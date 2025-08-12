@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Download, Save, Trash2, RotateCcw } from "lucide-react"
+import { Download, Save, Trash2, RotateCcw, Plus, Minus } from "lucide-react"
 
 interface PrintAreaMapping {
   id: string
@@ -62,6 +62,12 @@ const GARMENTS = [
   { path: "/garments/tshirt-caramel-oversize-back.jpeg", name: "T-shirt Caramelo Oversize Trasero" },
 ]
 
+const MARGIN_PRESETS = [
+  { name: "Mínimo", values: { top: 10, right: 8, bottom: 15, left: 8 } },
+  { name: "Estándar", values: { top: 20, right: 15, bottom: 30, left: 15 } },
+  { name: "Conservador", values: { top: 30, right: 20, bottom: 40, left: 20 } },
+]
+
 export default function PrintAreaMapper() {
   const [selectedGarment, setSelectedGarment] = useState<string>("")
   const [margins, setMargins] = useState({ top: 20, right: 15, bottom: 30, left: 15 })
@@ -111,6 +117,17 @@ export default function PrintAreaMapper() {
       width: Math.round(imageWidth - ((margins.left + margins.right) / 100) * imageWidth),
       height: Math.round(imageHeight - ((margins.top + margins.bottom) / 100) * imageHeight),
     }
+  }
+
+  const adjustMargin = (side: keyof typeof margins, delta: number) => {
+    setMargins((prev) => ({
+      ...prev,
+      [side]: Math.max(0, Math.min(50, prev[side] + delta)),
+    }))
+  }
+
+  const applyPreset = (preset: { top: number; right: number; bottom: number; left: number }) => {
+    setMargins(preset)
   }
 
   const saveMapping = () => {
@@ -197,7 +214,7 @@ export default function PrintAreaMapper() {
           <CardHeader>
             <CardTitle>Print Area Controls</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div>
               <Label htmlFor="mapping-name">Mapping Name</Label>
               <Input
@@ -205,12 +222,33 @@ export default function PrintAreaMapper() {
                 value={mappingName}
                 onChange={(e) => setMappingName(e.target.value)}
                 placeholder="Enter mapping name"
+                className="text-base"
               />
             </div>
 
             <Separator />
 
+            {/* Preset Buttons */}
             <div className="space-y-3">
+              <h4 className="font-medium">Quick Presets</h4>
+              <div className="grid grid-cols-3 gap-2">
+                {MARGIN_PRESETS.map((preset) => (
+                  <Button
+                    key={preset.name}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyPreset(preset.values)}
+                    className="text-xs"
+                  >
+                    {preset.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium">Margins (%)</h4>
                 <Button variant="outline" size="sm" onClick={resetMargins}>
@@ -219,49 +257,151 @@ export default function PrintAreaMapper() {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="top-margin">Top</Label>
+              {/* Top Margin */}
+              <div className="space-y-2">
+                <Label>Top: {margins.top}%</Label>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => adjustMargin("top", -1)} className="h-10 w-10 p-0">
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  <div className="flex-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="50"
+                      value={margins.top}
+                      onChange={(e) => setMargins((prev) => ({ ...prev, top: Number(e.target.value) }))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => adjustMargin("top", 1)} className="h-10 w-10 p-0">
+                    <Plus className="w-4 h-4" />
+                  </Button>
                   <Input
-                    id="top-margin"
                     type="number"
                     min="0"
                     max="50"
                     value={margins.top}
                     onChange={(e) => setMargins((prev) => ({ ...prev, top: Number(e.target.value) }))}
+                    className="w-16 text-center text-sm"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="bottom-margin">Bottom</Label>
+              </div>
+
+              {/* Bottom Margin */}
+              <div className="space-y-2">
+                <Label>Bottom: {margins.bottom}%</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => adjustMargin("bottom", -1)}
+                    className="h-10 w-10 p-0"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  <div className="flex-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="50"
+                      value={margins.bottom}
+                      onChange={(e) => setMargins((prev) => ({ ...prev, bottom: Number(e.target.value) }))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => adjustMargin("bottom", 1)}
+                    className="h-10 w-10 p-0"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
                   <Input
-                    id="bottom-margin"
                     type="number"
                     min="0"
                     max="50"
                     value={margins.bottom}
                     onChange={(e) => setMargins((prev) => ({ ...prev, bottom: Number(e.target.value) }))}
+                    className="w-16 text-center text-sm"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="left-margin">Left</Label>
+              </div>
+
+              {/* Left Margin */}
+              <div className="space-y-2">
+                <Label>Left: {margins.left}%</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => adjustMargin("left", -1)}
+                    className="h-10 w-10 p-0"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  <div className="flex-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="50"
+                      value={margins.left}
+                      onChange={(e) => setMargins((prev) => ({ ...prev, left: Number(e.target.value) }))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => adjustMargin("left", 1)} className="h-10 w-10 p-0">
+                    <Plus className="w-4 h-4" />
+                  </Button>
                   <Input
-                    id="left-margin"
                     type="number"
                     min="0"
                     max="50"
                     value={margins.left}
                     onChange={(e) => setMargins((prev) => ({ ...prev, left: Number(e.target.value) }))}
+                    className="w-16 text-center text-sm"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="right-margin">Right</Label>
+              </div>
+
+              {/* Right Margin */}
+              <div className="space-y-2">
+                <Label>Right: {margins.right}%</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => adjustMargin("right", -1)}
+                    className="h-10 w-10 p-0"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </Button>
+                  <div className="flex-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="50"
+                      value={margins.right}
+                      onChange={(e) => setMargins((prev) => ({ ...prev, right: Number(e.target.value) }))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => adjustMargin("right", 1)}
+                    className="h-10 w-10 p-0"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
                   <Input
-                    id="right-margin"
                     type="number"
                     min="0"
                     max="50"
                     value={margins.right}
                     onChange={(e) => setMargins((prev) => ({ ...prev, right: Number(e.target.value) }))}
+                    className="w-16 text-center text-sm"
                   />
                 </div>
               </div>
@@ -421,7 +561,7 @@ export default function PrintAreaMapper() {
               <strong>1.</strong> Select a garment from the list on the left
             </p>
             <p>
-              <strong>2.</strong> Adjust the margins using the percentage controls
+              <strong>2.</strong> Use sliders, +/- buttons, or quick presets to adjust margins
             </p>
             <p>
               <strong>3.</strong> The blue dashed area shows the printable zone
@@ -438,6 +578,41 @@ export default function PrintAreaMapper() {
           </div>
         </CardContent>
       </Card>
+
+      <style jsx>{`
+        .slider::-webkit-slider-thumb {
+          appearance: none;
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider::-moz-range-thumb {
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: #3b82f6;
+          cursor: pointer;
+          border: 2px solid #ffffff;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .slider::-webkit-slider-track {
+          height: 8px;
+          border-radius: 4px;
+          background: #e5e7eb;
+        }
+
+        .slider::-moz-range-track {
+          height: 8px;
+          border-radius: 4px;
+          background: #e5e7eb;
+        }
+      `}</style>
     </div>
   )
 }
