@@ -10,8 +10,8 @@ import { Download, Save, Trash2 } from "lucide-react"
 
 interface PrintAreaMapping {
   id: string
+  name: string
   garmentPath: string
-  garmentName: string
   margins: {
     top: number
     right: number
@@ -24,7 +24,7 @@ interface PrintAreaMapping {
     width: number
     height: number
   }
-  timestamp: string
+  timestamp: number
 }
 
 interface GarmentPreset {
@@ -39,35 +39,34 @@ const GARMENT_PRESETS: Record<string, GarmentPreset> = {
   "hoodie-back": { top: 20, right: 15, bottom: 30, left: 15 },
   "tshirt-front": { top: 20, right: 10, bottom: 25, left: 10 },
   "tshirt-back": { top: 15, right: 10, bottom: 20, left: 10 },
-  default: { top: 20, right: 15, bottom: 30, left: 15 },
 }
 
 const GARMENTS = [
-  { path: "/garments/hoodie-black-front.jpeg", name: "Hoodie Negro Frontal" },
-  { path: "/garments/hoodie-black-back.jpeg", name: "Hoodie Negro Trasero" },
-  { path: "/garments/hoodie-cream-front.jpeg", name: "Hoodie Crema Frontal" },
-  { path: "/garments/hoodie-cream-back.png", name: "Hoodie Crema Trasero" },
-  { path: "/garments/hoodie-caramel-front.jpeg", name: "Hoodie Caramelo Frontal" },
-  { path: "/garments/hoodie-caramel-back.png", name: "Hoodie Caramelo Trasero" },
-  { path: "/garments/hoodie-gray-front.jpeg", name: "Hoodie Gris Frontal" },
-  { path: "/garments/hoodie-gray-back.png", name: "Hoodie Gris Trasero" },
-  { path: "/garments/tshirt-black-oversize-front.jpeg", name: "T-shirt Negro Oversize Frontal" },
-  { path: "/garments/tshirt-black-oversize-back.jpeg", name: "T-shirt Negro Oversize Trasero" },
-  { path: "/garments/tshirt-black-classic-front.jpeg", name: "T-shirt Negro Clásico Frontal" },
-  { path: "/garments/tshirt-black-classic-back.jpeg", name: "T-shirt Negro Clásico Trasero" },
-  { path: "/garments/tshirt-white-oversize-front.jpeg", name: "T-shirt Blanco Oversize Frontal" },
-  { path: "/garments/tshirt-white-oversize-back.jpeg", name: "T-shirt Blanco Oversize Trasero" },
-  { path: "/garments/tshirt-white-classic-front.jpeg", name: "T-shirt Blanco Clásico Frontal" },
-  { path: "/garments/tshirt-white-classic-back.jpeg", name: "T-shirt Blanco Clásico Trasero" },
-  { path: "/garments/tshirt-caramel-oversize-front.jpeg", name: "T-shirt Caramelo Oversize Frontal" },
-  { path: "/garments/tshirt-caramel-oversize-back.jpeg", name: "T-shirt Caramelo Oversize Trasero" },
+  "/garments/hoodie-black-front.jpeg",
+  "/garments/hoodie-black-back.jpeg",
+  "/garments/hoodie-caramel-front.jpeg",
+  "/garments/hoodie-caramel-back.png",
+  "/garments/hoodie-cream-front.jpeg",
+  "/garments/hoodie-cream-back.png",
+  "/garments/hoodie-gray-front.jpeg",
+  "/garments/hoodie-gray-back.png",
+  "/garments/tshirt-black-classic-front.jpeg",
+  "/garments/tshirt-black-classic-back.jpeg",
+  "/garments/tshirt-black-oversize-front.jpeg",
+  "/garments/tshirt-black-oversize-back.jpeg",
+  "/garments/tshirt-white-classic-front.jpeg",
+  "/garments/tshirt-white-classic-back.jpeg",
+  "/garments/tshirt-white-oversize-front.jpeg",
+  "/garments/tshirt-white-oversize-back.jpeg",
+  "/garments/tshirt-caramel-oversize-front.jpeg",
+  "/garments/tshirt-caramel-oversize-back.jpeg",
 ]
 
 export default function PrintAreaMapper() {
   const [selectedGarment, setSelectedGarment] = useState<string>("")
-  const [margins, setMargins] = useState<GarmentPreset>({ top: 20, right: 15, bottom: 30, left: 15 })
+  const [margins, setMargins] = useState({ top: 20, right: 15, bottom: 30, left: 15 })
+  const [mappingName, setMappingName] = useState("")
   const [savedMappings, setSavedMappings] = useState<PrintAreaMapping[]>([])
-  const [mappingName, setMappingName] = useState<string>("")
 
   useEffect(() => {
     const saved = localStorage.getItem("printAreaMappings")
@@ -76,54 +75,53 @@ export default function PrintAreaMapper() {
     }
   }, [])
 
-  const getPresetForGarment = (garmentPath: string): GarmentPreset => {
-    if (garmentPath.includes("hoodie") && garmentPath.includes("front")) {
-      return GARMENT_PRESETS["hoodie-front"]
-    }
-    if (garmentPath.includes("hoodie") && garmentPath.includes("back")) {
-      return GARMENT_PRESETS["hoodie-back"]
-    }
-    if (garmentPath.includes("tshirt") && garmentPath.includes("front")) {
-      return GARMENT_PRESETS["tshirt-front"]
-    }
-    if (garmentPath.includes("tshirt") && garmentPath.includes("back")) {
-      return GARMENT_PRESETS["tshirt-back"]
-    }
-    return GARMENT_PRESETS["default"]
+  const getGarmentType = (path: string): string => {
+    const filename = path.split("/").pop() || ""
+    if (filename.includes("hoodie") && filename.includes("front")) return "hoodie-front"
+    if (filename.includes("hoodie") && filename.includes("back")) return "hoodie-back"
+    if (filename.includes("tshirt") && filename.includes("front")) return "tshirt-front"
+    if (filename.includes("tshirt") && filename.includes("back")) return "tshirt-back"
+    return "tshirt-front"
   }
 
   const handleGarmentSelect = (garmentPath: string) => {
     setSelectedGarment(garmentPath)
-    const preset = getPresetForGarment(garmentPath)
-    setMargins(preset)
+    const garmentType = getGarmentType(garmentPath)
+    const preset = GARMENT_PRESETS[garmentType]
+    if (preset) {
+      setMargins(preset)
+    }
 
-    const garmentName = GARMENTS.find((g) => g.path === garmentPath)?.name || ""
+    const garmentName =
+      garmentPath
+        .split("/")
+        .pop()
+        ?.replace(/\.(jpeg|jpg|png)$/, "") || ""
     setMappingName(garmentName)
   }
 
   const calculateCoordinates = () => {
-    const imageWidth = 400 // Base width for calculation
-    const imageHeight = 500 // Base height for calculation
+    const imageWidth = 400
+    const imageHeight = 500
 
-    const x = (margins.left / 100) * imageWidth
-    const y = (margins.top / 100) * imageHeight
-    const width = imageWidth - ((margins.left + margins.right) / 100) * imageWidth
-    const height = imageHeight - ((margins.top + margins.bottom) / 100) * imageHeight
-
-    return { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) }
+    return {
+      x: Math.round((margins.left / 100) * imageWidth),
+      y: Math.round((margins.top / 100) * imageHeight),
+      width: Math.round(imageWidth - ((margins.left + margins.right) / 100) * imageWidth),
+      height: Math.round(imageHeight - ((margins.top + margins.bottom) / 100) * imageHeight),
+    }
   }
 
   const saveMapping = () => {
     if (!selectedGarment || !mappingName.trim()) return
 
-    const coordinates = calculateCoordinates()
     const mapping: PrintAreaMapping = {
       id: Date.now().toString(),
+      name: mappingName.trim(),
       garmentPath: selectedGarment,
-      garmentName: mappingName.trim(),
-      margins,
-      coordinates,
-      timestamp: new Date().toISOString(),
+      margins: { ...margins },
+      coordinates: calculateCoordinates(),
+      timestamp: Date.now(),
     }
 
     const updatedMappings = [...savedMappings, mapping]
@@ -141,7 +139,7 @@ export default function PrintAreaMapper() {
     const dataStr = JSON.stringify(savedMappings, null, 2)
     const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr)
 
-    const exportFileDefaultName = `print-area-mappings-${new Date().toISOString().split("T")[0]}.json`
+    const exportFileDefaultName = "print-area-mappings.json"
 
     const linkElement = document.createElement("a")
     linkElement.setAttribute("href", dataUri)
@@ -154,52 +152,71 @@ export default function PrintAreaMapper() {
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Mapeador de Áreas de Impresión</h1>
+        <h1 className="text-3xl font-bold mb-2">Print Area Mapper</h1>
         <p className="text-muted-foreground">
-          Herramienta para mapear visualmente las áreas de impresión en las prendas
+          Map print areas for garments by adjusting margins and visualizing the printable zone.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Panel de Control */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Selección de Prenda</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-                {GARMENTS.map((garment) => (
-                  <Button
-                    key={garment.path}
-                    variant={selectedGarment === garment.path ? "default" : "outline"}
-                    className="justify-start text-left h-auto p-3"
-                    onClick={() => handleGarmentSelect(garment.path)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={garment.path || "/placeholder.svg"}
-                        alt={garment.name}
-                        className="w-12 h-12 object-cover rounded"
-                      />
-                      <span className="text-sm">{garment.name}</span>
-                    </div>
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Garment Selection */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Select Garment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+              {GARMENTS.map((garment) => (
+                <button
+                  key={garment}
+                  onClick={() => handleGarmentSelect(garment)}
+                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                    selectedGarment === garment ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-200"
+                  }`}
+                >
+                  <img
+                    src={garment || "/placeholder.svg"}
+                    alt={garment.split("/").pop()}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-1 truncate">
+                    {garment
+                      .split("/")
+                      .pop()
+                      ?.replace(/\.(jpeg|jpg|png)$/, "")}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Configuración de Márgenes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+        {/* Controls */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Print Area Controls</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="mapping-name">Mapping Name</Label>
+              <Input
+                id="mapping-name"
+                value={mappingName}
+                onChange={(e) => setMappingName(e.target.value)}
+                placeholder="Enter mapping name"
+              />
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <h4 className="font-medium">Margins (%)</h4>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label htmlFor="top">Superior (%)</Label>
+                  <Label htmlFor="top-margin">Top</Label>
                   <Input
-                    id="top"
+                    id="top-margin"
                     type="number"
                     min="0"
                     max="50"
@@ -208,9 +225,9 @@ export default function PrintAreaMapper() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="bottom">Inferior (%)</Label>
+                  <Label htmlFor="bottom-margin">Bottom</Label>
                   <Input
-                    id="bottom"
+                    id="bottom-margin"
                     type="number"
                     min="0"
                     max="50"
@@ -219,9 +236,9 @@ export default function PrintAreaMapper() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="left">Izquierdo (%)</Label>
+                  <Label htmlFor="left-margin">Left</Label>
                   <Input
-                    id="left"
+                    id="left-margin"
                     type="number"
                     min="0"
                     max="50"
@@ -230,9 +247,9 @@ export default function PrintAreaMapper() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="right">Derecho (%)</Label>
+                  <Label htmlFor="right-margin">Right</Label>
                   <Input
-                    id="right"
+                    id="right-margin"
                     type="number"
                     min="0"
                     max="50"
@@ -241,158 +258,150 @@ export default function PrintAreaMapper() {
                   />
                 </div>
               </div>
+            </div>
 
-              {coordinates && (
-                <div className="mt-4 p-4 bg-muted rounded-lg">
-                  <h4 className="font-semibold mb-2">Coordenadas Calculadas:</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
+            {coordinates && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <h4 className="font-medium">Calculated Coordinates</h4>
+                  <div className="text-sm space-y-1 bg-gray-50 p-3 rounded">
                     <div>X: {coordinates.x}px</div>
                     <div>Y: {coordinates.y}px</div>
-                    <div>Ancho: {coordinates.width}px</div>
-                    <div>Alto: {coordinates.height}px</div>
+                    <div>Width: {coordinates.width}px</div>
+                    <div>Height: {coordinates.height}px</div>
                   </div>
                 </div>
-              )}
+              </>
+            )}
 
-              <Separator />
+            <Button onClick={saveMapping} disabled={!selectedGarment || !mappingName.trim()} className="w-full">
+              <Save className="w-4 h-4 mr-2" />
+              Save Mapping
+            </Button>
+          </CardContent>
+        </Card>
 
-              <div className="space-y-2">
-                <Label htmlFor="mappingName">Nombre del Mapeo</Label>
-                <Input
-                  id="mappingName"
-                  value={mappingName}
-                  onChange={(e) => setMappingName(e.target.value)}
-                  placeholder="Nombre para identificar este mapeo"
+        {/* Preview */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Preview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedGarment ? (
+              <div className="relative">
+                <img
+                  src={selectedGarment || "/placeholder.svg"}
+                  alt="Selected garment"
+                  className="w-full max-w-sm mx-auto rounded-lg"
                 />
+
+                {/* Print area overlay */}
+                <div
+                  className="absolute border-2 border-dashed border-blue-500 bg-blue-100/20"
+                  style={{
+                    left: `${margins.left}%`,
+                    top: `${margins.top}%`,
+                    right: `${margins.right}%`,
+                    bottom: `${margins.bottom}%`,
+                  }}
+                >
+                  {/* Corner indicators */}
+                  <div className="absolute -top-1 -left-1 w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
+                </div>
+
+                {/* Non-printable area overlays */}
+                <div
+                  className="absolute top-0 left-0 right-0 bg-red-500/20"
+                  style={{ height: `${margins.top}%` }}
+                ></div>
+                <div
+                  className="absolute bottom-0 left-0 right-0 bg-red-500/20"
+                  style={{ height: `${margins.bottom}%` }}
+                ></div>
+                <div
+                  className="absolute left-0 bg-red-500/20"
+                  style={{
+                    top: `${margins.top}%`,
+                    bottom: `${margins.bottom}%`,
+                    width: `${margins.left}%`,
+                  }}
+                ></div>
+                <div
+                  className="absolute right-0 bg-red-500/20"
+                  style={{
+                    top: `${margins.top}%`,
+                    bottom: `${margins.bottom}%`,
+                    width: `${margins.right}%`,
+                  }}
+                ></div>
               </div>
-
-              <Button onClick={saveMapping} disabled={!selectedGarment || !mappingName.trim()} className="w-full">
-                <Save className="w-4 h-4 mr-2" />
-                Guardar Mapeo
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Panel de Vista Previa */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Vista Previa</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selectedGarment ? (
-                <div className="relative inline-block">
-                  <img
-                    src={selectedGarment || "/placeholder.svg"}
-                    alt="Prenda seleccionada"
-                    className="max-w-full h-auto rounded-lg"
-                    style={{ maxHeight: "500px" }}
-                  />
-
-                  {/* Overlay de área imprimible */}
-                  <div
-                    className="absolute border-2 border-blue-500 border-dashed bg-blue-500/10"
-                    style={{
-                      left: `${margins.left}%`,
-                      top: `${margins.top}%`,
-                      right: `${margins.right}%`,
-                      bottom: `${margins.bottom}%`,
-                    }}
-                  >
-                    {/* Puntos de control en las esquinas */}
-                    <div className="absolute -top-1 -left-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-                  </div>
-
-                  {/* Overlays para áreas no imprimibles */}
-                  {/* Superior */}
-                  <div
-                    className="absolute top-0 left-0 right-0 bg-red-500/20"
-                    style={{ height: `${margins.top}%` }}
-                  ></div>
-                  {/* Inferior */}
-                  <div
-                    className="absolute bottom-0 left-0 right-0 bg-red-500/20"
-                    style={{ height: `${margins.bottom}%` }}
-                  ></div>
-                  {/* Izquierdo */}
-                  <div
-                    className="absolute top-0 bottom-0 left-0 bg-red-500/20"
-                    style={{ width: `${margins.left}%` }}
-                  ></div>
-                  {/* Derecho */}
-                  <div
-                    className="absolute top-0 bottom-0 right-0 bg-red-500/20"
-                    style={{ width: `${margins.right}%` }}
-                  ></div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-64 bg-muted rounded-lg">
-                  <p className="text-muted-foreground">Selecciona una prenda para ver la vista previa</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-12">Select a garment to see the preview</div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Panel de Mapeos Guardados */}
-      <Card className="mt-8">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Mapeos Guardados ({savedMappings.length})</CardTitle>
-          <Button onClick={exportMappings} disabled={savedMappings.length === 0}>
-            <Download className="w-4 h-4 mr-2" />
-            Exportar JSON
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {savedMappings.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              No hay mapeos guardados. Crea tu primer mapeo seleccionando una prenda y configurando los márgenes.
-            </p>
-          ) : (
+      {/* Saved Mappings */}
+      {savedMappings.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Saved Mappings ({savedMappings.length})</CardTitle>
+            <Button onClick={exportMappings} variant="outline">
+              <Download className="w-4 h-4 mr-2" />
+              Export JSON
+            </Button>
+          </CardHeader>
+          <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {savedMappings.map((mapping) => (
-                <div key={mapping.id} className="border rounded-lg p-4 space-y-2">
+                <div key={mapping.id} className="border rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-sm">{mapping.garmentName}</h4>
-                    <Button variant="ghost" size="sm" onClick={() => deleteMapping(mapping.id)}>
+                    <h4 className="font-medium truncate">{mapping.name}</h4>
+                    <Button onClick={() => deleteMapping(mapping.id)} variant="ghost" size="sm">
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
 
-                  <img
-                    src={mapping.garmentPath || "/placeholder.svg"}
-                    alt={mapping.garmentName}
-                    className="w-full h-24 object-cover rounded"
-                  />
+                  <div className="relative aspect-square">
+                    <img
+                      src={mapping.garmentPath || "/placeholder.svg"}
+                      alt={mapping.name}
+                      className="w-full h-full object-cover rounded"
+                    />
+                    <div
+                      className="absolute border border-blue-400 bg-blue-100/30"
+                      style={{
+                        left: `${mapping.margins.left}%`,
+                        top: `${mapping.margins.top}%`,
+                        right: `${mapping.margins.right}%`,
+                        bottom: `${mapping.margins.bottom}%`,
+                      }}
+                    ></div>
+                  </div>
 
-                  <div className="text-xs space-y-1">
-                    <div className="grid grid-cols-2 gap-1">
-                      <span>
-                        Márgenes: {mapping.margins.top}% {mapping.margins.right}% {mapping.margins.bottom}%{" "}
-                        {mapping.margins.left}%
-                      </span>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <div>
+                      Margins: {mapping.margins.top}% {mapping.margins.right}% {mapping.margins.bottom}%{" "}
+                      {mapping.margins.left}%
                     </div>
-                    <div className="grid grid-cols-2 gap-1">
-                      <span>
-                        Coord: {mapping.coordinates.x},{mapping.coordinates.y}
-                      </span>
-                      <span>
-                        Tamaño: {mapping.coordinates.width}×{mapping.coordinates.height}
-                      </span>
+                    <div>
+                      Size: {mapping.coordinates.width}×{mapping.coordinates.height}px
                     </div>
-                    <div className="text-muted-foreground">{new Date(mapping.timestamp).toLocaleDateString()}</div>
+                    <div>
+                      Position: ({mapping.coordinates.x}, {mapping.coordinates.y})
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
