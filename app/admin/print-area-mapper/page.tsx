@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Download, Save, Trash2 } from "lucide-react"
+import { Download, Save, Trash2, RotateCcw } from "lucide-react"
 
 interface PrintAreaMapping {
   id: string
@@ -42,24 +42,24 @@ const GARMENT_PRESETS: Record<string, GarmentPreset> = {
 }
 
 const GARMENTS = [
-  "/garments/hoodie-black-front.jpeg",
-  "/garments/hoodie-black-back.jpeg",
-  "/garments/hoodie-caramel-front.jpeg",
-  "/garments/hoodie-caramel-back.png",
-  "/garments/hoodie-cream-front.jpeg",
-  "/garments/hoodie-cream-back.png",
-  "/garments/hoodie-gray-front.jpeg",
-  "/garments/hoodie-gray-back.png",
-  "/garments/tshirt-black-classic-front.jpeg",
-  "/garments/tshirt-black-classic-back.jpeg",
-  "/garments/tshirt-black-oversize-front.jpeg",
-  "/garments/tshirt-black-oversize-back.jpeg",
-  "/garments/tshirt-white-classic-front.jpeg",
-  "/garments/tshirt-white-classic-back.jpeg",
-  "/garments/tshirt-white-oversize-front.jpeg",
-  "/garments/tshirt-white-oversize-back.jpeg",
-  "/garments/tshirt-caramel-oversize-front.jpeg",
-  "/garments/tshirt-caramel-oversize-back.jpeg",
+  { path: "/garments/hoodie-black-front.jpeg", name: "Hoodie Negro Frontal" },
+  { path: "/garments/hoodie-black-back.jpeg", name: "Hoodie Negro Trasero" },
+  { path: "/garments/hoodie-caramel-front.jpeg", name: "Hoodie Caramelo Frontal" },
+  { path: "/garments/hoodie-caramel-back.png", name: "Hoodie Caramelo Trasero" },
+  { path: "/garments/hoodie-cream-front.jpeg", name: "Hoodie Crema Frontal" },
+  { path: "/garments/hoodie-cream-back.png", name: "Hoodie Crema Trasero" },
+  { path: "/garments/hoodie-gray-front.jpeg", name: "Hoodie Gris Frontal" },
+  { path: "/garments/hoodie-gray-back.png", name: "Hoodie Gris Trasero" },
+  { path: "/garments/tshirt-black-classic-front.jpeg", name: "T-shirt Negro Clásico Frontal" },
+  { path: "/garments/tshirt-black-classic-back.jpeg", name: "T-shirt Negro Clásico Trasero" },
+  { path: "/garments/tshirt-black-oversize-front.jpeg", name: "T-shirt Negro Oversize Frontal" },
+  { path: "/garments/tshirt-black-oversize-back.jpeg", name: "T-shirt Negro Oversize Trasero" },
+  { path: "/garments/tshirt-white-classic-front.jpeg", name: "T-shirt Blanco Clásico Frontal" },
+  { path: "/garments/tshirt-white-classic-back.jpeg", name: "T-shirt Blanco Clásico Trasero" },
+  { path: "/garments/tshirt-white-oversize-front.jpeg", name: "T-shirt Blanco Oversize Frontal" },
+  { path: "/garments/tshirt-white-oversize-back.jpeg", name: "T-shirt Blanco Oversize Trasero" },
+  { path: "/garments/tshirt-caramel-oversize-front.jpeg", name: "T-shirt Caramelo Oversize Frontal" },
+  { path: "/garments/tshirt-caramel-oversize-back.jpeg", name: "T-shirt Caramelo Oversize Trasero" },
 ]
 
 export default function PrintAreaMapper() {
@@ -71,7 +71,12 @@ export default function PrintAreaMapper() {
   useEffect(() => {
     const saved = localStorage.getItem("printAreaMappings")
     if (saved) {
-      setSavedMappings(JSON.parse(saved))
+      try {
+        setSavedMappings(JSON.parse(saved))
+      } catch (error) {
+        console.error("Error loading saved mappings:", error)
+        setSavedMappings([])
+      }
     }
   }, [])
 
@@ -92,12 +97,8 @@ export default function PrintAreaMapper() {
       setMargins(preset)
     }
 
-    const garmentName =
-      garmentPath
-        .split("/")
-        .pop()
-        ?.replace(/\.(jpeg|jpg|png)$/, "") || ""
-    setMappingName(garmentName)
+    const garmentInfo = GARMENTS.find((g) => g.path === garmentPath)
+    setMappingName(garmentInfo?.name || "")
   }
 
   const calculateCoordinates = () => {
@@ -135,11 +136,15 @@ export default function PrintAreaMapper() {
     localStorage.setItem("printAreaMappings", JSON.stringify(updatedMappings))
   }
 
+  const resetMargins = () => {
+    setMargins({ top: 20, right: 15, bottom: 30, left: 15 })
+  }
+
   const exportMappings = () => {
     const dataStr = JSON.stringify(savedMappings, null, 2)
     const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr)
 
-    const exportFileDefaultName = "print-area-mappings.json"
+    const exportFileDefaultName = `print-area-mappings-${new Date().toISOString().split("T")[0]}.json`
 
     const linkElement = document.createElement("a")
     linkElement.setAttribute("href", dataUri)
@@ -165,27 +170,23 @@ export default function PrintAreaMapper() {
             <CardTitle>Select Garment</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+            <div className="space-y-2 max-h-96 overflow-y-auto">
               {GARMENTS.map((garment) => (
-                <button
-                  key={garment}
-                  onClick={() => handleGarmentSelect(garment)}
-                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
-                    selectedGarment === garment ? "border-blue-500 ring-2 ring-blue-200" : "border-gray-200"
-                  }`}
+                <Button
+                  key={garment.path}
+                  variant={selectedGarment === garment.path ? "default" : "outline"}
+                  className="w-full justify-start text-left h-auto p-3"
+                  onClick={() => handleGarmentSelect(garment.path)}
                 >
-                  <img
-                    src={garment || "/placeholder.svg"}
-                    alt={garment.split("/").pop()}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs p-1 truncate">
-                    {garment
-                      .split("/")
-                      .pop()
-                      ?.replace(/\.(jpeg|jpg|png)$/, "")}
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={garment.path || "/placeholder.svg"}
+                      alt={garment.name}
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                    <span className="text-sm">{garment.name}</span>
                   </div>
-                </button>
+                </Button>
               ))}
             </div>
           </CardContent>
@@ -210,7 +211,13 @@ export default function PrintAreaMapper() {
             <Separator />
 
             <div className="space-y-3">
-              <h4 className="font-medium">Margins (%)</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Margins (%)</h4>
+                <Button variant="outline" size="sm" onClick={resetMargins}>
+                  <RotateCcw className="w-4 h-4 mr-1" />
+                  Reset
+                </Button>
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -402,6 +409,35 @@ export default function PrintAreaMapper() {
           </CardContent>
         </Card>
       )}
+
+      {/* Instructions */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>How to Use</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground space-y-2">
+            <p>
+              <strong>1.</strong> Select a garment from the list on the left
+            </p>
+            <p>
+              <strong>2.</strong> Adjust the margins using the percentage controls
+            </p>
+            <p>
+              <strong>3.</strong> The blue dashed area shows the printable zone
+            </p>
+            <p>
+              <strong>4.</strong> Red areas indicate non-printable margins
+            </p>
+            <p>
+              <strong>5.</strong> Save your mapping with a descriptive name
+            </p>
+            <p>
+              <strong>6.</strong> Export all mappings to JSON for integration
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
