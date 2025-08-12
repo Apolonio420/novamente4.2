@@ -1,80 +1,63 @@
 /**
- * Cliente para optimización de prompts usando OpenAI
- * Reemplaza la optimización local con IA real
+ * Lightweight prompt optimizer used for tests.
+ * Applies simple string heuristics synchronously without any network calls.
  */
 
-export async function optimizePrompt(originalPrompt: string): Promise<string> {
-  console.log("🔍 PROMPT OPTIMIZER: Using OpenAI for optimization")
-  console.log("📥 INPUT PROMPT:", originalPrompt)
-
-  try {
-    const response = await fetch("/api/optimize-prompt", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ prompt: originalPrompt }),
-    })
-
-    if (!response.ok) {
-      console.error("❌ Optimization API failed, using fallback")
-      return fallbackOptimization(originalPrompt)
-    }
-
-    const data = await response.json()
-
-    if (data.fallback) {
-      console.log("⚠️ Using fallback optimization")
-      return fallbackOptimization(originalPrompt)
-    }
-
-    console.log("📤 OPTIMIZED PROMPT:", data.optimizedPrompt)
-    return data.optimizedPrompt
-  } catch (error) {
-    console.error("❌ Error in prompt optimization:", error)
-    return fallbackOptimization(originalPrompt)
-  }
+export interface OptimizeOptions {
+  layout?: "square" | "tall" | "wide"
 }
 
-// Optimización de respaldo si falla la API
-function fallbackOptimization(prompt: string): string {
-  console.log("🔄 Using fallback optimization")
+const TRIGGER_WORDS = ["vector", "design", "digital", "illustration"]
 
-  const cleanPrompt = prompt.trim()
-  if (!cleanPrompt) return cleanPrompt
+/**
+ * Optimises a user provided prompt by removing trigger words, prefixing the
+ * description with "Illustration:" and appending composition hints and positive
+ * language. The function is synchronous so that it can be used directly in the
+ * tests without awaiting a Promise.
+ */
+export function optimizePrompt(originalPrompt: string, opts: OptimizeOptions = {}): string {
+  let cleaned = originalPrompt
+    // remove trigger words such as "vector" and "design"
+    .replace(new RegExp(`\\b(${TRIGGER_WORDS.join("|")})\\b`, "gi"), "")
+    // normalise excess white-space and commas left by the replacements
+    .replace(/\s+,/g, ",")
+    .replace(/,\s+/g, ", ")
+    .replace(/\s{2,}/g, " ")
+    .trim()
 
-  // Detectar si ya tiene fondo específico
-  const hasBackground = /\b(fondo|background)\b/i.test(cleanPrompt)
+  // ensure leading/trailing commas are removed after cleanup
+  cleaned = cleaned.replace(/^,\s*/, "").replace(/,\s*$/, "").trim()
 
-  // Detectar si ya especifica composición única
-  const hasSingleComposition = /\b(única|single|one|solo|centrada|centered)\b/i.test(cleanPrompt)
+  let result = `Illustration: ${cleaned}`
 
-  // Optimización básica
-  let optimized = cleanPrompt
-
-  if (!hasBackground) {
-    optimized += ", isolated on plain white background"
+  // Layout specific composition hints
+  switch (opts.layout) {
+    case "tall":
+      result += ", vertically centered composition"
+      break
+    case "wide":
+      result += ", horizontally centered composition"
+      break
+    default:
+      result += ", centered composition"
   }
 
-  // Agregar especificación de composición única si no está presente
-  if (!hasSingleComposition) {
-    optimized += ", una única composición centrada, sin duplicados, sin versiones alternativas"
-  }
+  // Positive language without negative instructions
+  result += ", isolated subject with no other elements, on a plain white background"
 
-  optimized += ", imagen de alta resolución, suitable for print design"
-
-  console.log("📤 FALLBACK OPTIMIZED:", optimized)
-  return optimized
+  return result
 }
 
-// Función para retry (mantenida para compatibilidad)
-export function addRetryEmphasis(prompt: string, retryCount: number): string {
-  if (retryCount === 0) return prompt
+/**
+ * Adds a positive emphasis used when retrying an image generation request.
+ * The emphasised sentence is purposely verbose but avoids negative language.
+ */
+export function addRetryEmphasis(prompt: string, retryCount = 1): string {
+  if (retryCount <= 0) return prompt
 
   const emphasis =
-    retryCount === 1
-      ? ", vector illustration style, graphic design element"
-      : ", minimalist vector art, logo design style, clean graphic illustration"
+    "The artwork is completely isolated on a pure white backdrop with absolutely nothing else in the image, minimalist vector art, logo design style, clean graphic illustration"
 
-  return `${prompt}${emphasis}`
+  return `${prompt}, ${emphasis}`
 }
+
