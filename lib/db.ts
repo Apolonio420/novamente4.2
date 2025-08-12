@@ -552,3 +552,6 @@ export async function getUserImages(userId?: string): Promise<ImageRecord[]> {
     return localImages.filter((img: ImageRecord) => img.user_id === actualUserId)
   }
 }
+
+// Export alias for compatibility
+export const saveImage = saveGeneratedImage
