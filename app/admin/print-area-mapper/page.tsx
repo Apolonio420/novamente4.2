@@ -12,122 +12,63 @@ interface PrintAreaMapping {
   id: string
   garmentPath: string
   garmentName: string
-  topMargin: number
-  bottomMargin: number
-  leftMargin: number
-  rightMargin: number
-  printArea: {
+  margins: {
+    top: number
+    right: number
+    bottom: number
+    left: number
+  }
+  coordinates: {
     x: number
     y: number
     width: number
     height: number
   }
+  timestamp: string
 }
 
-interface GarmentInfo {
-  path: string
-  name: string
-  type: "hoodie" | "tshirt"
-  side: "front" | "back"
+interface GarmentPreset {
+  top: number
+  right: number
+  bottom: number
+  left: number
 }
 
-const GARMENTS: GarmentInfo[] = [
-  // Hoodies
-  { path: "/garments/hoodie-black-front.jpeg", name: "Hoodie Negro Frontal", type: "hoodie", side: "front" },
-  { path: "/garments/hoodie-black-back.png", name: "Hoodie Negro Trasero", type: "hoodie", side: "back" },
-  { path: "/garments/hoodie-caramel-front.jpeg", name: "Hoodie Caramelo Frontal", type: "hoodie", side: "front" },
-  { path: "/garments/hoodie-caramel-back.png", name: "Hoodie Caramelo Trasero", type: "hoodie", side: "back" },
-  { path: "/garments/hoodie-cream-front.jpeg", name: "Hoodie Crema Frontal", type: "hoodie", side: "front" },
-  { path: "/garments/hoodie-cream-back.png", name: "Hoodie Crema Trasero", type: "hoodie", side: "back" },
-  { path: "/garments/hoodie-gray-front.jpeg", name: "Hoodie Gris Frontal", type: "hoodie", side: "front" },
-  { path: "/garments/hoodie-gray-back.png", name: "Hoodie Gris Trasero", type: "hoodie", side: "back" },
+const GARMENT_PRESETS: Record<string, GarmentPreset> = {
+  "hoodie-front": { top: 25, right: 15, bottom: 45, left: 15 },
+  "hoodie-back": { top: 20, right: 15, bottom: 30, left: 15 },
+  "tshirt-front": { top: 20, right: 10, bottom: 25, left: 10 },
+  "tshirt-back": { top: 15, right: 10, bottom: 20, left: 10 },
+  default: { top: 20, right: 15, bottom: 30, left: 15 },
+}
 
-  // T-shirts
-  {
-    path: "/garments/tshirt-black-classic-front.jpeg",
-    name: "T-shirt Negro Clásico Frontal",
-    type: "tshirt",
-    side: "front",
-  },
-  {
-    path: "/garments/tshirt-black-classic-back.jpeg",
-    name: "T-shirt Negro Clásico Trasero",
-    type: "tshirt",
-    side: "back",
-  },
-  {
-    path: "/garments/tshirt-black-oversize-front.jpeg",
-    name: "T-shirt Negro Oversize Frontal",
-    type: "tshirt",
-    side: "front",
-  },
-  {
-    path: "/garments/tshirt-black-oversize-back.jpeg",
-    name: "T-shirt Negro Oversize Trasero",
-    type: "tshirt",
-    side: "back",
-  },
-  {
-    path: "/garments/tshirt-white-classic-front.jpeg",
-    name: "T-shirt Blanco Clásico Frontal",
-    type: "tshirt",
-    side: "front",
-  },
-  {
-    path: "/garments/tshirt-white-classic-back.jpeg",
-    name: "T-shirt Blanco Clásico Trasero",
-    type: "tshirt",
-    side: "back",
-  },
-  {
-    path: "/garments/tshirt-white-oversize-front.jpeg",
-    name: "T-shirt Blanco Oversize Frontal",
-    type: "tshirt",
-    side: "front",
-  },
-  {
-    path: "/garments/tshirt-white-oversize-back.jpeg",
-    name: "T-shirt Blanco Oversize Trasero",
-    type: "tshirt",
-    side: "back",
-  },
-  {
-    path: "/garments/tshirt-caramel-oversize-front.jpeg",
-    name: "T-shirt Caramelo Oversize Frontal",
-    type: "tshirt",
-    side: "front",
-  },
-  {
-    path: "/garments/tshirt-caramel-oversize-back.jpeg",
-    name: "T-shirt Caramelo Oversize Trasero",
-    type: "tshirt",
-    side: "back",
-  },
+const GARMENTS = [
+  { path: "/garments/hoodie-black-front.jpeg", name: "Hoodie Negro Frontal" },
+  { path: "/garments/hoodie-black-back.jpeg", name: "Hoodie Negro Trasero" },
+  { path: "/garments/hoodie-cream-front.jpeg", name: "Hoodie Crema Frontal" },
+  { path: "/garments/hoodie-cream-back.png", name: "Hoodie Crema Trasero" },
+  { path: "/garments/hoodie-caramel-front.jpeg", name: "Hoodie Caramelo Frontal" },
+  { path: "/garments/hoodie-caramel-back.png", name: "Hoodie Caramelo Trasero" },
+  { path: "/garments/hoodie-gray-front.jpeg", name: "Hoodie Gris Frontal" },
+  { path: "/garments/hoodie-gray-back.png", name: "Hoodie Gris Trasero" },
+  { path: "/garments/tshirt-black-oversize-front.jpeg", name: "T-shirt Negro Oversize Frontal" },
+  { path: "/garments/tshirt-black-oversize-back.jpeg", name: "T-shirt Negro Oversize Trasero" },
+  { path: "/garments/tshirt-black-classic-front.jpeg", name: "T-shirt Negro Clásico Frontal" },
+  { path: "/garments/tshirt-black-classic-back.jpeg", name: "T-shirt Negro Clásico Trasero" },
+  { path: "/garments/tshirt-white-oversize-front.jpeg", name: "T-shirt Blanco Oversize Frontal" },
+  { path: "/garments/tshirt-white-oversize-back.jpeg", name: "T-shirt Blanco Oversize Trasero" },
+  { path: "/garments/tshirt-white-classic-front.jpeg", name: "T-shirt Blanco Clásico Frontal" },
+  { path: "/garments/tshirt-white-classic-back.jpeg", name: "T-shirt Blanco Clásico Trasero" },
+  { path: "/garments/tshirt-caramel-oversize-front.jpeg", name: "T-shirt Caramelo Oversize Frontal" },
+  { path: "/garments/tshirt-caramel-oversize-back.jpeg", name: "T-shirt Caramelo Oversize Trasero" },
 ]
 
-const PRESETS = {
-  hoodie: {
-    front: { top: 25, bottom: 45, left: 15, right: 15 },
-    back: { top: 20, bottom: 30, left: 15, right: 15 },
-  },
-  tshirt: {
-    front: { top: 20, bottom: 25, left: 10, right: 10 },
-    back: { top: 15, bottom: 20, left: 10, right: 10 },
-  },
-}
-
 export default function PrintAreaMapper() {
-  const [selectedGarment, setSelectedGarment] = useState<GarmentInfo | null>(null)
-  const [margins, setMargins] = useState({
-    top: 20,
-    bottom: 30,
-    left: 15,
-    right: 15,
-  })
+  const [selectedGarment, setSelectedGarment] = useState<string>("")
+  const [margins, setMargins] = useState<GarmentPreset>({ top: 20, right: 15, bottom: 30, left: 15 })
   const [savedMappings, setSavedMappings] = useState<PrintAreaMapping[]>([])
-  const [mappingName, setMappingName] = useState("")
+  const [mappingName, setMappingName] = useState<string>("")
 
-  // Load saved mappings from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("printAreaMappings")
     if (saved) {
@@ -135,61 +76,72 @@ export default function PrintAreaMapper() {
     }
   }, [])
 
-  // Apply preset when garment changes
-  useEffect(() => {
-    if (selectedGarment) {
-      const preset = PRESETS[selectedGarment.type][selectedGarment.side]
-      setMargins(preset)
-      setMappingName(selectedGarment.name)
+  const getPresetForGarment = (garmentPath: string): GarmentPreset => {
+    if (garmentPath.includes("hoodie") && garmentPath.includes("front")) {
+      return GARMENT_PRESETS["hoodie-front"]
     }
-  }, [selectedGarment])
+    if (garmentPath.includes("hoodie") && garmentPath.includes("back")) {
+      return GARMENT_PRESETS["hoodie-back"]
+    }
+    if (garmentPath.includes("tshirt") && garmentPath.includes("front")) {
+      return GARMENT_PRESETS["tshirt-front"]
+    }
+    if (garmentPath.includes("tshirt") && garmentPath.includes("back")) {
+      return GARMENT_PRESETS["tshirt-back"]
+    }
+    return GARMENT_PRESETS["default"]
+  }
 
-  const calculatePrintArea = () => {
-    if (!selectedGarment) return { x: 0, y: 0, width: 0, height: 0 }
+  const handleGarmentSelect = (garmentPath: string) => {
+    setSelectedGarment(garmentPath)
+    const preset = getPresetForGarment(garmentPath)
+    setMargins(preset)
 
-    // Assuming standard garment dimensions (adjust as needed)
-    const garmentWidth = 400
-    const garmentHeight = 500
+    const garmentName = GARMENTS.find((g) => g.path === garmentPath)?.name || ""
+    setMappingName(garmentName)
+  }
 
-    const x = (margins.left / 100) * garmentWidth
-    const y = (margins.top / 100) * garmentHeight
-    const width = garmentWidth - ((margins.left + margins.right) / 100) * garmentWidth
-    const height = garmentHeight - ((margins.top + margins.bottom) / 100) * garmentHeight
+  const calculateCoordinates = () => {
+    const imageWidth = 400 // Base width for calculation
+    const imageHeight = 500 // Base height for calculation
 
-    return { x, y, width, height }
+    const x = (margins.left / 100) * imageWidth
+    const y = (margins.top / 100) * imageHeight
+    const width = imageWidth - ((margins.left + margins.right) / 100) * imageWidth
+    const height = imageHeight - ((margins.top + margins.bottom) / 100) * imageHeight
+
+    return { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) }
   }
 
   const saveMapping = () => {
     if (!selectedGarment || !mappingName.trim()) return
 
-    const printArea = calculatePrintArea()
+    const coordinates = calculateCoordinates()
     const mapping: PrintAreaMapping = {
       id: Date.now().toString(),
-      garmentPath: selectedGarment.path,
+      garmentPath: selectedGarment,
       garmentName: mappingName.trim(),
-      topMargin: margins.top,
-      bottomMargin: margins.bottom,
-      leftMargin: margins.left,
-      rightMargin: margins.right,
-      printArea,
+      margins,
+      coordinates,
+      timestamp: new Date().toISOString(),
     }
 
-    const updated = [...savedMappings, mapping]
-    setSavedMappings(updated)
-    localStorage.setItem("printAreaMappings", JSON.stringify(updated))
+    const updatedMappings = [...savedMappings, mapping]
+    setSavedMappings(updatedMappings)
+    localStorage.setItem("printAreaMappings", JSON.stringify(updatedMappings))
   }
 
   const deleteMapping = (id: string) => {
-    const updated = savedMappings.filter((m) => m.id !== id)
-    setSavedMappings(updated)
-    localStorage.setItem("printAreaMappings", JSON.stringify(updated))
+    const updatedMappings = savedMappings.filter((m) => m.id !== id)
+    setSavedMappings(updatedMappings)
+    localStorage.setItem("printAreaMappings", JSON.stringify(updatedMappings))
   }
 
   const exportMappings = () => {
     const dataStr = JSON.stringify(savedMappings, null, 2)
     const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(dataStr)
 
-    const exportFileDefaultName = "print-area-mappings.json"
+    const exportFileDefaultName = `print-area-mappings-${new Date().toISOString().split("T")[0]}.json`
 
     const linkElement = document.createElement("a")
     linkElement.setAttribute("href", dataUri)
@@ -197,191 +149,198 @@ export default function PrintAreaMapper() {
     linkElement.click()
   }
 
-  const printArea = calculatePrintArea()
+  const coordinates = selectedGarment ? calculateCoordinates() : null
 
   return (
     <div className="container mx-auto p-6 max-w-7xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Mapeador de Áreas de Impresión</h1>
-        <p className="text-muted-foreground">Herramienta para definir las áreas imprimibles en cada prenda</p>
+        <p className="text-muted-foreground">
+          Herramienta para mapear visualmente las áreas de impresión en las prendas
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Garment Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Seleccionar Prenda</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {GARMENTS.map((garment) => (
-                <Button
-                  key={garment.path}
-                  variant={selectedGarment?.path === garment.path ? "default" : "outline"}
-                  className="w-full justify-start text-left h-auto p-3"
-                  onClick={() => setSelectedGarment(garment)}
-                >
-                  <div>
-                    <div className="font-medium">{garment.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {garment.type} - {garment.side}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Panel de Control */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Selección de Prenda</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+                {GARMENTS.map((garment) => (
+                  <Button
+                    key={garment.path}
+                    variant={selectedGarment === garment.path ? "default" : "outline"}
+                    className="justify-start text-left h-auto p-3"
+                    onClick={() => handleGarmentSelect(garment.path)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={garment.path || "/placeholder.svg"}
+                        alt={garment.name}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                      <span className="text-sm">{garment.name}</span>
                     </div>
-                  </div>
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Controls */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Controles de Márgenes</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="mapping-name">Nombre del Mapeo</Label>
-              <Input
-                id="mapping-name"
-                value={mappingName}
-                onChange={(e) => setMappingName(e.target.value)}
-                placeholder="Nombre del mapeo..."
-              />
-            </div>
-
-            <Separator />
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="top-margin">Margen Superior (%)</Label>
-                <Input
-                  id="top-margin"
-                  type="number"
-                  min="0"
-                  max="50"
-                  value={margins.top}
-                  onChange={(e) => setMargins((prev) => ({ ...prev, top: Number(e.target.value) }))}
-                />
+                  </Button>
+                ))}
               </div>
-              <div>
-                <Label htmlFor="bottom-margin">Margen Inferior (%)</Label>
-                <Input
-                  id="bottom-margin"
-                  type="number"
-                  min="0"
-                  max="50"
-                  value={margins.bottom}
-                  onChange={(e) => setMargins((prev) => ({ ...prev, bottom: Number(e.target.value) }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="left-margin">Margen Izquierdo (%)</Label>
-                <Input
-                  id="left-margin"
-                  type="number"
-                  min="0"
-                  max="50"
-                  value={margins.left}
-                  onChange={(e) => setMargins((prev) => ({ ...prev, left: Number(e.target.value) }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="right-margin">Margen Derecho (%)</Label>
-                <Input
-                  id="right-margin"
-                  type="number"
-                  min="0"
-                  max="50"
-                  value={margins.right}
-                  onChange={(e) => setMargins((prev) => ({ ...prev, right: Number(e.target.value) }))}
-                />
-              </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <Separator />
-
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Área de Impresión Calculada:</div>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <div>X: {printArea.x.toFixed(1)}px</div>
-                <div>Y: {printArea.y.toFixed(1)}px</div>
-                <div>Ancho: {printArea.width.toFixed(1)}px</div>
-                <div>Alto: {printArea.height.toFixed(1)}px</div>
-              </div>
-            </div>
-
-            <Button onClick={saveMapping} disabled={!selectedGarment || !mappingName.trim()} className="w-full">
-              <Save className="w-4 h-4 mr-2" />
-              Guardar Mapeo
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Preview */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Vista Previa</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {selectedGarment ? (
-              <div className="relative">
-                <img
-                  src={selectedGarment.path || "/placeholder.svg"}
-                  alt={selectedGarment.name}
-                  className="w-full h-auto rounded-lg"
-                  style={{ maxHeight: "400px", objectFit: "contain" }}
-                />
-
-                {/* Print area overlay */}
-                <div
-                  className="absolute border-2 border-blue-500 border-dashed bg-blue-500/10"
-                  style={{
-                    left: `${margins.left}%`,
-                    top: `${margins.top}%`,
-                    width: `${100 - margins.left - margins.right}%`,
-                    height: `${100 - margins.top - margins.bottom}%`,
-                  }}
-                >
-                  {/* Corner indicators */}
-                  <div className="absolute -top-1 -left-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Configuración de Márgenes</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="top">Superior (%)</Label>
+                  <Input
+                    id="top"
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={margins.top}
+                    onChange={(e) => setMargins((prev) => ({ ...prev, top: Number(e.target.value) }))}
+                  />
                 </div>
+                <div>
+                  <Label htmlFor="bottom">Inferior (%)</Label>
+                  <Input
+                    id="bottom"
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={margins.bottom}
+                    onChange={(e) => setMargins((prev) => ({ ...prev, bottom: Number(e.target.value) }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="left">Izquierdo (%)</Label>
+                  <Input
+                    id="left"
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={margins.left}
+                    onChange={(e) => setMargins((prev) => ({ ...prev, left: Number(e.target.value) }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="right">Derecho (%)</Label>
+                  <Input
+                    id="right"
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={margins.right}
+                    onChange={(e) => setMargins((prev) => ({ ...prev, right: Number(e.target.value) }))}
+                  />
+                </div>
+              </div>
 
-                {/* Non-printable area overlays */}
-                {/* Top */}
-                <div
-                  className="absolute top-0 left-0 right-0 bg-red-500/20"
-                  style={{ height: `${margins.top}%` }}
-                ></div>
-                {/* Bottom */}
-                <div
-                  className="absolute bottom-0 left-0 right-0 bg-red-500/20"
-                  style={{ height: `${margins.bottom}%` }}
-                ></div>
-                {/* Left */}
-                <div
-                  className="absolute top-0 bottom-0 left-0 bg-red-500/20"
-                  style={{ width: `${margins.left}%` }}
-                ></div>
-                {/* Right */}
-                <div
-                  className="absolute top-0 bottom-0 right-0 bg-red-500/20"
-                  style={{ width: `${margins.right}%` }}
-                ></div>
+              {coordinates && (
+                <div className="mt-4 p-4 bg-muted rounded-lg">
+                  <h4 className="font-semibold mb-2">Coordenadas Calculadas:</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>X: {coordinates.x}px</div>
+                    <div>Y: {coordinates.y}px</div>
+                    <div>Ancho: {coordinates.width}px</div>
+                    <div>Alto: {coordinates.height}px</div>
+                  </div>
+                </div>
+              )}
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label htmlFor="mappingName">Nombre del Mapeo</Label>
+                <Input
+                  id="mappingName"
+                  value={mappingName}
+                  onChange={(e) => setMappingName(e.target.value)}
+                  placeholder="Nombre para identificar este mapeo"
+                />
               </div>
-            ) : (
-              <div className="flex items-center justify-center h-64 bg-muted rounded-lg">
-                <p className="text-muted-foreground">Selecciona una prenda para ver la vista previa</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+
+              <Button onClick={saveMapping} disabled={!selectedGarment || !mappingName.trim()} className="w-full">
+                <Save className="w-4 h-4 mr-2" />
+                Guardar Mapeo
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Panel de Vista Previa */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Vista Previa</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {selectedGarment ? (
+                <div className="relative inline-block">
+                  <img
+                    src={selectedGarment || "/placeholder.svg"}
+                    alt="Prenda seleccionada"
+                    className="max-w-full h-auto rounded-lg"
+                    style={{ maxHeight: "500px" }}
+                  />
+
+                  {/* Overlay de área imprimible */}
+                  <div
+                    className="absolute border-2 border-blue-500 border-dashed bg-blue-500/10"
+                    style={{
+                      left: `${margins.left}%`,
+                      top: `${margins.top}%`,
+                      right: `${margins.right}%`,
+                      bottom: `${margins.bottom}%`,
+                    }}
+                  >
+                    {/* Puntos de control en las esquinas */}
+                    <div className="absolute -top-1 -left-1 w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-blue-500 rounded-full"></div>
+                  </div>
+
+                  {/* Overlays para áreas no imprimibles */}
+                  {/* Superior */}
+                  <div
+                    className="absolute top-0 left-0 right-0 bg-red-500/20"
+                    style={{ height: `${margins.top}%` }}
+                  ></div>
+                  {/* Inferior */}
+                  <div
+                    className="absolute bottom-0 left-0 right-0 bg-red-500/20"
+                    style={{ height: `${margins.bottom}%` }}
+                  ></div>
+                  {/* Izquierdo */}
+                  <div
+                    className="absolute top-0 bottom-0 left-0 bg-red-500/20"
+                    style={{ width: `${margins.left}%` }}
+                  ></div>
+                  {/* Derecho */}
+                  <div
+                    className="absolute top-0 bottom-0 right-0 bg-red-500/20"
+                    style={{ width: `${margins.right}%` }}
+                  ></div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-64 bg-muted rounded-lg">
+                  <p className="text-muted-foreground">Selecciona una prenda para ver la vista previa</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      {/* Saved Mappings */}
-      <Card className="mt-6">
+      {/* Panel de Mapeos Guardados */}
+      <Card className="mt-8">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Mapeos Guardados ({savedMappings.length})</CardTitle>
           <Button onClick={exportMappings} disabled={savedMappings.length === 0}>
@@ -391,33 +350,42 @@ export default function PrintAreaMapper() {
         </CardHeader>
         <CardContent>
           {savedMappings.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">No hay mapeos guardados aún</p>
+            <p className="text-muted-foreground text-center py-8">
+              No hay mapeos guardados. Crea tu primer mapeo seleccionando una prenda y configurando los márgenes.
+            </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {savedMappings.map((mapping) => (
                 <div key={mapping.id} className="border rounded-lg p-4 space-y-2">
-                  <div className="flex items-start justify-between">
-                    <h4 className="font-medium text-sm">{mapping.garmentName}</h4>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteMapping(mapping.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">{mapping.garmentName}</h4>
+                    <Button variant="ghost" size="sm" onClick={() => deleteMapping(mapping.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <div>
-                      Márgenes: {mapping.topMargin}% | {mapping.rightMargin}% | {mapping.bottomMargin}% |{" "}
-                      {mapping.leftMargin}%
+
+                  <img
+                    src={mapping.garmentPath || "/placeholder.svg"}
+                    alt={mapping.garmentName}
+                    className="w-full h-24 object-cover rounded"
+                  />
+
+                  <div className="text-xs space-y-1">
+                    <div className="grid grid-cols-2 gap-1">
+                      <span>
+                        Márgenes: {mapping.margins.top}% {mapping.margins.right}% {mapping.margins.bottom}%{" "}
+                        {mapping.margins.left}%
+                      </span>
                     </div>
-                    <div>
-                      Área: {mapping.printArea.width.toFixed(0)}×{mapping.printArea.height.toFixed(0)}px
+                    <div className="grid grid-cols-2 gap-1">
+                      <span>
+                        Coord: {mapping.coordinates.x},{mapping.coordinates.y}
+                      </span>
+                      <span>
+                        Tamaño: {mapping.coordinates.width}×{mapping.coordinates.height}
+                      </span>
                     </div>
-                    <div>
-                      Posición: ({mapping.printArea.x.toFixed(0)}, {mapping.printArea.y.toFixed(0)})
-                    </div>
+                    <div className="text-muted-foreground">{new Date(mapping.timestamp).toLocaleDateString()}</div>
                   </div>
                 </div>
               ))}
