@@ -1,0 +1,15 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`promptOptimizer v8 > adds subtle emphasis for retry without negative language 1`] = `"Illustration: cute cat, centered composition, isolated subject with no other elements, on a plain white background, The artwork is completely isolated on a pure white backdrop with absolutely nothing else in the image, minimalist vector art, logo design style, clean graphic illustration"`;
+
+exports[`promptOptimizer v8 > removes all trigger words from user prompt 1`] = `"Illustration: of a dragon, style, centered composition, isolated subject with no other elements, on a plain white background"`;
+
+exports[`promptOptimizer v8 > starts with 'Illustration:' to set context 1`] = `"Illustration: cute cat, centered composition, isolated subject with no other elements, on a plain white background"`;
+
+exports[`promptOptimizer v8 > uses composition hints based on layout 1`] = `"Illustration: sunset over mountains, centered composition, isolated subject with no other elements, on a plain white background"`;
+
+exports[`promptOptimizer v8 > uses composition hints based on layout 2`] = `"Illustration: sunset over mountains, vertically centered composition, isolated subject with no other elements, on a plain white background"`;
+
+exports[`promptOptimizer v8 > uses composition hints based on layout 3`] = `"Illustration: sunset over mountains, horizontally centered composition, isolated subject with no other elements, on a plain white background"`;
+
+exports[`promptOptimizer v8 > uses positive language instead of negative instructions 1`] = `"Illustration: dragon breathing fire, centered composition, isolated subject with no other elements, on a plain white background"`;
