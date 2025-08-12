@@ -73,11 +73,11 @@ export async function checkGenerationLimit(sessionId: string): Promise<{ limitRe
       return { limitReached: false, count: 0 }
     }
 
-    // Contar imágenes para la sesión usando la tabla correcta 'images'
+    // Contar imágenes para la sesión usando solo user_id (como en versiones anteriores)
     const { count, error } = await supabase
       .from("images")
       .select("id", { count: "exact", head: true })
-      .eq("session_id", cleanSessionId)
+      .eq("user_id", cleanSessionId) // Solo usar user_id
 
     if (error) {
       console.error(`Error counting images for session: ${cleanSessionId}`, error.message)

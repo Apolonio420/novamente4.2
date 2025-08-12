@@ -48,7 +48,6 @@ interface ImageRecord {
   prompt: string
   optimized_prompt?: string
   user_id: string
-  session_id: string
   created_at: string
 }
 
@@ -101,19 +100,18 @@ export async function saveGeneratedImage(data: SaveImageData) {
   // Generar ID único para la imagen
   const imageId = generateImageId()
 
-  // Usar session_id para usuarios anónimos
-  const sessionId = data.userId || getAnonymousSessionId()
+  // Usar user_id directamente, sin session_id
+  const userId = data.userId || getAnonymousSessionId()
 
   console.log("Saving image:", data)
-  console.log("Saving to Supabase with userId:", sessionId)
+  console.log("Saving to Supabase with userId:", userId)
 
   const imageData = {
     id: imageId,
     url: data.url,
     prompt: data.prompt,
     optimized_prompt: data.optimizedPrompt || null,
-    user_id: data.userId,
-    session_id: sessionId,
+    user_id: userId, // Solo usar user_id como en versiones anteriores
     created_at: new Date().toISOString(),
   }
 
@@ -121,7 +119,17 @@ export async function saveGeneratedImage(data: SaveImageData) {
 
   if (error) {
     console.error("Error saving to Supabase:", error)
-    throw error
+    // Fallback a localStorage si Supabase falla
+    const localImage: Image = {
+      id: imageId,
+      url: data.url,
+      prompt: data.prompt,
+      optimizedPrompt: data.optimizedPrompt,
+      createdAt: new Date().toISOString(),
+      userId: userId,
+    }
+    saveToLocalStorage(localImage)
+    return localImage
   }
 
   return result
@@ -133,37 +141,50 @@ export async function getRecentImages(userId?: string | null, limit = 12) {
 
   console.log("Getting recent images, limit:", limit)
 
-  let query = supabase.from("images").select("*").order("created_at", { ascending: false }).limit(limit)
+  const actualUserId = userId || getAnonymousSessionId()
+  console.log("Current userId:", actualUserId)
 
-  if (userId) {
-    console.log("Current userId:", userId)
-    query = query.eq("user_id", userId)
-  } else {
-    // Para usuarios anónimos, usar session_id
-    const sessionId = getAnonymousSessionId()
-    console.log("Current userId:", sessionId)
-    query = query.eq("session_id", sessionId)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error("Error fetching images:", error)
-    throw error
-  }
-
-  console.log("Fetched", data?.length || 0, "images from Supabase for user")
-  return data || []
-}
-
-// Función para eliminar imágenes expiradas (sin mostrar errores al usuario)
-async function deleteExpiredImage(id: string) {
   try {
-    const supabase = getSupabaseClient()
-    await supabase.from("images").delete().eq("id", id)
-    console.log(`Deleted expired image: ${id}`)
+    const { data, error } = await supabase
+      .from("images")
+      .select("*")
+      .eq("user_id", actualUserId) // Solo usar user_id
+      .order("created_at", { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error("Error fetching from Supabase:", error)
+      // Fallback a localStorage si Supabase falla
+      return getFromLocalStorage(limit)
+    }
+
+    // Filtrar URLs expiradas de Azure Blob Storage
+    const validImages =
+      data?.filter((image) => {
+        if (!image.url.includes("oaidalleapiprodscus.blob.core.windows.net")) {
+          return true // No es de Azure, mantener
+        }
+
+        try {
+          const url = new URL(image.url)
+          const seParam = url.searchParams.get("se") // Parámetro de expiración
+          if (!seParam) return true
+
+          const expirationDate = new Date(seParam)
+          const now = new Date()
+
+          return expirationDate > now
+        } catch {
+          return false // URL malformada
+        }
+      }) || []
+
+    console.log(`Fetched ${validImages.length} valid images from Supabase`)
+    return validImages
   } catch (error) {
-    console.error("Error deleting expired image:", error)
+    console.error("Error in getRecentImages:", error)
+    // Fallback completo a localStorage
+    return getFromLocalStorage(limit)
   }
 }
 
@@ -171,24 +192,24 @@ async function deleteExpiredImage(id: string) {
 export async function deleteImage(imageId: string, userId?: string | null) {
   const supabase = getSupabaseClient()
 
-  let query = supabase.from("images").delete().eq("id", imageId)
+  const actualUserId = userId || getAnonymousSessionId()
 
-  if (userId) {
-    query = query.eq("user_id", userId)
-  } else {
-    // Para usuarios anónimos, usar session_id
-    const sessionId = getAnonymousSessionId()
-    query = query.eq("session_id", sessionId)
+  try {
+    const { error } = await supabase.from("images").delete().eq("id", imageId).eq("user_id", actualUserId)
+
+    if (error) {
+      console.error("Error deleting image:", error)
+      // Fallback a localStorage
+      deleteFromLocalStorage(imageId)
+      return true
+    }
+
+    return true
+  } catch (error) {
+    console.error("Error in deleteImage:", error)
+    deleteFromLocalStorage(imageId)
+    return true
   }
-
-  const { error } = await query
-
-  if (error) {
-    console.error("Error deleting image:", error)
-    throw error
-  }
-
-  return true
 }
 
 // Función para limpiar imágenes expiradas automáticamente
@@ -196,7 +217,7 @@ export async function cleanupExpiredImages() {
   try {
     const supabase = getSupabaseClient()
     const currentUserId = getAnonymousSessionId()
-    const { data, error } = await supabase.from("images").select("id, url, created_at").eq("session_id", currentUserId)
+    const { data, error } = await supabase.from("images").select("id, url, created_at").eq("user_id", currentUserId)
 
     if (error) {
       console.error("Error fetching images for cleanup:", error)
@@ -490,7 +511,7 @@ export async function getUserImages(userId?: string): Promise<ImageRecord[]> {
     const { data, error } = await supabase
       .from("images")
       .select("*")
-      .eq("user_id", actualUserId)
+      .eq("user_id", actualUserId) // Solo usar user_id
       .order("created_at", { ascending: false })
       .limit(20)
 
