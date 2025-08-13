@@ -1,139 +1,300 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Download, ExternalLink } from "lucide-react"
-import { getImageHistory, type SavedImage } from "@/lib/db"
-import { useToast } from "@/hooks/use-toast"
-import Image from "next/image"
+import { getRecentImages, type SavedImage } from "@/lib/db"
+import { OptimizedImage } from "./OptimizedImage"
+import { Button } from "./ui/button"
+import { Eye, ChevronLeft, ChevronRight } from "lucide-react"
 
 interface ImageHistoryProps {
-  onImageSelect?: (imageUrl: string) => void
+  userId?: string
   limit?: number
+  onImageSelect?: (imageUrl: string) => void
+  images?: SavedImage[]
+  onScrollToGenerator?: () => void
+  isDesignPage?: boolean
+  refreshKey?: number
 }
 
-export function ImageHistory({ onImageSelect, limit = 20 }: ImageHistoryProps) {
+// Estilos base de Novamente
+const baseStyles = [
+  {
+    id: "style-1",
+    url: "/styles/acuarela-leon.png",
+    prompt: "León en estilo acuarela",
+  },
+  {
+    id: "style-2",
+    url: "/styles/geometrico-aguila.png",
+    prompt: "Águila geométrica",
+  },
+  {
+    id: "style-3",
+    url: "/styles/pixel-art-astronauta.png",
+    prompt: "Astronauta pixel art",
+  },
+  {
+    id: "style-4",
+    url: "/styles/pop-art-retrato.png",
+    prompt: "Retrato pop art",
+  },
+  {
+    id: "style-5",
+    url: "/styles/japones-gran-ola.png",
+    prompt: "Gran ola japonesa",
+  },
+  {
+    id: "style-6",
+    url: "/styles/retro-vaporwave-palmera.png",
+    prompt: "Palmera vaporwave",
+  },
+]
+
+export function ImageHistory({
+  userId,
+  limit = 20,
+  onImageSelect,
+  images: propImages,
+  onScrollToGenerator,
+  isDesignPage = false,
+  refreshKey,
+}: ImageHistoryProps) {
   const [images, setImages] = useState<SavedImage[]>([])
   const [loading, setLoading] = useState(true)
-  const { toast } = useToast()
-
-  useEffect(() => {
-    loadImages()
-  }, [limit])
+  const [error, setError] = useState<string | null>(null)
+  const [historyScrollPosition, setHistoryScrollPosition] = useState(0)
+  const [stylesScrollPosition, setStylesScrollPosition] = useState(0)
 
   const loadImages = async () => {
     try {
       setLoading(true)
-      const imageHistory = await getImageHistory(limit)
-      setImages(imageHistory)
-    } catch (error) {
-      console.error("Error loading image history:", error)
-      toast({
-        title: "Error",
-        description: "No se pudo cargar el historial de imágenes",
-        variant: "destructive",
-      })
+      setError(null)
+
+      if (propImages) {
+        setImages(propImages)
+      } else {
+        const recentImages = await getRecentImages(userId, limit)
+        setImages(recentImages)
+      }
+    } catch (err) {
+      console.error("Error loading images:", err)
+      setError("Error al cargar las imágenes")
+
+      // Fallback a localStorage
+      try {
+        const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+        setImages(localImages.slice(0, limit))
+      } catch (localErr) {
+        console.error("Error loading from localStorage:", localErr)
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const handleImageSelect = (imageUrl: string) => {
-    if (onImageSelect) {
-      onImageSelect(imageUrl)
-      toast({
-        title: "Imagen seleccionada",
-        description: "La imagen se ha cargado en el editor",
-      })
+  useEffect(() => {
+    loadImages()
+  }, [userId, limit, propImages, refreshKey])
+
+  const handleDownload = async (image: SavedImage) => {
+    try {
+      const response = await fetch(image.url)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.style.display = "none"
+      a.href = url
+      a.download = `novamente-${image.id}.png`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error("Error downloading image:", error)
     }
   }
 
-  const downloadImage = async (url: string, prompt: string) => {
-    try {
-      const response = await fetch(url)
-      const blob = await response.blob()
-      const downloadUrl = window.URL.createObjectURL(blob)
+  const handleImageClick = (imageUrl: string) => {
+    if (isDesignPage) {
+      // Redirigir a la página de personalización con la imagen
+      window.location.href = `/design/placeholder?image=${encodeURIComponent(imageUrl)}`
+    } else if (onImageSelect) {
+      onImageSelect(imageUrl)
+    }
+  }
 
-      const link = document.createElement("a")
-      link.href = downloadUrl
-      link.download = `${prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "_")}.png`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+  const scrollHistory = (direction: "left" | "right") => {
+    const container = document.getElementById("history-scroll")
+    if (container) {
+      const scrollAmount = 200
+      const newPosition =
+        direction === "left" ? Math.max(0, historyScrollPosition - scrollAmount) : historyScrollPosition + scrollAmount
 
-      window.URL.revokeObjectURL(downloadUrl)
+      container.scrollTo({ left: newPosition, behavior: "smooth" })
+      setHistoryScrollPosition(newPosition)
+    }
+  }
 
-      toast({
-        title: "Descarga iniciada",
-        description: "La imagen se está descargando",
-      })
-    } catch (error) {
-      console.error("Error downloading image:", error)
-      toast({
-        title: "Error",
-        description: "No se pudo descargar la imagen",
-        variant: "destructive",
-      })
+  const scrollStyles = (direction: "left" | "right") => {
+    const container = document.getElementById("styles-scroll")
+    if (container) {
+      const scrollAmount = 200
+      const newPosition =
+        direction === "left" ? Math.max(0, stylesScrollPosition - scrollAmount) : stylesScrollPosition + scrollAmount
+
+      container.scrollTo({ left: newPosition, behavior: "smooth" })
+      setStylesScrollPosition(newPosition)
     }
   }
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center">Cargando historial...</div>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        {/* Historial skeleton */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Historial de diseños</h3>
+            <div className="flex gap-2">
+              <div className="w-8 h-8 bg-gray-200 animate-pulse rounded" />
+              <div className="w-8 h-8 bg-gray-200 animate-pulse rounded" />
+            </div>
+          </div>
+          <div className="flex gap-3 overflow-hidden">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="w-16 h-16 bg-gray-200 animate-pulse rounded-lg flex-shrink-0" />
+            ))}
+          </div>
+        </div>
+
+        {/* Estilos skeleton */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">Estilos inspiradores</h3>
+            <div className="flex gap-2">
+              <div className="w-8 h-8 bg-gray-200 animate-pulse rounded" />
+              <div className="w-8 h-8 bg-gray-200 animate-pulse rounded" />
+            </div>
+          </div>
+          <div className="flex gap-3 overflow-hidden">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="w-16 h-16 bg-gray-200 animate-pulse rounded-lg flex-shrink-0" />
+            ))}
+          </div>
+        </div>
+      </div>
     )
   }
 
-  if (images.length === 0) {
+  if (error && images.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-center text-muted-foreground">No hay imágenes en el historial</div>
-        </CardContent>
-      </Card>
+      <div className="text-center py-8">
+        <p className="text-red-500 mb-4">{error}</p>
+        <Button onClick={loadImages} variant="outline">
+          Reintentar
+        </Button>
+      </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Historial de Imágenes ({images.length})</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {images.map((image) => (
-          <Card key={image.id} className="overflow-hidden">
-            <div className="relative aspect-square">
-              <Image
-                src={image.url || "/placeholder.svg"}
-                alt={image.prompt}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              />
+    <div className="space-y-6">
+      {/* Historial de diseños del usuario */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Historial de diseños</h3>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => scrollHistory("left")}
+              disabled={historyScrollPosition === 0}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => scrollHistory("right")}>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div
+          id="history-scroll"
+          className="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {images.length === 0 ? (
+            <div className="text-center py-8 w-full">
+              <p className="text-gray-500 mb-4">No hay diseños guardados</p>
+              {onScrollToGenerator && <Button onClick={onScrollToGenerator}>Crear primer diseño</Button>}
             </div>
-            <CardContent className="p-4">
-              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{image.prompt}</p>
-              <div className="flex gap-2">
-                {onImageSelect && (
-                  <Button size="sm" onClick={() => handleImageSelect(image.url)} className="flex-1">
-                    Usar
-                  </Button>
-                )}
-                <Button size="sm" variant="outline" onClick={() => downloadImage(image.url, image.prompt)}>
-                  <Download className="w-4 h-4" />
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => window.open(image.url, "_blank")}>
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
+          ) : (
+            images.map((image) => (
+              <div
+                key={image.id}
+                className="group relative w-16 h-16 flex-shrink-0 cursor-pointer"
+                onClick={() => handleImageClick(image.url)}
+              >
+                <OptimizedImage
+                  src={image.url}
+                  alt={image.prompt}
+                  width={64}
+                  height={64}
+                  className="w-full h-full object-cover rounded-lg border-2 border-transparent group-hover:border-primary transition-colors"
+                />
+
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                  <Eye className="w-4 h-4 text-white" />
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground mt-2">
-                {new Date(image.created_at).toLocaleDateString()}
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Estilos inspiradores */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Estilos inspiradores</h3>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => scrollStyles("left")}
+              disabled={stylesScrollPosition === 0}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => scrollStyles("right")}>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        <div
+          id="styles-scroll"
+          className="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
+          {baseStyles.map((style) => (
+            <div
+              key={style.id}
+              className="group relative w-16 h-16 flex-shrink-0 cursor-pointer"
+              onClick={() => handleImageClick(style.url)}
+            >
+              <OptimizedImage
+                src={style.url}
+                alt={style.prompt}
+                width={64}
+                height={64}
+                className="w-full h-full object-cover rounded-lg border-2 border-transparent group-hover:border-primary transition-colors"
+              />
+
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                <Eye className="w-4 h-4 text-white" />
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
