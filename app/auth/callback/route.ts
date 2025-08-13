@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js"
+import { supabase } from "@/lib/supabase"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
@@ -13,8 +13,6 @@ export async function GET(request: Request) {
       console.error("Missing Supabase credentials")
       return NextResponse.redirect(`${requestUrl.origin}/auth/error`)
     }
-
-    const supabase = createClient(supabaseUrl, supabaseKey)
 
     try {
       await supabase.auth.exchangeCodeForSession(code)

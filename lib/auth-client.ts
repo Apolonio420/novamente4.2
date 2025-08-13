@@ -1,37 +1,37 @@
-import { createClient } from "@supabase/supabase-js"
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+import { supabase } from "./supabase"
 
 export function getClientSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
   if (!supabaseUrl || !supabaseAnonKey) {
     console.warn("Supabase credentials not found")
     return null
   }
 
-  return createClient(supabaseUrl, supabaseAnonKey)
+  return supabase
 }
 
 export function useSupabaseAuth() {
-  const supabase = getClientSupabase()
+  const supabaseClient = getClientSupabase()
 
   return {
-    supabase,
+    supabase: supabaseClient,
     signIn: async (email: string, password: string) => {
-      if (!supabase) return { error: "Supabase not configured" }
-      return await supabase.auth.signInWithPassword({ email, password })
+      if (!supabaseClient) return { error: "Supabase not configured" }
+      return await supabaseClient.auth.signInWithPassword({ email, password })
     },
     signUp: async (email: string, password: string) => {
-      if (!supabase) return { error: "Supabase not configured" }
-      return await supabase.auth.signUp({ email, password })
+      if (!supabaseClient) return { error: "Supabase not configured" }
+      return await supabaseClient.auth.signUp({ email, password })
     },
     signOut: async () => {
-      if (!supabase) return { error: "Supabase not configured" }
-      return await supabase.auth.signOut()
+      if (!supabaseClient) return { error: "Supabase not configured" }
+      return await supabaseClient.auth.signOut()
     },
     getUser: async () => {
-      if (!supabase) return { data: { user: null }, error: "Supabase not configured" }
-      return await supabase.auth.getUser()
+      if (!supabaseClient) return { data: { user: null }, error: "Supabase not configured" }
+      return await supabaseClient.auth.getUser()
     },
   }
 }

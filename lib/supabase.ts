@@ -7,12 +7,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Missing Supabase environment variables")
 }
 
-// Crear una sola instancia del cliente
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-})
+let supabaseInstance: ReturnType<typeof createClient> | null = null
 
+function createSupabaseClient() {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    })
+  }
+  return supabaseInstance
+}
+
+// Exportar la instancia singleton
+export const supabase = createSupabaseClient()
 export default supabase

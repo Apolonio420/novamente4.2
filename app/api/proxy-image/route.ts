@@ -15,6 +15,21 @@ export async function GET(request: NextRequest) {
 
   console.log("🔄 Proxying image:", imageUrl)
 
+  try {
+    const url = new URL(imageUrl)
+    const seParam = url.searchParams.get("se") // Expiration time
+    if (seParam) {
+      const expirationTime = new Date(seParam)
+      const now = new Date()
+      if (now > expirationTime) {
+        console.log("⏰ Image URL has expired")
+        return generatePlaceholderImage()
+      }
+    }
+  } catch (error) {
+    console.log("⚠️ Could not parse URL for expiration check:", error)
+  }
+
   // Estrategia 1: Fetch básico
   try {
     console.log("📡 Strategy 1: Basic fetch")
@@ -35,6 +50,11 @@ export async function GET(request: NextRequest) {
           "Access-Control-Allow-Origin": "*",
         },
       })
+    }
+
+    if (response.status === 403 || response.status === 404) {
+      console.log("🔒 Image access denied or not found, likely expired")
+      return generatePlaceholderImage()
     }
   } catch (error) {
     console.log("❌ Strategy 1 failed:", error)
@@ -63,6 +83,11 @@ export async function GET(request: NextRequest) {
           "Access-Control-Allow-Origin": "*",
         },
       })
+    }
+
+    if (response.status === 403 || response.status === 404) {
+      console.log("🔒 Image access denied or not found, likely expired")
+      return generatePlaceholderImage()
     }
   } catch (error) {
     console.log("❌ Strategy 2 failed:", error)
@@ -98,6 +123,11 @@ export async function GET(request: NextRequest) {
         },
       })
     }
+
+    if (response.status === 403 || response.status === 404) {
+      console.log("🔒 Image access denied or not found, likely expired")
+      return generatePlaceholderImage()
+    }
   } catch (error) {
     console.log("❌ Strategy 3 failed:", error)
   }
@@ -124,10 +154,37 @@ export async function GET(request: NextRequest) {
         },
       })
     }
+
+    if (response.status === 403 || response.status === 404) {
+      console.log("🔒 Image access denied or not found, likely expired")
+      return generatePlaceholderImage()
+    }
   } catch (error) {
     console.log("❌ Strategy 4 failed:", error)
   }
 
-  console.log("❌ All strategies failed")
-  return NextResponse.json({ error: "Failed to fetch image after all strategies" }, { status: 500 })
+  console.log("❌ All strategies failed, returning placeholder")
+  return generatePlaceholderImage()
+}
+
+function generatePlaceholderImage() {
+  // SVG placeholder simple
+  const svg = `
+    <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="400" fill="#f3f4f6"/>
+      <rect x="50" y="50" width="300" height="300" fill="#e5e7eb" stroke="#d1d5db" stroke-width="2" rx="8"/>
+      <circle cx="150" cy="150" r="30" fill="#9ca3af"/>
+      <rect x="120" y="220" width="160" height="8" fill="#9ca3af" rx="4"/>
+      <rect x="140" y="240" width="120" height="6" fill="#d1d5db" rx="3"/>
+      <text x="200" y="320" text-anchor="middle" fill="#6b7280" font-family="Arial, sans-serif" font-size="14">Imagen no disponible</text>
+    </svg>
+  `
+
+  return new NextResponse(svg, {
+    headers: {
+      "Content-Type": "image/svg+xml",
+      "Cache-Control": "public, max-age=3600", // Cache por 1 hora
+      "Access-Control-Allow-Origin": "*",
+    },
+  })
 }

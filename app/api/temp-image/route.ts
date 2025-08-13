@@ -1,10 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-)
+import { supabaseAdmin } from "@/lib/supabase-admin"
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +24,7 @@ export async function POST(request: NextRequest) {
       const fileName = `temp-images/${id}.png`
 
       console.log("📤 Uploading to Supabase Storage...")
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
         .from("images")
         .upload(fileName, imageBuffer, {
           contentType: "image/png",
@@ -41,14 +36,14 @@ export async function POST(request: NextRequest) {
       }
 
       // Get public URL
-      const { data: urlData } = supabase.storage.from("images").getPublicUrl(fileName)
+      const { data: urlData } = supabaseAdmin.storage.from("images").getPublicUrl(fileName)
 
       const publicUrl = urlData.publicUrl
 
       console.log("✅ Image uploaded successfully:", publicUrl)
 
       // Save to database
-      const { error: dbError } = await supabase.from("temp_images").upsert({
+      const { error: dbError } = await supabaseAdmin.from("temp_images").upsert({
         id,
         image_url: publicUrl,
         original_url: imageUrl,
@@ -69,7 +64,7 @@ export async function POST(request: NextRequest) {
       console.warn("⚠️ Storage upload failed, falling back to original URL:", storageError)
 
       // Fallback: save original URL to database
-      const { error: dbError } = await supabase.from("temp_images").upsert({
+      const { error: dbError } = await supabaseAdmin.from("temp_images").upsert({
         id,
         image_url: imageUrl,
         original_url: imageUrl,
@@ -105,7 +100,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Try to get from database first
-    const { data, error } = await supabase.from("temp_images").select("image_url, original_url").eq("id", id).single()
+    const { data, error } = await supabaseAdmin
+      .from("temp_images")
+      .select("image_url, original_url")
+      .eq("id", id)
+      .single()
 
     if (error || !data) {
       console.log("❌ Image not found in database:", error)
