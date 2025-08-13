@@ -128,12 +128,7 @@ export function ImageGenerator({
 
       // Guardar en la base de datos
       try {
-        const savedImage = await saveGeneratedImage({
-          url: data.imageUrl,
-          prompt: prompt.trim(),
-          optimizedPrompt: autoOptimizedPrompt,
-          userId: null,
-        })
+        const savedImage = await saveGeneratedImage(data.imageUrl, prompt.trim(), null)
         console.log("✅ Image saved to database")
 
         if (onImageGenerated) {
