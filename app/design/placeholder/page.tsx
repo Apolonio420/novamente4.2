@@ -1,349 +1,466 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { ArrowLeft, Move } from "lucide-react"
+import { ArrowLeft, ShoppingCart, Eye, ChevronLeft, ChevronRight, Info } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { PrintArea } from "@/components/PrintArea"
+import { OptimizedImage } from "@/components/OptimizedImage"
+import { getRecentImages, type SavedImage } from "@/lib/db"
+import { useToast } from "@/hooks/use-toast"
 
-// Coordenadas exactas del JSON para restricciones de arrastre
-const EXACT_COORDINATES = {
-  // Hoodies
-  "astra-hoodie-black-front": { x: 112, y: 175, width: 180, height: 145 },
-  "astra-hoodie-black-back": { x: 116, y: 175, width: 180, height: 240 },
-  "astra-hoodie-caramel-front": { x: 112, y: 160, width: 176, height: 145 },
-  "astra-hoodie-caramel-back": { x: 128, y: 155, width: 144, height: 245 },
-  "astra-hoodie-cream-front": { x: 116, y: 155, width: 160, height: 135 },
-  "astra-hoodie-cream-back": { x: 124, y: 150, width: 156, height: 255 },
-  "astra-hoodie-gray-front": { x: 116, y: 145, width: 160, height: 150 },
-  "astra-hoodie-gray-back": { x: 116, y: 150, width: 164, height: 255 },
-
-  // T-shirts Classic
-  "aldea-classic-tshirt-black-front": { x: 96, y: 135, width: 204, height: 265 },
-  "aldea-classic-tshirt-black-back": { x: 100, y: 105, width: 192, height: 310 },
-  "aldea-classic-tshirt-white-front": { x: 96, y: 125, width: 204, height: 290 },
-  "aldea-classic-tshirt-white-back": { x: 112, y: 110, width: 180, height: 300 },
-
-  // T-shirts Oversize
-  "aura-oversize-tshirt-black-front": { x: 104, y: 130, width: 184, height: 275 },
-  "aura-oversize-tshirt-black-back": { x: 108, y: 105, width: 184, height: 310 },
-  "aura-oversize-tshirt-white-front": { x: 112, y: 115, width: 164, height: 305 },
-  "aura-oversize-tshirt-white-back": { x: 120, y: 105, width: 176, height: 315 },
-  "aura-oversize-tshirt-caramel-front": { x: 116, y: 120, width: 176, height: 290 },
-  "aura-oversize-tshirt-caramel-back": { x: 116, y: 100, width: 172, height: 315 },
-}
-
-const garmentOptions = [
-  {
-    id: "aura-oversize-tshirt",
+// Configuración de productos
+const products = {
+  "aura-oversize-tshirt": {
     name: "Aura Oversize T-Shirt Personalizada",
     price: 37000,
-    colors: ["black", "white", "caramel"],
-    images: {
-      "black-front": "/garments/tshirt-black-oversize-front.jpeg",
-      "black-back": "/garments/tshirt-black-oversize-back.jpeg",
-      "white-front": "/garments/tshirt-white-oversize-front.jpeg",
-      "white-back": "/garments/tshirt-white-oversize-back.jpeg",
-      "caramel-front": "/garments/tshirt-caramel-oversize-front.jpeg",
-      "caramel-back": "/garments/tshirt-caramel-oversize-back.jpeg",
+    colors: {
+      black: {
+        name: "Negro",
+        front: "/garments/tshirt-black-oversize-front.jpeg",
+        back: "/garments/tshirt-black-oversize-back.jpeg",
+      },
+      white: {
+        name: "Blanco",
+        front: "/garments/tshirt-white-oversize-front.jpeg",
+        back: "/garments/tshirt-white-oversize-back.jpeg",
+      },
+      caramel: {
+        name: "Caramelo",
+        front: "/garments/tshirt-caramel-oversize-front.jpeg",
+        back: "/garments/tshirt-caramel-oversize-back.jpeg",
+      },
     },
+    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
   },
-  {
-    id: "aldea-classic-tshirt",
+  "aldea-classic-tshirt": {
     name: "Aldea Classic T-Shirt Personalizada",
     price: 33000,
-    colors: ["black", "white"],
-    images: {
-      "black-front": "/garments/tshirt-black-classic-front.jpeg",
-      "black-back": "/garments/tshirt-black-classic-back.jpeg",
-      "white-front": "/garments/tshirt-white-classic-front.jpeg",
-      "white-back": "/garments/tshirt-white-classic-back.jpeg",
+    colors: {
+      black: {
+        name: "Negro",
+        front: "/garments/tshirt-black-classic-front.jpeg",
+        back: "/garments/tshirt-black-classic-back.jpeg",
+      },
+      white: {
+        name: "Blanco",
+        front: "/garments/tshirt-white-classic-front.jpeg",
+        back: "/garments/tshirt-white-classic-back.jpeg",
+      },
     },
+    sizes: ["XS", "S", "M", "L", "XL", "XXL"],
   },
-  {
-    id: "astra-hoodie",
+  "astra-oversize-hoodie": {
     name: "Astra Oversize Hoodie Personalizada",
     price: 60000,
-    colors: ["black", "caramel", "cream", "gray"],
-    images: {
-      "black-front": "/garments/hoodie-black-front.jpeg",
-      "black-back": "/garments/hoodie-black-back.jpeg",
-      "caramel-front": "/garments/hoodie-caramel-front.jpeg",
-      "caramel-back": "/garments/hoodie-caramel-back.png",
-      "cream-front": "/garments/hoodie-cream-front.jpeg",
-      "cream-back": "/garments/hoodie-cream-back.png",
-      "gray-front": "/garments/hoodie-gray-front.jpeg",
-      "gray-back": "/garments/hoodie-gray-back.png",
+    colors: {
+      black: { name: "Negro", front: "/garments/hoodie-black-front.jpeg", back: "/garments/hoodie-black-back.jpeg" },
+      caramel: {
+        name: "Caramelo",
+        front: "/garments/hoodie-caramel-front.jpeg",
+        back: "/garments/hoodie-caramel-back.png",
+      },
+      cream: { name: "Crema", front: "/garments/hoodie-cream-front.jpeg", back: "/garments/hoodie-cream-back.png" },
+      gray: { name: "Gris", front: "/garments/hoodie-gray-front.jpeg", back: "/garments/hoodie-gray-back.png" },
     },
+    sizes: ["S", "M", "L", "XL", "XXL"],
   },
-  {
-    id: "lienzo",
+  "lienzo-personalizado": {
     name: "Lienzo Personalizado",
     price: 59900,
-    colors: ["white"],
-    images: {
-      "white-front": "/products/lienzo-main.png",
+    colors: {
+      white: { name: "Blanco", front: "/products/lienzo-main.png", back: "/products/lienzo-main.png" },
     },
+    sizes: ["30x40cm", "40x50cm", "50x70cm"],
   },
-]
-
-const colorNames = {
-  black: "Negro",
-  white: "Blanco",
-  caramel: "Caramelo",
-  cream: "Crema",
-  gray: "Gris",
 }
 
-export default function PlaceholderDesignPage() {
+// Estilos base de Novamente
+const baseStyles = [
+  { id: "style-1", url: "/styles/acuarela-leon.png", prompt: "León en estilo acuarela" },
+  { id: "style-2", url: "/styles/geometrico-aguila.png", prompt: "Águila geométrica" },
+  { id: "style-3", url: "/styles/pixel-art-astronauta.png", prompt: "Astronauta pixel art" },
+  { id: "style-4", url: "/styles/pop-art-retrato.png", prompt: "Retrato pop art" },
+  { id: "style-5", url: "/styles/japones-gran-ola.png", prompt: "Gran ola japonesa" },
+  { id: "style-6", url: "/styles/retro-vaporwave-palmera.png", prompt: "Palmera vaporwave" },
+]
+
+export default function DesignPlaceholderPage() {
   const searchParams = useSearchParams()
-  const imageUrl = searchParams.get("image")
-  const [selectedGarment, setSelectedGarment] = useState("aura-oversize-tshirt")
+  const { toast } = useToast()
+
+  // Estados principales
+  const [selectedGarment, setSelectedGarment] = useState<keyof typeof products>("astra-oversize-hoodie")
   const [selectedColor, setSelectedColor] = useState("black")
+  const [selectedSize, setSelectedSize] = useState("M")
   const [activeTab, setActiveTab] = useState<"front" | "back">("front")
   const [showOnModel, setShowOnModel] = useState(false)
   const [designImage, setDesignImage] = useState<string | null>(null)
   const [designPosition, setDesignPosition] = useState({ x: 50, y: 50 })
-  const [isDragging, setIsDragging] = useState(false)
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
-  const containerRef = useRef<HTMLDivElement>(null)
+  const [designSize, setDesignSize] = useState(100)
 
+  // Estados del historial
+  const [userImages, setUserImages] = useState<SavedImage[]>([])
+  const [historyLoading, setHistoryLoading] = useState(true)
+  const [historyScrollPosition, setHistoryScrollPosition] = useState(0)
+  const [stylesScrollPosition, setStylesScrollPosition] = useState(0)
+
+  // Cargar imagen desde URL
   useEffect(() => {
+    const imageUrl = searchParams.get("image")
     if (imageUrl) {
       console.log("🖼️ Loading image from URL parameter:", imageUrl)
       const proxiedUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`
       console.log("🔄 Using proxied URL:", proxiedUrl)
       setDesignImage(proxiedUrl)
     }
-  }, [imageUrl])
+  }, [searchParams])
 
-  const selectedGarmentData = garmentOptions.find((g) => g.id === selectedGarment)
+  // Cargar historial de imágenes
+  useEffect(() => {
+    const loadUserImages = async () => {
+      try {
+        setHistoryLoading(true)
+        const images = await getRecentImages(undefined, 10)
+        setUserImages(images)
+      } catch (error) {
+        console.error("Error loading user images:", error)
+        // Fallback a localStorage
+        try {
+          const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+          setUserImages(localImages.slice(0, 10))
+        } catch (localErr) {
+          console.error("Error loading from localStorage:", localErr)
+        }
+      } finally {
+        setHistoryLoading(false)
+      }
+    }
+
+    loadUserImages()
+  }, [])
+
+  // Actualizar color cuando cambia la prenda
+  useEffect(() => {
+    const availableColors = Object.keys(products[selectedGarment].colors)
+    if (!availableColors.includes(selectedColor)) {
+      setSelectedColor(availableColors[0])
+    }
+  }, [selectedGarment, selectedColor])
+
+  // Actualizar talle cuando cambia la prenda
+  useEffect(() => {
+    const availableSizes = products[selectedGarment].sizes
+    if (!availableSizes.includes(selectedSize)) {
+      setSelectedSize(availableSizes[0])
+    }
+  }, [selectedGarment, selectedSize])
+
+  const currentProduct = products[selectedGarment]
+  const currentColorData = currentProduct.colors[selectedColor as keyof typeof currentProduct.colors]
+
+  const handleImageSelect = (imageUrl: string) => {
+    console.log("🖼️ Image selected:", imageUrl)
+    setDesignImage(imageUrl)
+    toast({
+      title: "Imagen cargada",
+      description: "La imagen se ha cargado en el editor",
+    })
+  }
+
+  const scrollHistory = (direction: "left" | "right") => {
+    const container = document.getElementById("history-scroll")
+    if (container) {
+      const scrollAmount = 200
+      const newPosition =
+        direction === "left" ? Math.max(0, historyScrollPosition - scrollAmount) : historyScrollPosition + scrollAmount
+
+      container.scrollTo({ left: newPosition, behavior: "smooth" })
+      setHistoryScrollPosition(newPosition)
+    }
+  }
+
+  const scrollStyles = (direction: "left" | "right") => {
+    const container = document.getElementById("styles-scroll")
+    if (container) {
+      const scrollAmount = 200
+      const newPosition =
+        direction === "left" ? Math.max(0, stylesScrollPosition - scrollAmount) : stylesScrollPosition + scrollAmount
+
+      container.scrollTo({ left: newPosition, behavior: "smooth" })
+      setStylesScrollPosition(newPosition)
+    }
+  }
+
+  const handleAddToCart = () => {
+    if (!designImage) {
+      toast({
+        title: "Imagen requerida",
+        description: "Selecciona una imagen para personalizar tu prenda",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const cartItem = {
+      id: `${selectedGarment}-${selectedColor}-${selectedSize}-${Date.now()}`,
+      productId: selectedGarment,
+      productName: currentProduct.name,
+      color: selectedColor,
+      colorName: currentColorData?.name || selectedColor,
+      size: selectedSize,
+      price: currentProduct.price,
+      designImage,
+      designPosition,
+      designSize,
+      side: activeTab,
+      quantity: 1,
+    }
+
+    // Agregar al carrito (localStorage por ahora)
+    const existingCart = JSON.parse(localStorage.getItem("cart") || "[]")
+    existingCart.push(cartItem)
+    localStorage.setItem("cart", JSON.stringify(existingCart))
+
+    toast({
+      title: "¡Agregado al carrito!",
+      description: `${currentProduct.name} agregada correctamente`,
+    })
+
+    // Disparar evento para actualizar el badge del carrito
+    window.dispatchEvent(new Event("cartUpdated"))
+  }
 
   const getGarmentImage = () => {
-    if (!selectedGarmentData) return "/placeholder.svg"
+    const colorData = currentProduct.colors[selectedColor as keyof typeof currentProduct.colors]
+    if (!colorData) return "/placeholder.svg"
 
-    const side = activeTab
-    const imageKey = `${selectedColor}-${side}` as keyof typeof selectedGarmentData.images
-    const imagePath = selectedGarmentData.images[imageKey]
-
+    const imagePath = activeTab === "front" ? colorData.front : colorData.back
     console.log("🖼️ Getting garment image:", {
       selectedGarment,
       selectedColor,
-      side,
-      imageKey,
+      side: activeTab,
+      imageKey: `${selectedColor}-${activeTab}`,
       imagePath,
-      availableImages: Object.keys(selectedGarmentData.images),
+      colorData,
     })
 
-    return imagePath || "/placeholder.svg"
-  }
-
-  // Calcular límites de arrastre basados en las coordenadas exactas
-  const getDragConstraints = () => {
-    const coordinateKey = `${selectedGarment}-${selectedColor}-${activeTab}`
-    const coordinates = EXACT_COORDINATES[coordinateKey as keyof typeof EXACT_COORDINATES]
-
-    if (!coordinates || !containerRef.current) {
-      return { left: 0, top: 0, right: 100, bottom: 100 }
-    }
-
-    const containerWidth = 400
-    const containerHeight = 500
-    const designSize = 80 // Tamaño del diseño en px
-
-    // Convertir coordenadas absolutas a porcentajes
-    const leftPercent = (coordinates.x / containerWidth) * 100
-    const topPercent = (coordinates.y / containerHeight) * 100
-    const rightPercent = ((coordinates.x + coordinates.width - designSize) / containerWidth) * 100
-    const bottomPercent = ((coordinates.y + coordinates.height - designSize) / containerHeight) * 100
-
-    return {
-      left: leftPercent,
-      top: topPercent,
-      right: Math.max(rightPercent, leftPercent + 5), // Mínimo 5% de ancho
-      bottom: Math.max(bottomPercent, topPercent + 5), // Mínimo 5% de alto
-    }
-  }
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!designImage) return
-
-    setIsDragging(true)
-    const rect = containerRef.current?.getBoundingClientRect()
-    if (rect) {
-      const x = ((e.clientX - rect.left) / rect.width) * 100
-      const y = ((e.clientY - rect.top) / rect.height) * 100
-      setDragOffset({
-        x: x - designPosition.x,
-        y: y - designPosition.y,
-      })
-    }
-  }
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !containerRef.current) return
-
-    const rect = containerRef.current.getBoundingClientRect()
-    const x = ((e.clientX - rect.left) / rect.width) * 100 - dragOffset.x
-    const y = ((e.clientY - rect.top) / rect.height) * 100 - dragOffset.y
-
-    const constraints = getDragConstraints()
-
-    // Aplicar restricciones
-    const constrainedX = Math.max(constraints.left, Math.min(constraints.right, x))
-    const constrainedY = Math.max(constraints.top, Math.min(constraints.bottom, y))
-
-    setDesignPosition({ x: constrainedX, y: constrainedY })
-  }
-
-  const handleMouseUp = () => {
-    setIsDragging(false)
-  }
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove as any)
-      document.addEventListener("mouseup", handleMouseUp)
-      return () => {
-        document.removeEventListener("mousemove", handleMouseMove as any)
-        document.removeEventListener("mouseup", handleMouseUp)
-      }
-    }
-  }, [isDragging, dragOffset])
-
-  if (!designImage) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card>
-          <CardContent className="p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">No hay imagen para diseñar</h2>
-            <p className="text-muted-foreground mb-6">Selecciona una imagen para comenzar a diseñar tu prenda.</p>
-            <Link href="/design">
-              <Button>Volver al generador</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    return imagePath
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-6">
           <Link href="/design">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold">Personaliza tu Prenda</h1>
+          <h1 className="text-2xl font-bold">Personaliza tu Prenda</h1>
+        </div>
+
+        {/* Historial de diseños */}
+        <div className="mb-6 space-y-4">
+          {/* Historial del usuario */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold">Historial de diseños</h3>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => scrollHistory("left")}
+                  disabled={historyScrollPosition === 0}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => scrollHistory("right")}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div
+              id="history-scroll"
+              className="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {historyLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="w-16 h-16 bg-gray-200 animate-pulse rounded-lg flex-shrink-0" />
+                ))
+              ) : userImages.length === 0 ? (
+                <div className="text-center py-4 w-full">
+                  <p className="text-gray-500 text-sm">No hay diseños guardados</p>
+                </div>
+              ) : (
+                userImages.map((image) => (
+                  <div
+                    key={image.id}
+                    className="group relative w-16 h-16 flex-shrink-0 cursor-pointer"
+                    onClick={() => handleImageSelect(image.url)}
+                  >
+                    <OptimizedImage
+                      src={image.url}
+                      alt={image.prompt}
+                      width={64}
+                      height={64}
+                      className="w-full h-full object-cover rounded-lg border-2 border-transparent group-hover:border-primary transition-colors"
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                      <Eye className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Estilos inspiradores */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold">Estilos inspiradores</h3>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => scrollStyles("left")}
+                  disabled={stylesScrollPosition === 0}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => scrollStyles("right")}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div
+              id="styles-scroll"
+              className="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
+              style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            >
+              {baseStyles.map((style) => (
+                <div
+                  key={style.id}
+                  className="group relative w-16 h-16 flex-shrink-0 cursor-pointer"
+                  onClick={() => handleImageSelect(style.url)}
+                >
+                  <OptimizedImage
+                    src={style.url}
+                    alt={style.prompt}
+                    width={64}
+                    height={64}
+                    className="w-full h-full object-cover rounded-lg border-2 border-transparent group-hover:border-primary transition-colors"
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                    <Eye className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Vista previa */}
+          {/* Vista previa del producto */}
           <div className="lg:col-span-2">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        id="show-model"
-                        checked={showOnModel}
-                        onCheckedChange={setShowOnModel}
-                        disabled={selectedGarment === "lienzo"}
-                      />
-                      <Label htmlFor="show-model">Mostrar en modelo</Label>
-                    </div>
+            <div className="space-y-4">
+              {/* Controles de vista */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch id="show-model" checked={showOnModel} onCheckedChange={setShowOnModel} />
+                    <Label htmlFor="show-model">Mostrar en modelo</Label>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Move className="w-4 h-4" />
+                    <Info className="w-4 h-4" />
                     Arrastra para mover
                   </div>
                 </div>
 
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "front" | "back")}>
-                  <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="front">Frontal</TabsTrigger>
-                    <TabsTrigger value="back" disabled={selectedGarment === "lienzo"}>
-                      Trasero
-                    </TabsTrigger>
-                  </TabsList>
+                {/* Tabs Front/Back */}
+                <div className="flex bg-muted rounded-lg p-1">
+                  <button
+                    onClick={() => setActiveTab("front")}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === "front"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Frontal ✓
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("back")}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === "back"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Trasero
+                  </button>
+                </div>
+              </div>
 
-                  <TabsContent value={activeTab}>
-                    <div
-                      ref={containerRef}
-                      className="relative bg-gray-100 rounded-lg overflow-hidden aspect-[4/5] cursor-crosshair"
-                      onMouseDown={handleMouseDown}
-                      onMouseMove={handleMouseMove}
-                      onMouseUp={handleMouseUp}
-                    >
-                      <Image
-                        src={getGarmentImage() || "/placeholder.svg"}
-                        alt={`${selectedGarmentData?.name} ${colorNames[selectedColor as keyof typeof colorNames]} ${activeTab}`}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 66vw"
-                      />
+              {/* Canvas de diseño */}
+              <Card className="overflow-hidden">
+                <CardContent className="p-0">
+                  <div className="relative aspect-square bg-gray-100">
+                    <Image
+                      src={getGarmentImage() || "/placeholder.svg"}
+                      alt={`${currentProduct.name} ${currentColorData?.name} ${activeTab}`}
+                      fill
+                      className="object-contain"
+                      priority
+                    />
 
-                      {/* Área de impresión */}
-                      <PrintArea garmentType={selectedGarment} garmentColor={selectedColor} activeTab={activeTab} />
-
-                      {/* Imagen de diseño */}
-                      {designImage && (
-                        <div
-                          className="absolute w-20 h-20 cursor-move"
-                          style={{
-                            left: `${designPosition.x}%`,
-                            top: `${designPosition.y}%`,
-                            transform: "translate(-50%, -50%)",
-                          }}
-                        >
-                          <Image
-                            src={designImage || "/placeholder.svg"}
-                            alt="Diseño"
-                            fill
-                            className="object-contain"
-                            sizes="80px"
-                            onLoad={() => console.log("✅ Design image loaded successfully")}
-                            onError={(e) => console.error("❌ Error loading design image:", e)}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+                    <PrintArea
+                      garmentType={selectedGarment}
+                      garmentColor={selectedColor}
+                      activeTab={activeTab}
+                      designImage={designImage}
+                      designPosition={designPosition}
+                      designSize={designSize}
+                      onPositionChange={setDesignPosition}
+                      onSizeChange={setDesignSize}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
           {/* Panel de configuración */}
           <div className="space-y-6">
-            {/* Selección de prenda */}
+            {/* Selección de producto */}
             <Card>
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Elegí tu prenda</h3>
-                <RadioGroup value={selectedGarment} onValueChange={setSelectedGarment}>
-                  {garmentOptions.map((garment) => (
-                    <div key={garment.id} className="flex items-center space-x-2">
-                      <RadioGroupItem value={garment.id} id={garment.id} />
-                      <Label htmlFor={garment.id} className="flex-1 cursor-pointer">
-                        <div className="flex justify-between items-center">
-                          <span>{garment.name}</span>
-                          <span className="font-bold">${garment.price.toLocaleString()}</span>
-                        </div>
-                      </Label>
+                <RadioGroup
+                  value={selectedGarment}
+                  onValueChange={(value) => setSelectedGarment(value as keyof typeof products)}
+                  className="space-y-3"
+                >
+                  {Object.entries(products).map(([key, product]) => (
+                    <div key={key} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value={key} id={key} />
+                        <Label htmlFor={key} className="font-medium">
+                          {product.name}
+                        </Label>
+                      </div>
+                      <span className="font-bold">${product.price.toLocaleString()}</span>
                     </div>
                   ))}
                 </RadioGroup>
@@ -355,14 +472,33 @@ export default function PlaceholderDesignPage() {
               <CardContent className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Color</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {selectedGarmentData?.colors.map((color) => (
+                  {Object.entries(currentProduct.colors).map(([colorKey, colorData]) => (
                     <Button
-                      key={color}
-                      variant={selectedColor === color ? "default" : "outline"}
-                      onClick={() => setSelectedColor(color)}
+                      key={colorKey}
+                      variant={selectedColor === colorKey ? "default" : "outline"}
+                      onClick={() => setSelectedColor(colorKey)}
                       className="justify-center"
                     >
-                      {colorNames[color as keyof typeof colorNames]}
+                      {colorData.name}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Selección de talle */}
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold mb-4">Talle</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {currentProduct.sizes.map((size) => (
+                    <Button
+                      key={size}
+                      variant={selectedSize === size ? "default" : "outline"}
+                      onClick={() => setSelectedSize(size)}
+                      size="sm"
+                    >
+                      {size}
                     </Button>
                   ))}
                 </div>
@@ -372,13 +508,37 @@ export default function PlaceholderDesignPage() {
             {/* Información del área de impresión */}
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-3 h-3 border-2 border-red-500 border-dashed"></div>
-                  <span className="text-sm font-medium">Área de impresión</span>
+                <div className="flex items-start gap-3">
+                  <div className="w-4 h-4 border-2 border-red-500 border-dashed mt-1 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-medium text-sm mb-1">Área de impresión</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Arrastra el diseño dentro del área marcada. Los bordes y costuras tienen restricciones de
+                      impresión.
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Arrastra el diseño dentro del área marcada. Los bordes y costuras tienen restricciones de impresión.
-                </p>
+              </CardContent>
+            </Card>
+
+            {/* Resumen y botón de compra */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Total:</span>
+                    <span className="text-2xl font-bold">${currentProduct.price.toLocaleString()}</span>
+                  </div>
+
+                  <Button onClick={handleAddToCart} className="w-full" size="lg" disabled={!designImage}>
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Agregar al Carrito
+                  </Button>
+
+                  {!designImage && (
+                    <p className="text-sm text-muted-foreground text-center">Selecciona una imagen para continuar</p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
