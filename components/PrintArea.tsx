@@ -2,64 +2,61 @@
 
 import { Badge } from "@/components/ui/badge"
 
-// Coordenadas exactas del JSON proporcionado
+// Coordenadas exactas del JSON proporcionado convertidas a porcentajes
 const EXACT_COORDINATES = {
-  "hoodie-black-front": { x: 168, y: 200, width: 264, height: 264 },
-  "hoodie-caramel-front": { x: 168, y: 200, width: 264, height: 264 },
-  "hoodie-cream-front": { x: 168, y: 200, width: 264, height: 264 },
-  "hoodie-gray-front": { x: 168, y: 200, width: 264, height: 264 },
-  "tshirt-black-classic-front": { x: 168, y: 180, width: 264, height: 264 },
-  "tshirt-white-classic-front": { x: 168, y: 180, width: 264, height: 264 },
-  "tshirt-black-oversize-front": { x: 148, y: 180, width: 304, height: 304 },
-  "tshirt-white-oversize-front": { x: 148, y: 180, width: 304, height: 304 },
-  "tshirt-caramel-oversize-front": { x: 148, y: 180, width: 304, height: 304 },
+  "aura-oversize-tshirt": {
+    front: { x: 50, y: 32, width: 28, height: 33 },
+    back: { x: 50, y: 32, width: 28, height: 33 },
+  },
+  "aldea-classic-tshirt": {
+    front: { x: 50, y: 30, width: 30, height: 35 },
+    back: { x: 50, y: 30, width: 30, height: 35 },
+  },
+  "astra-oversize-hoodie": {
+    front: { x: 50, y: 35, width: 25, height: 30 },
+    back: { x: 50, y: 32, width: 28, height: 33 },
+  },
+  lienzo: {
+    front: { x: 50, y: 50, width: 90, height: 90 },
+    back: { x: 50, y: 50, width: 90, height: 90 },
+  },
 }
 
 interface PrintAreaProps {
   garmentType: string
-  garmentColor: string
-  garmentImage: string
-  containerWidth?: number
-  containerHeight?: number
+  activeTab: "front" | "back"
+  className?: string
 }
 
-export function PrintArea({
-  garmentType,
-  garmentColor,
-  garmentImage,
-  containerWidth = 600,
-  containerHeight = 600,
-}: PrintAreaProps) {
-  // Crear la clave para buscar las coordenadas exactas
-  const garmentKey = `${garmentType}-${garmentColor}-front` as keyof typeof EXACT_COORDINATES
-  const coordinates = EXACT_COORDINATES[garmentKey]
+export function PrintArea({ garmentType, activeTab, className = "" }: PrintAreaProps) {
+  // Obtener coordenadas exactas del JSON
+  const garmentCoords = EXACT_COORDINATES[garmentType as keyof typeof EXACT_COORDINATES]
 
-  if (!coordinates) {
-    console.warn(`No exact coordinates found for: ${garmentKey}`)
+  if (!garmentCoords) {
+    console.warn(`No exact coordinates found for garment: ${garmentType}`)
     return null
   }
 
-  // Convertir coordenadas absolutas a porcentajes
-  const leftPercent = (coordinates.x / containerWidth) * 100
-  const topPercent = (coordinates.y / containerHeight) * 100
-  const widthPercent = (coordinates.width / containerWidth) * 100
-  const heightPercent = (coordinates.height / containerHeight) * 100
+  const coords = garmentCoords[activeTab]
+  const { x, y, width, height } = coords
+
+  console.log(`📐 PrintArea for ${garmentType} ${activeTab}:`, coords)
 
   return (
-    <div className="relative w-full h-full">
+    <div className={`absolute inset-0 pointer-events-none ${className}`}>
       {/* Área de impresión con coordenadas exactas */}
       <div
-        className="absolute border-2 border-dashed border-red-500 bg-red-500/10"
+        className="absolute border-2 border-red-500 border-dashed bg-red-500/10"
         style={{
-          left: `${leftPercent}%`,
-          top: `${topPercent}%`,
-          width: `${widthPercent}%`,
-          height: `${heightPercent}%`,
+          left: `${x - width / 2}%`,
+          top: `${y - height / 2}%`,
+          width: `${width}%`,
+          height: `${height}%`,
         }}
       >
         {/* Coordenadas en la esquina superior izquierda */}
         <div className="absolute -top-6 left-0 text-xs text-red-600 font-mono bg-white px-1 rounded">
-          {coordinates.x},{coordinates.y} {coordinates.width}×{coordinates.height}
+          {x},{y} ({width}×{height})
         </div>
 
         {/* Badge identificador en la esquina superior derecha */}

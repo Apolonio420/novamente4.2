@@ -30,6 +30,11 @@ export interface CartItem {
   }
 }
 
+// Función para generar un ID único
+function generateId(): string {
+  return `img_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
+}
+
 // Export que necesitas - saveGeneratedImage
 export async function saveGeneratedImage(imageData: {
   url: string
@@ -40,9 +45,13 @@ export async function saveGeneratedImage(imageData: {
   try {
     console.log("Saving image:", imageData)
 
+    // Generar un ID único para la imagen
+    const imageId = generateId()
+
     const { data, error } = await supabase
       .from("images")
       .insert({
+        id: imageId, // Asegurar que el ID no sea null
         url: imageData.url,
         prompt: imageData.prompt,
         optimized_prompt: imageData.optimizedPrompt,
@@ -56,7 +65,7 @@ export async function saveGeneratedImage(imageData: {
 
       // Fallback a localStorage
       const fallbackImage: SavedImage = {
-        id: `local_${Date.now()}`,
+        id: imageId,
         url: imageData.url,
         prompt: imageData.prompt,
         optimized_prompt: imageData.optimizedPrompt,
@@ -78,7 +87,7 @@ export async function saveGeneratedImage(imageData: {
 
     // Fallback a localStorage
     const fallbackImage: SavedImage = {
-      id: `local_${Date.now()}`,
+      id: generateId(),
       url: imageData.url,
       prompt: imageData.prompt,
       optimized_prompt: imageData.optimizedPrompt,
@@ -93,9 +102,6 @@ export async function saveGeneratedImage(imageData: {
     return fallbackImage
   }
 }
-
-// Alias para compatibilidad
-export const saveImage = saveGeneratedImage
 
 // Función para obtener imágenes recientes
 export async function getRecentImages(userId?: string, limit = 20): Promise<SavedImage[]> {
@@ -303,57 +309,5 @@ export async function cleanupOldImages(): Promise<void> {
     }
   } catch (error) {
     console.error("Error in cleanupOldImages:", error)
-  }
-}
-
-// Función para obtener imágenes del usuario
-export async function getUserImages(userId?: string): Promise<SavedImage[]> {
-  return getRecentImages(userId, 20)
-}
-
-// Función para contar generaciones por sesión
-export async function countGenerationsBySession(sessionId: string): Promise<number> {
-  try {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    const { count, error } = await supabase
-      .from("images")
-      .select("*", { count: "exact", head: true })
-      .is("user_id", null)
-      .gte("created_at", today.toISOString())
-
-    if (error) {
-      console.error("Error counting generations:", error)
-      return 0
-    }
-
-    return count || 0
-  } catch (error) {
-    console.error("Error in countGenerationsBySession:", error)
-    return 0
-  }
-}
-
-// Función para limpiar imágenes expiradas
-export async function cleanupExpiredImages(): Promise<void> {
-  try {
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - 15)
-
-    const { data, error } = await supabase
-      .from("images")
-      .delete()
-      .lt("created_at", cutoffDate.toISOString())
-      .select("id")
-
-    if (error) {
-      console.error("Error cleaning up expired images:", error)
-      return
-    }
-
-    console.log(`🧹 Cleaned up ${data?.length || 0} expired images`)
-  } catch (error) {
-    console.error("Error in cleanupExpiredImages:", error)
   }
 }
