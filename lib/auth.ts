@@ -1,124 +1,216 @@
-"use server"
-
 import { createClient } from "@supabase/supabase-js"
-import type { cookies } from "next/headers"
 
-// Singleton para el cliente de Supabase
-let supabaseClient: ReturnType<typeof createClient> | null = null
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-function getSupabaseClient() {
-  if (!supabaseClient) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-    if (!supabaseUrl || !supabaseKey) {
-      console.error("Missing Supabase environment variables")
-      return null
-    }
-
-    supabaseClient = createClient(supabaseUrl, supabaseKey)
-  }
-  return supabaseClient
+export interface User {
+  id: string
+  email?: string
+  name?: string
+  avatar?: string
 }
 
-export async function getCurrentUser(cookieStore: ReturnType<typeof cookies>) {
+// Función para obtener el usuario actual
+export async function getCurrentUser(): Promise<User | null> {
   try {
-    const supabase = getSupabaseClient()
-    if (!supabase) return null
-
-    const sessionCookie = cookieStore.get("sb-access-token")?.value
-
-    if (!sessionCookie) {
-      return null
-    }
-
     const {
       data: { user },
       error,
-    } = await supabase.auth.getUser(sessionCookie)
+    } = await supabase.auth.getUser()
 
-    if (error) {
-      console.error("Error getting user:", error.message)
+    if (error || !user) {
       return null
     }
 
-    return user
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.user_metadata?.name || user.email,
+      avatar: user.user_metadata?.avatar_url,
+    }
   } catch (error) {
-    console.error("Error in getCurrentUser:", error)
+    console.error("Error getting current user:", error)
     return null
   }
 }
 
-export async function checkGenerationLimit(sessionId: string): Promise<{ limitReached: boolean; count: number }> {
-  // Validación de entrada
-  if (!sessionId || typeof sessionId !== "string" || sessionId.trim().length === 0) {
-    console.log("Invalid sessionId provided to checkGenerationLimit")
-    return { limitReached: false, count: 0 }
-  }
-
-  const cleanSessionId = sessionId.trim()
+// Función para verificar límite de generación
+export async function checkGenerationLimit(userId?: string): Promise<{
+  canGenerate: boolean
+  remaining: number
+  limit: number
+}> {
+  const limit = 10 // Límite diario para usuarios anónimos
 
   try {
-    // Test de conexión a Supabase
-    const supabase = getSupabaseClient()
-    if (!supabase) {
-      console.log("Supabase client not available")
-      return { limitReached: false, count: 0 }
+    if (!userId) {
+      // Para usuarios anónimos, usar localStorage
+      const today = new Date().toDateString()
+      const stored = localStorage.getItem("generation_count")
+      const data = stored ? JSON.parse(stored) : { date: today, count: 0 }
+
+      if (data.date !== today) {
+        // Nuevo día, resetear contador
+        data.date = today
+        data.count = 0
+        localStorage.setItem("generation_count", JSON.stringify(data))
+      }
+
+      const remaining = Math.max(0, limit - data.count)
+      return {
+        canGenerate: data.count < limit,
+        remaining,
+        limit,
+      }
     }
 
-    // Verificar que la conexión funcione usando la tabla correcta 'images'
-    const { error: connectionError } = await supabase.from("images").select("id").limit(1)
-    if (connectionError) {
-      console.error("Supabase connection test failed:", connectionError.message)
-      return { limitReached: false, count: 0 }
-    }
+    // Para usuarios autenticados, verificar en la base de datos
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-    // Contar imágenes para la sesión usando la tabla correcta 'images'
     const { count, error } = await supabase
       .from("images")
-      .select("id", { count: "exact", head: true })
-      .eq("session_id", cleanSessionId)
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", today.toISOString())
 
     if (error) {
-      console.error(`Error counting images for session: ${cleanSessionId}`, error.message)
-      return { limitReached: false, count: 0 }
+      console.error("Error checking generation limit:", error)
+      return { canGenerate: true, remaining: limit, limit }
     }
 
-    // Validar que count sea un número válido
-    const validCount = typeof count === "number" && count >= 0 ? count : 0
-
-    console.log(`Session ${cleanSessionId} has generated ${validCount} images`)
+    const userLimit = 50 // Límite más alto para usuarios autenticados
+    const remaining = Math.max(0, userLimit - (count || 0))
 
     return {
-      limitReached: validCount >= 3,
-      count: validCount,
+      canGenerate: (count || 0) < userLimit,
+      remaining,
+      limit: userLimit,
     }
   } catch (error) {
-    console.error(`Error counting images for session: ${cleanSessionId}`, error)
-    // Siempre devolver un objeto válido, nunca lanzar excepción
-    return { limitReached: false, count: 0 }
+    console.error("Error in checkGenerationLimit:", error)
+    return { canGenerate: true, remaining: limit, limit }
   }
 }
 
-export async function setupImageRetentionPolicy() {
+// Función para incrementar el contador de generaciones
+export async function incrementGenerationCount(userId?: string): Promise<void> {
   try {
-    const supabase = getSupabaseClient()
-    if (!supabase) {
-      console.log("Supabase client not available for retention policy")
-      return
+    if (!userId) {
+      // Para usuarios anónimos, usar localStorage
+      const today = new Date().toDateString()
+      const stored = localStorage.getItem("generation_count")
+      const data = stored ? JSON.parse(stored) : { date: today, count: 0 }
+
+      if (data.date !== today) {
+        data.date = today
+        data.count = 1
+      } else {
+        data.count += 1
+      }
+
+      localStorage.setItem("generation_count", JSON.stringify(data))
     }
+    // Para usuarios autenticados, el contador se incrementa automáticamente al guardar la imagen
+  } catch (error) {
+    console.error("Error incrementing generation count:", error)
+  }
+}
 
-    // Eliminar imágenes de más de 15 días usando la tabla correcta 'images'
-    const fifteenDaysAgo = new Date()
-    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15)
-
-    const { error } = await supabase.from("images").delete().lt("created_at", fifteenDaysAgo.toISOString())
+// Función para iniciar sesión
+export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
     if (error) {
-      console.error("Error in image retention policy:", error.message)
-    } else {
-      console.log("Image retention policy executed successfully")
+      return { user: null, error: error.message }
     }
+
+    if (!data.user) {
+      return { user: null, error: "No user returned" }
+    }
+
+    return {
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.user_metadata?.name || data.user.email,
+        avatar: data.user.user_metadata?.avatar_url,
+      },
+      error: null,
+    }
+  } catch (error) {
+    console.error("Error signing in:", error)
+    return { user: null, error: "Error signing in" }
+  }
+}
+
+// Función para registrarse
+export async function signUp(
+  email: string,
+  password: string,
+  name?: string,
+): Promise<{ user: User | null; error: string | null }> {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: name || email,
+        },
+      },
+    })
+
+    if (error) {
+      return { user: null, error: error.message }
+    }
+
+    if (!data.user) {
+      return { user: null, error: "No user returned" }
+    }
+
+    return {
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        name: name || data.user.email,
+        avatar: data.user.user_metadata?.avatar_url,
+      },
+      error: null,
+    }
+  } catch (error) {
+    console.error("Error signing up:", error)
+    return { user: null, error: "Error signing up" }
+  }
+}
+
+// Función para cerrar sesión
+export async function signOut(): Promise<{ error: string | null }> {
+  try {
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    return { error: null }
+  } catch (error) {
+    console.error("Error signing out:", error)
+    return { error: "Error signing out" }
+  }
+}
+
+// Función para configurar política de retención de imágenes
+export async function setupImageRetentionPolicy(): Promise<void> {
+  try {
+    // Esta función se ejecutaría en el servidor para configurar políticas de limpieza automática
+    console.log("Image retention policy setup - this would run on server")
   } catch (error) {
     console.error("Error setting up image retention policy:", error)
   }

@@ -1,80 +1,74 @@
 "use client"
 
-interface PrintAreaProps {
-  garmentType: string
-  activeTab: "front" | "back"
+import { Badge } from "@/components/ui/badge"
+
+// Coordenadas exactas del JSON proporcionado
+const EXACT_COORDINATES = {
+  "hoodie-black-front": { x: 168, y: 200, width: 264, height: 264 },
+  "hoodie-caramel-front": { x: 168, y: 200, width: 264, height: 264 },
+  "hoodie-cream-front": { x: 168, y: 200, width: 264, height: 264 },
+  "hoodie-gray-front": { x: 168, y: 200, width: 264, height: 264 },
+  "tshirt-black-classic-front": { x: 168, y: 180, width: 264, height: 264 },
+  "tshirt-white-classic-front": { x: 168, y: 180, width: 264, height: 264 },
+  "tshirt-black-oversize-front": { x: 148, y: 180, width: 304, height: 304 },
+  "tshirt-white-oversize-front": { x: 148, y: 180, width: 304, height: 304 },
+  "tshirt-caramel-oversize-front": { x: 148, y: 180, width: 304, height: 304 },
 }
 
-export function PrintArea({ garmentType, activeTab }: PrintAreaProps) {
-  // Definir áreas de impresión según el tipo de prenda
-  const getPrintAreaStyle = () => {
-    switch (garmentType) {
-      case "aura-oversize-tshirt":
-      case "aldea-classic-tshirt":
-        // Remeras: 80% ancho x 70% alto, centrado
-        return {
-          left: "10%",
-          top: "15%",
-          width: "80%",
-          height: "70%",
-        }
+interface PrintAreaProps {
+  garmentType: string
+  garmentColor: string
+  garmentImage: string
+  containerWidth?: number
+  containerHeight?: number
+}
 
-      case "astra-oversize-hoodie":
-        if (activeTab === "front") {
-          // Hoodie frontal: área más pequeña para evitar bolsillo
-          return {
-            left: "15%",
-            top: "20%",
-            width: "70%",
-            height: "50%",
-          }
-        } else {
-          // Hoodie trasero: área completa
-          return {
-            left: "10%",
-            top: "15%",
-            width: "80%",
-            height: "70%",
-          }
-        }
+export function PrintArea({
+  garmentType,
+  garmentColor,
+  garmentImage,
+  containerWidth = 600,
+  containerHeight = 600,
+}: PrintAreaProps) {
+  // Crear la clave para buscar las coordenadas exactas
+  const garmentKey = `${garmentType}-${garmentColor}-front` as keyof typeof EXACT_COORDINATES
+  const coordinates = EXACT_COORDINATES[garmentKey]
 
-      case "lienzo":
-        // Lienzo: área casi completa con margen de 5%
-        return {
-          left: "5%",
-          top: "5%",
-          width: "90%",
-          height: "90%",
-        }
-
-      default:
-        return {
-          left: "10%",
-          top: "15%",
-          width: "80%",
-          height: "70%",
-        }
-    }
+  if (!coordinates) {
+    console.warn(`No exact coordinates found for: ${garmentKey}`)
+    return null
   }
 
-  const printAreaStyle = getPrintAreaStyle()
+  // Convertir coordenadas absolutas a porcentajes
+  const leftPercent = (coordinates.x / containerWidth) * 100
+  const topPercent = (coordinates.y / containerHeight) * 100
+  const widthPercent = (coordinates.width / containerWidth) * 100
+  const heightPercent = (coordinates.height / containerHeight) * 100
 
   return (
-    <div
-      className="absolute border-2 border-dashed border-gray-400 bg-black/5 pointer-events-none"
-      style={{
-        left: printAreaStyle.left,
-        top: printAreaStyle.top,
-        width: printAreaStyle.width,
-        height: printAreaStyle.height,
-        zIndex: 5,
-      }}
-    >
-      {/* Esquinas para mejor visualización */}
-      <div className="absolute -top-1 -left-1 w-3 h-3 border-l-2 border-t-2 border-gray-600" />
-      <div className="absolute -top-1 -right-1 w-3 h-3 border-r-2 border-t-2 border-gray-600" />
-      <div className="absolute -bottom-1 -left-1 w-3 h-3 border-l-2 border-b-2 border-gray-600" />
-      <div className="absolute -bottom-1 -right-1 w-3 h-3 border-r-2 border-b-2 border-gray-600" />
+    <div className="relative w-full h-full">
+      {/* Área de impresión con coordenadas exactas */}
+      <div
+        className="absolute border-2 border-dashed border-red-500 bg-red-500/10"
+        style={{
+          left: `${leftPercent}%`,
+          top: `${topPercent}%`,
+          width: `${widthPercent}%`,
+          height: `${heightPercent}%`,
+        }}
+      >
+        {/* Coordenadas en la esquina superior izquierda */}
+        <div className="absolute -top-6 left-0 text-xs text-red-600 font-mono bg-white px-1 rounded">
+          {coordinates.x},{coordinates.y} {coordinates.width}×{coordinates.height}
+        </div>
+
+        {/* Badge identificador en la esquina superior derecha */}
+        <div className="absolute -top-6 right-0">
+          <Badge variant="destructive" className="text-xs">
+            EXACT JSON
+          </Badge>
+        </div>
+      </div>
     </div>
   )
 }
