@@ -3,16 +3,37 @@
  * Reemplaza la optimización local con IA real
  */
 
-export interface OptimizationOptions {
-  layout?: "square" | "tall" | "wide"
-  style?: string
-}
-
-export function optimizePrompt(originalPrompt: string, options: OptimizationOptions = {}): string {
-  console.log("🔍 PROMPT OPTIMIZER: Using fallback optimization")
+export async function optimizePrompt(originalPrompt: string): Promise<string> {
+  console.log("🔍 PROMPT OPTIMIZER: Using OpenAI for optimization")
   console.log("📥 INPUT PROMPT:", originalPrompt)
 
-  return fallbackOptimization(originalPrompt)
+  try {
+    const response = await fetch("/api/optimize-prompt", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt: originalPrompt }),
+    })
+
+    if (!response.ok) {
+      console.error("❌ Optimization API failed, using fallback")
+      return fallbackOptimization(originalPrompt)
+    }
+
+    const data = await response.json()
+
+    if (data.fallback) {
+      console.log("⚠️ Using fallback optimization")
+      return fallbackOptimization(originalPrompt)
+    }
+
+    console.log("📤 OPTIMIZED PROMPT:", data.optimizedPrompt)
+    return data.optimizedPrompt
+  } catch (error) {
+    console.error("❌ Error in prompt optimization:", error)
+    return fallbackOptimization(originalPrompt)
+  }
 }
 
 // Optimización de respaldo si falla la API
