@@ -28,11 +28,21 @@ export interface CartItem {
 // Export que necesitas - saveGeneratedImage
 export async function saveGeneratedImage(url: string, prompt: string, userId?: string): Promise<SavedImage | null> {
   try {
-    console.log("💾 Saving image to database:", { url, prompt, userId })
+    console.log("💾 Saving image to database:", {
+      url: typeof url === "string" ? url.substring(0, 100) + "..." : "Invalid URL type",
+      prompt: typeof prompt === "string" ? prompt : "Invalid prompt type",
+      userId,
+    })
 
     // Validar que url sea string
-    if (typeof url !== "string") {
-      console.error("❌ URL must be a string:", url)
+    if (typeof url !== "string" || !url) {
+      console.error("❌ URL must be a valid string:", url)
+      return null
+    }
+
+    // Validar que prompt sea string
+    if (typeof prompt !== "string" || !prompt) {
+      console.error("❌ Prompt must be a valid string:", prompt)
       return null
     }
 
@@ -76,8 +86,11 @@ export async function getRecentImages(userId?: string, limit = 20): Promise<Save
       console.error("Error fetching from Supabase:", error)
 
       // Fallback a localStorage
-      const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-      return localImages.slice(0, limit)
+      if (typeof window !== "undefined") {
+        const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+        return localImages.slice(0, limit)
+      }
+      return []
     }
 
     return data || []
@@ -85,8 +98,11 @@ export async function getRecentImages(userId?: string, limit = 20): Promise<Save
     console.error("Error in getRecentImages:", error)
 
     // Fallback a localStorage
-    const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-    return localImages.slice(0, limit)
+    if (typeof window !== "undefined") {
+      const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+      return localImages.slice(0, limit)
+    }
+    return []
   }
 }
 
@@ -116,9 +132,11 @@ export async function deleteImage(id: string): Promise<boolean> {
       console.error("Error deleting from Supabase:", error)
 
       // Fallback a localStorage
-      const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-      const filteredImages = localImages.filter((img: SavedImage) => img.id !== id)
-      localStorage.setItem("saved_images", JSON.stringify(filteredImages))
+      if (typeof window !== "undefined") {
+        const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+        const filteredImages = localImages.filter((img: SavedImage) => img.id !== id)
+        localStorage.setItem("saved_images", JSON.stringify(filteredImages))
+      }
 
       return true
     }
@@ -128,9 +146,11 @@ export async function deleteImage(id: string): Promise<boolean> {
     console.error("Error in deleteImage:", error)
 
     // Fallback a localStorage
-    const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-    const filteredImages = localImages.filter((img: SavedImage) => img.id !== id)
-    localStorage.setItem("saved_images", JSON.stringify(filteredImages))
+    if (typeof window !== "undefined") {
+      const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+      const filteredImages = localImages.filter((img: SavedImage) => img.id !== id)
+      localStorage.setItem("saved_images", JSON.stringify(filteredImages))
+    }
 
     return true
   }
@@ -141,8 +161,11 @@ export async function getCartItems(userId?: string): Promise<CartItem[]> {
   try {
     if (!userId) {
       // Para usuarios anónimos, usar localStorage
-      const cartItems = localStorage.getItem("cart_items")
-      return cartItems ? JSON.parse(cartItems) : []
+      if (typeof window !== "undefined") {
+        const cartItems = localStorage.getItem("cart_items")
+        return cartItems ? JSON.parse(cartItems) : []
+      }
+      return []
     }
 
     const { data, error } = await supabase.from("cart_items").select("*").eq("user_id", userId)
@@ -163,13 +186,15 @@ export async function addToCart(item: Omit<CartItem, "id">, userId?: string): Pr
   try {
     if (!userId) {
       // Para usuarios anónimos, usar localStorage
-      const existingItems = JSON.parse(localStorage.getItem("cart_items") || "[]")
-      const newItem: CartItem = {
-        ...item,
-        id: `cart_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`,
+      if (typeof window !== "undefined") {
+        const existingItems = JSON.parse(localStorage.getItem("cart_items") || "[]")
+        const newItem: CartItem = {
+          ...item,
+          id: `cart_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`,
+        }
+        existingItems.push(newItem)
+        localStorage.setItem("cart_items", JSON.stringify(existingItems))
       }
-      existingItems.push(newItem)
-      localStorage.setItem("cart_items", JSON.stringify(existingItems))
       return true
     }
 
@@ -194,9 +219,11 @@ export async function removeFromCart(itemId: string, userId?: string): Promise<b
   try {
     if (!userId) {
       // Para usuarios anónimos, usar localStorage
-      const existingItems = JSON.parse(localStorage.getItem("cart_items") || "[]")
-      const filteredItems = existingItems.filter((item: CartItem) => item.id !== itemId)
-      localStorage.setItem("cart_items", JSON.stringify(filteredItems))
+      if (typeof window !== "undefined") {
+        const existingItems = JSON.parse(localStorage.getItem("cart_items") || "[]")
+        const filteredItems = existingItems.filter((item: CartItem) => item.id !== itemId)
+        localStorage.setItem("cart_items", JSON.stringify(filteredItems))
+      }
       return true
     }
 
@@ -218,13 +245,15 @@ export async function updateCartItem(itemId: string, updates: Partial<CartItem>,
   try {
     if (!userId) {
       // Para usuarios anónimos, usar localStorage
-      const existingItems = JSON.parse(localStorage.getItem("cart_items") || "[]")
-      const itemIndex = existingItems.findIndex((item: CartItem) => item.id === itemId)
+      if (typeof window !== "undefined") {
+        const existingItems = JSON.parse(localStorage.getItem("cart_items") || "[]")
+        const itemIndex = existingItems.findIndex((item: CartItem) => item.id === itemId)
 
-      if (itemIndex !== -1) {
-        existingItems[itemIndex] = { ...existingItems[itemIndex], ...updates }
-        localStorage.setItem("cart_items", JSON.stringify(existingItems))
-        return true
+        if (itemIndex !== -1) {
+          existingItems[itemIndex] = { ...existingItems[itemIndex], ...updates }
+          localStorage.setItem("cart_items", JSON.stringify(existingItems))
+          return true
+        }
       }
 
       return false

@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch"
 import { ArrowLeft, ShoppingCart, Eye, ChevronLeft, ChevronRight, Info } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { getRecentImages, type SavedImage } from "@/lib/db"
+import { getUserImages, type SavedImage } from "@/lib/db"
 import { useToast } from "@/hooks/use-toast"
 
 // Configuración de productos
@@ -134,12 +134,13 @@ function DesignPlaceholderContent() {
 
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Función para crear URL del proxy
+  // Función para crear URL del proxy - SIMPLIFICADA
   const createProxyUrl = useCallback((originalUrl: string) => {
+    // Solo usar proxy para URLs de DALL-E
     if (originalUrl.includes("oaidalleapiprodscus.blob.core.windows.net")) {
-      const encodedUrl = encodeURIComponent(originalUrl)
-      return `/api/proxy-image?url=${encodedUrl}`
+      return `/api/proxy-image?url=${encodeURIComponent(originalUrl)}`
     }
+    // Para imágenes locales, usar directamente
     return originalUrl
   }, [])
 
@@ -169,14 +170,16 @@ function DesignPlaceholderContent() {
     const loadUserImages = async () => {
       try {
         setHistoryLoading(true)
-        const images = await getRecentImages(undefined, 10)
+        const images = await getUserImages(undefined)
         setUserImages(images)
       } catch (error) {
         console.error("Error loading user images:", error)
         // Fallback a localStorage
         try {
-          const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-          setUserImages(localImages.slice(0, 10))
+          if (typeof window !== "undefined") {
+            const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+            setUserImages(localImages.slice(0, 10))
+          }
         } catch (localErr) {
           console.error("Error loading from localStorage:", localErr)
         }
@@ -243,9 +246,11 @@ function DesignPlaceholderContent() {
     }
 
     // Agregar al carrito (localStorage por ahora)
-    const existingCart = JSON.parse(localStorage.getItem("cart") || "[]")
-    existingCart.push(cartItem)
-    localStorage.setItem("cart", JSON.stringify(existingCart))
+    if (typeof window !== "undefined") {
+      const existingCart = JSON.parse(localStorage.getItem("cart") || "[]")
+      existingCart.push(cartItem)
+      localStorage.setItem("cart", JSON.stringify(existingCart))
+    }
 
     toast({
       title: "¡Agregado al carrito!",
@@ -253,7 +258,9 @@ function DesignPlaceholderContent() {
     })
 
     // Disparar evento para actualizar el badge del carrito
-    window.dispatchEvent(new Event("cartUpdated"))
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("cartUpdated"))
+    }
   }
 
   const getGarmentImage = () => {

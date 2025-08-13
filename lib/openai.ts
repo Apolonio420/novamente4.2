@@ -69,3 +69,6 @@ export async function generateImage(prompt: string, width = 1024, height = 1024)
     throw new Error("Unknown error occurred during image generation")
   }
 }
+
+// Export the openai instance for direct use
+export const openai = getOpenAIClient()
