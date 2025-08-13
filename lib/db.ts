@@ -560,15 +560,33 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
         }
       }
 
-      const allImages = [...dbImages, ...localImages]
-      const uniqueImages = allImages.filter(
-        (image, index, self) => index === self.findIndex((img) => img.id === image.id),
-      )
+      const imageMap = new Map<string, SavedImage>()
+
+      // Primero agregar imágenes de la base de datos (tienen prioridad)
+      dbImages.forEach((image) => {
+        imageMap.set(image.id, image)
+      })
+
+      // Luego agregar imágenes de localStorage solo si no existen ya
+      localImages.forEach((image) => {
+        if (!imageMap.has(image.id)) {
+          imageMap.set(image.id, image)
+        }
+      })
+
+      const uniqueImages = Array.from(imageMap.values())
 
       // Ordenar por fecha de creación (más recientes primero)
       uniqueImages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
       console.log("🎯 Returning", uniqueImages.slice(0, 20).length, "unique images")
+      console.log("📊 Deduplication stats:", {
+        dbImages: dbImages.length,
+        localImages: localImages.length,
+        totalBeforeDedup: dbImages.length + localImages.length,
+        uniqueAfterDedup: uniqueImages.length,
+      })
+
       return uniqueImages.slice(0, 20)
     }
 

@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { useCart } from "@/lib/cartStore"
 import { useToast } from "@/hooks/use-toast"
 import { formatCurrency } from "@/lib/utils"
-import { Loader, ShoppingCart, Plus, Check, ArrowLeft } from "lucide-react"
+import { Loader, ShoppingCart, Plus, Check, ArrowLeft, ZoomIn, ZoomOut } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -91,6 +91,14 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
 
   const getCurrentDesign = () => {
     return activeTab === "front" ? frontDesign : backDesign
+  }
+
+  const increaseSize = () => {
+    setScale((prev) => Math.min(1.05, prev + 0.05)) // Máximo 3.5x (1.05 = 3.5x del 0.3 inicial)
+  }
+
+  const decreaseSize = () => {
+    setScale((prev) => Math.max(0.15, prev - 0.05)) // Mínimo 0.5x (0.15 = 0.5x del 0.3 inicial)
   }
 
   // CÁLCULO EXACTO DEL PRECIO FINAL
@@ -279,8 +287,8 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
           {getCurrentDesign() && (
             <Card>
               <CardContent className="p-4">
-                <h3 className="text-sm font-medium mb-3">Ajustar Posición</h3>
-                <div className="space-y-3">
+                <h3 className="text-sm font-medium mb-3">Ajustar Posición y Tamaño</h3>
+                <div className="space-y-4">
                   <div>
                     <Label className="text-xs">Horizontal: {position.x}%</Label>
                     <input
@@ -289,7 +297,7 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                       max="90"
                       value={position.x}
                       onChange={(e) => setPosition({ ...position, x: Number(e.target.value) })}
-                      className="w-full"
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                     />
                   </div>
                   <div>
@@ -300,20 +308,48 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                       max="90"
                       value={position.y}
                       onChange={(e) => setPosition({ ...position, y: Number(e.target.value) })}
-                      className="w-full"
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs">Tamaño: {Math.round(scale * 100)}%</Label>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-xs">Tamaño del estampado: {Math.round((scale / 0.3) * 100)}%</Label>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={decreaseSize}
+                          disabled={scale <= 0.15}
+                          className="h-6 w-6 p-0 bg-transparent"
+                        >
+                          <ZoomOut className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={increaseSize}
+                          disabled={scale >= 1.05}
+                          className="h-6 w-6 p-0"
+                        >
+                          <ZoomIn className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
                     <input
                       type="range"
-                      min="0.1"
-                      max="0.8"
+                      min="0.15"
+                      max="1.05"
                       step="0.05"
                       value={scale}
                       onChange={(e) => setScale(Number(e.target.value))}
-                      className="w-full"
+                      className="w-full h-3 bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 rounded-lg appearance-none cursor-pointer size-slider"
                     />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>0.5x</span>
+                      <span>1x</span>
+                      <span>2x</span>
+                      <span>3.5x</span>
+                    </div>
                   </div>
                 </div>
               </CardContent>
