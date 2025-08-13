@@ -1,5 +1,6 @@
 import { supabase } from "./supabase"
 import { getCurrentUser } from "./auth"
+import { v4 as uuidv4 } from "uuid"
 
 export interface SavedImage {
   id: string
@@ -48,9 +49,12 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
       return null
     }
 
+    const imageId = uuidv4()
+
     const { data, error } = await supabase
       .from("images")
       .insert({
+        id: imageId,
         url: url,
         prompt: prompt,
         user_id: userId || null,
@@ -60,6 +64,29 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
 
     if (error) {
       console.error("❌ Error saving image to Supabase:", error)
+
+      if (typeof window !== "undefined") {
+        try {
+          const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+          const newImage: SavedImage = {
+            id: imageId,
+            url: url,
+            prompt: prompt,
+            created_at: new Date().toISOString(),
+            user_id: userId || null,
+          }
+          localImages.unshift(newImage)
+          // Keep only last 50 images in localStorage
+          if (localImages.length > 50) {
+            localImages.splice(50)
+          }
+          localStorage.setItem("saved_images", JSON.stringify(localImages))
+          console.log("✅ Image saved to localStorage as fallback")
+          return newImage
+        } catch (localError) {
+          console.error("❌ Error saving to localStorage:", localError)
+        }
+      }
       return null
     }
 
@@ -71,6 +98,29 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
     return data
   } catch (error) {
     console.error("❌ Exception in saveGeneratedImage:", error)
+
+    if (typeof window !== "undefined") {
+      try {
+        const imageId = uuidv4()
+        const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+        const newImage: SavedImage = {
+          id: imageId,
+          url: url,
+          prompt: prompt,
+          created_at: new Date().toISOString(),
+          user_id: userId || null,
+        }
+        localImages.unshift(newImage)
+        if (localImages.length > 50) {
+          localImages.splice(50)
+        }
+        localStorage.setItem("saved_images", JSON.stringify(localImages))
+        console.log("✅ Image saved to localStorage after exception")
+        return newImage
+      } catch (localError) {
+        console.error("❌ Error in exception fallback:", localError)
+      }
+    }
     return null
   }
 }
@@ -83,6 +133,16 @@ export async function getRecentImages(userId?: string, limit = 20): Promise<Save
     if (userId) {
       query = query.eq("user_id", userId)
     } else {
+      if (typeof window !== "undefined") {
+        try {
+          const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+          if (localImages.length > 0) {
+            return localImages.slice(0, limit)
+          }
+        } catch (localError) {
+          console.error("Error reading from localStorage:", localError)
+        }
+      }
       query = query.is("user_id", null)
     }
 
@@ -330,7 +390,14 @@ export async function getImageHistory(limit = 20): Promise<SavedImage[]> {
 export async function getUserImages(userId?: string): Promise<SavedImage[]> {
   try {
     if (!userId) {
-      // Para usuarios anónimos, devolver array vacío
+      if (typeof window !== "undefined") {
+        try {
+          const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+          return localImages.slice(0, 20)
+        } catch (localError) {
+          console.error("Error reading localStorage:", localError)
+        }
+      }
       return []
     }
 

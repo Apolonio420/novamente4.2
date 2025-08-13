@@ -17,13 +17,21 @@ export async function getCurrentUser(): Promise<User | null> {
     } = await supabase.auth.getUser()
 
     if (error) {
-      console.error("Error getting current user:", error)
+      if (error.message?.includes("session") || error.message?.includes("JWT")) {
+        console.warn("No active auth session found")
+      } else {
+        console.error("Error getting current user:", error)
+      }
       return null
     }
 
     return user
   } catch (error) {
-    console.error("Error in getCurrentUser:", error)
+    if (error instanceof Error && error.message?.includes("session")) {
+      console.warn("Auth session missing - user not logged in")
+    } else {
+      console.error("Error in getCurrentUser:", error)
+    }
     return null
   }
 }

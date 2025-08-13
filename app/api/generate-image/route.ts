@@ -10,7 +10,7 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt } = await request.json()
+    const { prompt, size = "1024x1024" } = await request.json()
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 })
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       model: "dall-e-3",
       prompt: optimizedPrompt,
       n: 1,
-      size: "1024x1024",
+      size: size as "1024x1024" | "1792x1024" | "1024x1792", // Support different image sizes
       quality: "standard",
       response_format: "url",
     })
@@ -62,12 +62,26 @@ export async function POST(request: NextRequest) {
 
     console.log("✅ Image generated successfully:", imageUrl)
 
-    // Obtener usuario actual
-    const user = await getCurrentUser()
-    const userId = user?.id || null
+    // Obtener usuario actual - Handle auth errors gracefully
+    let userId: string | null = null
+    try {
+      const user = await getCurrentUser()
+      userId = user?.id || null
+    } catch (authError) {
+      console.error("Error getting current user:", authError)
+      // Continue without user ID for anonymous users
+    }
 
     // Guardar imagen en la base de datos - PASAR PARÁMETROS INDIVIDUALES CORRECTAMENTE
     console.log("💾 Attempting to save image to database...")
+    console.log("💾 Saving image to database with parameters:", {
+      urlType: typeof imageUrl,
+      urlLength: typeof imageUrl === "string" ? imageUrl.length : "N/A",
+      promptType: typeof prompt,
+      promptLength: typeof prompt === "string" ? prompt.length : "N/A",
+      userId,
+    })
+
     const savedImage = await saveGeneratedImage(imageUrl, prompt, userId)
 
     if (savedImage) {

@@ -25,8 +25,13 @@ export default async function Home() {
   // Obtener el store de cookies
   const cookieStore = cookies()
 
-  // Obtener el usuario actual
-  const user = await getCurrentUser(cookieStore)
+  let user = null
+  try {
+    user = await getCurrentUser()
+  } catch (error) {
+    console.error("Error getting current user:", error)
+    // Continuar sin usuario si hay error
+  }
 
   // Obtener el ID de sesión
   const sessionId = cookieStore.get("novamente_session_id")?.value

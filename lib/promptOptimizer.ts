@@ -8,7 +8,11 @@ export async function optimizePrompt(originalPrompt: string): Promise<string> {
   console.log("📥 INPUT PROMPT:", originalPrompt)
 
   try {
-    const response = await fetch("/api/optimize-prompt", {
+    const baseUrl =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+    const response = await fetch(`${baseUrl}/api/optimize-prompt`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
 
     console.log("🔍 OPTIMIZING PROMPT:", prompt)
 
-    // Temporary fallback optimization without AI SDK
     const cleanPrompt = prompt.trim()
     const hasBackground = /\b(fondo|background)\b/i.test(cleanPrompt)
     const hasSingleComposition = /\b(única|single|one|solo|centrada|centered)\b/i.test(cleanPrompt)
@@ -36,26 +35,31 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("❌ Error optimizing prompt:", error)
 
-    // Fallback optimization
-    const cleanPrompt = prompt.trim()
-    const hasBackground = /\b(fondo|background)\b/i.test(cleanPrompt)
-    const hasSingleComposition = /\b(única|single|one|solo|centrada|centered)\b/i.test(cleanPrompt)
+    try {
+      const { prompt: originalPrompt } = await request.json()
+      const cleanPrompt = originalPrompt?.trim() || ""
+      const hasBackground = /\b(fondo|background)\b/i.test(cleanPrompt)
+      const hasSingleComposition = /\b(única|single|one|solo|centrada|centered)\b/i.test(cleanPrompt)
 
-    let fallbackOptimized = cleanPrompt
+      let fallbackOptimized = cleanPrompt
 
-    if (!hasBackground) {
-      fallbackOptimized += ", isolated on plain white background"
+      if (!hasBackground) {
+        fallbackOptimized += ", isolated on plain white background"
+      }
+
+      if (!hasSingleComposition) {
+        fallbackOptimized += ", una única composición centrada, sin duplicados, sin versiones alternativas"
+      }
+
+      fallbackOptimized += ", imagen de alta resolución, suitable for print design"
+
+      return NextResponse.json({
+        optimizedPrompt: fallbackOptimized,
+        fallback: true,
+      })
+    } catch (fallbackError) {
+      console.error("❌ Error in fallback optimization:", fallbackError)
+      return NextResponse.json({ error: "Error optimizing prompt" }, { status: 500 })
     }
-
-    if (!hasSingleComposition) {
-      fallbackOptimized += ", una única composición centrada, sin duplicados, sin versiones alternativas"
-    }
-
-    fallbackOptimized += ", imagen de alta resolución, suitable for print design"
-
-    return NextResponse.json({
-      optimizedPrompt: fallbackOptimized,
-      fallback: true,
-    })
   }
 }
