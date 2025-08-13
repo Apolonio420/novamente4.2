@@ -3,11 +3,6 @@
  * Reemplaza la optimización local con IA real
  */
 
-interface OptimizationOptions {
-  layout?: "square" | "tall" | "wide"
-  style?: string
-}
-
 export async function optimizePrompt(originalPrompt: string): Promise<string> {
   console.log("🔍 PROMPT OPTIMIZER: Using OpenAI for optimization")
   console.log("📥 INPUT PROMPT:", originalPrompt)
