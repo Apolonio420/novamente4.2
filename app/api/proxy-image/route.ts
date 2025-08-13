@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid image source" }, { status: 403 })
   }
 
-  console.log("🔄 Proxying image:", imageUrl)
+  console.log("🔄 Proxying image:", imageUrl.substring(0, 100) + "...")
 
   try {
     const url = new URL(imageUrl)
@@ -21,8 +21,11 @@ export async function GET(request: NextRequest) {
     if (seParam) {
       const expirationTime = new Date(seParam)
       const now = new Date()
-      if (now > expirationTime) {
-        console.log("⏰ Image URL has expired")
+      // Agregar buffer de 5 minutos para evitar errores de timing
+      const bufferTime = new Date(now.getTime() + 5 * 60 * 1000)
+
+      if (bufferTime > expirationTime) {
+        console.log("⏰ Image URL has expired or will expire soon")
         return generatePlaceholderImage()
       }
     }
@@ -35,7 +38,7 @@ export async function GET(request: NextRequest) {
     console.log("📡 Strategy 1: Basic fetch")
     const response = await fetch(imageUrl, {
       method: "GET",
-      signal: AbortSignal.timeout(15000), // 15 segundos
+      signal: AbortSignal.timeout(10000), // Reducido a 10 segundos
     })
 
     if (response.ok) {
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
       return new NextResponse(imageBuffer, {
         headers: {
           "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000",
+          "Cache-Control": "public, max-age=3600", // Reducido cache a 1 hora
           "Access-Control-Allow-Origin": "*",
         },
       })
@@ -68,7 +71,7 @@ export async function GET(request: NextRequest) {
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; ImageProxy/1.0)",
       },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(10000),
     })
 
     if (response.ok) {
@@ -79,7 +82,7 @@ export async function GET(request: NextRequest) {
       return new NextResponse(imageBuffer, {
         headers: {
           "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000",
+          "Cache-Control": "public, max-age=3600",
           "Access-Control-Allow-Origin": "*",
         },
       })
@@ -93,97 +96,33 @@ export async function GET(request: NextRequest) {
     console.log("❌ Strategy 2 failed:", error)
   }
 
-  // Estrategia 3: Headers completos
-  try {
-    console.log("📡 Strategy 3: Full headers")
-    const response = await fetch(imageUrl, {
-      method: "GET",
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        Accept: "image/webp,image/apng,image/*,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        Referer: "https://chat.openai.com/",
-        Origin: "https://chat.openai.com",
-      },
-      signal: AbortSignal.timeout(15000),
-    })
-
-    if (response.ok) {
-      const contentType = response.headers.get("content-type") || "image/png"
-      const imageBuffer = await response.arrayBuffer()
-
-      console.log("✅ Strategy 3 successful")
-      return new NextResponse(imageBuffer, {
-        headers: {
-          "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000",
-          "Access-Control-Allow-Origin": "*",
-        },
-      })
-    }
-
-    if (response.status === 403 || response.status === 404) {
-      console.log("🔒 Image access denied or not found, likely expired")
-      return generatePlaceholderImage()
-    }
-  } catch (error) {
-    console.log("❌ Strategy 3 failed:", error)
-  }
-
-  // Estrategia 4: URL sin decodificar
-  try {
-    console.log("📡 Strategy 4: Raw URL")
-    const rawUrl = decodeURIComponent(imageUrl)
-    const response = await fetch(rawUrl, {
-      method: "GET",
-      signal: AbortSignal.timeout(15000),
-    })
-
-    if (response.ok) {
-      const contentType = response.headers.get("content-type") || "image/png"
-      const imageBuffer = await response.arrayBuffer()
-
-      console.log("✅ Strategy 4 successful")
-      return new NextResponse(imageBuffer, {
-        headers: {
-          "Content-Type": contentType,
-          "Cache-Control": "public, max-age=31536000",
-          "Access-Control-Allow-Origin": "*",
-        },
-      })
-    }
-
-    if (response.status === 403 || response.status === 404) {
-      console.log("🔒 Image access denied or not found, likely expired")
-      return generatePlaceholderImage()
-    }
-  } catch (error) {
-    console.log("❌ Strategy 4 failed:", error)
-  }
-
   console.log("❌ All strategies failed, returning placeholder")
   return generatePlaceholderImage()
 }
 
 function generatePlaceholderImage() {
-  // SVG placeholder simple
   const svg = `
     <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
-      <rect width="400" height="400" fill="#f3f4f6"/>
-      <rect x="50" y="50" width="300" height="300" fill="#e5e7eb" stroke="#d1d5db" stroke-width="2" rx="8"/>
-      <circle cx="150" cy="150" r="30" fill="#9ca3af"/>
-      <rect x="120" y="220" width="160" height="8" fill="#9ca3af" rx="4"/>
-      <rect x="140" y="240" width="120" height="6" fill="#d1d5db" rx="3"/>
-      <text x="200" y="320" text-anchor="middle" fill="#6b7280" font-family="Arial, sans-serif" font-size="14">Imagen no disponible</text>
+      <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#f8fafc;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#e2e8f0;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      <rect width="400" height="400" fill="url(#bg)"/>
+      <rect x="80" y="80" width="240" height="240" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" rx="12" opacity="0.8"/>
+      <circle cx="200" cy="160" r="24" fill="#94a3b8"/>
+      <rect x="160" y="200" width="80" height="6" fill="#94a3b8" rx="3"/>
+      <rect x="170" y="215" width="60" height="4" fill="#cbd5e1" rx="2"/>
+      <text x="200" y="280" text-anchor="middle" fill="#64748b" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500">Imagen no disponible</text>
+      <text x="200" y="300" text-anchor="middle" fill="#94a3b8" font-family="system-ui, -apple-system, sans-serif" font-size="10">La imagen ha expirado</text>
     </svg>
   `
 
   return new NextResponse(svg, {
     headers: {
       "Content-Type": "image/svg+xml",
-      "Cache-Control": "public, max-age=3600", // Cache por 1 hora
+      "Cache-Control": "public, max-age=3600",
       "Access-Control-Allow-Origin": "*",
     },
   })

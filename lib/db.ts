@@ -397,7 +397,33 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
         try {
           const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
           console.log("📱 Found", localImages.length, "images in localStorage")
-          return localImages.slice(0, 20)
+
+          const now = new Date()
+          const validImages = localImages.filter((image: SavedImage) => {
+            if (!image.url.includes("oaidalleapiprodscus.blob.core.windows.net")) {
+              return true // Mantener imágenes que no son de DALL-E
+            }
+
+            try {
+              const url = new URL(image.url)
+              const seParam = url.searchParams.get("se")
+              if (seParam) {
+                const expirationTime = new Date(seParam)
+                return now < expirationTime
+              }
+            } catch (error) {
+              console.log("⚠️ Could not parse image URL for expiration check")
+            }
+
+            return true // Mantener si no se puede verificar
+          })
+
+          if (validImages.length !== localImages.length) {
+            console.log(`🧹 Cleaned ${localImages.length - validImages.length} expired images from localStorage`)
+            localStorage.setItem("saved_images", JSON.stringify(validImages))
+          }
+
+          return validImages.slice(0, 20)
         } catch (localError) {
           console.error("❌ Error reading localStorage:", localError)
         }

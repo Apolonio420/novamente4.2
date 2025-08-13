@@ -146,7 +146,7 @@ function DesignPlaceholderContent() {
 
   // Cargar imagen desde URL
   useEffect(() => {
-    const imageUrl = searchParams.get("image")
+    const imageUrl = searchParams.get("imageUrl")
     if (imageUrl) {
       console.log("🖼️ Loading image from URL parameter:", imageUrl.substring(0, 100) + "...")
       try {
