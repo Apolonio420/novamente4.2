@@ -1,19 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getRecentImages, type SavedImage } from "@/lib/db"
 import { OptimizedImage } from "./OptimizedImage"
+import { getUserImages, type SavedImage } from "@/lib/db"
 import { Button } from "./ui/button"
 import { Eye, ChevronLeft, ChevronRight } from "lucide-react"
 
 interface ImageHistoryProps {
   userId?: string
   limit?: number
-  onImageSelect?: (imageUrl: string) => void
+  onImageSelect: (imageUrl: string) => void
   images?: SavedImage[]
   onScrollToGenerator?: () => void
   isDesignPage?: boolean
   refreshKey?: number
+  selectedImage?: string
 }
 
 // Estilos base de Novamente
@@ -58,6 +59,7 @@ export function ImageHistory({
   onScrollToGenerator,
   isDesignPage = false,
   refreshKey,
+  selectedImage,
 }: ImageHistoryProps) {
   const [images, setImages] = useState<SavedImage[]>([])
   const [loading, setLoading] = useState(true)
@@ -73,7 +75,7 @@ export function ImageHistory({
       if (propImages) {
         setImages(propImages)
       } else {
-        const recentImages = await getRecentImages(userId, limit)
+        const recentImages = await getUserImages(userId)
         setImages(recentImages)
       }
     } catch (err) {
@@ -229,23 +231,26 @@ export function ImageHistory({
             </div>
           ) : (
             images.map((image) => (
-              <div
+              <button
                 key={image.id}
-                className="group relative w-16 h-16 flex-shrink-0 cursor-pointer"
                 onClick={() => handleImageClick(image.url)}
+                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                  selectedImage === image.url
+                    ? "border-purple-500 ring-2 ring-purple-500/50"
+                    : "border-gray-600 hover:border-gray-500"
+                }`}
               >
                 <OptimizedImage
-                  src={image.url}
+                  src={`/api/proxy-image?url=${encodeURIComponent(image.url)}`}
                   alt={image.prompt}
-                  width={64}
-                  height={64}
-                  className="w-full h-full object-cover rounded-lg border-2 border-transparent group-hover:border-primary transition-colors"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 50vw, 25vw"
                 />
-
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
                   <Eye className="w-4 h-4 text-white" />
                 </div>
-              </div>
+              </button>
             ))
           )}
         </div>
@@ -276,23 +281,26 @@ export function ImageHistory({
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {baseStyles.map((style) => (
-            <div
+            <button
               key={style.id}
-              className="group relative w-16 h-16 flex-shrink-0 cursor-pointer"
               onClick={() => handleImageClick(style.url)}
+              className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                selectedImage === style.url
+                  ? "border-purple-500 ring-2 ring-purple-500/50"
+                  : "border-gray-600 hover:border-gray-500"
+              }`}
             >
               <OptimizedImage
                 src={style.url}
                 alt={style.prompt}
-                width={64}
-                height={64}
-                className="w-full h-full object-cover rounded-lg border-2 border-transparent group-hover:border-primary transition-colors"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 50vw, 25vw"
               />
-
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
                 <Eye className="w-4 h-4 text-white" />
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>

@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS images (
   id TEXT PRIMARY KEY,
   url TEXT NOT NULL,
   prompt TEXT NOT NULL,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
