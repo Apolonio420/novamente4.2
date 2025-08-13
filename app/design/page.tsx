@@ -3,6 +3,7 @@
 import { Suspense, useCallback } from "react"
 import { ImageGenerator } from "@/components/ImageGenerator"
 import { ImageHistory } from "@/components/ImageHistory"
+import { StyleGallery } from "@/components/StyleGallery"
 import { useEffect, useState } from "react"
 import { Loader } from "lucide-react"
 
@@ -151,7 +152,7 @@ export default function DesignPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <main className="container mx-auto px-4 py-12 flex-1 space-y-12">
         {/* Generador de imágenes */}
-        <section>
+        <section id="generator-section">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold mb-4">Genera tu Diseño</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -164,27 +165,46 @@ export default function DesignPage() {
           </Suspense>
         </section>
 
-        {/* Historial de imágenes */}
+        {/* Sección de diseños */}
         <section>
           <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center text-secondary-foreground font-bold text-xl">
               2
             </div>
-            <h2 className="novamente-heading text-3xl md:text-4xl">EXPLORAR DISEÑOS GUARDADOS</h2>
+            <h2 className="novamente-heading text-3xl md:text-4xl">EXPLORAR DISEÑOS</h2>
           </div>
 
-          <Suspense fallback={<div className="h-64 w-full bg-muted/30 animate-pulse rounded-lg"></div>}>
-            <ImageHistory
-              images={recentImages}
-              onScrollToGenerator={handleScrollToGenerator}
-              isDesignPage={true}
-              refreshKey={refreshKey}
-              onImageSelect={(imageUrl) => {
-                console.log("🖼️ Image selected from history:", imageUrl)
-                // Aquí podrías agregar lógica adicional si es necesario
-              }}
-            />
-          </Suspense>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Historial de diseños del usuario */}
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Tus Diseños</h3>
+              <Suspense fallback={<div className="h-64 w-full bg-muted/30 animate-pulse rounded-lg"></div>}>
+                <ImageHistory
+                  onImageSelect={(imageUrl) => {
+                    console.log("🖼️ Image selected from history:", imageUrl)
+                    // Redirigir a la página de diseño con la imagen seleccionada
+                    window.location.href = `/design/placeholder?image=${encodeURIComponent(imageUrl)}`
+                  }}
+                  limit={6}
+                />
+              </Suspense>
+            </div>
+
+            {/* Galería de estilos base */}
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Estilos Inspiradores</h3>
+              <Suspense fallback={<div className="h-64 w-full bg-muted/30 animate-pulse rounded-lg"></div>}>
+                <StyleGallery
+                  onStyleSelect={(styleUrl) => {
+                    console.log("🎨 Style selected:", styleUrl)
+                    // Redirigir a la página de diseño con el estilo seleccionado
+                    window.location.href = `/design/placeholder?image=${encodeURIComponent(styleUrl)}`
+                  }}
+                  limit={6}
+                />
+              </Suspense>
+            </div>
+          </div>
         </section>
       </main>
     </div>
