@@ -1,51 +1,37 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getRecentImages, deleteImage, type SavedImage } from "@/lib/db"
-import { getCurrentUser, type User } from "@/lib/auth"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Trash2, Download, Copy, ExternalLink } from "lucide-react"
-import { toast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button"
+import { Download, ExternalLink } from "lucide-react"
+import { getImageHistory, type SavedImage } from "@/lib/db"
+import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
 
 interface ImageHistoryProps {
-  onImageSelect?: (image: SavedImage) => void
+  onImageSelect?: (imageUrl: string) => void
   limit?: number
-  showActions?: boolean
 }
 
-export function ImageHistory({ onImageSelect, limit = 12, showActions = true }: ImageHistoryProps) {
+export function ImageHistory({ onImageSelect, limit = 20 }: ImageHistoryProps) {
   const [images, setImages] = useState<SavedImage[]>([])
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<User | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     loadImages()
-    loadUser()
   }, [limit])
-
-  const loadUser = async () => {
-    try {
-      const currentUser = await getCurrentUser()
-      setUser(currentUser)
-    } catch (error) {
-      console.error("Error loading user:", error)
-    }
-  }
 
   const loadImages = async () => {
     try {
       setLoading(true)
-      const currentUser = await getCurrentUser()
-      const recentImages = await getRecentImages(currentUser?.id, limit)
-      setImages(recentImages)
+      const imageHistory = await getImageHistory(limit)
+      setImages(imageHistory)
     } catch (error) {
-      console.error("Error loading images:", error)
+      console.error("Error loading image history:", error)
       toast({
         title: "Error",
-        description: "No se pudieron cargar las imágenes",
+        description: "No se pudo cargar el historial de imágenes",
         variant: "destructive",
       })
     } finally {
@@ -53,41 +39,30 @@ export function ImageHistory({ onImageSelect, limit = 12, showActions = true }: 
     }
   }
 
-  const handleDelete = async (imageId: string) => {
-    try {
-      const success = await deleteImage(imageId)
-      if (success) {
-        setImages(images.filter((img) => img.id !== imageId))
-        toast({
-          title: "Imagen eliminada",
-          description: "La imagen se eliminó correctamente",
-        })
-      } else {
-        throw new Error("Failed to delete image")
-      }
-    } catch (error) {
-      console.error("Error deleting image:", error)
+  const handleImageSelect = (imageUrl: string) => {
+    if (onImageSelect) {
+      onImageSelect(imageUrl)
       toast({
-        title: "Error",
-        description: "No se pudo eliminar la imagen",
-        variant: "destructive",
+        title: "Imagen seleccionada",
+        description: "La imagen se ha cargado en el editor",
       })
     }
   }
 
-  const handleDownload = async (image: SavedImage) => {
+  const downloadImage = async (url: string, prompt: string) => {
     try {
-      const response = await fetch(image.url)
+      const response = await fetch(url)
       const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.style.display = "none"
-      a.href = url
-      a.download = `novamente-${image.id}.png`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      const downloadUrl = window.URL.createObjectURL(blob)
+
+      const link = document.createElement("a")
+      link.href = downloadUrl
+      link.download = `${prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, "_")}.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      window.URL.revokeObjectURL(downloadUrl)
 
       toast({
         title: "Descarga iniciada",
@@ -103,149 +78,63 @@ export function ImageHistory({ onImageSelect, limit = 12, showActions = true }: 
     }
   }
 
-  const handleCopyUrl = async (url: string) => {
-    try {
-      await navigator.clipboard.writeText(url)
-      toast({
-        title: "URL copiada",
-        description: "La URL de la imagen se copió al portapapeles",
-      })
-    } catch (error) {
-      console.error("Error copying URL:", error)
-      toast({
-        title: "Error",
-        description: "No se pudo copiar la URL",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleOpenInNewTab = (url: string) => {
-    window.open(url, "_blank")
-  }
-
   if (loading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {Array.from({ length: limit }).map((_, i) => (
-          <Card key={i} className="aspect-square">
-            <CardContent className="p-0">
-              <div className="w-full h-full bg-gray-200 animate-pulse rounded-lg" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">Cargando historial...</div>
+        </CardContent>
+      </Card>
     )
   }
 
   if (images.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 mb-4">No hay imágenes generadas aún</p>
-        <p className="text-sm text-gray-400">Las imágenes que generes aparecerán aquí</p>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-muted-foreground">No hay imágenes en el historial</div>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Imágenes Recientes</h3>
-        <Badge variant="secondary">{images.length} imágenes</Badge>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <h3 className="text-lg font-semibold">Historial de Imágenes ({images.length})</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {images.map((image) => (
-          <Card
-            key={image.id}
-            className="group relative aspect-square overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => onImageSelect?.(image)}
-          >
-            <CardContent className="p-0">
-              <div className="relative w-full h-full">
-                <Image
-                  src={image.url || "/placeholder.svg"}
-                  alt={image.prompt}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                />
-
-                {/* Overlay con acciones */}
-                {showActions && (
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDownload(image)
-                        }}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleCopyUrl(image.url)
-                        }}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleOpenInNewTab(image.url)
-                        }}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDelete(image.id)
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+          <Card key={image.id} className="overflow-hidden">
+            <div className="relative aspect-square">
+              <Image
+                src={image.url || "/placeholder.svg"}
+                alt={image.prompt}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            </div>
+            <CardContent className="p-4">
+              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{image.prompt}</p>
+              <div className="flex gap-2">
+                {onImageSelect && (
+                  <Button size="sm" onClick={() => handleImageSelect(image.url)} className="flex-1">
+                    Usar
+                  </Button>
                 )}
-
-                {/* Badge con información */}
-                <div className="absolute top-2 left-2">
-                  <Badge variant="secondary" className="text-xs">
-                    {new Date(image.created_at).toLocaleDateString()}
-                  </Badge>
-                </div>
+                <Button size="sm" variant="outline" onClick={() => downloadImage(image.url, image.prompt)}>
+                  <Download className="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => window.open(image.url, "_blank")}>
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground mt-2">
+                {new Date(image.created_at).toLocaleDateString()}
               </div>
             </CardContent>
-
-            {/* Información de la imagen */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-              <p className="text-white text-sm font-medium truncate">{image.prompt}</p>
-              {image.optimized_prompt && (
-                <p className="text-white/70 text-xs truncate mt-1">{image.optimized_prompt}</p>
-              )}
-            </div>
           </Card>
         ))}
       </div>
-
-      {images.length >= limit && (
-        <div className="text-center">
-          <Button variant="outline" onClick={loadImages}>
-            Cargar más imágenes
-          </Button>
-        </div>
-      )}
     </div>
   )
 }

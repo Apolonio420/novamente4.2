@@ -1,18 +1,15 @@
 -- Crear tabla de imágenes
 CREATE TABLE IF NOT EXISTS images (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  id TEXT PRIMARY KEY,
   url TEXT NOT NULL,
   prompt TEXT NOT NULL,
-  optimized_prompt TEXT,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Crear índices para mejorar el rendimiento
 CREATE INDEX IF NOT EXISTS idx_images_user_id ON images(user_id);
-CREATE INDEX IF NOT EXISTS idx_images_created_at ON images(created_at);
-CREATE INDEX IF NOT EXISTS idx_images_user_created ON images(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_images_created_at ON images(created_at DESC);
 
 -- Crear tabla de items del carrito
 CREATE TABLE IF NOT EXISTS cart_items (

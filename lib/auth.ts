@@ -1,9 +1,4 @@
-import { createClient } from "@supabase/supabase-js"
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+import { supabase } from "./supabase"
 
 export interface User {
   id: string
@@ -20,16 +15,12 @@ export async function getCurrentUser(): Promise<User | null> {
       error,
     } = await supabase.auth.getUser()
 
-    if (error || !user) {
+    if (error) {
+      console.log("No authenticated user:", error.message)
       return null
     }
 
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.user_metadata?.name || user.email,
-      avatar: user.user_metadata?.avatar_url,
-    }
+    return user
   } catch (error) {
     console.error("Error getting current user:", error)
     return null
@@ -120,90 +111,31 @@ export async function incrementGenerationCount(userId?: string): Promise<void> {
 }
 
 // Función para iniciar sesión
-export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+export async function signInWithEmail(email: string, password: string) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
 
-    if (error) {
-      return { user: null, error: error.message }
-    }
-
-    if (!data.user) {
-      return { user: null, error: "No user returned" }
-    }
-
-    return {
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.user_metadata?.name || data.user.email,
-        avatar: data.user.user_metadata?.avatar_url,
-      },
-      error: null,
-    }
-  } catch (error) {
-    console.error("Error signing in:", error)
-    return { user: null, error: "Error signing in" }
-  }
+  if (error) throw error
+  return data
 }
 
 // Función para registrarse
-export async function signUp(
-  email: string,
-  password: string,
-  name?: string,
-): Promise<{ user: User | null; error: string | null }> {
-  try {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name: name || email,
-        },
-      },
-    })
+export async function signUpWithEmail(email: string, password: string) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  })
 
-    if (error) {
-      return { user: null, error: error.message }
-    }
-
-    if (!data.user) {
-      return { user: null, error: "No user returned" }
-    }
-
-    return {
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-        name: name || data.user.email,
-        avatar: data.user.user_metadata?.avatar_url,
-      },
-      error: null,
-    }
-  } catch (error) {
-    console.error("Error signing up:", error)
-    return { user: null, error: "Error signing up" }
-  }
+  if (error) throw error
+  return data
 }
 
 // Función para cerrar sesión
-export async function signOut(): Promise<{ error: string | null }> {
-  try {
-    const { error } = await supabase.auth.signOut()
-
-    if (error) {
-      return { error: error.message }
-    }
-
-    return { error: null }
-  } catch (error) {
-    console.error("Error signing out:", error)
-    return { error: "Error signing out" }
-  }
+export async function signOut() {
+  const { error } = await supabase.auth.signOut()
+  if (error) throw error
 }
 
 // Función para configurar política de retención de imágenes

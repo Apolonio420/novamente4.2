@@ -631,7 +631,7 @@ function PlaceholderContent() {
                     />
 
                     {/* Área de impresión */}
-                    <PrintArea garmentType={selectedGarment} activeTab="front" />
+                    <PrintArea garmentType={selectedGarment} activeTab="front" selectedColor={selectedColor} />
 
                     {/* ✅ DISEÑO SUPERPUESTO SOBRE LA PRENDA */}
                     {frontDesign && hasFrontDesign && (
@@ -703,7 +703,7 @@ function PlaceholderContent() {
                     />
 
                     {/* Área de impresión */}
-                    <PrintArea garmentType={selectedGarment} activeTab="back" />
+                    <PrintArea garmentType={selectedGarment} activeTab="back" selectedColor={selectedColor} />
 
                     {/* ✅ DISEÑO SUPERPUESTO SOBRE LA PRENDA TRASERA */}
                     {backDesign && hasBackDesign && (
@@ -827,6 +827,7 @@ function PlaceholderContent() {
                     <Image
                       src={
                         (SIZE_GUIDE_IMAGES[selectedGarment as keyof typeof SIZE_GUIDE_IMAGES] as string) ||
+                        "/placeholder.svg" ||
                         "/placeholder.svg" ||
                         "/placeholder.svg"
                       }

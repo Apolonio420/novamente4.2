@@ -1,17 +1,17 @@
 import { createClient } from "@supabase/supabase-js"
+import { getCurrentUser } from "./auth"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
 
 export interface SavedImage {
   id: string
   url: string
   prompt: string
-  optimized_prompt?: string
-  user_id?: string
   created_at: string
+  user_id: string | null
 }
 
 export interface CartItem {
@@ -36,77 +36,44 @@ function generateId(): string {
 }
 
 // Export que necesitas - saveGeneratedImage
-export async function saveGeneratedImage(imageData: {
-  url: string
-  prompt: string
-  optimizedPrompt?: string
-  userId?: string
-}): Promise<SavedImage | null> {
+export async function saveGeneratedImage(url: string, prompt: string): Promise<SavedImage | null> {
   try {
-    console.log("Saving image:", imageData)
+    console.log("💾 Saving image to database:", { url: url.substring(0, 100) + "...", prompt })
 
-    // Generar un ID único para la imagen
-    const imageId = generateId()
+    const user = await getCurrentUser()
+    const userId = user?.id || null
 
-    const { data, error } = await supabase
+    // Generate unique ID
+    const imageId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+    const { data, error } = await supabaseClient
       .from("images")
       .insert({
-        id: imageId, // Asegurar que el ID no sea null
-        url: imageData.url,
-        prompt: imageData.prompt,
-        optimized_prompt: imageData.optimizedPrompt,
-        user_id: imageData.userId || null,
+        id: imageId,
+        url,
+        prompt,
+        user_id: userId,
       })
       .select()
       .single()
 
     if (error) {
-      console.error("Error saving to Supabase:", error)
-
-      // Fallback a localStorage
-      const fallbackImage: SavedImage = {
-        id: imageId,
-        url: imageData.url,
-        prompt: imageData.prompt,
-        optimized_prompt: imageData.optimizedPrompt,
-        user_id: imageData.userId,
-        created_at: new Date().toISOString(),
-      }
-
-      const existingImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-      existingImages.unshift(fallbackImage)
-      localStorage.setItem("saved_images", JSON.stringify(existingImages.slice(0, 50)))
-
-      return fallbackImage
+      console.error("❌ Error saving to Supabase:", error)
+      return null
     }
 
-    console.log("✅ Image saved to Supabase:", data)
+    console.log("✅ Image saved to database")
     return data
   } catch (error) {
-    console.error("❌ Error saving to database:", error)
-
-    // Fallback a localStorage
-    const fallbackImage: SavedImage = {
-      id: generateId(),
-      url: imageData.url,
-      prompt: imageData.prompt,
-      optimized_prompt: imageData.optimizedPrompt,
-      user_id: imageData.userId,
-      created_at: new Date().toISOString(),
-    }
-
-    const existingImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-    existingImages.unshift(fallbackImage)
-    localStorage.setItem("saved_images", JSON.stringify(existingImages.slice(0, 50)))
-
-    return fallbackImage
+    console.error("❌ Error in saveGeneratedImage:", error)
+    return null
   }
 }
 
 // Función para obtener imágenes recientes
 export async function getRecentImages(userId?: string, limit = 20): Promise<SavedImage[]> {
   try {
-    let query = supabase.from("images").select("*").order("created_at", { ascending: false }).limit(limit)
+    let query = supabaseClient.from("images").select("*").order("created_at", { ascending: false }).limit(limit)
 
     if (userId) {
       query = query.eq("user_id", userId)
@@ -137,7 +104,7 @@ export async function getRecentImages(userId?: string, limit = 20): Promise<Save
 // Función para obtener una imagen por ID
 export async function getImageById(id: string): Promise<SavedImage | null> {
   try {
-    const { data, error } = await supabase.from("images").select("*").eq("id", id).single()
+    const { data, error } = await supabaseClient.from("images").select("*").eq("id", id).single()
 
     if (error) {
       console.error("Error fetching image by ID:", error)
@@ -160,7 +127,7 @@ export async function getImageById(id: string): Promise<SavedImage | null> {
 // Función para eliminar una imagen
 export async function deleteImage(id: string): Promise<boolean> {
   try {
-    const { error } = await supabase.from("images").delete().eq("id", id)
+    const { error } = await supabaseClient.from("images").delete().eq("id", id)
 
     if (error) {
       console.error("Error deleting from Supabase:", error)
@@ -195,7 +162,7 @@ export async function getCartItems(userId?: string): Promise<CartItem[]> {
       return cartItems ? JSON.parse(cartItems) : []
     }
 
-    const { data, error } = await supabase.from("cart_items").select("*").eq("user_id", userId)
+    const { data, error } = await supabaseClient.from("cart_items").select("*").eq("user_id", userId)
 
     if (error) {
       console.error("Error fetching cart items:", error)
@@ -223,7 +190,7 @@ export async function addToCart(item: Omit<CartItem, "id">, userId?: string): Pr
       return true
     }
 
-    const { error } = await supabase.from("cart_items").insert({
+    const { error } = await supabaseClient.from("cart_items").insert({
       ...item,
       user_id: userId,
     })
@@ -250,7 +217,7 @@ export async function removeFromCart(itemId: string, userId?: string): Promise<b
       return true
     }
 
-    const { error } = await supabase.from("cart_items").delete().eq("id", itemId).eq("user_id", userId)
+    const { error } = await supabaseClient.from("cart_items").delete().eq("id", itemId).eq("user_id", userId)
 
     if (error) {
       console.error("Error removing from cart:", error)
@@ -280,7 +247,7 @@ export async function updateCartItem(itemId: string, updates: Partial<CartItem>,
       return false
     }
 
-    const { error } = await supabase.from("cart_items").update(updates).eq("id", itemId).eq("user_id", userId)
+    const { error } = await supabaseClient.from("cart_items").update(updates).eq("id", itemId).eq("user_id", userId)
 
     if (error) {
       console.error("Error updating cart item:", error)
@@ -300,7 +267,7 @@ export async function cleanupOldImages(): Promise<void> {
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
-    const { error } = await supabase.from("images").delete().lt("created_at", thirtyDaysAgo.toISOString())
+    const { error } = await supabaseClient.from("images").delete().lt("created_at", thirtyDaysAgo.toISOString())
 
     if (error) {
       console.error("Error cleaning up old images:", error)
@@ -309,5 +276,34 @@ export async function cleanupOldImages(): Promise<void> {
     }
   } catch (error) {
     console.error("Error in cleanupOldImages:", error)
+  }
+}
+
+// Función para obtener el historial de imágenes
+export async function getImageHistory(limit = 20): Promise<SavedImage[]> {
+  try {
+    const user = await getCurrentUser()
+    const userId = user?.id || null
+
+    let query = supabaseClient.from("images").select("*").order("created_at", { ascending: false }).limit(limit)
+
+    if (userId) {
+      query = query.eq("user_id", userId)
+    } else {
+      // For anonymous users, get recent images (fallback)
+      query = query.is("user_id", null)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error("❌ Error fetching image history:", error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("❌ Error in getImageHistory:", error)
+    return []
   }
 }
