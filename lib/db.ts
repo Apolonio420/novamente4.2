@@ -509,11 +509,16 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
           .select("*")
           .is("user_id", null)
           .order("created_at", { ascending: false })
-          .limit(20)
+          .limit(50) // Obtener más para filtrar expiradas
 
         if (!error && data) {
           console.log("✅ Found", data.length, "anonymous images in database")
-          dbImages = data.map((item) => ({
+
+          // Filtrar URLs expiradas
+          const validDbImages = data.filter((item) => !isDalleUrlExpired(item.url))
+          console.log(`🧹 Filtered out ${data.length - validDbImages.length} expired images from database`)
+
+          dbImages = validDbImages.map((item) => ({
             ...item,
             hasBgRemoved: item.has_bg_removed || false,
             urlWithoutBg: item.url_without_bg || null,
@@ -529,25 +534,8 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
           const stored = JSON.parse(localStorage.getItem("saved_images") || "[]")
           console.log("📱 Found", stored.length, "images in localStorage")
 
-          const now = new Date()
-          const validImages = stored.filter((image: SavedImage) => {
-            if (!image.url.includes("oaidalleapiprodscus.blob.core.windows.net")) {
-              return true // Mantener imágenes que no son de DALL-E
-            }
-
-            try {
-              const url = new URL(image.url)
-              const seParam = url.searchParams.get("se")
-              if (seParam) {
-                const expirationTime = new Date(seParam)
-                return now < expirationTime
-              }
-            } catch (error) {
-              console.log("⚠️ Could not parse image URL for expiration check")
-            }
-
-            return true // Mantener si no se puede verificar
-          })
+          // Filtrar URLs expiradas
+          const validImages = stored.filter((image: SavedImage) => !isDalleUrlExpired(image.url))
 
           if (validImages.length !== stored.length) {
             console.log(`🧹 Cleaned ${stored.length - validImages.length} expired images from localStorage`)
@@ -564,13 +552,15 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
 
       // Primero agregar imágenes de la base de datos (tienen prioridad)
       dbImages.forEach((image) => {
-        imageMap.set(image.id, image)
+        const key = createImageKey(image.url, image.prompt)
+        imageMap.set(key, image)
       })
 
       // Luego agregar imágenes de localStorage solo si no existen ya
       localImages.forEach((image) => {
-        if (!imageMap.has(image.id)) {
-          imageMap.set(image.id, image)
+        const key = createImageKey(image.url, image.prompt)
+        if (!imageMap.has(key)) {
+          imageMap.set(key, image)
         }
       })
 
@@ -590,20 +580,26 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       return uniqueImages.slice(0, 20)
     }
 
+    // Para usuarios autenticados
     const { data, error } = await supabase
       .from("images")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(20)
+      .limit(50) // Obtener más para filtrar expiradas
 
     if (error) {
       console.error("❌ Error fetching user images:", error)
       return []
     }
 
-    console.log("✅ Found", data?.length || 0, "user images in database")
-    return (data || []).map((item) => ({
+    // Filtrar URLs expiradas para usuarios autenticados también
+    const validImages = (data || []).filter((item) => !isDalleUrlExpired(item.url))
+    console.log(
+      `✅ Found ${validImages.length} valid user images (${(data?.length || 0) - validImages.length} expired filtered out)`,
+    )
+
+    return validImages.slice(0, 20).map((item) => ({
       ...item,
       hasBgRemoved: item.has_bg_removed || false,
       urlWithoutBg: item.url_without_bg || null,
@@ -614,8 +610,9 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
     if (typeof window !== "undefined") {
       try {
         const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-        console.log("🔄 Fallback: Found", localImages.length, "images in localStorage")
-        return localImages.slice(0, 20)
+        const validImages = localImages.filter((image: SavedImage) => !isDalleUrlExpired(image.url))
+        console.log("🔄 Fallback: Found", validImages.length, "valid images in localStorage")
+        return validImages.slice(0, 20)
       } catch (localError) {
         console.error("❌ Error in fallback localStorage read:", localError)
       }
@@ -623,4 +620,75 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
 
     return []
   }
+}
+
+export async function cleanupExpiredImages(): Promise<void> {
+  try {
+    console.log("🧹 Starting cleanup of expired images...")
+
+    const { data, error } = await supabase
+      .from("images")
+      .select("id, url")
+      .contains("url", "oaidalleapiprodscus.blob.core.windows.net")
+
+    if (error) {
+      console.error("❌ Error fetching images for cleanup:", error)
+      return
+    }
+
+    if (!data || data.length === 0) {
+      console.log("✅ No DALL-E images found for cleanup")
+      return
+    }
+
+    const expiredIds: string[] = []
+    data.forEach((image) => {
+      if (isDalleUrlExpired(image.url)) {
+        expiredIds.push(image.id)
+      }
+    })
+
+    if (expiredIds.length === 0) {
+      console.log("✅ No expired images found")
+      return
+    }
+
+    const { error: deleteError } = await supabase.from("images").delete().in("id", expiredIds)
+
+    if (deleteError) {
+      console.error("❌ Error deleting expired images:", deleteError)
+    } else {
+      console.log(`✅ Successfully deleted ${expiredIds.length} expired images from database`)
+    }
+  } catch (error) {
+    console.error("❌ Error in cleanupExpiredImages:", error)
+  }
+}
+
+function isDalleUrlExpired(url: string): boolean {
+  if (!url.includes("oaidalleapiprodscus.blob.core.windows.net")) {
+    return false // No es una URL de DALL-E
+  }
+
+  try {
+    const urlObj = new URL(url)
+    const seParam = urlObj.searchParams.get("se")
+    if (seParam) {
+      const expirationTime = new Date(seParam)
+      const now = new Date()
+      // Agregar buffer de 30 minutos para evitar URLs que expiran pronto
+      const bufferTime = new Date(now.getTime() + 30 * 60 * 1000)
+      return bufferTime >= expirationTime
+    }
+  } catch (error) {
+    console.log("⚠️ Could not parse URL for expiration check:", url.substring(0, 50))
+  }
+
+  return false
+}
+
+function createImageKey(url: string, prompt: string): string {
+  // Usar los primeros 50 caracteres de la URL y el prompt completo
+  const urlKey = url.substring(0, 50)
+  return `${urlKey}|${prompt.trim().toLowerCase()}`
 }
