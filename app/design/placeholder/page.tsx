@@ -9,10 +9,20 @@ import { Card, CardContent } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { ArrowLeft, ShoppingCart, Eye, ChevronLeft, ChevronRight, Info } from "lucide-react"
+import {
+  ArrowLeft,
+  ShoppingCart,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  Scissors,
+  RotateCcw,
+  Loader2,
+} from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { getUserImages, type SavedImage } from "@/lib/db"
+import { getUserImages, saveImageWithoutBackground, type SavedImage } from "@/lib/db"
 import { useToast } from "@/hooks/use-toast"
 
 // Configuración de productos
@@ -132,6 +142,12 @@ function DesignPlaceholderContent() {
   const [userImages, setUserImages] = useState<SavedImage[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
 
+  // Estados para la eliminación de fondo
+  const [currentImageId, setCurrentImageId] = useState<string | null>(null)
+  const [showingWithoutBg, setShowingWithoutBg] = useState(false)
+  const [removingBackground, setRemovingBackground] = useState(false)
+  const [currentImageData, setCurrentImageData] = useState<SavedImage | null>(null)
+
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Función para crear URL del proxy - SIMPLIFICADA
@@ -210,57 +226,142 @@ function DesignPlaceholderContent() {
   const currentProduct = products[selectedGarment]
   const currentColorData = currentProduct.colors[selectedColor as keyof typeof currentProduct.colors]
 
-  const handleImageSelect = (imageUrl: string) => {
+  const handleImageSelect = (imageUrl: string, imageData?: SavedImage) => {
     console.log("🖼️ Image selected:", imageUrl)
     const proxiedUrl = createProxyUrl(imageUrl)
     setDesignImage(proxiedUrl)
+
+    if (imageData) {
+      setCurrentImageData(imageData)
+      setCurrentImageId(imageData.id)
+      setShowingWithoutBg(false)
+    } else {
+      setCurrentImageData(null)
+      setCurrentImageId(null)
+      setShowingWithoutBg(false)
+    }
+
     toast({
       title: "Imagen cargada",
       description: "La imagen se ha cargado en el editor",
     })
   }
 
-  const handleAddToCart = () => {
-    if (!designImage) {
+  const handleRemoveBackground = async () => {
+    if (!currentImageData || !currentImageId) {
       toast({
-        title: "Imagen requerida",
-        description: "Selecciona una imagen para personalizar tu prenda",
+        title: "Error",
+        description: "No hay imagen seleccionada para procesar",
         variant: "destructive",
       })
       return
     }
 
-    const cartItem = {
-      id: `${selectedGarment}-${selectedColor}-${selectedSize}-${Date.now()}`,
-      productId: selectedGarment,
-      productName: currentProduct.name,
-      color: selectedColor,
-      colorName: currentColorData?.name || selectedColor,
-      size: selectedSize,
-      price: currentProduct.price,
-      designImage,
-      designPosition,
-      designSize,
-      side: activeTab,
-      quantity: 1,
+    // If already has background removed, just toggle to it
+    if (currentImageData.hasBgRemoved && currentImageData.urlWithoutBg) {
+      console.log("🎭 Using existing background-removed version")
+      const proxiedUrl = createProxyUrl(currentImageData.urlWithoutBg)
+      setDesignImage(proxiedUrl)
+      setShowingWithoutBg(true)
+      toast({
+        title: "Fondo removido",
+        description: "Mostrando versión sin fondo guardada",
+      })
+      return
     }
 
-    // Agregar al carrito (localStorage por ahora)
-    if (typeof window !== "undefined") {
-      const existingCart = JSON.parse(localStorage.getItem("cart") || "[]")
-      existingCart.push(cartItem)
-      localStorage.setItem("cart", JSON.stringify(existingCart))
-    }
+    setRemovingBackground(true)
 
-    toast({
-      title: "¡Agregado al carrito!",
-      description: `${currentProduct.name} agregada correctamente`,
-    })
+    try {
+      console.log("🎭 Removing background for image:", currentImageId)
 
-    // Disparar evento para actualizar el badge del carrito
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("cartUpdated"))
+      const response = await fetch("/api/remove-bg", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageUrl: currentImageData.url,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok || result.error) {
+        throw new Error(result.error || "Failed to remove background")
+      }
+
+      if (result.skipped) {
+        toast({
+          title: "Servicio no disponible",
+          description: result.error || "No se pudo remover el fondo",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Save the background-removed version
+      await saveImageWithoutBackground(currentImageId, result.processedImageUrl)
+
+      // Update current image data
+      const updatedImageData = {
+        ...currentImageData,
+        urlWithoutBg: result.processedImageUrl,
+        hasBgRemoved: true,
+      }
+      setCurrentImageData(updatedImageData)
+
+      // Update the design image
+      const proxiedUrl = createProxyUrl(result.processedImageUrl)
+      setDesignImage(proxiedUrl)
+      setShowingWithoutBg(true)
+
+      // Update user images list
+      setUserImages((prev) => prev.map((img) => (img.id === currentImageId ? updatedImageData : img)))
+
+      toast({
+        title: "¡Fondo removido!",
+        description: "La imagen sin fondo se ha guardado correctamente",
+      })
+    } catch (error) {
+      console.error("❌ Error removing background:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo remover el fondo",
+        variant: "destructive",
+      })
+    } finally {
+      setRemovingBackground(false)
     }
+  }
+
+  const handleToggleBackground = () => {
+    if (!currentImageData) return
+
+    if (showingWithoutBg && currentImageData.urlWithoutBg) {
+      // Switch back to original
+      const proxiedUrl = createProxyUrl(currentImageData.url)
+      setDesignImage(proxiedUrl)
+      setShowingWithoutBg(false)
+      toast({
+        title: "Versión original",
+        description: "Mostrando imagen con fondo",
+      })
+    } else if (currentImageData.hasBgRemoved && currentImageData.urlWithoutBg) {
+      // Switch to background-removed
+      const proxiedUrl = createProxyUrl(currentImageData.urlWithoutBg)
+      setDesignImage(proxiedUrl)
+      setShowingWithoutBg(true)
+      toast({
+        title: "Sin fondo",
+        description: "Mostrando imagen sin fondo",
+      })
+    }
+  }
+
+  const handleAddToCart = () => {
+    // Implement the logic for adding to cart here
+    console.log("Adding to cart...")
   }
 
   const getGarmentImage = () => {
@@ -371,7 +472,7 @@ function DesignPlaceholderContent() {
                   <div
                     key={image.id}
                     className="group relative w-16 h-16 flex-shrink-0 cursor-pointer"
-                    onClick={() => handleImageSelect(image.url)}
+                    onClick={() => handleImageSelect(image.url, image)}
                   >
                     <Image
                       src={createProxyUrl(image.url) || "/placeholder.svg"}
@@ -387,6 +488,11 @@ function DesignPlaceholderContent() {
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
                       <Eye className="w-4 h-4 text-white" />
                     </div>
+                    {image.hasBgRemoved && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                        <Scissors className="w-2 h-2 text-white" />
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -471,6 +577,52 @@ function DesignPlaceholderContent() {
                   </button>
                 </div>
               </div>
+
+              {currentImageData && (
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-medium">Imagen seleccionada:</span>
+                    <span className="text-muted-foreground truncate max-w-[200px]">{currentImageData.prompt}</span>
+                    {showingWithoutBg && (
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Sin fondo</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 ml-auto">
+                    {currentImageData.hasBgRemoved && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleToggleBackground}
+                        className="text-xs bg-transparent"
+                      >
+                        <RotateCcw className="w-3 h-3 mr-1" />
+                        {showingWithoutBg ? "Con fondo" : "Sin fondo"}
+                      </Button>
+                    )}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemoveBackground}
+                      disabled={removingBackground}
+                      className="text-xs bg-transparent"
+                    >
+                      {removingBackground ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          Procesando...
+                        </>
+                      ) : (
+                        <>
+                          <Scissors className="w-3 h-3 mr-1" />
+                          {currentImageData.hasBgRemoved ? "Ya sin fondo" : "Remover fondo"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {/* Canvas de diseño */}
               <Card className="overflow-hidden">

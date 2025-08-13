@@ -8,6 +8,8 @@ export interface SavedImage {
   prompt: string
   created_at: string
   user_id: string | null
+  urlWithoutBg?: string | null
+  hasBgRemoved?: boolean
 }
 
 export interface CartItem {
@@ -56,6 +58,8 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
       prompt: prompt,
       created_at: new Date().toISOString(),
       user_id: userId || null,
+      hasBgRemoved: false,
+      urlWithoutBg: null,
     }
 
     if (!userId && typeof window !== "undefined") {
@@ -80,6 +84,8 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
         url: url,
         prompt: prompt,
         user_id: userId || null,
+        has_bg_removed: false,
+        url_without_bg: null,
       })
       .select()
       .single()
@@ -115,7 +121,12 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
       url: data.url.substring(0, 50) + "...",
       prompt: data.prompt,
     })
-    return data
+
+    return {
+      ...data,
+      hasBgRemoved: data.has_bg_removed || false,
+      urlWithoutBg: data.url_without_bg || null,
+    }
   } catch (error) {
     console.error("❌ Exception in saveGeneratedImage:", error)
 
@@ -129,6 +140,8 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
           prompt: prompt,
           created_at: new Date().toISOString(),
           user_id: userId || null,
+          hasBgRemoved: false,
+          urlWithoutBg: null,
         }
         localImages.unshift(newImage)
         if (localImages.length > 50) {
@@ -142,6 +155,73 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
       }
     }
     return null
+  }
+}
+
+export async function saveImageWithoutBackground(imageId: string, urlWithoutBg: string): Promise<boolean> {
+  try {
+    console.log("🎭 Saving background-removed version for image:", imageId)
+
+    // Update in database
+    const { error } = await supabase
+      .from("images")
+      .update({
+        url_without_bg: urlWithoutBg,
+        has_bg_removed: true,
+      })
+      .eq("id", imageId)
+
+    if (error) {
+      console.error("❌ Error updating image in Supabase:", error)
+
+      // Fallback to localStorage for anonymous users
+      if (typeof window !== "undefined") {
+        try {
+          const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+          const imageIndex = localImages.findIndex((img: SavedImage) => img.id === imageId)
+
+          if (imageIndex !== -1) {
+            localImages[imageIndex] = {
+              ...localImages[imageIndex],
+              urlWithoutBg: urlWithoutBg,
+              hasBgRemoved: true,
+            }
+            localStorage.setItem("saved_images", JSON.stringify(localImages))
+            console.log("✅ Background-removed version saved to localStorage as fallback")
+            return true
+          }
+        } catch (localError) {
+          console.error("❌ Error updating localStorage:", localError)
+        }
+      }
+      return false
+    }
+
+    // Also update localStorage if available
+    if (typeof window !== "undefined") {
+      try {
+        const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+        const imageIndex = localImages.findIndex((img: SavedImage) => img.id === imageId)
+
+        if (imageIndex !== -1) {
+          localImages[imageIndex] = {
+            ...localImages[imageIndex],
+            urlWithoutBg: urlWithoutBg,
+            hasBgRemoved: true,
+          }
+          localStorage.setItem("saved_images", JSON.stringify(localImages))
+          console.log("🔄 Also updated localStorage with background-removed version")
+        }
+      } catch (localError) {
+        console.error("⚠️ Could not update localStorage:", localError)
+      }
+    }
+
+    console.log("✅ Background-removed version saved successfully")
+    return true
+  } catch (error) {
+    console.error("❌ Error in saveImageWithoutBackground:", error)
+    return false
   }
 }
 
@@ -179,7 +259,11 @@ export async function getRecentImages(userId?: string, limit = 20): Promise<Save
       return []
     }
 
-    return data || []
+    return (data || []).map((item) => ({
+      ...item,
+      hasBgRemoved: item.has_bg_removed || false,
+      urlWithoutBg: item.url_without_bg || null,
+    }))
   } catch (error) {
     console.error("Error in getRecentImages:", error)
 
@@ -202,7 +286,11 @@ export async function getImageById(id: string): Promise<SavedImage | null> {
       return null
     }
 
-    return data
+    return {
+      ...data,
+      hasBgRemoved: data.has_bg_removed || false,
+      urlWithoutBg: data.url_without_bg || null,
+    }
   } catch (error) {
     console.error("❌ Error in getImageById:", error)
     return null
@@ -425,7 +513,11 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
 
         if (!error && data) {
           console.log("✅ Found", data.length, "anonymous images in database")
-          dbImages = data
+          dbImages = data.map((item) => ({
+            ...item,
+            hasBgRemoved: item.has_bg_removed || false,
+            urlWithoutBg: item.url_without_bg || null,
+          }))
         }
       } catch (dbError) {
         console.log("⚠️ Could not fetch from database:", dbError)
@@ -493,7 +585,11 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
     }
 
     console.log("✅ Found", data?.length || 0, "user images in database")
-    return data || []
+    return (data || []).map((item) => ({
+      ...item,
+      hasBgRemoved: item.has_bg_removed || false,
+      urlWithoutBg: item.url_without_bg || null,
+    }))
   } catch (error) {
     console.error("❌ Error in getUserImages:", error)
 
