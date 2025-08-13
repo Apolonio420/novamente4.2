@@ -13,63 +13,50 @@ export async function optimizePrompt(originalPrompt: string, options: Optimizati
   console.log("📥 INPUT PROMPT:", originalPrompt)
 
   try {
-    console.log("🔧 Optimizing prompt:", originalPrompt)
-
-    // Try to use the API endpoint first
     const response = await fetch("/api/optimize-prompt", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        prompt: originalPrompt,
-        style: options.style,
-        layout: options.layout,
-      }),
+      body: JSON.stringify({ prompt: originalPrompt }),
     })
 
     if (!response.ok) {
       console.error("❌ Optimization API failed, using fallback")
-      return fallbackOptimization(originalPrompt, options)
+      return fallbackOptimization(originalPrompt)
     }
 
     const data = await response.json()
 
     if (data.fallback) {
       console.log("⚠️ Using fallback optimization")
-      return fallbackOptimization(originalPrompt, options)
+      return fallbackOptimization(originalPrompt)
     }
 
     console.log("📤 OPTIMIZED PROMPT:", data.optimizedPrompt)
     return data.optimizedPrompt
   } catch (error) {
     console.error("❌ Error in prompt optimization:", error)
-    return fallbackOptimization(originalPrompt, options)
+    return fallbackOptimization(originalPrompt)
   }
 }
 
-function fallbackOptimization(prompt: string, options: OptimizationOptions = {}): string {
+// Optimización de respaldo si falla la API
+function fallbackOptimization(prompt: string): string {
   console.log("🔄 Using fallback optimization")
 
-  let optimized = prompt.trim()
-
-  // Add style if specified
-  if (options.style) {
-    optimized = `${optimized}, ${options.style} style`
-  }
-
-  // Add layout if specified
-  if (options.layout) {
-    optimized = `${optimized}, ${options.layout} layout`
-  }
+  const cleanPrompt = prompt.trim()
+  if (!cleanPrompt) return cleanPrompt
 
   // Detectar si ya tiene fondo específico
-  const hasBackground = /\b(fondo|background)\b/i.test(optimized)
+  const hasBackground = /\b(fondo|background)\b/i.test(cleanPrompt)
 
   // Detectar si ya especifica composición única
-  const hasSingleComposition = /\b(única|single|one|solo|centrada|centered)\b/i.test(optimized)
+  const hasSingleComposition = /\b(única|single|one|solo|centrada|centered)\b/i.test(cleanPrompt)
 
   // Optimización básica
+  let optimized = cleanPrompt
+
   if (!hasBackground) {
     optimized += ", isolated on plain white background"
   }
