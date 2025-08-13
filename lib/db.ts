@@ -50,6 +50,28 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
     }
 
     const imageId = uuidv4()
+    const newImage: SavedImage = {
+      id: imageId,
+      url: url,
+      prompt: prompt,
+      created_at: new Date().toISOString(),
+      user_id: userId || null,
+    }
+
+    if (!userId && typeof window !== "undefined") {
+      try {
+        const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+        localImages.unshift(newImage)
+        // Keep only last 50 images in localStorage
+        if (localImages.length > 50) {
+          localImages.splice(50)
+        }
+        localStorage.setItem("saved_images", JSON.stringify(localImages))
+        console.log("💾 Image also saved to localStorage for anonymous user")
+      } catch (localError) {
+        console.error("❌ Error saving to localStorage:", localError)
+      }
+    }
 
     const { data, error } = await supabase
       .from("images")
@@ -65,18 +87,16 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
     if (error) {
       console.error("❌ Error saving image to Supabase:", error)
 
+      if (!userId && typeof window !== "undefined") {
+        console.log("✅ Image saved to localStorage as fallback for anonymous user")
+        return newImage
+      }
+
+      // Para usuarios autenticados, intentar guardar en localStorage como fallback
       if (typeof window !== "undefined") {
         try {
           const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-          const newImage: SavedImage = {
-            id: imageId,
-            url: url,
-            prompt: prompt,
-            created_at: new Date().toISOString(),
-            user_id: userId || null,
-          }
           localImages.unshift(newImage)
-          // Keep only last 50 images in localStorage
           if (localImages.length > 50) {
             localImages.splice(50)
           }
@@ -392,14 +412,33 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
     console.log("🔍 Getting user images for userId:", userId)
 
     if (!userId) {
-      console.log("👤 No userId provided, checking localStorage...")
+      console.log("👤 No userId provided, checking both database and localStorage...")
+
+      let dbImages: SavedImage[] = []
+      try {
+        const { data, error } = await supabase
+          .from("images")
+          .select("*")
+          .is("user_id", null)
+          .order("created_at", { ascending: false })
+          .limit(20)
+
+        if (!error && data) {
+          console.log("✅ Found", data.length, "anonymous images in database")
+          dbImages = data
+        }
+      } catch (dbError) {
+        console.log("⚠️ Could not fetch from database:", dbError)
+      }
+
+      let localImages: SavedImage[] = []
       if (typeof window !== "undefined") {
         try {
-          const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-          console.log("📱 Found", localImages.length, "images in localStorage")
+          const stored = JSON.parse(localStorage.getItem("saved_images") || "[]")
+          console.log("📱 Found", stored.length, "images in localStorage")
 
           const now = new Date()
-          const validImages = localImages.filter((image: SavedImage) => {
+          const validImages = stored.filter((image: SavedImage) => {
             if (!image.url.includes("oaidalleapiprodscus.blob.core.windows.net")) {
               return true // Mantener imágenes que no son de DALL-E
             }
@@ -418,31 +457,27 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
             return true // Mantener si no se puede verificar
           })
 
-          if (validImages.length !== localImages.length) {
-            console.log(`🧹 Cleaned ${localImages.length - validImages.length} expired images from localStorage`)
+          if (validImages.length !== stored.length) {
+            console.log(`🧹 Cleaned ${stored.length - validImages.length} expired images from localStorage`)
             localStorage.setItem("saved_images", JSON.stringify(validImages))
           }
 
-          return validImages.slice(0, 20)
+          localImages = validImages
         } catch (localError) {
           console.error("❌ Error reading localStorage:", localError)
         }
       }
 
-      console.log("🔄 Trying to get recent anonymous images from database...")
-      const { data, error } = await supabase
-        .from("images")
-        .select("*")
-        .is("user_id", null)
-        .order("created_at", { ascending: false })
-        .limit(20)
+      const allImages = [...dbImages, ...localImages]
+      const uniqueImages = allImages.filter(
+        (image, index, self) => index === self.findIndex((img) => img.id === image.id),
+      )
 
-      if (!error && data) {
-        console.log("✅ Found", data.length, "anonymous images in database")
-        return data
-      }
+      // Ordenar por fecha de creación (más recientes primero)
+      uniqueImages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-      return []
+      console.log("🎯 Returning", uniqueImages.slice(0, 20).length, "unique images")
+      return uniqueImages.slice(0, 20)
     }
 
     const { data, error } = await supabase
