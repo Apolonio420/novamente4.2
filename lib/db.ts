@@ -389,15 +389,33 @@ export async function getImageHistory(limit = 20): Promise<SavedImage[]> {
 // Función para obtener imágenes del usuario
 export async function getUserImages(userId?: string): Promise<SavedImage[]> {
   try {
+    console.log("🔍 Getting user images for userId:", userId)
+
     if (!userId) {
+      console.log("👤 No userId provided, checking localStorage...")
       if (typeof window !== "undefined") {
         try {
           const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+          console.log("📱 Found", localImages.length, "images in localStorage")
           return localImages.slice(0, 20)
         } catch (localError) {
-          console.error("Error reading localStorage:", localError)
+          console.error("❌ Error reading localStorage:", localError)
         }
       }
+
+      console.log("🔄 Trying to get recent anonymous images from database...")
+      const { data, error } = await supabase
+        .from("images")
+        .select("*")
+        .is("user_id", null)
+        .order("created_at", { ascending: false })
+        .limit(20)
+
+      if (!error && data) {
+        console.log("✅ Found", data.length, "anonymous images in database")
+        return data
+      }
+
       return []
     }
 
@@ -413,9 +431,21 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       return []
     }
 
+    console.log("✅ Found", data?.length || 0, "user images in database")
     return data || []
   } catch (error) {
     console.error("❌ Error in getUserImages:", error)
+
+    if (typeof window !== "undefined") {
+      try {
+        const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+        console.log("🔄 Fallback: Found", localImages.length, "images in localStorage")
+        return localImages.slice(0, 20)
+      } catch (localError) {
+        console.error("❌ Error in fallback localStorage read:", localError)
+      }
+    }
+
     return []
   }
 }

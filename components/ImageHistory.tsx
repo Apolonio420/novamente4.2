@@ -71,23 +71,30 @@ export function ImageHistory({
     try {
       setLoading(true)
       setError(null)
+      console.log("🔄 Loading images...")
 
       if (propImages) {
+        console.log("📋 Using provided images:", propImages.length)
         setImages(propImages)
       } else {
+        console.log("🔍 Fetching user images for userId:", userId)
         const recentImages = await getUserImages(userId)
+        console.log("✅ Loaded", recentImages.length, "images")
         setImages(recentImages)
       }
     } catch (err) {
-      console.error("Error loading images:", err)
+      console.error("❌ Error loading images:", err)
       setError("Error al cargar las imágenes")
 
-      // Fallback a localStorage
       try {
+        console.log("🔄 Trying localStorage fallback...")
         const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+        console.log("📱 Found", localImages.length, "images in localStorage fallback")
         setImages(localImages.slice(0, limit))
+        setError(null) // Clear error if localStorage works
       } catch (localErr) {
-        console.error("Error loading from localStorage:", localErr)
+        console.error("❌ Error loading from localStorage:", localErr)
+        setImages([]) // Ensure empty array instead of undefined
       }
     } finally {
       setLoading(false)
@@ -225,16 +232,25 @@ export function ImageHistory({
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {images.length === 0 ? (
-            <div className="text-center py-8 w-full">
-              <p className="text-gray-500 mb-4">No hay diseños guardados</p>
-              {onScrollToGenerator && <Button onClick={onScrollToGenerator}>Crear primer diseño</Button>}
+            <div className="flex items-center justify-center w-full min-h-[64px] text-center">
+              <div className="flex items-center justify-center w-16 h-16 bg-gray-800 rounded-lg border-2 border-dashed border-gray-600">
+                <div className="w-6 h-6 bg-gray-600 rounded-full"></div>
+              </div>
+              <div className="ml-3">
+                <p className="text-gray-400 text-sm">No hay diseños guardados</p>
+                {onScrollToGenerator && (
+                  <Button onClick={onScrollToGenerator} variant="outline" size="sm" className="mt-2 bg-transparent">
+                    Crear primer diseño
+                  </Button>
+                )}
+              </div>
             </div>
           ) : (
             images.map((image) => (
               <button
                 key={image.id}
                 onClick={() => handleImageClick(image.url)}
-                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                className={`flex-shrink-0 w-16 h-16 relative aspect-square rounded-lg overflow-hidden border-2 transition-all group ${
                   selectedImage === image.url
                     ? "border-purple-500 ring-2 ring-purple-500/50"
                     : "border-gray-600 hover:border-gray-500"
@@ -245,7 +261,7 @@ export function ImageHistory({
                   alt={image.prompt}
                   fill
                   className="object-cover"
-                  sizes="(max-width: 768px) 50vw, 25vw"
+                  sizes="64px"
                 />
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
                   <Eye className="w-4 h-4 text-white" />
@@ -284,7 +300,7 @@ export function ImageHistory({
             <button
               key={style.id}
               onClick={() => handleImageClick(style.url)}
-              className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+              className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all group ${
                 selectedImage === style.url
                   ? "border-purple-500 ring-2 ring-purple-500/50"
                   : "border-gray-600 hover:border-gray-500"
