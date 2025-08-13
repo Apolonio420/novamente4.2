@@ -12,6 +12,13 @@ function getSupabaseClient() {
   return supabaseInstance
 }
 
+function getSupabase() {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  }
+  return supabaseInstance
+}
+
 // Tipos
 interface Image {
   id: string
@@ -42,12 +49,32 @@ interface SaveImageData {
   userId?: string | null
 }
 
+interface SaveImageParams {
+  prompt: string
+  imageUrl: string
+  userId?: string
+  sessionId?: string
+  resolution?: string
+  style?: string | null
+}
+
 interface ImageRecord {
   id: string
   url: string
   prompt: string
   optimized_prompt?: string
   user_id: string
+  created_at: string
+}
+
+interface SavedImage {
+  id: string
+  prompt: string
+  image_url: string
+  user_id: string | null
+  session_id: string | null
+  resolution: string | null
+  style: string | null
   created_at: string
 }
 
@@ -94,45 +121,45 @@ const localImages: Image[] = []
 let localCartItems: CartItem[] = []
 
 // Función para guardar una imagen generada
-export async function saveGeneratedImage(data: SaveImageData) {
-  const supabase = getSupabaseClient()
+export async function saveGeneratedImage(params: SaveImageParams): Promise<SavedImage> {
+  const supabase = getSupabase()
 
-  // Generar ID único para la imagen
-  const imageId = generateImageId()
-
-  // Usar user_id directamente, sin session_id
-  const userId = data.userId || getAnonymousSessionId()
-
-  console.log("Saving image:", data)
-  console.log("Saving to Supabase with userId:", userId)
-
-  const imageData = {
-    id: imageId,
-    url: data.url,
-    prompt: data.prompt,
-    optimized_prompt: data.optimizedPrompt || null,
-    user_id: userId, // Solo usar user_id como en versiones anteriores
-    created_at: new Date().toISOString(),
-  }
-
-  const { data: result, error } = await supabase.from("images").insert(imageData).select().single()
+  const { data, error } = await supabase
+    .from("generated_images")
+    .insert({
+      prompt: params.prompt,
+      image_url: params.imageUrl,
+      user_id: params.userId || null,
+      session_id: params.sessionId || null,
+      resolution: params.resolution || "1024x1024",
+      style: params.style || null,
+    })
+    .select()
+    .single()
 
   if (error) {
-    console.error("Error saving to Supabase:", error)
-    // Fallback a localStorage si Supabase falla
-    const localImage: Image = {
-      id: imageId,
-      url: data.url,
-      prompt: data.prompt,
-      optimizedPrompt: data.optimizedPrompt,
-      createdAt: new Date().toISOString(),
-      userId: userId,
-    }
-    saveToLocalStorage(localImage)
-    return localImage
+    console.error("❌ Error saving image to database:", error)
+    throw new Error(`Failed to save image: ${error.message}`)
   }
 
-  return result
+  console.log("✅ Image saved to database:", data.id)
+  return data
+}
+
+// Alias for backward compatibility
+export const saveImage = saveGeneratedImage
+
+export async function getImageById(id: string): Promise<SavedImage | null> {
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase.from("generated_images").select("*").eq("id", id).single()
+
+  if (error) {
+    console.error("❌ Error fetching image:", error)
+    return null
+  }
+
+  return data
 }
 
 // Función para obtener imágenes recientes del usuario actual
@@ -186,6 +213,42 @@ export async function getRecentImages(userId?: string | null, limit = 12) {
     // Fallback completo a localStorage
     return getFromLocalStorage(limit)
   }
+}
+
+export async function getUserImages(userId: string, limit = 20): Promise<SavedImage[]> {
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from("generated_images")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error("❌ Error fetching user images:", error)
+    return []
+  }
+
+  return data || []
+}
+
+export async function getSessionImages(sessionId: string, limit = 20): Promise<SavedImage[]> {
+  const supabase = getSupabase()
+
+  const { data, error } = await supabase
+    .from("generated_images")
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error("❌ Error fetching session images:", error)
+    return []
+  }
+
+  return data || []
 }
 
 // Función para eliminar una imagen
@@ -501,57 +564,3 @@ function clearLocalCart() {
     }
   }
 }
-
-export async function getUserImages(userId?: string): Promise<ImageRecord[]> {
-  const supabase = getSupabaseClient()
-  const actualUserId = userId || getAnonymousSessionId()
-  console.log("Fetching images for userId:", actualUserId)
-
-  try {
-    const { data, error } = await supabase
-      .from("images")
-      .select("*")
-      .eq("user_id", actualUserId) // Solo usar user_id
-      .order("created_at", { ascending: false })
-      .limit(20)
-
-    if (error) {
-      console.error("Error fetching from Supabase:", error)
-      // Fallback a localStorage si Supabase falla
-      const localImages = JSON.parse(localStorage.getItem("generated_images") || "[]")
-      return localImages.filter((img: ImageRecord) => img.user_id === actualUserId)
-    }
-
-    // Filtrar URLs expiradas de Azure Blob Storage
-    const validImages =
-      data?.filter((image) => {
-        if (!image.url.includes("oaidalleapiprodscus.blob.core.windows.net")) {
-          return true // No es de Azure, mantener
-        }
-
-        try {
-          const url = new URL(image.url)
-          const seParam = url.searchParams.get("se") // Parámetro de expiración
-          if (!seParam) return true
-
-          const expirationDate = new Date(seParam)
-          const now = new Date()
-
-          return expirationDate > now
-        } catch {
-          return false // URL malformada
-        }
-      }) || []
-
-    console.log(`Fetched ${validImages.length} valid images from Supabase`)
-    return validImages
-  } catch (error) {
-    console.error("Error in getUserImages:", error)
-    // Fallback completo a localStorage
-    const localImages = JSON.parse(localStorage.getItem("generated_images") || "[]")
-    return localImages.filter((img: ImageRecord) => img.user_id === actualUserId)
-  }
-}
-
-// Export alias for compatibility
-export const saveImage = saveGeneratedImage
