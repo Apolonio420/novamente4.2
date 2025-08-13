@@ -1,7 +1,5 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge"
-
 // Mapeo exacto del JSON proporcionado - coordenadas absolutas
 const EXACT_COORDINATES = {
   // Hoodies
@@ -60,16 +58,7 @@ export function PrintArea({ garmentType, activeTab, selectedColor = "black", cla
             width: "50%",
             height: "40%",
           }}
-        >
-          <div className="absolute -top-6 left-0 text-xs text-red-600 font-mono bg-white px-1 rounded">
-            No mapping found
-          </div>
-          <div className="absolute -top-6 right-0">
-            <Badge variant="destructive" className="text-xs">
-              FALLBACK
-            </Badge>
-          </div>
-        </div>
+        />
       </div>
     )
   }
@@ -83,14 +72,9 @@ export function PrintArea({ garmentType, activeTab, selectedColor = "black", cla
   const widthPercent = (coordinates.width / containerWidth) * 100
   const heightPercent = (coordinates.height / containerHeight) * 100
 
-  console.log(`📐 PrintArea for ${garmentKey}:`, {
-    original: coordinates,
-    percentages: { leftPercent, topPercent, widthPercent, heightPercent },
-  })
-
   return (
     <div className={`absolute inset-0 pointer-events-none ${className}`}>
-      {/* Área de impresión con coordenadas exactas del JSON */}
+      {/* Área de impresión con coordenadas exactas del JSON - SIN texto ni badge */}
       <div
         className="absolute border-2 border-red-500 border-dashed bg-red-500/10"
         style={{
@@ -99,19 +83,39 @@ export function PrintArea({ garmentType, activeTab, selectedColor = "black", cla
           width: `${widthPercent}%`,
           height: `${heightPercent}%`,
         }}
-      >
-        {/* Coordenadas en la esquina superior izquierda */}
-        <div className="absolute -top-6 left-0 text-xs text-red-600 font-mono bg-white px-1 rounded">
-          {coordinates.x},{coordinates.y} {coordinates.width}×{coordinates.height}
-        </div>
-
-        {/* Badge identificador en la esquina superior derecha */}
-        <div className="absolute -top-6 right-0">
-          <Badge variant="destructive" className="text-xs">
-            EXACT JSON
-          </Badge>
-        </div>
-      </div>
+      />
     </div>
   )
+}
+
+// Exportar función para obtener las coordenadas del área de impresión
+export function getPrintAreaBounds(garmentType: string, activeTab: "front" | "back", selectedColor = "black") {
+  const garmentKey = `${garmentType}-${selectedColor}-${activeTab}` as keyof typeof EXACT_COORDINATES
+  const coordinates = EXACT_COORDINATES[garmentKey]
+
+  if (!coordinates) {
+    // Fallback genérico
+    return {
+      left: 25,
+      top: 30,
+      width: 50,
+      height: 40,
+    }
+  }
+
+  // Convertir coordenadas absolutas a porcentajes
+  const containerWidth = 400
+  const containerHeight = 500
+
+  const leftPercent = (coordinates.x / containerWidth) * 100
+  const topPercent = (coordinates.y / containerHeight) * 100
+  const widthPercent = (coordinates.width / containerWidth) * 100
+  const heightPercent = (coordinates.height / containerHeight) * 100
+
+  return {
+    left: leftPercent,
+    top: topPercent,
+    width: widthPercent,
+    height: heightPercent,
+  }
 }

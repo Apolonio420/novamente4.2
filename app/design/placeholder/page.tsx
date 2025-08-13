@@ -18,7 +18,7 @@ import { Loader, ShoppingCart, Plus, Check, ArrowLeft, Move, X, Ruler, Info } fr
 import Image from "next/image"
 import Link from "next/link"
 import { MiniImageHistory } from "@/components/MiniImageHistory"
-import { PrintArea } from "@/components/PrintArea"
+import { PrintArea, getPrintAreaBounds } from "@/components/PrintArea"
 
 // PRECIOS EXACTOS - ESTOS SON LOS PRECIOS REALES
 const GARMENT_PRICES = {
@@ -92,31 +92,16 @@ const MODEL_IMAGES = {
 
 const DOUBLE_STAMPING_EXTRA = 7000
 
-// Función para verificar si una posición está dentro del área de impresión
+// Función para verificar si una posición está dentro del área de impresión REAL
 function isPositionInPrintArea(
   position: { x: number; y: number },
   scale: number,
   garmentType: string,
   activeTab: "front" | "back",
+  selectedColor: string,
 ): { x: number; y: number } {
-  let printArea = { left: 10, top: 15, width: 80, height: 70 }
-
-  switch (garmentType) {
-    case "aura-oversize-tshirt":
-    case "aldea-classic-tshirt":
-      printArea = { left: 10, top: 15, width: 80, height: 70 }
-      break
-    case "astra-oversize-hoodie":
-      if (activeTab === "front") {
-        printArea = { left: 15, top: 20, width: 70, height: 50 }
-      } else {
-        printArea = { left: 10, top: 15, width: 80, height: 70 }
-      }
-      break
-    case "lienzo":
-      printArea = { left: 5, top: 5, width: 90, height: 90 }
-      break
-  }
+  // Obtener los límites reales del área de impresión
+  const printArea = getPrintAreaBounds(garmentType, activeTab, selectedColor)
 
   // Calcular el tamaño del diseño en porcentaje
   const designSize = scale * 20 // 20% es el tamaño base del diseño
@@ -209,13 +194,13 @@ function PlaceholderContent() {
     }
   }, [selectedGarment, selectedColor])
 
-  // Reposicionar diseño cuando cambia la prenda
+  // Reposicionar diseño cuando cambia la prenda o color
   useEffect(() => {
-    const constrainedPosition = isPositionInPrintArea(position, scale, selectedGarment, activeTab)
+    const constrainedPosition = isPositionInPrintArea(position, scale, selectedGarment, activeTab, selectedColor)
     if (constrainedPosition.x !== position.x || constrainedPosition.y !== position.y) {
       setPosition(constrainedPosition)
     }
-  }, [selectedGarment, activeTab, position, scale])
+  }, [selectedGarment, activeTab, selectedColor, position, scale])
 
   const handleImageSelect = (newImageUrl: string) => {
     if (activeTab === "front") {
@@ -349,7 +334,7 @@ function PlaceholderContent() {
     return activeTab === "front" ? hasFrontDesign : hasBackDesign
   }
 
-  // Drag & Drop functionality mejorado con restricciones
+  // Drag & Drop functionality mejorado con restricciones REALES del área de impresión
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (!designRef.current || !containerRef.current) return
 
@@ -381,12 +366,18 @@ function PlaceholderContent() {
       const newX = ((e.clientX - dragOffset.x - containerRect.left) / containerRect.width) * 100
       const newY = ((e.clientY - dragOffset.y - containerRect.top) / containerRect.height) * 100
 
-      // Aplicar restricciones del área de impresión
-      const constrainedPosition = isPositionInPrintArea({ x: newX, y: newY }, scale, selectedGarment, activeTab)
+      // Aplicar restricciones del área de impresión REAL
+      const constrainedPosition = isPositionInPrintArea(
+        { x: newX, y: newY },
+        scale,
+        selectedGarment,
+        activeTab,
+        selectedColor,
+      )
 
       setPosition(constrainedPosition)
     },
-    [isDragging, dragOffset, scale, selectedGarment, activeTab],
+    [isDragging, dragOffset, scale, selectedGarment, activeTab, selectedColor],
   )
 
   const handleMouseUp = useCallback(() => {
@@ -427,12 +418,18 @@ function PlaceholderContent() {
       const newX = ((touch.clientX - dragOffset.x - containerRect.left) / containerRef.current.width) * 100
       const newY = ((touch.clientY - dragOffset.y - containerRect.top) / containerRef.current.height) * 100
 
-      // Aplicar restricciones del área de impresión
-      const constrainedPosition = isPositionInPrintArea({ x: newX, y: newY }, scale, selectedGarment, activeTab)
+      // Aplicar restricciones del área de impresión REAL
+      const constrainedPosition = isPositionInPrintArea(
+        { x: newX, y: newY },
+        scale,
+        selectedGarment,
+        activeTab,
+        selectedColor,
+      )
 
       setPosition(constrainedPosition)
     },
-    [isDragging, dragOffset, scale, selectedGarment, activeTab],
+    [isDragging, dragOffset, scale, selectedGarment, activeTab, selectedColor],
   )
 
   const handleTouchEnd = useCallback(() => {
@@ -630,7 +627,7 @@ function PlaceholderContent() {
                       }}
                     />
 
-                    {/* Área de impresión */}
+                    {/* Área de impresión - SIN coordenadas ni badge */}
                     <PrintArea garmentType={selectedGarment} activeTab="front" selectedColor={selectedColor} />
 
                     {/* ✅ DISEÑO SUPERPUESTO SOBRE LA PRENDA */}
@@ -702,7 +699,7 @@ function PlaceholderContent() {
                       }}
                     />
 
-                    {/* Área de impresión */}
+                    {/* Área de impresión - SIN coordenadas ni badge */}
                     <PrintArea garmentType={selectedGarment} activeTab="back" selectedColor={selectedColor} />
 
                     {/* ✅ DISEÑO SUPERPUESTO SOBRE LA PRENDA TRASERA */}
@@ -789,7 +786,13 @@ function PlaceholderContent() {
                       const newScale = Number(e.target.value)
                       setScale(newScale)
                       // Reposicionar si está fuera del área de impresión
-                      const constrainedPosition = isPositionInPrintArea(position, newScale, selectedGarment, activeTab)
+                      const constrainedPosition = isPositionInPrintArea(
+                        position,
+                        newScale,
+                        selectedGarment,
+                        activeTab,
+                        selectedColor,
+                      )
                       setPosition(constrainedPosition)
                     }}
                     className="w-full"
@@ -827,7 +830,6 @@ function PlaceholderContent() {
                     <Image
                       src={
                         (SIZE_GUIDE_IMAGES[selectedGarment as keyof typeof SIZE_GUIDE_IMAGES] as string) ||
-                        "/placeholder.svg" ||
                         "/placeholder.svg" ||
                         "/placeholder.svg"
                       }
