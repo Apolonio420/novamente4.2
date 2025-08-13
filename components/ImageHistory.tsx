@@ -71,28 +71,35 @@ export function ImageHistory({
       setError(null)
       console.log("🔄 Loading images...")
 
-      if (propImages) {
+      if (propImages && propImages.length > 0) {
         console.log("📋 Using provided images:", propImages.length)
         setImages(propImages)
-      } else {
-        console.log("🔍 Fetching user images for userId:", userId)
-        const recentImages = await getUserImages(userId)
-        console.log("✅ Loaded", recentImages.length, "images")
-        setImages(recentImages)
+        return
       }
+
+      console.log("🔍 Fetching user images for userId:", userId)
+      const recentImages = await getUserImages(userId)
+      console.log("✅ Loaded", recentImages.length, "images")
+      setImages(recentImages)
     } catch (err) {
       console.error("❌ Error loading images:", err)
       setError("Error al cargar las imágenes")
 
-      try {
-        console.log("🔄 Trying localStorage fallback...")
-        const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-        console.log("📱 Found", localImages.length, "images in localStorage fallback")
-        setImages(localImages.slice(0, limit))
-        setError(null) // Clear error if localStorage works
-      } catch (localErr) {
-        console.error("❌ Error loading from localStorage:", localErr)
-        setImages([]) // Ensure empty array instead of undefined
+      if (!propImages || propImages.length === 0) {
+        try {
+          console.log("🔄 Trying localStorage fallback...")
+          const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+          console.log("📱 Found", localImages.length, "images in localStorage fallback")
+          setImages(localImages.slice(0, limit))
+          setError(null) // Clear error if localStorage works
+        } catch (localErr) {
+          console.error("❌ Error loading from localStorage:", localErr)
+          setImages([]) // Ensure empty array instead of undefined
+        }
+      } else {
+        // Use prop images as fallback
+        setImages(propImages)
+        setError(null)
       }
     } finally {
       setLoading(false)
@@ -102,6 +109,15 @@ export function ImageHistory({
   useEffect(() => {
     loadImages()
   }, [userId, limit, propImages, refreshKey])
+
+  useEffect(() => {
+    if (propImages && propImages.length > 0) {
+      console.log("📋 Prop images updated:", propImages.length)
+      setImages(propImages)
+      setLoading(false)
+      setError(null)
+    }
+  }, [propImages])
 
   const handleDownload = async (image: SavedImage) => {
     try {
