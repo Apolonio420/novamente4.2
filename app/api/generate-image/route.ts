@@ -1,8 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { openai } from "@/lib/openai"
+import OpenAI from "openai"
 import { saveGeneratedImage } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
 import { optimizePrompt } from "@/lib/promptOptimizer"
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +18,22 @@ export async function POST(request: NextRequest) {
 
     console.log("🎨 Generating image with prompt:", prompt)
 
+    // Validar que el prompt no contenga contenido inapropiado
+    if (
+      prompt.toLowerCase().includes("javier milei") ||
+      prompt.toLowerCase().includes("milei") ||
+      prompt.toLowerCase().includes("político") ||
+      prompt.toLowerCase().includes("presidente")
+    ) {
+      console.log("❌ Blocked political content")
+      return NextResponse.json(
+        { error: "No se pueden generar imágenes de figuras políticas o personas reales" },
+        { status: 400 },
+      )
+    }
+
     // Optimizar el prompt
+    console.log("🔄 Auto-optimizing prompt with OpenAI...")
     const optimizedPrompt = await optimizePrompt(prompt)
     console.log("📤 Using optimized prompt:", optimizedPrompt)
 
@@ -31,33 +50,55 @@ export async function POST(request: NextRequest) {
     const imageUrl = response.data[0]?.url
 
     if (!imageUrl) {
-      console.error("❌ No image URL received from OpenAI")
-      return NextResponse.json({ error: "Failed to generate image" }, { status: 500 })
+      console.error("❌ No image URL returned from OpenAI")
+      return NextResponse.json({ error: "No image generated" }, { status: 500 })
     }
 
-    console.log("✅ Image generated successfully:", imageUrl.substring(0, 100) + "...")
+    // Validar que la URL sea de DALL-E (Azure Blob Storage)
+    if (!imageUrl.includes("oaidalleapiprodscus.blob.core.windows.net")) {
+      console.error("❌ Invalid image URL - not from DALL-E:", imageUrl)
+      return NextResponse.json({ error: "Invalid image source" }, { status: 500 })
+    }
+
+    console.log("✅ Image generated successfully:", imageUrl)
 
     // Obtener usuario actual
     const user = await getCurrentUser()
     const userId = user?.id || null
 
-    // Guardar imagen en la base de datos - PASAR PARÁMETROS INDIVIDUALES
+    // Guardar imagen en la base de datos - PASAR PARÁMETROS INDIVIDUALES CORRECTAMENTE
+    console.log("💾 Attempting to save image to database...")
     const savedImage = await saveGeneratedImage(imageUrl, prompt, userId)
 
     if (savedImage) {
-      console.log("✅ Image saved to database")
+      console.log("✅ Image saved to database successfully")
     } else {
       console.log("⚠️ Failed to save image to database, but generation was successful")
     }
 
     return NextResponse.json({
-      url: imageUrl,
-      prompt: prompt,
-      optimizedPrompt: optimizedPrompt,
-      userId: userId,
+      imageUrl,
+      prompt,
+      revisedPrompt: response.data[0]?.revised_prompt,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ Error generating image:", error)
-    return NextResponse.json({ error: "Failed to generate image" }, { status: 500 })
+
+    // Manejar errores específicos de OpenAI
+    if (error?.error?.code === "content_policy_violation") {
+      return NextResponse.json(
+        { error: "El contenido solicitado viola las políticas de contenido. Intenta con una descripción diferente." },
+        { status: 400 },
+      )
+    }
+
+    if (error?.error?.code === "rate_limit_exceeded") {
+      return NextResponse.json(
+        { error: "Límite de generación alcanzado. Intenta nuevamente en unos minutos." },
+        { status: 429 },
+      )
+    }
+
+    return NextResponse.json({ error: "Error interno del servidor al generar la imagen" }, { status: 500 })
   }
 }

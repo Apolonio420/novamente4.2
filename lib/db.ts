@@ -28,21 +28,23 @@ export interface CartItem {
 // Export que necesitas - saveGeneratedImage
 export async function saveGeneratedImage(url: string, prompt: string, userId?: string): Promise<SavedImage | null> {
   try {
-    console.log("💾 Saving image to database:", {
-      url: typeof url === "string" ? url.substring(0, 100) + "..." : "Invalid URL type",
-      prompt: typeof prompt === "string" ? prompt : "Invalid prompt type",
+    console.log("💾 Saving image to database with parameters:", {
+      urlType: typeof url,
+      urlLength: typeof url === "string" ? url.length : "N/A",
+      promptType: typeof prompt,
+      promptLength: typeof prompt === "string" ? prompt.length : "N/A",
       userId,
     })
 
     // Validar que url sea string
     if (typeof url !== "string" || !url) {
-      console.error("❌ URL must be a valid string:", url)
+      console.error("❌ URL must be a valid string. Received:", typeof url, url)
       return null
     }
 
     // Validar que prompt sea string
     if (typeof prompt !== "string" || !prompt) {
-      console.error("❌ Prompt must be a valid string:", prompt)
+      console.error("❌ Prompt must be a valid string. Received:", typeof prompt, prompt)
       return null
     }
 
@@ -57,14 +59,18 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
       .single()
 
     if (error) {
-      console.error("❌ Error saving image:", error)
+      console.error("❌ Error saving image to Supabase:", error)
       return null
     }
 
-    console.log("✅ Image saved successfully:", data)
+    console.log("✅ Image saved successfully to database:", {
+      id: data.id,
+      url: data.url.substring(0, 50) + "...",
+      prompt: data.prompt,
+    })
     return data
   } catch (error) {
-    console.error("❌ Error in saveGeneratedImage:", error)
+    console.error("❌ Exception in saveGeneratedImage:", error)
     return null
   }
 }
