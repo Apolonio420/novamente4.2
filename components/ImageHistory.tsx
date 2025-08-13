@@ -12,7 +12,6 @@ interface ImageHistoryProps {
   onImageSelect: (imageUrl: string) => void
   images?: SavedImage[]
   onScrollToGenerator?: () => void
-  isDesignPage?: boolean
   refreshKey?: number
   selectedImage?: string
 }
@@ -57,7 +56,6 @@ export function ImageHistory({
   onImageSelect,
   images: propImages,
   onScrollToGenerator,
-  isDesignPage = false,
   refreshKey,
   selectedImage,
 }: ImageHistoryProps) {
@@ -124,9 +122,8 @@ export function ImageHistory({
   }
 
   const handleImageClick = (imageUrl: string) => {
-    if (isDesignPage) {
-      // Redirigir a la página de personalización con la imagen
-      window.location.href = `/design/placeholder?image=${encodeURIComponent(imageUrl)}`
+    if (selectedImage) {
+      window.location.href = `/design/placeholder?imageUrl=${encodeURIComponent(imageUrl)}`
     } else if (onImageSelect) {
       onImageSelect(imageUrl)
     }
