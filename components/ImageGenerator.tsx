@@ -7,7 +7,25 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Loader2, Wand2, Download, ExternalLink, RefreshCw, AlertTriangle, Zap, Settings } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Loader2,
+  Wand2,
+  Download,
+  ExternalLink,
+  RefreshCw,
+  AlertTriangle,
+  Zap,
+  Settings,
+  ShieldAlert,
+} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { saveGeneratedImage } from "@/lib/db"
 import { optimizePrompt } from "@/lib/promptOptimizer"
@@ -34,6 +52,8 @@ export function ImageGenerator({
   const [retryCount, setRetryCount] = useState(0)
   const [imageKey, setImageKey] = useState(0)
   const [selectedSize, setSelectedSize] = useState("1024x1024")
+  const [showContentPolicyError, setShowContentPolicyError] = useState(false)
+  const [contentPolicyErrorMessage, setContentPolicyErrorMessage] = useState("")
   const { toast } = useToast()
 
   // Función para obtener clases CSS del contenedor según resolución
@@ -118,7 +138,15 @@ export function ImageGenerator({
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || "Error al generar la imagen")
+        const errorMessage = errorData.error || "Error al generar la imagen"
+
+        if (errorMessage.includes("políticas de contenido") || errorMessage.includes("content policy")) {
+          setContentPolicyErrorMessage(errorMessage)
+          setShowContentPolicyError(true)
+          return
+        }
+
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
@@ -270,191 +298,247 @@ export function ImageGenerator({
   }, [generatedImage, retryCount, createProxyUrl, toast])
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* Columna izquierda - Formulario */}
-      <div className="space-y-6">
-        {/* Área de texto principal */}
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="prompt" className="text-sm font-medium">
-              Describe tu diseño
-            </label>
-            <Textarea
-              id="prompt"
-              placeholder="Ej: Un león majestuoso con corona dorada, fondo negro..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              className="min-h-[120px] resize-none"
-              disabled={isGenerating}
-            />
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Zap className="h-3 w-3" />
-              <span>Tu prompt será optimizado automáticamente con IA</span>
-            </div>
-          </div>
-
-          {/* Selector de resolución */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              <Label className="text-sm font-medium">Resolución de imagen</Label>
-            </div>
-            <RadioGroup value={selectedSize} onValueChange={setSelectedSize} className="space-y-2">
-              {sizeOptions.map((option) => (
-                <div key={option.value} className="flex items-center space-x-2">
-                  <RadioGroupItem value={option.value} id={option.value} />
-                  <Label htmlFor={option.value} className="flex-1 cursor-pointer">
-                    <div className="font-medium">{option.label}</div>
-                    <div className="text-xs text-muted-foreground">{option.description}</div>
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-          </div>
-
-          {/* Botón de generación */}
-          <Button onClick={generateImage} disabled={isGenerating || !prompt.trim()} className="w-full">
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {isOptimizing ? "Optimizando con IA..." : "Generando imagen..."}
-              </>
-            ) : (
-              <>
-                <Wand2 className="mr-2 h-4 w-4" />
-                Generar con IA ({selectedSize})
-              </>
-            )}
-          </Button>
-        </div>
-
-        {/* Ejemplos rápidos */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium">Ejemplos rápidos</h3>
-          <div className="space-y-2">
-            {quickExamples.map((example, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                size="sm"
-                className="w-full justify-start text-left h-auto py-3 px-4 bg-transparent"
-                onClick={() => setPrompt(example)}
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Columna izquierda - Formulario */}
+        <div className="space-y-6">
+          {/* Área de texto principal */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="prompt" className="text-sm font-medium">
+                Describe tu diseño
+              </label>
+              <Textarea
+                id="prompt"
+                placeholder="Ej: Un león majestuoso con corona dorada, fondo negro..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="min-h-[120px] resize-none"
                 disabled={isGenerating}
-              >
-                <span className="text-sm">{example}</span>
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        {/* Estilos */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium">Estilos populares (reemplaza el anterior)</h3>
-          <div className="flex flex-wrap gap-2">
-            {popularStyles.map((style) => (
-              <Badge
-                key={style}
-                variant="secondary"
-                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                onClick={() => addStyleToBadge(style)}
-              >
-                {style}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Columna derecha - Imagen generada */}
-      <div className="space-y-4">
-        <Card className="overflow-hidden">
-          <CardContent className="p-0">
-            <div
-              className={`${getImageContainerClasses()} bg-muted border-2 border-dashed border-muted-foreground/25 flex items-center justify-center`}
-            >
-              {generatedImage && !imageError ? (
-                <div className="relative w-full h-full">
-                  <Image
-                    key={`${imageKey}-${retryCount}`}
-                    src={createProxyUrl(generatedImage) || "/placeholder.svg"}
-                    alt="Imagen generada"
-                    fill
-                    className="object-contain"
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                    onError={handleImageError}
-                    onLoad={handleImageLoad}
-                    priority
-                    unoptimized
-                  />
-                </div>
-              ) : imageError ? (
-                <div className="text-center text-muted-foreground p-8">
-                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-red-500" />
-                  <p className="text-sm mb-4">Error cargando imagen</p>
-                  <p className="text-xs text-muted-foreground mb-4">
-                    {retryCount >= 3 ? "Máximo de reintentos alcanzado" : `Intento ${retryCount + 1} de 3`}
-                  </p>
-                  {retryCount < 3 && (
-                    <Button variant="outline" size="sm" onClick={retryImageLoad} className="bg-transparent">
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Reintentar (2s)
-                    </Button>
-                  )}
-                  {retryCount >= 3 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setImageError(false)
-                        setRetryCount(0)
-                        setImageKey((prev) => prev + 1)
-                        generateImage()
-                      }}
-                      className="bg-transparent"
-                    >
-                      <Wand2 className="h-4 w-4 mr-2" />
-                      Generar Nueva Imagen
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center text-muted-foreground p-8">
-                  <Wand2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-sm">Tu diseño aparecerá aquí</p>
-                  <p className="text-xs mt-2 opacity-75">Optimizado con IA • {selectedSize}</p>
-                </div>
-              )}
+              />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Zap className="h-3 w-3" />
+                <span>Tu prompt será optimizado automáticamente con IA</span>
+              </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Acciones de la imagen */}
-        {generatedImage && !imageError && (
-          <div className="flex gap-2">
-            <Link href={`/design/placeholder?image=${encodeURIComponent(generatedImage)}`} className="flex-1">
-              <Button className="w-full">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Usar en Diseño
-              </Button>
-            </Link>
-            <Button variant="outline" onClick={handleDownload}>
-              <Download className="h-4 w-4" />
+            {/* Selector de resolución */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <Label className="text-sm font-medium">Resolución de imagen</Label>
+              </div>
+              <RadioGroup value={selectedSize} onValueChange={setSelectedSize} className="space-y-2">
+                {sizeOptions.map((option) => (
+                  <div key={option.value} className="flex items-center space-x-2">
+                    <RadioGroupItem value={option.value} id={option.value} />
+                    <Label htmlFor={option.value} className="flex-1 cursor-pointer">
+                      <div className="font-medium">{option.label}</div>
+                      <div className="text-xs text-muted-foreground">{option.description}</div>
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+
+            {/* Botón de generación */}
+            <Button onClick={generateImage} disabled={isGenerating || !prompt.trim()} className="w-full">
+              {isGenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isOptimizing ? "Optimizando con IA..." : "Generando imagen..."}
+                </>
+              ) : (
+                <>
+                  <Wand2 className="mr-2 h-4 w-4" />
+                  Generar con IA ({selectedSize})
+                </>
+              )}
             </Button>
           </div>
-        )}
 
-        {/* Mostrar prompt optimizado */}
-        {optimizedPrompt && optimizedPrompt !== prompt && (
-          <div className="p-3 bg-muted rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap className="h-4 w-4 text-primary" />
-              <p className="text-sm font-medium text-primary">Prompt optimizado con IA:</p>
+          {/* Ejemplos rápidos */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium">Ejemplos rápidos</h3>
+            <div className="space-y-2">
+              {quickExamples.map((example, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  size="sm"
+                  className="w-full justify-start text-left h-auto py-3 px-4 bg-transparent"
+                  onClick={() => setPrompt(example)}
+                  disabled={isGenerating}
+                >
+                  <span className="text-sm">{example}</span>
+                </Button>
+              ))}
             </div>
-            <p className="text-sm text-muted-foreground">{optimizedPrompt}</p>
-            <div className="mt-2 text-xs text-muted-foreground">✅ Optimizado por OpenAI para mejores resultados</div>
           </div>
-        )}
+
+          {/* Estilos */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium">Estilos populares (reemplaza el anterior)</h3>
+            <div className="flex flex-wrap gap-2">
+              {popularStyles.map((style) => (
+                <Badge
+                  key={style}
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                  onClick={() => addStyleToBadge(style)}
+                >
+                  {style}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Columna derecha - Imagen generada */}
+        <div className="space-y-4">
+          <Card className="overflow-hidden">
+            <CardContent className="p-0">
+              <div
+                className={`${getImageContainerClasses()} bg-muted border-2 border-dashed border-muted-foreground/25 flex items-center justify-center`}
+              >
+                {generatedImage && !imageError ? (
+                  <div className="relative w-full h-full">
+                    <Image
+                      key={`${imageKey}-${retryCount}`}
+                      src={createProxyUrl(generatedImage) || "/placeholder.svg"}
+                      alt="Imagen generada"
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      onError={handleImageError}
+                      onLoad={handleImageLoad}
+                      priority
+                      unoptimized
+                    />
+                  </div>
+                ) : imageError ? (
+                  <div className="text-center text-muted-foreground p-8">
+                    <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-red-500" />
+                    <p className="text-sm mb-4">Error cargando imagen</p>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      {retryCount >= 3 ? "Máximo de reintentos alcanzado" : `Intento ${retryCount + 1} de 3`}
+                    </p>
+                    {retryCount < 3 && (
+                      <Button variant="outline" size="sm" onClick={retryImageLoad} className="bg-transparent">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Reintentar (2s)
+                      </Button>
+                    )}
+                    {retryCount >= 3 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setImageError(false)
+                          setRetryCount(0)
+                          setImageKey((prev) => prev + 1)
+                          generateImage()
+                        }}
+                        className="bg-transparent"
+                      >
+                        <Wand2 className="h-4 w-4 mr-2" />
+                        Generar Nueva Imagen
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground p-8">
+                    <Wand2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-sm">Tu diseño aparecerá aquí</p>
+                    <p className="text-xs mt-2 opacity-75">Optimizado con IA • {selectedSize}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Acciones de la imagen */}
+          {generatedImage && !imageError && (
+            <div className="flex gap-2">
+              <Link href={`/design/placeholder?image=${encodeURIComponent(generatedImage)}`} className="flex-1">
+                <Button className="w-full">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Usar en Diseño
+                </Button>
+              </Link>
+              <Button variant="outline" onClick={handleDownload}>
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {/* Mostrar prompt optimizado */}
+          {optimizedPrompt && optimizedPrompt !== prompt && (
+            <div className="p-3 bg-muted rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="h-4 w-4 text-primary" />
+                <p className="text-sm font-medium text-primary">Prompt optimizado con IA:</p>
+              </div>
+              <p className="text-sm text-muted-foreground">{optimizedPrompt}</p>
+              <div className="mt-2 text-xs text-muted-foreground">✅ Optimizado por OpenAI para mejores resultados</div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Content policy error popup */}
+      <Dialog open={showContentPolicyError} onOpenChange={setShowContentPolicyError}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <ShieldAlert className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-left">Contenido no permitido</DialogTitle>
+                <DialogDescription className="text-left">
+                  Tu descripción no cumple con las políticas de contenido
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-lg bg-red-50 p-4 border border-red-200">
+              <p className="text-sm text-red-800">
+                {contentPolicyErrorMessage ||
+                  "El contenido solicitado viola las políticas de contenido. Intenta con una descripción diferente."}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Sugerencias:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Evita contenido violento o inapropiado</li>
+                <li>• Usa descripciones más generales y positivas</li>
+                <li>• Enfócate en elementos artísticos y creativos</li>
+                <li>• Prueba con diferentes palabras clave</li>
+              </ul>
+            </div>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowContentPolicyError(false)
+                setPrompt("")
+              }}
+              className="w-full sm:w-auto"
+            >
+              Limpiar descripción
+            </Button>
+            <Button onClick={() => setShowContentPolicyError(false)} className="w-full sm:w-auto">
+              Modificar descripción
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

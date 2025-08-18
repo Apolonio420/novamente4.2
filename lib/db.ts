@@ -549,18 +549,33 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       }
 
       const imageMap = new Map<string, SavedImage>()
+      const seenKeys = new Set<string>()
+
+      console.log("🔄 Starting deduplication process...")
 
       // Primero agregar imágenes de la base de datos (tienen prioridad)
-      dbImages.forEach((image) => {
+      dbImages.forEach((image, index) => {
         const key = createImageKey(image.url, image.prompt)
-        imageMap.set(key, image)
+        console.log(`[v0] DB Image ${index}: key="${key.substring(0, 80)}...", id="${image.id}"`)
+
+        if (seenKeys.has(key)) {
+          console.log(`[v0] Duplicate detected in DB: ${key.substring(0, 50)}...`)
+        } else {
+          imageMap.set(key, image)
+          seenKeys.add(key)
+        }
       })
 
       // Luego agregar imágenes de localStorage solo si no existen ya
-      localImages.forEach((image) => {
+      localImages.forEach((image, index) => {
         const key = createImageKey(image.url, image.prompt)
-        if (!imageMap.has(key)) {
+        console.log(`[v0] Local Image ${index}: key="${key.substring(0, 80)}...", id="${image.id}"`)
+
+        if (seenKeys.has(key)) {
+          console.log(`[v0] Duplicate detected in localStorage: ${key.substring(0, 50)}...`)
+        } else {
           imageMap.set(key, image)
+          seenKeys.add(key)
         }
       })
 
@@ -569,13 +584,12 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       // Ordenar por fecha de creación (más recientes primero)
       uniqueImages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-      console.log("🎯 Returning", uniqueImages.slice(0, 20).length, "unique images")
-      console.log("📊 Deduplication stats:", {
-        dbImages: dbImages.length,
-        localImages: localImages.length,
-        totalBeforeDedup: dbImages.length + localImages.length,
-        uniqueAfterDedup: uniqueImages.length,
-      })
+      console.log("🎯 Deduplication complete:")
+      console.log(`[v0] DB images: ${dbImages.length}`)
+      console.log(`[v0] Local images: ${localImages.length}`)
+      console.log(`[v0] Total before dedup: ${dbImages.length + localImages.length}`)
+      console.log(`[v0] Unique after dedup: ${uniqueImages.length}`)
+      console.log(`[v0] Returning: ${uniqueImages.slice(0, 20).length} images`)
 
       return uniqueImages.slice(0, 20)
     }
@@ -688,7 +702,19 @@ function isDalleUrlExpired(url: string): boolean {
 }
 
 function createImageKey(url: string, prompt: string): string {
-  // Usar los primeros 50 caracteres de la URL y el prompt completo
-  const urlKey = url.substring(0, 50)
-  return `${urlKey}|${prompt.trim().toLowerCase()}`
+  try {
+    const urlObj = new URL(url)
+    // Para URLs de DALL-E, usar el pathname que contiene el ID único de la imagen
+    if (url.includes("oaidalleapiprodscus.blob.core.windows.net")) {
+      const pathname = urlObj.pathname
+      // El pathname contiene el ID único de la imagen generada
+      return `dalle:${pathname}|${prompt.trim().toLowerCase()}`
+    }
+    // Para otras URLs, usar la URL completa
+    return `${url}|${prompt.trim().toLowerCase()}`
+  } catch (error) {
+    // Fallback si no se puede parsear la URL
+    console.log("⚠️ Could not parse URL for key creation, using full URL")
+    return `${url}|${prompt.trim().toLowerCase()}`
+  }
 }
