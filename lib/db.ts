@@ -633,9 +633,9 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
 
         if (!imageMap.has(key)) {
           imageMap.set(key, image)
-          console.log(`[v0] ✅ Added DB image to map`)
+          console.log(`[v0] ✅ Added DB image to map (key not found)`)
         } else {
-          console.log(`[v0] ❌ Skipping duplicate DB image: ${key.substring(0, 50)}...`)
+          console.log(`[v0] ❌ Skipping duplicate DB image: ${key.substring(0, 50)}... (key already exists)`)
         }
       })
 
@@ -646,9 +646,9 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
 
         if (!imageMap.has(key)) {
           imageMap.set(key, image)
-          console.log(`[v0] ✅ Added localStorage image to map`)
+          console.log(`[v0] ✅ Added localStorage image to map (key not found)`)
         } else {
-          console.log(`[v0] ❌ Skipping duplicate localStorage image: ${key.substring(0, 50)}...`)
+          console.log(`[v0] ❌ Skipping duplicate localStorage image: ${key.substring(0, 50)}... (key already exists)`)
         }
       })
 
@@ -662,6 +662,7 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       console.log(`[v0] Local images processed: ${localImages.length}`)
       console.log(`[v0] Total before dedup: ${dbImages.length + localImages.length}`)
       console.log(`[v0] Unique after dedup: ${uniqueImages.length}`)
+      console.log(`[v0] Map size: ${imageMap.size}`)
       console.log(`[v0] Returning: ${uniqueImages.slice(0, 20).length} images`)
 
       return uniqueImages.slice(0, 20)
