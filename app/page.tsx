@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowRight, Zap, Shirt, Star, Sparkles, Palette, Wand2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { getRecentImages } from "@/lib/db"
+import { getUserImages } from "@/lib/db"
 import { cookies } from "next/headers"
 import { getCurrentUser, checkGenerationLimit, setupImageRetentionPolicy } from "@/lib/auth"
 import { ScrollButton } from "@/components/scroll-button"
@@ -54,9 +54,9 @@ export default async function Home() {
     // Si el usuario está autenticado, obtener sus imágenes
     // Si no, obtener las imágenes de la sesión actual
     if (user) {
-      recentImages = await getRecentImages(12)
-    } else if (sessionId) {
-      recentImages = await getRecentImages(6)
+      recentImages = await getUserImages(user.id)
+    } else {
+      recentImages = await getUserImages() // Sin userId para usuarios anónimos
     }
     console.log("Server-side fetched images:", recentImages.length)
   } catch (error) {
