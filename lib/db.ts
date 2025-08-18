@@ -625,17 +625,31 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       const imageMap = new Map<string, SavedImage>()
 
       console.log("🔄 Starting deduplication process...")
+      console.log(`[v0] 🗺️ Initial Map size: ${imageMap.size}`)
 
       // Procesar imágenes de la base de datos (tienen prioridad)
       dbImages.forEach((image, index) => {
         const key = createImageKey(image.url, image.prompt)
         console.log(`[v0] DB Image ${index}: key="${key.substring(0, 80)}...", id="${image.id}"`)
 
-        if (!imageMap.has(key)) {
+        console.log(`[v0] 🔍 Map size before check: ${imageMap.size}`)
+        console.log(
+          `[v0] 🔍 Map keys before check: [${Array.from(imageMap.keys())
+            .map((k) => k.substring(0, 20) + "...")
+            .join(", ")}]`,
+        )
+
+        const hasKey = imageMap.has(key)
+        console.log(`[v0] 🔍 imageMap.has("${key.substring(0, 50)}..."): ${hasKey}`)
+
+        if (!hasKey) {
           imageMap.set(key, image)
           console.log(`[v0] ✅ Added DB image to map (key not found)`)
+          console.log(`[v0] 🗺️ Map size after adding: ${imageMap.size}`)
         } else {
           console.log(`[v0] ❌ Skipping duplicate DB image: ${key.substring(0, 50)}... (key already exists)`)
+          const existingImage = imageMap.get(key)
+          console.log(`[v0] 🔍 Existing image ID: ${existingImage?.id}`)
         }
       })
 
@@ -644,9 +658,14 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
         const key = createImageKey(image.url, image.prompt)
         console.log(`[v0] Local Image ${index}: key="${key.substring(0, 80)}...", id="${image.id}"`)
 
-        if (!imageMap.has(key)) {
+        console.log(`[v0] 🔍 Map size before localStorage check: ${imageMap.size}`)
+        const hasKey = imageMap.has(key)
+        console.log(`[v0] 🔍 imageMap.has("${key.substring(0, 50)}..."): ${hasKey}`)
+
+        if (!hasKey) {
           imageMap.set(key, image)
           console.log(`[v0] ✅ Added localStorage image to map (key not found)`)
+          console.log(`[v0] 🗺️ Map size after adding: ${imageMap.size}`)
         } else {
           console.log(`[v0] ❌ Skipping duplicate localStorage image: ${key.substring(0, 50)}... (key already exists)`)
         }
@@ -662,7 +681,12 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       console.log(`[v0] Local images processed: ${localImages.length}`)
       console.log(`[v0] Total before dedup: ${dbImages.length + localImages.length}`)
       console.log(`[v0] Unique after dedup: ${uniqueImages.length}`)
-      console.log(`[v0] Map size: ${imageMap.size}`)
+      console.log(`[v0] Final Map size: ${imageMap.size}`)
+      console.log(
+        `[v0] Final Map keys: [${Array.from(imageMap.keys())
+          .map((k) => k.substring(0, 30) + "...")
+          .join(", ")}]`,
+      )
       console.log(`[v0] Returning: ${uniqueImages.slice(0, 20).length} images`)
 
       return uniqueImages.slice(0, 20)
