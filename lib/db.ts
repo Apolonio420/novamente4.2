@@ -30,32 +30,40 @@ export interface CartItem {
 
 async function checkImageExists(url: string, prompt: string, userId?: string): Promise<SavedImage | null> {
   try {
+    console.log("🔍 Checking if image exists with URL:", url.substring(0, 50) + "...")
     const key = createImageKey(url, prompt)
+    console.log("🔑 Generated key:", key.substring(0, 80) + "...")
 
-    // Buscar por URL y prompt similar
     const { data, error } = await supabase
       .from("images")
       .select("*")
-      .eq("prompt", prompt.trim())
       .eq("user_id", userId || null)
       .order("created_at", { ascending: false })
-      .limit(1)
+      .limit(100) // Buscar más imágenes para comparar claves
 
-    if (error || !data || data.length === 0) {
+    if (error) {
+      console.log("⚠️ Error searching for existing images:", error)
       return null
     }
 
-    // Verificar si la clave coincide exactamente
-    const existingKey = createImageKey(data[0].url, data[0].prompt)
-    if (existingKey === key) {
-      console.log("🔍 Found existing image with same key:", data[0].id)
-      return {
-        ...data[0],
-        hasBgRemoved: data[0].has_bg_removed || false,
-        urlWithoutBg: data[0].url_without_bg || null,
+    if (!data || data.length === 0) {
+      console.log("📭 No existing images found for user")
+      return null
+    }
+
+    for (const existingImage of data) {
+      const existingKey = createImageKey(existingImage.url, existingImage.prompt)
+      if (existingKey === key) {
+        console.log("🔍 Found existing image with same key:", existingImage.id)
+        return {
+          ...existingImage,
+          hasBgRemoved: existingImage.has_bg_removed || false,
+          urlWithoutBg: existingImage.url_without_bg || null,
+        }
       }
     }
 
+    console.log("✨ No duplicate found, image is unique")
     return null
   } catch (error) {
     console.log("⚠️ Error checking for existing image:", error)
