@@ -34,12 +34,15 @@ async function checkImageExists(url: string, prompt: string, userId?: string): P
     const key = createImageKey(url, prompt)
     console.log("🔑 Generated key:", key.substring(0, 80) + "...")
 
-    const { data, error } = await supabase
-      .from("images")
-      .select("*")
-      .eq("user_id", userId || null)
-      .order("created_at", { ascending: false })
-      .limit(100) // Buscar más imágenes para comparar claves
+    let query = supabase.from("images").select("*").order("created_at", { ascending: false }).limit(100) // Buscar más imágenes para comparar claves
+
+    if (userId) {
+      query = query.eq("user_id", userId)
+    } else {
+      query = query.is("user_id", null)
+    }
+
+    const { data, error } = await query
 
     if (error) {
       console.log("⚠️ Error searching for existing images:", error)
@@ -50,6 +53,8 @@ async function checkImageExists(url: string, prompt: string, userId?: string): P
       console.log("📭 No existing images found for user")
       return null
     }
+
+    console.log(`🔍 Checking ${data.length} existing images for duplicates...`)
 
     for (const existingImage of data) {
       const existingKey = createImageKey(existingImage.url, existingImage.prompt)
