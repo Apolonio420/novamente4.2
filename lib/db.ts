@@ -626,29 +626,29 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
 
       console.log("🔄 Starting deduplication process...")
 
-      // Primero agregar imágenes de la base de datos (tienen prioridad)
+      // Procesar imágenes de la base de datos (tienen prioridad)
       dbImages.forEach((image, index) => {
         const key = createImageKey(image.url, image.prompt)
         console.log(`[v0] DB Image ${index}: key="${key.substring(0, 80)}...", id="${image.id}"`)
 
-        // Solo agregar si no existe la clave (primera ocurrencia gana)
         if (!imageMap.has(key)) {
           imageMap.set(key, image)
+          console.log(`[v0] ✅ Added DB image to map`)
         } else {
-          console.log(`[v0] Skipping duplicate DB image: ${key.substring(0, 50)}...`)
+          console.log(`[v0] ❌ Skipping duplicate DB image: ${key.substring(0, 50)}...`)
         }
       })
 
-      // Luego agregar imágenes de localStorage solo si no existen ya
+      // Procesar imágenes de localStorage solo si no existen ya
       localImages.forEach((image, index) => {
         const key = createImageKey(image.url, image.prompt)
         console.log(`[v0] Local Image ${index}: key="${key.substring(0, 80)}...", id="${image.id}"`)
 
-        // Solo agregar si no existe la clave
         if (!imageMap.has(key)) {
           imageMap.set(key, image)
+          console.log(`[v0] ✅ Added localStorage image to map`)
         } else {
-          console.log(`[v0] Skipping duplicate localStorage image: ${key.substring(0, 50)}...`)
+          console.log(`[v0] ❌ Skipping duplicate localStorage image: ${key.substring(0, 50)}...`)
         }
       })
 
@@ -658,8 +658,8 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       uniqueImages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
       console.log("🎯 Deduplication complete:")
-      console.log(`[v0] DB images: ${dbImages.length}`)
-      console.log(`[v0] Local images: ${localImages.length}`)
+      console.log(`[v0] DB images processed: ${dbImages.length}`)
+      console.log(`[v0] Local images processed: ${localImages.length}`)
       console.log(`[v0] Total before dedup: ${dbImages.length + localImages.length}`)
       console.log(`[v0] Unique after dedup: ${uniqueImages.length}`)
       console.log(`[v0] Returning: ${uniqueImages.slice(0, 20).length} images`)
