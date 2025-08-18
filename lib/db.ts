@@ -28,6 +28,41 @@ export interface CartItem {
   }
 }
 
+async function checkImageExists(url: string, prompt: string, userId?: string): Promise<SavedImage | null> {
+  try {
+    const key = createImageKey(url, prompt)
+
+    // Buscar por URL y prompt similar
+    const { data, error } = await supabase
+      .from("images")
+      .select("*")
+      .eq("prompt", prompt.trim())
+      .eq("user_id", userId || null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+
+    if (error || !data || data.length === 0) {
+      return null
+    }
+
+    // Verificar si la clave coincide exactamente
+    const existingKey = createImageKey(data[0].url, data[0].prompt)
+    if (existingKey === key) {
+      console.log("🔍 Found existing image with same key:", data[0].id)
+      return {
+        ...data[0],
+        hasBgRemoved: data[0].has_bg_removed || false,
+        urlWithoutBg: data[0].url_without_bg || null,
+      }
+    }
+
+    return null
+  } catch (error) {
+    console.log("⚠️ Error checking for existing image:", error)
+    return null
+  }
+}
+
 // Export que necesitas - saveGeneratedImage
 export async function saveGeneratedImage(url: string, prompt: string, userId?: string): Promise<SavedImage | null> {
   try {
@@ -49,6 +84,32 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
     if (typeof prompt !== "string" || !prompt) {
       console.error("❌ Prompt must be a valid string. Received:", typeof prompt, prompt)
       return null
+    }
+
+    const existingImage = await checkImageExists(url, prompt, userId)
+    if (existingImage) {
+      console.log("♻️ Image already exists, returning existing record:", existingImage.id)
+
+      // Aún guardar en localStorage para usuarios anónimos si no está ahí
+      if (!userId && typeof window !== "undefined") {
+        try {
+          const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
+          const existsInLocal = localImages.some((img: SavedImage) => img.id === existingImage.id)
+
+          if (!existsInLocal) {
+            localImages.unshift(existingImage)
+            if (localImages.length > 50) {
+              localImages.splice(50)
+            }
+            localStorage.setItem("saved_images", JSON.stringify(localImages))
+            console.log("💾 Added existing image to localStorage for sync")
+          }
+        } catch (localError) {
+          console.error("❌ Error syncing to localStorage:", localError)
+        }
+      }
+
+      return existingImage
     }
 
     const imageId = uuidv4()
