@@ -789,10 +789,15 @@ function isDalleUrlExpired(url: string): boolean {
 function createImageKey(url: string, prompt: string): string {
   try {
     const urlObj = new URL(url)
-    // Para URLs de DALL-E, usar el pathname que contiene el ID único de la imagen
+    // Para URLs de DALL-E, extraer el ID único de la imagen del pathname
     if (url.includes("oaidalleapiprodscus.blob.core.windows.net")) {
       const pathname = urlObj.pathname
-      // El pathname contiene el ID único de la imagen generada
+      const imageIdMatch = pathname.match(/img-([a-zA-Z0-9]+)/)
+      if (imageIdMatch) {
+        const imageId = imageIdMatch[0] // img-XXXXX
+        return `dalle:${imageId}|${prompt.trim().toLowerCase()}`
+      }
+      // Fallback al pathname completo si no se encuentra el patrón
       return `dalle:${pathname}|${prompt.trim().toLowerCase()}`
     }
     // Para otras URLs, usar la URL completa
