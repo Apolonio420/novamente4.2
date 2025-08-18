@@ -32,9 +32,9 @@ async function checkImageExists(url: string, prompt: string, userId?: string): P
   try {
     console.log("🔍 Checking if image exists with URL:", url.substring(0, 50) + "...")
     const key = createImageKey(url, prompt)
-    console.log("🔑 Generated key:", key.substring(0, 80) + "...")
+    console.log("🔑 Generated key:", key)
 
-    let query = supabase.from("images").select("*").order("created_at", { ascending: false }).limit(100) // Buscar más imágenes para comparar claves
+    let query = supabase.from("images").select("*").order("created_at", { ascending: false }).limit(100)
 
     if (userId) {
       query = query.eq("user_id", userId)
@@ -630,28 +630,24 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       // Procesar imágenes de la base de datos primero (tienen prioridad)
       dbImages.forEach((image, index) => {
         const key = createImageKey(image.url, image.prompt)
-        console.log(`[v0] DB Image ${index}: key="${key.substring(0, 80)}...", id="${image.id}"`)
+        console.log(`[v0] DB Image ${index}: key="${key}", id="${image.id}"`)
         console.log(`[v0] Set size before check: ${seenKeys.size}`)
         console.log(`[v0] Set contains key: ${seenKeys.has(key)}`)
-        console.log(
-          `[v0] Set keys: [${Array.from(seenKeys)
-            .map((k) => k.substring(0, 30))
-            .join(", ")}]`,
-        )
+        console.log(`[v0] Set keys: [${Array.from(seenKeys).join(", ")}]`)
 
         if (!seenKeys.has(key)) {
           seenKeys.add(key)
           uniqueImages.push(image)
           console.log(`[v0] ✅ Added DB image (unique key) - Set size now: ${seenKeys.size}`)
         } else {
-          console.log(`[v0] ❌ Skipping duplicate DB image: ${key.substring(0, 50)}...`)
+          console.log(`[v0] ❌ Skipping duplicate DB image: ${key}`)
         }
       })
 
       // Procesar imágenes de localStorage solo si no existen ya
       localImages.forEach((image, index) => {
         const key = createImageKey(image.url, image.prompt)
-        console.log(`[v0] Local Image ${index}: key="${key.substring(0, 80)}...", id="${image.id}"`)
+        console.log(`[v0] Local Image ${index}: key="${key}", id="${image.id}"`)
         console.log(`[v0] Set size before check: ${seenKeys.size}`)
         console.log(`[v0] Set contains key: ${seenKeys.has(key)}`)
 
@@ -660,7 +656,7 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
           uniqueImages.push(image)
           console.log(`[v0] ✅ Added localStorage image (unique key) - Set size now: ${seenKeys.size}`)
         } else {
-          console.log(`[v0] ❌ Skipping duplicate localStorage image: ${key.substring(0, 50)}...`)
+          console.log(`[v0] ❌ Skipping duplicate localStorage image: ${key}`)
         }
       })
 
@@ -678,7 +674,6 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       return uniqueImages.slice(0, 20)
     }
 
-    // Para usuarios autenticados
     const { data, error } = await supabase
       .from("images")
       .select("*")
@@ -795,12 +790,12 @@ function createImageKey(url: string, prompt: string): string {
       const imageIdMatch = pathname.match(/img-([a-zA-Z0-9]+)/)
       if (imageIdMatch) {
         const imageId = imageIdMatch[0] // img-XXXXX
-        return `dalle:${imageId}|${prompt.trim().toLowerCase()}`
+        return `dalle:${imageId}`
       }
       // Fallback al pathname completo si no se encuentra el patrón
-      return `dalle:${pathname}|${prompt.trim().toLowerCase()}`
+      return `dalle:${pathname}`
     }
-    // Para otras URLs, usar la URL completa
+    // Para otras URLs, usar la URL completa con prompt
     return `${url}|${prompt.trim().toLowerCase()}`
   } catch (error) {
     // Fallback si no se puede parsear la URL
