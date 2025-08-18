@@ -583,7 +583,7 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
           .select("*")
           .is("user_id", null)
           .order("created_at", { ascending: false })
-          .limit(50) // Obtener más para filtrar expiradas
+          .limit(50)
 
         if (!error && data) {
           console.log("✅ Found", data.length, "anonymous images in database")
@@ -623,7 +623,6 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       }
 
       const imageMap = new Map<string, SavedImage>()
-      const seenKeys = new Set<string>()
 
       console.log("🔄 Starting deduplication process...")
 
@@ -632,11 +631,11 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
         const key = createImageKey(image.url, image.prompt)
         console.log(`[v0] DB Image ${index}: key="${key.substring(0, 80)}...", id="${image.id}"`)
 
-        if (seenKeys.has(key)) {
-          console.log(`[v0] Duplicate detected in DB: ${key.substring(0, 50)}...`)
-        } else {
+        // Solo agregar si no existe la clave (primera ocurrencia gana)
+        if (!imageMap.has(key)) {
           imageMap.set(key, image)
-          seenKeys.add(key)
+        } else {
+          console.log(`[v0] Skipping duplicate DB image: ${key.substring(0, 50)}...`)
         }
       })
 
@@ -645,11 +644,11 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
         const key = createImageKey(image.url, image.prompt)
         console.log(`[v0] Local Image ${index}: key="${key.substring(0, 80)}...", id="${image.id}"`)
 
-        if (seenKeys.has(key)) {
-          console.log(`[v0] Duplicate detected in localStorage: ${key.substring(0, 50)}...`)
-        } else {
+        // Solo agregar si no existe la clave
+        if (!imageMap.has(key)) {
           imageMap.set(key, image)
-          seenKeys.add(key)
+        } else {
+          console.log(`[v0] Skipping duplicate localStorage image: ${key.substring(0, 50)}...`)
         }
       })
 
@@ -674,7 +673,7 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(50) // Obtener más para filtrar expiradas
+      .limit(50)
 
     if (error) {
       console.error("❌ Error fetching user images:", error)
