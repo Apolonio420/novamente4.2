@@ -631,11 +631,18 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       dbImages.forEach((image, index) => {
         const key = createImageKey(image.url, image.prompt)
         console.log(`[v0] DB Image ${index}: key="${key.substring(0, 80)}...", id="${image.id}"`)
+        console.log(`[v0] Set size before check: ${seenKeys.size}`)
+        console.log(`[v0] Set contains key: ${seenKeys.has(key)}`)
+        console.log(
+          `[v0] Set keys: [${Array.from(seenKeys)
+            .map((k) => k.substring(0, 30))
+            .join(", ")}]`,
+        )
 
         if (!seenKeys.has(key)) {
           seenKeys.add(key)
           uniqueImages.push(image)
-          console.log(`[v0] ✅ Added DB image (unique key)`)
+          console.log(`[v0] ✅ Added DB image (unique key) - Set size now: ${seenKeys.size}`)
         } else {
           console.log(`[v0] ❌ Skipping duplicate DB image: ${key.substring(0, 50)}...`)
         }
@@ -645,11 +652,13 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       localImages.forEach((image, index) => {
         const key = createImageKey(image.url, image.prompt)
         console.log(`[v0] Local Image ${index}: key="${key.substring(0, 80)}...", id="${image.id}"`)
+        console.log(`[v0] Set size before check: ${seenKeys.size}`)
+        console.log(`[v0] Set contains key: ${seenKeys.has(key)}`)
 
         if (!seenKeys.has(key)) {
           seenKeys.add(key)
           uniqueImages.push(image)
-          console.log(`[v0] ✅ Added localStorage image (unique key)`)
+          console.log(`[v0] ✅ Added localStorage image (unique key) - Set size now: ${seenKeys.size}`)
         } else {
           console.log(`[v0] ❌ Skipping duplicate localStorage image: ${key.substring(0, 50)}...`)
         }
