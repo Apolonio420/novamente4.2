@@ -139,6 +139,42 @@ function DesignPlaceholderContent() {
     return originalUrl
   }, [])
 
+  const getCurrentGarmentMapping = useCallback(() => {
+    let garmentType = ""
+
+    if (selectedGarment === "aura-oversize-tshirt") {
+      garmentType = "tshirt-oversize"
+    } else if (selectedGarment === "aldea-classic-tshirt") {
+      garmentType = "tshirt-classic"
+    } else if (selectedGarment === "astra-oversize-hoodie") {
+      garmentType = "hoodie"
+    }
+
+    return getGarmentMapping(garmentType, selectedColor, activeTab as "front" | "back")
+  }, [selectedGarment, selectedColor, activeTab])
+
+  const getExactCoordinates = useCallback(() => {
+    const currentMapping = getCurrentGarmentMapping()
+
+    if (currentMapping) {
+      return currentMapping.coordinates
+    }
+
+    return { x: 100, y: 150, width: 200, height: 200 }
+  }, [getCurrentGarmentMapping])
+
+  const currentProduct = products[selectedGarment]
+  const currentColorData = currentProduct.colors[selectedColor as keyof typeof currentProduct.colors]
+  const exactCoords = getExactCoordinates()
+
+  const CONTAINER_SIZE = 400
+  const printArea = {
+    left: (exactCoords.x / CONTAINER_SIZE) * 100,
+    top: (exactCoords.y / CONTAINER_SIZE) * 100,
+    width: (exactCoords.width / CONTAINER_SIZE) * 100,
+    height: (exactCoords.height / CONTAINER_SIZE) * 100,
+  }
+
   // Cargar imagen desde URL
   useEffect(() => {
     const imageUrl = searchParams.get("imageUrl") || searchParams.get("image")
@@ -173,7 +209,7 @@ function DesignPlaceholderContent() {
         })
       }
     }
-  }, [searchParams, createProxyUrl, toast])
+  }, [searchParams, createProxyUrl, getCurrentGarmentMapping, toast])
 
   // Cargar historial de imágenes
   useEffect(() => {
@@ -216,9 +252,6 @@ function DesignPlaceholderContent() {
       setSelectedSize(availableSizes[0])
     }
   }, [selectedGarment, selectedSize])
-
-  const currentProduct = products[selectedGarment]
-  const currentColorData = currentProduct.colors[selectedColor as keyof typeof currentProduct.colors]
 
   const handleImageSelect = (imageUrl: string, imageData?: SavedImage) => {
     console.log("🖼️ Image selected:", imageUrl)
@@ -366,29 +399,6 @@ function DesignPlaceholderContent() {
     return imagePath
   }
 
-  // Obtener coordenadas exactas para la combinación actual
-  const getExactCoordinates = () => {
-    const currentMapping = getCurrentGarmentMapping()
-
-    if (currentMapping) {
-      return currentMapping.coordinates
-    }
-
-    // Fallback a coordenadas genéricas
-    return { x: 100, y: 150, width: 200, height: 200 }
-  }
-
-  const exactCoords = getExactCoordinates()
-
-  // Convertir coordenadas absolutas a porcentajes (asumiendo contenedor de 400x400)
-  const CONTAINER_SIZE = 400
-  const printArea = {
-    left: (exactCoords.x / CONTAINER_SIZE) * 100,
-    top: (exactCoords.y / CONTAINER_SIZE) * 100,
-    width: (exactCoords.width / CONTAINER_SIZE) * 100,
-    height: (exactCoords.height / CONTAINER_SIZE) * 100,
-  }
-
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!designImage) return
     setIsDragging(true)
@@ -419,20 +429,6 @@ function DesignPlaceholderContent() {
 
   const handleMouseUp = () => {
     setIsDragging(false)
-  }
-
-  const getCurrentGarmentMapping = () => {
-    let garmentType = ""
-
-    if (selectedGarment === "aura-oversize-tshirt") {
-      garmentType = "tshirt-oversize"
-    } else if (selectedGarment === "aldea-classic-tshirt") {
-      garmentType = "tshirt-classic"
-    } else if (selectedGarment === "astra-oversize-hoodie") {
-      garmentType = "hoodie"
-    }
-
-    return getGarmentMapping(garmentType, selectedColor, activeTab as "front" | "back")
   }
 
   return (
