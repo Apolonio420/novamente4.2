@@ -137,21 +137,27 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
     const mapping = getCurrentGarmentMapping()
     if (!mapping) return { transform: `scale(${scale})` }
 
-    // Calculate position within the print area
     const printArea = mapping.coordinates
+
+    // Calculate exact center of print area
     const centerX = printArea.x + printArea.width / 2
     const centerY = printArea.y + printArea.height / 2
 
-    // Apply user position adjustments within the print area
-    const offsetX = ((position.x - 50) / 50) * (printArea.width / 4) // Allow movement within print area
-    const offsetY = ((position.y - 50) / 50) * (printArea.height / 4)
+    // Apply user position adjustments within the print area bounds
+    const maxOffsetX = printArea.width / 3 // Allow movement within 1/3 of print area
+    const maxOffsetY = printArea.height / 3
+
+    const offsetX = ((position.x - 50) / 50) * maxOffsetX
+    const offsetY = ((position.y - 50) / 50) * maxOffsetY
 
     return {
+      position: "absolute",
       left: `${centerX + offsetX}px`,
       top: `${centerY + offsetY}px`,
       transform: `translate(-50%, -50%) scale(${scale})`,
-      width: "200px",
-      height: "200px",
+      width: "120px", // Fixed size for design image
+      height: "120px",
+      zIndex: 10,
     }
   }
 
@@ -161,10 +167,12 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
 
     const coords = mapping.coordinates
     return {
+      position: "absolute",
       left: `${coords.x}px`,
       top: `${coords.y}px`,
       width: `${coords.width}px`,
       height: `${coords.height}px`,
+      zIndex: 5,
     }
   }
 
