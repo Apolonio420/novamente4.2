@@ -13,14 +13,14 @@ import { formatCurrency } from "@/lib/utils"
 import { Loader, ShoppingCart, Plus, Check, ArrowLeft, ZoomIn, ZoomOut } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { getGarmentMapping } from "@/lib/garment-mappings"
+import garmentMappings from "@/lib/garment-mappings.json"
+import { saveImageWithoutBackground } from "@/lib/db"
 
 interface DesignCustomizerProps {
   initialImageUrl: string
   imageId?: string
 }
 
-// PRECIOS EXACTOS
 const GARMENT_PRICES = {
   "aura-oversize-tshirt": 37000,
   "aldea-classic-tshirt": 33000,
@@ -50,17 +50,23 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
   const [backDesign, setBackDesign] = useState<string | null>(null)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
 
+  const [isRemovingBg, setIsRemovingBg] = useState(false)
+  const [hasBackgroundRemoved, setHasBackgroundRemoved] = useState(false)
+  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null)
+  const [bgRemovedImageUrl, setBgRemovedImageUrl] = useState<string | null>(null)
+
   const [position, setPosition] = useState({ x: 50, y: 50 })
-  const [scale, setScale] = useState(0.5)
+  const [scale, setScale] = useState(0.8)
 
   useEffect(() => {
     if (initialImageUrl) {
-      // Create proxy URL for DALL-E images
       const processedUrl = initialImageUrl.includes("oaidalleapiprodscus.blob.core.windows.net")
         ? `/api/proxy-image?url=${encodeURIComponent(initialImageUrl)}`
         : initialImageUrl
 
       setFrontDesign(processedUrl)
+      setOriginalImageUrl(processedUrl)
+      setPosition({ x: 50, y: 50 })
       console.log("[v0] Setting initial design:", processedUrl)
 
       toast({
@@ -90,6 +96,70 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
     })
   }
 
+  const toggleBackgroundRemoval = async () => {
+    if (!originalImageUrl || !imageId) {
+      toast({
+        title: "Error",
+        description: "No se puede procesar la imagen",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (hasBackgroundRemoved && bgRemovedImageUrl) {
+      setFrontDesign(originalImageUrl)
+      setHasBackgroundRemoved(false)
+      toast({
+        title: "Fondo restaurado",
+        description: "Se restauró la imagen original",
+      })
+      return
+    }
+
+    if (bgRemovedImageUrl) {
+      setFrontDesign(bgRemovedImageUrl)
+      setHasBackgroundRemoved(true)
+      toast({
+        title: "Fondo removido",
+        description: "Se aplicó la versión sin fondo",
+      })
+      return
+    }
+
+    setIsRemovingBg(true)
+    try {
+      const response = await fetch("/api/remove-bg", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: originalImageUrl }),
+      })
+
+      if (!response.ok) throw new Error("Failed to remove background")
+
+      const { imageUrl: bgRemovedUrl } = await response.json()
+
+      await saveImageWithoutBackground(imageId, bgRemovedUrl)
+
+      setBgRemovedImageUrl(bgRemovedUrl)
+      setFrontDesign(bgRemovedUrl)
+      setHasBackgroundRemoved(true)
+
+      toast({
+        title: "Fondo removido",
+        description: "Se removió el fondo exitosamente",
+      })
+    } catch (error) {
+      console.error("Error removing background:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo remover el fondo",
+        variant: "destructive",
+      })
+    } finally {
+      setIsRemovingBg(false)
+    }
+  }
+
   const getGarmentImage = () => {
     const side = activeTab === "back" ? "back" : "front"
 
@@ -112,25 +182,25 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
   }
 
   const increaseSize = () => {
-    setScale((prev) => Math.min(1.75, prev + 0.05)) // Máximo 1.75x
+    setScale((prev) => Math.min(3.5, prev + 0.1)) // Máximo 3.5x
   }
 
   const decreaseSize = () => {
-    setScale((prev) => Math.max(0.25, prev - 0.05)) // Mínimo 0.25x
+    setScale((prev) => Math.max(0.5, prev - 0.1)) // Mínimo 0.5x
   }
 
   const getCurrentGarmentMapping = () => {
-    let garmentType = ""
+    let garmentName = ""
 
-    if (selectedGarment === "aura-oversize-tshirt") {
-      garmentType = "tshirt-oversize"
+    if (selectedGarment === "astra-oversize-hoodie") {
+      garmentName = `Hoodie ${selectedColor === "black" ? "Negro" : selectedColor === "caramel" ? "Caramelo" : selectedColor === "cream" ? "Crema" : selectedColor === "gray" ? "Gris" : "Blanco"} ${activeTab === "front" ? "Frontal" : "Trasero"}`
+    } else if (selectedGarment === "aura-oversize-tshirt") {
+      garmentName = `T-shirt ${selectedColor === "black" ? "Negro" : selectedColor === "white" ? "Blanco" : "Caramelo"} Oversize ${activeTab === "front" ? "Frontal" : "Trasero"}`
     } else if (selectedGarment === "aldea-classic-tshirt") {
-      garmentType = "tshirt-classic"
-    } else if (selectedGarment === "astra-oversize-hoodie") {
-      garmentType = "hoodie"
+      garmentName = `T-shirt ${selectedColor === "black" ? "Negro" : "Blanco"} Clásico ${activeTab === "front" ? "Frontal" : "Trasero"}`
     }
 
-    return getGarmentMapping(garmentType, selectedColor, activeTab as "front" | "back")
+    return garmentMappings.find((mapping) => mapping.name === garmentName)
   }
 
   const getDesignPositioning = () => {
@@ -139,24 +209,16 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
 
     const printArea = mapping.coordinates
 
-    // Calculate exact center of print area
-    const centerX = printArea.x + printArea.width / 2
-    const centerY = printArea.y + printArea.height / 2
-
-    // Apply user position adjustments within the print area bounds
-    const maxOffsetX = printArea.width / 3 // Allow movement within 1/3 of print area
-    const maxOffsetY = printArea.height / 3
-
-    const offsetX = ((position.x - 50) / 50) * maxOffsetX
-    const offsetY = ((position.y - 50) / 50) * maxOffsetY
+    const designX = printArea.x + (printArea.width * position.x) / 100
+    const designY = printArea.y + (printArea.height * position.y) / 100
 
     return {
-      position: "absolute",
-      left: `${centerX + offsetX}px`,
-      top: `${centerY + offsetY}px`,
+      position: "absolute" as const,
+      left: `${designX}px`,
+      top: `${designY}px`,
       transform: `translate(-50%, -50%) scale(${scale})`,
-      width: "120px", // Fixed size for design image
-      height: "120px",
+      width: "100px",
+      height: "100px",
       zIndex: 10,
     }
   }
@@ -176,7 +238,6 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
     }
   }
 
-  // CÁLCULO EXACTO DEL PRECIO FINAL
   const basePrice = GARMENT_PRICES[selectedGarment as keyof typeof GARMENT_PRICES] || 0
   const hasDoubleStamping = frontDesign && backDesign
   const finalPrice = basePrice + (hasDoubleStamping ? DOUBLE_STAMPING_EXTRA : 0)
@@ -233,7 +294,6 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <Link href="/design">
           <Button variant="ghost" size="sm">
@@ -246,7 +306,6 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* Vista del producto */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -255,9 +314,28 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
               </Label>
               <Switch id="model-toggle" checked={showOnModel} onCheckedChange={setShowOnModel} />
             </div>
+            {getCurrentDesign() && imageId && (
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">{hasBackgroundRemoved ? "Con fondo" : "Sin fondo"}</Label>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={toggleBackgroundRemoval}
+                  disabled={isRemovingBg}
+                  className="h-8 bg-transparent"
+                >
+                  {isRemovingBg ? (
+                    <Loader className="w-4 h-4 animate-spin" />
+                  ) : hasBackgroundRemoved ? (
+                    "Restaurar fondo"
+                  ) : (
+                    "Remover fondo"
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
 
-          {/* Tabs para frontal/trasero */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="front" className="flex items-center gap-2">
@@ -368,7 +446,6 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
             </TabsContent>
           </Tabs>
 
-          {/* Controles de posición */}
           {getCurrentDesign() && (
             <Card>
               <CardContent className="p-4">
@@ -378,8 +455,8 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                     <Label className="text-xs">Horizontal: {position.x}%</Label>
                     <input
                       type="range"
-                      min="20"
-                      max="80"
+                      min="10"
+                      max="90"
                       value={position.x}
                       onChange={(e) => setPosition({ ...position, x: Number(e.target.value) })}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
@@ -389,8 +466,8 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                     <Label className="text-xs">Vertical: {position.y}%</Label>
                     <input
                       type="range"
-                      min="20"
-                      max="80"
+                      min="10"
+                      max="90"
                       value={position.y}
                       onChange={(e) => setPosition({ ...position, y: Number(e.target.value) })}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
@@ -404,7 +481,7 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                           size="sm"
                           variant="outline"
                           onClick={decreaseSize}
-                          disabled={scale <= 0.25}
+                          disabled={scale <= 0.5}
                           className="h-6 w-6 p-0 bg-transparent"
                         >
                           <ZoomOut className="w-3 h-3" />
@@ -413,7 +490,7 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                           size="sm"
                           variant="outline"
                           onClick={increaseSize}
-                          disabled={scale >= 1.75}
+                          disabled={scale >= 3.5}
                           className="h-6 w-6 p-0"
                         >
                           <ZoomIn className="w-3 h-3" />
@@ -422,18 +499,18 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                     </div>
                     <input
                       type="range"
-                      min="0.25"
-                      max="1.75"
-                      step="0.05"
+                      min="0.5"
+                      max="3.5"
+                      step="0.1"
                       value={scale}
                       onChange={(e) => setScale(Number(e.target.value))}
                       className="w-full h-3 bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 rounded-lg appearance-none cursor-pointer size-slider"
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>25%</span>
                       <span>50%</span>
                       <span>100%</span>
-                      <span>175%</span>
+                      <span>200%</span>
+                      <span>350%</span>
                     </div>
                   </div>
                 </div>
@@ -442,9 +519,7 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
           )}
         </div>
 
-        {/* Panel de configuración */}
         <div className="space-y-6">
-          {/* Selector de prenda */}
           <Card>
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Elegí tu prenda</h3>
@@ -471,7 +546,6 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
             </CardContent>
           </Card>
 
-          {/* Selector de color */}
           <Card>
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Color</h3>
@@ -501,7 +575,6 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
             </CardContent>
           </Card>
 
-          {/* Selector de talla */}
           <Card>
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Talle</h3>
@@ -523,7 +596,6 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
             </CardContent>
           </Card>
 
-          {/* Opciones de estampado */}
           <Card>
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Opciones de Estampado</h3>
@@ -568,7 +640,6 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
             </CardContent>
           </Card>
 
-          {/* Resumen de precio */}
           <Card>
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Resumen de Precio</h3>
