@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -13,7 +13,7 @@ import { formatCurrency } from "@/lib/utils"
 import { Loader, ShoppingCart, Plus, Check, ArrowLeft, ZoomIn, ZoomOut } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { getGarmentMapping, getGarmentPositioning } from "@/lib/garment-mappings"
+import { getGarmentMapping } from "@/lib/garment-mappings"
 
 interface DesignCustomizerProps {
   initialImageUrl: string
@@ -46,12 +46,29 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
   const [selectedSize, setSelectedSize] = useState("M")
   const [showOnModel, setShowOnModel] = useState(false)
   const [activeTab, setActiveTab] = useState("front")
-  const [frontDesign, setFrontDesign] = useState<string | null>(initialImageUrl || null)
+  const [frontDesign, setFrontDesign] = useState<string | null>(null)
   const [backDesign, setBackDesign] = useState<string | null>(null)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
 
-  const [position, setPosition] = useState({ x: 50, y: 45 })
-  const [scale, setScale] = useState(0.3)
+  const [position, setPosition] = useState({ x: 50, y: 50 })
+  const [scale, setScale] = useState(0.5)
+
+  useEffect(() => {
+    if (initialImageUrl) {
+      // Create proxy URL for DALL-E images
+      const processedUrl = initialImageUrl.includes("oaidalleapiprodscus.blob.core.windows.net")
+        ? `/api/proxy-image?url=${encodeURIComponent(initialImageUrl)}`
+        : initialImageUrl
+
+      setFrontDesign(processedUrl)
+      console.log("[v0] Setting initial design:", processedUrl)
+
+      toast({
+        title: "Imagen cargada",
+        description: "La imagen se ha aplicado automáticamente a la prenda",
+      })
+    }
+  }, [initialImageUrl, toast])
 
   const addBackDesign = () => {
     if (frontDesign) {
@@ -95,11 +112,11 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
   }
 
   const increaseSize = () => {
-    setScale((prev) => Math.min(1.05, prev + 0.05)) // Máximo 3.5x (1.05 = 3.5x del 0.3 inicial)
+    setScale((prev) => Math.min(1.75, prev + 0.05)) // Máximo 1.75x
   }
 
   const decreaseSize = () => {
-    setScale((prev) => Math.max(0.15, prev - 0.05)) // Mínimo 0.5x (0.15 = 0.5x del 0.3 inicial)
+    setScale((prev) => Math.max(0.25, prev - 0.05)) // Mínimo 0.25x
   }
 
   const getCurrentGarmentMapping = () => {
@@ -118,12 +135,36 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
 
   const getDesignPositioning = () => {
     const mapping = getCurrentGarmentMapping()
-    const basePositioning = getGarmentPositioning(mapping)
+    if (!mapping) return { transform: `scale(${scale})` }
 
-    // Apply user adjustments on top of base positioning
+    // Calculate position within the print area
+    const printArea = mapping.coordinates
+    const centerX = printArea.x + printArea.width / 2
+    const centerY = printArea.y + printArea.height / 2
+
+    // Apply user position adjustments within the print area
+    const offsetX = ((position.x - 50) / 50) * (printArea.width / 4) // Allow movement within print area
+    const offsetY = ((position.y - 50) / 50) * (printArea.height / 4)
+
     return {
-      ...basePositioning,
+      left: `${centerX + offsetX}px`,
+      top: `${centerY + offsetY}px`,
       transform: `translate(-50%, -50%) scale(${scale})`,
+      width: "200px",
+      height: "200px",
+    }
+  }
+
+  const getPrintAreaStyle = () => {
+    const mapping = getCurrentGarmentMapping()
+    if (!mapping) return {}
+
+    const coords = mapping.coordinates
+    return {
+      left: `${coords.x}px`,
+      top: `${coords.y}px`,
+      width: `${coords.width}px`,
+      height: `${coords.height}px`,
     }
   }
 
@@ -240,31 +281,23 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                       className="object-contain"
                     />
                     {frontDesign && (
-                      <div
-                        className="absolute pointer-events-none"
-                        style={{
-                          ...getDesignPositioning(),
-                          left: `${position.x}%`,
-                          top: `${position.y}%`,
-                        }}
-                      >
+                      <div className="absolute pointer-events-none" style={getDesignPositioning()}>
                         <Image
                           src={frontDesign || "/placeholder.svg"}
                           alt="Diseño frontal"
                           fill
                           className="object-contain"
+                          onError={(e) => {
+                            console.log("[v0] Image load error:", frontDesign)
+                            e.currentTarget.src = "/placeholder.svg"
+                          }}
                         />
                       </div>
                     )}
                     {getCurrentGarmentMapping() && (
                       <div
-                        className="absolute border-2 border-red-500 border-dashed pointer-events-none opacity-30"
-                        style={{
-                          left: `${(getCurrentGarmentMapping()?.coordinates.x || 0) / 4}%`,
-                          top: `${(getCurrentGarmentMapping()?.coordinates.y || 0) / 5}%`,
-                          width: `${(getCurrentGarmentMapping()?.coordinates.width || 200) / 4}px`,
-                          height: `${(getCurrentGarmentMapping()?.coordinates.height || 200) / 5}px`,
-                        }}
+                        className="absolute border-2 border-red-500 border-dashed pointer-events-none opacity-50"
+                        style={getPrintAreaStyle()}
                       >
                         <div className="absolute -bottom-6 left-0 text-xs text-red-500 bg-white px-1 rounded">
                           Área de impresión
@@ -287,31 +320,23 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                       className="object-contain"
                     />
                     {backDesign && (
-                      <div
-                        className="absolute pointer-events-none"
-                        style={{
-                          ...getDesignPositioning(),
-                          left: `${position.x}%`,
-                          top: `${position.y}%`,
-                        }}
-                      >
+                      <div className="absolute pointer-events-none" style={getDesignPositioning()}>
                         <Image
                           src={backDesign || "/placeholder.svg"}
                           alt="Diseño trasero"
                           fill
                           className="object-contain"
+                          onError={(e) => {
+                            console.log("[v0] Image load error:", backDesign)
+                            e.currentTarget.src = "/placeholder.svg"
+                          }}
                         />
                       </div>
                     )}
                     {getCurrentGarmentMapping() && (
                       <div
-                        className="absolute border-2 border-red-500 border-dashed pointer-events-none opacity-30"
-                        style={{
-                          left: `${(getCurrentGarmentMapping()?.coordinates.x || 0) / 4}%`,
-                          top: `${(getCurrentGarmentMapping()?.coordinates.y || 0) / 5}%`,
-                          width: `${(getCurrentGarmentMapping()?.coordinates.width || 200) / 4}px`,
-                          height: `${(getCurrentGarmentMapping()?.coordinates.height || 200) / 5}px`,
-                        }}
+                        className="absolute border-2 border-red-500 border-dashed pointer-events-none opacity-50"
+                        style={getPrintAreaStyle()}
                       >
                         <div className="absolute -bottom-6 left-0 text-xs text-red-500 bg-white px-1 rounded">
                           Área de impresión
@@ -345,8 +370,8 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                     <Label className="text-xs">Horizontal: {position.x}%</Label>
                     <input
                       type="range"
-                      min="10"
-                      max="90"
+                      min="20"
+                      max="80"
                       value={position.x}
                       onChange={(e) => setPosition({ ...position, x: Number(e.target.value) })}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
@@ -356,8 +381,8 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                     <Label className="text-xs">Vertical: {position.y}%</Label>
                     <input
                       type="range"
-                      min="10"
-                      max="90"
+                      min="20"
+                      max="80"
                       value={position.y}
                       onChange={(e) => setPosition({ ...position, y: Number(e.target.value) })}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
@@ -365,13 +390,13 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <Label className="text-xs">Tamaño del estampado: {Math.round((scale / 0.3) * 100)}%</Label>
+                      <Label className="text-xs">Tamaño del estampado: {Math.round(scale * 100)}%</Label>
                       <div className="flex items-center gap-1">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={decreaseSize}
-                          disabled={scale <= 0.15}
+                          disabled={scale <= 0.25}
                           className="h-6 w-6 p-0 bg-transparent"
                         >
                           <ZoomOut className="w-3 h-3" />
@@ -380,7 +405,7 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                           size="sm"
                           variant="outline"
                           onClick={increaseSize}
-                          disabled={scale >= 1.05}
+                          disabled={scale >= 1.75}
                           className="h-6 w-6 p-0"
                         >
                           <ZoomIn className="w-3 h-3" />
@@ -389,18 +414,18 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                     </div>
                     <input
                       type="range"
-                      min="0.15"
-                      max="1.05"
+                      min="0.25"
+                      max="1.75"
                       step="0.05"
                       value={scale}
                       onChange={(e) => setScale(Number(e.target.value))}
                       className="w-full h-3 bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 rounded-lg appearance-none cursor-pointer size-slider"
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>0.5x</span>
-                      <span>1x</span>
-                      <span>2x</span>
-                      <span>3.5x</span>
+                      <span>25%</span>
+                      <span>50%</span>
+                      <span>100%</span>
+                      <span>175%</span>
                     </div>
                   </div>
                 </div>
