@@ -24,6 +24,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { getUserImages, saveImageWithoutBackground, type SavedImage } from "@/lib/db"
 import { useToast } from "@/hooks/use-toast"
+import { getGarmentMapping, getGarmentPositioning } from "@/lib/garment-mappings"
 
 // Configuración de productos
 const products = {
@@ -91,28 +92,6 @@ const products = {
   },
 }
 
-// Coordenadas exactas del JSON
-const EXACT_COORDINATES = {
-  "astra-oversize-hoodie-black-front": { x: 112, y: 175, width: 180, height: 145 },
-  "astra-oversize-hoodie-black-back": { x: 116, y: 175, width: 180, height: 240 },
-  "astra-oversize-hoodie-caramel-front": { x: 112, y: 160, width: 176, height: 145 },
-  "astra-oversize-hoodie-caramel-back": { x: 128, y: 155, width: 144, height: 245 },
-  "astra-oversize-hoodie-cream-front": { x: 116, y: 155, width: 160, height: 135 },
-  "astra-oversize-hoodie-cream-back": { x: 124, y: 150, width: 156, height: 255 },
-  "astra-oversize-hoodie-gray-front": { x: 116, y: 145, width: 160, height: 150 },
-  "astra-oversize-hoodie-gray-back": { x: 116, y: 150, width: 164, height: 255 },
-  "aldea-classic-tshirt-black-front": { x: 96, y: 135, width: 204, height: 265 },
-  "aldea-classic-tshirt-black-back": { x: 100, y: 105, width: 192, height: 310 },
-  "aldea-classic-tshirt-white-front": { x: 96, y: 125, width: 204, height: 290 },
-  "aldea-classic-tshirt-white-back": { x: 112, y: 110, width: 180, height: 300 },
-  "aura-oversize-tshirt-black-front": { x: 104, y: 130, width: 184, height: 275 },
-  "aura-oversize-tshirt-black-back": { x: 108, y: 105, width: 184, height: 310 },
-  "aura-oversize-tshirt-white-front": { x: 112, y: 115, width: 164, height: 305 },
-  "aura-oversize-tshirt-white-back": { x: 120, y: 105, width: 176, height: 315 },
-  "aura-oversize-tshirt-caramel-front": { x: 116, y: 120, width: 176, height: 290 },
-  "aura-oversize-tshirt-caramel-back": { x: 116, y: 100, width: 172, height: 315 },
-}
-
 // Estilos base de Novamente
 const baseStyles = [
   { id: "style-1", url: "/styles/acuarela-leon.png", prompt: "León en estilo acuarela" },
@@ -162,7 +141,7 @@ function DesignPlaceholderContent() {
 
   // Cargar imagen desde URL
   useEffect(() => {
-    const imageUrl = searchParams.get("imageUrl")
+    const imageUrl = searchParams.get("imageUrl") || searchParams.get("image")
     if (imageUrl) {
       console.log("🖼️ Loading image from URL parameter:", imageUrl.substring(0, 100) + "...")
       try {
@@ -170,6 +149,21 @@ function DesignPlaceholderContent() {
         const proxiedUrl = createProxyUrl(decodedUrl)
         console.log("🔄 Using proxied URL:", proxiedUrl.substring(0, 100) + "...")
         setDesignImage(proxiedUrl)
+
+        const currentMapping = getCurrentGarmentMapping()
+        if (currentMapping) {
+          const positioning = getGarmentPositioning(currentMapping)
+          // Convert positioning to center of print area
+          setDesignPosition({
+            x: Number.parseFloat(positioning.left) || 50,
+            y: Number.parseFloat(positioning.top) || 50,
+          })
+        }
+
+        toast({
+          title: "Imagen cargada",
+          description: "Tu diseño se ha cargado automáticamente en la prenda",
+        })
       } catch (error) {
         console.error("❌ Error processing image URL:", error)
         toast({
@@ -374,11 +368,10 @@ function DesignPlaceholderContent() {
 
   // Obtener coordenadas exactas para la combinación actual
   const getExactCoordinates = () => {
-    const key = `${selectedGarment}-${selectedColor}-${activeTab}`
-    const coords = EXACT_COORDINATES[key as keyof typeof EXACT_COORDINATES]
+    const currentMapping = getCurrentGarmentMapping()
 
-    if (coords) {
-      return coords
+    if (currentMapping) {
+      return currentMapping.coordinates
     }
 
     // Fallback a coordenadas genéricas
@@ -426,6 +419,20 @@ function DesignPlaceholderContent() {
 
   const handleMouseUp = () => {
     setIsDragging(false)
+  }
+
+  const getCurrentGarmentMapping = () => {
+    let garmentType = ""
+
+    if (selectedGarment === "aura-oversize-tshirt") {
+      garmentType = "tshirt-oversize"
+    } else if (selectedGarment === "aldea-classic-tshirt") {
+      garmentType = "tshirt-classic"
+    } else if (selectedGarment === "astra-oversize-hoodie") {
+      garmentType = "hoodie"
+    }
+
+    return getGarmentMapping(garmentType, selectedColor, activeTab as "front" | "back")
   }
 
   return (
@@ -642,16 +649,19 @@ function DesignPlaceholderContent() {
                       priority
                     />
 
-                    {/* Área de impresión */}
                     <div
-                      className="absolute border-2 border-red-500 border-dashed pointer-events-none"
+                      className="absolute border-2 border-red-500 border-dashed pointer-events-none opacity-50"
                       style={{
                         left: `${printArea.left}%`,
                         top: `${printArea.top}%`,
                         width: `${printArea.width}%`,
                         height: `${printArea.height}%`,
                       }}
-                    />
+                    >
+                      <div className="absolute -bottom-6 left-0 text-xs text-red-500 bg-white px-1 rounded">
+                        Área de impresión
+                      </div>
+                    </div>
 
                     {/* Imagen de diseño */}
                     {designImage && (

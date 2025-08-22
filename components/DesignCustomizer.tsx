@@ -13,6 +13,7 @@ import { formatCurrency } from "@/lib/utils"
 import { Loader, ShoppingCart, Plus, Check, ArrowLeft, ZoomIn, ZoomOut } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { getGarmentMapping, getGarmentPositioning } from "@/lib/garment-mappings"
 
 interface DesignCustomizerProps {
   initialImageUrl: string
@@ -45,7 +46,7 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
   const [selectedSize, setSelectedSize] = useState("M")
   const [showOnModel, setShowOnModel] = useState(false)
   const [activeTab, setActiveTab] = useState("front")
-  const [frontDesign, setFrontDesign] = useState<string | null>(initialImageUrl)
+  const [frontDesign, setFrontDesign] = useState<string | null>(initialImageUrl || null)
   const [backDesign, setBackDesign] = useState<string | null>(null)
   const [isAddingToCart, setIsAddingToCart] = useState(false)
 
@@ -99,6 +100,31 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
 
   const decreaseSize = () => {
     setScale((prev) => Math.max(0.15, prev - 0.05)) // Mínimo 0.5x (0.15 = 0.5x del 0.3 inicial)
+  }
+
+  const getCurrentGarmentMapping = () => {
+    let garmentType = ""
+
+    if (selectedGarment === "aura-oversize-tshirt") {
+      garmentType = "tshirt-oversize"
+    } else if (selectedGarment === "aldea-classic-tshirt") {
+      garmentType = "tshirt-classic"
+    } else if (selectedGarment === "astra-oversize-hoodie") {
+      garmentType = "hoodie"
+    }
+
+    return getGarmentMapping(garmentType, selectedColor, activeTab as "front" | "back")
+  }
+
+  const getDesignPositioning = () => {
+    const mapping = getCurrentGarmentMapping()
+    const basePositioning = getGarmentPositioning(mapping)
+
+    // Apply user adjustments on top of base positioning
+    return {
+      ...basePositioning,
+      transform: `translate(-50%, -50%) scale(${scale})`,
+    }
   }
 
   // CÁLCULO EXACTO DEL PRECIO FINAL
@@ -217,11 +243,9 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                       <div
                         className="absolute pointer-events-none"
                         style={{
+                          ...getDesignPositioning(),
                           left: `${position.x}%`,
                           top: `${position.y}%`,
-                          transform: `translate(-50%, -50%) scale(${scale})`,
-                          width: "200px",
-                          height: "200px",
                         }}
                       >
                         <Image
@@ -230,6 +254,21 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                           fill
                           className="object-contain"
                         />
+                      </div>
+                    )}
+                    {getCurrentGarmentMapping() && (
+                      <div
+                        className="absolute border-2 border-red-500 border-dashed pointer-events-none opacity-30"
+                        style={{
+                          left: `${(getCurrentGarmentMapping()?.coordinates.x || 0) / 4}%`,
+                          top: `${(getCurrentGarmentMapping()?.coordinates.y || 0) / 5}%`,
+                          width: `${(getCurrentGarmentMapping()?.coordinates.width || 200) / 4}px`,
+                          height: `${(getCurrentGarmentMapping()?.coordinates.height || 200) / 5}px`,
+                        }}
+                      >
+                        <div className="absolute -bottom-6 left-0 text-xs text-red-500 bg-white px-1 rounded">
+                          Área de impresión
+                        </div>
                       </div>
                     )}
                   </div>
@@ -251,11 +290,9 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                       <div
                         className="absolute pointer-events-none"
                         style={{
+                          ...getDesignPositioning(),
                           left: `${position.x}%`,
                           top: `${position.y}%`,
-                          transform: `translate(-50%, -50%) scale(${scale})`,
-                          width: "200px",
-                          height: "200px",
                         }}
                       >
                         <Image
@@ -264,6 +301,21 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                           fill
                           className="object-contain"
                         />
+                      </div>
+                    )}
+                    {getCurrentGarmentMapping() && (
+                      <div
+                        className="absolute border-2 border-red-500 border-dashed pointer-events-none opacity-30"
+                        style={{
+                          left: `${(getCurrentGarmentMapping()?.coordinates.x || 0) / 4}%`,
+                          top: `${(getCurrentGarmentMapping()?.coordinates.y || 0) / 5}%`,
+                          width: `${(getCurrentGarmentMapping()?.coordinates.width || 200) / 4}px`,
+                          height: `${(getCurrentGarmentMapping()?.coordinates.height || 200) / 5}px`,
+                        }}
+                      >
+                        <div className="absolute -bottom-6 left-0 text-xs text-red-500 bg-white px-1 rounded">
+                          Área de impresión
+                        </div>
                       </div>
                     )}
                     {!backDesign && (

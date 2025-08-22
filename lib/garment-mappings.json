@@ -1,0 +1,326 @@
+[
+  {
+    "id": "1755023347511",
+    "name": "Hoodie Negro Frontal",
+    "garmentPath": "/garments/hoodie-black-front.jpeg",
+    "margins": {
+      "top": 35,
+      "right": 27,
+      "bottom": 36,
+      "left": 28
+    },
+    "coordinates": {
+      "x": 112,
+      "y": 175,
+      "width": 180,
+      "height": 145
+    },
+    "timestamp": 1755023347511
+  },
+  {
+    "id": "1755023390559",
+    "name": "Hoodie Negro Trasero",
+    "garmentPath": "/garments/hoodie-black-back.jpeg",
+    "margins": {
+      "top": 35,
+      "right": 26,
+      "bottom": 17,
+      "left": 29
+    },
+    "coordinates": {
+      "x": 116,
+      "y": 175,
+      "width": 180,
+      "height": 240
+    },
+    "timestamp": 1755023390559
+  },
+  {
+    "id": "1755023468831",
+    "name": "Hoodie Caramelo Frontal",
+    "garmentPath": "/garments/hoodie-caramel-front.jpeg",
+    "margins": {
+      "top": 32,
+      "right": 28,
+      "bottom": 39,
+      "left": 28
+    },
+    "coordinates": {
+      "x": 112,
+      "y": 160,
+      "width": 176,
+      "height": 145
+    },
+    "timestamp": 1755023468831
+  },
+  {
+    "id": "1755023509358",
+    "name": "Hoodie Caramelo Trasero",
+    "garmentPath": "/garments/hoodie-caramel-back.png",
+    "margins": {
+      "top": 31,
+      "right": 32,
+      "bottom": 20,
+      "left": 32
+    },
+    "coordinates": {
+      "x": 128,
+      "y": 155,
+      "width": 144,
+      "height": 245
+    },
+    "timestamp": 1755023509358
+  },
+  {
+    "id": "1755023531199",
+    "name": "Hoodie Crema Frontal",
+    "garmentPath": "/garments/hoodie-cream-front.jpeg",
+    "margins": {
+      "top": 31,
+      "right": 31,
+      "bottom": 42,
+      "left": 29
+    },
+    "coordinates": {
+      "x": 116,
+      "y": 155,
+      "width": 160,
+      "height": 135
+    },
+    "timestamp": 1755023531199
+  },
+  {
+    "id": "1755023566679",
+    "name": "Hoodie Crema Trasero",
+    "garmentPath": "/garments/hoodie-cream-back.png",
+    "margins": {
+      "top": 30,
+      "right": 30,
+      "bottom": 19,
+      "left": 31
+    },
+    "coordinates": {
+      "x": 124,
+      "y": 150,
+      "width": 156,
+      "height": 255
+    },
+    "timestamp": 1755023566679
+  },
+  {
+    "id": "1755023609951",
+    "name": "Hoodie Gris Frontal",
+    "garmentPath": "/garments/hoodie-gray-front.jpeg",
+    "margins": {
+      "top": 29,
+      "right": 31,
+      "bottom": 41,
+      "left": 29
+    },
+    "coordinates": {
+      "x": 116,
+      "y": 145,
+      "width": 160,
+      "height": 150
+    },
+    "timestamp": 1755023609951
+  },
+  {
+    "id": "1755023640767",
+    "name": "Hoodie Gris Trasero",
+    "garmentPath": "/garments/hoodie-gray-back.png",
+    "margins": {
+      "top": 30,
+      "right": 30,
+      "bottom": 19,
+      "left": 29
+    },
+    "coordinates": {
+      "x": 116,
+      "y": 150,
+      "width": 164,
+      "height": 255
+    },
+    "timestamp": 1755023640767
+  },
+  {
+    "id": "1755023682390",
+    "name": "T-shirt Negro Clásico Frontal",
+    "garmentPath": "/garments/tshirt-black-classic-front.jpeg",
+    "margins": {
+      "top": 27,
+      "right": 25,
+      "bottom": 20,
+      "left": 24
+    },
+    "coordinates": {
+      "x": 96,
+      "y": 135,
+      "width": 204,
+      "height": 265
+    },
+    "timestamp": 1755023682390
+  },
+  {
+    "id": "1755023706200",
+    "name": "T-shirt Negro Clásico Trasero",
+    "garmentPath": "/garments/tshirt-black-classic-back.jpeg",
+    "margins": {
+      "top": 21,
+      "right": 27,
+      "bottom": 17,
+      "left": 25
+    },
+    "coordinates": {
+      "x": 100,
+      "y": 105,
+      "width": 192,
+      "height": 310
+    },
+    "timestamp": 1755023706200
+  },
+  {
+    "id": "1755023730447",
+    "name": "T-shirt Negro Oversize Frontal",
+    "garmentPath": "/garments/tshirt-black-oversize-front.jpeg",
+    "margins": {
+      "top": 26,
+      "right": 28,
+      "bottom": 19,
+      "left": 26
+    },
+    "coordinates": {
+      "x": 104,
+      "y": 130,
+      "width": 184,
+      "height": 275
+    },
+    "timestamp": 1755023730447
+  },
+  {
+    "id": "1755023755554",
+    "name": "T-shirt Negro Oversize Trasero",
+    "garmentPath": "/garments/tshirt-black-oversize-back.jpeg",
+    "margins": {
+      "top": 21,
+      "right": 27,
+      "bottom": 17,
+      "left": 27
+    },
+    "coordinates": {
+      "x": 108,
+      "y": 105,
+      "width": 184,
+      "height": 310
+    },
+    "timestamp": 1755023755554
+  },
+  {
+    "id": "1755023779606",
+    "name": "T-shirt Blanco Clásico Frontal",
+    "garmentPath": "/garments/tshirt-white-classic-front.jpeg",
+    "margins": {
+      "top": 25,
+      "right": 25,
+      "bottom": 17,
+      "left": 24
+    },
+    "coordinates": {
+      "x": 96,
+      "y": 125,
+      "width": 204,
+      "height": 290
+    },
+    "timestamp": 1755023779606
+  },
+  {
+    "id": "1755023805622",
+    "name": "T-shirt Blanco Clásico Trasero",
+    "garmentPath": "/garments/tshirt-white-classic-back.jpeg",
+    "margins": {
+      "top": 22,
+      "right": 27,
+      "bottom": 18,
+      "left": 28
+    },
+    "coordinates": {
+      "x": 112,
+      "y": 110,
+      "width": 180,
+      "height": 300
+    },
+    "timestamp": 1755023805622
+  },
+  {
+    "id": "1755023823255",
+    "name": "T-shirt Blanco Oversize Frontal",
+    "garmentPath": "/garments/tshirt-white-oversize-front.jpeg",
+    "margins": {
+      "top": 23,
+      "right": 31,
+      "bottom": 16,
+      "left": 28
+    },
+    "coordinates": {
+      "x": 112,
+      "y": 115,
+      "width": 164,
+      "height": 305
+    },
+    "timestamp": 1755023823255
+  },
+  {
+    "id": "1755023843496",
+    "name": "T-shirt Blanco Oversize Trasero",
+    "garmentPath": "/garments/tshirt-white-oversize-back.jpeg",
+    "margins": {
+      "top": 21,
+      "right": 26,
+      "bottom": 16,
+      "left": 30
+    },
+    "coordinates": {
+      "x": 120,
+      "y": 105,
+      "width": 176,
+      "height": 315
+    },
+    "timestamp": 1755023843496
+  },
+  {
+    "id": "1755024175022",
+    "name": "T-shirt Caramelo Oversize Frontal",
+    "garmentPath": "/garments/tshirt-caramel-oversize-front.jpeg",
+    "margins": {
+      "top": 24,
+      "right": 27,
+      "bottom": 18,
+      "left": 29
+    },
+    "coordinates": {
+      "x": 116,
+      "y": 120,
+      "width": 176,
+      "height": 290
+    },
+    "timestamp": 1755024175022
+  },
+  {
+    "id": "1755024195151",
+    "name": "T-shirt Caramelo Oversize Trasero",
+    "garmentPath": "/garments/tshirt-caramel-oversize-back.jpeg",
+    "margins": {
+      "top": 20,
+      "right": 28,
+      "bottom": 17,
+      "left": 29
+    },
+    "coordinates": {
+      "x": 116,
+      "y": 100,
+      "width": 172,
+      "height": 315
+    },
+    "timestamp": 1755024195151
+  }
+]
