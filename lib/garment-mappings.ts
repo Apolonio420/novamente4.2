@@ -14,18 +14,40 @@ const PATH_BUILDERS: Record<string, (color: string, side: "front" | "back") => s
   "aura-oversize-tshirt": (c, s) => `tshirt-${c}-oversize-${s}`,
   "aldea-classic-tshirt": (c, s) => `tshirt-${c}-classic-${s}`,
   "astra-oversize-hoodie": (c, s) => `hoodie-${c}-${s}`,
-  // "lienzo": ... (si aplica)
 }
 
 export function getGarmentMapping(garmentType: string, color: string, side: "front" | "back"): GarmentMapping | null {
   const builder = PATH_BUILDERS[garmentType]
-  if (!builder) return null
+  if (!builder) {
+    console.log(`[v0] No path builder found for garment type: ${garmentType}`)
+    return null
+  }
+
   const needle = builder(color.toLowerCase(), side.toLowerCase())
-  const m = garmentMappings.find((g) => g.garmentPath.toLowerCase().includes(needle))
-  return m ?? null
+  console.log(`[v0] Searching for mapping with needle: ${needle}`)
+  console.log(
+    `[v0] Available mappings:`,
+    garmentMappings.map((g) => g.garmentPath),
+  )
+
+  const mapping = garmentMappings.find((g) => g.garmentPath.toLowerCase().includes(needle))
+
+  if (!mapping) {
+    console.log(`[v0] No mapping found for needle: ${needle}`)
+    return {
+      id: "fallback",
+      name: "Fallback Mapping",
+      garmentPath: "fallback",
+      margins: { top: 0, right: 0, bottom: 0, left: 0 },
+      coordinates: { x: 112, y: 175, width: 180, height: 145 }, // Hoodie Negro Frontal coordinates
+      timestamp: Date.now(),
+    }
+  }
+
+  console.log(`[v0] Found mapping:`, mapping)
+  return mapping
 }
 
-/** COMPAT: viejo import en /design/placeholder */
 export function getGarmentPositioning(mapping: GarmentMapping | null) {
   if (!mapping) {
     return {
@@ -37,8 +59,7 @@ export function getGarmentPositioning(mapping: GarmentMapping | null) {
       maxHeight: "40%",
     }
   }
-  // Este helper queda como "dummy" y ya no se usa para el borde real (ver PrintArea).
-  // Lo mantenemos solo para no romper imports antiguos.
+
   const baseWidth = 400,
     baseHeight = 500
   return {

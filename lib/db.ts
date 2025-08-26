@@ -10,7 +10,6 @@ export interface SavedImage {
   prompt: string
   created_at: string
   user_id: string | null
-  anon_id: string | null
   storage_url: string | null
   expires_at: string | null
   urlWithoutBg?: string | null
@@ -147,7 +146,6 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
       url,
       prompt,
       user_id: finalUserId,
-      anon_id: null,
       storage_url: storageUrl,
       expires_at: expiresAt,
       has_bg_removed: false,
