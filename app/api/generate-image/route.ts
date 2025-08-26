@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 import { saveGeneratedImage } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
+import { getOrCreateAnonIdServer } from "@/lib/anon"
 import { optimizePrompt } from "@/lib/promptOptimizer"
 
 const openai = new OpenAI({
@@ -69,32 +70,32 @@ export async function POST(request: NextRequest) {
       userId = user?.id || null
     } catch (authError) {
       console.error("Error getting current user:", authError)
-      // Continue without user ID for anonymous users
+      // Use anon ID for server-side anonymous users
+      userId = getOrCreateAnonIdServer()
     }
 
     // Guardar imagen en la base de datos - PASAR PARÁMETROS INDIVIDUALES CORRECTAMENTE
     console.log("💾 Attempting to save image to database...")
-    console.log("💾 Saving image to database with parameters:", {
-      urlType: typeof imageUrl,
-      urlLength: typeof imageUrl === "string" ? imageUrl.length : "N/A",
-      promptType: typeof prompt,
-      promptLength: typeof prompt === "string" ? prompt.length : "N/A",
-      userId,
-    })
-
     const savedImage = await saveGeneratedImage(imageUrl, prompt, userId)
 
     if (savedImage) {
       console.log("✅ Image saved to database successfully")
+      return NextResponse.json({
+        imageUrl:
+          savedImage.urlWithoutBg && savedImage.hasBgRemoved
+            ? savedImage.urlWithoutBg
+            : savedImage.storage_url || imageUrl,
+        prompt,
+        revisedPrompt: response.data[0]?.revised_prompt,
+      })
     } else {
       console.log("⚠️ Failed to save image to database, but generation was successful")
+      return NextResponse.json({
+        imageUrl,
+        prompt,
+        revisedPrompt: response.data[0]?.revised_prompt,
+      })
     }
-
-    return NextResponse.json({
-      imageUrl,
-      prompt,
-      revisedPrompt: response.data[0]?.revised_prompt,
-    })
   } catch (error: any) {
     console.error("❌ Error generating image:", error)
 

@@ -1,13 +1,19 @@
 import { supabase } from "./supabase"
 import { getCurrentUser } from "./auth"
+import { getOrCreateAnonIdServer } from "./anon"
 import { v4 as uuidv4 } from "uuid"
+import { put } from "@vercel/blob"
 
 export interface SavedImage {
   id: string
+  key: string
   url: string
   prompt: string
   created_at: string
   user_id: string | null
+  anon_id: string | null
+  storage_url: string | null
+  expires_at: string | null
   urlWithoutBg?: string | null
   hasBgRemoved?: boolean
 }
@@ -99,103 +105,64 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
       return null
     }
 
-    const existingImage = await checkImageExists(url, prompt, userId)
-    if (existingImage) {
-      console.log("♻️ Image already exists, returning existing record:", existingImage.id)
+    const finalUserId = userId || (typeof window === "undefined" ? getOrCreateAnonIdServer() : null)
+    const key = createImageKey(url, prompt)
 
-      // Aún guardar en localStorage para usuarios anónimos si no está ahí
-      if (!userId && typeof window !== "undefined") {
-        try {
-          const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-          const existsInLocal = localImages.some((img: SavedImage) => img.id === existingImage.id)
+    // Check if already exists
+    const { data: existing } = await supabase.from("images").select("*").eq("key", key).single()
 
-          if (!existsInLocal) {
-            localImages.unshift(existingImage)
-            if (localImages.length > 50) {
-              localImages.splice(50)
-            }
-            localStorage.setItem("saved_images", JSON.stringify(localImages))
-            console.log("💾 Added existing image to localStorage for sync")
-          }
-        } catch (localError) {
-          console.error("❌ Error syncing to localStorage:", localError)
-        }
+    if (existing) {
+      console.log("♻️ Image already exists, returning existing record:", existing.id)
+      return {
+        ...existing,
+        hasBgRemoved: existing.has_bg_removed || false,
+        urlWithoutBg: existing.url_without_bg || null,
       }
+    }
 
-      return existingImage
+    let storageUrl: string | null = null
+    let expiresAt: string | null = null
+
+    if (url.includes("oaidalleapiprodscus.blob.core.windows.net")) {
+      try {
+        const filename = `dalle-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
+        storageUrl = await archiveExternalImageToPermanent(url, filename)
+
+        // Set expiration for original URL
+        const urlObj = new URL(url)
+        const seParam = urlObj.searchParams.get("se")
+        if (seParam) {
+          expiresAt = new Date(seParam).toISOString()
+        }
+
+        console.log("📦 Archived image to permanent storage:", storageUrl)
+      } catch (archiveError) {
+        console.error("⚠️ Failed to archive image, using original URL:", archiveError)
+      }
     }
 
     const imageId = uuidv4()
-    const newImage: SavedImage = {
+    const newImage = {
       id: imageId,
-      url: url,
-      prompt: prompt,
-      created_at: new Date().toISOString(),
-      user_id: userId || null,
-      hasBgRemoved: false,
-      urlWithoutBg: null,
+      key,
+      url,
+      prompt,
+      user_id: finalUserId,
+      anon_id: !userId && typeof window === "undefined" ? getOrCreateAnonIdServer() : null,
+      storage_url: storageUrl,
+      expires_at: expiresAt,
+      has_bg_removed: false,
+      url_without_bg: null,
     }
 
-    if (!userId && typeof window !== "undefined") {
-      try {
-        const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-        localImages.unshift(newImage)
-        // Keep only last 50 images in localStorage
-        if (localImages.length > 50) {
-          localImages.splice(50)
-        }
-        localStorage.setItem("saved_images", JSON.stringify(localImages))
-        console.log("💾 Image also saved to localStorage for anonymous user")
-      } catch (localError) {
-        console.error("❌ Error saving to localStorage:", localError)
-      }
-    }
-
-    const { data, error } = await supabase
-      .from("images")
-      .insert({
-        id: imageId,
-        url: url,
-        prompt: prompt,
-        user_id: userId || null,
-        has_bg_removed: false,
-        url_without_bg: null,
-      })
-      .select()
-      .single()
+    const { data, error } = await supabase.from("images").insert(newImage).select().single()
 
     if (error) {
       console.error("❌ Error saving image to Supabase:", error)
-
-      if (!userId && typeof window !== "undefined") {
-        console.log("✅ Image saved to localStorage as fallback for anonymous user")
-        return newImage
-      }
-
-      // Para usuarios autenticados, intentar guardar en localStorage como fallback
-      if (typeof window !== "undefined") {
-        try {
-          const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-          localImages.unshift(newImage)
-          if (localImages.length > 50) {
-            localImages.splice(50)
-          }
-          localStorage.setItem("saved_images", JSON.stringify(localImages))
-          console.log("✅ Image saved to localStorage as fallback")
-          return newImage
-        } catch (localError) {
-          console.error("❌ Error saving to localStorage:", localError)
-        }
-      }
       return null
     }
 
-    console.log("✅ Image saved successfully to database:", {
-      id: data.id,
-      url: data.url.substring(0, 50) + "...",
-      prompt: data.prompt,
-    })
-
+    console.log("✅ Image saved successfully to database with permanent storage")
     return {
       ...data,
       hasBgRemoved: data.has_bg_removed || false,
@@ -203,31 +170,6 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
     }
   } catch (error) {
     console.error("❌ Exception in saveGeneratedImage:", error)
-
-    if (typeof window !== "undefined") {
-      try {
-        const imageId = uuidv4()
-        const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-        const newImage: SavedImage = {
-          id: imageId,
-          url: url,
-          prompt: prompt,
-          created_at: new Date().toISOString(),
-          user_id: userId || null,
-          hasBgRemoved: false,
-          urlWithoutBg: null,
-        }
-        localImages.unshift(newImage)
-        if (localImages.length > 50) {
-          localImages.splice(50)
-        }
-        localStorage.setItem("saved_images", JSON.stringify(localImages))
-        console.log("✅ Image saved to localStorage after exception")
-        return newImage
-      } catch (localError) {
-        console.error("❌ Error in exception fallback:", localError)
-      }
-    }
     return null
   }
 }
@@ -573,189 +515,177 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
   try {
     console.log("🔍 Getting user images for userId:", userId)
 
-    if (!userId) {
-      console.log("👤 No userId provided, checking both database and localStorage...")
+    let query = supabase.from("images").select("*").order("created_at", { ascending: false }).limit(50)
 
-      let dbImages: SavedImage[] = []
-      try {
-        const { data, error } = await supabase
-          .from("images")
-          .select("*")
-          .is("user_id", null)
-          .order("created_at", { ascending: false })
-          .limit(50)
-
-        if (!error && data) {
-          console.log("✅ Found", data.length, "anonymous images in database")
-
-          // Filtrar URLs expiradas
-          const validDbImages = data.filter((item) => !isDalleUrlExpired(item.url))
-          console.log(`🧹 Filtered out ${data.length - validDbImages.length} expired images from database`)
-
-          dbImages = validDbImages.map((item) => ({
-            ...item,
-            hasBgRemoved: item.has_bg_removed || false,
-            urlWithoutBg: item.url_without_bg || null,
-          }))
-        }
-      } catch (dbError) {
-        console.log("⚠️ Could not fetch from database:", dbError)
+    if (userId) {
+      query = query.eq("user_id", userId)
+    } else {
+      const anonId = typeof window === "undefined" ? getOrCreateAnonIdServer() : null
+      if (anonId) {
+        query = query.eq("anon_id", anonId)
+      } else {
+        query = query.is("user_id", null).is("anon_id", null)
       }
-
-      let localImages: SavedImage[] = []
-      if (typeof window !== "undefined") {
-        try {
-          const stored = JSON.parse(localStorage.getItem("saved_images") || "[]")
-          console.log("📱 Found", stored.length, "images in localStorage")
-
-          // Filtrar URLs expiradas
-          const validImages = stored.filter((image: SavedImage) => !isDalleUrlExpired(image.url))
-
-          if (validImages.length !== stored.length) {
-            console.log(`🧹 Cleaned ${stored.length - validImages.length} expired images from localStorage`)
-            localStorage.setItem("saved_images", JSON.stringify(validImages))
-          }
-
-          localImages = validImages
-        } catch (localError) {
-          console.error("❌ Error reading localStorage:", localError)
-        }
-      }
-
-      const seenKeys = new Set<string>()
-      const uniqueImages: SavedImage[] = []
-
-      console.log("🔄 Starting deduplication process with Set...")
-
-      // Procesar imágenes de la base de datos primero (tienen prioridad)
-      dbImages.forEach((image, index) => {
-        const key = createImageKey(image.url, image.prompt)
-        console.log(`[v0] DB Image ${index}: key="${key}", id="${image.id}"`)
-        console.log(`[v0] Set size before check: ${seenKeys.size}`)
-        console.log(`[v0] Set contains key: ${seenKeys.has(key)}`)
-        console.log(`[v0] Set keys: [${Array.from(seenKeys).join(", ")}]`)
-
-        if (!seenKeys.has(key)) {
-          seenKeys.add(key)
-          uniqueImages.push(image)
-          console.log(`[v0] ✅ Added DB image (unique key) - Set size now: ${seenKeys.size}`)
-        } else {
-          console.log(`[v0] ❌ Skipping duplicate DB image: ${key}`)
-        }
-      })
-
-      // Procesar imágenes de localStorage solo si no existen ya
-      localImages.forEach((image, index) => {
-        const key = createImageKey(image.url, image.prompt)
-        console.log(`[v0] Local Image ${index}: key="${key}", id="${image.id}"`)
-        console.log(`[v0] Set size before check: ${seenKeys.size}`)
-        console.log(`[v0] Set contains key: ${seenKeys.has(key)}`)
-
-        if (!seenKeys.has(key)) {
-          seenKeys.add(key)
-          uniqueImages.push(image)
-          console.log(`[v0] ✅ Added localStorage image (unique key) - Set size now: ${seenKeys.size}`)
-        } else {
-          console.log(`[v0] ❌ Skipping duplicate localStorage image: ${key}`)
-        }
-      })
-
-      // Ordenar por fecha de creación (más recientes primero)
-      uniqueImages.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-      console.log("🎯 Deduplication complete:")
-      console.log(`[v0] DB images processed: ${dbImages.length}`)
-      console.log(`[v0] Local images processed: ${localImages.length}`)
-      console.log(`[v0] Total before dedup: ${dbImages.length + localImages.length}`)
-      console.log(`[v0] Unique after dedup: ${uniqueImages.length}`)
-      console.log(`[v0] Set size: ${seenKeys.size}`)
-      console.log(`[v0] Returning: ${uniqueImages.slice(0, 20).length} images`)
-
-      return uniqueImages.slice(0, 20)
     }
 
-    const { data, error } = await supabase
-      .from("images")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(50)
+    const { data, error } = await query
 
     if (error) {
       console.error("❌ Error fetching user images:", error)
       return []
     }
 
-    // Filtrar URLs expiradas para usuarios autenticados también
-    const validImages = (data || []).filter((item) => !isDalleUrlExpired(item.url))
-    console.log(
-      `✅ Found ${validImages.length} valid user images (${(data?.length || 0) - validImages.length} expired filtered out)`,
+    const processedImages = await Promise.all(
+      (data || []).map(async (item) => {
+        let finalUrl = item.url
+
+        if (item.storage_url) {
+          finalUrl = item.storage_url
+        } else if (item.expires_at && new Date(item.expires_at) < new Date() && item.url) {
+          // Try to re-archive expired URL
+          try {
+            const filename = `rearchive-${item.id}`
+            const newStorageUrl = await archiveExternalImageToPermanent(item.url, filename)
+
+            // Update record with new storage URL
+            await supabase.from("images").update({ storage_url: newStorageUrl }).eq("id", item.id)
+
+            finalUrl = newStorageUrl
+            console.log("🔄 Re-archived expired image:", item.id)
+          } catch (reArchiveError) {
+            console.error("⚠️ Failed to re-archive expired image:", reArchiveError)
+          }
+        }
+
+        return {
+          ...item,
+          url: finalUrl,
+          hasBgRemoved: item.has_bg_removed || false,
+          urlWithoutBg: item.url_without_bg || null,
+        }
+      }),
     )
 
-    return validImages.slice(0, 20).map((item) => ({
-      ...item,
-      hasBgRemoved: item.has_bg_removed || false,
-      urlWithoutBg: item.url_without_bg || null,
-    }))
+    return processedImages.slice(0, 20)
   } catch (error) {
     console.error("❌ Error in getUserImages:", error)
-
-    if (typeof window !== "undefined") {
-      try {
-        const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-        const validImages = localImages.filter((image: SavedImage) => !isDalleUrlExpired(image.url))
-        console.log("🔄 Fallback: Found", validImages.length, "valid images in localStorage")
-        return validImages.slice(0, 20)
-      } catch (localError) {
-        console.error("❌ Error in fallback localStorage read:", localError)
-      }
-    }
-
     return []
   }
 }
 
 // Función para limpiar imágenes expiradas
-export async function cleanupExpiredImages(): Promise<void> {
+export async function cleanupExpiredImages(): Promise<{
+  deleted: number
+  archived: number
+  duplicatesRemoved: number
+}> {
   try {
     console.log("🧹 Starting cleanup of expired images...")
 
-    const { data, error } = await supabase
+    let deleted = 0,
+      archived = 0,
+      duplicatesRemoved = 0
+
+    // Delete expired images without storage_url
+    const { data: expiredWithoutStorage } = await supabase
       .from("images")
-      .select("id, url")
-      .contains("url", "oaidalleapiprodscus.blob.core.windows.net")
+      .select("id")
+      .lt("expires_at", new Date().toISOString())
+      .is("storage_url", null)
 
-    if (error) {
-      console.error("❌ Error fetching images for cleanup:", error)
-      return
+    if (expiredWithoutStorage?.length) {
+      const { error } = await supabase
+        .from("images")
+        .delete()
+        .in(
+          "id",
+          expiredWithoutStorage.map((img) => img.id),
+        )
+
+      if (!error) {
+        deleted = expiredWithoutStorage.length
+        console.log(`🗑️ Deleted ${deleted} expired images without storage`)
+      }
     }
 
-    if (!data || data.length === 0) {
-      console.log("✅ No DALL-E images found for cleanup")
-      return
+    // Try to archive expired images that still have accessible URLs
+    const { data: expiredWithUrls } = await supabase
+      .from("images")
+      .select("*")
+      .lt("expires_at", new Date().toISOString())
+      .is("storage_url", null)
+      .not("url", "is", null)
+
+    for (const img of expiredWithUrls || []) {
+      try {
+        const filename = `cleanup-${img.id}`
+        const storageUrl = await archiveExternalImageToPermanent(img.url, filename)
+
+        await supabase.from("images").update({ storage_url: storageUrl }).eq("id", img.id)
+
+        archived++
+      } catch (archiveError) {
+        console.error(`⚠️ Failed to archive expired image ${img.id}:`, archiveError)
+      }
     }
 
-    const expiredIds: string[] = []
-    data.forEach((image) => {
-      if (isDalleUrlExpired(image.url)) {
-        expiredIds.push(image.id)
+    // Remove duplicates by key (keep newest)
+    const { data: duplicates } = await supabase
+      .from("images")
+      .select("id, key, created_at")
+      .order("created_at", { ascending: false })
+
+    const seenKeys = new Set<string>()
+    const duplicateIds: string[] = []
+
+    duplicates?.forEach((img) => {
+      if (seenKeys.has(img.key)) {
+        duplicateIds.push(img.id)
+      } else {
+        seenKeys.add(img.key)
       }
     })
 
-    if (expiredIds.length === 0) {
-      console.log("✅ No expired images found")
-      return
+    if (duplicateIds.length) {
+      const { error } = await supabase.from("images").delete().in("id", duplicateIds)
+
+      if (!error) {
+        duplicatesRemoved = duplicateIds.length
+        console.log(`🔄 Removed ${duplicatesRemoved} duplicate images`)
+      }
     }
 
-    const { error: deleteError } = await supabase.from("images").delete().in("id", expiredIds)
-
-    if (deleteError) {
-      console.error("❌ Error deleting expired images:", deleteError)
-    } else {
-      console.log(`✅ Successfully deleted ${expiredIds.length} expired images from database`)
-    }
+    console.log(
+      `✅ Cleanup complete: ${deleted} deleted, ${archived} archived, ${duplicatesRemoved} duplicates removed`,
+    )
+    return { deleted, archived, duplicatesRemoved }
   } catch (error) {
     console.error("❌ Error in cleanupExpiredImages:", error)
+    return { deleted: 0, archived: 0, duplicatesRemoved: 0 }
+  }
+}
+
+export async function archiveExternalImageToPermanent(url: string, filename: string): Promise<string> {
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`Failed to fetch image: ${res.status}`)
+  const buf = await res.arrayBuffer()
+
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const blob = await put(`generated/${filename}.png`, new Blob([buf]), { access: "public" })
+    return blob.url // permanente
+  } else {
+    // Fallback to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from("generated-images")
+      .upload(`${filename}.png`, buf, { contentType: "image/png" })
+
+    if (error) throw error
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("generated-images").getPublicUrl(data.path)
+
+    return publicUrl
   }
 }
 
