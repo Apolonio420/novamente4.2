@@ -42,13 +42,12 @@ const COLORS_BY_GARMENT: Record<string, string[]> = {
 }
 
 const DOUBLE_STAMPING_EXTRA = 7000
-const BASE = 400
 
 export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerProps) {
   const { addItem } = useCart()
   const { toast } = useToast()
 
-  const [selectedGarment, setSelectedGarment] = useState("aura-oversize-tshirt")
+  const [selectedGarment, setSelectedGarment] = useState("astra-oversize-hoodie")
   const [selectedColor, setSelectedColor] = useState("black")
   const [selectedSize, setSelectedSize] = useState("M")
   const [showOnModel, setShowOnModel] = useState(false)
@@ -65,21 +64,23 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
   const [position, setPosition] = useState({ x: 50, y: 50 }) // 0-100 relativo al área
   const [designSizePct, setDesignSizePct] = useState(60) // % del ancho del área
 
+  const [nat, setNat] = useState<{ w: number; h: number } | null>(null)
+
   const mapping = useMemo(() => {
     const side = activeTab === "back" ? "back" : "front"
     return getGarmentMapping(selectedGarment, selectedColor, side)
   }, [selectedGarment, selectedColor, activeTab])
 
   const framePct = useMemo(() => {
-    if (!mapping) return null
+    if (!mapping || !nat) return null
     const { x, y, width, height } = mapping.coordinates
     return {
-      leftPct: (x / BASE) * 100,
-      topPct: (y / BASE) * 100,
-      widthPct: (width / BASE) * 100,
-      heightPct: (height / BASE) * 100,
+      leftPct: (x / nat.w) * 100,
+      topPct: (y / nat.h) * 100,
+      widthPct: (width / nat.w) * 100,
+      heightPct: (height / nat.h) * 100,
     }
-  }, [mapping])
+  }, [mapping, nat])
 
   useEffect(() => {
     if (initialImageUrl) {
@@ -99,8 +100,15 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
     }
   }, [initialImageUrl, toast])
 
+  // Update available colors when garment changes
+  useEffect(() => {
+    const availableColors = COLORS_BY_GARMENT[selectedGarment] || []
+    if (!availableColors.includes(selectedColor)) {
+      setSelectedColor(availableColors[0] || "black")
+    }
+  }, [selectedGarment, selectedColor])
+
   const getGarmentImage = () => {
-    if (selectedGarment === "lienzo") return "/products/lienzo-main.png"
     const side = activeTab === "back" ? "back" : "front"
     return getGarmentMapping(selectedGarment, selectedColor, side)?.garmentPath ?? "/placeholder.svg"
   }
@@ -327,6 +335,10 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                       src={getGarmentImage() || "/placeholder.svg"}
                       alt="Prenda frontal"
                       className="w-full h-full object-contain"
+                      onLoad={(e) => {
+                        const img = e.currentTarget as HTMLImageElement
+                        setNat({ w: img.naturalWidth, h: img.naturalHeight })
+                      }}
                       onError={(e) => (e.currentTarget.src = "/placeholder.svg")}
                     />
 
@@ -379,6 +391,10 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                       src={getGarmentImage() || "/placeholder.svg"}
                       alt="Prenda trasera"
                       className="w-full h-full object-contain"
+                      onLoad={(e) => {
+                        const img = e.currentTarget as HTMLImageElement
+                        setNat({ w: img.naturalWidth, h: img.naturalHeight })
+                      }}
                       onError={(e) => (e.currentTarget.src = "/placeholder.svg")}
                     />
 

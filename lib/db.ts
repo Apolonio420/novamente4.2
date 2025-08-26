@@ -1,6 +1,5 @@
 import { supabase } from "./supabase"
 import { getCurrentUser } from "./auth"
-import { getOrCreateAnonIdServer } from "./anon"
 import { v4 as uuidv4 } from "uuid"
 import { put } from "@vercel/blob"
 
@@ -105,7 +104,7 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
       return null
     }
 
-    const finalUserId = userId || (typeof window === "undefined" ? getOrCreateAnonIdServer() : null)
+    const finalUserId = userId || null
     const key = createImageKey(url, prompt)
 
     // Check if already exists
@@ -148,7 +147,7 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
       url,
       prompt,
       user_id: finalUserId,
-      anon_id: !userId && typeof window === "undefined" ? getOrCreateAnonIdServer() : null,
+      anon_id: null,
       storage_url: storageUrl,
       expires_at: expiresAt,
       has_bg_removed: false,
@@ -520,12 +519,7 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
     if (userId) {
       query = query.eq("user_id", userId)
     } else {
-      const anonId = typeof window === "undefined" ? getOrCreateAnonIdServer() : null
-      if (anonId) {
-        query = query.eq("anon_id", anonId)
-      } else {
-        query = query.is("user_id", null).is("anon_id", null)
-      }
+      query = query.is("user_id", null)
     }
 
     const { data, error } = await query

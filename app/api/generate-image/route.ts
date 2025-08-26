@@ -2,8 +2,18 @@ import { type NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 import { saveGeneratedImage } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
-import { getOrCreateAnonIdServer } from "@/lib/anon"
 import { optimizePrompt } from "@/lib/promptOptimizer"
+import { cookies } from "next/headers"
+import { randomUUID } from "crypto"
+
+function getOrCreateAnonIdServer() {
+  const store = cookies()
+  const existing = store.get("anon_id")?.value
+  if (existing) return existing
+  const id = randomUUID()
+  store.set("anon_id", id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 })
+  return id
+}
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

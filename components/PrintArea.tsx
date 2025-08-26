@@ -1,69 +1,68 @@
 "use client"
 import { useEffect, useMemo, useRef, useState } from "react"
+import Image from "next/image"
 import { getGarmentMapping } from "@/lib/garment-mappings"
 
 interface PrintAreaProps {
   garmentType: string
   garmentColor: string
   activeTab: "front" | "back"
+  mockupSrc?: string // opcional override
   designImage: string | null
-  designPosition: { x: number; y: number } // 0–100 relativo al área
+  designPos: { x: number; y: number } // 0–100 relativo al área
   designSizePct: number // % del ancho del área
-  onPositionChange: (p: { x: number; y: number }) => void
-  onSizeChange: (sizePct: number) => void
+  onPos: (p: { x: number; y: number }) => void
+  onSize: (sizePct: number) => void
   showFrame?: boolean
 }
 
-const BASE = 400
-
-export function PrintArea(props: PrintAreaProps) {
-  const {
-    garmentType,
-    garmentColor,
-    activeTab,
-    designImage,
-    designPosition,
-    designSizePct,
-    onPositionChange,
-    onSizeChange,
-    showFrame = true,
-  } = props
-  const areaRef = useRef<HTMLDivElement | null>(null)
-
+export function PrintArea({
+  garmentType,
+  garmentColor,
+  activeTab,
+  mockupSrc,
+  designImage,
+  designPos,
+  designSizePct,
+  onPos,
+  onSize,
+  showFrame = true,
+}: PrintAreaProps) {
   const mapping = useMemo(
     () => getGarmentMapping(garmentType, garmentColor, activeTab),
     [garmentType, garmentColor, activeTab],
   )
 
-  const frame = useMemo(() => {
-    if (!mapping) return null
+  const [nat, setNat] = useState<{ w: number; h: number } | null>(null)
+  const [drag, setDrag] = useState(false)
+  const wrapRef = useRef<HTMLDivElement | null>(null)
+
+  const mockup = mockupSrc ?? mapping?.garmentPath ?? "/placeholder.svg"
+
+  const framePct = useMemo(() => {
+    if (!mapping || !nat) return null
     const { x, y, width, height } = mapping.coordinates
     return {
-      leftPct: (x / BASE) * 100,
-      topPct: (y / BASE) * 100,
-      widthPct: (width / BASE) * 100,
-      heightPct: (height / BASE) * 100,
+      leftPct: (x / nat.w) * 100,
+      topPct: (y / nat.h) * 100,
+      widthPct: (width / nat.w) * 100,
+      heightPct: (height / nat.h) * 100,
     }
-  }, [mapping])
-
-  const [dragging, setDragging] = useState(false)
+  }, [mapping, nat])
 
   useEffect(() => {
-    if (!dragging) return
+    if (!drag) return
     const onMove = (e: MouseEvent | TouchEvent) => {
-      if (!areaRef.current || !frame) return
-      const rect = areaRef.current.getBoundingClientRect()
-      const clientX = (e as TouchEvent).touches?.[0]?.clientX ?? (e as MouseEvent).clientX
-      const clientY = (e as TouchEvent).touches?.[0]?.clientY ?? (e as MouseEvent).clientY
-      const relX = ((clientX - rect.left) / rect.width) * 100
-      const relY = ((clientY - rect.top) / rect.height) * 100
-      const xInArea = ((relX - frame.leftPct) / frame.widthPct) * 100
-      const yInArea = ((relY - frame.topPct) / frame.heightPct) * 100
-      const cx = Math.max(0, Math.min(100, xInArea))
-      const cy = Math.max(0, Math.min(100, yInArea))
-      onPositionChange({ x: cx, y: cy })
+      if (!wrapRef.current || !framePct) return
+      const rect = wrapRef.current.getBoundingClientRect()
+      const cx = ((("touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX) - rect.left) / rect.width) * 100
+      const cy = ((("touches" in e ? e.touches[0].clientY : (e as MouseEvent).clientY) - rect.top) / rect.height) * 100
+      // convertir a % RELATIVO AL ÁREA
+      const xRel = ((cx - framePct.leftPct) / framePct.widthPct) * 100
+      const yRel = ((cy - framePct.topPct) / framePct.heightPct) * 100
+      onPos({ x: Math.max(0, Math.min(100, xRel)), y: Math.max(0, Math.min(100, yRel)) })
     }
-    const stop = () => setDragging(false)
+    const stop = () => setDrag(false)
     window.addEventListener("mousemove", onMove)
     window.addEventListener("mouseup", stop)
     window.addEventListener("touchmove", onMove, { passive: false })
@@ -74,39 +73,43 @@ export function PrintArea(props: PrintAreaProps) {
       window.removeEventListener("touchmove", onMove as any)
       window.removeEventListener("touchend", stop)
     }
-  }, [dragging, frame, onPositionChange])
+  }, [drag, framePct, onPos])
 
-  if (!frame) return null
-
-  const designWidthPctOfContainer = frame.widthPct * (designSizePct / 100)
+  const overlayWidthPctOfContainer = framePct ? framePct.widthPct * (designSizePct / 100) : 0
 
   return (
-    <>
-      {showFrame && (
+    <div ref={wrapRef} className="relative aspect-square bg-gray-100">
+      <Image
+        src={mockup || "/placeholder.svg"}
+        alt="Mockup"
+        fill
+        className="object-contain"
+        unoptimized
+        onLoadingComplete={(img) => setNat({ w: img.naturalWidth, h: img.naturalHeight })}
+        onError={() => setNat(null)}
+      />
+
+      {framePct && showFrame && (
         <div
           className="absolute border-2 border-red-500 border-dashed pointer-events-none"
           style={{
-            left: `${frame.leftPct}%`,
-            top: `${frame.topPct}%`,
-            width: `${frame.widthPct}%`,
-            height: `${frame.heightPct}%`,
+            left: `${framePct.leftPct}%`,
+            top: `${framePct.topPct}%`,
+            width: `${framePct.widthPct}%`,
+            height: `${framePct.heightPct}%`,
+            zIndex: 5,
           }}
         />
       )}
 
-      {designImage && (
-        <div
-          ref={areaRef}
-          className="absolute inset-0"
-          onMouseDown={() => setDragging(true)}
-          onTouchStart={() => setDragging(true)}
-        >
+      {framePct && designImage && (
+        <div className="absolute inset-0" onMouseDown={() => setDrag(true)} onTouchStart={() => setDrag(true)}>
           <div
             className="absolute"
             style={{
-              left: `${frame.leftPct + (frame.widthPct * designPosition.x) / 100}%`,
-              top: `${frame.topPct + (frame.heightPct * designPosition.y) / 100}%`,
-              width: `${designWidthPctOfContainer}%`,
+              left: `${framePct.leftPct + (framePct.widthPct * designPos.x) / 100}%`,
+              top: `${framePct.topPct + (framePct.heightPct * designPos.y) / 100}%`,
+              width: `${overlayWidthPctOfContainer}%`,
               transform: "translate(-50%, -50%)",
               zIndex: 10,
               cursor: "move",
@@ -122,6 +125,6 @@ export function PrintArea(props: PrintAreaProps) {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }
