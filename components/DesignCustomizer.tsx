@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,9 +11,8 @@ import { useCart } from "@/lib/cartStore"
 import { useToast } from "@/hooks/use-toast"
 import { formatCurrency } from "@/lib/utils"
 import { Loader, ShoppingCart, Plus, Check, ArrowLeft, ZoomIn, ZoomOut } from "lucide-react"
-import Image from "next/image"
 import Link from "next/link"
-import garmentMappings from "@/lib/garment-mappings.json"
+import { getGarmentMapping } from "@/lib/garment-mappings"
 import { saveImageWithoutBackground } from "@/lib/db"
 
 interface DesignCustomizerProps {
@@ -35,7 +34,15 @@ const GARMENT_NAMES = {
   lienzo: "Lienzo Personalizado",
 }
 
+const COLORS_BY_GARMENT: Record<string, string[]> = {
+  "aura-oversize-tshirt": ["black", "white", "caramel"],
+  "aldea-classic-tshirt": ["black", "white"],
+  "astra-oversize-hoodie": ["black", "caramel", "gray", "cream"],
+  lienzo: ["white"],
+}
+
 const DOUBLE_STAMPING_EXTRA = 7000
+const BASE = 400
 
 export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerProps) {
   const { addItem } = useCart()
@@ -55,8 +62,24 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
   const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null)
   const [bgRemovedImageUrl, setBgRemovedImageUrl] = useState<string | null>(null)
 
-  const [position, setPosition] = useState({ x: 50, y: 50 })
-  const [scale, setScale] = useState(0.8)
+  const [position, setPosition] = useState({ x: 50, y: 50 }) // 0-100 relativo al área
+  const [designSizePct, setDesignSizePct] = useState(60) // % del ancho del área
+
+  const mapping = useMemo(() => {
+    const side = activeTab === "back" ? "back" : "front"
+    return getGarmentMapping(selectedGarment, selectedColor, side)
+  }, [selectedGarment, selectedColor, activeTab])
+
+  const framePct = useMemo(() => {
+    if (!mapping) return null
+    const { x, y, width, height } = mapping.coordinates
+    return {
+      leftPct: (x / BASE) * 100,
+      topPct: (y / BASE) * 100,
+      widthPct: (width / BASE) * 100,
+      heightPct: (height / BASE) * 100,
+    }
+  }, [mapping])
 
   useEffect(() => {
     if (initialImageUrl) {
@@ -75,6 +98,12 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
       })
     }
   }, [initialImageUrl, toast])
+
+  const getGarmentImage = () => {
+    if (selectedGarment === "lienzo") return "/products/lienzo-main.png"
+    const side = activeTab === "back" ? "back" : "front"
+    return getGarmentMapping(selectedGarment, selectedColor, side)?.garmentPath ?? "/placeholder.svg"
+  }
 
   const addBackDesign = () => {
     if (frontDesign) {
@@ -160,82 +189,16 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
     }
   }
 
-  const getGarmentImage = () => {
-    const side = activeTab === "back" ? "back" : "front"
-
-    if (selectedGarment === "lienzo") {
-      return "/products/lienzo-main.png"
-    }
-
-    const garmentMap: Record<string, string> = {
-      "aura-oversize-tshirt": `tshirt-${selectedColor}-oversize`,
-      "aldea-classic-tshirt": `tshirt-${selectedColor}-classic`,
-      "astra-oversize-hoodie": `hoodie-${selectedColor}`,
-    }
-
-    const garmentKey = garmentMap[selectedGarment]
-    return `/garments/${garmentKey}-${side}.jpeg`
-  }
-
   const getCurrentDesign = () => {
     return activeTab === "front" ? frontDesign : backDesign
   }
 
   const increaseSize = () => {
-    setScale((prev) => Math.min(3.5, prev + 0.1)) // Máximo 3.5x
+    setDesignSizePct((prev) => Math.min(120, prev + 5)) // Máximo 120% del área
   }
 
   const decreaseSize = () => {
-    setScale((prev) => Math.max(0.5, prev - 0.1)) // Mínimo 0.5x
-  }
-
-  const getCurrentGarmentMapping = () => {
-    let garmentName = ""
-
-    if (selectedGarment === "astra-oversize-hoodie") {
-      garmentName = `Hoodie ${selectedColor === "black" ? "Negro" : selectedColor === "caramel" ? "Caramelo" : selectedColor === "cream" ? "Crema" : selectedColor === "gray" ? "Gris" : "Blanco"} ${activeTab === "front" ? "Frontal" : "Trasero"}`
-    } else if (selectedGarment === "aura-oversize-tshirt") {
-      garmentName = `T-shirt ${selectedColor === "black" ? "Negro" : selectedColor === "white" ? "Blanco" : "Caramelo"} Oversize ${activeTab === "front" ? "Frontal" : "Trasero"}`
-    } else if (selectedGarment === "aldea-classic-tshirt") {
-      garmentName = `T-shirt ${selectedColor === "black" ? "Negro" : "Blanco"} Clásico ${activeTab === "front" ? "Frontal" : "Trasero"}`
-    }
-
-    return garmentMappings.find((mapping) => mapping.name === garmentName)
-  }
-
-  const getDesignPositioning = () => {
-    const mapping = getCurrentGarmentMapping()
-    if (!mapping) return { transform: `scale(${scale})` }
-
-    const printArea = mapping.coordinates
-
-    const designX = printArea.x + (printArea.width * position.x) / 100
-    const designY = printArea.y + (printArea.height * position.y) / 100
-
-    return {
-      position: "absolute" as const,
-      left: `${designX}px`,
-      top: `${designY}px`,
-      transform: `translate(-50%, -50%) scale(${scale})`,
-      width: "100px",
-      height: "100px",
-      zIndex: 10,
-    }
-  }
-
-  const getPrintAreaStyle = () => {
-    const mapping = getCurrentGarmentMapping()
-    if (!mapping) return {}
-
-    const coords = mapping.coordinates
-    return {
-      position: "absolute",
-      left: `${coords.x}px`,
-      top: `${coords.y}px`,
-      width: `${coords.width}px`,
-      height: `${coords.height}px`,
-      zIndex: 5,
-    }
+    setDesignSizePct((prev) => Math.max(10, prev - 5)) // Mínimo 10% del área
   }
 
   const basePrice = GARMENT_PRICES[selectedGarment as keyof typeof GARMENT_PRICES] || 0
@@ -316,7 +279,7 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
             </div>
             {getCurrentDesign() && imageId && (
               <div className="flex items-center gap-2">
-                <Label className="text-sm">{hasBackgroundRemoved ? "Con fondo" : "Sin fondo"}</Label>
+                <Label className="text-sm">{hasBackgroundRemoved ? "Sin fondo" : "Con fondo"}</Label>
                 <Button
                   size="sm"
                   variant="outline"
@@ -360,34 +323,47 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
               <Card className="relative overflow-hidden">
                 <CardContent className="p-0">
                   <div className="relative aspect-square bg-gray-100">
-                    <Image
+                    <img
                       src={getGarmentImage() || "/placeholder.svg"}
                       alt="Prenda frontal"
-                      fill
-                      className="object-contain"
+                      className="w-full h-full object-contain"
+                      onError={(e) => (e.currentTarget.src = "/placeholder.svg")}
                     />
-                    {frontDesign && (
-                      <div className="absolute pointer-events-none" style={getDesignPositioning()}>
-                        <Image
-                          src={frontDesign || "/placeholder.svg"}
-                          alt="Diseño frontal"
-                          fill
-                          className="object-contain"
-                          onError={(e) => {
-                            console.log("[v0] Image load error:", frontDesign)
-                            e.currentTarget.src = "/placeholder.svg"
-                          }}
-                        />
-                      </div>
-                    )}
-                    {getCurrentGarmentMapping() && (
+
+                    {framePct && (
                       <div
                         className="absolute border-2 border-red-500 border-dashed pointer-events-none opacity-50"
-                        style={getPrintAreaStyle()}
+                        style={{
+                          left: `${framePct.leftPct}%`,
+                          top: `${framePct.topPct}%`,
+                          width: `${framePct.widthPct}%`,
+                          height: `${framePct.heightPct}%`,
+                          zIndex: 5,
+                        }}
                       >
                         <div className="absolute -bottom-6 left-0 text-xs text-red-500 bg-white px-1 rounded">
                           Área de impresión
                         </div>
+                      </div>
+                    )}
+
+                    {frontDesign && framePct && (
+                      <div
+                        className="absolute pointer-events-none"
+                        style={{
+                          left: `${framePct.leftPct + (framePct.widthPct * position.x) / 100}%`,
+                          top: `${framePct.topPct + (framePct.heightPct * position.y) / 100}%`,
+                          width: `${framePct.widthPct * (designSizePct / 100)}%`,
+                          transform: "translate(-50%, -50%)",
+                          zIndex: 10,
+                        }}
+                      >
+                        <img
+                          src={frontDesign || "/placeholder.svg"}
+                          alt="Diseño frontal"
+                          className="w-full h-auto object-contain"
+                          onError={(e) => (e.currentTarget.src = "/placeholder.svg")}
+                        />
                       </div>
                     )}
                   </div>
@@ -399,36 +375,50 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
               <Card className="relative overflow-hidden">
                 <CardContent className="p-0">
                   <div className="relative aspect-square bg-gray-100">
-                    <Image
+                    <img
                       src={getGarmentImage() || "/placeholder.svg"}
                       alt="Prenda trasera"
-                      fill
-                      className="object-contain"
+                      className="w-full h-full object-contain"
+                      onError={(e) => (e.currentTarget.src = "/placeholder.svg")}
                     />
-                    {backDesign && (
-                      <div className="absolute pointer-events-none" style={getDesignPositioning()}>
-                        <Image
-                          src={backDesign || "/placeholder.svg"}
-                          alt="Diseño trasero"
-                          fill
-                          className="object-contain"
-                          onError={(e) => {
-                            console.log("[v0] Image load error:", backDesign)
-                            e.currentTarget.src = "/placeholder.svg"
-                          }}
-                        />
-                      </div>
-                    )}
-                    {getCurrentGarmentMapping() && (
+
+                    {framePct && (
                       <div
                         className="absolute border-2 border-red-500 border-dashed pointer-events-none opacity-50"
-                        style={getPrintAreaStyle()}
+                        style={{
+                          left: `${framePct.leftPct}%`,
+                          top: `${framePct.topPct}%`,
+                          width: `${framePct.widthPct}%`,
+                          height: `${framePct.heightPct}%`,
+                          zIndex: 5,
+                        }}
                       >
                         <div className="absolute -bottom-6 left-0 text-xs text-red-500 bg-white px-1 rounded">
                           Área de impresión
                         </div>
                       </div>
                     )}
+
+                    {backDesign && framePct && (
+                      <div
+                        className="absolute pointer-events-none"
+                        style={{
+                          left: `${framePct.leftPct + (framePct.widthPct * position.x) / 100}%`,
+                          top: `${framePct.topPct + (framePct.heightPct * position.y) / 100}%`,
+                          width: `${framePct.widthPct * (designSizePct / 100)}%`,
+                          transform: "translate(-50%, -50%)",
+                          zIndex: 10,
+                        }}
+                      >
+                        <img
+                          src={backDesign || "/placeholder.svg"}
+                          alt="Diseño trasero"
+                          className="w-full h-auto object-contain"
+                          onError={(e) => (e.currentTarget.src = "/placeholder.svg")}
+                        />
+                      </div>
+                    )}
+
                     {!backDesign && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center text-muted-foreground">
@@ -455,8 +445,8 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                     <Label className="text-xs">Horizontal: {position.x}%</Label>
                     <input
                       type="range"
-                      min="10"
-                      max="90"
+                      min="0"
+                      max="100"
                       value={position.x}
                       onChange={(e) => setPosition({ ...position, x: Number(e.target.value) })}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
@@ -466,8 +456,8 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                     <Label className="text-xs">Vertical: {position.y}%</Label>
                     <input
                       type="range"
-                      min="10"
-                      max="90"
+                      min="0"
+                      max="100"
                       value={position.y}
                       onChange={(e) => setPosition({ ...position, y: Number(e.target.value) })}
                       className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
@@ -475,13 +465,13 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <Label className="text-xs">Tamaño del estampado: {Math.round(scale * 100)}%</Label>
+                      <Label className="text-xs">Tamaño del estampado: {designSizePct}%</Label>
                       <div className="flex items-center gap-1">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={decreaseSize}
-                          disabled={scale <= 0.5}
+                          disabled={designSizePct <= 10}
                           className="h-6 w-6 p-0 bg-transparent"
                         >
                           <ZoomOut className="w-3 h-3" />
@@ -490,7 +480,7 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                           size="sm"
                           variant="outline"
                           onClick={increaseSize}
-                          disabled={scale >= 3.5}
+                          disabled={designSizePct >= 120}
                           className="h-6 w-6 p-0"
                         >
                           <ZoomIn className="w-3 h-3" />
@@ -499,18 +489,18 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
                     </div>
                     <input
                       type="range"
-                      min="0.5"
-                      max="3.5"
-                      step="0.1"
-                      value={scale}
-                      onChange={(e) => setScale(Number(e.target.value))}
+                      min="10"
+                      max="120"
+                      step="5"
+                      value={designSizePct}
+                      onChange={(e) => setDesignSizePct(Number(e.target.value))}
                       className="w-full h-3 bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 rounded-lg appearance-none cursor-pointer size-slider"
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>10%</span>
                       <span>50%</span>
                       <span>100%</span>
-                      <span>200%</span>
-                      <span>350%</span>
+                      <span>120%</span>
                     </div>
                   </div>
                 </div>
@@ -550,7 +540,7 @@ export function DesignCustomizer({ initialImageUrl, imageId }: DesignCustomizerP
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold mb-4">Color</h3>
               <div className="grid grid-cols-2 gap-2">
-                {["black", "white", "caramel", "gray", "cream"].map((color) => (
+                {COLORS_BY_GARMENT[selectedGarment]?.map((color) => (
                   <button
                     key={color}
                     onClick={() => setSelectedColor(color)}

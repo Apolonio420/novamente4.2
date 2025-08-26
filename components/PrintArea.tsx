@@ -1,109 +1,125 @@
 "use client"
-
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { getGarmentMapping } from "@/lib/garment-mappings"
 
 interface PrintAreaProps {
   garmentType: string
   garmentColor: string
   activeTab: "front" | "back"
   designImage: string | null
-  designPosition: { x: number; y: number }
-  designSize: number
-  onPositionChange: (position: { x: number; y: number }) => void
-  onSizeChange: (size: number) => void
+  designPosition: { x: number; y: number } // 0–100 relativo al área
+  designSizePct: number // % del ancho del área
+  onPositionChange: (p: { x: number; y: number }) => void
+  onSizeChange: (sizePct: number) => void
+  showFrame?: boolean
 }
 
-// Coordenadas exactas del JSON
-const EXACT_COORDINATES = {
-  "astra-oversize-hoodie-black-front": { x: 112, y: 175, width: 180, height: 145 },
-  "astra-oversize-hoodie-black-back": { x: 116, y: 175, width: 180, height: 240 },
-  "astra-oversize-hoodie-caramel-front": { x: 112, y: 160, width: 176, height: 145 },
-  "astra-oversize-hoodie-caramel-back": { x: 128, y: 155, width: 144, height: 245 },
-  "astra-oversize-hoodie-cream-front": { x: 116, y: 155, width: 160, height: 135 },
-  "astra-oversize-hoodie-cream-back": { x: 124, y: 150, width: 156, height: 255 },
-  "astra-oversize-hoodie-gray-front": { x: 116, y: 145, width: 160, height: 150 },
-  "astra-oversize-hoodie-gray-back": { x: 116, y: 150, width: 164, height: 255 },
-  "aldea-classic-tshirt-black-front": { x: 96, y: 135, width: 204, height: 265 },
-  "aldea-classic-tshirt-black-back": { x: 100, y: 105, width: 192, height: 310 },
-  "aldea-classic-tshirt-white-front": { x: 96, y: 125, width: 204, height: 290 },
-  "aldea-classic-tshirt-white-back": { x: 112, y: 110, width: 180, height: 300 },
-  "aura-oversize-tshirt-black-front": { x: 104, y: 130, width: 184, height: 275 },
-  "aura-oversize-tshirt-black-back": { x: 108, y: 105, width: 184, height: 310 },
-  "aura-oversize-tshirt-white-front": { x: 112, y: 115, width: 164, height: 305 },
-  "aura-oversize-tshirt-white-back": { x: 120, y: 105, width: 176, height: 315 },
-  "aura-oversize-tshirt-caramel-front": { x: 116, y: 120, width: 176, height: 290 },
-  "aura-oversize-tshirt-caramel-back": { x: 116, y: 100, width: 172, height: 315 },
-}
+const BASE = 400
 
-export function PrintArea({
-  garmentType,
-  garmentColor,
-  activeTab,
-  designImage,
-  designPosition,
-  designSize,
-  onPositionChange,
-  onSizeChange,
-}: PrintAreaProps) {
-  const [printArea, setPrintArea] = useState({ left: 25, top: 25, width: 50, height: 50 })
+export function PrintArea(props: PrintAreaProps) {
+  const {
+    garmentType,
+    garmentColor,
+    activeTab,
+    designImage,
+    designPosition,
+    designSizePct,
+    onPositionChange,
+    onSizeChange,
+    showFrame = true,
+  } = props
+  const areaRef = useRef<HTMLDivElement | null>(null)
+
+  const mapping = useMemo(
+    () => getGarmentMapping(garmentType, garmentColor, activeTab),
+    [garmentType, garmentColor, activeTab],
+  )
+
+  const frame = useMemo(() => {
+    if (!mapping) return null
+    const { x, y, width, height } = mapping.coordinates
+    return {
+      leftPct: (x / BASE) * 100,
+      topPct: (y / BASE) * 100,
+      widthPct: (width / BASE) * 100,
+      heightPct: (height / BASE) * 100,
+    }
+  }, [mapping])
+
+  const [dragging, setDragging] = useState(false)
 
   useEffect(() => {
-    // Obtener coordenadas exactas para la combinación actual
-    const key = `${garmentType}-${garmentColor}-${activeTab}`
-    const coords = EXACT_COORDINATES[key as keyof typeof EXACT_COORDINATES]
-
-    if (coords) {
-      // Convertir coordenadas absolutas a porcentajes (asumiendo contenedor de 400x400)
-      const CONTAINER_SIZE = 400
-      const newPrintArea = {
-        left: (coords.x / CONTAINER_SIZE) * 100,
-        top: (coords.y / CONTAINER_SIZE) * 100,
-        width: (coords.width / CONTAINER_SIZE) * 100,
-        height: (coords.height / CONTAINER_SIZE) * 100,
-      }
-      setPrintArea(newPrintArea)
-    } else {
-      // Fallback a coordenadas genéricas
-      setPrintArea({ left: 25, top: 30, width: 50, height: 40 })
+    if (!dragging) return
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      if (!areaRef.current || !frame) return
+      const rect = areaRef.current.getBoundingClientRect()
+      const clientX = (e as TouchEvent).touches?.[0]?.clientX ?? (e as MouseEvent).clientX
+      const clientY = (e as TouchEvent).touches?.[0]?.clientY ?? (e as MouseEvent).clientY
+      const relX = ((clientX - rect.left) / rect.width) * 100
+      const relY = ((clientY - rect.top) / rect.height) * 100
+      const xInArea = ((relX - frame.leftPct) / frame.widthPct) * 100
+      const yInArea = ((relY - frame.topPct) / frame.heightPct) * 100
+      const cx = Math.max(0, Math.min(100, xInArea))
+      const cy = Math.max(0, Math.min(100, yInArea))
+      onPositionChange({ x: cx, y: cy })
     }
-  }, [garmentType, garmentColor, activeTab])
+    const stop = () => setDragging(false)
+    window.addEventListener("mousemove", onMove)
+    window.addEventListener("mouseup", stop)
+    window.addEventListener("touchmove", onMove, { passive: false })
+    window.addEventListener("touchend", stop)
+    return () => {
+      window.removeEventListener("mousemove", onMove)
+      window.removeEventListener("mouseup", stop)
+      window.removeEventListener("touchmove", onMove as any)
+      window.removeEventListener("touchend", stop)
+    }
+  }, [dragging, frame, onPositionChange])
+
+  if (!frame) return null
+
+  const designWidthPctOfContainer = frame.widthPct * (designSizePct / 100)
 
   return (
     <>
-      {/* Área de impresión - solo el borde rojo punteado */}
-      <div
-        className="absolute border-2 border-red-500 border-dashed pointer-events-none"
-        style={{
-          left: `${printArea.left}%`,
-          top: `${printArea.top}%`,
-          width: `${printArea.width}%`,
-          height: `${printArea.height}%`,
-        }}
-      />
+      {showFrame && (
+        <div
+          className="absolute border-2 border-red-500 border-dashed pointer-events-none"
+          style={{
+            left: `${frame.leftPct}%`,
+            top: `${frame.topPct}%`,
+            width: `${frame.widthPct}%`,
+            height: `${frame.heightPct}%`,
+          }}
+        />
+      )}
 
-      {/* Imagen de diseño */}
       {designImage && (
         <div
-          className="absolute cursor-move"
-          style={{
-            left: `${designPosition.x}%`,
-            top: `${designPosition.y}%`,
-            width: `${designSize}px`,
-            height: `${designSize}px`,
-            transform: "translate(-50%, -50%)",
-            zIndex: 10,
-          }}
+          ref={areaRef}
+          className="absolute inset-0"
+          onMouseDown={() => setDragging(true)}
+          onTouchStart={() => setDragging(true)}
         >
-          <img
-            src={designImage || "/placeholder.svg"}
-            alt="Diseño personalizado"
-            className="w-full h-full object-contain pointer-events-none"
-            draggable={false}
-            onError={(e) => {
-              console.error("Error loading design image:", designImage)
-              e.currentTarget.src = "/placeholder.svg"
+          <div
+            className="absolute"
+            style={{
+              left: `${frame.leftPct + (frame.widthPct * designPosition.x) / 100}%`,
+              top: `${frame.topPct + (frame.heightPct * designPosition.y) / 100}%`,
+              width: `${designWidthPctOfContainer}%`,
+              transform: "translate(-50%, -50%)",
+              zIndex: 10,
+              cursor: "move",
             }}
-          />
+          >
+            <img
+              src={designImage || "/placeholder.svg"}
+              alt="Diseño"
+              className="w-full h-auto object-contain pointer-events-none select-none"
+              draggable={false}
+              onError={(e) => (e.currentTarget.src = "/placeholder.svg")}
+            />
+          </div>
         </div>
       )}
     </>
