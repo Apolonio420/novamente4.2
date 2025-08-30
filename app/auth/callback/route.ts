@@ -6,14 +6,6 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get("code")
 
   if (code) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseKey) {
-      console.error("Missing Supabase credentials")
-      return NextResponse.redirect(`${requestUrl.origin}/auth/error`)
-    }
-
     try {
       await supabase.auth.exchangeCodeForSession(code)
     } catch (error) {

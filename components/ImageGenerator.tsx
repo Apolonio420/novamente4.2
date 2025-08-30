@@ -28,7 +28,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { saveGeneratedImage } from "@/lib/db"
-import { optimizePrompt } from "@/lib/promptOptimizer"
+import { optimizePrompt } from "@/lib/gemini"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -119,8 +119,8 @@ export function ImageGenerator({
     try {
       console.log("🎨 Generating image with prompt:", prompt)
 
-      // OPTIMIZACIÓN AUTOMÁTICA CON OPENAI
-      console.log("🔄 Auto-optimizing prompt with OpenAI...")
+      // OPTIMIZACIÓN AUTOMÁTICA CON GEMINI
+      console.log("🔄 Auto-optimizing prompt with Gemini...")
       const autoOptimizedPrompt = await optimizePrompt(prompt.trim())
       setOptimizedPrompt(autoOptimizedPrompt)
       setIsOptimizing(false)
@@ -480,7 +480,7 @@ export function ImageGenerator({
                 <p className="text-sm font-medium text-primary">Prompt optimizado con IA:</p>
               </div>
               <p className="text-sm text-muted-foreground">{optimizedPrompt}</p>
-              <div className="mt-2 text-xs text-muted-foreground">✅ Optimizado por OpenAI para mejores resultados</div>
+              <div className="mt-2 text-xs text-muted-foreground">✅ Optimizado por Gemini para mejores resultados</div>
             </div>
           )}
         </div>

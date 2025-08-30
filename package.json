@@ -11,6 +11,7 @@
   "dependencies": {
     "@edge-runtime/vm": "5.0.0",
     "@emotion/is-prop-valid": "1.3.1",
+    "@google/generative-ai": "latest",
     "@hookform/resolvers": "3.9.1",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
@@ -48,7 +49,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
-    "crypto": "latest",
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
     "framer-motion": "latest",
@@ -61,7 +61,6 @@
     "mercadopago": "latest",
     "next": "15.2.4",
     "next-themes": "latest",
-    "openai": "latest",
     "react": "^19",
     "react-day-picker": "9.8.0",
     "react-dom": "^19",

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
-import { generateImage } from "@/lib/openai"
+import { generateImage } from "@/lib/gemini"
 import { generateMockImage } from "@/lib/mockImageGenerator"
 import { saveGeneratedImage } from "@/lib/db"
-import { optimizePrompt } from "@/lib/promptOptimizer"
+import { optimizePrompt } from "@/lib/gemini"
 
 // Explicitly set the runtime to Node.js
 export const runtime = "nodejs"
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     }
 
     // Optimize the prompt for print-ready designs
-    const optimizedPrompt = optimizePrompt(prompt, { layout })
+    const optimizedPrompt = await optimizePrompt(prompt)
 
     // Determine image size based on layout
     const sizeMap = {
@@ -30,15 +30,15 @@ export async function POST(request: Request) {
     let imageUrl: string
 
     // In development or preview environments, use mock images
-    if (process.env.NODE_ENV !== "production" || !process.env.OPENAI_API_KEY) {
+    if (process.env.NODE_ENV !== "production" || !process.env.GEMINI_API_KEY) {
       console.log("Using mock image generator for development/preview")
       imageUrl = await generateMockImage(optimizedPrompt)
     } else {
-      // In production with API key, use OpenAI
+      // In production with API key, use Gemini
       try {
         imageUrl = await generateImage(optimizedPrompt, size.width, size.height)
       } catch (error) {
-        console.error("OpenAI API error:", error)
+        console.error("Gemini API error:", error)
         const errorMessage = error instanceof Error ? error.message : "Failed to generate image"
         return NextResponse.json({ error: errorMessage }, { status: 500 })
       }

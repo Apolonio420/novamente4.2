@@ -1,10 +1,10 @@
 /**
- * Cliente para optimización de prompts usando OpenAI
+ * Cliente para optimización de prompts usando Gemini
  * Reemplaza la optimización local con IA real
  */
 
 export async function optimizePrompt(originalPrompt: string): Promise<string> {
-  console.log("🔍 PROMPT OPTIMIZER: Using OpenAI for optimization")
+  console.log("🔍 PROMPT OPTIMIZER: Using Gemini for optimization")
   console.log("📥 INPUT PROMPT:", originalPrompt)
 
   try {
