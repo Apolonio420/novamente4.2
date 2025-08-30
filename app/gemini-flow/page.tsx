@@ -93,12 +93,26 @@ export default function GeminiFlowPage() {
       }
 
       const data = await response.json()
-      setGeneratedImages([data.imageUrl])
 
-      toast({
-        title: "¡Diseño generado!",
-        description: "Tu diseño está listo para aplicar a una prenda",
-      })
+      if (data.success && data.images && data.images.length > 0) {
+        const imageUrls = data.images.map((img: { data: string; contentType: string }) => {
+          const binaryString = atob(img.data)
+          const bytes = new Uint8Array(binaryString.length)
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i)
+          }
+          const blob = new Blob([bytes], { type: img.contentType })
+          return URL.createObjectURL(blob)
+        })
+        setGeneratedImages(imageUrls)
+
+        toast({
+          title: "¡Diseño generado!",
+          description: "Tu diseño está listo para aplicar a una prenda",
+        })
+      } else {
+        throw new Error("No se recibieron imágenes en la respuesta")
+      }
     } catch (error) {
       console.error("Error generating image:", error)
       toast({
