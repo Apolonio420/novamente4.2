@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server"
-import fs from "node:fs/promises"
-import path from "node:path"
 
 export const runtime = "nodejs"
 
@@ -46,39 +44,32 @@ function inferMeta(file: string): Omit<GarmentItem, "path" | "url"> {
   return { type, side, color }
 }
 
+const GARMENT_FILES = [
+  "hoodie-black-front.png",
+  "hoodie-black-back.png",
+  "hoodie-white-front.png",
+  "hoodie-white-back.png",
+  "hoodie-gray-front.png",
+  "hoodie-gray-back.png",
+  "hoodie-caramel-front.png",
+  "hoodie-caramel-back.png",
+  "tshirt-black-front.png",
+  "tshirt-black-back.png",
+  "tshirt-white-front.png",
+  "tshirt-white-back.png",
+  "tshirt-gray-front.png",
+  "tshirt-gray-back.png",
+  "tshirt-caramel-front.png",
+  "tshirt-caramel-back.png",
+  "tshirt-cream-front.png",
+  "tshirt-cream-back.png",
+]
+
 export async function GET() {
   try {
-    console.log("[v0] GARMENTS API: Starting to list garments")
-    console.log("[v0] GARMENTS API: process.cwd():", process.cwd())
+    console.log("[v0] GARMENTS API: Using static file list for v0 runtime")
 
-    const dir = path.join(process.cwd(), "public", "garments")
-    console.log("[v0] GARMENTS API: Looking for directory:", dir)
-
-    // Check if directory exists
-    try {
-      const stats = await fs.stat(dir)
-      console.log("[v0] GARMENTS API: Directory exists:", stats.isDirectory())
-    } catch (statError) {
-      console.error("[v0] GARMENTS API: Directory stat error:", statError)
-      return ok({ success: false, error: `Directory not found: ${dir}` }, 500)
-    }
-
-    const entries = await fs.readdir(dir, { withFileTypes: true })
-    console.log("[v0] GARMENTS API: Found", entries.length, "entries")
-    console.log(
-      "[v0] GARMENTS API: Entries:",
-      entries.map((e) => `${e.name} (${e.isFile() ? "file" : "dir"})`),
-    )
-
-    const allowed = new Set([".png", ".jpg", ".jpeg", ".webp"])
-    const files = entries
-      .filter((e) => e.isFile())
-      .map((e) => e.name)
-      .filter((name) => allowed.has(path.extname(name).toLowerCase()))
-
-    console.log("[v0] GARMENTS API: Filtered image files:", files)
-
-    const items: GarmentItem[] = files.map((name) => {
+    const items: GarmentItem[] = GARMENT_FILES.map((name) => {
       const meta = inferMeta(name)
       return {
         path: name,
@@ -87,7 +78,7 @@ export async function GET() {
       }
     })
 
-    console.log("[v0] GARMENTS API: Processed items:", items.length)
+    console.log("[v0] GARMENTS API: Processed", items.length, "items")
 
     // Orden: primero hoodie, luego tshirt; dentro, front antes que back
     items.sort(
