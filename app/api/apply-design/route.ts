@@ -41,9 +41,11 @@ function dataUrlToInline(dataUrl: string) {
   const mime = /data:(.*?);base64/.exec(hdr)?.[1] || "image/png"
   return { inlineData: { data: b64, mimeType: mime } }
 }
+
 function bufferToDataUrl(buf: Buffer, mime: string) {
   return `data:${mime};base64,` + buf.toString("base64")
 }
+
 function mimeFromExt(ext: string) {
   const e = ext.toLowerCase()
   if (e === ".jpg" || e === ".jpeg") return "image/jpeg"
@@ -51,6 +53,7 @@ function mimeFromExt(ext: string) {
   if (e === ".webp") return "image/webp"
   return "image/png"
 }
+
 function placementText(p?: Body["placement"]) {
   switch (p) {
     case "chest":
@@ -65,6 +68,7 @@ function placementText(p?: Body["placement"]) {
       return "centrada en el frente"
   }
 }
+
 function scaleText(s?: Body["scaleHint"]) {
   switch (s) {
     case "small":
@@ -78,49 +82,73 @@ function scaleText(s?: Body["scaleHint"]) {
 
 export async function POST(req: Request) {
   const t0 = Date.now()
+
+  console.log("[v0] APPLY-DESIGN: Endpoint accessed")
+
   try {
     const apiKey = process.env.GEMINI_API_KEY
-    if (!apiKey) return ok({ error: "Missing GEMINI_API_KEY" }, 500)
+    if (!apiKey) {
+      console.log("[v0] APPLY-DESIGN: Missing GEMINI_API_KEY")
+      return ok({ error: "Missing GEMINI_API_KEY" }, 500)
+    }
 
     const body = (await req.json()) as Body
+    console.log("[v0] APPLY-DESIGN: Request body received", {
+      hasDesignBase64: !!body.designBase64,
+      hasProductBase64: !!body.productBase64,
+      productPath: body.productPath,
+      placement: body.placement,
+      scaleHint: body.scaleHint,
+    })
+
     if (!body.designBase64) return ok({ error: "Falta designBase64" }, 400)
 
     // 1) Preparar prenda: base64 o archivo en /public/garments/*
     let productDataUrl: string | undefined
     if (body.productBase64) {
       productDataUrl = body.productBase64
+      console.log("[v0] APPLY-DESIGN: Using productBase64")
     } else if (body.productPath) {
-      let filePath: string
+      console.log("[v0] APPLY-DESIGN: Looking for file:", body.productPath)
+
       try {
-        // Try multiple possible paths for v0 runtime
         const possiblePaths = [
           path.join(process.cwd(), "public", "garments", body.productPath),
           path.join("public", "garments", body.productPath),
           path.join("/app", "public", "garments", body.productPath),
           path.join("/var/task", "app", "public", "garments", body.productPath),
+          // Additional paths for v0 runtime
+          path.join("/var/task", "public", "garments", body.productPath),
+          path.join(process.cwd(), "app", "public", "garments", body.productPath),
         ]
 
+        console.log("[v0] APPLY-DESIGN: Trying paths:", possiblePaths)
+
         let buf: Buffer | null = null
+        let foundPath: string | null = null
+
         for (const testPath of possiblePaths) {
           try {
             buf = await fs.readFile(testPath)
-            filePath = testPath
+            foundPath = testPath
+            console.log("[v0] APPLY-DESIGN: Found file at:", testPath)
             break
           } catch (e) {
-            // Continue to next path
+            console.log("[v0] APPLY-DESIGN: Path not found:", testPath)
             continue
           }
         }
 
         if (!buf) {
-          console.error("APPLY-DESIGN: Could not find file at any path:", possiblePaths)
+          console.error("[v0] APPLY-DESIGN: Could not find file at any path:", possiblePaths)
           return ok({ error: `No se pudo encontrar el archivo: ${body.productPath}` }, 404)
         }
 
         const mime = mimeFromExt(path.extname(body.productPath))
         productDataUrl = bufferToDataUrl(buf, mime)
+        console.log("[v0] APPLY-DESIGN: File loaded successfully, mime:", mime)
       } catch (e: any) {
-        console.error("APPLY-DESIGN: File read error:", e.message)
+        console.error("[v0] APPLY-DESIGN: File read error:", e.message)
         return ok({ error: `Error leyendo archivo: ${e.message}` }, 500)
       }
     } else {
@@ -134,6 +162,8 @@ export async function POST(req: Request) {
       `Tamaño: ${scaleText(body.scaleHint)}.`,
       "No alteres colores ni detalles fuera del área de estampado.",
     ].join(" ")
+
+    console.log("[v0] APPLY-DESIGN: Calling Gemini with prompt")
 
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({ model: IMAGE_MODEL })
@@ -163,16 +193,19 @@ export async function POST(req: Request) {
 
     if (!outB64) {
       const txt = res.response?.text?.()
-      console.warn("APPLY-DESIGN no images. fallbackText:", DEBUG ? txt : txt ? `len=${txt.length}` : null)
+      console.warn(
+        "[v0] APPLY-DESIGN: No images returned. fallbackText:",
+        DEBUG ? txt : txt ? `len=${txt.length}` : null,
+      )
       return ok({ error: "Gemini no devolvió imagen fusionada" }, 502)
     }
 
     const t1 = Date.now()
-    console.log("APPLY-DESIGN done", { ms: t1 - t0, placement: body.placement, scale: body.scaleHint })
+    console.log("[v0] APPLY-DESIGN: Success", { ms: t1 - t0, placement: body.placement, scale: body.scaleHint })
     return ok({ success: true, image: { data: outB64, contentType: "image/png" } })
   } catch (e: any) {
     const t1 = Date.now()
-    console.error("APPLY-DESIGN FATAL", {
+    console.error("[v0] APPLY-DESIGN: FATAL ERROR", {
       ms: t1 - t0,
       message: e?.message,
       status: e?.status,
