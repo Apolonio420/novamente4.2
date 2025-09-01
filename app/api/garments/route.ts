@@ -48,14 +48,35 @@ function inferMeta(file: string): Omit<GarmentItem, "path" | "url"> {
 
 export async function GET() {
   try {
+    console.log("[v0] GARMENTS API: Starting to list garments")
+    console.log("[v0] GARMENTS API: process.cwd():", process.cwd())
+
     const dir = path.join(process.cwd(), "public", "garments")
+    console.log("[v0] GARMENTS API: Looking for directory:", dir)
+
+    // Check if directory exists
+    try {
+      const stats = await fs.stat(dir)
+      console.log("[v0] GARMENTS API: Directory exists:", stats.isDirectory())
+    } catch (statError) {
+      console.error("[v0] GARMENTS API: Directory stat error:", statError)
+      return ok({ success: false, error: `Directory not found: ${dir}` }, 500)
+    }
+
     const entries = await fs.readdir(dir, { withFileTypes: true })
+    console.log("[v0] GARMENTS API: Found", entries.length, "entries")
+    console.log(
+      "[v0] GARMENTS API: Entries:",
+      entries.map((e) => `${e.name} (${e.isFile() ? "file" : "dir"})`),
+    )
 
     const allowed = new Set([".png", ".jpg", ".jpeg", ".webp"])
     const files = entries
       .filter((e) => e.isFile())
       .map((e) => e.name)
       .filter((name) => allowed.has(path.extname(name).toLowerCase()))
+
+    console.log("[v0] GARMENTS API: Filtered image files:", files)
 
     const items: GarmentItem[] = files.map((name) => {
       const meta = inferMeta(name)
@@ -66,6 +87,8 @@ export async function GET() {
       }
     })
 
+    console.log("[v0] GARMENTS API: Processed items:", items.length)
+
     // Orden: primero hoodie, luego tshirt; dentro, front antes que back
     items.sort(
       (a, b) =>
@@ -74,9 +97,11 @@ export async function GET() {
         a.path.localeCompare(b.path),
     )
 
+    console.log("[v0] GARMENTS API: Returning", items.length, "sorted items")
     return ok({ success: true, items })
   } catch (e: any) {
-    console.error("GARMENTS LIST ERROR", e)
+    console.error("[v0] GARMENTS API ERROR:", e)
+    console.error("[v0] GARMENTS API ERROR stack:", e.stack)
     return ok({ success: false, error: e?.message || "No se pudo listar garments" }, 500)
   }
 }

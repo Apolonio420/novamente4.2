@@ -41,18 +41,32 @@ export default function GeminiFlowPage() {
   useEffect(() => {
     const loadGarments = async () => {
       try {
+        console.log("[v0] Starting to load garments from /api/garments")
         const response = await fetch("/api/garments")
-        if (!response.ok) throw new Error("Error loading garments")
+        console.log("[v0] Garments API response status:", response.status)
+        console.log("[v0] Garments API response ok:", response.ok)
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.log("[v0] Garments API error response:", errorText)
+          throw new Error(`Error loading garments: ${response.status} ${response.statusText}`)
+        }
 
         const data = await response.json()
+        console.log("[v0] Garments API response data:", data)
+
         if (data.success) {
+          console.log("[v0] Found", data.items.length, "garments")
           setGarments(data.items)
           if (data.items.length > 0) {
             setSelectedGarment(data.items[0].path)
+            console.log("[v0] Selected first garment:", data.items[0].path)
           }
+        } else {
+          throw new Error(data.error || "API returned success: false")
         }
       } catch (error) {
-        console.error("Error loading garments:", error)
+        console.error("[v0] Error loading garments:", error)
         toast({
           title: "Error",
           description: "No se pudieron cargar las prendas disponibles",
