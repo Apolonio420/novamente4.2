@@ -18,11 +18,17 @@ interface GarmentItem {
   color: string
 }
 
+interface GeneratedImage {
+  url: string
+  base64: string
+  contentType: string
+}
+
 export default function GeminiFlowPage() {
   const [prompt, setPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
-  const [generatedImages, setGeneratedImages] = useState<string[]>([])
+  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
   const [garments, setGarments] = useState<GarmentItem[]>([])
   const [selectedGarment, setSelectedGarment] = useState("")
   const [placement, setPlacement] = useState("center")
@@ -95,16 +101,20 @@ export default function GeminiFlowPage() {
       const data = await response.json()
 
       if (data.success && data.images && data.images.length > 0) {
-        const imageUrls = data.images.map((img: { data: string; contentType: string }) => {
+        const imageData = data.images.map((img: { data: string; contentType: string }) => {
           const binaryString = atob(img.data)
           const bytes = new Uint8Array(binaryString.length)
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i)
           }
           const blob = new Blob([bytes], { type: img.contentType })
-          return URL.createObjectURL(blob)
+          return {
+            url: URL.createObjectURL(blob),
+            base64: img.data,
+            contentType: img.contentType,
+          }
         })
-        setGeneratedImages(imageUrls)
+        setGeneratedImages(imageData)
 
         toast({
           title: "¡Diseño generado!",
@@ -126,7 +136,7 @@ export default function GeminiFlowPage() {
   }
 
   // Aplicar diseño a prenda
-  const handleApplyDesign = async (designUrl: string) => {
+  const handleApplyDesign = async (generatedImage: GeneratedImage) => {
     if (!selectedGarment) {
       toast({
         title: "Error",
@@ -146,7 +156,7 @@ export default function GeminiFlowPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          designUrl,
+          designBase64: generatedImage.base64,
           productPath: selectedGarment,
           placement: `Coloca el diseño en ${placement} de la prenda`,
           scaleHint: `Tamaño ${scaleHint} del diseño`,
@@ -315,11 +325,11 @@ export default function GeminiFlowPage() {
                     </div>
                   ) : (
                     <div className="grid gap-4">
-                      {generatedImages.map((imageUrl, index) => (
+                      {generatedImages.map((imageData, index) => (
                         <div key={index} className="relative group">
                           <div className="aspect-square relative rounded-lg overflow-hidden border">
                             <Image
-                              src={imageUrl || "/placeholder.svg"}
+                              src={imageData.url || "/placeholder.svg"}
                               alt={`Diseño generado ${index + 1}`}
                               fill
                               className="object-cover"
@@ -327,7 +337,7 @@ export default function GeminiFlowPage() {
                             />
                           </div>
                           <Button
-                            onClick={() => handleApplyDesign(imageUrl)}
+                            onClick={() => handleApplyDesign(imageData)}
                             disabled={isApplying || !selectedGarment}
                             className="w-full mt-2"
                           >
