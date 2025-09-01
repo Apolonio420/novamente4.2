@@ -49,7 +49,6 @@ export async function POST(req: Request) {
       console.log("[v0] APPLY-DESIGN: Using provided productBase64")
     } else if (body.productPath) {
       try {
-        // Get the base URL from the request
         const url = new URL(req.url)
         const baseUrl = `${url.protocol}//${url.host}`
         const imageUrl = `${baseUrl}/garments/${body.productPath}`
@@ -78,14 +77,14 @@ export async function POST(req: Request) {
     const placement = body.placement || "chest"
     const scale = body.scaleHint || "medium"
 
-    const placementMap = {
+    const placementMap: Record<string, string> = {
       chest: "centrada en el pecho",
       back: "centrada en la espalda",
       left: "en el lado izquierdo",
       right: "en el lado derecho",
     }
 
-    const scaleMap = {
+    const scaleMap: Record<string, string> = {
       small: "tamaño pequeño (25% del ancho)",
       medium: "tamaño medio (45% del ancho)",
       large: "tamaño grande (65% del ancho)",
@@ -113,16 +112,18 @@ export async function POST(req: Request) {
       { inlineData: { data: designB64, mimeType: designMime } },
     ])
 
-    // Extract image from response
     let imageData: string | null = null
 
-    for (const candidate of result.response?.candidates || []) {
-      for (const part of candidate?.content?.parts || []) {
-        // @ts-ignore
-        if (part?.inlineData?.mimeType?.startsWith("image/")) {
-          // @ts-ignore
-          imageData = part.inlineData.data
-          break
+    const candidates = result.response?.candidates || []
+    for (const candidate of candidates) {
+      const parts = candidate?.content?.parts || []
+      for (const part of parts) {
+        if (part && typeof part === "object" && "inlineData" in part) {
+          const inlineData = part.inlineData as any
+          if (inlineData?.mimeType?.startsWith("image/")) {
+            imageData = inlineData.data
+            break
+          }
         }
       }
       if (imageData) break
