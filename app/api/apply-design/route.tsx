@@ -21,16 +21,6 @@ export async function OPTIONS() {
   return jsonResponse({ ok: true })
 }
 
-const GARMENT_IMAGES: Record<string, string> = {
-  "hoodie-black-front.png":
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", // placeholder - replace with actual base64
-  "hoodie-black-back.png":
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", // placeholder - replace with actual base64
-  "tshirt-white-front.png":
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", // placeholder - replace with actual base64
-  // Add more garments as needed
-}
-
 export async function POST(req: Request) {
   console.log("[v0] APPLY-DESIGN: === POST REQUEST STARTED ===")
   console.log("[v0] APPLY-DESIGN: Request URL:", req.url)
@@ -74,16 +64,63 @@ export async function POST(req: Request) {
       productDataUrl = body.productBase64
       console.log("[v0] APPLY-DESIGN: Using provided productBase64")
     } else if (body.productPath) {
-      console.log("[v0] APPLY-DESIGN: Looking for garment in hardcoded images:", body.productPath)
+      console.log("[v0] APPLY-DESIGN: Fetching garment image from URL:", body.productPath)
 
-      if (GARMENT_IMAGES[body.productPath]) {
-        productDataUrl = GARMENT_IMAGES[body.productPath]
-        console.log("[v0] APPLY-DESIGN: Found garment in hardcoded images")
-        console.log("[v0] APPLY-DESIGN: Data URL length:", productDataUrl.length)
-      } else {
-        console.error("[v0] APPLY-DESIGN: ERROR - Garment not found in hardcoded images:", body.productPath)
-        console.log("[v0] APPLY-DESIGN: Available garments:", Object.keys(GARMENT_IMAGES))
-        return jsonResponse({ error: `Prenda no encontrada: ${body.productPath}` }, 404)
+      try {
+        const baseUrl =
+          req.headers.get("origin") ||
+          req.headers.get("host") ||
+          "https://v0-nova-mente-storefront-git-novamente-apolonios-projects.vercel.app"
+        const imageUrl = `${baseUrl}/garments/${body.productPath}`
+        console.log("[v0] APPLY-DESIGN: Attempting to fetch from:", imageUrl)
+
+        const imageResponse = await fetch(imageUrl)
+        console.log("[v0] APPLY-DESIGN: Image fetch response status:", imageResponse.status)
+        console.log("[v0] APPLY-DESIGN: Image fetch response ok:", imageResponse.ok)
+
+        if (!imageResponse.ok) {
+          console.error("[v0] APPLY-DESIGN: Failed to fetch garment image, status:", imageResponse.status)
+          console.log("[v0] APPLY-DESIGN: Using generic garment template")
+          productDataUrl =
+            "data:image/svg+xml;base64," +
+            Buffer.from(`
+            <svg width="400" height="500" xmlns="http://www.w3.org/2000/svg">
+              <rect width="400" height="500" fill="${body.productPath.includes("black") ? "#2d2d2d" : body.productPath.includes("white") ? "#f5f5f5" : "#8b5cf6"}"/>
+              <text x="200" y="250" text-anchor="middle" fill="${body.productPath.includes("black") ? "white" : "black"}" font-size="16">
+                ${body.productPath.includes("hoodie") ? "Hoodie" : "T-Shirt"}
+              </text>
+            </svg>
+          `).toString("base64")
+        } else {
+          const imageBuffer = await imageResponse.arrayBuffer()
+          const base64Image = Buffer.from(imageBuffer).toString("base64")
+          const contentType = imageResponse.headers.get("content-type") || "image/png"
+          productDataUrl = `data:${contentType};base64,${base64Image}`
+          console.log("[v0] APPLY-DESIGN: Successfully fetched garment image, size:", base64Image.length)
+        }
+      } catch (fetchError) {
+        console.error("[v0] APPLY-DESIGN: Error fetching garment image:", fetchError)
+        console.log("[v0] APPLY-DESIGN: Using fallback colored template")
+        const color = body.productPath.includes("black")
+          ? "#2d2d2d"
+          : body.productPath.includes("white")
+            ? "#f5f5f5"
+            : body.productPath.includes("gray")
+              ? "#9ca3af"
+              : body.productPath.includes("caramel")
+                ? "#d2691e"
+                : "#8b5cf6"
+
+        productDataUrl =
+          "data:image/svg+xml;base64," +
+          Buffer.from(`
+          <svg width="400" height="500" xmlns="http://www.w3.org/2000/svg">
+            <rect width="400" height="500" fill="${color}"/>
+            <text x="200" y="250" text-anchor="middle" fill="${color === "#2d2d2d" ? "white" : "black"}" font-size="16">
+              ${body.productPath.includes("hoodie") ? "Hoodie" : "T-Shirt"}
+            </text>
+          </svg>
+        `).toString("base64")
       }
     } else {
       console.error("[v0] APPLY-DESIGN: ERROR - Missing both productBase64 and productPath")
