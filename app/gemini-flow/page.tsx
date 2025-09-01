@@ -39,9 +39,12 @@ export default function GeminiFlowPage() {
 
   // Cargar prendas disponibles
   useEffect(() => {
-    const loadGarments = async () => {
+    const loadGarments = async (retryCount = 0) => {
+      const maxRetries = 3
+      const retryDelay = 1000 // 1 second
+
       try {
-        console.log("[v0] Starting to load garments from /api/garments")
+        console.log("[v0] Starting to load garments from /api/garments (attempt", retryCount + 1, ")")
         const response = await fetch("/api/garments")
         console.log("[v0] Garments API response status:", response.status)
         console.log("[v0] Garments API response ok:", response.ok)
@@ -49,6 +52,13 @@ export default function GeminiFlowPage() {
         if (!response.ok) {
           const errorText = await response.text()
           console.log("[v0] Garments API error response:", errorText)
+
+          if (response.status === 500 && retryCount < maxRetries) {
+            console.log("[v0] Retrying garments API in", retryDelay, "ms...")
+            setTimeout(() => loadGarments(retryCount + 1), retryDelay)
+            return
+          }
+
           throw new Error(`Error loading garments: ${response.status} ${response.statusText}`)
         }
 
@@ -67,13 +77,18 @@ export default function GeminiFlowPage() {
         }
       } catch (error) {
         console.error("[v0] Error loading garments:", error)
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar las prendas disponibles",
-          variant: "destructive",
-        })
+
+        if (retryCount >= maxRetries) {
+          toast({
+            title: "Error",
+            description: "No se pudieron cargar las prendas disponibles",
+            variant: "destructive",
+          })
+        }
       } finally {
-        setLoadingGarments(false)
+        if (retryCount >= maxRetries || garments.length > 0) {
+          setLoadingGarments(false)
+        }
       }
     }
 
