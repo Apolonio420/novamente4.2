@@ -45,7 +45,10 @@ function createGarmentFallback(productPath: string): string {
           ? "#d2b48c"
           : "#2d2d2d"
 
-  // Create a simple 400x500 colored PNG (this is a simplified approach)
+  const width = 400
+  const height = 500
+
+  // Create a simple colored PNG template (this is still a fallback)
   const pngData = `iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`
 
   console.log(`[v0] APPLY-DESIGN: Created ${type} fallback in color ${color}`)
@@ -74,8 +77,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Falta productPath" }, { status: 400 })
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin
+    const baseUrl = request.nextUrl.origin
     console.log(`[v0] APPLY-DESIGN: Using base URL: ${baseUrl}`)
+    console.log(`[v0] APPLY-DESIGN: Request origin: ${request.nextUrl.origin}`)
     console.log(`[v0] APPLY-DESIGN: Looking for garment: ${body.productPath}`)
 
     let garmentBase64 = await fetchGarmentImage(body.productPath, baseUrl)
