@@ -90,10 +90,39 @@ export async function POST(req: Request) {
     if (body.productBase64) {
       productDataUrl = body.productBase64
     } else if (body.productPath) {
-      const filePath = path.join(process.cwd(), "public", "garments", body.productPath)
-      const buf = await fs.readFile(filePath)
-      const mime = mimeFromExt(path.extname(filePath))
-      productDataUrl = bufferToDataUrl(buf, mime)
+      let filePath: string
+      try {
+        // Try multiple possible paths for v0 runtime
+        const possiblePaths = [
+          path.join(process.cwd(), "public", "garments", body.productPath),
+          path.join("public", "garments", body.productPath),
+          path.join("/app", "public", "garments", body.productPath),
+          path.join("/var/task", "app", "public", "garments", body.productPath),
+        ]
+
+        let buf: Buffer | null = null
+        for (const testPath of possiblePaths) {
+          try {
+            buf = await fs.readFile(testPath)
+            filePath = testPath
+            break
+          } catch (e) {
+            // Continue to next path
+            continue
+          }
+        }
+
+        if (!buf) {
+          console.error("APPLY-DESIGN: Could not find file at any path:", possiblePaths)
+          return ok({ error: `No se pudo encontrar el archivo: ${body.productPath}` }, 404)
+        }
+
+        const mime = mimeFromExt(path.extname(body.productPath))
+        productDataUrl = bufferToDataUrl(buf, mime)
+      } catch (e: any) {
+        console.error("APPLY-DESIGN: File read error:", e.message)
+        return ok({ error: `Error leyendo archivo: ${e.message}` }, 500)
+      }
     } else {
       return ok({ error: "Debe enviar productBase64 o productPath" }, 400)
     }
