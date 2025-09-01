@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import fs from "node:fs/promises"
-import path from "node:path"
 
 export const runtime = "nodejs"
 
@@ -50,36 +48,29 @@ export async function POST(req: Request) {
       productDataUrl = body.productBase64
       console.log("[v0] APPLY-DESIGN: Using provided productBase64")
     } else if (body.productPath) {
-      // Try multiple possible paths in v0 runtime
-      const possiblePaths = [
-        path.join(process.cwd(), "public", "garments", body.productPath),
-        path.join("public", "garments", body.productPath),
-        `/var/task/public/garments/${body.productPath}`,
-        `/app/public/garments/${body.productPath}`,
-      ]
+      try {
+        // Get the base URL from the request
+        const url = new URL(req.url)
+        const baseUrl = `${url.protocol}//${url.host}`
+        const imageUrl = `${baseUrl}/garments/${body.productPath}`
 
-      let fileBuffer: Buffer | null = null
-      let foundPath = ""
+        console.log("[v0] APPLY-DESIGN: Fetching image from:", imageUrl)
 
-      for (const testPath of possiblePaths) {
-        try {
-          fileBuffer = await fs.readFile(testPath)
-          foundPath = testPath
-          console.log("[v0] APPLY-DESIGN: Found file at:", testPath)
-          break
-        } catch (e) {
-          console.log("[v0] APPLY-DESIGN: Path failed:", testPath)
+        const response = await fetch(imageUrl)
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
         }
-      }
 
-      if (!fileBuffer) {
-        console.error("[v0] APPLY-DESIGN: File not found at any path:", possiblePaths)
-        return jsonResponse({ error: `No se pudo encontrar el archivo: ${body.productPath}` }, 404)
-      }
+        const arrayBuffer = await response.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
 
-      const mimeType = body.productPath.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg"
-      productDataUrl = `data:${mimeType};base64,${fileBuffer.toString("base64")}`
-      console.log("[v0] APPLY-DESIGN: File loaded successfully")
+        const mimeType = body.productPath.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg"
+        productDataUrl = `data:${mimeType};base64,${buffer.toString("base64")}`
+        console.log("[v0] APPLY-DESIGN: Image fetched and converted successfully")
+      } catch (error: any) {
+        console.error("[v0] APPLY-DESIGN: Failed to fetch image:", error.message)
+        return jsonResponse({ error: `No se pudo cargar la imagen: ${body.productPath}` }, 404)
+      }
     } else {
       return jsonResponse({ error: "Debe enviar productBase64 o productPath" }, 400)
     }
