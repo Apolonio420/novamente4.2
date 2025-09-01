@@ -5,213 +5,153 @@ import path from "node:path"
 
 export const runtime = "nodejs"
 
-// ==== Config ====
-const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image-preview"
-const DEBUG = (process.env.DEBUG_GEMINI || "").toLowerCase() === "true"
-
-const CORS = {
+const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
 
-function ok(data: unknown, status = 200) {
+function jsonResponse(data: any, status = 200) {
   return new NextResponse(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json", ...CORS },
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   })
 }
 
 export async function OPTIONS() {
-  return ok({ ok: true })
-}
-
-type Body = {
-  designBase64: string // data:image/png;base64,...
-  productBase64?: string // data:image/jpeg;base64,...
-  productPath?: string // ej: "hoodie/front.jpg" (en /public/garments)
-  placement?: "chest" | "back" | "left" | "right"
-  scaleHint?: "small" | "medium" | "large"
-}
-
-// Helpers
-function dataUrlToInline(dataUrl: string) {
-  const [hdr, b64] = dataUrl.split(",")
-  if (!hdr || !b64) throw new Error("Data URL inválida")
-  const mime = /data:(.*?);base64/.exec(hdr)?.[1] || "image/png"
-  return { inlineData: { data: b64, mimeType: mime } }
-}
-
-function bufferToDataUrl(buf: Buffer, mime: string) {
-  return `data:${mime};base64,` + buf.toString("base64")
-}
-
-function mimeFromExt(ext: string) {
-  const e = ext.toLowerCase()
-  if (e === ".jpg" || e === ".jpeg") return "image/jpeg"
-  if (e === ".png") return "image/png"
-  if (e === ".webp") return "image/webp"
-  return "image/png"
-}
-
-function placementText(p?: Body["placement"]) {
-  switch (p) {
-    case "chest":
-      return "centrada en el pecho"
-    case "back":
-      return "centrada en la espalda"
-    case "left":
-      return "en el lado izquierdo del frente"
-    case "right":
-      return "en el lado derecho del frente"
-    default:
-      return "centrada en el frente"
-  }
-}
-
-function scaleText(s?: Body["scaleHint"]) {
-  switch (s) {
-    case "small":
-      return "tamaño pequeño (20–30% del ancho del frente)"
-    case "large":
-      return "tamaño grande (60–70% del ancho del frente)"
-    default:
-      return "tamaño medio (40–50% del ancho del frente)"
-  }
+  return jsonResponse({ ok: true })
 }
 
 export async function POST(req: Request) {
-  const t0 = Date.now()
-
-  console.log("[v0] APPLY-DESIGN: Endpoint accessed")
+  console.log("[v0] APPLY-DESIGN: Starting request processing")
 
   try {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) {
-      console.log("[v0] APPLY-DESIGN: Missing GEMINI_API_KEY")
-      return ok({ error: "Missing GEMINI_API_KEY" }, 500)
+      console.error("[v0] APPLY-DESIGN: Missing GEMINI_API_KEY")
+      return jsonResponse({ error: "Missing GEMINI_API_KEY" }, 500)
     }
 
-    const body = (await req.json()) as Body
-    console.log("[v0] APPLY-DESIGN: Request body received", {
+    const body = await req.json()
+    console.log("[v0] APPLY-DESIGN: Body received", {
       hasDesignBase64: !!body.designBase64,
-      hasProductBase64: !!body.productBase64,
       productPath: body.productPath,
-      placement: body.placement,
-      scaleHint: body.scaleHint,
+      placement: body.placement || "chest",
+      scaleHint: body.scaleHint || "medium",
     })
 
-    if (!body.designBase64) return ok({ error: "Falta designBase64" }, 400)
-
-    // 1) Preparar prenda: base64 o archivo en /public/garments/*
-    let productDataUrl: string | undefined
-    if (body.productBase64) {
-      productDataUrl = body.productBase64
-      console.log("[v0] APPLY-DESIGN: Using productBase64")
-    } else if (body.productPath) {
-      console.log("[v0] APPLY-DESIGN: Looking for file:", body.productPath)
-
-      try {
-        const possiblePaths = [
-          path.join(process.cwd(), "public", "garments", body.productPath),
-          path.join("public", "garments", body.productPath),
-          path.join("/app", "public", "garments", body.productPath),
-          path.join("/var/task", "app", "public", "garments", body.productPath),
-          // Additional paths for v0 runtime
-          path.join("/var/task", "public", "garments", body.productPath),
-          path.join(process.cwd(), "app", "public", "garments", body.productPath),
-        ]
-
-        console.log("[v0] APPLY-DESIGN: Trying paths:", possiblePaths)
-
-        let buf: Buffer | null = null
-        let foundPath: string | null = null
-
-        for (const testPath of possiblePaths) {
-          try {
-            buf = await fs.readFile(testPath)
-            foundPath = testPath
-            console.log("[v0] APPLY-DESIGN: Found file at:", testPath)
-            break
-          } catch (e) {
-            console.log("[v0] APPLY-DESIGN: Path not found:", testPath)
-            continue
-          }
-        }
-
-        if (!buf) {
-          console.error("[v0] APPLY-DESIGN: Could not find file at any path:", possiblePaths)
-          return ok({ error: `No se pudo encontrar el archivo: ${body.productPath}` }, 404)
-        }
-
-        const mime = mimeFromExt(path.extname(body.productPath))
-        productDataUrl = bufferToDataUrl(buf, mime)
-        console.log("[v0] APPLY-DESIGN: File loaded successfully, mime:", mime)
-      } catch (e: any) {
-        console.error("[v0] APPLY-DESIGN: File read error:", e.message)
-        return ok({ error: `Error leyendo archivo: ${e.message}` }, 500)
-      }
-    } else {
-      return ok({ error: "Debe enviar productBase64 o productPath" }, 400)
+    if (!body.designBase64) {
+      return jsonResponse({ error: "Falta designBase64" }, 400)
     }
 
-    const promptText = [
-      "Superpone la estampa (segunda imagen) sobre la prenda (primera imagen) con aspecto realista:",
-      "respetá arrugas, sombras e iluminación, como impresión integrada a la tela.",
-      `Ubicación: ${placementText(body.placement)}.`,
-      `Tamaño: ${scaleText(body.scaleHint)}.`,
-      "No alteres colores ni detalles fuera del área de estampado.",
-    ].join(" ")
+    let productDataUrl: string
 
-    console.log("[v0] APPLY-DESIGN: Calling Gemini with prompt")
+    if (body.productBase64) {
+      productDataUrl = body.productBase64
+      console.log("[v0] APPLY-DESIGN: Using provided productBase64")
+    } else if (body.productPath) {
+      // Try multiple possible paths in v0 runtime
+      const possiblePaths = [
+        path.join(process.cwd(), "public", "garments", body.productPath),
+        path.join("public", "garments", body.productPath),
+        `/var/task/public/garments/${body.productPath}`,
+        `/app/public/garments/${body.productPath}`,
+      ]
+
+      let fileBuffer: Buffer | null = null
+      let foundPath = ""
+
+      for (const testPath of possiblePaths) {
+        try {
+          fileBuffer = await fs.readFile(testPath)
+          foundPath = testPath
+          console.log("[v0] APPLY-DESIGN: Found file at:", testPath)
+          break
+        } catch (e) {
+          console.log("[v0] APPLY-DESIGN: Path failed:", testPath)
+        }
+      }
+
+      if (!fileBuffer) {
+        console.error("[v0] APPLY-DESIGN: File not found at any path:", possiblePaths)
+        return jsonResponse({ error: `No se pudo encontrar el archivo: ${body.productPath}` }, 404)
+      }
+
+      const mimeType = body.productPath.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg"
+      productDataUrl = `data:${mimeType};base64,${fileBuffer.toString("base64")}`
+      console.log("[v0] APPLY-DESIGN: File loaded successfully")
+    } else {
+      return jsonResponse({ error: "Debe enviar productBase64 o productPath" }, 400)
+    }
+
+    const placement = body.placement || "chest"
+    const scale = body.scaleHint || "medium"
+
+    const placementMap = {
+      chest: "centrada en el pecho",
+      back: "centrada en la espalda",
+      left: "en el lado izquierdo",
+      right: "en el lado derecho",
+    }
+
+    const scaleMap = {
+      small: "tamaño pequeño (25% del ancho)",
+      medium: "tamaño medio (45% del ancho)",
+      large: "tamaño grande (65% del ancho)",
+    }
+
+    const prompt = `Superpone la estampa sobre la prenda de manera realista. Ubicación: ${placementMap[placement] || placementMap.chest}. Tamaño: ${scaleMap[scale] || scaleMap.medium}. Mantén las arrugas y sombras naturales.`
+
+    console.log("[v0] APPLY-DESIGN: Calling Gemini API")
 
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: IMAGE_MODEL })
+    const model = genAI.getGenerativeModel({
+      model: process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image-preview",
+    })
 
-    // ✅ SDK: array con texto + partes inline (product primero, luego design)
-    const res = await model.generateContent([
-      { text: promptText },
-      dataUrlToInline(productDataUrl),
-      dataUrlToInline(body.designBase64),
+    // Parse data URLs
+    const productB64 = productDataUrl.split(",")[1]
+    const productMime = productDataUrl.match(/data:(.*?);base64/)?.[1] || "image/png"
+
+    const designB64 = body.designBase64.split(",")[1]
+    const designMime = body.designBase64.match(/data:(.*?);base64/)?.[1] || "image/png"
+
+    const result = await model.generateContent([
+      { text: prompt },
+      { inlineData: { data: productB64, mimeType: productMime } },
+      { inlineData: { data: designB64, mimeType: designMime } },
     ])
 
-    // Extraer primera imagen resultante
-    let outB64: string | null = null
-    for (const cand of res.response?.candidates ?? []) {
-      for (const part of cand?.content?.parts ?? []) {
+    // Extract image from response
+    let imageData: string | null = null
+
+    for (const candidate of result.response?.candidates || []) {
+      for (const part of candidate?.content?.parts || []) {
         // @ts-ignore
-        const inline = part?.inlineData
-        // @ts-ignore
-        if (inline?.mimeType?.startsWith("image/") && typeof inline?.data === "string") {
+        if (part?.inlineData?.mimeType?.startsWith("image/")) {
           // @ts-ignore
-          outB64 = inline.data
+          imageData = part.inlineData.data
           break
         }
       }
-      if (outB64) break
+      if (imageData) break
     }
 
-    if (!outB64) {
-      const txt = res.response?.text?.()
-      console.warn(
-        "[v0] APPLY-DESIGN: No images returned. fallbackText:",
-        DEBUG ? txt : txt ? `len=${txt.length}` : null,
-      )
-      return ok({ error: "Gemini no devolvió imagen fusionada" }, 502)
+    if (!imageData) {
+      console.error("[v0] APPLY-DESIGN: No image returned from Gemini")
+      return jsonResponse({ error: "No se pudo generar la imagen fusionada" }, 502)
     }
 
-    const t1 = Date.now()
-    console.log("[v0] APPLY-DESIGN: Success", { ms: t1 - t0, placement: body.placement, scale: body.scaleHint })
-    return ok({ success: true, image: { data: outB64, contentType: "image/png" } })
-  } catch (e: any) {
-    const t1 = Date.now()
-    console.error("[v0] APPLY-DESIGN: FATAL ERROR", {
-      ms: t1 - t0,
-      message: e?.message,
-      status: e?.status,
-      code: e?.code,
-      details: e?.details,
+    console.log("[v0] APPLY-DESIGN: Success - image generated")
+    return jsonResponse({
+      success: true,
+      image: {
+        data: imageData,
+        contentType: "image/png",
+      },
     })
-    return ok({ error: e?.message ?? "Error aplicando diseño" }, 500)
+  } catch (error: any) {
+    console.error("[v0] APPLY-DESIGN: Error:", error.message)
+    return jsonResponse({ error: error.message || "Error aplicando diseño" }, 500)
   }
 }
