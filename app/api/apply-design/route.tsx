@@ -75,8 +75,11 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] APPLY-DESIGN: Using garment template")
 
-    // Prepare Gemini request
     const gemini = getGeminiClient()
+    const model = gemini.getGenerativeModel({
+      model: process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image-preview",
+    })
+
     const placement = body.placement || "Coloca el diseño en el centro de la prenda"
     const scaleHint = body.scaleHint || "Tamaño mediano del diseño"
 
@@ -89,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] APPLY-DESIGN: Calling Gemini with prompt:", prompt)
 
-    const result = await gemini.generateContent([
+    const result = await model.generateContent([
       prompt,
       {
         inlineData: {
