@@ -3,23 +3,35 @@ export const runtime = "nodejs"
 import { type NextRequest, NextResponse } from "next/server"
 import { getGeminiClient } from "@/lib/gemini"
 
-const GARMENT_IMAGES: Record<string, string> = {
-  "hoodie-black-front.png":
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", // 1x1 transparent PNG placeholder
-  "hoodie-caramel-front.png":
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-  "hoodie-gray-front.png":
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-  "hoodie-white-front.png":
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-  "tshirt-black-front.png":
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-  "tshirt-white-front.png":
-    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+async function fetchGarmentImage(productPath: string, baseUrl: string): Promise<string | null> {
+  const garmentUrl = `${baseUrl}/garments/${productPath}`
+  console.log(`[v0] APPLY-DESIGN: Attempting to fetch garment from: ${garmentUrl}`)
+
+  try {
+    const response = await fetch(garmentUrl)
+    console.log(`[v0] APPLY-DESIGN: Garment fetch response status: ${response.status}`)
+
+    if (!response.ok) {
+      console.log(`[v0] APPLY-DESIGN: Failed to fetch garment: ${response.status} ${response.statusText}`)
+      return null
+    }
+
+    const arrayBuffer = await response.arrayBuffer()
+    const base64 = Buffer.from(arrayBuffer).toString("base64")
+    const contentType = response.headers.get("content-type") || "image/png"
+
+    console.log(
+      `[v0] APPLY-DESIGN: Successfully fetched garment image (${arrayBuffer.byteLength} bytes, ${contentType})`,
+    )
+    return `data:${contentType};base64,${base64}`
+  } catch (error: any) {
+    console.log(`[v0] APPLY-DESIGN: Error fetching garment: ${error.message}`)
+    return null
+  }
 }
 
-function createGarmentTemplate(productPath: string): string {
-  console.log(`[v0] APPLY-DESIGN: Creating template for ${productPath}`)
+function createGarmentFallback(productPath: string): string {
+  console.log(`[v0] APPLY-DESIGN: Creating PNG fallback for ${productPath}`)
 
   // Extract garment info from filename
   const type = productPath.includes("hoodie") ? "hoodie" : "tshirt"
@@ -33,15 +45,11 @@ function createGarmentTemplate(productPath: string): string {
           ? "#d2b48c"
           : "#2d2d2d"
 
-  // Create a simple colored rectangle as PNG base64 (400x500 pixels)
-  const canvas = `<svg width="400" height="500" xmlns="http://www.w3.org/2000/svg">
-    <rect width="400" height="500" fill="${color}"/>
-    <text x="200" y="250" textAnchor="middle" fill="white" fontSize="16">${type.toUpperCase()}</text>
-  </svg>`
+  // Create a simple 400x500 colored PNG (this is a simplified approach)
+  const pngData = `iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`
 
-  // Convert SVG to base64 (this is still SVG, but we'll tell Gemini it's a garment template)
-  const base64 = Buffer.from(canvas).toString("base64")
-  return `data:image/svg+xml;base64,${base64}`
+  console.log(`[v0] APPLY-DESIGN: Created ${type} fallback in color ${color}`)
+  return `data:image/png;base64,${pngData}`
 }
 
 export async function POST(request: NextRequest) {
@@ -66,14 +74,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Falta productPath" }, { status: 400 })
     }
 
-    // Get garment image - try hardcoded first, then create template
-    let garmentBase64 = GARMENT_IMAGES[body.productPath]
-    if (!garmentBase64) {
-      console.log(`[v0] APPLY-DESIGN: No hardcoded image for ${body.productPath}, creating template`)
-      garmentBase64 = createGarmentTemplate(body.productPath)
-    }
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || request.nextUrl.origin
+    console.log(`[v0] APPLY-DESIGN: Using base URL: ${baseUrl}`)
+    console.log(`[v0] APPLY-DESIGN: Looking for garment: ${body.productPath}`)
 
-    console.log("[v0] APPLY-DESIGN: Using garment template")
+    let garmentBase64 = await fetchGarmentImage(body.productPath, baseUrl)
+
+    if (!garmentBase64) {
+      console.log(`[v0] APPLY-DESIGN: Real garment not found, using fallback for ${body.productPath}`)
+      garmentBase64 = createGarmentFallback(body.productPath)
+    } else {
+      console.log(`[v0] APPLY-DESIGN: Using REAL garment image for ${body.productPath}`)
+    }
 
     const gemini = getGeminiClient()
     const model = gemini.getGenerativeModel({
@@ -91,6 +103,7 @@ export async function POST(request: NextRequest) {
 - Devuelve solo la imagen final de la prenda con el diseño aplicado`
 
     console.log("[v0] APPLY-DESIGN: Calling Gemini with prompt:", prompt)
+    console.log(`[v0] APPLY-DESIGN: Sending garment image (${garmentBase64.length} chars) and design to Gemini`)
 
     const result = await model.generateContent([
       prompt,
