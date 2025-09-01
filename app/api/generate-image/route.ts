@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 export const runtime = "nodejs"
 
 // ==== Config ====
-const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image-preview"
+const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-1.5-flash"
 const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-1.5-pro"
 const DEBUG = (process.env.DEBUG_GEMINI || "").toLowerCase() === "true"
 
