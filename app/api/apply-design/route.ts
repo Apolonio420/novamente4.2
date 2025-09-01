@@ -21,6 +21,16 @@ export async function OPTIONS() {
   return jsonResponse({ ok: true })
 }
 
+const GARMENT_IMAGES: Record<string, string> = {
+  "hoodie-black-front.png":
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", // placeholder - replace with actual base64
+  "hoodie-black-back.png":
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", // placeholder - replace with actual base64
+  "tshirt-white-front.png":
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", // placeholder - replace with actual base64
+  // Add more garments as needed
+}
+
 export async function POST(req: Request) {
   console.log("[v0] APPLY-DESIGN: === POST REQUEST STARTED ===")
   console.log("[v0] APPLY-DESIGN: Request URL:", req.url)
@@ -64,41 +74,16 @@ export async function POST(req: Request) {
       productDataUrl = body.productBase64
       console.log("[v0] APPLY-DESIGN: Using provided productBase64")
     } else if (body.productPath) {
-      try {
-        const url = new URL(req.url)
-        const baseUrl = `${url.protocol}//${url.host}`
-        const imageUrl = `${baseUrl}/garments/${body.productPath}`
+      console.log("[v0] APPLY-DESIGN: Looking for garment in hardcoded images:", body.productPath)
 
-        console.log("[v0] APPLY-DESIGN: Fetching image from URL:", imageUrl)
-        console.log("[v0] APPLY-DESIGN: Base URL:", baseUrl)
-        console.log("[v0] APPLY-DESIGN: Product path:", body.productPath)
-
-        const response = await fetch(imageUrl)
-        console.log("[v0] APPLY-DESIGN: Fetch response status:", response.status)
-        console.log("[v0] APPLY-DESIGN: Fetch response ok:", response.ok)
-        console.log("[v0] APPLY-DESIGN: Fetch response headers:", Object.fromEntries(response.headers.entries()))
-
-        if (!response.ok) {
-          console.error("[v0] APPLY-DESIGN: ERROR - Fetch failed:", response.status, response.statusText)
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-        }
-
-        console.log("[v0] APPLY-DESIGN: Converting response to array buffer...")
-        const arrayBuffer = await response.arrayBuffer()
-        const buffer = Buffer.from(arrayBuffer)
-        console.log("[v0] APPLY-DESIGN: Buffer size:", buffer.length, "bytes")
-
-        const mimeType = body.productPath.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg"
-        productDataUrl = `data:${mimeType};base64,${buffer.toString("base64")}`
-        console.log("[v0] APPLY-DESIGN: Image converted to data URL successfully")
+      if (GARMENT_IMAGES[body.productPath]) {
+        productDataUrl = GARMENT_IMAGES[body.productPath]
+        console.log("[v0] APPLY-DESIGN: Found garment in hardcoded images")
         console.log("[v0] APPLY-DESIGN: Data URL length:", productDataUrl.length)
-        console.log("[v0] APPLY-DESIGN: MIME type:", mimeType)
-      } catch (error: any) {
-        console.error("[v0] APPLY-DESIGN: ERROR - Failed to fetch image:", error)
-        console.error("[v0] APPLY-DESIGN: Error name:", error.name)
-        console.error("[v0] APPLY-DESIGN: Error message:", error.message)
-        console.error("[v0] APPLY-DESIGN: Error stack:", error.stack)
-        return jsonResponse({ error: `No se pudo cargar la imagen: ${body.productPath}` }, 404)
+      } else {
+        console.error("[v0] APPLY-DESIGN: ERROR - Garment not found in hardcoded images:", body.productPath)
+        console.log("[v0] APPLY-DESIGN: Available garments:", Object.keys(GARMENT_IMAGES))
+        return jsonResponse({ error: `Prenda no encontrada: ${body.productPath}` }, 404)
       }
     } else {
       console.error("[v0] APPLY-DESIGN: ERROR - Missing both productBase64 and productPath")
