@@ -248,7 +248,12 @@ export default function GeminiFlowPage() {
       if (data.success && data.image) {
         console.log("[v0] Converting image data to blob...")
         // Convertir los datos de imagen a URL
-        const blob = new Blob([new Uint8Array(data.image.data)], {
+        const binaryString = atob(data.image.data)
+        const bytes = new Uint8Array(binaryString.length)
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i)
+        }
+        const blob = new Blob([bytes], {
           type: data.image.contentType,
         })
         const imageUrl = URL.createObjectURL(blob)
