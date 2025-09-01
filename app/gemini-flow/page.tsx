@@ -166,7 +166,19 @@ export default function GeminiFlowPage() {
 
   // Aplicar diseño a prenda
   const handleApplyDesign = async (generatedImage: GeneratedImage) => {
+    console.log("[v0] === STARTING APPLY DESIGN ===")
+    console.log("[v0] Selected garment:", selectedGarment)
+    console.log("[v0] Generated image data:", {
+      hasUrl: !!generatedImage.url,
+      hasBase64: !!generatedImage.base64,
+      base64Length: generatedImage.base64?.length || 0,
+      contentType: generatedImage.contentType,
+    })
+    console.log("[v0] Placement:", placement)
+    console.log("[v0] Scale hint:", scaleHint)
+
     if (!selectedGarment) {
+      console.log("[v0] ERROR: No garment selected")
       toast({
         title: "Error",
         description: "Por favor, selecciona una prenda",
@@ -179,46 +191,92 @@ export default function GeminiFlowPage() {
     setResultImage(null)
 
     try {
+      const requestBody = {
+        designBase64: generatedImage.base64,
+        productPath: selectedGarment,
+        placement: `Coloca el diseño en ${placement} de la prenda`,
+        scaleHint: `Tamaño ${scaleHint} del diseño`,
+      }
+
+      console.log("[v0] Request body:", {
+        hasDesignBase64: !!requestBody.designBase64,
+        designBase64Length: requestBody.designBase64?.length || 0,
+        productPath: requestBody.productPath,
+        placement: requestBody.placement,
+        scaleHint: requestBody.scaleHint,
+      })
+
+      console.log("[v0] Making POST request to /api/apply-design...")
+
       const response = await fetch("/api/apply-design", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          designBase64: generatedImage.base64,
-          productPath: selectedGarment,
-          placement: `Coloca el diseño en ${placement} de la prenda`,
-          scaleHint: `Tamaño ${scaleHint} del diseño`,
-        }),
+        body: JSON.stringify(requestBody),
       })
 
+      console.log("[v0] Apply design response status:", response.status)
+      console.log("[v0] Apply design response ok:", response.ok)
+      console.log("[v0] Apply design response headers:", Object.fromEntries(response.headers.entries()))
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Error al aplicar el diseño")
+        const errorText = await response.text()
+        console.log("[v0] Apply design error response text:", errorText)
+
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+          console.log("[v0] Apply design error data:", errorData)
+        } catch (e) {
+          console.log("[v0] Could not parse error response as JSON")
+          errorData = { error: errorText }
+        }
+
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
       }
 
+      console.log("[v0] Apply design response successful, parsing JSON...")
       const data = await response.json()
+      console.log("[v0] Apply design response data:", {
+        success: data.success,
+        hasImage: !!data.image,
+        imageDataLength: data.image?.data?.length || 0,
+        imageContentType: data.image?.contentType,
+      })
+
       if (data.success && data.image) {
+        console.log("[v0] Converting image data to blob...")
         // Convertir los datos de imagen a URL
         const blob = new Blob([new Uint8Array(data.image.data)], {
           type: data.image.contentType,
         })
         const imageUrl = URL.createObjectURL(blob)
+        console.log("[v0] Created blob URL:", imageUrl)
         setResultImage(imageUrl)
 
         toast({
           title: "¡Diseño aplicado!",
           description: "Tu diseño se ha aplicado exitosamente a la prenda",
         })
+      } else {
+        console.log("[v0] ERROR: Response missing success or image data")
+        throw new Error("Respuesta inválida del servidor")
       }
     } catch (error) {
-      console.error("Error applying design:", error)
+      console.error("[v0] Error applying design:", error)
+      console.log("[v0] Error details:", {
+        name: error instanceof Error ? error.name : "Unknown",
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      })
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "No se pudo aplicar el diseño",
         variant: "destructive",
       })
     } finally {
+      console.log("[v0] === APPLY DESIGN FINISHED ===")
       setIsApplying(false)
     }
   }
