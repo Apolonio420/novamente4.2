@@ -103,6 +103,7 @@ export default function GeminiFlowPage() {
             setSelectedGarment(data.items[0].path)
             console.log("[v0] Selected first garment:", data.items[0].path)
           }
+          setLoadingGarments(false)
         } else {
           throw new Error(data.error || "API returned success: false")
         }
@@ -110,15 +111,12 @@ export default function GeminiFlowPage() {
         console.error("[v0] Error loading garments:", error)
 
         if (retryCount >= maxRetries) {
+          setLoadingGarments(false)
           toast({
             title: "Error",
             description: "No se pudieron cargar las prendas disponibles",
             variant: "destructive",
           })
-        }
-      } finally {
-        if (retryCount >= maxRetries || garments.length > 0) {
-          setLoadingGarments(false)
         }
       }
     }
@@ -385,9 +383,16 @@ export default function GeminiFlowPage() {
                 <div className="space-y-4">
                   <div>
                     <Label>Prenda</Label>
-                    <Select value={selectedGarment} onValueChange={setSelectedGarment} disabled={loadingGarments}>
+                    <Select
+                      value={selectedGarment}
+                      onValueChange={(value) => {
+                        console.log("[v0] Garment selection changed to:", value)
+                        setSelectedGarment(value)
+                      }}
+                      disabled={loadingGarments && garments.length === 0}
+                    >
                       <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Selecciona una prenda" />
+                        <SelectValue placeholder={loadingGarments ? "Cargando prendas..." : "Selecciona una prenda"} />
                       </SelectTrigger>
                       <SelectContent>
                         {garments.map((garment) => (
@@ -397,6 +402,11 @@ export default function GeminiFlowPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {process.env.NODE_ENV === "development" && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Loading: {loadingGarments.toString()}, Garments: {garments.length}, Selected: {selectedGarment}
+                      </div>
+                    )}
                   </div>
 
                   <div>
