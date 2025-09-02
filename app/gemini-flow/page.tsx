@@ -192,10 +192,10 @@ export default function GeminiFlowPage() {
 
     try {
       const requestBody = {
-        designBase64: generatedImage.base64,
+        designBase64: `data:image/png;base64,${generatedImage.base64}`,
         productPath: selectedGarment,
-        placement: `Coloca el diseño en ${placement} de la prenda`,
-        scaleHint: `Tamaño ${scaleHint} del diseño`,
+        placement,
+        scaleHint,
       }
 
       console.log("[v0] Request body:", {

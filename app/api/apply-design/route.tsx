@@ -71,6 +71,13 @@ async function fetchGarmentImage(productPath: string, baseUrl: string): Promise<
   }
 }
 
+const SAFE_RE = /^[a-zA-Z0-9._-]+$/
+const ALLOWED_EXT = new Set([".png", ".jpg", ".jpeg", ".webp"])
+
+function isSafePath(p: string) {
+  return SAFE_RE.test(p) && ALLOWED_EXT.has(path.extname(p).toLowerCase())
+}
+
 export async function POST(request: NextRequest) {
   console.log("[v0] APPLY-DESIGN: Starting request processing")
 
@@ -87,6 +94,11 @@ export async function POST(request: NextRequest) {
     if (!body.designBase64) {
       console.log("[v0] APPLY-DESIGN: Missing designBase64")
       return NextResponse.json({ success: false, error: "Falta designBase64" }, { status: 400 })
+    }
+
+    if (body.productPath && !isSafePath(body.productPath)) {
+      console.log(`[v0] APPLY-DESIGN: Invalid productPath: ${body.productPath}`)
+      return NextResponse.json({ success: false, error: "productPath inválido" }, { status: 400 })
     }
 
     let productDataUrl: string
