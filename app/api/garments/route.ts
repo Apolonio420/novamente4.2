@@ -47,22 +47,12 @@ function inferMeta(file: string): Omit<GarmentItem, "path" | "url"> {
 const GARMENT_FILES = [
   "hoodie-black-front.jpeg",
   "hoodie-black-back.jpeg",
-  "hoodie-white-front.jpeg",
-  "hoodie-white-back.jpeg",
   "hoodie-gray-front.jpeg",
   "hoodie-gray-back.jpeg",
-  "hoodie-caramel-front.jpeg",
-  "hoodie-caramel-back.jpeg",
   "tshirt-black-front.jpeg",
   "tshirt-black-back.jpeg",
-  "tshirt-white-front.jpeg",
-  "tshirt-white-back.jpeg",
   "tshirt-gray-front.jpeg",
   "tshirt-gray-back.jpeg",
-  "tshirt-caramel-front.jpeg",
-  "tshirt-caramel-back.jpeg",
-  "tshirt-cream-front.jpeg",
-  "tshirt-cream-back.jpeg",
 ]
 
 export async function GET() {
