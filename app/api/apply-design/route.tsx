@@ -2,6 +2,30 @@ export const runtime = "nodejs"
 
 import { type NextRequest, NextResponse } from "next/server"
 import { getGeminiClient } from "@/lib/gemini"
+import * as fs from "fs/promises"
+import * as path from "path"
+
+// Utility functions for file handling
+function mimeFromExt(ext: string): string {
+  switch (ext.toLowerCase()) {
+    case ".png":
+      return "image/png"
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg"
+    case ".gif":
+      return "image/gif"
+    case ".webp":
+      return "image/webp"
+    default:
+      return "image/png"
+  }
+}
+
+function bufferToDataUrl(buffer: Buffer, mimeType: string): string {
+  const base64 = buffer.toString("base64")
+  return `data:${mimeType};base64,${base64}`
+}
 
 async function fetchGarmentImage(productPath: string, baseUrl: string): Promise<string | null> {
   const garmentUrl = `${baseUrl}/garments/${productPath}`
@@ -30,31 +54,6 @@ async function fetchGarmentImage(productPath: string, baseUrl: string): Promise<
   }
 }
 
-function createGarmentFallback(productPath: string): string {
-  console.log(`[v0] APPLY-DESIGN: Creating PNG fallback for ${productPath}`)
-
-  // Extract garment info from filename
-  const type = productPath.includes("hoodie") ? "hoodie" : "tshirt"
-  const color = productPath.includes("black")
-    ? "#2d2d2d"
-    : productPath.includes("white")
-      ? "#f5f5f5"
-      : productPath.includes("gray")
-        ? "#8b8b8b"
-        : productPath.includes("caramel")
-          ? "#d2b48c"
-          : "#2d2d2d"
-
-  const width = 400
-  const height = 500
-
-  // Create a simple colored PNG template (this is still a fallback)
-  const pngData = `iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==`
-
-  console.log(`[v0] APPLY-DESIGN: Created ${type} fallback in color ${color}`)
-  return `data:image/png;base64,${pngData}`
-}
-
 export async function POST(request: NextRequest) {
   console.log("[v0] APPLY-DESIGN: Starting request processing")
 
@@ -62,6 +61,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log("[v0] APPLY-DESIGN: Body received", {
       hasDesignBase64: !!body.designBase64,
+      hasProductBase64: !!body.productBase64,
       productPath: body.productPath,
       placement: body.placement,
       scaleHint: body.scaleHint,
@@ -72,23 +72,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Falta designBase64" }, { status: 400 })
     }
 
-    if (!body.productPath) {
-      console.log("[v0] APPLY-DESIGN: Missing productPath")
-      return NextResponse.json({ success: false, error: "Falta productPath" }, { status: 400 })
-    }
+    let productDataUrl: string
 
-    const baseUrl = request.nextUrl.origin
-    console.log(`[v0] APPLY-DESIGN: Using base URL: ${baseUrl}`)
-    console.log(`[v0] APPLY-DESIGN: Request origin: ${request.nextUrl.origin}`)
-    console.log(`[v0] APPLY-DESIGN: Looking for garment: ${body.productPath}`)
-
-    let garmentBase64 = await fetchGarmentImage(body.productPath, baseUrl)
-
-    if (!garmentBase64) {
-      console.log(`[v0] APPLY-DESIGN: Real garment not found, using fallback for ${body.productPath}`)
-      garmentBase64 = createGarmentFallback(body.productPath)
+    if (body.productBase64) {
+      // Use productBase64 directly
+      console.log("[v0] APPLY-DESIGN: Using provided productBase64")
+      productDataUrl = body.productBase64
+    } else if (body.productPath) {
+      // Read from filesystem
+      console.log(`[v0] APPLY-DESIGN: Reading garment from filesystem: ${body.productPath}`)
+      try {
+        const filePath = path.join(process.cwd(), "public", "garments", body.productPath)
+        const buf = await fs.readFile(filePath)
+        const mime = mimeFromExt(path.extname(filePath))
+        productDataUrl = bufferToDataUrl(buf, mime)
+        console.log(`[v0] APPLY-DESIGN: Successfully loaded garment from filesystem (${buf.length} bytes)`)
+      } catch (error: any) {
+        console.log(`[v0] APPLY-DESIGN: Failed to read garment file: ${error.message}`)
+        return NextResponse.json({ success: false, error: "productPath invalido o no encontrado" }, { status: 400 })
+      }
     } else {
-      console.log(`[v0] APPLY-DESIGN: Using REAL garment image for ${body.productPath}`)
+      console.log("[v0] APPLY-DESIGN: Missing both productBase64 and productPath")
+      return NextResponse.json({ success: false, error: "Se requiere productBase64 o productPath" }, { status: 400 })
     }
 
     const gemini = getGeminiClient()
@@ -107,7 +112,6 @@ export async function POST(request: NextRequest) {
 - Devuelve solo la imagen final de la prenda con el diseño aplicado`
 
     console.log("[v0] APPLY-DESIGN: Calling Gemini with prompt:", prompt)
-    console.log(`[v0] APPLY-DESIGN: Sending garment image (${garmentBase64.length} chars) and design to Gemini`)
 
     const result = await model.generateContent([
       prompt,
@@ -119,7 +123,7 @@ export async function POST(request: NextRequest) {
       },
       {
         inlineData: {
-          data: garmentBase64.replace(/^data:image\/[^;]+;base64,/, ""),
+          data: productDataUrl.replace(/^data:image\/[^;]+;base64,/, ""),
           mimeType: "image/png",
         },
       },
@@ -149,7 +153,7 @@ export async function POST(request: NextRequest) {
       success: true,
       image: {
         data: imagePart.inlineData.data,
-        contentType: imagePart.inlineData.mimeType || "image/png",
+        contentType: "image/png",
       },
     })
   } catch (error: any) {
