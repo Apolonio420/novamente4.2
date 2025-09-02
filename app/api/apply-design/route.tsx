@@ -2,6 +2,7 @@ export const runtime = "nodejs"
 
 import { type NextRequest, NextResponse } from "next/server"
 import { getGeminiClient } from "@/lib/gemini"
+import { headers } from "next/headers"
 import * as fs from "fs/promises"
 import * as path from "path"
 
@@ -25,6 +26,22 @@ function mimeFromExt(ext: string): string {
 function bufferToDataUrl(buffer: Buffer, mimeType: string): string {
   const base64 = buffer.toString("base64")
   return `data:${mimeType};base64,${base64}`
+}
+
+async function readGarmentFromPublicViaHTTP(fileRel: string, req: Request) {
+  // origin de la request o VERCEL_URL como respaldo
+  const h = headers()
+  const hdrOrigin = h.get("origin")
+  const vercel = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null
+  const origin = hdrOrigin || vercel || "http://localhost:3000"
+  const url = `${origin}/garments/${fileRel}`
+  const resp = await fetch(url)
+  if (!resp.ok) throw new Error(`fetch public failed: ${resp.status}`)
+  const arrayBuf = await resp.arrayBuffer()
+  const ext = path.extname(fileRel).toLowerCase()
+  const mime = ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg"
+  const b64 = Buffer.from(arrayBuf).toString("base64")
+  return `data:${mime};base64,${b64}`
 }
 
 async function fetchGarmentImage(productPath: string, baseUrl: string): Promise<string | null> {
@@ -79,7 +96,6 @@ export async function POST(request: NextRequest) {
       console.log("[v0] APPLY-DESIGN: Using provided productBase64")
       productDataUrl = body.productBase64
     } else if (body.productPath) {
-      // Read from filesystem
       console.log(`[v0] APPLY-DESIGN: Reading garment from filesystem: ${body.productPath}`)
       try {
         const filePath = path.join(process.cwd(), "public", "garments", body.productPath)
@@ -87,9 +103,16 @@ export async function POST(request: NextRequest) {
         const mime = mimeFromExt(path.extname(filePath))
         productDataUrl = bufferToDataUrl(buf, mime)
         console.log(`[v0] APPLY-DESIGN: Successfully loaded garment from filesystem (${buf.length} bytes)`)
-      } catch (error: any) {
-        console.log(`[v0] APPLY-DESIGN: Failed to read garment file: ${error.message}`)
-        return NextResponse.json({ success: false, error: "productPath invalido o no encontrado" }, { status: 400 })
+      } catch {
+        console.log("[v0] APPLY-DESIGN: Filesystem read failed, trying HTTP fallback")
+        try {
+          // Fallback a HTTP público (solo si existe el asset estático)
+          productDataUrl = await readGarmentFromPublicViaHTTP(body.productPath!, request)
+          console.log("[v0] APPLY-DESIGN: Successfully loaded garment via HTTP fallback")
+        } catch (error: any) {
+          console.log(`[v0] APPLY-DESIGN: HTTP fallback also failed: ${error.message}`)
+          return NextResponse.json({ success: false, error: "productPath invalido o no encontrado" }, { status: 400 })
+        }
       }
     } else {
       console.log("[v0] APPLY-DESIGN: Missing both productBase64 and productPath")
