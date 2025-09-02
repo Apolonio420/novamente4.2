@@ -83,9 +83,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    console.log("[v0] APPLY-DESIGN: Body received", {
-      hasDesignBase64: !!body.designBase64,
-      hasProductBase64: !!body.productBase64,
+
+    console.log("APPLY-DESIGN input", {
+      hasDesign: !!body.designBase64,
+      src: body.productBase64 ? "base64" : "public",
       productPath: body.productPath,
       placement: body.placement,
       scaleHint: body.scaleHint,
@@ -102,24 +103,27 @@ export async function POST(request: NextRequest) {
     }
 
     let productDataUrl: string
+    let methodUsed = ""
 
     if (body.productBase64) {
       // Use productBase64 directly
       console.log("[v0] APPLY-DESIGN: Using provided productBase64")
       productDataUrl = body.productBase64
+      methodUsed = "base64"
     } else if (body.productPath) {
-      console.log(`[v0] APPLY-DESIGN: Reading garment from filesystem: ${body.productPath}`)
       try {
         const filePath = path.join(process.cwd(), "public", "garments", body.productPath)
         const buf = await fs.readFile(filePath)
         const mime = mimeFromExt(path.extname(filePath))
         productDataUrl = bufferToDataUrl(buf, mime)
+        methodUsed = "fs"
         console.log(`[v0] APPLY-DESIGN: Successfully loaded garment from filesystem (${buf.length} bytes)`)
       } catch {
         console.log("[v0] APPLY-DESIGN: Filesystem read failed, trying HTTP fallback")
         try {
           // Fallback a HTTP público (solo si existe el asset estático)
           productDataUrl = await readGarmentFromPublicViaHTTP(body.productPath!, request)
+          methodUsed = "http"
           console.log("[v0] APPLY-DESIGN: Successfully loaded garment via HTTP fallback")
         } catch (error: any) {
           console.log(`[v0] APPLY-DESIGN: HTTP fallback also failed: ${error.message}`)
@@ -139,17 +143,24 @@ export async function POST(request: NextRequest) {
     const placement = body.placement || "Coloca el diseño en el centro de la prenda"
     const scaleHint = body.scaleHint || "Tamaño mediano del diseño"
 
-    const prompt = `Aplica este diseño a la prenda siguiendo estas instrucciones:
+    const promptText = `Aplica este diseño a la prenda siguiendo estas instrucciones:
 - ${placement}
 - ${scaleHint}
 - Mantén la forma y proporciones originales de la prenda
 - El diseño debe verse natural y bien integrado
 - Devuelve solo la imagen final de la prenda con el diseño aplicado`
 
-    console.log("[v0] APPLY-DESIGN: Calling Gemini with prompt:", prompt)
+    if (process.env.DEBUG_GEMINI === "true") {
+      console.log("APPLY-DESIGN debug", {
+        promptText,
+        methodUsed,
+      })
+    }
+
+    console.log("[v0] APPLY-DESIGN: Calling Gemini with prompt:", promptText)
 
     const result = await model.generateContent([
-      prompt,
+      promptText,
       {
         inlineData: {
           data: body.designBase64.replace(/^data:image\/[^;]+;base64,/, ""),
@@ -183,6 +194,11 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[v0] APPLY-DESIGN: Successfully generated image")
+
+    console.log("APPLY-DESIGN done", {
+      placement: body.placement,
+      scale: body.scaleHint,
+    })
 
     return NextResponse.json({
       success: true,
