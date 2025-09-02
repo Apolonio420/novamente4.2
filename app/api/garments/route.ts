@@ -22,9 +22,9 @@ export async function OPTIONS() {
 type GarmentItem = {
   path: string // relativo a /public/garments
   url: string // /garments/<path>
-  type: string // hoodie | tshirt | other (heurística)
+  type: string // hoodie | tshirt | other
   side: "front" | "back" | "unknown"
-  color?: string // heurística a partir del nombre
+  color?: string
 }
 
 function inferMeta(file: string): Omit<GarmentItem, "path" | "url"> {
@@ -45,30 +45,28 @@ function inferMeta(file: string): Omit<GarmentItem, "path" | "url"> {
 }
 
 const GARMENT_FILES = [
-  "hoodie-black-front.png",
-  "hoodie-black-back.png",
-  "hoodie-white-front.png",
-  "hoodie-white-back.png",
-  "hoodie-gray-front.png",
-  "hoodie-gray-back.png",
-  "hoodie-caramel-front.png",
-  "hoodie-caramel-back.png",
-  "tshirt-black-front.png",
-  "tshirt-black-back.png",
-  "tshirt-white-front.png",
-  "tshirt-white-back.png",
-  "tshirt-gray-front.png",
-  "tshirt-gray-back.png",
-  "tshirt-caramel-front.png",
-  "tshirt-caramel-back.png",
-  "tshirt-cream-front.png",
-  "tshirt-cream-back.png",
+  "hoodie-black-front.jpeg",
+  "hoodie-black-back.jpeg",
+  "hoodie-white-front.jpeg",
+  "hoodie-white-back.jpeg",
+  "hoodie-gray-front.jpeg",
+  "hoodie-gray-back.jpeg",
+  "hoodie-caramel-front.jpeg",
+  "hoodie-caramel-back.jpeg",
+  "tshirt-black-front.jpeg",
+  "tshirt-black-back.jpeg",
+  "tshirt-white-front.jpeg",
+  "tshirt-white-back.jpeg",
+  "tshirt-gray-front.jpeg",
+  "tshirt-gray-back.jpeg",
+  "tshirt-caramel-front.jpeg",
+  "tshirt-caramel-back.jpeg",
+  "tshirt-cream-front.jpeg",
+  "tshirt-cream-back.jpeg",
 ]
 
 export async function GET() {
   try {
-    console.log("[v0] GARMENTS API: Using static file list for v0 runtime")
-
     const items: GarmentItem[] = GARMENT_FILES.map((name) => {
       const meta = inferMeta(name)
       return {
@@ -78,8 +76,6 @@ export async function GET() {
       }
     })
 
-    console.log("[v0] GARMENTS API: Processed", items.length, "items")
-
     // Orden: primero hoodie, luego tshirt; dentro, front antes que back
     items.sort(
       (a, b) =>
@@ -88,11 +84,9 @@ export async function GET() {
         a.path.localeCompare(b.path),
     )
 
-    console.log("[v0] GARMENTS API: Returning", items.length, "sorted items")
     return ok({ success: true, items })
   } catch (e: any) {
-    console.error("[v0] GARMENTS API ERROR:", e)
-    console.error("[v0] GARMENTS API ERROR stack:", e.stack)
+    console.error("GARMENTS LIST ERROR", e)
     return ok({ success: false, error: e?.message || "No se pudo listar garments" }, 500)
   }
 }

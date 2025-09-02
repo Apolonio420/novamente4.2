@@ -24,6 +24,37 @@ interface GeneratedImage {
   contentType: string
 }
 
+async function ensureAssetExists(pathRel: string): Promise<string> {
+  // prueba tal cual
+  const tryHead = async (p: string) => {
+    const r = await fetch(`/garments/${p}`, { method: "HEAD" })
+    return r.ok
+  }
+
+  if (await tryHead(pathRel)) return pathRel
+
+  // si venía .png, probá .jpeg y .jpg
+  if (pathRel.toLowerCase().endsWith(".png")) {
+    const jpeg = pathRel.replace(/\.png$/i, ".jpeg")
+    if (await tryHead(jpeg)) return jpeg
+    const jpg = pathRel.replace(/\.png$/i, ".jpg")
+    if (await tryHead(jpg)) return jpg
+  }
+
+  // si venía .jpeg/.jpg, probá .png
+  if (pathRel.toLowerCase().endsWith(".jpeg")) {
+    const png = pathRel.replace(/\.jpeg$/i, ".png")
+    if (await tryHead(png)) return png
+  }
+  if (pathRel.toLowerCase().endsWith(".jpg")) {
+    const png = pathRel.replace(/\.jpg$/i, ".png")
+    if (await tryHead(png)) return png
+  }
+
+  // si no hay, devolvés el original (dejará 400 y muestra el error claro)
+  return pathRel
+}
+
 export default function GeminiFlowPage() {
   const [prompt, setPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
@@ -191,9 +222,11 @@ export default function GeminiFlowPage() {
     setResultImage(null)
 
     try {
+      const safePath = await ensureAssetExists(selectedGarment)
+
       const requestBody = {
         designBase64: `data:image/png;base64,${generatedImage.base64}`,
-        productPath: selectedGarment,
+        productPath: safePath, // <- usa el verificado
         placement,
         scaleHint,
       }
