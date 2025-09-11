@@ -90,7 +90,7 @@ export function Navbar() {
               }}
             >
               <User className="h-4 w-4 mr-1" />
-              <span className="hidden sm:inline">Crear cuenta</span>
+              <span className="hidden sm:inline">Iniciar sesión o registrarse</span>
               <span className="sm:hidden">Cuenta</span>
             </Button>
           )}
