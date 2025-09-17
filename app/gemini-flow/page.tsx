@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Wand2, Download, Eye } from "lucide-react"
+import { Loader2, Wand2, Download, Eye, Scissors, CheckCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
+import { useSearchParams } from "next/navigation"
 
 interface GarmentItem {
   path: string
@@ -56,17 +57,56 @@ async function ensureAssetExists(pathRel: string): Promise<string> {
 }
 
 export default function GeminiFlowPage() {
+  const searchParams = useSearchParams()
   const [prompt, setPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isRemovingBackground, setIsRemovingBackground] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([])
+  const [backgroundRemovedImage, setBackgroundRemovedImage] = useState<GeneratedImage | null>(null)
   const [garments, setGarments] = useState<GarmentItem[]>([])
   const [selectedGarment, setSelectedGarment] = useState("")
   const [placement, setPlacement] = useState("center")
   const [scaleHint, setScaleHint] = useState("medium")
   const [resultImage, setResultImage] = useState<string | null>(null)
   const [loadingGarments, setLoadingGarments] = useState(true)
+  const [currentStep, setCurrentStep] = useState(1)
   const { toast } = useToast()
+
+  useEffect(() => {
+    const imageParam = searchParams.get("image")
+    const promptParam = searchParams.get("prompt")
+
+    if (imageParam && promptParam) {
+      // Convert URL to base64 for consistency
+      fetch(imageParam)
+        .then((response) => response.blob())
+        .then((blob) => {
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            const base64 = (reader.result as string).split(",")[1]
+            setGeneratedImages([
+              {
+                url: imageParam,
+                base64: base64,
+                contentType: "image/png",
+              },
+            ])
+            setPrompt(promptParam)
+            setCurrentStep(2) // Skip to step 2 since we already have the image
+          }
+          reader.readAsDataURL(blob)
+        })
+        .catch((error) => {
+          console.error("Error loading image from URL:", error)
+          toast({
+            title: "Error",
+            description: "No se pudo cargar la imagen desde la URL",
+            variant: "destructive",
+          })
+        })
+    }
+  }, [searchParams, toast])
 
   // Cargar prendas disponibles
   useEffect(() => {
@@ -137,7 +177,9 @@ export default function GeminiFlowPage() {
 
     setIsGenerating(true)
     setGeneratedImages([])
+    setBackgroundRemovedImage(null)
     setResultImage(null)
+    setCurrentStep(1)
 
     try {
       const response = await fetch("/api/generate-image", {
@@ -173,10 +215,11 @@ export default function GeminiFlowPage() {
           }
         })
         setGeneratedImages(imageData)
+        setCurrentStep(2)
 
         toast({
           title: "¡Diseño generado!",
-          description: "Tu diseño está listo para aplicar a una prenda",
+          description: "Ahora puedes remover el fondo y aplicarlo a una prenda",
         })
       } else {
         throw new Error("No se recibieron imágenes en la respuesta")
@@ -193,15 +236,70 @@ export default function GeminiFlowPage() {
     }
   }
 
+  const handleRemoveBackground = async (generatedImage: GeneratedImage) => {
+    setIsRemovingBackground(true)
+
+    try {
+      const response = await fetch("/api/remove-background", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageBase64: `data:image/png;base64,${generatedImage.base64}`,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Error al remover el fondo")
+      }
+
+      const data = await response.json()
+
+      if (data.success && data.image) {
+        const binaryString = atob(data.image.data)
+        const bytes = new Uint8Array(binaryString.length)
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i)
+        }
+        const blob = new Blob([bytes], { type: data.image.contentType })
+
+        setBackgroundRemovedImage({
+          url: URL.createObjectURL(blob),
+          base64: data.image.data,
+          contentType: data.image.contentType,
+        })
+        setCurrentStep(3)
+
+        toast({
+          title: "¡Fondo removido!",
+          description: "Ahora puedes aplicar el diseño a tu prenda",
+        })
+      } else {
+        throw new Error("No se pudo procesar la imagen")
+      }
+    } catch (error) {
+      console.error("Error removing background:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo remover el fondo",
+        variant: "destructive",
+      })
+    } finally {
+      setIsRemovingBackground(false)
+    }
+  }
+
   // Aplicar diseño a prenda
-  const handleApplyDesign = async (generatedImage: GeneratedImage) => {
+  const handleApplyDesign = async (imageToApply: GeneratedImage) => {
     console.log("[v0] === STARTING APPLY DESIGN ===")
     console.log("[v0] Selected garment:", selectedGarment)
-    console.log("[v0] Generated image data:", {
-      hasUrl: !!generatedImage.url,
-      hasBase64: !!generatedImage.base64,
-      base64Length: generatedImage.base64?.length || 0,
-      contentType: generatedImage.contentType,
+    console.log("[v0] Image to apply:", {
+      hasUrl: !!imageToApply.url,
+      hasBase64: !!imageToApply.base64,
+      base64Length: imageToApply.base64?.length || 0,
+      contentType: imageToApply.contentType,
     })
     console.log("[v0] Placement:", placement)
     console.log("[v0] Scale hint:", scaleHint)
@@ -223,8 +321,8 @@ export default function GeminiFlowPage() {
       const safePath = await ensureAssetExists(selectedGarment)
 
       const requestBody = {
-        designBase64: `data:image/png;base64,${generatedImage.base64}`,
-        productPath: safePath, // <- usa el verificado
+        designBase64: `data:image/png;base64,${imageToApply.base64}`,
+        productPath: safePath,
         placement,
         scaleHint,
       }
@@ -249,7 +347,6 @@ export default function GeminiFlowPage() {
 
       console.log("[v0] Apply design response status:", response.status)
       console.log("[v0] Apply design response ok:", response.ok)
-      console.log("[v0] Apply design response headers:", Object.fromEntries(response.headers.entries()))
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -278,7 +375,6 @@ export default function GeminiFlowPage() {
 
       if (data.success && data.image) {
         console.log("[v0] Converting image data to blob...")
-        // Convertir los datos de imagen a URL
         const binaryString = atob(data.image.data)
         const bytes = new Uint8Array(binaryString.length)
         for (let i = 0; i < binaryString.length; i++) {
@@ -301,11 +397,6 @@ export default function GeminiFlowPage() {
       }
     } catch (error) {
       console.error("[v0] Error applying design:", error)
-      console.log("[v0] Error details:", {
-        name: error instanceof Error ? error.name : "Unknown",
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      })
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "No se pudo aplicar el diseño",
@@ -333,17 +424,53 @@ export default function GeminiFlowPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Flujo Gemini</h1>
-          <p className="text-muted-foreground">Genera tu diseño → Elige prenda → Aplica diseño</p>
+          <h1 className="text-3xl font-bold mb-2">Flujo de Diseño con IA</h1>
+          <p className="text-muted-foreground">Genera → Remueve fondo → Aplica a prenda</p>
+
+          <div className="flex justify-center items-center gap-4 mt-6">
+            <div className={`flex items-center gap-2 ${currentStep >= 1 ? "text-primary" : "text-muted-foreground"}`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 1 ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+              >
+                {currentStep > 1 ? <CheckCircle className="w-4 h-4" /> : "1"}
+              </div>
+              <span className="text-sm font-medium">Generar</span>
+            </div>
+            <div className={`w-8 h-0.5 ${currentStep >= 2 ? "bg-primary" : "bg-muted"}`}></div>
+            <div className={`flex items-center gap-2 ${currentStep >= 2 ? "text-primary" : "text-muted-foreground"}`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 2 ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+              >
+                {currentStep > 2 ? <CheckCircle className="w-4 h-4" /> : "2"}
+              </div>
+              <span className="text-sm font-medium">Remover Fondo</span>
+            </div>
+            <div className={`w-8 h-0.5 ${currentStep >= 3 ? "bg-primary" : "bg-muted"}`}></div>
+            <div className={`flex items-center gap-2 ${currentStep >= 3 ? "text-primary" : "text-muted-foreground"}`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep >= 3 ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+              >
+                3
+              </div>
+              <span className="text-sm font-medium">Aplicar</span>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Panel izquierdo - Controles */}
           <div className="space-y-6">
-            {/* Generación de diseño */}
-            <Card>
+            {/* Paso 1: Generación de diseño */}
+            <Card className={currentStep === 1 ? "ring-2 ring-primary" : ""}>
               <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">1. Generar Diseño</h2>
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${currentStep >= 1 ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+                  >
+                    {currentStep > 1 ? <CheckCircle className="w-3 h-3" /> : "1"}
+                  </div>
+                  Generar Diseño
+                </h2>
 
                 <div className="space-y-4">
                   <div>
@@ -375,10 +502,17 @@ export default function GeminiFlowPage() {
               </CardContent>
             </Card>
 
-            {/* Selección de prenda */}
-            <Card>
+            {/* Paso 3: Selección de prenda */}
+            <Card className={currentStep === 3 ? "ring-2 ring-primary" : ""}>
               <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">2. Elegir Prenda</h2>
+                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${currentStep >= 3 ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+                  >
+                    3
+                  </div>
+                  Elegir Prenda y Aplicar
+                </h2>
 
                 <div className="space-y-4">
                   <div>
@@ -402,11 +536,6 @@ export default function GeminiFlowPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    {process.env.NODE_ENV === "development" && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Loading: {loadingGarments.toString()}, Garments: {garments.length}, Selected: {selectedGarment}
-                      </div>
-                    )}
                   </div>
 
                   <div>
@@ -445,10 +574,10 @@ export default function GeminiFlowPage() {
 
           {/* Panel derecho - Resultados */}
           <div className="space-y-6">
-            {/* Diseños generados */}
+            {/* Paso 1: Diseños generados */}
             <Card>
               <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Diseños Generados</h2>
+                <h2 className="text-xl font-semibold mb-4">Paso 1: Diseño Original</h2>
 
                 <div className="space-y-4">
                   {generatedImages.length === 0 ? (
@@ -472,19 +601,19 @@ export default function GeminiFlowPage() {
                             />
                           </div>
                           <Button
-                            onClick={() => handleApplyDesign(imageData)}
-                            disabled={isApplying || !selectedGarment}
+                            onClick={() => handleRemoveBackground(imageData)}
+                            disabled={isRemovingBackground || currentStep < 2}
                             className="w-full mt-2"
                           >
-                            {isApplying ? (
+                            {isRemovingBackground ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Aplicando...
+                                Removiendo fondo...
                               </>
                             ) : (
                               <>
-                                <Eye className="mr-2 h-4 w-4" />
-                                Aplicar a Prenda
+                                <Scissors className="mr-2 h-4 w-4" />
+                                Remover Fondo
                               </>
                             )}
                           </Button>
@@ -496,10 +625,63 @@ export default function GeminiFlowPage() {
               </CardContent>
             </Card>
 
-            {/* Resultado final */}
+            {/* Paso 2: Imagen sin fondo */}
             <Card>
               <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Resultado Final</h2>
+                <h2 className="text-xl font-semibold mb-4">Paso 2: Sin Fondo</h2>
+
+                <div className="space-y-4">
+                  {!backgroundRemovedImage ? (
+                    <div className="aspect-square bg-muted border-2 border-dashed border-muted-foreground/25 flex items-center justify-center rounded-lg">
+                      <div className="text-center text-muted-foreground">
+                        <Scissors className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p className="text-sm">Imagen sin fondo aparecerá aquí</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div
+                        className="aspect-square relative rounded-lg overflow-hidden border bg-gray-100 bg-opacity-50"
+                        style={{
+                          backgroundImage:
+                            "url(\"data:image/svg+xml,%3csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3e%3cdefs%3e%3cpattern id='a' patternUnits='userSpaceOnUse' width='20' height='20'%3e%3crect fill='%23f3f4f6' width='10' height='10'/%3e%3crect fill='%23e5e7eb' x='10' width='10' height='10'/%3e%3crect fill='%23e5e7eb' y='10' width='10' height='10'/%3e%3crect fill='%23f3f4f6' x='10' y='10' width='10' height='10'/%3e%3c/pattern%3e%3c/defs%3e%3crect width='100%25' height='100%25' fill='url(%23a)'/%3e%3c/svg%3e\")",
+                        }}
+                      >
+                        <Image
+                          src={backgroundRemovedImage.url || "/placeholder.svg"}
+                          alt="Diseño sin fondo"
+                          fill
+                          className="object-contain"
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                        />
+                      </div>
+                      <Button
+                        onClick={() => handleApplyDesign(backgroundRemovedImage)}
+                        disabled={isApplying || !selectedGarment || currentStep < 3}
+                        className="w-full"
+                      >
+                        {isApplying ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Aplicando...
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Aplicar a Prenda
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Paso 3: Resultado final */}
+            <Card>
+              <CardContent className="p-6">
+                <h2 className="text-xl font-semibold mb-4">Paso 3: Resultado Final</h2>
 
                 <div className="space-y-4">
                   {!resultImage ? (

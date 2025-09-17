@@ -460,10 +460,13 @@ export function ImageGenerator({
           {/* Acciones de la imagen */}
           {generatedImage && !imageError && (
             <div className="flex gap-2">
-              <Link href={`/design/placeholder?image=${encodeURIComponent(generatedImage)}`} className="flex-1">
+              <Link
+                href={`/gemini-flow?image=${encodeURIComponent(generatedImage)}&prompt=${encodeURIComponent(prompt)}`}
+                className="flex-1"
+              >
                 <Button className="w-full">
                   <ExternalLink className="mr-2 h-4 w-4" />
-                  Usar en Diseño
+                  Usar este Diseño
                 </Button>
               </Link>
               <Button variant="outline" onClick={handleDownload}>
