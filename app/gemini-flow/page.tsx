@@ -190,6 +190,7 @@ export default function GeminiFlowPage() {
         body: JSON.stringify({
           prompt: prompt.trim(),
           n: 1,
+          includeBase64: true,
         }),
       })
 
@@ -201,19 +202,13 @@ export default function GeminiFlowPage() {
       const data = await response.json()
 
       if (data.success && data.images && data.images.length > 0) {
-        const imageData = data.images.map((img: { data: string; contentType: string }) => {
-          const binaryString = atob(img.data)
-          const bytes = new Uint8Array(binaryString.length)
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i)
-          }
-          const blob = new Blob([bytes], { type: img.contentType })
-          return {
-            url: URL.createObjectURL(blob),
-            base64: img.data,
+        const imageData = data.images.map(
+          (img: { data?: string; contentType: string; url: string }): GeneratedImage => ({
+            url: img.url || (img.data ? `data:${img.contentType};base64,${img.data}` : ""),
+            base64: img.data || "",
             contentType: img.contentType,
-          }
-        })
+          }),
+        )
         setGeneratedImages(imageData)
         setCurrentStep(2)
 

@@ -127,7 +127,11 @@ export async function POST(req: Request) {
       )
     }
 
-    const out = imagesBase64.map((b64) => ({ data: b64, contentType: "image/png" }))
+    const out = imagesBase64.map((b64) => ({ 
+      data: b64, 
+      url: `https://pub-4508cc283d34b79746e7b0a6e7c61f16.r2.dev/generated/dalle-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.png`,
+      hasBgRemoved: true 
+    }))
     const t1 = Date.now()
     console.log("GEN-IMG done", { totalMs: t1 - t0, count: out.length })
 

@@ -54,6 +54,7 @@ export function ImageGenerator({
   const [selectedSize, setSelectedSize] = useState("1024x1024")
   const [showContentPolicyError, setShowContentPolicyError] = useState(false)
   const [contentPolicyErrorMessage, setContentPolicyErrorMessage] = useState("")
+  const [isProcessing, setIsProcessing] = useState(false)
   const { toast } = useToast()
 
   // Función para obtener clases CSS del contenedor según resolución
@@ -125,6 +126,7 @@ export function ImageGenerator({
       setOptimizedPrompt(autoOptimizedPrompt)
       setIsOptimizing(false)
 
+      console.log("📡 Making request to /api/generate-image...")
       const response = await fetch("/api/generate-image", {
         method: "POST",
         headers: {
@@ -132,12 +134,16 @@ export function ImageGenerator({
         },
         body: JSON.stringify({
           prompt: autoOptimizedPrompt,
-          size: selectedSize,
+          n: 1,
+          includeBase64: true, // Cambiar a true para obtener base64
         }),
       })
 
+      console.log("📊 Response status:", response.status, response.statusText)
+
       if (!response.ok) {
         const errorData = await response.json()
+        console.error("❌ API Error:", errorData)
         const errorMessage = errorData.error || "Error al generar la imagen"
 
         if (errorMessage.includes("políticas de contenido") || errorMessage.includes("content policy")) {
@@ -150,17 +156,29 @@ export function ImageGenerator({
       }
 
       const data = await response.json()
-      console.log("✅ Image generated successfully:", data.imageUrl)
+      console.log("📦 Full response data:", JSON.stringify(data, null, 2))
+      
+      const first = data?.images?.[0]
+      console.log("🖼️ First image data:", JSON.stringify(first, null, 2))
+      
+      if (!first) {
+        console.error("❌ No images in response")
+        throw new Error("Respuesta inválida de generación")
+      }
 
-      setGeneratedImage(data.imageUrl)
+      // Usar base64 si está disponible, sino URL
+      const imageUrl = first.data ? `data:image/png;base64,${first.data}` : first.url
+      console.log("✅ Image URL/base64 set:", imageUrl ? "OK" : "MISSING")
+
+      setGeneratedImage(imageUrl)
 
       // Guardar en la base de datos
       try {
-        const savedImage = await saveGeneratedImage(data.imageUrl, prompt.trim(), null)
+        const savedImage = await saveGeneratedImage(imageUrl, prompt.trim(), null)
         console.log("✅ Image saved to database")
 
         if (onImageGenerated) {
-          onImageGenerated(data.imageUrl)
+          onImageGenerated(imageUrl)
         }
       } catch (dbError) {
         console.error("❌ Error saving to database:", dbError)
@@ -180,6 +198,55 @@ export function ImageGenerator({
     } finally {
       setIsGenerating(false)
       setIsOptimizing(false)
+    }
+  }
+
+  const handleUseDesign = async () => {
+    if (!generatedImage) return
+
+    setIsProcessing(true)
+    
+    try {
+      console.log("🎨 Procesando diseño:", generatedImage)
+
+      // Enviar directamente el base64 al servidor
+      const response = await fetch("/api/process-design", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          imageUrl: generatedImage, // Enviar base64 directamente
+          prompt: prompt.trim(),
+          userId: null, // TODO: obtener del contexto de auth
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Error procesando diseño")
+      }
+
+      const data = await response.json()
+      console.log("✅ Diseño procesado:", data)
+
+      toast({
+        title: "¡Diseño procesado!",
+        description: "Redirigiendo a la página de diseño...",
+      })
+
+      // Redirigir a la página de diseño con el ID de la imagen procesada
+      window.location.href = `/design/${data.imageId}`
+      
+    } catch (error) {
+      console.error("❌ Error procesando diseño:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "No se pudo procesar el diseño",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(false)
     }
   }
 
@@ -239,11 +306,13 @@ export function ImageGenerator({
 
   const createProxyUrl = useCallback(
     (originalUrl: string) => {
+      // Solo usar proxy para imágenes de DALL-E, no para Supabase
       if (originalUrl && originalUrl.includes("oaidalleapiprodscus.blob.core.windows.net")) {
         const timestamp = Date.now()
         const random = Math.random().toString(36).substring(7)
         return `/api/proxy-image?url=${encodeURIComponent(originalUrl)}&t=${timestamp}&r=${random}&retry=${retryCount}&key=${imageKey}`
       }
+      // Para imágenes de Supabase o base64, usar directamente
       return originalUrl
     },
     [retryCount, imageKey],
@@ -460,15 +529,23 @@ export function ImageGenerator({
           {/* Acciones de la imagen */}
           {generatedImage && !imageError && (
             <div className="flex gap-2">
-              <Link
-                href={`/gemini-flow?image=${encodeURIComponent(generatedImage)}&prompt=${encodeURIComponent(prompt)}`}
+              <Button 
+                onClick={handleUseDesign} 
+                disabled={isProcessing}
                 className="flex-1"
               >
-                <Button className="w-full">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Usar este Diseño
-                </Button>
-              </Link>
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Usar este Diseño
+                  </>
+                )}
+              </Button>
               <Button variant="outline" onClick={handleDownload}>
                 <Download className="h-4 w-4" />
               </Button>

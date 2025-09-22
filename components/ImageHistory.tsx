@@ -9,7 +9,7 @@ import { Eye, ChevronLeft, ChevronRight } from "lucide-react"
 interface ImageHistoryProps {
   userId?: string
   limit?: number
-  onImageSelect: (imageUrl: string) => void
+  onImageSelect?: (imageUrl: string) => void
   images?: SavedImage[]
   onScrollToGenerator?: () => void
   refreshKey?: number
@@ -73,6 +73,7 @@ export function ImageHistory({
 
       if (propImages && propImages.length > 0) {
         console.log("📋 Using provided images:", propImages.length)
+        // Usar todas las imágenes proporcionadas (R2 y Supabase)
         setImages(propImages)
         return
       }
@@ -113,6 +114,7 @@ export function ImageHistory({
   useEffect(() => {
     if (propImages && propImages.length > 0) {
       console.log("📋 Prop images updated:", propImages.length)
+      // Usar todas las imágenes proporcionadas (R2 y Supabase)
       setImages(propImages)
       setLoading(false)
       setError(null)
@@ -138,10 +140,14 @@ export function ImageHistory({
   }
 
   const handleImageClick = (imageUrl: string) => {
-    if (selectedImage) {
-      window.location.href = `/design/placeholder?imageUrl=${encodeURIComponent(imageUrl)}`
-    } else if (onImageSelect) {
+    if (onImageSelect) {
       onImageSelect(imageUrl)
+    } else {
+      // Si no hay onImageSelect, buscar el generador en la página y cargar la imagen
+      const event = new CustomEvent('loadImageInGenerator', { 
+        detail: { imageUrl } 
+      })
+      window.dispatchEvent(event)
     }
   }
 
@@ -263,18 +269,19 @@ export function ImageHistory({
               <button
                 key={image.id}
                 onClick={() => handleImageClick(image.url)}
-                className={`flex-shrink-0 w-16 h-16 relative aspect-square rounded-lg overflow-hidden border-2 transition-all group ${
+                className={`flex-shrink-0 w-20 h-20 relative aspect-square rounded-lg overflow-hidden border-2 transition-all group ${
                   selectedImage === image.url
                     ? "border-purple-500 ring-2 ring-purple-500/50"
                     : "border-gray-600 hover:border-gray-500"
                 }`}
               >
                 <OptimizedImage
-                  src={`/api/proxy-image?url=${encodeURIComponent(image.url)}`}
+                  src={image.url}
                   alt={image.prompt}
-                  fill
-                  className="object-cover"
-                  sizes="64px"
+                  width={80}
+                  height={80}
+                  className="object-cover w-full h-full"
+                  sizes="80px"
                 />
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
                   <Eye className="w-4 h-4 text-white" />
@@ -313,7 +320,7 @@ export function ImageHistory({
             <button
               key={style.id}
               onClick={() => handleImageClick(style.url)}
-              className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all group ${
+              className={`w-20 h-20 relative aspect-square rounded-lg overflow-hidden border-2 transition-all group ${
                 selectedImage === style.url
                   ? "border-purple-500 ring-2 ring-purple-500/50"
                   : "border-gray-600 hover:border-gray-500"
@@ -322,8 +329,9 @@ export function ImageHistory({
               <OptimizedImage
                 src={style.url}
                 alt={style.prompt}
-                fill
-                className="object-cover"
+                width={80}
+                height={80}
+                className="object-cover w-full h-full"
                 sizes="(max-width: 768px) 50vw, 25vw"
               />
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
