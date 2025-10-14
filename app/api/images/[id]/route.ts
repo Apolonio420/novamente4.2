@@ -1,61 +1,62 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = params
-    console.log("🖼️ Proxying image request for ID:", id)
+    const { id: imageId } = await params
 
-    // Try to get the original URL from our database first
-    let imageUrl = null
+    if (!imageId) {
+      return NextResponse.json({ error: "ID de imagen requerido" }, { status: 400 })
+    }
 
-    // If we have the URL stored, use it
-    if (id.startsWith("temp_")) {
-      try {
-        const tempResponse = await fetch(`${request.nextUrl.origin}/api/temp-image?id=${id}`)
-        if (tempResponse.ok) {
-          const tempData = await tempResponse.json()
-          imageUrl = tempData.data?.imageUrl
-        }
-      } catch (error) {
-        console.log("Could not fetch from temp storage:", error)
+    console.log("🔍 Buscando imagen procesada:", imageId)
+
+    // Buscar la imagen en la base de datos
+    const { data, error } = await supabaseAdmin
+      .from("images")
+      .select("*")
+      .eq("id", imageId)
+      .single()
+
+    if (error) {
+      console.error("❌ Error buscando imagen:", error)
+      if (error.code === "PGRST116") {
+        return NextResponse.json({ error: "Imagen no encontrada" }, { status: 404 })
       }
+      return NextResponse.json({ error: "Error del servidor" }, { status: 500 })
     }
 
-    // If no URL found, try to construct it (fallback)
-    if (!imageUrl) {
-      // This is a fallback - in practice, we should have the URL stored
-      console.log("No stored URL found for ID:", id)
-      return NextResponse.json({ error: "Image not found" }, { status: 404 })
+    if (!data) {
+      return NextResponse.json({ error: "Imagen no encontrada" }, { status: 404 })
     }
 
-    console.log("🔄 Fetching image from:", imageUrl.substring(0, 100) + "...")
+    console.log("✅ Imagen encontrada:", {
+      id: data.id,
+      hasBgRemoved: data.has_bg_removed,
+      url: data.url?.substring(0, 50) + "...",
+    })
 
-    // Fetch the image
-    const imageResponse = await fetch(imageUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; NovaMente/1.0)",
+    return NextResponse.json({
+      success: true,
+      image: {
+        id: data.id,
+        url: data.url,
+        prompt: data.prompt,
+        has_bg_removed: data.has_bg_removed || false,
+        url_without_bg: data.url_without_bg,
+        created_at: data.created_at,
+        user_id: data.user_id,
       },
     })
 
-    if (!imageResponse.ok) {
-      console.error("❌ Failed to fetch image:", imageResponse.status, imageResponse.statusText)
-      return NextResponse.json({ error: "Failed to fetch image" }, { status: imageResponse.status })
-    }
-
-    const imageBuffer = await imageResponse.arrayBuffer()
-    const contentType = imageResponse.headers.get("content-type") || "image/png"
-
-    console.log("✅ Image proxied successfully, size:", imageBuffer.byteLength, "bytes")
-
-    return new NextResponse(imageBuffer, {
-      headers: {
-        "Content-Type": contentType,
-        "Cache-Control": "public, max-age=31536000, immutable",
-        "Access-Control-Allow-Origin": "*",
-      },
-    })
   } catch (error) {
-    console.error("❌ Error proxying image:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("❌ Error en GET /api/images/[id]:", error)
+    return NextResponse.json(
+      { error: "Error interno del servidor" },
+      { status: 500 }
+    )
   }
 }

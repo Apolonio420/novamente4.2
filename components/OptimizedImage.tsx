@@ -89,6 +89,30 @@ export function OptimizedImage({
     setIsLoading(false)
   }
 
+  // Determinar si usar proxy o URL directa
+  const getImageSrc = (src: string) => {
+    // URLs de nuestro proxy R2 se usan directamente (sin optimización de Next)
+    if (src.startsWith('/api/r2-public')) {
+      return src
+    }
+    // Evitar que Next/Image proxifique cuando ya tenemos URLs firmadas/públicas
+    if (
+      src.startsWith('http') && (
+        src.includes('r2.dev') ||
+        src.includes('r2.cloudflarestorage.com') ||
+        src.includes('supabase.co')
+      )
+    ) {
+      return src
+    }
+    // URLs de DALL-E van al proxy
+    if (src.includes('oaidalleapiprodscus.blob.core.windows.net')) {
+      return `/api/proxy-image?url=${encodeURIComponent(src)}`
+    }
+    // URLs locales se usan directamente
+    return src
+  }
+
   if (hasError) {
     return (
       <div
@@ -117,7 +141,7 @@ export function OptimizedImage({
       )}
 
       <Image
-        src={currentSrc || "/placeholder.svg"}
+        src={getImageSrc(currentSrc || "/placeholder.svg")}
         alt={alt}
         width={width}
         height={height}
@@ -128,6 +152,12 @@ export function OptimizedImage({
         sizes={sizes}
         quality={quality}
         loading={loading}
+        // Evitar que Next optimice/proxifique URLs externas firmadas, nuestro proxy R2, o rutas de garments
+        unoptimized={Boolean(
+          currentSrc?.startsWith('http') || 
+          currentSrc?.startsWith('/api/r2-public') ||
+          currentSrc?.startsWith('/garments/')
+        )}
         onLoad={handleLoad}
         onError={handleError}
         className={cn("transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100", className)}

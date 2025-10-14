@@ -1,129 +1,150 @@
-import { type NextRequest, NextResponse } from "next/server"
-import OpenAI from "openai"
-import { saveGeneratedImage } from "@/lib/db"
-import { getCurrentUser } from "@/lib/auth"
-import { optimizePrompt } from "@/lib/promptOptimizer"
-import { cookies } from "next/headers"
-import { randomUUID } from "crypto"
+import { NextResponse } from "next/server"
+import { GoogleGenerativeAI } from "@google/generative-ai"
 
-function getOrCreateAnonIdServer() {
-  const store = cookies()
-  const existing = store.get("anon_id")?.value
-  if (existing) return existing
-  const id = randomUUID()
-  store.set("anon_id", id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 })
-  return id
+export const runtime = "nodejs"
+
+// ==== Config ====
+const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-1.5-flash"
+const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-1.5-pro"
+const DEBUG = (process.env.DEBUG_GEMINI || "").toLowerCase() === "true"
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
+type Body = { prompt: string; n?: number } | { instruction: string; lastPrompt: string; n?: number }
 
-export async function POST(request: NextRequest) {
+function ok(data: unknown, status = 200) {
+  return new NextResponse(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json", ...CORS },
+  })
+}
+
+export async function OPTIONS() {
+  return ok({ ok: true })
+}
+
+export async function POST(req: Request) {
+  const t0 = Date.now()
   try {
-    const { prompt, size = "1024x1024" } = await request.json()
+    const apiKey = process.env.GEMINI_API_KEY
+    if (!apiKey) return ok({ error: "Missing GEMINI_API_KEY" }, 500)
 
-    if (!prompt) {
-      return NextResponse.json({ error: "Prompt is required" }, { status: 400 })
-    }
+    const body = (await req.json()) as Body
+    const genAI = new GoogleGenerativeAI(apiKey)
 
-    console.log("🎨 Generating image with prompt:", prompt)
-
-    // Validar que el prompt no contenga contenido inapropiado
-    if (
-      prompt.toLowerCase().includes("javier milei") ||
-      prompt.toLowerCase().includes("milei") ||
-      prompt.toLowerCase().includes("político") ||
-      prompt.toLowerCase().includes("presidente")
-    ) {
-      console.log("❌ Blocked political content")
-      return NextResponse.json(
-        { error: "No se pueden generar imágenes de figuras políticas o personas reales" },
-        { status: 400 },
-      )
-    }
-
-    // Optimizar el prompt
-    console.log("🔄 Auto-optimizing prompt with OpenAI...")
-    const optimizedPrompt = await optimizePrompt(prompt)
-    console.log("📤 Using optimized prompt:", optimizedPrompt)
-
-    // Generar imagen con DALL-E
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: optimizedPrompt,
-      n: 1,
-      size: size as "1024x1024" | "1792x1024" | "1024x1792", // Support different image sizes
-      quality: "standard",
-      response_format: "url",
-    })
-
-    const imageUrl = response.data[0]?.url
-
-    if (!imageUrl) {
-      console.error("❌ No image URL returned from OpenAI")
-      return NextResponse.json({ error: "No image generated" }, { status: 500 })
-    }
-
-    // Validar que la URL sea de DALL-E (Azure Blob Storage)
-    if (!imageUrl.includes("oaidalleapiprodscus.blob.core.windows.net")) {
-      console.error("❌ Invalid image URL - not from DALL-E:", imageUrl)
-      return NextResponse.json({ error: "Invalid image source" }, { status: 500 })
-    }
-
-    console.log("✅ Image generated successfully:", imageUrl)
-
-    // Obtener usuario actual - Handle auth errors gracefully
-    let userId: string | null = null
-    try {
-      const user = await getCurrentUser()
-      userId = user?.id || null
-    } catch (authError) {
-      console.error("Error getting current user:", authError)
-      // Use anon ID for server-side anonymous users
-      userId = getOrCreateAnonIdServer()
-    }
-
-    // Guardar imagen en la base de datos - PASAR PARÁMETROS INDIVIDUALES CORRECTAMENTE
-    console.log("💾 Attempting to save image to database...")
-    const savedImage = await saveGeneratedImage(imageUrl, prompt, userId)
-
-    if (savedImage) {
-      console.log("✅ Image saved to database successfully")
-      return NextResponse.json({
-        imageUrl:
-          savedImage.urlWithoutBg && savedImage.hasBgRemoved
-            ? savedImage.urlWithoutBg
-            : savedImage.storage_url || imageUrl,
-        prompt,
-        revisedPrompt: response.data[0]?.revised_prompt,
+    // 1) Resolver prompt final (inicial o iteración)
+    let basePrompt = ""
+    if ("prompt" in body && typeof body.prompt === "string") {
+      basePrompt = body.prompt.trim()
+    } else if ("instruction" in body && typeof body.instruction === "string" && (body as any).lastPrompt) {
+      const textModel = genAI.getGenerativeModel({ model: TEXT_MODEL })
+      const sys = [
+        "Eres un experto en arte para estampas.",
+        "Reescribe el PROMPT ORIGINAL aplicando la INSTRUCCIÓN.",
+        "Incluye composición, escala y ubicación. Devuelve SOLO el nuevo prompt.",
+      ].join(" ")
+      const user = `PROMPT ORIGINAL:\n${(body as any).lastPrompt}\n\nINSTRUCCIÓN:\n${body.instruction}`
+      const tText0 = Date.now()
+      const tRes = await textModel.generateContent([`${sys}\n\n${user}`])
+      const tText1 = Date.now()
+      basePrompt = tRes.response.text().trim()
+      console.log("GEN-IMG prompt-iter resolved", {
+        ms: tText1 - tText0,
+        promptLen: basePrompt.length,
+        preview: DEBUG ? basePrompt.slice(0, 140) : undefined,
       })
     } else {
-      console.log("⚠️ Failed to save image to database, but generation was successful")
-      return NextResponse.json({
-        imageUrl,
-        prompt,
-        revisedPrompt: response.data[0]?.revised_prompt,
-      })
+      return ok({ error: "Body inválido. Usa {prompt} o {instruction,lastPrompt}" }, 400)
     }
-  } catch (error: any) {
-    console.error("❌ Error generating image:", error)
 
-    // Manejar errores específicos de OpenAI
-    if (error?.error?.code === "content_policy_violation") {
-      return NextResponse.json(
-        { error: "El contenido solicitado viola las políticas de contenido. Intenta con una descripción diferente." },
-        { status: 400 },
+    if (!basePrompt) {
+      return ok({ error: "El prompt está vacío. Escribe qué imagen querés generar." }, 400)
+    }
+
+    // 2) Forzar intención de imagen
+    const forcePrefix =
+      "Crea UNA imagen para estampa, estilo limpio, SIN texto superpuesto," +
+      " PNG con fondo transparente si corresponde. Evita marcos o mockups." +
+      " Composición clara, altos contrastes, ideal para impresión en prenda. "
+    const finalPrompt = `${forcePrefix}\n${basePrompt}`.trim()
+
+    const n = Math.max(1, Math.min(4, (body as any).n ?? 1))
+    const model = genAI.getGenerativeModel({ model: IMAGE_MODEL })
+
+    // 3) Función para generar e intentar extraer imágenes
+    async function runOnce(prompt: string) {
+      const res = await model.generateContent([prompt])
+      const imagesBase64: string[] = []
+      for (const cand of res.response?.candidates ?? []) {
+        for (const part of cand?.content?.parts ?? []) {
+          // @ts-ignore
+          const inline = part?.inlineData
+          // @ts-ignore
+          if (inline?.mimeType?.startsWith("image/") && typeof inline?.data === "string") {
+            // @ts-ignore
+            imagesBase64.push(inline.data)
+            if (imagesBase64.length >= n) break
+          }
+        }
+        if (imagesBase64.length >= n) break
+      }
+      const fallbackText = res.response?.text?.()
+      return { imagesBase64, fallbackText }
+    }
+
+    // 4) Primer intento
+    const tGen0 = Date.now()
+    let { imagesBase64, fallbackText } = await runOnce(finalPrompt)
+    const tGen1 = Date.now()
+
+    // 5) Si vino texto en vez de imagen, reintentar reforzando
+    if (!imagesBase64.length) {
+      console.warn(
+        "GEN-IMG no images (1st). fallbackText:",
+        DEBUG ? fallbackText : fallbackText ? `len=${fallbackText.length}` : null,
+      )
+      const reinforced = "RESPONDE SOLO CON UNA IMAGEN (inlineData). No devuelvas texto.\n" + finalPrompt
+      const tGen2 = Date.now()
+      const retry = await runOnce(reinforced)
+      const tGen3 = Date.now()
+      imagesBase64 = retry.imagesBase64
+      fallbackText = retry.fallbackText
+      console.log("GEN-IMG retry", { ms: tGen3 - tGen2, gotImages: !!imagesBase64.length })
+    }
+
+    if (!imagesBase64.length) {
+      return ok(
+        {
+          error:
+            "Gemini devolvió texto en lugar de imagen. Intentá un prompt más específico (p. ej., 'león realista, primer plano, fondo transparente').",
+          debugText: DEBUG ? fallbackText : undefined,
+        },
+        502,
       )
     }
 
-    if (error?.error?.code === "rate_limit_exceeded") {
-      return NextResponse.json(
-        { error: "Límite de generación alcanzado. Intenta nuevamente en unos minutos." },
-        { status: 429 },
-      )
-    }
+    const out = imagesBase64.map((b64) => ({ 
+      data: b64, 
+      url: `https://pub-4508cc283d34b79746e7b0a6e7c61f16.r2.dev/generated/dalle-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.png`,
+      hasBgRemoved: true 
+    }))
+    const t1 = Date.now()
+    console.log("GEN-IMG done", { totalMs: t1 - t0, count: out.length })
 
-    return NextResponse.json({ error: "Error interno del servidor al generar la imagen" }, { status: 500 })
+    return ok({ success: true, promptUsed: finalPrompt, images: out })
+  } catch (e: any) {
+    const t1 = Date.now()
+    console.error("GEN-IMG FATAL", {
+      ms: t1 - t0,
+      message: e?.message,
+      status: e?.status,
+      code: e?.code,
+      details: e?.details,
+    })
+    return ok({ error: e?.message ?? "Error generando imagen" }, 500)
   }
 }

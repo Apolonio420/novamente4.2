@@ -106,48 +106,61 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
     const finalUserId = userId || null
     const key = createImageKey(url, prompt)
 
-    // Check if already exists
-    const { data: existing } = await supabase.from("images").select("*").eq("key", key).single()
-
+    // Evitar duplicados sin depender de una columna 'key' en la BD
+    const existing = await checkImageExists(url, prompt, finalUserId)
     if (existing) {
-      console.log("♻️ Image already exists, returning existing record:", existing.id)
-      return {
-        ...existing,
-        hasBgRemoved: existing.has_bg_removed || false,
-        urlWithoutBg: existing.url_without_bg || null,
+      console.log("♻️ Image already exists (by computed key):", existing.id)
+      return existing
+    }
+
+    // Evitar guardar base64 muy grandes (límite ~1MB)
+    if (typeof url === 'string' && url.startsWith('data:')) {
+      const base64 = url.split(',')[1] || ''
+      const approxBytes = Math.floor(base64.length * 0.75)
+      if (approxBytes > 1_000_000) {
+        console.error("⚠️ Skipping save: base64 image too large (>", approxBytes, "bytes)")
+        return null
       }
     }
 
-    let storageUrl: string | null = null
-    let expiresAt: string | null = null
-
-    if (url.includes("oaidalleapiprodscus.blob.core.windows.net")) {
-      try {
-        const filename = `dalle-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
-        storageUrl = await archiveExternalImageToPermanent(url, filename)
-
-        // Set expiration for original URL
-        const urlObj = new URL(url)
-        const seParam = urlObj.searchParams.get("se")
-        if (seParam) {
-          expiresAt = new Date(seParam).toISOString()
-        }
-
-        console.log("📦 Archived image to permanent storage:", storageUrl)
-      } catch (archiveError) {
-        console.error("⚠️ Failed to archive image, using original URL:", archiveError)
-      }
-    }
+    // (Opcional) Si fuera una URL temporal de DALL·E se podría archivar aquí,
+    // pero no dependemos de columnas inexistentes en BD para expiración.
 
     const imageId = uuidv4()
+    
+    // Convertir URL temporal a estable inmediatamente si es necesario
+    let finalUrl = url
+    if (url.includes("X-Amz-Algorithm") || url.includes("X-Amz-Signature")) {
+      try {
+        const urlMatch = url.match(/\/novamente\/([^\/]+)\/([^\/]+)\/([^\?]+)/)
+        if (urlMatch) {
+          const [, category, uuid, filename] = urlMatch
+          const key = `${category}/${uuid}/${filename}`
+          finalUrl = `/api/r2-public?key=${encodeURIComponent(key)}`
+          console.log("✅ Converted new image URL to stable proxy:", imageId)
+        }
+      } catch (conversionError) {
+        console.error("⚠️ Error converting new image URL:", conversionError)
+      }
+    } else if (url.includes("pub-") && url.includes("r2.dev")) {
+      try {
+        const urlMatch = url.match(/\/processed\/([^\/]+)\/([^\?]+)/)
+        if (urlMatch) {
+          const [, uuid, filename] = urlMatch
+          const key = `processed/${uuid}/${filename}`
+          finalUrl = `/api/r2-public?key=${encodeURIComponent(key)}`
+          console.log("✅ Converted new public URL to stable proxy:", imageId)
+        }
+      } catch (conversionError) {
+        console.error("⚠️ Error converting new public URL:", conversionError)
+      }
+    }
+    
     const newImage = {
       id: imageId,
-      key,
-      url,
+      url: finalUrl,
       prompt,
       user_id: finalUserId,
-      storage_url: storageUrl,
-      expires_at: expiresAt,
       has_bg_removed: false,
       url_without_bg: null,
     }
@@ -527,25 +540,56 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       return []
     }
 
+    // En cliente, no intentamos resolver/perfilar URLs de R2 (evita CORS/SDK en browser)
+    if (typeof window !== 'undefined') {
+      const clientImages = (data || []).map((item) => ({
+        ...item,
+        hasBgRemoved: item.has_bg_removed || false,
+        urlWithoutBg: item.url_without_bg || null,
+      }))
+      return clientImages.slice(0, 20) as any
+    }
+
     const processedImages = await Promise.all(
       (data || []).map(async (item) => {
         let finalUrl = item.url
 
-        if (item.storage_url) {
-          finalUrl = item.storage_url
-        } else if (item.expires_at && new Date(item.expires_at) < new Date() && item.url) {
-          // Try to re-archive expired URL
-          try {
-            const filename = `rearchive-${item.id}`
-            const newStorageUrl = await archiveExternalImageToPermanent(item.url, filename)
-
-            // Update record with new storage URL
-            await supabase.from("images").update({ storage_url: newStorageUrl }).eq("id", item.id)
-
-            finalUrl = newStorageUrl
-            console.log("🔄 Re-archived expired image:", item.id)
-          } catch (reArchiveError) {
-            console.error("⚠️ Failed to re-archive expired image:", reArchiveError)
+        // Verificar si la URL es de R2 (temporal, permanente o pública antigua) y convertir a working URL
+        if (item.url && (item.url.includes("r2.cloudflarestorage.com") || item.url.includes("r2.dev"))) {
+          if (item.url.includes("X-Amz-Algorithm") || item.url.includes("X-Amz-Signature")) {
+            // Es una URL temporal firmada. Persistimos una URL estable relativa que
+            // siempre redirige a una URL válida sin volver a convertir cada vez.
+            try {
+              const urlMatch = item.url.match(/\/novamente\/([^\/]+)\/([^\/]+)\/([^\?]+)/)
+              if (urlMatch) {
+                const [, category, uuid, filename] = urlMatch
+                const key = `${category}/${uuid}/${filename}`
+                const proxyUrl = `/api/r2-public?key=${encodeURIComponent(key)}`
+                finalUrl = proxyUrl
+                console.log("✅ Converted signed URL to stable proxy URL:", item.id)
+                await supabase.from("images").update({ url: proxyUrl }).eq("id", item.id)
+              }
+            } catch (conversionError) {
+              console.error("⚠️ Error converting signed URL:", conversionError)
+            }
+          } else if (item.url.includes("pub-") && item.url.includes("r2.dev")) {
+            // URL pública antigua → persistir URL proxy estable
+            try {
+              const urlMatch = item.url.match(/\/processed\/([^\/]+)\/([^\?]+)/)
+              if (urlMatch) {
+                const [, uuid, filename] = urlMatch
+                const key = `processed/${uuid}/${filename}`
+                const proxyUrl = `/api/r2-public?key=${encodeURIComponent(key)}`
+                finalUrl = proxyUrl
+                console.log("✅ Converted old public URL to stable proxy URL:", item.id)
+                await supabase.from("images").update({ url: proxyUrl }).eq("id", item.id)
+              }
+            } catch (conversionError) {
+              console.error("⚠️ Error converting old public URL:", conversionError)
+            }
+          } else {
+            // Ya es una URL permanente de R2; evitar HEAD en SSR para no romper por fallas de red
+            finalUrl = item.url
           }
         }
 
@@ -558,6 +602,7 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
       }),
     )
 
+    console.log("✅ Processed", processedImages.length, "images")
     return processedImages.slice(0, 20)
   } catch (error) {
     console.error("❌ Error in getUserImages:", error)

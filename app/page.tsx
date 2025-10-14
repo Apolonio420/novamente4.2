@@ -34,7 +34,7 @@ export default async function Home() {
   }
 
   // Obtener el ID de sesión
-  const sessionId = cookieStore.get("novamente_session_id")?.value
+  const sessionId = (await cookieStore).get("novamente_session_id")?.value
 
   // Obtener el conteo de generaciones para usuarios no autenticados
   let generationCount = 0

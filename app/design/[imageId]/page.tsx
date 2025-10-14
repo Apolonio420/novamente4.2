@@ -7,7 +7,9 @@ interface PageProps {
   }
 }
 
-export default function DesignPage({ params }: PageProps) {
+export default async function DesignPage({ params }: PageProps) {
+  const { imageId } = await params
+  
   return (
     <Suspense
       fallback={
@@ -21,7 +23,7 @@ export default function DesignPage({ params }: PageProps) {
         </div>
       }
     >
-      <DesignPageClient imageId={params.imageId} />
+      <DesignPageClient imageId={imageId} />
     </Suspense>
   )
 }

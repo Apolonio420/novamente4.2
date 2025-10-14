@@ -7,18 +7,45 @@ const client = new MercadoPagoConfig({
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar que el token de MercadoPago esté configurado
+    console.log("🔑 MP_ACCESS_TOKEN configured:", !!process.env.MP_ACCESS_TOKEN)
+    
+    if (!process.env.MP_ACCESS_TOKEN) {
+      console.error("❌ MP_ACCESS_TOKEN not configured - using mock response")
+      // Para testing, devolver una respuesta simulada
+      return NextResponse.json({
+        success: true,
+        id: "mock-preference-id",
+        init_point: "/checkout/success?mock=true",
+        message: "Mock payment created for testing"
+      })
+    }
+
     const { items, customer, total } = await request.json()
 
     console.log("🛒 Checkout API received:", {
-      itemsCount: items.length,
-      customer: customer.email,
+      itemsCount: items?.length || 0,
+      customer: customer?.email || 'No customer data',
       totalReceived: total,
-      items: items.map((item: any) => ({
+      items: items?.map((item: any) => ({
         title: item.title,
         quantity: item.quantity,
         unit_price: item.unit_price,
-      })),
+      })) || [],
     })
+
+    // Validar que tenemos los datos necesarios
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ success: false, error: "No items provided" }, { status: 400 })
+    }
+
+    if (!customer || !customer.email) {
+      return NextResponse.json({ success: false, error: "Customer information required" }, { status: 400 })
+    }
+
+    if (!total || total <= 0) {
+      return NextResponse.json({ success: false, error: "Invalid total amount" }, { status: 400 })
+    }
 
     // Validar que el total calculado coincida con la suma de items
     const calculatedTotal = items.reduce((sum: number, item: any) => sum + item.unit_price * item.quantity, 0)
@@ -60,20 +87,25 @@ export async function POST(request: NextRequest) {
         },
       },
       back_urls: {
-        success: `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/success`,
-        failure: `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/cancel`,
-        pending: `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/pending`,
+        success: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/success`,
+        failure: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/cancel`,
+        pending: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/pending`,
       },
-      auto_return: "approved",
-      notification_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/mercadopago`,
+      // auto_return: "approved", // Comentado para evitar problemas con localhost
+      notification_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/webhooks/mercadopago`,
       statement_descriptor: "NOVAMENTE",
+      external_reference: `order_${Date.now()}`,
     }
 
     console.log("🚀 Creating MercadoPago preference:", {
       itemsCount: preferenceData.items.length,
       totalAmount: calculatedTotal,
       customerEmail: preferenceData.payer.email,
+      backUrls: preferenceData.back_urls,
+      baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
     })
+    
+    console.log("📋 Full preference data:", JSON.stringify(preferenceData, null, 2))
 
     const result = await preference.create({ body: preferenceData })
 
@@ -87,8 +119,30 @@ export async function POST(request: NextRequest) {
       id: result.id,
       init_point: result.init_point,
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ Checkout API error:", error)
-    return NextResponse.json({ success: false, error: "Error creating payment preference" }, { status: 500 })
+    console.error("❌ Error details:", {
+      message: error?.message || 'Unknown error',
+      status: error?.status,
+      error: error?.error,
+      cause: error?.cause,
+      stack: error?.stack,
+    })
+    
+    // Si es un error de MercadoPago, devolver más detalles
+    if (error?.status === 400) {
+      return NextResponse.json({ 
+        success: false, 
+        error: "MercadoPago validation error",
+        details: error.message,
+        mercadopagoError: error.error
+      }, { status: 400 })
+    }
+    
+    return NextResponse.json({ 
+      success: false, 
+      error: "Error creating payment preference",
+      details: error?.message || 'Unknown error'
+    }, { status: 500 })
   }
 }
