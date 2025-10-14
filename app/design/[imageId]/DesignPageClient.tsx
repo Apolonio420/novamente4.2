@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { DesignCustomizer } from "@/components/DesignCustomizer"
 import { ImageHistory } from "@/components/ImageHistory"
@@ -27,10 +27,11 @@ export function DesignPageClient({ imageId }: DesignPageClientProps) {
   const [error, setError] = useState<string | null>(null)
   const [recentImages, setRecentImages] = useState<any[]>([])
   const [user, setUser] = useState<any>(null)
-  const [showImageHistory, setShowImageHistory] = useState(false)
-  const [showImageGenerator, setShowImageGenerator] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
+  
+  // Referencia al DesignCustomizer para comunicación directa
+  const designCustomizerRef = useRef<any>(null)
 
   useEffect(() => {
     const loadProcessedImage = async () => {
@@ -109,17 +110,43 @@ export function DesignPageClient({ imageId }: DesignPageClientProps) {
     loadImageHistory()
   }, [])
 
-  const handleImageSelect = (imageUrl: string) => {
+  const handleImageSelect = (imageUrl: string, selectedId?: string) => {
+    console.log('🔍 DEBUG DesignPageClient handleImageSelect:', {
+      imageUrl,
+      selectedId,
+      timestamp: new Date().toISOString()
+    })
+    
     // Actualizar la imagen actual con la seleccionada del historial
     setImageData(prev => prev ? {
       ...prev,
-      imageUrl: imageUrl
+      imageUrl: imageUrl,
+      id: selectedId || prev.id
     } : null)
     
     toast({
       title: "Imagen seleccionada",
       description: "Se ha cargado la imagen del historial",
     })
+  }
+
+  // Función para manejar la selección de imágenes que puede redirigir al DesignCustomizer
+  const handleImageSelectWithContext = (imageUrl: string, selectedId?: string) => {
+    console.log('🔍 DEBUG DesignPageClient handleImageSelectWithContext:', {
+      imageUrl,
+      selectedId,
+      designCustomizerRef: designCustomizerRef.current,
+      timestamp: new Date().toISOString()
+    })
+    
+    // Intentar comunicarse con el DesignCustomizer primero
+    if (designCustomizerRef.current && typeof designCustomizerRef.current.handleHistoryImageSelect === 'function') {
+      console.log('✅ Llamando a handleHistoryImageSelect del DesignCustomizer')
+      designCustomizerRef.current.handleHistoryImageSelect(imageUrl, selectedId)
+    } else {
+      console.log('⚠️ DesignCustomizer no disponible, usando función original')
+      handleImageSelect(imageUrl, selectedId)
+    }
   }
 
   const handleImageGenerated = (imageUrl: string) => {
@@ -220,51 +247,35 @@ export function DesignPageClient({ imageId }: DesignPageClientProps) {
         )}
       </div>
 
-      {/* Botones para mostrar historial y generador */}
-      <div className="mb-6 flex gap-4">
-        <button
-          onClick={() => setShowImageHistory(!showImageHistory)}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          {showImageHistory ? 'Ocultar' : 'Mostrar'} Historial de Imágenes
-        </button>
-        <button
-          onClick={() => setShowImageGenerator(!showImageGenerator)}
-          className="px-4 py-2 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
-        >
-          {showImageGenerator ? 'Ocultar' : 'Mostrar'} Generador de Imágenes
-        </button>
+      {/* Historial de imágenes - clickeable para seleccionar */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-4">Tus Diseños Recientes</h2>
+        <p className="text-muted-foreground mb-4">Haz clic en cualquier diseño para seleccionarlo</p>
+        <ImageHistory 
+          images={recentImages}
+          onImageSelect={handleImageSelectWithContext}
+          selectedImage={imageData.imageUrl}
+          showStyles={true}
+        />
       </div>
-
-      {/* Historial de imágenes */}
-      {showImageHistory && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Tus Diseños Recientes</h2>
-          <ImageHistory 
-            images={recentImages}
-            onImageSelect={handleImageSelect}
-            selectedImage={imageData.imageUrl}
-          />
-        </div>
-      )}
-
-      {/* Generador de imágenes */}
-      {showImageGenerator && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Generar Nueva Imagen</h2>
-          <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/10">
-            <ImageGenerator 
-              onImageGenerated={handleImageGenerated}
-              isAuthenticated={!!user}
-            />
-          </div>
-        </div>
-      )}
       
       <DesignCustomizer 
+        ref={designCustomizerRef}
         initialImageUrl={imageData.imageUrl} 
         imageId={imageData.id}
+        onImageSelect={handleImageSelect}
       />
+
+      {/* Generador de imágenes - al final */}
+      <div className="mt-12" data-section="image-generator">
+        <h2 className="text-2xl font-bold mb-4">Generar Nueva Imagen</h2>
+        <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/10">
+          <ImageGenerator 
+            onImageGenerated={handleImageGenerated}
+            isAuthenticated={!!user}
+          />
+        </div>
+      </div>
     </div>
   )
 }

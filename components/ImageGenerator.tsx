@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
@@ -28,7 +28,8 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { saveGeneratedImage } from "@/lib/db"
-import { optimizePrompt } from "@/lib/gemini"
+import { getAllArtisticStyles } from "@/lib/advanced-prompt-optimizer"
+// import { optimizePrompt } from "@/lib/gemini" // Removed - optimization handled server-side
 import Image from "next/image"
 import Link from "next/link"
 
@@ -36,12 +37,14 @@ interface ImageGeneratorProps {
   onImageGenerated?: (imageUrl: string) => void
   initialGenerationCount?: number
   isAuthenticated?: boolean
+  mode?: 'standalone' | 'modal'
 }
 
 export function ImageGenerator({
   onImageGenerated,
   initialGenerationCount = 0,
   isAuthenticated = false,
+  mode = 'standalone',
 }: ImageGeneratorProps) {
   const [prompt, setPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
@@ -55,7 +58,31 @@ export function ImageGenerator({
   const [showContentPolicyError, setShowContentPolicyError] = useState(false)
   const [contentPolicyErrorMessage, setContentPolicyErrorMessage] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
+  const [processedImageId, setProcessedImageId] = useState<string | null>(null)
   const { toast } = useToast()
+  const isModal = mode === 'modal'
+
+  // Escuchar selección desde ImageHistory (sin guardar en DB)
+  useEffect(() => {
+    const handler = (e: any) => {
+      try {
+        const url = e?.detail?.imageUrl
+        const imageId = e?.detail?.imageId as string | undefined
+        if (!url) return
+        setGeneratedImage(url)
+        setImageError(false)
+        setOptimizedPrompt(null)
+        // Guardar el id para navegación directa si se usa "usar este diseño"
+        ;(window as any).__selectedHistoryImageId = imageId || null
+        toast({ title: "Imagen seleccionada", description: "Cargada desde el historial" })
+        // Hacer scroll al generador si existe un ancla
+        const container = document.getElementById('generator')
+        if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      } catch {}
+    }
+    window.addEventListener('loadImageInGenerator', handler as EventListener)
+    return () => window.removeEventListener('loadImageInGenerator', handler as EventListener)
+  }, [toast])
 
   // Función para obtener clases CSS del contenedor según resolución
   const getImageContainerClasses = () => {
@@ -79,19 +106,8 @@ export function ImageGenerator({
     "Águila volando con alas extendidas",
   ]
 
-  // Estilos populares
-  const popularStyles = [
-    "Realista",
-    "Cartoon",
-    "Minimalista",
-    "Vintage",
-    "Futurista",
-    "Acuarela",
-    "Pop Art",
-    "Geométrico",
-    "Surrealista",
-    "Pixel Art",
-  ]
+  // Estilos artísticos NovaMente
+  const novamenteStyles = getAllArtisticStyles()
 
   // Opciones de resolución
   const sizeOptions = [
@@ -120,10 +136,10 @@ export function ImageGenerator({
     try {
       console.log("🎨 Generating image with prompt:", prompt)
 
-      // OPTIMIZACIÓN AUTOMÁTICA CON GEMINI
-      console.log("🔄 Auto-optimizing prompt with Gemini...")
-      const autoOptimizedPrompt = await optimizePrompt(prompt.trim())
-      setOptimizedPrompt(autoOptimizedPrompt)
+      // Usar el prompt directamente sin optimización en el cliente
+      // La optimización se hace en el servidor en /api/generate-image
+      console.log("📝 Using prompt directly (optimization handled server-side)")
+      setOptimizedPrompt(prompt.trim())
       setIsOptimizing(false)
 
       console.log("📡 Making request to /api/generate-image...")
@@ -133,7 +149,7 @@ export function ImageGenerator({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt: autoOptimizedPrompt,
+          prompt: prompt.trim(),
           n: 1,
           includeBase64: true, // Cambiar a true para obtener base64
         }),
@@ -172,16 +188,74 @@ export function ImageGenerator({
 
       setGeneratedImage(imageUrl)
 
-      // Guardar en la base de datos
-      try {
-        const savedImage = await saveGeneratedImage(imageUrl, prompt.trim(), null)
-        console.log("✅ Image saved to database")
+      // Procesar la imagen inmediatamente para convertirla a URL de R2
+      if (first.data) {
+        try {
+          console.log("🔄 Processing image to R2...")
+          const processResponse = await fetch("/api/process-design", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              imageUrl: `data:image/png;base64,${first.data}`,
+              prompt: prompt.trim(),
+            }),
+          })
 
-        if (onImageGenerated) {
-          onImageGenerated(imageUrl)
+          if (processResponse.ok) {
+            const processResult = await processResponse.json()
+            console.log("✅ Image processed and saved to R2:", processResult.success)
+            
+            // Guardar el ID de la imagen procesada para evitar reprocesamiento
+            setProcessedImageId(processResult.imageId)
+            
+            if (onImageGenerated) {
+              onImageGenerated(processResult.imageUrl || imageUrl)
+            }
+            if (isModal) {
+              // En modo modal no navegamos
+              return
+            }
+          } else {
+            console.error("❌ Error processing image:", processResponse.statusText)
+            if (onImageGenerated) {
+              onImageGenerated(imageUrl)
+            }
+          if (isModal) {
+            return
+          }
+          }
+        } catch (processError) {
+          console.error("❌ Error processing image:", processError)
+          if (onImageGenerated) {
+            onImageGenerated(imageUrl)
+          }
+        if (isModal) {
+          return
         }
-      } catch (dbError) {
-        console.error("❌ Error saving to database:", dbError)
+        }
+      } else {
+        // Si no hay base64, guardar la URL directamente
+        try {
+          const savedImage = await saveGeneratedImage(imageUrl, prompt.trim(), null)
+          console.log("✅ Image saved to database")
+          
+          if (onImageGenerated) {
+            onImageGenerated(imageUrl)
+          }
+          if (isModal) {
+            return
+          }
+        } catch (dbError) {
+          console.error("❌ Error saving to database:", dbError)
+          if (onImageGenerated) {
+            onImageGenerated(imageUrl)
+          }
+          if (isModal) {
+            return
+          }
+        }
       }
 
       toast({
@@ -207,18 +281,41 @@ export function ImageGenerator({
     setIsProcessing(true)
     
     try {
-      console.log("🎨 Procesando diseño:", generatedImage)
+      console.log("🎨 Usar diseño:", generatedImage)
 
-      // Enviar directamente el base64 al servidor
+      // Si la imagen viene del historial
+      const selectedId = (window as any).__selectedHistoryImageId as string | null
+      if (selectedId) {
+        if (isModal && onImageGenerated) {
+          onImageGenerated(generatedImage)
+          ;(window as any).__selectedHistoryImageId = null
+          return
+        }
+        window.location.href = `/design/${selectedId}`
+        return
+      }
+
+      // Si ya tenemos un imageId procesado, navegar directamente
+      if (processedImageId) {
+        console.log("✅ Using already processed image ID:", processedImageId)
+        if (isModal && onImageGenerated) {
+          onImageGenerated(generatedImage)
+          return
+        }
+        window.location.href = `/design/${processedImageId}`
+        return
+      }
+
+      // Si es una imagen recién generada (base64), procesar en servidor y navegar
       const response = await fetch("/api/process-design", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          imageUrl: generatedImage, // Enviar base64 directamente
+          imageUrl: generatedImage,
           prompt: prompt.trim(),
-          userId: null, // TODO: obtener del contexto de auth
+          userId: null,
         }),
       })
 
@@ -228,15 +325,11 @@ export function ImageGenerator({
       }
 
       const data = await response.json()
-      console.log("✅ Diseño procesado:", data)
-
-      toast({
-        title: "¡Diseño procesado!",
-        description: "Redirigiendo a la página de diseño...",
-      })
-
-      // Redirigir a la página de diseño con el ID de la imagen procesada
-      window.location.href = `/design/${data.imageId}`
+      if (isModal && onImageGenerated) {
+        onImageGenerated(data.imageUrl || generatedImage)
+      } else {
+        window.location.href = `/design/${data.imageId}`
+      }
       
     } catch (error) {
       console.error("❌ Error procesando diseño:", error)
@@ -287,20 +380,20 @@ export function ImageGenerator({
     }
   }
 
-  const addStyleToBadge = (style: string) => {
+  const addNovamenteStyle = (style: any) => {
     const currentPrompt = prompt.trim()
-    const styleText = `estilo ${style.toLowerCase()}`
+    const styleText = `estilo ${style.name.toLowerCase()}`
 
     // Remover estilos existentes antes de agregar el nuevo
-    const styleRegex = /,?\s*estilo\s+\w+/gi
+    const styleRegex = /,?\s*estilo\s+[^,]+/gi
     const cleanPrompt = currentPrompt.replace(styleRegex, "").trim()
 
     const newPrompt = cleanPrompt ? `${cleanPrompt}, ${styleText}` : styleText
     setPrompt(newPrompt)
 
     toast({
-      title: "Estilo actualizado",
-      description: `Se cambió el estilo a "${style}"`,
+      title: "Estilo NovaMente aplicado",
+      description: `${style.name} - ${style.description}`,
     })
   }
 
@@ -445,19 +538,34 @@ export function ImageGenerator({
             </div>
           </div>
 
-          {/* Estilos */}
+
+          {/* Estilos Artísticos NovaMente */}
           <div className="space-y-3">
-            <h3 className="text-sm font-medium">Estilos populares (reemplaza el anterior)</h3>
-            <div className="flex flex-wrap gap-2">
-              {popularStyles.map((style) => (
-                <Badge
-                  key={style}
-                  variant="secondary"
-                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                  onClick={() => addStyleToBadge(style)}
+            <h3 className="text-sm font-medium">Estilos Artísticos NovaMente</h3>
+            <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
+              {novamenteStyles.map((style) => (
+                <Button
+                  key={style.key}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => addNovamenteStyle(style)}
+                  disabled={isGenerating}
+                  className="text-xs h-auto p-3 justify-start text-left"
                 >
-                  {style}
-                </Badge>
+                  <div className="flex flex-col items-start w-full">
+                    <div className="flex items-center justify-between w-full">
+                      <span className="font-medium">{style.name}</span>
+                      {style.printOptimized && (
+                        <Badge variant="secondary" className="text-xs ml-2">
+                          ✓
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground text-left mt-1">
+                      {style.description}
+                    </span>
+                  </div>
+                </Button>
               ))}
             </div>
           </div>

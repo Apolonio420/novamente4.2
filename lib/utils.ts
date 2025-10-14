@@ -11,3 +11,16 @@ export function formatCurrency(amount: number) {
     currency: "USD",
   }).format(amount)
 }
+
+export async function serverLog(tag: string, payload: unknown) {
+  try {
+    await fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tag, payload, ts: new Date().toISOString() }),
+    })
+  } catch (e) {
+    // no-op
+    console.warn('serverLog failed', e)
+  }
+}

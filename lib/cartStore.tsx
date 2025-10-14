@@ -13,9 +13,12 @@ export interface CartItem {
   price: number
   quantity: number
   image: string
+  frontMockup?: string
+  backMockup?: string
   frontDesign?: string
   backDesign?: string
   garmentColor?: string
+  isGeneratingMockups?: boolean
   customDesign?: {
     image: string
     position: { x: number; y: number }
@@ -29,6 +32,7 @@ interface CartStore {
   addItem: (item: CartItem) => void
   removeItem: (id: string) => void
   updateQuantity: (id: string, quantity: number) => void
+  updateItem: (id: string, updatedItem: Partial<CartItem>) => void
   clearCart: () => void
   getTotalPrice: () => number
   getTotalItems: () => number
@@ -55,6 +59,10 @@ export const useCart = create<CartStore>()(
       updateQuantity: (id, quantity) =>
         set((state) => ({
           items: state.items.map((item) => (item.id === id ? { ...item, quantity } : item)),
+        })),
+      updateItem: (id, updatedItem) =>
+        set((state) => ({
+          items: state.items.map((item) => (item.id === id ? { ...item, ...updatedItem } : item)),
         })),
       clearCart: () => set({ items: [] }),
       getTotalPrice: () => {

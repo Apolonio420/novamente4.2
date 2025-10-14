@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
       side, 
       stampSize, 
       stampPosition,
-      prompt 
+      prompt,
+      originalImageId, // id de la imagen base (procesada)
     } = body
 
     if (!designImageUrl || !garmentType || !garmentColor || !side || !stampSize) {
@@ -24,7 +25,21 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("🎨 STAMP-GEN: Starting stamp generation...")
-    console.log("STAMP-GEN params:", { garmentType, garmentVariant, garmentColor, side, stampSize, stampPosition })
+    console.log("STAMP-GEN params:", { garmentType, garmentVariant, garmentColor, side, stampSize, stampPosition, originalImageId })
+
+    // Resolver id base para agrupar derivados bajo la misma carpeta en R2
+    const resolveBaseImageId = (): string => {
+      if (originalImageId && typeof originalImageId === 'string') return originalImageId
+      try {
+        const url = String(designImageUrl)
+        const matchProcessed = url.match(/\/processed\/([^\/]+)/)
+        if (matchProcessed?.[1]) return matchProcessed[1]
+        const matchImages = url.match(/\/images\/([^\/]+)/)
+        if (matchImages?.[1]) return matchImages[1]
+      } catch {}
+      return uuidv4()
+    }
+    const baseImageId = resolveBaseImageId()
 
     // Inicializar Gemini
     const genAI = new GoogleGenAI({
@@ -33,7 +48,15 @@ export async function POST(request: NextRequest) {
 
     // 1) Descargar la imagen de diseño (sin fondo)
     console.log("STAMP-GEN: Downloading design image...")
-    const designResponse = await fetch(designImageUrl)
+    
+    // Convertir URL relativa a absoluta si es necesario
+    let absoluteDesignUrl = designImageUrl
+    if (designImageUrl.startsWith('/api/')) {
+      absoluteDesignUrl = new URL(designImageUrl, request.url).toString()
+    }
+    
+    console.log("STAMP-GEN: Fetching from URL:", absoluteDesignUrl)
+    const designResponse = await fetch(absoluteDesignUrl)
     if (!designResponse.ok) {
       throw new Error(`Error descargando imagen de diseño: ${designResponse.status}`)
     }
@@ -180,8 +203,21 @@ Generate a high-quality, realistic garment with the design properly stamped in t
     const stampedBuffer = Buffer.from(stampedImageBase64, 'base64')
     
     const description = prompt ? prompt.split(' ').slice(0, 2).join(' ') : 'estampado'
-    const fileName = generateImageName(description, 'estampado', stampSize)
-    const r2Key = `stamps/${stampId}/${fileName}`
+    // Nombre con tokens descriptivos: tipo_variant_color_side_size_pos
+    const token = [
+      String(garmentType || '').toLowerCase(),
+      String(garmentVariant || 'classic').toLowerCase(),
+      String(garmentColor || '').toLowerCase(),
+      String(side || '').toLowerCase(),
+      String(stampSize || '').toUpperCase(),
+      (stampPosition ? String(stampPosition).toLowerCase() : undefined),
+    ]
+      .filter(Boolean)
+      .join('_')
+
+    const fileName = generateImageName(description, token)
+    // Guardar bajo la carpeta de la imagen base: images/<baseId>/stamps/<stampId>/<fileName>
+    const r2Key = `images/${baseImageId}/stamps/${stampId}/${fileName}`
     
     let publicUrl: string
     try {
@@ -192,29 +228,8 @@ Generate a high-quality, realistic garment with the design properly stamped in t
       throw new Error("Error subiendo imagen estampada")
     }
 
-    // 7) Guardar la nueva imagen (sin cache por ahora para evitar problemas)
-    const { supabaseAdmin } = await import("@/lib/supabase-admin")
-
-    // Guardar la nueva imagen
-    const { data: dbData, error: dbError } = await supabaseAdmin
-      .from("images")
-      .insert({
-        id: stampId,
-        url: publicUrl,
-        prompt: prompt || `Estampado ${garmentType} ${stampSize}`,
-        user_id: null,
-        has_bg_removed: false,
-        url_without_bg: null,
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single()
-
-    if (dbError) {
-      console.error("STAMP-GEN: Error saving to database:", dbError)
-    } else {
-      console.log("STAMP-GEN: Saved to database:", stampId)
-    }
+    // 7) No guardar estampas derivadas en la base de datos (solo en R2)
+    // Se devuelve la URL pública y metadatos para uso inmediato
 
     console.log("STAMP-GEN: Success! Generated stamp:", publicUrl)
 
@@ -222,7 +237,8 @@ Generate a high-quality, realistic garment with the design properly stamped in t
       success: true, 
       publicUrl, 
       r2Key,
-      stampId 
+      stampId,
+      baseImageId,
     }, { status: 200 })
 
   } catch (error: any) {

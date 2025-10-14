@@ -24,16 +24,11 @@ export function getGarmentMapping(garmentType: string, color: string, side: "fro
   }
 
   const needle = builder(color.toLowerCase(), side.toLowerCase())
-  console.log(`[v0] Searching for mapping with needle: ${needle}`)
-  console.log(
-    `[v0] Available mappings:`,
-    garmentMappings.map((g) => g.garmentPath),
-  )
+  // Searching for garment mapping
 
   const mapping = garmentMappings.find((g) => g.garmentPath.toLowerCase().includes(needle))
 
   if (!mapping) {
-    console.log(`[v0] No mapping found for needle: ${needle}`)
     return {
       id: "fallback",
       name: "Fallback Mapping",
@@ -43,8 +38,6 @@ export function getGarmentMapping(garmentType: string, color: string, side: "fro
       timestamp: Date.now(),
     }
   }
-
-  console.log(`[v0] Found mapping:`, mapping)
   return mapping
 }
 

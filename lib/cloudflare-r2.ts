@@ -14,7 +14,12 @@ const r2Client = new S3Client({
 const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'novamente-images'
 
 // Función para generar nombres de archivo descriptivos
-export function generateImageName(description: string, type: 'original' | 'sinfondo' | 'estampado', garment?: string, size?: string): string {
+export function generateImageName(
+  description: string,
+  typeOrToken: 'original' | 'sinfondo' | 'estampado' | string,
+  garment?: string,
+  size?: string,
+): string {
   // Limpiar y normalizar la descripción
   const cleanDescription = description
     .toLowerCase()
@@ -27,7 +32,14 @@ export function generateImageName(description: string, type: 'original' | 'sinfo
 
   const baseName = cleanDescription || 'imagen'
   
-  switch (type) {
+  // Si se pasa un token personalizado (por ejemplo, "hoodie_classic_black_front_R2_center"),
+  // usarlo directamente en el nombre del archivo
+  if (typeOrToken !== 'original' && typeOrToken !== 'sinfondo' && typeOrToken !== 'estampado') {
+    const tokenClean = typeOrToken.replace(/\s+/g, '_').toLowerCase()
+    return `${baseName}_${tokenClean}.png`
+  }
+
+  switch (typeOrToken) {
     case 'original':
       return `${baseName}.png`
     case 'sinfondo':
@@ -114,21 +126,13 @@ export function getPublicR2Url(key: string): string {
 // Función para obtener URL firmada (temporal pero funcional)
 export async function getPublicR2UrlAsync(key: string): Promise<string> {
   try {
-    // Intentar URL pública primero
-    const publicUrl = getPublicR2Url(key)
-    
-    // Verificar si la URL pública funciona
-    const testResponse = await fetch(publicUrl, { method: 'HEAD' })
-    if (testResponse.ok) {
-      return publicUrl
-    }
-    
-    // Si no funciona, usar URL firmada
-    console.log('⚠️ Public URL not accessible, using signed URL')
+    // Para imágenes generadas por Gemini, siempre usar URLs firmadas
+    // ya que el bucket no está configurado para acceso público
+    console.log('🔐 Using signed URL for generated images')
     return await getSignedR2Url(key, 86400) // 24 horas
   } catch (error) {
-    console.log('⚠️ Error checking public URL, using signed URL')
-    return await getSignedR2Url(key, 86400) // 24 horas
+    console.log('⚠️ Error getting signed URL')
+    throw new Error('Error obteniendo URL de imagen')
   }
 }
 

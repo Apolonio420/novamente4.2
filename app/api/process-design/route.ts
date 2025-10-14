@@ -3,6 +3,7 @@ import { GoogleGenAI } from "@google/genai"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { uploadToR2, generateImageName } from "@/lib/cloudflare-r2"
 import { v4 as uuidv4 } from "uuid"
+import { createClient } from "@supabase/supabase-js"
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
 
@@ -18,10 +19,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "imageUrl es requerido" }, { status: 400 })
     }
 
+    // Obtener userId de la sesión si no se proporciona
+    let finalUserId = userId
+    if (!finalUserId) {
+      try {
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+        
+        const authHeader = request.headers.get('authorization')
+        if (authHeader) {
+          const token = authHeader.replace('Bearer ', '')
+          const { data: { user } } = await supabase.auth.getUser(token)
+          finalUserId = user?.id || null
+        }
+      } catch (authError) {
+        console.log("PROCESS-DESIGN: Could not get user from session:", authError)
+      }
+    }
+
     console.log("PROCESS-DESIGN input", {
       hasImageUrl: !!imageUrl,
       hasPrompt: !!prompt,
-      userId,
+      userId: finalUserId,
       imageUrl: imageUrl.substring(0, 100) + "..."
     })
 
@@ -102,7 +123,9 @@ export async function POST(request: NextRequest) {
     // Generar nombre descriptivo basado en el prompt
     const description = prompt ? prompt.split(' ').slice(0, 2).join(' ') : 'imagen'
     const fileName = generateImageName(description, 'sinfondo')
-    const r2Key = `processed/${imageId}/${fileName}`
+    // Estructura base para toda imagen generada
+    // images/<imageId>/original/<fileName>
+    const r2Key = `images/${imageId}/original/${fileName}`
     
     let publicUrl: string
     try {
@@ -113,16 +136,32 @@ export async function POST(request: NextRequest) {
       throw new Error("Error subiendo imagen procesada")
     }
 
-    // 5) Guardar en base de datos
+    // 5) Convertir URL R2 a URL estable antes de guardar
+    let stableUrl = publicUrl
+    if (publicUrl.includes("r2.dev") || publicUrl.includes("r2.cloudflarestorage.com")) {
+      try {
+        // Extraer key de la URL R2
+        const urlMatch = publicUrl.match(/\/novamente\/(.+)$/)
+        if (urlMatch) {
+          const key = urlMatch[1]
+          stableUrl = `/api/r2-public?key=${encodeURIComponent(key)}`
+          console.log("✅ Converted processed image URL to stable proxy:", imageId)
+        }
+      } catch (conversionError) {
+        console.error("⚠️ Error converting processed image URL:", conversionError)
+      }
+    }
+
+    // 6) Guardar en base de datos
     const { data: dbData, error: dbError } = await supabaseAdmin
       .from("images")
       .insert({
         id: imageId,
-        url: publicUrl,
+        url: stableUrl,
         prompt: prompt || "Imagen procesada",
-        user_id: userId || null,
+        user_id: finalUserId || null,
         has_bg_removed: hasBackgroundRemoved,
-        url_without_bg: hasBackgroundRemoved ? publicUrl : null,
+        url_without_bg: hasBackgroundRemoved ? stableUrl : null,
         created_at: new Date().toISOString(),
       })
       .select()
@@ -142,7 +181,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       imageId,
-      imageUrl: publicUrl,
+      imageUrl: stableUrl,
       hasBgRemoved: hasBackgroundRemoved,
       prompt: prompt || "Imagen procesada",
     })

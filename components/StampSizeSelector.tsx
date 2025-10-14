@@ -12,9 +12,10 @@ interface StampSizeSelectorProps {
   garmentVariant: 'classic' | 'oversize'
   garmentColor: 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model'
   side: 'front' | 'back'
-  onSizeSelect: (size: 'R1' | 'R2', position?: 'center' | 'left') => void
-  selectedSize?: 'R1' | 'R2'
+  onSizeSelect: (size: 'R1' | 'R2' | 'R3', position?: 'center' | 'left') => void
+  selectedSize?: 'R1' | 'R2' | 'R3'
   selectedPosition?: 'center' | 'left'
+  onZoomImage?: (imageUrl: string, alt: string) => void
 }
 
 export function StampSizeSelector({
@@ -24,7 +25,8 @@ export function StampSizeSelector({
   side,
   onSizeSelect,
   selectedSize,
-  selectedPosition
+  selectedPosition,
+  onZoomImage
 }: StampSizeSelectorProps) {
   const [hoveredOption, setHoveredOption] = useState<string | null>(null)
 
@@ -35,22 +37,23 @@ export function StampSizeSelector({
     side
   )
 
-  console.log("StampSizeSelector - Available options:", availableOptions)
-  console.log("StampSizeSelector - Props:", { garmentType, garmentVariant, garmentColor, side })
+  // StampSizeSelector initialized
 
   // Fallback options si no hay opciones disponibles
   const fallbackOptions = [
     { size: 'R1' as const, position: 'center' as const, imagePath: '/placeholder.svg' },
     { size: 'R1' as const, position: 'left' as const, imagePath: '/placeholder.svg' },
-    { size: 'R2' as const, imagePath: '/placeholder.svg' }
+    { size: 'R2' as const, imagePath: '/placeholder.svg' },
+    { size: 'R3' as const, imagePath: '/placeholder.svg' }
   ]
 
   const displayOptions = availableOptions.length > 0 ? availableOptions : fallbackOptions
 
-  const getSizeLabel = (size: 'R1' | 'R2') => {
+  const getSizeLabel = (size: 'R1' | 'R2' | 'R3') => {
     switch (size) {
       case 'R1': return 'Pequeño'
       case 'R2': return 'Mediano'
+      case 'R3': return 'Grande'
     }
   }
 
@@ -59,7 +62,7 @@ export function StampSizeSelector({
     return position === 'center' ? 'Centro' : 'Izquierda'
   }
 
-  const getOptionKey = (size: 'R1' | 'R2', position?: 'center' | 'left') => {
+  const getOptionKey = (size: 'R1' | 'R2' | 'R3', position?: 'center' | 'left') => {
     return `${size}${position || ''}`
   }
 
@@ -75,13 +78,14 @@ export function StampSizeSelector({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {displayOptions.map((option) => {
           const optionKey = getOptionKey(option.size, option.position)
-          const isSelected = selectedSize === option.size && selectedPosition === option.position
+          const isSelected = selectedSize === option.size && 
+            (option.position ? selectedPosition === option.position : (selectedPosition === undefined || selectedPosition === null))
           const isHovered = hoveredOption === optionKey
 
           return (
             <Card
               key={optionKey}
-              className={`cursor-pointer transition-all duration-200 ${
+              className={`group cursor-pointer transition-all duration-200 ${
                 isSelected 
                   ? "ring-2 ring-primary bg-primary/5" 
                   : "hover:shadow-md hover:scale-105"
@@ -89,6 +93,7 @@ export function StampSizeSelector({
               onMouseEnter={() => setHoveredOption(optionKey)}
               onMouseLeave={() => setHoveredOption(null)}
               onClick={() => onSizeSelect(option.size, option.position)}
+              onDoubleClick={() => onZoomImage?.(option.imagePath, `Estampado ${getSizeLabel(option.size)} ${getPositionLabel(option.position)}`)}
             >
               <CardContent className="p-4">
                 <div className="space-y-3">
@@ -107,6 +112,13 @@ export function StampSizeSelector({
                         <Badge variant="secondary" className="text-xs">
                           {isSelected ? "Seleccionado" : "Seleccionar"}
                         </Badge>
+                      </div>
+                    )}
+                    {onZoomImage && (
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="bg-black/50 text-white text-xs px-2 py-1 rounded">
+                          🔍 Doble click para zoom
+                        </div>
                       </div>
                     )}
                   </div>

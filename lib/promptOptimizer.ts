@@ -1,10 +1,12 @@
 /**
- * Cliente para optimización de prompts usando Gemini
- * Reemplaza la optimización local con IA real
+ * Cliente para optimización de prompts usando el sistema NovaMente
+ * Integra el nuevo optimizador avanzado con parámetros de marca
  */
 
+// Interfaz simplificada para compatibilidad
+
 export async function optimizePrompt(originalPrompt: string): Promise<string> {
-  console.log("🔍 PROMPT OPTIMIZER: Using Gemini for optimization")
+  console.log("🔍 NOVAMENTE PROMPT OPTIMIZER: Using advanced optimization")
   console.log("📥 INPUT PROMPT:", originalPrompt)
 
   try {
@@ -12,12 +14,15 @@ export async function optimizePrompt(originalPrompt: string): Promise<string> {
       typeof window !== "undefined"
         ? window.location.origin
         : process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+    
     const response = await fetch(`${baseUrl}/api/optimize-prompt`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ prompt: originalPrompt }),
+      body: JSON.stringify({ 
+        prompt: originalPrompt
+      }),
     })
 
     if (!response.ok) {
@@ -45,7 +50,9 @@ function fallbackOptimization(prompt: string): string {
   console.log("🔄 Using fallback optimization")
 
   const cleanPrompt = prompt.trim()
-  if (!cleanPrompt) return cleanPrompt
+  if (!cleanPrompt) {
+    return ""
+  }
 
   // Detectar si ya tiene fondo específico
   const hasBackground = /\b(fondo|background)\b/i.test(cleanPrompt)
@@ -53,11 +60,12 @@ function fallbackOptimization(prompt: string): string {
   // Detectar si ya especifica composición única
   const hasSingleComposition = /\b(única|single|one|solo|centrada|centered)\b/i.test(cleanPrompt)
 
-  // Optimización básica
-  let optimized = cleanPrompt
+  // Optimización básica - SIEMPRE vectorial
+  let optimized = `Ilustración vectorial: ${cleanPrompt}`
+  optimized += `. Diseño vectorial, colores planos, líneas definidas, sin texturas, sin sombras realistas`
 
   if (!hasBackground) {
-    optimized += ", isolated on plain white background"
+    optimized += ", fondo transparente, elemento aislado"
   }
 
   // Agregar especificación de composición única si no está presente
@@ -65,6 +73,8 @@ function fallbackOptimization(prompt: string): string {
     optimized += ", una única composición centrada, sin duplicados, sin versiones alternativas"
   }
 
+  // CRÍTICO: Evitar que aparezcan prendas
+  optimized += ", SIN prendas, SIN ropa, SIN camisetas, SIN buzos, SOLO el diseño"
   optimized += ", imagen de alta resolución, suitable for print design"
 
   console.log("📤 FALLBACK OPTIMIZED:", optimized)

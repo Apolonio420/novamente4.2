@@ -5,7 +5,7 @@ export interface RedSquareGarment {
   variant: 'classic' | 'oversize'
   color: 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model'
   side: 'front' | 'back'
-  size: 'R1' | 'R2'
+  size: 'R1' | 'R2' | 'R3'
   position?: 'center' | 'left' // Solo para R1
   imagePath: string
 }
@@ -16,16 +16,20 @@ export function getRedSquareGarmentImage(
   variant: 'classic' | 'oversize',
   color: 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model',
   side: 'front' | 'back',
-  size: 'R1' | 'R2',
+  size: 'R1' | 'R2' | 'R3',
   position?: 'center' | 'left'
 ): string | null {
+  // Nota: Los archivos con naming simple (hoodie-black-front.jpeg) no existen en el directorio.
+  // Solo existen los archivos con naming MRoja-XX. Por lo tanto, siempre usamos el mapeo por índices.
+
+  // 2) Fallback: mapeo anterior por índices (MRoja-XX-...)
   // Mapeo de colores
   const colorMap = {
     'black': 'N',
     'gray': 'G', 
     'caramel': 'M', // Caramelo se mapea a M (Marrón) en las imágenes
     'white': 'B',
-    'cream': 'B', // Crema se mapea a B (Blanco) en las imágenes
+    'cream': 'C', // Cream usa las imágenes con código C (MRoja-5/6/7/8/9/10)
     'model': 'M'
   }
 
@@ -48,7 +52,8 @@ export function getRedSquareGarmentImage(
   // Mapeo de números para cada combinación
   const getImageNumber = (type: string, color: string, side: string, size: string, position?: string) => {
     // Construir la clave correcta
-    const positionCode = position === 'center' ? 'C' : position === 'left' ? 'I' : ''
+    // Solo R1 usa códigos de posición (C/I), R2 y R3 no
+    const positionCode = size === 'R1' ? (position === 'center' ? 'C' : position === 'left' ? 'I' : '') : ''
     const key = `${type}_${color}_${side}_${size}${positionCode}`
     
     // Mapeo basado en los archivos existentes
@@ -56,28 +61,28 @@ export function getRedSquareGarmentImage(
       'BuzoOver_N_Frente_R1C': 17,
       'BuzoOver_N_Frente_R1I': 16,
       'BuzoOver_N_Frente_R2': 18,
-      'BuzoOver_N_Frente_R3': 18, // Usar R2 como fallback para R3
+      'BuzoOver_N_Frente_R3': 54, // Imagen real R3
       'BuzoOver_N_Dorso_R1': 15,
       'BuzoOver_N_Dorso_R2': 14,
       'BuzoOver_N_Dorso_R3': 1,
       'BuzoOver_G_Frente_R1C': 3,
       'BuzoOver_G_Frente_R1I': 4,
       'BuzoOver_G_Frente_R2': 2,
-      'BuzoOver_G_Frente_R3': 2, // Usar R2 como fallback para R3
+      'BuzoOver_G_Frente_R3': 2, // R3 no disponible para frente, usar R2
       'BuzoOver_G_Dorso_R1': 13,
       'BuzoOver_G_Dorso_R2': 12,
       'BuzoOver_G_Dorso_R3': 11,
       'BuzoOver_C_Frente_R1C': 6,
       'BuzoOver_C_Frente_R1I': 7,
       'BuzoOver_C_Frente_R2': 5,
-      'BuzoOver_C_Frente_R3': 5, // Usar R2 como fallback para R3
+      'BuzoOver_C_Frente_R3': 5, // R3 no disponible para frente, usar R2
       'BuzoOver_C_Dorso_R1': 10,
       'BuzoOver_C_Dorso_R2': 9,
       'BuzoOver_C_Dorso_R3': 8,
       'BuzoOver_M_Frente_R1C': 23,
       'BuzoOver_M_Frente_R1I': 24,
       'BuzoOver_M_Frente_R2': 22,
-      'BuzoOver_M_Frente_R3': 22, // Usar R2 como fallback para R3
+      'BuzoOver_M_Frente_R3': 22, // R3 no disponible para frente, usar R2
       'BuzoOver_M_Dorso_R1': 21,
       'BuzoOver_M_Dorso_R2': 20,
       'BuzoOver_M_Dorso_R3': 19,
@@ -131,25 +136,19 @@ export function getRedSquareGarmentImage(
 
   const imageNumber = getImageNumber(typeCode, colorCode, sideCode, size, position)
   
-  console.log(`getRedSquareGarmentImage - Input:`, { type, variant, color, side, size, position })
-  console.log(`getRedSquareGarmentImage - Mapped:`, { typeCode, colorCode, sideCode, size, position })
-  console.log(`getRedSquareGarmentImage - Image number:`, imageNumber)
+  // Getting red square garment image
   
-  // Debug específico para R1C
-  if (size === 'R1' && position === 'center') {
-    console.log(`🔍 DEBUG R1C: typeCode=${typeCode}, colorCode=${colorCode}, sideCode=${sideCode}`)
-    const debugKey = `${typeCode}_${colorCode}_${sideCode}_R1C`
-    console.log(`🔍 DEBUG R1C: Looking for key: ${debugKey}`)
-  }
+  // Debug específico para R1C (removed for cleaner console)
   
   if (!imageNumber) {
     console.warn(`No se encontró imagen para: ${typeCode}_${colorCode}_${sideCode}_${size}${position || ''}`)
     return null
   }
 
-  const positionCode = position === 'center' ? 'C' : position === 'left' ? 'I' : ''
+  // Solo R1 usa códigos de posición en el nombre del archivo
+  const positionCode = size === 'R1' ? (position === 'center' ? 'C' : position === 'left' ? 'I' : '') : ''
   const fileName = `MRoja-${imageNumber}-${typeCode}_${colorCode}_${sideCode}_${size}${positionCode}.png`
-  return `/garments/red square/${fileName}`
+  return `/garments/red-square/${fileName}`
 }
 
 // Función para obtener todas las opciones disponibles para una prenda
@@ -158,7 +157,7 @@ export function getAvailableRedSquareOptions(
   variant: 'classic' | 'oversize',
   color: 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model',
   side: 'front' | 'back'
-): Array<{ size: 'R1' | 'R2', position?: 'center' | 'left', imagePath: string }> {
+): Array<{ size: 'R1' | 'R2' | 'R3', position?: 'center' | 'left', imagePath: string }> {
   const options = []
 
   // R1 con posiciones
@@ -184,10 +183,18 @@ export function getAvailableRedSquareOptions(
     }
   }
 
-  // R2 (eliminamos R3)
+  // R2
   const r2Path = getRedSquareGarmentImage(type, variant, color, side, 'R2')
   if (r2Path) {
     options.push({ size: 'R2', imagePath: r2Path })
+  }
+
+  // R3: disponible para remeras (frente/dorso) y buzos en la espalda
+  if (type === 'tshirt' || (type === 'hoodie' && side === 'back')) {
+    const r3Path = getRedSquareGarmentImage(type, variant, color, side, 'R3')
+    if (r3Path) {
+      options.push({ size: 'R3', imagePath: r3Path })
+    }
   }
 
   return options
@@ -205,7 +212,7 @@ export function getBaseGarmentImage(
     'gray': 'gray', 
     'caramel': 'caramel', // Mantener 'caramel' para las rutas de archivos
     'white': 'white',
-    'cream': 'white', // Crema usa las imágenes blancas
+    'cream': 'cream', // Cream usa sus propios assets hoodie-cream-*.jpeg
     'model': 'model'
   }
 
