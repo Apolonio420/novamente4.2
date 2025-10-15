@@ -80,6 +80,18 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
+  // Configuración webpack para excluir binarios nativos
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Excluir binarios nativos de canvas del bundle
+      config.externals = config.externals || [];
+      config.externals.push({
+        canvas: 'canvas',
+        '@napi-rs/canvas': '@napi-rs/canvas',
+      });
+    }
+    return config;
+  },
   // Compresión y optimización
   compress: true,
   poweredByHeader: false,

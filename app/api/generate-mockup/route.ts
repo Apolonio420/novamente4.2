@@ -2,19 +2,29 @@ import { NextRequest, NextResponse } from "next/server"
 import { uploadToR2, generateImageName } from "@/lib/cloudflare-r2"
 import { getGarmentMapping } from "@/lib/garment-mappings"
 import { v4 as uuidv4 } from "uuid"
-// Canvas: usar @napi-rs/canvas si está disponible en entorno de build (Vercel),
-// y hacer fallback a canvas puro en local. Evita errores de binary missing.
-let createCanvas: any, loadImage: any
-try {
-  // @ts-ignore
-  ;({ createCanvas, loadImage } = require('@napi-rs/canvas'))
-} catch {
-  ;({ createCanvas, loadImage } = require('canvas'))
-}
 
 export async function POST(request: NextRequest) {
   try {
     console.log("GENERATE-MOCKUP starting...")
+    
+    // Dynamic import for canvas to support Vercel deployment
+    let createCanvas, loadImage;
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        const { createCanvas: napiCreateCanvas, loadImage: napiLoadImage } = require('@napi-rs/canvas');
+        createCanvas = napiCreateCanvas;
+        loadImage = napiLoadImage;
+      } catch (e) {
+        console.warn("Failed to load @napi-rs/canvas, falling back to canvas:", e);
+        const { createCanvas: nodeCanvasCreateCanvas, loadImage: nodeCanvasLoadImage } = require('canvas');
+        createCanvas = nodeCanvasCreateCanvas;
+        loadImage = nodeCanvasLoadImage;
+      }
+    } else {
+      const { createCanvas: nodeCanvasCreateCanvas, loadImage: nodeCanvasLoadImage } = require('canvas');
+      createCanvas = nodeCanvasCreateCanvas;
+      loadImage = nodeCanvasLoadImage;
+    }
     
     const body = await request.json()
     const { 
