@@ -947,9 +947,14 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   }
 
   const handleContinueToPurchase = async () => {
-    // Verificar si ya existen mockups suficientes
-    const alreadyHaveMockups = Boolean(generatedMockups.front) && (!wantsDoubleStamping || Boolean(generatedMockups.back))
-    let finalMockups = generatedMockups
+    // Reutilizar mockups existentes si están presentes
+    const haveFront = Boolean(generatedMockups.front || mockupImages.front)
+    const haveBack = Boolean(generatedMockups.back || mockupImages.back)
+    const alreadyHaveMockups = haveFront && (!wantsDoubleStamping || haveBack)
+    let finalMockups: { front?: string; back?: string } = {
+      front: generatedMockups.front || mockupImages.front,
+      back: generatedMockups.back || mockupImages.back,
+    }
 
     if (!alreadyHaveMockups) {
       setIsGeneratingMockups(true)
@@ -1010,8 +1015,10 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   }
 
   const handleAddToCartOnly = async () => {
-    // Verificar si ya existen mockups suficientes
-    const alreadyHaveMockups = Boolean(generatedMockups.front) && (!wantsDoubleStamping || Boolean(generatedMockups.back))
+    // Reutilizar mockups existentes si están presentes
+    const haveFront = Boolean(generatedMockups.front || mockupImages.front)
+    const haveBack = Boolean(generatedMockups.back || mockupImages.back)
+    const alreadyHaveMockups = haveFront && (!wantsDoubleStamping || haveBack)
     console.log("🛒 DEBUG handleAddToCartOnly:", {
       alreadyHaveMockups,
       hasFront: Boolean(generatedMockups.front),
@@ -1022,14 +1029,14 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
     })
     
     // Crear item del carrito inmediatamente (con o sin mockups)
-    const mockImage = generatedMockups.front || getGarmentImage(selectedGarment as any, selectedColor)
+    const mockImage = (generatedMockups.front || mockupImages.front) || getGarmentImage(selectedGarment as any, selectedColor)
     const item = {
       id: `${selectedGarment || 'garment'}-${selectedColor}-${selectedSize}-${Date.now()}`,
       name: selectedGarment ? GARMENT_NAMES[selectedGarment as keyof typeof GARMENT_NAMES] : 'Prenda personalizada',
       price: GARMENT_PRICES[selectedGarment as keyof typeof GARMENT_PRICES] + (wantsDoubleStamping ? DOUBLE_STAMPING_EXTRA : 0),
       image: mockImage,
-      frontMockup: generatedMockups.front,
-      backMockup: generatedMockups.back,
+      frontMockup: generatedMockups.front || mockupImages.front,
+      backMockup: generatedMockups.back || mockupImages.back,
       quantity: 1,
       color: selectedColor,
       size: selectedSize,
@@ -1095,7 +1102,10 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   }
 
   const generateFinalMockups = async () => {
-    const mockups: { front?: string, back?: string } = {}
+    const mockups: { front?: string, back?: string } = {
+      front: generatedMockups.front || mockupImages.front,
+      back: generatedMockups.back || mockupImages.back,
+    }
     
     console.log("🛒 generateFinalMockups - Estado actual:", {
       frontDesign: Boolean(frontDesign),
@@ -1106,8 +1116,8 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       selectedColor
     })
     
-    // Generar mockup frontal si existe diseño
-    if (frontDesign && frontStampSize) {
+    // Generar mockup frontal solo si no existe aún
+    if (frontDesign && frontStampSize && !mockups.front) {
       try {
         console.log("🛒 Generando mockup frontal...")
         const frontMockup = await generateStampWithParams(
@@ -1129,8 +1139,8 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       }
     }
     
-    // Generar mockup trasero si existe diseño
-    if (backDesign && backStampSize) {
+    // Generar mockup trasero solo si no existe aún
+    if (backDesign && backStampSize && !mockups.back) {
       try {
         console.log("🛒 Generando mockup trasero...")
         const backMockup = await generateStampWithParams(

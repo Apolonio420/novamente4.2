@@ -28,6 +28,15 @@ export default function CheckoutPage() {
   const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<'mercadopago' | 'transferencia'>('mercadopago')
+  // Estado para previsualización
+  const [selectedItemIndex, setSelectedItemIndex] = useState(0)
+  const selectedItem = items[selectedItemIndex] || items[0]
+  const availablePreviews = [
+    selectedItem?.frontMockup,
+    selectedItem?.backMockup,
+    selectedItem?.image,
+  ].filter(Boolean) as string[]
+  const [selectedPreviewUrl, setSelectedPreviewUrl] = useState<string | null>(availablePreviews[0] || null)
   const [customerInfo, setCustomerInfo] = useState<CustomerData>({
     email: "",
     firstName: "",
@@ -56,6 +65,16 @@ export default function CheckoutPage() {
       router.push("/cart")
     }
   }, [getTotalItems, router])
+
+  // Sincronizar preview cuando cambia el item seleccionado o el carrito
+  useEffect(() => {
+    const previews = [
+      items[selectedItemIndex]?.frontMockup,
+      items[selectedItemIndex]?.backMockup,
+      items[selectedItemIndex]?.image,
+    ].filter(Boolean) as string[]
+    setSelectedPreviewUrl(previews[0] || null)
+  }, [items, selectedItemIndex])
 
   const handleInputChange = (field: string, value: string) => {
     setCustomerInfo((prev) => ({ ...prev, [field]: value }))
@@ -339,7 +358,7 @@ export default function CheckoutPage() {
         {/* Resumen del pedido */}
         <div className="space-y-6">
           {/* Imagen grande de las prendas */}
-          {items.length > 0 && (
+          {items.length > 0 && selectedItem && (
             <Card>
               <CardHeader>
                 <CardTitle>Vista Previa de tu Pedido</CardTitle>
@@ -347,8 +366,8 @@ export default function CheckoutPage() {
               <CardContent>
                 <div className="relative w-full h-96 rounded-lg overflow-hidden bg-gray-100">
                   <Image 
-                    src={items[0].frontMockup || items[0].backMockup || items[0].image || "/placeholder.svg"} 
-                    alt={items[0].name} 
+                    src={selectedPreviewUrl || "/placeholder.svg"} 
+                    alt={selectedItem.name} 
                     fill 
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-contain"
@@ -356,12 +375,39 @@ export default function CheckoutPage() {
                       const target = e.target as HTMLImageElement
                       target.src = "/placeholder.svg"
                     }}
-                    unoptimized={(items[0].frontMockup || items[0].backMockup || items[0].image || "").startsWith('/api/')}
+                    unoptimized={(selectedPreviewUrl || "").startsWith('/api/')}
                   />
                 </div>
                 <p className="text-base font-medium mt-3 text-center">
-                  {items[0].name} - {items[0].color} - Talle {items[0].size}
+                  {selectedItem.name} - {selectedItem.color} - Talle {selectedItem.size}
                 </p>
+
+                {/* Thumbnails de la prenda seleccionada */}
+                {availablePreviews.length > 1 && (
+                  <div className="mt-4 flex items-center justify-center gap-3">
+                    {availablePreviews.map((src, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedPreviewUrl(src)}
+                        className={`relative w-16 h-16 rounded-md overflow-hidden border ${selectedPreviewUrl === src ? 'border-primary' : 'border-transparent'} hover:border-primary/60`}
+                        aria-label={`Vista ${idx + 1}`}
+                      >
+                        <Image
+                          src={src}
+                          alt={`Miniatura ${idx + 1}`}
+                          fill
+                          sizes="64px"
+                          className="object-cover"
+                          unoptimized={src.startsWith('/api/')}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.src = "/placeholder.svg"
+                          }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -372,8 +418,12 @@ export default function CheckoutPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {items.map((item) => (
-                  <div key={item.id} className="flex gap-4">
+                {items.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    className={`flex gap-4 cursor-pointer rounded-md p-2 ${idx === selectedItemIndex ? 'bg-muted/30 ring-1 ring-primary/30' : 'hover:bg-muted/20'}`}
+                    onClick={() => setSelectedItemIndex(idx)}
+                  >
                     <div className="w-16 h-16 relative rounded overflow-hidden flex-shrink-0">
                       <Image 
                         src={item.frontMockup || item.backMockup || item.image || "/placeholder.svg"} 
