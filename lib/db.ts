@@ -511,6 +511,10 @@ export async function getImageHistory(limit = 20, sessionId?: string): Promise<S
     const { data, error } = await query
 
     if (error) {
+      if ((error as any).code === '42703') {
+        // Columna session_id aún no existe en el entorno. Devolver vacío para invitados.
+        return []
+      }
       console.error("❌ Error fetching image history:", error)
       return []
     }
@@ -532,15 +536,25 @@ export async function getUserImages(userId?: string, sessionId?: string): Promis
     if (userId) {
       query = query.eq("user_id", userId)
     } else if (sessionId) {
-      query = query.eq("session_id", sessionId)
+      try {
+        query = query.eq("session_id", sessionId)
+      } catch {
+        // Si no existe la columna, dejar query sin filtro adicional
+      }
     } else {
       // Si no hay user ni session, no devolver nada
-      query = query.eq("session_id", "__none__")
+      try {
+        query = query.eq("session_id", "__none__")
+      } catch {}
     }
 
     const { data, error } = await query
 
     if (error) {
+      if ((error as any).code === '42703') {
+        // Sin columna session_id: retornar vacío para evitar exponer imágenes globales
+        return []
+      }
       console.error("❌ Error fetching user images:", error)
       return []
     }

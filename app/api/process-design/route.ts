@@ -177,6 +177,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 6) Guardar en base de datos
+    // Intentar insertar con session_id si existe la columna
+    let insertError: any = null
     const { data: dbData, error: dbError } = await supabaseAdmin
       .from("images")
       .insert({
@@ -192,9 +194,27 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (dbError) {
-      console.error("Error guardando en BD:", dbError)
-      throw new Error("Error guardando en base de datos")
+    if (dbError && (dbError as any).code === '42703') {
+      // Columna session_id no existe: reintentar sin session_id
+      const retry = await supabaseAdmin
+        .from('images')
+        .insert({
+          id: imageId,
+          url: stableUrl,
+          prompt: prompt || 'Imagen procesada',
+          user_id: finalUserId || null,
+          has_bg_removed: hasBackgroundRemoved,
+          url_without_bg: hasBackgroundRemoved ? stableUrl : null,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single()
+      insertError = retry.error
+    }
+
+    if (dbError && !(dbError as any).code === '42703' || insertError) {
+      console.error('Error guardando en BD:', dbError || insertError)
+      throw new Error('Error guardando en base de datos')
     }
 
     console.log("PROCESS-DESIGN success", {

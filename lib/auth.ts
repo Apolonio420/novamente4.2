@@ -81,6 +81,19 @@ export async function checkGenerationLimit(sessionOrUserId: string): Promise<{ c
       .select('id', { count: 'exact', head: true })
       .or(`user_id.eq.${sessionOrUserId},session_id.eq.${sessionOrUserId}`)
 
+    if (error && (error as any).code === '42703') {
+      // Columna session_id no existe aún. Fallback: contar solo por user_id (0 para invitados)
+      const { count: count2 } = await supabase
+        .from('images')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', sessionOrUserId)
+      const current2 = typeof count2 === 'number' ? count2 : 0
+      const limit2 = 10
+      const remaining2 = Math.max(0, limit2 - current2)
+      const canGenerate2 = remaining2 > 0
+      return { canGenerate: canGenerate2, remaining: remaining2, count: current2 }
+    }
+
     const current = typeof count === 'number' ? count : 0
     const limit = 10
     const remaining = Math.max(0, limit - current)
