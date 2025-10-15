@@ -30,7 +30,7 @@ importers:
         specifier: 3.9.1
         version: 3.9.1(react-hook-form@7.54.1(react@19.0.0))
       '@napi-rs/canvas':
-        specifier: ^0.1.80
+        specifier: 0.1.80
         version: 0.1.80
       '@radix-ui/react-accordion':
         specifier: 1.2.2
