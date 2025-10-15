@@ -62,6 +62,15 @@ export function ImageGenerator({
   const { toast } = useToast()
   const isModal = mode === 'modal'
 
+  // Asegurar sesión anónima antes de generar/procesar
+  useEffect(() => {
+    ;(async () => {
+      try {
+        await fetch('/api/user/session', { cache: 'no-store' })
+      } catch {}
+    })()
+  }, [])
+
   // Escuchar selección desde ImageHistory (sin guardar en DB)
   useEffect(() => {
     const handler = (e: any) => {

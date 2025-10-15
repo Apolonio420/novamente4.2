@@ -13,16 +13,22 @@ export async function GET() {
     // Si no hay ID de sesión, crear uno nuevo
     if (!sessionId) {
       sessionId = uuidv4()
-
-      // En una implementación real, aquí se guardaría el ID de sesión en la base de datos
       console.log("Created new session ID:", sessionId)
     }
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       sessionId,
-      isAuthenticated: false, // En una implementación real, esto dependería de si el usuario ha iniciado sesión
-      expiresIn: 30 * 24 * 60 * 60, // 30 días en segundos
+      isAuthenticated: false,
+      expiresIn: 30 * 24 * 60 * 60,
     })
+
+    // Setear cookie persistente (30 días)
+    res.headers.set(
+      'Set-Cookie',
+      `${SESSION_COOKIE_NAME}=${sessionId}; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax; HttpOnly`
+    )
+
+    return res
   } catch (error) {
     console.error("Error getting session:", error)
     return NextResponse.json({ error: "Failed to get session" }, { status: 500 })

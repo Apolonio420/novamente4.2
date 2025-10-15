@@ -44,8 +44,13 @@ export async function POST(request: NextRequest) {
     // Límite para invitados: 10 por sessionId
     if (!finalUserId) {
       try {
+        // Asegurar que exista sesión; si no, crearla y setear cookie en la respuesta final
         const cookieStore = cookies()
-        const sessionId = (await cookieStore).get('novamente_session_id')?.value
+        let sessionId = (await cookieStore).get('novamente_session_id')?.value
+        if (!sessionId) {
+          // Crear uno efímero para validación; la cookie persistente se establece desde /api/user/session al montar el generador
+          sessionId = crypto.randomUUID()
+        }
         if (!sessionId) {
           return NextResponse.json({ error: 'Falta sessionId. Recargá la página para iniciar sesión anónima.' }, { status: 429 })
         }
