@@ -312,9 +312,17 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         // Forzar lado opuesto y pestaña correcta, y mostrar vista original para placeholder
         if (firstStampSide) {
           const targetSide = firstStampSide === 'front' ? 'back' : 'front'
+          console.log('🔍 DEBUG step3.5 navigation:', {
+            firstStampSide,
+            targetSide,
+            currentActiveTab: activeTab,
+            currentBackDesign: backDesign
+          })
           setSelectedSide(targetSide)
           handleTabChange(targetSide)
           setCurrentViewIndex(0)
+          // Forzar que se muestre el placeholder
+          setBackDesign(null)
         }
         break
       case 'step4':
@@ -821,10 +829,19 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
 
   // Función para manejar el cambio de tab
   const handleTabChange = (newTab: 'front' | 'back') => {
+    console.log('🔍 DEBUG handleTabChange:', {
+      newTab,
+      currentActiveTab: activeTab,
+      isDoubleStamping,
+      backDesign,
+      currentViewIndex
+    })
+    
     setActiveTab(newTab)
     
     // Si cambiamos al tab back en modo doble estampado y no hay backDesign, resetear la vista
     if (isDoubleStamping && newTab === 'back' && !backDesign) {
+      console.log('✅ Reseteando currentViewIndex a 0 para mostrar placeholder')
       setCurrentViewIndex(0) // Volver a la vista original (placeholder)
     }
   }
