@@ -2,7 +2,15 @@ import { NextRequest, NextResponse } from "next/server"
 import { uploadToR2, generateImageName } from "@/lib/cloudflare-r2"
 import { getGarmentMapping } from "@/lib/garment-mappings"
 import { v4 as uuidv4 } from "uuid"
-import { createCanvas, loadImage } from "canvas"
+// Canvas: usar @napi-rs/canvas si está disponible en entorno de build (Vercel),
+// y hacer fallback a canvas puro en local. Evita errores de binary missing.
+let createCanvas: any, loadImage: any
+try {
+  // @ts-ignore
+  ;({ createCanvas, loadImage } = require('@napi-rs/canvas'))
+} catch {
+  ;({ createCanvas, loadImage } = require('canvas'))
+}
 
 export async function POST(request: NextRequest) {
   try {

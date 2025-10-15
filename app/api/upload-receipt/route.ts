@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase-admin'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import { uploadToR2 } from '@/lib/cloudflare-r2'
 
 export async function POST(request: NextRequest) {
@@ -70,8 +70,8 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Archivo subido a R2:', uploadResult.url)
 
-    // Guardar información en la base de datos
-    const supabase = createClient()
+    // Guardar información en la base de datos (cliente admin server-side)
+    const supabase = supabaseAdmin
     const { data, error } = await supabase
       .from('receipts')
       .insert({
