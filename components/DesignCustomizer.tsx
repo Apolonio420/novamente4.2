@@ -858,9 +858,13 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
     })
     
     if (isDoubleStamping && activeTab === 'back' && !backDesign) {
-      // Si estamos en modo doble estampado, en el tab back, y no hay backDesign, asignar al segundo estampado
-      console.log('✅ Asignando imagen al segundo estampado (backDesign)')
+      // Segundo estampado: reemplazar placeholder por la imagen elegida y priorizarla en la vista
+      console.log('✅ Asignando imagen al segundo estampado (backDesign) y limpiando mockups previos del back')
       setBackDesign(imageUrl)
+      // Asegurar que el carrusel muestre primero la imagen nueva (vista original)
+      setCurrentViewIndex(0)
+      // Limpiar mockup trasero previo si existía para evitar mostrarlo antes de tiempo
+      setMockupImages((prev) => ({ ...prev, back: undefined }))
       toast({
         title: "Imagen seleccionada",
         description: "Se ha seleccionado la imagen para el segundo estampado",
