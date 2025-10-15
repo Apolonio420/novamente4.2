@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
       insertError = retry.error
     }
 
-    if (dbError && !(dbError as any).code === '42703' || insertError) {
+    if ((dbError && (dbError as any).code !== '42703') || insertError) {
       console.error('Error guardando en BD:', dbError || insertError)
       throw new Error('Error guardando en base de datos')
     }
