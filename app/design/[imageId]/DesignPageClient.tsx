@@ -98,10 +98,20 @@ export function DesignPageClient({ imageId }: DesignPageClientProps) {
       try {
         const currentUser = await getCurrentUser()
         setUser(currentUser)
-        
-        const images = await getUserImages(currentUser?.id)
-        setRecentImages(images)
-        console.log("📋 Historial de imágenes cargado:", images.length)
+
+        if (currentUser?.id) {
+          const images = await getUserImages(currentUser.id)
+          setRecentImages(images)
+          console.log("📋 Historial de imágenes cargado (user):", images.length)
+        } else {
+          // Obtener sessionId del backend
+          const res = await fetch('/api/user/session')
+          const data = await res.json()
+          const sessionId = data?.sessionId as string | undefined
+          const images = await getUserImages(undefined, sessionId)
+          setRecentImages(images)
+          console.log("📋 Historial de imágenes cargado (session):", images.length)
+        }
       } catch (error) {
         console.error("❌ Error cargando historial de imágenes:", error)
       }

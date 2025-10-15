@@ -71,13 +71,24 @@ export async function signOut() {
   }
 }
 
-export async function checkGenerationLimit(userId: string): Promise<{ canGenerate: boolean; remaining: number }> {
+// Límite: usuarios no autenticados (por sessionId) máx 10
+export async function checkGenerationLimit(sessionOrUserId: string): Promise<{ canGenerate: boolean; remaining: number; count: number }> {
   try {
-    // For now, return unlimited generations
-    return { canGenerate: true, remaining: 999 }
+    // Si viene un UUID de usuario (autenticado), no limitar aquí (0 = ilimitado en UI)
+    // Para invitados (sessionId), contar imágenes con ese session_id
+    const { data, error, count } = await supabase
+      .from('images')
+      .select('id', { count: 'exact', head: true })
+      .or(`user_id.eq.${sessionOrUserId},session_id.eq.${sessionOrUserId}`)
+
+    const current = typeof count === 'number' ? count : 0
+    const limit = 10
+    const remaining = Math.max(0, limit - current)
+    const canGenerate = remaining > 0
+    return { canGenerate, remaining, count: current }
   } catch (error) {
-    console.error("Error checking generation limit:", error)
-    return { canGenerate: false, remaining: 0 }
+    console.error('Error checking generation limit:', error)
+    return { canGenerate: false, remaining: 0, count: 0 }
   }
 }
 

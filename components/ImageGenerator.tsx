@@ -238,7 +238,7 @@ export function ImageGenerator({
       } else {
         // Si no hay base64, guardar la URL directamente
         try {
-          const savedImage = await saveGeneratedImage(imageUrl, prompt.trim(), null)
+          const savedImage = await saveGeneratedImage(imageUrl, prompt.trim(), undefined)
           console.log("✅ Image saved to database")
           
           if (onImageGenerated) {

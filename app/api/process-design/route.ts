@@ -4,6 +4,8 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 import { uploadToR2, generateImageName } from "@/lib/cloudflare-r2"
 import { v4 as uuidv4 } from "uuid"
 import { createClient } from "@supabase/supabase-js"
+import { cookies } from "next/headers"
+import { checkGenerationLimit } from "@/lib/auth"
 
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! })
 
@@ -36,6 +38,23 @@ export async function POST(request: NextRequest) {
         }
       } catch (authError) {
         console.log("PROCESS-DESIGN: Could not get user from session:", authError)
+      }
+    }
+
+    // Límite para invitados: 10 por sessionId
+    if (!finalUserId) {
+      try {
+        const cookieStore = cookies()
+        const sessionId = (await cookieStore).get('novamente_session_id')?.value
+        if (!sessionId) {
+          return NextResponse.json({ error: 'Falta sessionId. Recargá la página para iniciar sesión anónima.' }, { status: 429 })
+        }
+        const { canGenerate, remaining } = await checkGenerationLimit(sessionId)
+        if (!canGenerate) {
+          return NextResponse.json({ error: 'Alcanzaste el límite de 10 imágenes sin iniciar sesión.' }, { status: 429 })
+        }
+      } catch (limitError) {
+        console.warn('No se pudo validar límite de generación:', limitError)
       }
     }
 
@@ -160,6 +179,7 @@ export async function POST(request: NextRequest) {
         url: stableUrl,
         prompt: prompt || "Imagen procesada",
         user_id: finalUserId || null,
+        session_id: finalUserId ? null : (await (async () => { const c = cookies(); return (await c).get('novamente_session_id')?.value || null })()),
         has_bg_removed: hasBackgroundRemoved,
         url_without_bg: hasBackgroundRemoved ? stableUrl : null,
         created_at: new Date().toISOString(),

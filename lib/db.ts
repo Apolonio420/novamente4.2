@@ -492,7 +492,7 @@ export async function cleanupOldImages(): Promise<void> {
 }
 
 // Función para obtener el historial de imágenes
-export async function getImageHistory(limit = 20): Promise<SavedImage[]> {
+export async function getImageHistory(limit = 20, sessionId?: string): Promise<SavedImage[]> {
   try {
     const user = await getCurrentUser()
     const userId = user?.id || null
@@ -501,9 +501,11 @@ export async function getImageHistory(limit = 20): Promise<SavedImage[]> {
 
     if (userId) {
       query = query.eq("user_id", userId)
+    } else if (sessionId) {
+      query = query.eq("session_id", sessionId)
     } else {
-      // For anonymous users, get recent images (fallback)
-      query = query.is("user_id", null)
+      // Si no hay userId ni sessionId, no devolvemos imágenes compartidas globales
+      query = query.eq("session_id", "__none__")
     }
 
     const { data, error } = await query
@@ -521,7 +523,7 @@ export async function getImageHistory(limit = 20): Promise<SavedImage[]> {
 }
 
 // Función para obtener imágenes del usuario
-export async function getUserImages(userId?: string): Promise<SavedImage[]> {
+export async function getUserImages(userId?: string, sessionId?: string): Promise<SavedImage[]> {
   try {
     console.log("🔍 Getting user images for userId:", userId)
 
@@ -529,8 +531,11 @@ export async function getUserImages(userId?: string): Promise<SavedImage[]> {
 
     if (userId) {
       query = query.eq("user_id", userId)
+    } else if (sessionId) {
+      query = query.eq("session_id", sessionId)
     } else {
-      query = query.is("user_id", null)
+      // Si no hay user ni session, no devolver nada
+      query = query.eq("session_id", "__none__")
     }
 
     const { data, error } = await query

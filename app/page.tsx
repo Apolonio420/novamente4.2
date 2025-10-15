@@ -56,7 +56,8 @@ export default async function Home() {
     if (user) {
       recentImages = await getUserImages(user.id)
     } else {
-      recentImages = await getUserImages() // Sin userId para usuarios anónimos
+      // Para invitados, filtrar por session_id para que el historial sea personal
+      recentImages = await getUserImages(undefined, sessionId || undefined)
     }
     console.log("Server-side fetched images:", recentImages.length)
   } catch (error) {
