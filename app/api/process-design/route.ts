@@ -179,6 +179,16 @@ export async function POST(request: NextRequest) {
     // 6) Guardar en base de datos
     // Intentar insertar con session_id si existe la columna
     let insertError: any = null
+    const sessionId = finalUserId ? null : (await (async () => { const c = cookies(); return (await c).get('novamente_session_id')?.value || null })())
+    
+    console.log("PROCESS-DESIGN: Intentando insert con datos:", {
+      imageId,
+      finalUserId,
+      sessionId,
+      hasBackgroundRemoved,
+      urlLength: stableUrl?.length
+    })
+    
     const { data: dbData, error: dbError } = await supabaseAdmin
       .from("images")
       .insert({
@@ -186,7 +196,7 @@ export async function POST(request: NextRequest) {
         url: stableUrl,
         prompt: prompt || "Imagen procesada",
         user_id: finalUserId || null,
-        session_id: finalUserId ? null : (await (async () => { const c = cookies(); return (await c).get('novamente_session_id')?.value || null })()),
+        session_id: sessionId,
         has_bg_removed: hasBackgroundRemoved,
         url_without_bg: hasBackgroundRemoved ? stableUrl : null,
         created_at: new Date().toISOString(),
@@ -194,7 +204,17 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
+    console.log("PROCESS-DESIGN: Resultado del primer insert:", {
+      hasData: !!dbData,
+      error: dbError ? {
+        code: (dbError as any).code,
+        message: (dbError as any).message,
+        details: (dbError as any).details
+      } : null
+    })
+
     if (dbError && (dbError as any).code === '42703') {
+      console.log("PROCESS-DESIGN: Columna session_id no existe, reintentando sin session_id")
       // Columna session_id no existe: reintentar sin session_id
       const retry = await supabaseAdmin
         .from('images')
@@ -209,11 +229,27 @@ export async function POST(request: NextRequest) {
         })
         .select()
         .single()
+      
+      console.log("PROCESS-DESIGN: Resultado del retry sin session_id:", {
+        hasData: !!retry.data,
+        error: retry.error ? {
+          code: (retry.error as any).code,
+          message: (retry.error as any).message,
+          details: (retry.error as any).details
+        } : null
+      })
+      
       insertError = retry.error
     }
 
     if ((dbError && (dbError as any).code !== '42703') || insertError) {
-      console.error('Error guardando en BD:', dbError || insertError)
+      console.error('PROCESS-DESIGN: Error final guardando en BD:', {
+        originalError: dbError,
+        retryError: insertError,
+        finalUserId,
+        sessionId,
+        imageId
+      })
       throw new Error('Error guardando en base de datos')
     }
 
