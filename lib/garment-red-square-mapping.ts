@@ -207,12 +207,29 @@ export function getBaseGarmentImage(
   color: 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model',
   side: 'front' | 'back'
 ): string {
+  // Usar el mapeo de garment-mappings.json para obtener la ruta correcta
+  const { getGarmentMapping } = require("@/lib/garment-mappings")
+  
+  // Mapear los tipos de prenda a los IDs del sistema
+  const garmentTypeMap = {
+    'hoodie': 'astra-oversize-hoodie',
+    'tshirt': variant === 'classic' ? 'aldea-classic-tshirt' : 'aura-oversize-tshirt'
+  }
+  
+  const garmentType = garmentTypeMap[type]
+  const mapping = getGarmentMapping(garmentType, color, side)
+  
+  if (mapping && mapping.garmentPath !== 'fallback') {
+    return mapping.garmentPath
+  }
+  
+  // Fallback: usar la lógica anterior
   const colorMap = {
     'black': 'black',
     'gray': 'gray', 
-    'caramel': 'caramel', // Mantener 'caramel' para las rutas de archivos
+    'caramel': 'caramel',
     'white': 'white',
-    'cream': 'cream', // Cream usa sus propios assets hoodie-cream-*.jpeg
+    'cream': 'cream',
     'model': 'model'
   }
 
