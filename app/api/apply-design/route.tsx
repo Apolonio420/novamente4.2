@@ -3,7 +3,6 @@ export const runtime = "nodejs"
 import { type NextRequest, NextResponse } from "next/server"
 import { getGeminiClient } from "@/lib/gemini"
 import { headers } from "next/headers"
-import * as fs from "fs/promises"
 import * as path from "path"
 
 // Utility functions for file handling
@@ -111,24 +110,14 @@ export async function POST(request: NextRequest) {
       productDataUrl = body.productBase64
       methodUsed = "base64"
     } else if (body.productPath) {
+      // Siempre usar HTTP público para evitar que Next tracee todo public/garments en el bundle
       try {
-        const filePath = path.join(process.cwd(), "public", "garments", body.productPath)
-        const buf = await fs.readFile(filePath)
-        const mime = mimeFromExt(path.extname(filePath))
-        productDataUrl = bufferToDataUrl(buf, mime)
-        methodUsed = "fs"
-        console.log(`[v0] APPLY-DESIGN: Successfully loaded garment from filesystem (${buf.length} bytes)`)
-      } catch {
-        console.log("[v0] APPLY-DESIGN: Filesystem read failed, trying HTTP fallback")
-        try {
-          // Fallback a HTTP público (solo si existe el asset estático)
-          productDataUrl = await readGarmentFromPublicViaHTTP(body.productPath!, request)
-          methodUsed = "http"
-          console.log("[v0] APPLY-DESIGN: Successfully loaded garment via HTTP fallback")
-        } catch (error: any) {
-          console.log(`[v0] APPLY-DESIGN: HTTP fallback also failed: ${error.message}`)
-          return NextResponse.json({ success: false, error: "productPath invalido o no encontrado" }, { status: 400 })
-        }
+        productDataUrl = await readGarmentFromPublicViaHTTP(body.productPath!, request)
+        methodUsed = "http"
+        console.log("[v0] APPLY-DESIGN: Successfully loaded garment via HTTP (no fs)")
+      } catch (error: any) {
+        console.log(`[v0] APPLY-DESIGN: HTTP load failed: ${error.message}`)
+        return NextResponse.json({ success: false, error: "productPath invalido o no encontrado" }, { status: 400 })
       }
     } else {
       console.log("[v0] APPLY-DESIGN: Missing both productBase64 and productPath")
