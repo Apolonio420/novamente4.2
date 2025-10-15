@@ -81,7 +81,7 @@ export async function checkGenerationLimit(sessionOrUserId: string): Promise<{ c
       .select('id', { count: 'exact', head: true })
       .or(`user_id.eq.${sessionOrUserId},session_id.eq.${sessionOrUserId}`)
 
-    if (error && (error as any).code === '42703') {
+    if (error && ((error as any).code === '42703' || (error as any).code === 'PGRST204')) {
       // Columna session_id no existe aún. Fallback: contar solo por user_id (0 para invitados)
       const { count: count2 } = await supabase
         .from('images')

@@ -511,7 +511,7 @@ export async function getImageHistory(limit = 20, sessionId?: string): Promise<S
     const { data, error } = await query
 
     if (error) {
-      if ((error as any).code === '42703') {
+      if ((error as any).code === '42703' || (error as any).code === 'PGRST204') {
         // Columna session_id aún no existe en el entorno. Devolver vacío para invitados.
         return []
       }
@@ -551,7 +551,7 @@ export async function getUserImages(userId?: string, sessionId?: string): Promis
     const { data, error } = await query
 
     if (error) {
-      if ((error as any).code === '42703') {
+      if ((error as any).code === '42703' || (error as any).code === 'PGRST204') {
         // Sin columna session_id: retornar vacío para evitar exponer imágenes globales
         return []
       }

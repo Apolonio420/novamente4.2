@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
       } : null
     })
 
-    if (dbError && (dbError as any).code === '42703') {
+    if (dbError && ((dbError as any).code === '42703' || (dbError as any).code === 'PGRST204')) {
       console.log("PROCESS-DESIGN: Columna session_id no existe, reintentando sin session_id")
       // Columna session_id no existe: reintentar sin session_id
       const retry = await supabaseAdmin
@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
       insertError = retry.error
     }
 
-    if ((dbError && (dbError as any).code !== '42703') || insertError) {
+    if ((dbError && ((dbError as any).code !== '42703' && (dbError as any).code !== 'PGRST204')) || insertError) {
       console.error('PROCESS-DESIGN: Error final guardando en BD:', {
         originalError: dbError,
         retryError: insertError,
