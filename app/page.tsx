@@ -181,9 +181,14 @@ export default async function Home() {
       </section>
 
       {/* Generador de Imágenes */}
-      <section id="generator-section" className="py-20 px-4 bg-gradient-to-b from-novamente-black to-background scroll-mt-24">
+      <section id="generator-section" className="scroll-mt-24 py-8 md:py-10">
         <div className="container mx-auto">
-          <h2 className="novamente-heading text-3xl md:text-4xl mb-12 text-center">GENERADOR DE DISEÑOS</h2>
+          <h2 className="mb-4 text-center text-base md:text-lg font-medium tracking-tight text-zinc-100">
+            GENERADOR DE DISEÑOS
+          </h2>
+          <p className="mb-6 text-center text-sm text-zinc-400">
+            Elegí tamaño, estilo y generá con IA.
+          </p>
           <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 md:p-8 shadow-lg border border-white/10">
             <Suspense fallback={<div className="h-96 w-full bg-muted/30 animate-pulse rounded-lg"></div>}>
               <ImageGenerator initialGenerationCount={generationCount} isAuthenticated={!!user} />

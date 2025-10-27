@@ -7,8 +7,9 @@ import { Footer } from "@/components/Footer"
 import { Toaster } from "@/components/Toaster"
 import { WhatsAppButton } from "@/components/WhatsAppButton"
 import { ImageHistoryProvider } from "@/contexts/ImageHistoryContext"
+import { Background } from "@/components/ui/Background"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"], display: "swap" })
 
 export const metadata: Metadata = {
   title: "Tienda Oficial de Novamente",
@@ -27,8 +28,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es">
-      <body className={inter.className}>
+    <html lang="es" className="h-full">
+      <body className={`min-h-screen bg-zinc-950 text-zinc-100 ${inter.className}`}>
+        <Background />
         <ImageHistoryProvider>
           <div className="min-h-screen flex flex-col">
             <Navbar />

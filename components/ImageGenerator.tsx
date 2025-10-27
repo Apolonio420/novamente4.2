@@ -542,12 +542,12 @@ export function ImageGenerator({
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8 min-h-[calc(100vh-9rem)]">
         {/* Columna izquierda - Formulario compacto */}
         <div className="flex flex-col gap-4">
           {/* Área de texto principal - compacta */}
           <div>
-            <label htmlFor="prompt" className="block text-sm text-zinc-300 mb-1 font-medium">
+            <label htmlFor="prompt" className="block text-xs text-zinc-400 mb-1.5">
               Describe tu diseño
             </label>
             <Textarea
@@ -555,10 +555,10 @@ export function ImageGenerator({
               placeholder="Ej: Un león majestuoso con corona dorada, fondo negro..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              className="w-full resize-none h-20 max-h-24 rounded-md bg-zinc-900 border border-zinc-800 px-3 py-2 text-zinc-100 placeholder:text-zinc-500"
+              className="w-full resize-none h-20 rounded-md bg-zinc-900/60 border border-zinc-800 px-3 py-2 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-primary/60"
               disabled={isGenerating}
             />
-            <p className="mt-1 text-xs text-zinc-500">Tu prompt será optimizado automáticamente con IA.</p>
+            <p className="mt-1 text-[11px] text-zinc-500">Optimizado automáticamente con IA.</p>
           </div>
 
           {/* Resoluciones - fila compacta */}
@@ -579,10 +579,10 @@ export function ImageGenerator({
           </div>
 
           {/* Carrusel de ejemplos */}
-          <ExamplesCarousel onExampleClick={handleExampleClick} />
+          <ExamplesCarousel onExampleClick={handleExampleClick} compact />
 
           {/* Carrusel de estilos */}
-          <StylesCarousel onStyleSelect={handleStyleSelect} selectedStyle={selectedStyle} />
+          <StylesCarousel onStyleSelect={handleStyleSelect} selectedStyle={selectedStyle} compact />
 
           {/* CTA Generar - compacto con estados */}
           <Button 
@@ -616,64 +616,62 @@ export function ImageGenerator({
         </div>
 
         {/* Columna derecha - Visor */}
-        <div ref={viewerRef} className="min-h-[60vh] lg:min-h-[72vh] rounded-xl border border-zinc-800 bg-zinc-950/50">
-          <div className="h-full p-4">
-            <div
-              className={`${getImageContainerClasses()} bg-muted border-2 border-dashed border-muted-foreground/25 flex items-center justify-center h-full`}
-            >
-                {generatedImage && !imageError ? (
-                  <div className="relative w-full h-full">
-                    <Image
-                      key={`${imageKey}-${retryCount}`}
-                      src={createProxyUrl(generatedImage) || "/placeholder.svg"}
-                      alt="Imagen generada"
-                      fill
-                      className="object-contain"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      onError={handleImageError}
-                      onLoad={handleImageLoad}
-                      priority
-                      unoptimized
-                    />
-                  </div>
-                ) : imageError ? (
-                  <div className="text-center text-muted-foreground p-8">
-                    <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-red-500" />
-                    <p className="text-sm mb-4">Error cargando imagen</p>
-                    <p className="text-xs text-muted-foreground mb-4">
-                      {retryCount >= 3 ? "Máximo de reintentos alcanzado" : `Intento ${retryCount + 1} de 3`}
-                    </p>
-                    {retryCount < 3 && (
-                      <Button variant="outline" size="sm" onClick={retryImageLoad} className="bg-transparent">
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Reintentar (2s)
-                      </Button>
-                    )}
-                    {retryCount >= 3 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setImageError(false)
-                          setRetryCount(0)
-                          setImageKey((prev) => prev + 1)
-                          generateImage()
-                        }}
-                        className="bg-transparent"
-                      >
-                        <Wand2 className="h-4 w-4 mr-2" />
-                        Generar Nueva Imagen
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground p-8">
-                    <Wand2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-sm">Tu diseño aparecerá aquí</p>
-                    <p className="text-xs mt-2 opacity-75">Optimizado con IA • {selectedSize}</p>
-                  </div>
+        <div ref={viewerRef} className="rounded-xl border border-zinc-800/70 bg-zinc-950/40 p-3 lg:p-4 shadow-lg">
+          <div className="aspect-[5/6] w-full overflow-hidden rounded-md bg-zinc-900/40 grid place-items-center">
+            {generatedImage && !imageError ? (
+              <div className="relative w-full h-full">
+                <Image
+                  key={`${imageKey}-${retryCount}`}
+                  src={createProxyUrl(generatedImage) || "/placeholder.svg"}
+                  alt="Imagen generada"
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  onError={handleImageError}
+                  onLoad={handleImageLoad}
+                  priority
+                  unoptimized
+                />
+              </div>
+            ) : imageError ? (
+              <div className="text-center p-4">
+                <div className="h-10 w-10 mx-auto mb-3 animate-pulse rounded-lg bg-zinc-800/70" />
+                <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-red-500" />
+                <p className="text-sm mb-2">Error cargando imagen</p>
+                <p className="text-[11px] text-zinc-500 mb-3">
+                  {retryCount >= 3 ? "Máximo de reintentos alcanzado" : `Intento ${retryCount + 1} de 3`}
+                </p>
+                {retryCount < 3 && (
+                  <Button variant="outline" size="sm" onClick={retryImageLoad} className="bg-transparent text-xs">
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Reintentar
+                  </Button>
                 )}
-            </div>
+                {retryCount >= 3 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setImageError(false)
+                      setRetryCount(0)
+                      setImageKey((prev) => prev + 1)
+                      generateImage()
+                    }}
+                    className="bg-transparent text-xs"
+                  >
+                    <Wand2 className="h-3 w-3 mr-1" />
+                    Generar Nueva
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="text-center">
+                <div className="h-10 w-10 mx-auto mb-2 animate-pulse rounded-lg bg-zinc-800/70" />
+                <p className="text-sm text-zinc-400">Tu diseño aparecerá aquí</p>
+                <p className="text-[11px] mt-1 text-zinc-500">Optimizado con IA</p>
+              </div>
+            )}
+          </div>
 
             {/* Acciones de la imagen */}
             {generatedImage && !imageError && (

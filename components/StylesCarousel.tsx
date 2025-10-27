@@ -3,9 +3,10 @@
 interface StylesCarouselProps {
   onStyleSelect?: (styleId: string) => void
   selectedStyle?: string
+  compact?: boolean
 }
 
-export function StylesCarousel({ onStyleSelect, selectedStyle }: StylesCarouselProps) {
+export function StylesCarousel({ onStyleSelect, selectedStyle, compact = false }: StylesCarouselProps) {
   const styles = [
     { id: "linear-min", name: "Minimalista Lineal", desc: "Líneas limpias, formas simples" },
     { id: "line-art", name: "Line Art", desc: "Trazos finos, estilo tatuaje" },
@@ -25,20 +26,22 @@ export function StylesCarousel({ onStyleSelect, selectedStyle }: StylesCarouselP
 
   return (
     <div>
-      <h3 className="mb-2 text-sm text-zinc-300 font-medium">Estilos artísticos NovaMente</h3>
-      <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <h3 className={`mb-1.5 ${compact ? "text-xs" : "text-sm"} text-zinc-300 font-medium`}>
+        Estilos artísticos NovaMente
+      </h3>
+      <div className="flex gap-2 overflow-x-auto pb-1.5 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {styles.map((style) => (
           <button
             key={style.id}
             onClick={() => handleStyleClick(style.id)}
-            className={`snap-start min-w-[220px] rounded-lg border px-3 py-2 text-left transition-colors ${
+            className={`snap-start min-w-[200px] rounded-lg border px-3 py-2 text-left transition-colors ${
               selectedStyle === style.id
                 ? "border-primary bg-primary/10 text-primary"
                 : "border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800"
             }`}
           >
-            <div className="text-sm font-medium">{style.name}</div>
-            <div className="text-xs text-zinc-400">{style.desc}</div>
+            <div className="text-xs font-medium">{style.name}</div>
+            <div className="text-[11px] text-zinc-400">{style.desc}</div>
           </button>
         ))}
       </div>

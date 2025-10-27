@@ -2,9 +2,10 @@
 
 interface ExamplesCarouselProps {
   onExampleClick?: (example: string) => void
+  compact?: boolean
 }
 
-export function ExamplesCarousel({ onExampleClick }: ExamplesCarouselProps) {
+export function ExamplesCarousel({ onExampleClick, compact = false }: ExamplesCarouselProps) {
   const examples = [
     "Un león majestuoso con corona dorada",
     "Mandala geométrico intrincado",
@@ -26,13 +27,15 @@ export function ExamplesCarousel({ onExampleClick }: ExamplesCarouselProps) {
 
   return (
     <div>
-      <h3 className="mb-2 text-sm text-zinc-300 font-medium">Ejemplos rápidos</h3>
-      <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <h3 className={`mb-1.5 ${compact ? "text-xs" : "text-sm"} text-zinc-300 font-medium`}>
+        Ejemplos rápidos
+      </h3>
+      <div className="flex gap-2 overflow-x-auto pb-1.5 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {examples.map((example) => (
           <button
             key={example}
             onClick={() => handleExampleClick(example)}
-            className="snap-start min-w-max rounded-md border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-xs text-zinc-200 hover:bg-zinc-800 transition-colors"
+            className="snap-start min-w-max rounded-md border border-zinc-800 bg-zinc-900/60 px-2.5 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800 transition-colors"
             data-example={example}
           >
             {example}
