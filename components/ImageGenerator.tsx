@@ -34,6 +34,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ExamplesCarousel } from "@/components/ExamplesCarousel"
 import { StylesCarousel } from "@/components/StylesCarousel"
+import { buildPrompt, type StyleId } from "@/lib/generator/prompt"
 
 interface ImageGeneratorProps {
   onImageGenerated?: (imageUrl: string) => void
@@ -65,7 +66,7 @@ export function ImageGenerator({
   const [contentPolicyErrorMessage, setContentPolicyErrorMessage] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [processedImageId, setProcessedImageId] = useState<string | null>(null)
-  const [selectedStyle, setSelectedStyle] = useState<string>("")
+  const [selectedStyle, setSelectedStyle] = useState<StyleId | undefined>(undefined)
   const { toast } = useToast()
   const isModal = mode === 'modal'
   const viewerRef = useRef<HTMLDivElement>(null)
@@ -187,12 +188,15 @@ export function ImageGenerator({
     setImageKey((prev) => prev + 1)
 
     try {
-      console.log("🎨 Generating image with prompt:", prompt)
+      // Construir el prompt final con el estilo aplicado
+      const finalPrompt = buildPrompt(prompt, selectedStyle)
+      console.log("🎨 Generating image with prompt:", finalPrompt)
+      if (selectedStyle) {
+        console.log("🎨 Style applied:", selectedStyle)
+      }
 
-      // Usar el prompt directamente sin optimización en el cliente
-      // La optimización se hace en el servidor en /api/generate-image
-      console.log("📝 Using prompt directly (optimization handled server-side)")
-      setOptimizedPrompt(prompt.trim())
+      // Usar el prompt con estilo aplicado
+      setOptimizedPrompt(finalPrompt)
       setIsOptimizing(false)
 
       console.log("📡 Making request to /api/generate-image...")
@@ -202,10 +206,10 @@ export function ImageGenerator({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt: prompt.trim(),
+          prompt: buildPrompt(prompt, selectedStyle), // Aplicar estilo al prompt
           n: 1,
-          includeBase64: true, // Cambiar a true para obtener base64
-          size: getSizeParams(), // Agregar parámetros de tamaño
+          includeBase64: true,
+          size: getSizeParams(),
         }),
       })
 
