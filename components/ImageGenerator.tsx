@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
@@ -32,6 +32,8 @@ import { getAllArtisticStyles } from "@/lib/advanced-prompt-optimizer"
 // import { optimizePrompt } from "@/lib/gemini" // Removed - optimization handled server-side
 import Image from "next/image"
 import Link from "next/link"
+import { ExamplesCarousel } from "@/components/ExamplesCarousel"
+import { StylesCarousel } from "@/components/StylesCarousel"
 
 interface ImageGeneratorProps {
   onImageGenerated?: (imageUrl: string) => void
@@ -59,8 +61,10 @@ export function ImageGenerator({
   const [contentPolicyErrorMessage, setContentPolicyErrorMessage] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [processedImageId, setProcessedImageId] = useState<string | null>(null)
+  const [selectedStyle, setSelectedStyle] = useState<string>("")
   const { toast } = useToast()
   const isModal = mode === 'modal'
+  const viewerRef = useRef<HTMLDivElement>(null)
 
   // Asegurar sesión anónima antes de generar/procesar
   useEffect(() => {
@@ -271,6 +275,13 @@ export function ImageGenerator({
         title: "¡Imagen generada!",
         description: `Tu diseño está listo (${selectedSize}). Optimizado con IA.`,
       })
+
+      // Auto-scroll a visor en mobile tras generar
+      if (window.innerWidth < 1024 && viewerRef.current) {
+        setTimeout(() => {
+          viewerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+        }, 500)
+      }
     } catch (error) {
       console.error("❌ Error generating image:", error)
       toast({
@@ -389,6 +400,18 @@ export function ImageGenerator({
     }
   }
 
+  const handleExampleClick = (example: string) => {
+    setPrompt(example)
+  }
+
+  const handleStyleSelect = (styleId: string) => {
+    setSelectedStyle(styleId)
+    const style = novamenteStyles.find(s => s.key === styleId)
+    if (style) {
+      addNovamenteStyle(style)
+    }
+  }
+
   const addNovamenteStyle = (style: any) => {
     const currentPrompt = prompt.trim()
     const styleText = `estilo ${style.name.toLowerCase()}`
@@ -470,123 +493,74 @@ export function ImageGenerator({
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Columna izquierda - Formulario */}
-        <div className="space-y-6">
-          {/* Área de texto principal */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="prompt" className="text-sm font-medium">
-                Describe tu diseño
-              </label>
-              <Textarea
-                id="prompt"
-                placeholder="Ej: Un león majestuoso con corona dorada, fondo negro..."
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="min-h-[120px] resize-none"
-                disabled={isGenerating}
-              />
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Zap className="h-3 w-3" />
-                <span>Tu prompt será optimizado automáticamente con IA</span>
-              </div>
-            </div>
-
-            {/* Selector de resolución */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                <Label className="text-sm font-medium">Resolución de imagen</Label>
-              </div>
-              <RadioGroup value={selectedSize} onValueChange={setSelectedSize} className="space-y-2">
-                {sizeOptions.map((option) => (
-                  <div key={option.value} className="flex items-center space-x-2">
-                    <RadioGroupItem value={option.value} id={option.value} />
-                    <Label htmlFor={option.value} className="flex-1 cursor-pointer">
-                      <div className="font-medium">{option.label}</div>
-                      <div className="text-xs text-muted-foreground">{option.description}</div>
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </div>
-
-            {/* Botón de generación */}
-            <Button onClick={generateImage} disabled={isGenerating || !prompt.trim()} className="w-full">
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isOptimizing ? "Optimizando con IA..." : "Generando imagen..."}
-                </>
-              ) : (
-                <>
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  Generar con IA ({selectedSize})
-                </>
-              )}
-            </Button>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+        {/* Columna izquierda - Formulario compacto */}
+        <div className="flex flex-col gap-4">
+          {/* Área de texto principal - compacta */}
+          <div>
+            <label htmlFor="prompt" className="block text-sm text-zinc-300 mb-1 font-medium">
+              Describe tu diseño
+            </label>
+            <Textarea
+              id="prompt"
+              placeholder="Ej: Un león majestuoso con corona dorada, fondo negro..."
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              className="w-full resize-none h-20 max-h-24 rounded-md bg-zinc-900 border border-zinc-800 px-3 py-2 text-zinc-100 placeholder:text-zinc-500"
+              disabled={isGenerating}
+            />
+            <p className="mt-1 text-xs text-zinc-500">Tu prompt será optimizado automáticamente con IA.</p>
           </div>
 
-          {/* Ejemplos rápidos */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium">Ejemplos rápidos</h3>
-            <div className="space-y-2">
-              {quickExamples.map((example, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  className="w-full justify-start text-left h-auto py-3 px-4 bg-transparent"
-                  onClick={() => setPrompt(example)}
-                  disabled={isGenerating}
-                >
-                  <span className="text-sm">{example}</span>
-                </Button>
-              ))}
-            </div>
+          {/* Resoluciones - fila compacta */}
+          <div className="flex flex-wrap items-center gap-2">
+            {sizeOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setSelectedSize(option.value)}
+                className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                  selectedSize === option.value
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-zinc-700/70 bg-zinc-900/60 text-zinc-200 hover:bg-zinc-800"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
 
+          {/* Carrusel de ejemplos */}
+          <ExamplesCarousel onExampleClick={handleExampleClick} />
 
-          {/* Estilos Artísticos NovaMente */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium">Estilos Artísticos NovaMente</h3>
-            <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-              {novamenteStyles.map((style) => (
-                <Button
-                  key={style.key}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => addNovamenteStyle(style)}
-                  disabled={isGenerating}
-                  className="text-xs h-auto p-3 justify-start text-left"
-                >
-                  <div className="flex flex-col items-start w-full">
-                    <div className="flex items-center justify-between w-full">
-                      <span className="font-medium">{style.name}</span>
-                      {style.printOptimized && (
-                        <Badge variant="secondary" className="text-xs ml-2">
-                          ✓
-                        </Badge>
-                      )}
-                    </div>
-                    <span className="text-xs text-muted-foreground text-left mt-1">
-                      {style.description}
-                    </span>
-                  </div>
-                </Button>
-              ))}
-            </div>
-          </div>
+          {/* Carrusel de estilos */}
+          <StylesCarousel onStyleSelect={handleStyleSelect} selectedStyle={selectedStyle} />
+
+          {/* CTA Generar - compacto */}
+          <Button 
+            onClick={generateImage} 
+            disabled={isGenerating || !prompt.trim()} 
+            className="mt-2 inline-flex items-center justify-center rounded-lg bg-violet-600 px-4 py-2 text-white hover:bg-violet-500 disabled:opacity-60"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isOptimizing ? "Optimizando..." : "Generando..."}
+              </>
+            ) : (
+              <>
+                <Wand2 className="mr-2 h-4 w-4" />
+                Generar con IA
+              </>
+            )}
+          </Button>
         </div>
 
-        {/* Columna derecha - Imagen generada */}
-        <div className="space-y-4">
-          <Card className="overflow-hidden">
-            <CardContent className="p-0">
-              <div
-                className={`${getImageContainerClasses()} bg-muted border-2 border-dashed border-muted-foreground/25 flex items-center justify-center`}
-              >
+        {/* Columna derecha - Visor */}
+        <div ref={viewerRef} className="min-h-[60vh] lg:min-h-[72vh] rounded-xl border border-zinc-800 bg-zinc-950/50">
+          <div className="h-full p-4">
+            <div
+              className={`${getImageContainerClasses()} bg-muted border-2 border-dashed border-muted-foreground/25 flex items-center justify-center h-full`}
+            >
                 {generatedImage && !imageError ? (
                   <div className="relative w-full h-full">
                     <Image
@@ -639,47 +613,46 @@ export function ImageGenerator({
                     <p className="text-xs mt-2 opacity-75">Optimizado con IA • {selectedSize}</p>
                   </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Acciones de la imagen */}
-          {generatedImage && !imageError && (
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleUseDesign} 
-                disabled={isProcessing}
-                className="flex-1"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Procesando...
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Usar este Diseño
-                  </>
-                )}
-              </Button>
-              <Button variant="outline" onClick={handleDownload}>
-                <Download className="h-4 w-4" />
-              </Button>
             </div>
-          )}
 
-          {/* Mostrar prompt optimizado */}
-          {optimizedPrompt && optimizedPrompt !== prompt && (
-            <div className="p-3 bg-muted rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-4 w-4 text-primary" />
-                <p className="text-sm font-medium text-primary">Prompt optimizado con IA:</p>
+            {/* Acciones de la imagen */}
+            {generatedImage && !imageError && (
+              <div className="flex gap-2 mt-4">
+                <Button 
+                  onClick={handleUseDesign} 
+                  disabled={isProcessing}
+                  className="flex-1"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Usar este Diseño
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" onClick={handleDownload}>
+                  <Download className="h-4 w-4" />
+                </Button>
               </div>
-              <p className="text-sm text-muted-foreground">{optimizedPrompt}</p>
-              <div className="mt-2 text-xs text-muted-foreground">✅ Optimizado por Gemini para mejores resultados</div>
-            </div>
-          )}
+            )}
+
+            {/* Mostrar prompt optimizado */}
+            {optimizedPrompt && optimizedPrompt !== prompt && (
+              <div className="p-3 bg-muted rounded-lg mt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-medium text-primary">Prompt optimizado con IA:</p>
+                </div>
+                <p className="text-sm text-muted-foreground">{optimizedPrompt}</p>
+                <div className="mt-2 text-xs text-muted-foreground">✅ Optimizado por Gemini para mejores resultados</div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

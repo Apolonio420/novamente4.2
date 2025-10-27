@@ -80,7 +80,7 @@ export function DesignPageClient({ imageId }: DesignPageClientProps) {
 
         // Redirigir a la página de diseño principal después de un error
         setTimeout(() => {
-          router.push("/design")
+          router.push("/#generator-section")
         }, 3000)
       } finally {
         setLoading(false)
@@ -203,7 +203,7 @@ export function DesignPageClient({ imageId }: DesignPageClientProps) {
             <h2 className="text-xl font-semibold mb-2">Error cargando diseño</h2>
             <p className="text-muted-foreground mb-4">{error}</p>
             <button
-              onClick={() => router.push("/design")}
+              onClick={() => router.push("/#generator-section")}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             >
               Volver al generador
@@ -225,7 +225,7 @@ export function DesignPageClient({ imageId }: DesignPageClientProps) {
               No se pudo encontrar el diseño solicitado
             </p>
             <button
-              onClick={() => router.push("/design")}
+              onClick={() => router.push("/#generator-section")}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             >
               Crear nuevo diseño

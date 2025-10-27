@@ -1442,7 +1442,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
-        <Link href="/design">
+        <Link href="/#generator-section">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Volver

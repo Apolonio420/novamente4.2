@@ -173,8 +173,8 @@ export default function ProductsPage() {
         {products.map((product, index) => (
           <div key={product.id} className="group">
             <div className="border rounded-xl overflow-hidden bg-card hover:shadow-lg transition-all duration-300">
-              {/* Imagen principal clickeable - va a /design */}
-              <Link href="/design" className="block">
+              {/* Imagen principal clickeable - va a #generator-section */}
+              <Link href="/#generator-section" className="block" data-cta="products-page-image-click">
                 <div className="aspect-square relative overflow-hidden cursor-pointer">
                   <Image
                     src={product.images.main || "/placeholder.svg"}
