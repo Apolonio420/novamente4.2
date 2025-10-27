@@ -1,13 +1,15 @@
 "use client"
 
+import { memo, useMemo, useCallback } from "react"
+
 interface StylesCarouselProps {
   onStyleSelect?: (styleId: string) => void
   selectedStyle?: string
   compact?: boolean
 }
 
-export function StylesCarousel({ onStyleSelect, selectedStyle, compact = false }: StylesCarouselProps) {
-  const styles = [
+function _StylesCarousel({ onStyleSelect, selectedStyle, compact = false }: StylesCarouselProps) {
+  const styles = useMemo(() => [
     { id: "linear-min", name: "Minimalista Lineal", desc: "Líneas limpias, formas simples" },
     { id: "line-art", name: "Line Art", desc: "Trazos finos, estilo tatuaje" },
     { id: "sticker", name: "Sticker Style", desc: "Colores planos, borde grueso" },
@@ -22,7 +24,7 @@ export function StylesCarousel({ onStyleSelect, selectedStyle, compact = false }
     if (onStyleSelect) {
       onStyleSelect(styleId)
     }
-  }
+  }, [onStyleSelect])
 
   return (
     <div>
@@ -48,3 +50,5 @@ export function StylesCarousel({ onStyleSelect, selectedStyle, compact = false }
     </div>
   )
 }
+
+export const StylesCarousel = memo(_StylesCarousel)

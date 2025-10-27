@@ -1,12 +1,14 @@
 "use client"
 
+import { memo, useMemo } from "react"
+
 interface ExamplesCarouselProps {
   onExampleClick?: (example: string) => void
   compact?: boolean
 }
 
-export function ExamplesCarousel({ onExampleClick, compact = false }: ExamplesCarouselProps) {
-  const examples = [
+function _ExamplesCarousel({ onExampleClick, compact = false }: ExamplesCarouselProps) {
+  const examples = useMemo(() => [
     "Un león majestuoso con corona dorada",
     "Mandala geométrico intrincado",
     "Gato ninja con katana",
@@ -17,7 +19,7 @@ export function ExamplesCarousel({ onExampleClick, compact = false }: ExamplesCa
     "Flor de loto zen",
     "Calavera mexicana colorida",
     "Montañas nevadas minimalistas"
-  ]
+  ], [])
 
   const handleExampleClick = (example: string) => {
     if (onExampleClick) {
@@ -45,3 +47,5 @@ export function ExamplesCarousel({ onExampleClick, compact = false }: ExamplesCa
     </div>
   )
 }
+
+export const ExamplesCarousel = memo(_ExamplesCarousel)
