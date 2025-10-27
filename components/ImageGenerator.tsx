@@ -673,44 +673,43 @@ export function ImageGenerator({
             )}
           </div>
 
-            {/* Acciones de la imagen */}
-            {generatedImage && !imageError && (
-              <div className="flex gap-2 mt-4">
-                <Button 
-                  onClick={handleUseDesign} 
-                  disabled={isProcessing}
-                  className="flex-1"
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Procesando...
-                    </>
-                  ) : (
-                    <>
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Usar este Diseño
-                    </>
-                  )}
-                </Button>
-                <Button variant="outline" onClick={handleDownload}>
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+          {/* Acciones de la imagen */}
+          {generatedImage && !imageError && (
+            <div className="flex gap-2 mt-4">
+              <Button 
+                onClick={handleUseDesign} 
+                disabled={isProcessing}
+                className="flex-1"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Usar este Diseño
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" onClick={handleDownload}>
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
 
-            {/* Mostrar prompt optimizado */}
-            {optimizedPrompt && optimizedPrompt !== prompt && (
-              <div className="p-3 bg-muted rounded-lg mt-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Zap className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-medium text-primary">Prompt optimizado con IA:</p>
-                </div>
-                <p className="text-sm text-muted-foreground">{optimizedPrompt}</p>
-                <div className="mt-2 text-xs text-muted-foreground">✅ Optimizado por Gemini para mejores resultados</div>
+          {/* Mostrar prompt optimizado */}
+          {optimizedPrompt && optimizedPrompt !== prompt && (
+            <div className="p-3 bg-muted rounded-lg mt-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="h-4 w-4 text-primary" />
+                <p className="text-sm font-medium text-primary">Prompt optimizado con IA:</p>
               </div>
-            )}
-          </div>
+              <p className="text-sm text-muted-foreground">{optimizedPrompt}</p>
+              <div className="mt-2 text-xs text-muted-foreground">✅ Optimizado por Gemini para mejores resultados</div>
+            </div>
+          )}
         </div>
       </div>
 
