@@ -2,25 +2,26 @@
 export type RegionKey = "R1_center" | "R1_left" | "R2_center" | "R3_center";
 export type SideKey = "front" | "back";
 
-interface Area {
-  wPct: number;  // ancho en porcentaje del total de la prenda
-  hPct: number;  // alto en porcentaje del total de la prenda
-  xPct: number; // posición X (centro) en porcentaje
-  yPct: number; // posición Y (centro) en porcentaje
+interface PrintArea {
+  wPct: number;  // ancho del estampado (% del ancho de la prenda)
+  hPct: number;  // alto del estampado (% del alto de la prenda)
+  xPct: number; // posición horizontal (% desde la izquierda)
+  yPct: number; // posición vertical (% desde arriba)
 }
 
-export const PRINT_AREAS: Record<SideKey, Record<RegionKey, Area>> = {
+// Proporciones calibradas según imágenes modelo con recuadro rojo
+export const PRINT_AREAS: Record<SideKey, Record<RegionKey, PrintArea>> = {
   front: {
-    R1_center: { wPct: 16, hPct: 16, xPct: 42, yPct: 26 },
-    R1_left:   { wPct: 16, hPct: 16, xPct: 28, yPct: 26 },
-    R2_center: { wPct: 28, hPct: 28, xPct: 36, yPct: 22 },
-    R3_center: { wPct: 44, hPct: 44, xPct: 28, yPct: 20 },
+    R1_center: { wPct: 12, hPct: 12, xPct: 44, yPct: 28 }, // pequeño tipo bolsillo
+    R1_left:   { wPct: 12, hPct: 12, xPct: 28, yPct: 28 },
+    R2_center: { wPct: 24, hPct: 24, xPct: 38, yPct: 24 }, // mediano pechera estándar
+    R3_center: { wPct: 38, hPct: 38, xPct: 31, yPct: 20 }  // grande torso completo
   },
   back: {
-    R1_center: { wPct: 16, hPct: 16, xPct: 42, yPct: 26 },
-    R1_left:   { wPct: 16, hPct: 16, xPct: 28, yPct: 26 },
-    R2_center: { wPct: 28, hPct: 28, xPct: 36, yPct: 22 },
-    R3_center: { wPct: 44, hPct: 44, xPct: 28, yPct: 20 },
+    R1_center: { wPct: 12, hPct: 12, xPct: 44, yPct: 30 }, // igual al frente con ajuste vertical
+    R1_left:   { wPct: 12, hPct: 12, xPct: 28, yPct: 30 },
+    R2_center: { wPct: 24, hPct: 24, xPct: 38, yPct: 26 },
+    R3_center: { wPct: 38, hPct: 38, xPct: 31, yPct: 22 }
   }
 };
 
