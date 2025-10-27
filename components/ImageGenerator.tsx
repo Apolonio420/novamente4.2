@@ -48,6 +48,10 @@ export function ImageGenerator({
   isAuthenticated = false,
   mode = 'standalone',
 }: ImageGeneratorProps) {
+  // Estados del generador
+  type GenState = "idle" | "generating" | "ready"
+  const [genState, setGenState] = useState<GenState>("idle")
+  
   const [prompt, setPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [isOptimizing, setIsOptimizing] = useState(false)
@@ -65,6 +69,29 @@ export function ImageGenerator({
   const { toast } = useToast()
   const isModal = mode === 'modal'
   const viewerRef = useRef<HTMLDivElement>(null)
+  
+  // Reset inteligente de estado
+  useEffect(() => {
+    setGenState("idle")
+  }, [prompt, selectedStyle, selectedSize])
+  
+  // Efecto para flash y scroll cuando imagen está lista
+  useEffect(() => {
+    if (genState === "ready" && viewerRef.current) {
+      // Desktop: flash suave
+      viewerRef.current.classList.add("ring-2", "ring-emerald-500/60")
+      setTimeout(() => {
+        viewerRef.current?.classList.remove("ring-2", "ring-emerald-500/60")
+      }, 800)
+      
+      // Mobile: scroll automático
+      if (window.innerWidth < 1024) {
+        setTimeout(() => {
+          viewerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+        }, 100)
+      }
+    }
+  }, [genState])
 
   // Asegurar sesión anónima antes de generar/procesar
   useEffect(() => {
@@ -101,11 +128,23 @@ export function ImageGenerator({
   const getImageContainerClasses = () => {
     switch (selectedSize) {
       case "1792x1024":
-        return "aspect-[16/9]" // Horizontal
+        return "aspect-[1792/1024]" // Horizontal
       case "1024x1792":
-        return "aspect-[9/16]" // Vertical
+        return "aspect-[1024/1792]" // Vertical
       default:
         return "aspect-square" // Cuadrada
+    }
+  }
+  
+  // Mapeo de tamaños a parámetros para la API
+  const getSizeParams = () => {
+    switch (selectedSize) {
+      case "1792x1024":
+        return { width: 1792, height: 1024 }
+      case "1024x1792":
+        return { width: 1024, height: 1792 }
+      default:
+        return { width: 1024, height: 1024 }
     }
   }
 
@@ -139,6 +178,7 @@ export function ImageGenerator({
       return
     }
 
+    setGenState("generating")
     setIsGenerating(true)
     setIsOptimizing(true)
     setGeneratedImage(null)
@@ -165,6 +205,7 @@ export function ImageGenerator({
           prompt: prompt.trim(),
           n: 1,
           includeBase64: true, // Cambiar a true para obtener base64
+          size: getSizeParams(), // Agregar parámetros de tamaño
         }),
       })
 
@@ -271,19 +312,19 @@ export function ImageGenerator({
         }
       }
 
+      // Cambiar estado a ready
+      setGenState("ready")
+      
+      // Reset a idle después de 3 segundos
+      setTimeout(() => setGenState("idle"), 3000)
+      
       toast({
         title: "¡Imagen generada!",
         description: `Tu diseño está listo (${selectedSize}). Optimizado con IA.`,
       })
-
-      // Auto-scroll a visor en mobile tras generar
-      if (window.innerWidth < 1024 && viewerRef.current) {
-        setTimeout(() => {
-          viewerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-        }, 500)
-      }
     } catch (error) {
       console.error("❌ Error generating image:", error)
+      setGenState("idle")
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "No se pudo generar la imagen",
@@ -409,6 +450,10 @@ export function ImageGenerator({
     const style = novamenteStyles.find(s => s.key === styleId)
     if (style) {
       addNovamenteStyle(style)
+      toast({
+        title: "Estilo aplicado",
+        description: `${style.name}`,
+      })
     }
   }
 
@@ -535,16 +580,27 @@ export function ImageGenerator({
           {/* Carrusel de estilos */}
           <StylesCarousel onStyleSelect={handleStyleSelect} selectedStyle={selectedStyle} />
 
-          {/* CTA Generar - compacto */}
+          {/* CTA Generar - compacto con estados */}
           <Button 
             onClick={generateImage} 
-            disabled={isGenerating || !prompt.trim()} 
-            className="mt-2 inline-flex items-center justify-center rounded-lg bg-violet-600 px-4 py-2 text-white hover:bg-violet-500 disabled:opacity-60"
+            disabled={genState === "generating" || !prompt.trim()} 
+            className={`mt-2 inline-flex items-center justify-center rounded-lg px-4 py-2 transition-colors disabled:opacity-60 ${
+              genState === "generating"
+                ? "bg-zinc-700 text-zinc-300"
+                : genState === "ready"
+                ? "bg-emerald-600 text-white hover:bg-emerald-500"
+                : "bg-violet-600 text-white hover:bg-violet-500"
+            }`}
           >
-            {isGenerating ? (
+            {genState === "generating" ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {isOptimizing ? "Optimizando..." : "Generando..."}
+              </>
+            ) : genState === "ready" ? (
+              <>
+                <Zap className="mr-2 h-4 w-4" />
+                Imagen lista
               </>
             ) : (
               <>
