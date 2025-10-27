@@ -18,9 +18,9 @@ function _StylesCarousel({ onStyleSelect, selectedStyle, compact = false }: Styl
     { id: "vintage", name: "Vintage", desc: "Estilo retro, colores sepia" },
     { id: "neon", name: "Neon", desc: "Colores brillantes, efectos glow" },
     { id: "sketch", name: "Sketch", desc: "Boceto a lápiz, líneas sueltas" }
-  ]
+  ], [])
 
-  const handleStyleClick = (styleId: string) => {
+  const handleStyleClick = useCallback((styleId: string) => {
     if (onStyleSelect) {
       onStyleSelect(styleId)
     }
