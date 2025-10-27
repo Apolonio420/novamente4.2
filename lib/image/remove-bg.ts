@@ -49,6 +49,16 @@ export async function removeBackground(inputBuffer: Buffer): Promise<Buffer> {
     return processed
   } catch (error) {
     console.error("❌ Error removing background:", error)
+    
+    // Importar handleError dinámicamente para evitar problemas en server bundles
+    try {
+      await import("@/lib/ui/errors").then(({ handleError }) =>
+        handleError({ error: "REMOVE_BG_FAILED", message: "No se pudo quitar el fondo." })
+      )
+    } catch (e) {
+      console.error("Error importing handleError:", e)
+    }
+    
     // Retornar imagen original si falla todo
     return inputBuffer
   }
