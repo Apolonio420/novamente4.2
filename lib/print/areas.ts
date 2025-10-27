@@ -29,7 +29,7 @@ export const PRINT_AREAS: Record<SideKey, Record<RegionKey, PrintArea>> = {
  * Convierte porcentajes de área a píxeles absolutos
  */
 export function areaToPixels(
-  area: Area,
+  area: PrintArea,
   garmentWidth: number,
   garmentHeight: number
 ): { 
@@ -44,5 +44,20 @@ export function areaToPixels(
     x: Math.round(area.xPct / 100 * garmentWidth),
     y: Math.round(area.yPct / 100 * garmentHeight),
   }
+}
+
+/**
+ * Obtiene el área de impresión con fallback seguro
+ */
+export function getPrintArea(
+  side: SideKey,
+  region: RegionKey
+): PrintArea | null {
+  const area = PRINT_AREAS[side]?.[region]
+  if (area) return area
+  
+  // Fallback a R2_center si la región no existe
+  console.warn(`⚠️ Región inválida: ${side}/${region}, usando fallback R2_center`)
+  return PRINT_AREAS[side]?.["R2_center"] || null
 }
 

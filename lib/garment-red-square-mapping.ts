@@ -63,6 +63,7 @@ export function getRedSquareGarmentImage(
       'BuzoOver_N_Frente_R2': 18,
       'BuzoOver_N_Frente_R3': 54, // Imagen real R3
       'BuzoOver_N_Dorso_R1': 15,
+      'BuzoOver_N_Dorso_R1C': 15, // R1 centro en dorso
       'BuzoOver_N_Dorso_R2': 14,
       'BuzoOver_N_Dorso_R3': 1,
       'BuzoOver_G_Frente_R1C': 3,
@@ -70,6 +71,7 @@ export function getRedSquareGarmentImage(
       'BuzoOver_G_Frente_R2': 2,
       'BuzoOver_G_Frente_R3': 2, // R3 no disponible para frente, usar R2
       'BuzoOver_G_Dorso_R1': 13,
+      'BuzoOver_G_Dorso_R1C': 13, // R1 centro en dorso
       'BuzoOver_G_Dorso_R2': 12,
       'BuzoOver_G_Dorso_R3': 11,
       'BuzoOver_C_Frente_R1C': 6,
@@ -77,6 +79,7 @@ export function getRedSquareGarmentImage(
       'BuzoOver_C_Frente_R2': 5,
       'BuzoOver_C_Frente_R3': 5, // R3 no disponible para frente, usar R2
       'BuzoOver_C_Dorso_R1': 10,
+      'BuzoOver_C_Dorso_R1C': 10, // R1 centro en dorso
       'BuzoOver_C_Dorso_R2': 9,
       'BuzoOver_C_Dorso_R3': 8,
       'BuzoOver_M_Frente_R1C': 23,
@@ -84,6 +87,7 @@ export function getRedSquareGarmentImage(
       'BuzoOver_M_Frente_R2': 22,
       'BuzoOver_M_Frente_R3': 22, // R3 no disponible para frente, usar R2
       'BuzoOver_M_Dorso_R1': 21,
+      'BuzoOver_M_Dorso_R1C': 21, // R1 centro en dorso
       'BuzoOver_M_Dorso_R2': 20,
       'BuzoOver_M_Dorso_R3': 19,
       // BuzoOver_B (Blanco/Crema) - usar imágenes existentes como fallback
@@ -92,6 +96,7 @@ export function getRedSquareGarmentImage(
       'BuzoOver_B_Frente_R2': 18, // Usar N como fallback
       'BuzoOver_B_Frente_R3': 18, // Usar N como fallback
       'BuzoOver_B_Dorso_R1': 15, // Usar N como fallback
+      'BuzoOver_B_Dorso_R1C': 15, // R1 centro en dorso
       'BuzoOver_B_Dorso_R2': 14, // Usar N como fallback
       'BuzoOver_B_Dorso_R3': 1, // Usar N como fallback
       'RemeraOver_M_Frente_R1C': 25,
@@ -99,6 +104,7 @@ export function getRedSquareGarmentImage(
       'RemeraOver_M_Frente_R2': 27,
       'RemeraOver_M_Frente_R3': 28,
       'RemeraOver_M_Dorso_R1': 31,
+      'RemeraOver_M_Dorso_R1C': 31, // R1 centro en dorso
       'RemeraOver_M_Dorso_R2': 30,
       'RemeraOver_M_Dorso_R3': 29,
       'RemeraOver_B_Frente_R1C': 45,
@@ -106,6 +112,7 @@ export function getRedSquareGarmentImage(
       'RemeraOver_B_Frente_R2': 43,
       'RemeraOver_B_Frente_R3': 42,
       'RemeraOver_B_Dorso_R1': 39,
+      'RemeraOver_B_Dorso_R1C': 39, // R1 centro en dorso
       'RemeraOver_B_Dorso_R2': 40,
       'RemeraOver_B_Dorso_R3': 41,
       'RemeraOver_N_Frente_R1C': 56,
@@ -113,6 +120,7 @@ export function getRedSquareGarmentImage(
       'RemeraOver_N_Frente_R2': 53,
       'RemeraOver_N_Frente_R3': 54,
       'RemeraOver_N_Dorso_R1': 59,
+      'RemeraOver_N_Dorso_R1C': 59, // R1 centro en dorso
       'RemeraOver_N_Dorso_R2': 57,
       'RemeraOver_N_Dorso_R3': 58,
       'RemeraClassic_B_Frente_R1C': 37,
@@ -120,6 +128,7 @@ export function getRedSquareGarmentImage(
       'RemeraClassic_B_Frente_R2': 36,
       'RemeraClassic_B_Frente_R3': 35,
       'RemeraClassic_B_Dorso_R1': 33,
+      'RemeraClassic_B_Dorso_R1C': 33, // R1 centro en dorso
       'RemeraClassic_B_Dorso_R2': 32,
       'RemeraClassic_B_Dorso_R3': 34,
       'RemeraClassic_N_Frente_R1C': 49,
@@ -127,6 +136,7 @@ export function getRedSquareGarmentImage(
       'RemeraClassic_N_Frente_R2': 52,
       'RemeraClassic_N_Frente_R3': 51,
       'RemeraClassic_N_Dorso_R1': 46,
+      'RemeraClassic_N_Dorso_R1C': 46, // R1 centro en dorso
       'RemeraClassic_N_Dorso_R2': 47,
       'RemeraClassic_N_Dorso_R3': 48,
     }
@@ -160,26 +170,39 @@ export function getAvailableRedSquareOptions(
 ): Array<{ size: 'R1' | 'R2' | 'R3', position?: 'center' | 'left', imagePath: string }> {
   const options = []
 
-  // R1 con posiciones
-  if (type === 'tshirt' || (type === 'hoodie' && side === 'front')) {
-    // R1 Centro
+  // R1 con posiciones - ahora habilitado para tshirt front/back
+  if (type === 'tshirt') {
+    // R1 Centro - disponible en front y back
     const r1CenterPath = getRedSquareGarmentImage(type, variant, color, side, 'R1', 'center')
     if (r1CenterPath) {
       options.push({ size: 'R1', position: 'center', imagePath: r1CenterPath })
     }
 
-    // R1 Izquierda (solo para front)
+    // R1 Izquierda - solo para front
     if (side === 'front') {
       const r1LeftPath = getRedSquareGarmentImage(type, variant, color, side, 'R1', 'left')
       if (r1LeftPath) {
         options.push({ size: 'R1', position: 'left', imagePath: r1LeftPath })
       }
     }
-  } else {
-    // R1 simple para back de hoodie
-    const r1Path = getRedSquareGarmentImage(type, variant, color, side, 'R1')
-    if (r1Path) {
-      options.push({ size: 'R1', imagePath: r1Path })
+  } else if (type === 'hoodie') {
+    // R1 para hoodie - front con posiciones, back simple
+    if (side === 'front') {
+      const r1CenterPath = getRedSquareGarmentImage(type, variant, color, side, 'R1', 'center')
+      if (r1CenterPath) {
+        options.push({ size: 'R1', position: 'center', imagePath: r1CenterPath })
+      }
+      
+      const r1LeftPath = getRedSquareGarmentImage(type, variant, color, side, 'R1', 'left')
+      if (r1LeftPath) {
+        options.push({ size: 'R1', position: 'left', imagePath: r1LeftPath })
+      }
+    } else {
+      // R1 simple para back de hoodie
+      const r1Path = getRedSquareGarmentImage(type, variant, color, side, 'R1')
+      if (r1Path) {
+        options.push({ size: 'R1', imagePath: r1Path })
+      }
     }
   }
 
