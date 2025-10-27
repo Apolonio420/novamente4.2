@@ -10,6 +10,7 @@ import { getClientSupabase } from "@/lib/auth-client"
 import { User, LogOut, Menu } from "lucide-react"
 import { Logo } from "./Logo"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { scrollToGenerator } from "@/lib/scrollToGenerator"
 
 export function Navbar() {
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -47,7 +48,7 @@ export function Navbar() {
     { label: "PRODUCTOS", href: "/products" },
     { label: "ESTILOS", href: "/styles" },
     { label: "MERCH", href: "/merch" },
-    { label: "DISEÑA", href: "/design" },
+    { label: "DISEÑA", href: "/#generator-section", isButton: true },
   ]
 
   return (
@@ -58,15 +59,29 @@ export function Navbar() {
         </div>
 
         <nav className="hidden md:flex items-center gap-8">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-sm tracking-widest font-medium uppercase transition-colors hover:text-primary"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            if ((item as any).isButton) {
+              return (
+                <button
+                  key={item.href}
+                  onClick={scrollToGenerator}
+                  className="text-sm tracking-widest font-medium uppercase transition-colors hover:text-primary"
+                  data-cta="header-design"
+                >
+                  {item.label}
+                </button>
+              )
+            }
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-sm tracking-widest font-medium uppercase transition-colors hover:text-primary"
+              >
+                {item.label}
+              </Link>
+            )
+          })}
         </nav>
 
         <div className="flex items-center gap-4">
@@ -108,15 +123,33 @@ export function Navbar() {
                 <div className="flex items-center justify-center mb-4">
                   <Logo />
                 </div>
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="text-lg tracking-widest font-medium uppercase transition-colors hover:text-primary text-center"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+                {navItems.map((item) => {
+                  if ((item as any).isButton) {
+                    return (
+                      <button
+                        key={item.href}
+                        onClick={() => {
+                          const sheet = document.querySelector('[data-state="open"]')
+                          if (sheet) (sheet as any).click()
+                          scrollToGenerator()
+                        }}
+                        className="text-lg tracking-widest font-medium uppercase transition-colors hover:text-primary text-center"
+                        data-cta="header-design-mobile"
+                      >
+                        {item.label}
+                      </button>
+                    )
+                  }
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="text-lg tracking-widest font-medium uppercase transition-colors hover:text-primary text-center"
+                    >
+                      {item.label}
+                    </Link>
+                  )
+                })}
               </div>
             </SheetContent>
           </Sheet>

@@ -104,7 +104,7 @@ export default function CartPage() {
           <ShoppingBag className="mx-auto h-24 w-24 text-muted-foreground mb-6" />
           <h1 className="text-3xl font-bold mb-4">Tu carrito está vacío</h1>
           <p className="text-muted-foreground mb-8">¡Agrega algunos productos increíbles para comenzar!</p>
-          <Link href="/design">
+          <Link href="/#generator-section" data-cta="cart-empty-continue-designing">
             <Button size="lg">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Continuar Diseñando
@@ -358,7 +358,7 @@ export default function CartPage() {
                   Proceder al Checkout
                 </Button>
 
-                <Link href="/design" className="block">
+                <Link href="/#generator-section" className="block" data-cta="cart-with-items-continue-designing">
                   <Button variant="outline" className="w-full bg-transparent">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Continuar Diseñando

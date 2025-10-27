@@ -181,7 +181,7 @@ export default async function Home() {
       </section>
 
       {/* Generador de Imágenes */}
-      <section id="generator" className="py-20 px-4 bg-gradient-to-b from-novamente-black to-background">
+      <section id="generator-section" className="py-20 px-4 bg-gradient-to-b from-novamente-black to-background scroll-mt-24">
         <div className="container mx-auto">
           <h2 className="novamente-heading text-3xl md:text-4xl mb-12 text-center">GENERADOR DE DISEÑOS</h2>
           <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 md:p-8 shadow-lg border border-white/10">
@@ -240,7 +240,7 @@ export default async function Home() {
           <div className="grid md:grid-cols-3 gap-8">
             {/* Hoodie Preview */}
             <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300">
-              <Link href="/design" className="block">
+              <Link href="/#generator-section" className="block">
                 <div className="aspect-square relative overflow-hidden cursor-pointer">
                   <Image
                     src="/products/hoodie-negro-front.jpeg"
@@ -286,9 +286,9 @@ export default async function Home() {
                   Buzo oversize premium en algodón 100%, ideal para estampados DTG de alta calidad.
                 </p>
 
-                {/* Botón personalizar - va a /design */}
+                {/* Botón personalizar - va a #generator-section */}
                 <div className="flex gap-2">
-                  <Link href="/design" className="flex-1">
+                  <Link href="/#generator-section" className="flex-1" data-cta="product-card-hoodie">
                     <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-xl py-3 px-6 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
                       <Sparkles className="w-4 h-4 mr-2" />
                       Personalizar Ahora
@@ -300,7 +300,7 @@ export default async function Home() {
 
             {/* T-Shirt Preview */}
             <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300">
-              <Link href="/design" className="block">
+              <Link href="/#generator-section" className="block">
                 <div className="aspect-square relative overflow-hidden cursor-pointer">
                   <Image
                     src="/products/aura-tshirt-blanco-front.jpeg"
@@ -346,9 +346,9 @@ export default async function Home() {
                   Remera oversize en algodón peinado, base perfecta para diseños vibrantes.
                 </p>
 
-                {/* Botón personalizar - va a /design */}
+                {/* Botón personalizar - va a #generator-section */}
                 <div className="flex gap-2">
-                  <Link href="/design" className="flex-1">
+                  <Link href="/#generator-section" className="flex-1" data-cta="product-card-tshirt">
                     <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-xl py-3 px-6 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
                       <Sparkles className="w-4 h-4 mr-2" />
                       Personalizar Ahora
@@ -360,7 +360,7 @@ export default async function Home() {
 
             {/* Canvas Preview */}
             <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300">
-              <Link href="/design" className="block">
+              <Link href="/#generator-section" className="block">
                 <div className="aspect-square relative overflow-hidden cursor-pointer">
                   <Image
                     src="/products/lienzo-main.png"
@@ -406,9 +406,9 @@ export default async function Home() {
                   Obra impresa en lienzo textil, perfecta para decorar con tu arte personalizado.
                 </p>
 
-                {/* Botón personalizar - va a /design */}
+                {/* Botón personalizar - va a #generator-section */}
                 <div className="flex gap-2">
-                  <Link href="/design" className="flex-1">
+                  <Link href="/#generator-section" className="flex-1" data-cta="product-card-lienzo">
                     <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-xl py-3 px-6 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
                       <Sparkles className="w-4 h-4 mr-2" />
                       Personalizar Ahora

@@ -282,10 +282,10 @@ export default function ProductsPage() {
                   </Tabs>
                 )}
 
-                {/* Botón personalizar mejorado - va a /design */}
+                {/* Botón personalizar mejorado - va a #generator-section */}
                 <div className="flex gap-2">
                   {product.available ? (
-                    <Link href="/design" className="flex-1">
+                    <Link href="/#generator-section" className="flex-1" data-cta="products-page-personalize">
                       <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-xl py-3 px-6 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
                         <Sparkles className="w-4 h-4 mr-2" />
                         Personalizar Ahora

@@ -1,6 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
+import { scrollToGenerator } from "@/lib/scrollToGenerator"
 
 interface ScrollButtonProps {
   children: ReactNode
@@ -8,11 +9,17 @@ interface ScrollButtonProps {
   targetId?: string
 }
 
-export function ScrollButton({ children, className, targetId = "generator" }: ScrollButtonProps) {
+export function ScrollButton({ children, className, targetId = "generator-section" }: ScrollButtonProps) {
   const handleClick = () => {
-    const element = document.getElementById(targetId)
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" })
+    if (targetId === "generator-section") {
+      // Use the new scrollToGenerator utility
+      scrollToGenerator()
+    } else {
+      // Fallback for custom targetId
+      const element = document.getElementById(targetId)
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" })
+      }
     }
   }
 

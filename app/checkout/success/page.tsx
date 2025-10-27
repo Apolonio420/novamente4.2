@@ -98,7 +98,7 @@ export default function CheckoutSuccessPage() {
                 </Button>
               </Link>
 
-              <Link href="/design" className="block">
+              <Link href="/#generator-section" className="block" data-cta="checkout-success-create-design">
                 <Button variant="outline" className="w-full bg-transparent">
                   Crear Otro Diseño
                 </Button>
