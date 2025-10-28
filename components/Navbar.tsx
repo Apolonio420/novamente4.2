@@ -47,7 +47,7 @@ export function Navbar() {
   const navItems = [
     { label: "PRODUCTOS", href: "/products" },
     { label: "ESTILOS", href: "/styles" },
-    { label: "MERCH", href: "/merch" },
+    { label: "MERCH", href: "/merchs" },
     { label: "DISEÑA", href: "/#generator-section", isButton: true },
   ]
 

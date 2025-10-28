@@ -35,8 +35,13 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/cart" className="text-white/60 hover:text-white">
-                  Carrito
+                <Link href="/merchs" className="text-white/60 hover:text-white">
+                  Merch B2B
+                </Link>
+              </li>
+              <li>
+                <Link href="/merch" className="text-white/60 hover:text-white">
+                  Catálogo
                 </Link>
               </li>
             </ul>

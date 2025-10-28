@@ -12,14 +12,29 @@ import { Background } from "@/components/ui/Background"
 const inter = Inter({ subsets: ["latin"], display: "swap" })
 
 export const metadata: Metadata = {
-  title: "Tienda Oficial de Novamente",
-  description: "Creá tu estilo único con inteligencia artificial. Prendas personalizadas de alta calidad.",
-  icons: {
-    icon: "/novamente-logo.png",
-    shortcut: "/novamente-logo.png",
-    apple: "/novamente-logo.png",
+  metadataBase: new URL("https://www.novamente.ar"),
+  title: { default: "Tienda Oficial de NovaMente", template: "%s · NovaMente" },
+  description:
+    "Creá tu estilo único con IA. Prendas personalizadas on-demand: elegí prenda, color y tamaño, generá tu diseño y recibilo en tu casa.",
+  openGraph: {
+    type: "website",
+    url: "https://www.novamente.ar/",
+    title: "NovaMente · Moda personalizada con IA",
+    description: "Generá diseños únicos y estampos on-demand. Sin stock muerto.",
+    images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: "NovaMente" }],
+    siteName: "NovaMente",
   },
-    generator: 'v0.dev'
+  twitter: {
+    card: "summary_large_image",
+    title: "NovaMente · Moda personalizada con IA",
+    description: "Creá y estampá tu propio diseño. On-demand.",
+    images: ["/twitter-image.png"],
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+  alternates: { canonical: "https://www.novamente.ar/" },
 }
 
 export default function RootLayout({

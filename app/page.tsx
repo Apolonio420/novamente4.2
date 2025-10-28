@@ -13,6 +13,7 @@ import { getUserImages } from "@/lib/db"
 import { cookies } from "next/headers"
 import { getCurrentUser, checkGenerationLimit, setupImageRetentionPolicy } from "@/lib/auth"
 import { ScrollButton } from "@/components/scroll-button"
+import { INTERNAL_LINKS } from "@/lib/config/links"
 
 // Marcamos esta página como dinámica para asegurar que siempre se obtengan los datos más recientes
 export const dynamic = "force-dynamic"
@@ -245,7 +246,7 @@ export default async function Home() {
           <div className="grid md:grid-cols-3 gap-8">
             {/* Hoodie Preview */}
             <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300">
-              <Link href="/#generator-section" className="block">
+              <Link href={INTERNAL_LINKS.generator} className="block">
                 <div className="aspect-square relative overflow-hidden cursor-pointer">
                   <Image
                     src="/products/hoodie-negro-front.jpeg"
@@ -293,7 +294,7 @@ export default async function Home() {
 
                 {/* Botón personalizar - va a #generator-section */}
                 <div className="flex gap-2">
-                  <Link href="/#generator-section" className="flex-1" data-cta="product-card-hoodie">
+                  <Link href={INTERNAL_LINKS.generator} className="flex-1" data-cta="product-card-hoodie">
                     <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-xl py-3 px-6 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
                       <Sparkles className="w-4 h-4 mr-2" />
                       Personalizar Ahora
@@ -305,7 +306,7 @@ export default async function Home() {
 
             {/* T-Shirt Preview */}
             <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300">
-              <Link href="/#generator-section" className="block">
+              <Link href={INTERNAL_LINKS.generator} className="block">
                 <div className="aspect-square relative overflow-hidden cursor-pointer">
                   <Image
                     src="/products/aura-tshirt-blanco-front.jpeg"
@@ -353,7 +354,7 @@ export default async function Home() {
 
                 {/* Botón personalizar - va a #generator-section */}
                 <div className="flex gap-2">
-                  <Link href="/#generator-section" className="flex-1" data-cta="product-card-tshirt">
+                  <Link href={INTERNAL_LINKS.generator} className="flex-1" data-cta="product-card-tshirt">
                     <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-xl py-3 px-6 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
                       <Sparkles className="w-4 h-4 mr-2" />
                       Personalizar Ahora
@@ -365,7 +366,7 @@ export default async function Home() {
 
             {/* Canvas Preview */}
             <Card className="overflow-hidden group hover:shadow-lg transition-all duration-300">
-              <Link href="/#generator-section" className="block">
+              <Link href={INTERNAL_LINKS.generator} className="block">
                 <div className="aspect-square relative overflow-hidden cursor-pointer">
                   <Image
                     src="/products/lienzo-main.png"
@@ -413,7 +414,7 @@ export default async function Home() {
 
                 {/* Botón personalizar - va a #generator-section */}
                 <div className="flex gap-2">
-                  <Link href="/#generator-section" className="flex-1" data-cta="product-card-lienzo">
+                  <Link href={INTERNAL_LINKS.generator} className="flex-1" data-cta="product-card-lienzo">
                     <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-xl py-3 px-6 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
                       <Sparkles className="w-4 h-4 mr-2" />
                       Personalizar Ahora
