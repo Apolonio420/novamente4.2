@@ -21,14 +21,14 @@ export const metadata: Metadata = {
     url: "https://www.novamente.ar/",
     title: "NovaMente · Moda personalizada con IA",
     description: "Generá diseños únicos y estampos on-demand. Sin stock muerto.",
-    images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: "NovaMente" }],
+    images: [{ url: "/novamente-logo.png", width: 1200, height: 630, alt: "NovaMente" }],
     siteName: "NovaMente",
   },
   twitter: {
     card: "summary_large_image",
     title: "NovaMente · Moda personalizada con IA",
     description: "Creá y estampá tu propio diseño. On-demand.",
-    images: ["/twitter-image.png"],
+    images: ["/novamente-logo.png"],
   },
   icons: {
     icon: "/favicon.ico",
