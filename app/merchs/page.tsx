@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Users, Clock, Package, Sparkles, Target, Zap } from "lucide-react"
 import { WHATSAPP_URL, GENERATOR_URL, INTERNAL_LINKS } from "@/lib/config/links"
+import AutoScrollGallery from "@/components/merchs/AutoScrollGallery"
 
 export const metadata: Metadata = {
   title: "B2B Merchandising | NovaMente",
@@ -97,6 +98,11 @@ export default function MerchsPage() {
             <p className="text-muted-foreground text-sm">{benefit.description}</p>
           </div>
         ))}
+      </div>
+
+      {/* Auto-scroll gallery */}
+      <div className="mb-16">
+        <AutoScrollGallery heightClass="h-60 md:h-80 lg:h-96" gapClass="gap-4 md:gap-6" pauseOnHover speedSec={34} />
       </div>
 
       {/* How it Works */}
