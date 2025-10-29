@@ -6,7 +6,8 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "img:merchs": "node scripts/optimize-merchs.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.891.0",

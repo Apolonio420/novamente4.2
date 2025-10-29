@@ -43,6 +43,13 @@ export default function AutoScrollGallery({
                 sizes="(max-width: 768px) 70vw, (max-width: 1280px) 40vw, 33vw"
                 className="object-cover"
                 priority={i < 3}
+                {...(i < 3
+                  ? {
+                      placeholder: "blur" as const,
+                      blurDataURL:
+                        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO1hX9EAAAAASUVORK5CYII=",
+                    }
+                  : {})}
               />
             </figure>
           ))}
