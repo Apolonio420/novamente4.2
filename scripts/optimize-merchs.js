@@ -1,7 +1,7 @@
 /*
   Optimiza imágenes de merchs a .webp
-  - Origen: public/merchs/nm-merch-009.jpg ... nm-merch-018.jpg
-  - Salida: public/merchs/nm-merch-009.webp ... nm-merch-018.webp
+  - Origen: public/merchs/nm-merch-001.jpg ... nm-merch-008.jpg
+  - Salida: public/merchs/nm-merch-001.webp ... nm-merch-008.webp
   Requisitos: paquete 'sharp' instalado (ya presente en dependencies)
 */
 
@@ -10,10 +10,8 @@ const path = require("path")
 const sharp = require("sharp")
 
 const DIR = path.join(process.cwd(), "public/merchs")
-const files = Array.from({ length: 10 }, (_, i) => {
-  const n = 9 + i // 009..018
-  return `nm-merch-0${n}.jpg`
-})
+const pad3 = (n) => String(n).padStart(3, "0")
+const files = Array.from({ length: 8 }, (_, i) => `nm-merch-${pad3(i + 1)}.jpg`)
 
 ;(async () => {
   for (const file of files) {

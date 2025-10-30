@@ -17,7 +17,14 @@ export default function AutoScrollGallery({
   pauseOnHover = true,
   speedSec = 38,
 }: Props) {
-  const items = [...MERCHS_GALLERY, ...MERCHS_GALLERY]
+  
+
+  const base = MERCHS_GALLERY.map((x) => ({
+    ...x,
+    src: x.src.startsWith("/merchs/") ? x.src : `/merchs/${x.src.replace(/^\//, "")}`,
+  }))
+
+  const items = [...base, ...base]
 
   return (
     <section aria-label="Galería de merch" className="mx-auto w-full max-w-6xl px-4 md:px-6">
@@ -43,6 +50,14 @@ export default function AutoScrollGallery({
                 sizes="(max-width: 768px) 70vw, (max-width: 1280px) 40vw, 33vw"
                 className="object-cover"
                 priority={i < 3}
+                unoptimized={process.env.NODE_ENV === "development"}
+                onError={(e) => {
+                  const el = (e.currentTarget as unknown) as HTMLImageElement & { dataset: { triedJpg?: string } }
+                  if (!el.dataset.triedJpg && el.src.endsWith(".webp")) {
+                    el.dataset.triedJpg = "1"
+                    el.src = el.src.replace(".webp", ".jpg")
+                  }
+                }}
                 {...(i < 3
                   ? {
                       placeholder: "blur" as const,
