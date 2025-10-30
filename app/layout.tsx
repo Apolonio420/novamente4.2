@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     images: ["/novamente-logo.png"],
   },
   icons: {
-    icon: "/logo.svg",
+    icon: "/favicon.ico",
   },
   alternates: { canonical: "https://www.novamente.ar/" },
 }
