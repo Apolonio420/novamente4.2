@@ -9,7 +9,8 @@ export function Background() {
       <div 
         className="absolute inset-0 opacity-[0.06] mix-blend-overlay"
         style={{
-          backgroundImage: "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFklEQVR42mNk+M9Qz0AIBo5gOQ7H/Sw=1JmAAAArSURBVHjYR8NCBQC4oPx8BgUFAKGg/xCGzPs/KP9/jIpMqqoIgAIAAA=)')",
+          // Usar un pixel transparente para evitar errores de data URL inválidos
+          backgroundImage: "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Y4jQAAAAASUVORK5CYII=')",
           backgroundRepeat: "repeat",
           backgroundSize: "64px 64px"
         }}

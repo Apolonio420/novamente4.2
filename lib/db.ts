@@ -1,7 +1,9 @@
 import { supabase } from "./supabase"
+import { supabaseAdmin } from "./supabase-admin"
 import { getCurrentUser } from "./auth"
 import { v4 as uuidv4 } from "uuid"
 import { put } from "@vercel/blob"
+import { normalizeR2Key, toPublicR2Url } from "./r2"
 
 export interface SavedImage {
   id: string
@@ -128,37 +130,21 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
 
     const imageId = uuidv4()
     
-    // Convertir URL temporal a estable inmediatamente si es necesario
-    let finalUrl = url
-    if (url.includes("X-Amz-Algorithm") || url.includes("X-Amz-Signature")) {
-      try {
-        const urlMatch = url.match(/\/novamente\/([^\/]+)\/([^\/]+)\/([^\?]+)/)
-        if (urlMatch) {
-          const [, category, uuid, filename] = urlMatch
-          const key = `${category}/${uuid}/${filename}`
-          finalUrl = `/api/r2-public?key=${encodeURIComponent(key)}`
-          console.log("✅ Converted new image URL to stable proxy:", imageId)
-        }
-      } catch (conversionError) {
-        console.error("⚠️ Error converting new image URL:", conversionError)
-      }
-    } else if (url.includes("pub-") && url.includes("r2.dev")) {
-      try {
-        const urlMatch = url.match(/\/processed\/([^\/]+)\/([^\?]+)/)
-        if (urlMatch) {
-          const [, uuid, filename] = urlMatch
-          const key = `processed/${uuid}/${filename}`
-          finalUrl = `/api/r2-public?key=${encodeURIComponent(key)}`
-          console.log("✅ Converted new public URL to stable proxy:", imageId)
-        }
-      } catch (conversionError) {
-        console.error("⚠️ Error converting new public URL:", conversionError)
-      }
+    // Normalizar URL a key limpio (sin firmas, sin proxy, sin query params)
+    // Solo guardar el key en la base de datos, nunca URLs firmadas o proxy
+    const cleanKey = normalizeR2Key(url)
+    
+    if (!cleanKey) {
+      console.error("❌ Could not normalize URL to key:", url.substring(0, 100))
+      return null
     }
+    
+    console.log("✅ Normalized URL to clean key:", cleanKey.substring(0, 100))
     
     const newImage = {
       id: imageId,
-      url: finalUrl,
+      url: cleanKey, // Guardar solo el key limpio
+      storage_key: cleanKey, // También en storage_key para compatibilidad
       prompt,
       user_id: finalUserId,
       has_bg_removed: false,
@@ -173,10 +159,16 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
     }
 
     console.log("✅ Image saved successfully to database with permanent storage")
+    
+    // Devolver imagen con URL pública transformada (no el key)
+    const publicUrl = toPublicR2Url(data.url || data.storage_key || cleanKey)
+    const publicUrlWithoutBg = data.url_without_bg ? toPublicR2Url(data.url_without_bg) : null
+    
     return {
       ...data,
+      url: publicUrl, // Devolver URL pública al cliente
       hasBgRemoved: data.has_bg_removed || false,
-      urlWithoutBg: data.url_without_bg || null,
+      urlWithoutBg: publicUrlWithoutBg,
     }
   } catch (error) {
     console.error("❌ Exception in saveGeneratedImage:", error)
@@ -188,11 +180,19 @@ export async function saveImageWithoutBackground(imageId: string, urlWithoutBg: 
   try {
     console.log("🎭 Saving background-removed version for image:", imageId)
 
-    // Update in database
+    // Normalizar la URL a key limpio antes de guardar
+    const cleanKey = normalizeR2Key(urlWithoutBg)
+    
+    if (!cleanKey) {
+      console.error("❌ Could not normalize urlWithoutBg:", urlWithoutBg.substring(0, 100))
+      return false
+    }
+
+    // Update in database (guardar solo el key limpio)
     const { error } = await supabase
       .from("images")
       .update({
-        url_without_bg: urlWithoutBg,
+        url_without_bg: cleanKey,
         has_bg_removed: true,
       })
       .eq("id", imageId)
@@ -287,8 +287,9 @@ export async function getRecentImages(userId?: string, limit = 20): Promise<Save
 
     return (data || []).map((item) => ({
       ...item,
+      url: toPublicR2Url(normalizeR2Key(item.url || item.storage_key || item.key || '')),
       hasBgRemoved: item.has_bg_removed || false,
-      urlWithoutBg: item.url_without_bg || null,
+      urlWithoutBg: item.url_without_bg ? toPublicR2Url(normalizeR2Key(item.url_without_bg)) : null,
     }))
   } catch (error) {
     console.error("Error in getRecentImages:", error)
@@ -314,8 +315,9 @@ export async function getImageById(id: string): Promise<SavedImage | null> {
 
     return {
       ...data,
+      url: toPublicR2Url(normalizeR2Key(data.url || data.storage_key || data.key || '')),
       hasBgRemoved: data.has_bg_removed || false,
-      urlWithoutBg: data.url_without_bg || null,
+      urlWithoutBg: data.url_without_bg ? toPublicR2Url(normalizeR2Key(data.url_without_bg)) : null,
     }
   } catch (error) {
     console.error("❌ Error in getImageById:", error)
@@ -519,7 +521,14 @@ export async function getImageHistory(limit = 20, sessionId?: string): Promise<S
       return []
     }
 
-    return data || []
+    // Devolver URLs públicas transformadas
+    const { toPublicR2Url, normalizeR2Key } = await import('./r2')
+    return (data || []).map((item) => ({
+      ...item,
+      url: toPublicR2Url(normalizeR2Key(item.url || item.storage_key || item.key || '')),
+      hasBgRemoved: item.has_bg_removed || false,
+      urlWithoutBg: item.url_without_bg ? toPublicR2Url(normalizeR2Key(item.url_without_bg)) : null,
+    }))
   } catch (error) {
     console.error("❌ Error in getImageHistory:", error)
     return []
@@ -529,7 +538,16 @@ export async function getImageHistory(limit = 20, sessionId?: string): Promise<S
 // Función para obtener imágenes del usuario
 export async function getUserImages(userId?: string, sessionId?: string): Promise<SavedImage[]> {
   try {
-    console.log("🔍 Getting user images for userId:", userId)
+    // Mejorar logging para evitar confusión con undefined
+    if (userId) {
+      console.log("🔍 Getting user images for userId:", userId.substring(0, 8) + "...")
+    } else if (sessionId) {
+      console.log("🔍 Getting user images for sessionId:", sessionId.substring(0, 8) + "...")
+    } else {
+      // No hacer fetch si no hay userId ni sessionId - retornar vacío directamente
+      // No loguear como error, solo skip silenciosamente
+      return []
+    }
 
     let query = supabase.from("images").select("*").order("created_at", { ascending: false }).limit(50)
 
@@ -543,9 +561,8 @@ export async function getUserImages(userId?: string, sessionId?: string): Promis
       }
     } else {
       // Si no hay user ni session, no devolver nada
-      try {
-        query = query.eq("session_id", "__none__")
-      } catch {}
+      // Ya retornamos vacío arriba, pero por seguridad
+      return []
     }
 
     const { data, error } = await query
@@ -559,67 +576,67 @@ export async function getUserImages(userId?: string, sessionId?: string): Promis
       return []
     }
 
-    // En cliente, no intentamos resolver/perfilar URLs de R2 (evita CORS/SDK en browser)
+    // En cliente, usar proxy también
     if (typeof window !== 'undefined') {
-      const clientImages = (data || []).map((item) => ({
-        ...item,
-        hasBgRemoved: item.has_bg_removed || false,
-        urlWithoutBg: item.url_without_bg || null,
-      }))
+      const { normalizeR2Key } = require('./r2')
+      const clientImages = (data || []).map((item) => {
+        // Normalizar el key (puede venir como URL firmada, proxy, o key limpio)
+        const cleanKey = normalizeR2Key(item.url || item.storage_key || item.key || '')
+        let imageUrl = ''
+        if (cleanKey) {
+          // Si el key parece ser de R2, usar proxy
+          if (cleanKey.includes('images/') || cleanKey.includes('original/') || cleanKey.includes('processed/')) {
+            imageUrl = `/api/proxy-image?key=${encodeURIComponent(cleanKey)}`
+          } else {
+            // Si no, puede ser una URL local o externa
+            imageUrl = cleanKey.startsWith('/') || cleanKey.startsWith('http') ? cleanKey : `/${cleanKey}`
+          }
+        }
+        return {
+          ...item,
+          url: imageUrl,
+          key: cleanKey,
+          hasBgRemoved: item.has_bg_removed || false,
+          urlWithoutBg: item.url_without_bg ? 
+            (normalizeR2Key(item.url_without_bg) ? 
+              `/api/proxy-image?key=${encodeURIComponent(normalizeR2Key(item.url_without_bg))}` : 
+              null) : 
+            null,
+        }
+      })
       return clientImages.slice(0, 20) as any
     }
 
-    const processedImages = await Promise.all(
-      (data || []).map(async (item) => {
-        let finalUrl = item.url
-
-        // Verificar si la URL es de R2 (temporal, permanente o pública antigua) y convertir a working URL
-        if (item.url && (item.url.includes("r2.cloudflarestorage.com") || item.url.includes("r2.dev"))) {
-          if (item.url.includes("X-Amz-Algorithm") || item.url.includes("X-Amz-Signature")) {
-            // Es una URL temporal firmada. Persistimos una URL estable relativa que
-            // siempre redirige a una URL válida sin volver a convertir cada vez.
-            try {
-              const urlMatch = item.url.match(/\/novamente\/([^\/]+)\/([^\/]+)\/([^\?]+)/)
-              if (urlMatch) {
-                const [, category, uuid, filename] = urlMatch
-                const key = `${category}/${uuid}/${filename}`
-                const proxyUrl = `/api/r2-public?key=${encodeURIComponent(key)}`
-                finalUrl = proxyUrl
-                console.log("✅ Converted signed URL to stable proxy URL:", item.id)
-                await supabase.from("images").update({ url: proxyUrl }).eq("id", item.id)
-              }
-            } catch (conversionError) {
-              console.error("⚠️ Error converting signed URL:", conversionError)
-            }
-          } else if (item.url.includes("pub-") && item.url.includes("r2.dev")) {
-            // URL pública antigua → persistir URL proxy estable
-            try {
-              const urlMatch = item.url.match(/\/processed\/([^\/]+)\/([^\?]+)/)
-              if (urlMatch) {
-                const [, uuid, filename] = urlMatch
-                const key = `processed/${uuid}/${filename}`
-                const proxyUrl = `/api/r2-public?key=${encodeURIComponent(key)}`
-                finalUrl = proxyUrl
-                console.log("✅ Converted old public URL to stable proxy URL:", item.id)
-                await supabase.from("images").update({ url: proxyUrl }).eq("id", item.id)
-              }
-            } catch (conversionError) {
-              console.error("⚠️ Error converting old public URL:", conversionError)
-            }
-          } else {
-            // Ya es una URL permanente de R2; evitar HEAD en SSR para no romper por fallas de red
-            finalUrl = item.url
-          }
+    // En servidor, normalizar y usar proxy para imágenes
+    const processedImages = (data || []).map((item) => {
+      // Normalizar el key actual (puede ser URL firmada, proxy, o key limpio)
+      const currentValue = item.url || item.storage_key || item.key || ''
+      const cleanKey = normalizeR2Key(currentValue)
+      
+      // Usar proxy para imágenes de R2
+      let imageUrl = ''
+      if (cleanKey) {
+        // Si el key parece ser de R2, usar proxy
+        if (cleanKey.includes('images/') || cleanKey.includes('original/') || cleanKey.includes('processed/')) {
+          imageUrl = `/api/proxy-image?key=${encodeURIComponent(cleanKey)}`
+        } else {
+          // Si no, usar la URL pública directamente (puede ser local o externa)
+          imageUrl = toPublicR2Url(cleanKey) || cleanKey
         }
+      }
 
-        return {
-          ...item,
-          url: finalUrl,
-          hasBgRemoved: item.has_bg_removed || false,
-          urlWithoutBg: item.url_without_bg || null,
-        }
-      }),
-    )
+      return {
+        ...item,
+        url: imageUrl,
+        key: cleanKey, // Guardar el key limpio también
+        hasBgRemoved: item.has_bg_removed || false,
+        urlWithoutBg: item.url_without_bg ? 
+          (normalizeR2Key(item.url_without_bg) ? 
+            `/api/proxy-image?key=${encodeURIComponent(normalizeR2Key(item.url_without_bg))}` : 
+            null) : 
+          null,
+      }
+    })
 
     console.log("✅ Processed", processedImages.length, "images")
     return processedImages.slice(0, 20)

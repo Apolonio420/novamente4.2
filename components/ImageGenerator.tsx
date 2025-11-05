@@ -35,6 +35,7 @@ import Link from "next/link"
 import { ExamplesCarousel } from "@/components/ExamplesCarousel"
 import { StylesCarousel } from "@/components/StylesCarousel"
 import { buildPrompt, type StyleId } from "@/lib/generator/prompt"
+import { supabase } from "@/lib/supabase"
 
 interface ImageGeneratorProps {
   onImageGenerated?: (imageUrl: string) => void
@@ -159,7 +160,7 @@ export function ImageGenerator({
     "Águila volando con alas extendidas",
   ]
 
-  // Estilos artísticos NovaMente
+  // Estilos artísticos Novamente
   const novamenteStyles = getAllArtisticStyles()
 
   // Opciones de resolución
@@ -246,15 +247,38 @@ export function ImageGenerator({
 
       setGeneratedImage(imageUrl)
 
+      // La imagen ya está disponible: reflejarlo de inmediato en la UI
+      // para que el botón cambie de color/estado sin esperar al post-proceso.
+      setGenState("ready")
+
       // Procesar la imagen inmediatamente para convertirla a URL de R2
       if (first.data) {
         try {
           console.log("🔄 Processing image to R2...")
+          
+          // Obtener el token de autenticación de Supabase si hay sesión activa
+          let authToken: string | null = null
+          try {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session?.access_token) {
+              authToken = session.access_token
+              console.log("✅ Auth token obtained for process-design")
+            }
+          } catch (authError) {
+            console.warn("⚠️ Could not get auth token for process-design:", authError)
+          }
+
+          const processHeaders: HeadersInit = {
+            "Content-Type": "application/json",
+          }
+          
+          if (authToken) {
+            processHeaders["Authorization"] = `Bearer ${authToken}`
+          }
+          
           const processResponse = await fetch("/api/process-design", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: processHeaders,
             body: JSON.stringify({
               imageUrl: `data:image/png;base64,${first.data}`,
               prompt: prompt.trim(),
@@ -265,33 +289,44 @@ export function ImageGenerator({
             const processResult = await processResponse.json()
             console.log("✅ Image processed and saved to R2:", processResult.success)
             
+            // El endpoint ahora devuelve { success: true, image: {...}, debugId }
+            const resultImageId = processResult.image?.id || processResult.imageId
+            const resultImageUrl = processResult.image?.url || processResult.imageUrl || imageUrl
+            
             // Guardar el ID de la imagen procesada para evitar reprocesamiento
-            setProcessedImageId(processResult.imageId)
+            if (resultImageId) {
+              setProcessedImageId(resultImageId)
+            }
             
             if (onImageGenerated) {
-              onImageGenerated(processResult.imageUrl || imageUrl)
+              onImageGenerated(resultImageUrl)
             }
             if (isModal) {
               // En modo modal no navegamos
               return
             }
           } else {
-            console.error("❌ Error processing image:", processResponse.statusText)
+            // Manejar errores pero no bloquear la UI (la imagen ya está generada)
+            const errorData = await processResponse.json().catch(() => ({}))
+            const debugId = processResponse.headers.get('X-Debug-Id') || errorData.debugId || 'unknown'
+            console.error(`❌ Error processing image [${debugId}]:`, processResponse.statusText, errorData.error)
+            
             if (onImageGenerated) {
               onImageGenerated(imageUrl)
             }
-          if (isModal) {
-            return
-          }
+            if (isModal) {
+              return
+            }
           }
         } catch (processError) {
+          // No bloquear la UI si falla el procesamiento (la imagen ya está generada)
           console.error("❌ Error processing image:", processError)
           if (onImageGenerated) {
             onImageGenerated(imageUrl)
           }
-        if (isModal) {
-          return
-        }
+          if (isModal) {
+            return
+          }
         }
       } else {
         // Si no hay base64, guardar la URL directamente
@@ -316,9 +351,6 @@ export function ImageGenerator({
         }
       }
 
-      // Cambiar estado a ready
-      setGenState("ready")
-      
       // Reset a idle después de 3 segundos
       setTimeout(() => setGenState("idle"), 3000)
       
@@ -372,28 +404,106 @@ export function ImageGenerator({
       }
 
       // Si es una imagen recién generada (base64), procesar en servidor y navegar
+      // Obtener el token de autenticación de Supabase si hay sesión activa
+      let authToken: string | null = null
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token) {
+          authToken = session.access_token
+          console.log("✅ Auth token obtained from Supabase session")
+        }
+      } catch (authError) {
+        console.warn("⚠️ Could not get auth token:", authError)
+      }
+
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      }
+      
+      // Agregar token de autenticación si está disponible
+      if (authToken) {
+        headers["Authorization"] = `Bearer ${authToken}`
+      }
+
+      // Asegurar que tenemos un prompt válido
+      // 1. Usar optimizedPrompt si existe y no está vacío
+      // 2. Si no, reconstruir usando buildPrompt
+      // 3. Si aún está vacío, usar un prompt por defecto
+      let finalPrompt = optimizedPrompt?.trim() || ""
+      if (!finalPrompt) {
+        finalPrompt = buildPrompt(prompt, selectedStyle).trim()
+      }
+      if (!finalPrompt) {
+        finalPrompt = "Diseño personalizado"
+      }
+
+      console.log("📝 Enviando prompt a process-design:", finalPrompt)
+
       const response = await fetch("/api/process-design", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({
           imageUrl: generatedImage,
-          prompt: prompt.trim(),
+          prompt: finalPrompt,
           userId: null,
         }),
       })
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || "Error procesando diseño")
+        const debugId = response.headers.get('X-Debug-Id') || errorData.debugId || 'unknown'
+        
+        // Manejo específico por código de estado
+        if (response.status === 401 || response.status === 403) {
+          toast({
+            title: "Sesión requerida",
+            description: "Iniciá sesión para guardar tus diseños",
+            variant: "destructive",
+          })
+          // Opcional: abrir modal de login aquí
+          throw new Error(errorData.error || "Sesión requerida")
+        } else if (response.status === 422) {
+          toast({
+            title: "Datos inválidos",
+            description: errorData.error || "Los datos enviados no son válidos",
+            variant: "destructive",
+          })
+          throw new Error(errorData.error || "Datos inválidos")
+        } else if (response.status === 429) {
+          toast({
+            title: "Límite alcanzado",
+            description: errorData.error || "Alcanzaste el límite de imágenes sin iniciar sesión",
+            variant: "destructive",
+          })
+          throw new Error(errorData.error || "Límite alcanzado")
+        } else {
+          // Error 500 u otro
+          const errorMsg = errorData.error || "Error procesando diseño"
+          console.error(`❌ Error procesando diseño [${debugId}]:`, errorMsg)
+          toast({
+            title: "Error",
+            description: `${errorMsg} (Debug ID: ${debugId})`,
+            variant: "destructive",
+          })
+          throw new Error(errorMsg)
+        }
       }
 
       const data = await response.json()
+      
+      // El endpoint ahora devuelve { success: true, image: {...}, debugId }
+      const imageId = data.image?.id || data.imageId
+      const imageUrl = data.image?.url || data.imageUrl || generatedImage
+      
+      if (!imageId) {
+        console.error("❌ No imageId in response:", data)
+        throw new Error("Respuesta inválida del servidor")
+      }
+      
       if (isModal && onImageGenerated) {
-        onImageGenerated(data.imageUrl || generatedImage)
+        onImageGenerated(imageUrl)
       } else {
-        window.location.href = `/design/${data.imageId}`
+        window.location.href = `/design/${imageId}`
       }
       
     } catch (error) {
@@ -450,7 +560,7 @@ export function ImageGenerator({
   }
 
   const handleStyleSelect = (styleId: string) => {
-    setSelectedStyle(styleId)
+    setSelectedStyle(styleId as StyleId)
     const style = novamenteStyles.find(s => s.key === styleId)
     if (style) {
       addNovamenteStyle(style)
@@ -473,7 +583,7 @@ export function ImageGenerator({
     setPrompt(newPrompt)
 
     toast({
-      title: "Estilo NovaMente aplicado",
+      title: "Estilo Novamente aplicado",
       description: `${style.name} - ${style.description}`,
     })
   }

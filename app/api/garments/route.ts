@@ -61,7 +61,7 @@ const GARMENT_FILES = [
   "tshirt-black-oversize-back.jpeg",
   "tshirt-black-oversize-front.jpeg",
   "tshirt-caramel-oversize-back.jpeg",
-  "tshirt-caramel-oversize-front.jpeg",
+  "tshirt-caramel-oversize-front.png",
   "tshirt-white-classic-back.jpeg",
   "tshirt-white-classic-front.jpeg",
   "tshirt-white-oversize-back.jpeg",

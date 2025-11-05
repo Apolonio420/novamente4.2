@@ -19,16 +19,21 @@ export default function AutoScrollGallery({
 }: Props) {
   
 
-  const base = MERCHS_GALLERY.map((x) => ({
-    ...x,
-    src: x.src.startsWith("/merchs/") ? x.src : `/merchs/${x.src.replace(/^\//, "")}`,
-  }))
+  // Cache-busting simple para forzar el refresco cuando se actualizan las imágenes del carrusel
+  const VERSION = "merch-20251030"
+
+  const base = MERCHS_GALLERY.map((x) => {
+    const srcNormalized = x.src.startsWith("/merchs/") ? x.src : `/merchs/${x.src.replace(/^\//, "")}`
+    const hasQuery = srcNormalized.includes("?")
+    const srcWithVersion = `${srcNormalized}${hasQuery ? "&" : "?"}v=${VERSION}`
+    return { ...x, src: srcWithVersion }
+  })
 
   const items = [...base, ...base]
 
   return (
-    <section aria-label="Galería de merch" className="mx-auto w-full max-w-6xl px-4 md:px-6">
-      <div className={`relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/30 ${heightClass}`}>
+    <section aria-label="Galería de merch" className="mx-auto w-full px-4 md:px-6 lg:px-8">
+      <div className={`relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 ${heightClass}`}>
         <div
           className={`absolute inset-0 flex ${gapClass} animate-marquee will-change-transform`}
           style={{ ["--marquee-duration" as any]: `${speedSec}s` }}
@@ -45,7 +50,7 @@ export default function AutoScrollGallery({
             <figure key={`${img.src}-${i}`} className={`relative shrink-0 ${getItemSize((img as any).orientation)} overflow-hidden rounded-xl`}>
               <Image
                 src={img.src}
-                alt={(img as any).alt ?? "NovaMente merch"}
+                alt={(img as any).alt ?? "Novamente merch"}
                 fill
                 sizes="(max-width: 768px) 70vw, (max-width: 1280px) 40vw, 33vw"
                 className="object-cover"
@@ -69,8 +74,8 @@ export default function AutoScrollGallery({
             </figure>
           ))}
         </div>
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-zinc-950/80 to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-zinc-950/80 to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-white to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-white to-transparent" />
       </div>
     </section>
   )

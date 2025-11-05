@@ -49,7 +49,12 @@ export function CartDrawer() {
                 className="flex items-start gap-4 py-4"
               >
                 <div className="h-20 w-20 relative rounded overflow-hidden flex-shrink-0">
-                  <Image src={item.imageUrl || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
+                  <Image 
+                    src={item.mockupUrl || item.frontMockup || item.imageUrl || item.image || "/placeholder.svg"} 
+                    alt={item.name} 
+                    fill 
+                    className="object-cover" 
+                  />
                 </div>
                 <div className="flex-1">
                   <h4 className="font-medium">{item.name}</h4>

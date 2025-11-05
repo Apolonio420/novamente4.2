@@ -1,4 +1,5 @@
 import { StyleGallery } from "@/components/StyleGallery"
+export const metadata = { title: "Estilos | Novamente" }
 
 export default function StylesPage() {
   return (

@@ -14,6 +14,8 @@ const PATH_BUILDERS: Record<string, (color: string, side: "front" | "back") => s
   "aura-oversize-tshirt": (c, s) => `tshirt-${c}-oversize-${s}`,
   "aldea-classic-tshirt": (c, s) => `tshirt-${c}-classic-${s}`,
   "astra-oversize-hoodie": (c, s) => `hoodie-${c}-${s}`,
+  // Lienzo no depende de color ni lado para el mapeo base
+  lienzo: () => `lienzo`,
 }
 
 export function getGarmentMapping(garmentType: string, color: string, side: "front" | "back"): GarmentMapping | null {

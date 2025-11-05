@@ -32,6 +32,7 @@ export default function CheckoutPage() {
   const [selectedItemIndex, setSelectedItemIndex] = useState(0)
   const selectedItem = items[selectedItemIndex] || items[0]
   const availablePreviews = [
+    selectedItem?.mockupUrl,
     selectedItem?.frontMockup,
     selectedItem?.backMockup,
     selectedItem?.image,
@@ -69,6 +70,7 @@ export default function CheckoutPage() {
   // Sincronizar preview cuando cambia el item seleccionado o el carrito
   useEffect(() => {
     const previews = [
+      items[selectedItemIndex]?.mockupUrl,
       items[selectedItemIndex]?.frontMockup,
       items[selectedItemIndex]?.backMockup,
       items[selectedItemIndex]?.image,
@@ -426,7 +428,7 @@ export default function CheckoutPage() {
                   >
                     <div className="w-16 h-16 relative rounded overflow-hidden flex-shrink-0">
                       <Image 
-                        src={item.frontMockup || item.backMockup || item.image || "/placeholder.svg"} 
+                        src={item.mockupUrl || item.frontMockup || item.backMockup || item.image || "/placeholder.svg"} 
                         alt={item.name} 
                         fill 
                         sizes="64px" 
@@ -435,7 +437,7 @@ export default function CheckoutPage() {
                           const target = e.target as HTMLImageElement
                           target.src = "/placeholder.svg"
                         }}
-                        unoptimized={(item.frontMockup || item.backMockup || item.image || "").startsWith('/api/')}
+                        unoptimized={(item.mockupUrl || item.frontMockup || item.backMockup || item.image || "").startsWith('/api/')}
                       />
                     </div>
                     <div className="flex-1">
@@ -443,7 +445,17 @@ export default function CheckoutPage() {
                       <p className="text-xs text-muted-foreground">
                         {item.garmentType} - {item.color} - Talle {item.size}
                       </p>
-                      {item.backDesign && <p className="text-xs text-green-600">✓ Con estampado trasero</p>}
+                      {item.frontStampSize && (
+                        <p className="text-xs text-muted-foreground">
+                          Estampado: {item.frontStampSize} {item.frontStampPosition && `(${item.frontStampPosition === 'center' ? 'Centro' : 'Izquierda'})`}
+                        </p>
+                      )}
+                      {item.backStampSize && (
+                        <p className="text-xs text-muted-foreground">
+                          Estampado trasero: {item.backStampSize} {item.backStampPosition && `(${item.backStampPosition === 'center' ? 'Centro' : 'Izquierda'})`}
+                        </p>
+                      )}
+                      {item.backDesign && !item.backStampSize && <p className="text-xs text-green-600">✓ Con estampado trasero</p>}
                       <p className="text-xs text-muted-foreground">Cantidad: {item.quantity}</p>
                     </div>
                     <div className="text-right">

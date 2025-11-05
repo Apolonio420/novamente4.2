@@ -13,12 +13,17 @@ export interface CartItem {
   price: number
   quantity: number
   image: string
+  mockupUrl?: string
   frontMockup?: string
   backMockup?: string
   frontDesign?: string
   backDesign?: string
   garmentColor?: string
   isGeneratingMockups?: boolean
+  frontStampSize?: 'R1' | 'R2' | 'R3'
+  backStampSize?: 'R1' | 'R2' | 'R3'
+  frontStampPosition?: 'center' | 'left'
+  backStampPosition?: 'center' | 'left'
   customDesign?: {
     image: string
     position: { x: number; y: number }

@@ -13,25 +13,31 @@ const inter = Inter({ subsets: ["latin"], display: "swap" })
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.novamente.ar"),
-  title: { default: "Tienda Oficial de NovaMente", template: "%s · NovaMente" },
+  title: { default: "Novamente | Potenciá tu marca con merchandising sin inversión inicial", template: "%s · Novamente" },
   description:
-    "Creá tu estilo único con IA. Prendas personalizadas on-demand: elegí prenda, color y tamaño, generá tu diseño y recibilo en tu casa.",
+    "Diseñá, lanzá y vendé tu línea de indumentaria con Novamente. Sin inversión inicial, sin complicaciones.",
   openGraph: {
     type: "website",
     url: "https://www.novamente.ar/",
-    title: "NovaMente · Moda personalizada con IA",
-    description: "Generá diseños únicos y estampos on-demand. Sin stock muerto.",
-    images: [{ url: "/novamente-logo.png", width: 1200, height: 630, alt: "NovaMente" }],
-    siteName: "NovaMente",
+    title: "Novamente",
+    description: "Potenciá tu marca con merchandising sin inversión inicial.",
+    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Logo Novamente" }],
+    siteName: "Novamente",
+    locale: "es_AR",
   },
   twitter: {
     card: "summary_large_image",
-    title: "NovaMente · Moda personalizada con IA",
-    description: "Creá y estampá tu propio diseño. On-demand.",
-    images: ["/novamente-logo.png"],
+    title: "Novamente",
+    description: "Potenciá tu marca con merchandising sin inversión inicial.",
+    images: ["/logo.png"],
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/logo.png?v=3", type: "image/png" },
+      { url: "/logo.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/logo.png?v=3",
+    apple: "/logo.png?v=3",
   },
   alternates: { canonical: "https://www.novamente.ar/" },
 }

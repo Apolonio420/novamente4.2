@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 
@@ -37,12 +37,14 @@ export function OptimizedImage({
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [currentSrc, setCurrentSrc] = useState(src)
+  const [failed, setFailed] = useState(false)
   const imgRef = useRef<HTMLImageElement>(null)
 
   useEffect(() => {
     setCurrentSrc(src)
     setHasError(false)
     setIsLoading(true)
+    setFailed(false)
   }, [src])
 
   // Generar un placeholder blur simple si no se proporciona uno
@@ -75,53 +77,40 @@ export function OptimizedImage({
     setIsLoading(false)
   }
 
-  const handleError = () => {
-    console.error("❌ Error loading image:", currentSrc)
-
-    if (!currentSrc.includes("placeholder.svg") && !hasError) {
-      console.log("🔄 Trying placeholder fallback")
-      setCurrentSrc("/unavailable-image.png")
-      setHasError(false) // Reset error state para intentar con placeholder
-    } else {
-      setHasError(true)
+  const handleError = useCallback(() => {
+    if (!failed) {
+      setFailed(true)
+      // Solo un warning silencioso, no spam
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Image failed, using placeholder:', currentSrc?.substring(0, 50))
+      }
     }
-
+    setHasError(true)
     setIsLoading(false)
-  }
-
-  // Determinar si usar proxy o URL directa
-  const getImageSrc = (src: string) => {
-    // URLs de nuestro proxy R2 se usan directamente (sin optimización de Next)
-    if (src.startsWith('/api/r2-public')) {
-      return src
-    }
-    // Evitar que Next/Image proxifique cuando ya tenemos URLs firmadas/públicas
-    if (
-      src.startsWith('http') && (
-        src.includes('r2.dev') ||
-        src.includes('r2.cloudflarestorage.com') ||
-        src.includes('supabase.co')
-      )
-    ) {
-      return src
-    }
-    // URLs de DALL-E van al proxy
-    if (src.includes('oaidalleapiprodscus.blob.core.windows.net')) {
-      return `/api/proxy-image?url=${encodeURIComponent(src)}`
-    }
-    // URLs locales se usan directamente
-    return src
-  }
+  }, [failed, currentSrc])
 
   if (hasError) {
+    // Placeholder visual más compacto para historial
+    const isSmall = (width && width <= 100) || (height && height <= 100)
+    
     return (
       <div
-        className={cn("flex items-center justify-center bg-muted text-muted-foreground rounded-lg", className)}
-        style={{ width, height }}
+        className={cn(
+          "flex items-center justify-center bg-muted/50 text-muted-foreground rounded-lg overflow-hidden",
+          isSmall ? "p-1" : "p-2",
+          className
+        )}
+        style={fill ? { width: '100%', height: '100%' } : { width, height }}
       >
-        <div className="text-center p-4">
-          <div className="w-8 h-8 bg-muted-foreground/20 rounded-full mx-auto mb-2" />
-          <span className="text-sm">Imagen no disponible</span>
+        <div className="text-center w-full">
+          {isSmall ? (
+            <div className="w-4 h-4 bg-muted-foreground/20 rounded mx-auto" />
+          ) : (
+            <>
+              <div className="w-6 h-6 bg-muted-foreground/20 rounded-full mx-auto mb-1" />
+              <span className="text-xs text-muted-foreground/60">No disponible</span>
+            </>
+          )}
         </div>
       </div>
     )
@@ -141,7 +130,7 @@ export function OptimizedImage({
       )}
 
       <Image
-        src={getImageSrc(currentSrc || "/placeholder.svg")}
+        src={hasError ? "/unavailable-image.png" : (currentSrc || "/placeholder.svg")}
         alt={alt}
         width={width}
         height={height}
@@ -149,14 +138,15 @@ export function OptimizedImage({
         priority={priority}
         placeholder={placeholder}
         blurDataURL={defaultBlurDataURL}
-        sizes={sizes}
+        sizes={sizes || "(max-width: 768px) 50vw, 25vw"}
         quality={quality}
         loading={loading}
-        // Evitar que Next optimice/proxifique URLs externas firmadas, nuestro proxy R2, o rutas de garments
+        // No optimizar imágenes del proxy, URLs externas, o assets locales estáticos
         unoptimized={Boolean(
-          currentSrc?.startsWith('http') || 
-          currentSrc?.startsWith('/api/r2-public') ||
-          currentSrc?.startsWith('/garments/')
+          currentSrc?.startsWith('/api/proxy-image') ||
+          currentSrc?.startsWith('http') ||
+          currentSrc?.startsWith('/garments/') ||
+          currentSrc?.startsWith('/styles/')
         )}
         onLoad={handleLoad}
         onError={handleError}

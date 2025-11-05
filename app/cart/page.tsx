@@ -36,6 +36,14 @@ export default function CartPage() {
     return "/placeholder.svg"
   }
 
+  // Función helper para detectar si una URL necesita unoptimized (localhost o rutas /api/)
+  const needsUnoptimized = (src: string): boolean => {
+    if (!src) return false
+    return src.startsWith('/api/') || 
+           src.includes('/api/') || 
+           (src.includes('localhost') && src.includes('/api/'))
+  }
+
   const previewImages = useMemo(() => {
     if (!selectedItem) return []
     
@@ -68,7 +76,6 @@ export default function CartPage() {
   
   const [activePreviewIdx, setActivePreviewIdx] = useState(0)
   const activePreview = previewImages[activePreviewIdx] || normalizeSrc(selectedItem?.image)
-  const isApiSrc = activePreview.startsWith('/api/')
 
   // Función para abrir el modal de zoom
   const openZoomModal = (imageUrl: string, alt: string) => {
@@ -154,7 +161,7 @@ export default function CartPage() {
                           const target = e.target as HTMLImageElement
                           target.src = "/placeholder.svg"
                         }}
-                        unoptimized={isApiSrc}
+                        unoptimized={needsUnoptimized(activePreview)}
                       />
                     )}
                     {/* Leyenda de zoom */}
@@ -188,7 +195,7 @@ export default function CartPage() {
                               const target = e.target as HTMLImageElement
                               target.src = "/placeholder.svg"
                             }}
-                            unoptimized={src.startsWith('/api/')}
+                            unoptimized={needsUnoptimized(src)}
                           />
                         </button>
                       )
@@ -209,18 +216,18 @@ export default function CartPage() {
                   <div 
                     className="relative w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:bg-gray-200 transition-colors"
                     onDoubleClick={() => openZoomModal(
-                      normalizeSrc(item.frontMockup) || normalizeSrc(item.backMockup) || normalizeSrc(item.image), 
+                      normalizeSrc(item.mockupUrl) || normalizeSrc(item.frontMockup) || normalizeSrc(item.backMockup) || normalizeSrc(item.image), 
                       item.name
                     )}
                     title="Doble click para hacer zoom"
                   >
-                    {item.isGeneratingMockups && !item.frontMockup && !item.backMockup ? (
+                    {item.isGeneratingMockups && !item.mockupUrl && !item.frontMockup && !item.backMockup ? (
                       <div className="flex items-center justify-center h-full">
                         <Loader2 className="h-4 w-4 animate-spin text-primary" />
                       </div>
                     ) : (
                       <Image 
-                        src={normalizeSrc(item.frontMockup) || normalizeSrc(item.backMockup) || normalizeSrc(item.image)} 
+                        src={normalizeSrc(item.mockupUrl) || normalizeSrc(item.frontMockup) || normalizeSrc(item.backMockup) || normalizeSrc(item.image)} 
                         alt={item.name} 
                         fill 
                         sizes="96px" 
@@ -229,7 +236,7 @@ export default function CartPage() {
                           const target = e.target as HTMLImageElement
                           target.src = "/placeholder.svg"
                         }}
-                        unoptimized={(normalizeSrc(item.frontMockup) || normalizeSrc(item.backMockup) || normalizeSrc(item.image)).startsWith('/api/')}
+                        unoptimized={needsUnoptimized(normalizeSrc(item.mockupUrl) || normalizeSrc(item.frontMockup) || normalizeSrc(item.backMockup) || normalizeSrc(item.image))}
                       />
                     )}
                   </div>
@@ -241,6 +248,16 @@ export default function CartPage() {
                       <Badge variant="outline">Color: {item.color}</Badge>
                       <Badge variant="outline">Talle: {item.size}</Badge>
                       {item.garmentType && <Badge variant="outline">{item.garmentType}</Badge>}
+                      {item.frontStampSize && (
+                        <Badge variant="outline">
+                          Estampado: {item.frontStampSize} {item.frontStampPosition && `(${item.frontStampPosition === 'center' ? 'Centro' : 'Izquierda'})`}
+                        </Badge>
+                      )}
+                      {item.backStampSize && (
+                        <Badge variant="outline">
+                          Estampado trasero: {item.backStampSize} {item.backStampPosition && `(${item.backStampPosition === 'center' ? 'Centro' : 'Izquierda'})`}
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between">
@@ -294,7 +311,7 @@ export default function CartPage() {
                                 const target = e.target as HTMLImageElement
                                 target.src = "/placeholder.svg"
                               }}
-                              unoptimized={normalizeSrc(item.frontMockup).startsWith('/api/')}
+                              unoptimized={needsUnoptimized(normalizeSrc(item.frontMockup))}
                             />
                           </div>
                         )}
@@ -310,7 +327,7 @@ export default function CartPage() {
                                 const target = e.target as HTMLImageElement
                                 target.src = "/placeholder.svg"
                               }}
-                              unoptimized={normalizeSrc(item.backMockup).startsWith('/api/')}
+                              unoptimized={needsUnoptimized(normalizeSrc(item.backMockup))}
                             />
                           </div>
                         )}
@@ -395,7 +412,7 @@ export default function CartPage() {
                 const target = e.target as HTMLImageElement
                 target.src = "/placeholder.svg"
               }}
-              unoptimized={zoomImageUrl.startsWith('/api/')}
+              unoptimized={needsUnoptimized(zoomImageUrl)}
             />
           </div>
         </DialogContent>

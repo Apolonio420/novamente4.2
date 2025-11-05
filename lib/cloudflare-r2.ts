@@ -119,7 +119,8 @@ export function getPublicR2Url(key: string): string {
     // Usar endpoint directo de R2 (puede no funcionar si no está configurado para público)
     const endpoint = process.env.CLOUDFLARE_R2_ENDPOINT
     const accountId = endpoint?.match(/https:\/\/([^.]+)\.r2\.cloudflarestorage\.com/)?.[1]
-    return `https://pub-${accountId}.r2.dev/${key}`
+    // En el dominio público genérico de R2.dev se requiere incluir el nombre del bucket
+    return `https://pub-${accountId}.r2.dev/${BUCKET_NAME}/${key}`
   }
 }
 

@@ -58,7 +58,7 @@ const GARMENTS = [
   { path: "/garments/tshirt-white-classic-back.jpeg", name: "T-shirt Blanco Clásico Trasero" },
   { path: "/garments/tshirt-white-oversize-front.jpeg", name: "T-shirt Blanco Oversize Frontal" },
   { path: "/garments/tshirt-white-oversize-back.jpeg", name: "T-shirt Blanco Oversize Trasero" },
-  { path: "/garments/tshirt-caramel-oversize-front.jpeg", name: "T-shirt Caramelo Oversize Frontal" },
+  { path: "/garments/tshirt-caramel-oversize-front.png", name: "T-shirt Caramelo Oversize Frontal" },
   { path: "/garments/tshirt-caramel-oversize-back.jpeg", name: "T-shirt Caramelo Oversize Trasero" },
 ]
 

@@ -7,4 +7,8 @@ export const INTERNAL_LINKS = {
   home: "/",
 } as const
 
+// Enlaces externos y atajos usados en varias páginas
+export const WHATSAPP_URL = "https://wa.me/message/DRWR3O2HZY2JG1"
+export const GENERATOR_URL = INTERNAL_LINKS.generator
+
 

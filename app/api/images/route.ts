@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { toPublicR2Url, normalizeR2Key } from "@/lib/r2"
 
 export async function GET() {
   try {
@@ -19,11 +20,17 @@ export async function GET() {
 
     console.log(`✅ Found ${data?.length || 0} images in database`)
     
-    const images = (data || []).map((item) => ({
-      ...item,
-      hasBgRemoved: item.has_bg_removed || false,
-      urlWithoutBg: item.url_without_bg || null,
-    }))
+    const images = (data || []).map((item) => {
+      const key = normalizeR2Key((item as any).storage_key || (item as any).url || '')
+      const url = toPublicR2Url(key)
+      const urlWithoutBg = toPublicR2Url(normalizeR2Key(item.url_without_bg || '')) || null
+      return {
+        ...item,
+        url,
+        hasBgRemoved: item.has_bg_removed || false,
+        urlWithoutBg,
+      }
+    })
 
     return NextResponse.json({ images })
   } catch (error) {

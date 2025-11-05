@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowRight, Zap, Shirt, Star, Sparkles, Palette, Wand2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { getUserImages } from "@/lib/db"
+import { getUserImages, type SavedImage } from "@/lib/db"
 import { cookies } from "next/headers"
 import { getCurrentUser, checkGenerationLimit, setupImageRetentionPolicy } from "@/lib/auth"
 import { ScrollButton } from "@/components/scroll-button"
@@ -18,6 +18,8 @@ import { INTERNAL_LINKS } from "@/lib/config/links"
 // Marcamos esta página como dinámica para asegurar que siempre se obtengan los datos más recientes
 export const dynamic = "force-dynamic"
 export const revalidate = 0
+
+export const metadata = { title: "Tienda Oficial de Novamente" }
 
 export default async function Home() {
   // Ejecutar la política de retención de imágenes (eliminar imágenes de más de 15 días)
@@ -50,34 +52,25 @@ export default async function Home() {
   }
 
   // Use try/catch to handle any potential errors with fetching images
-  let recentImages = []
+  let recentImages: SavedImage[] = []
   try {
     // Si el usuario está autenticado, obtener sus imágenes
-    // Si no, obtener las imágenes de la sesión actual
-    if (user) {
+    if (user?.id) {
       recentImages = await getUserImages(user.id)
-    } else {
+    } else if (sessionId) {
       // Para invitados, filtrar por session_id para que el historial sea personal
-      recentImages = await getUserImages(undefined, sessionId || undefined)
+      recentImages = await getUserImages(undefined, sessionId)
     }
-    console.log("Server-side fetched images:", recentImages.length)
+    // Si no hay user ni sessionId, recentImages queda como array vacío
+    // (no hacer fetch innecesario)
   } catch (error) {
     console.error("Error fetching recent images:", error)
     // Continue with empty array if there's an error
+    recentImages = []
   }
-
-  // Imágenes críticas para preload
-  const criticalImages = [
-    "/novamente-logo.png",
-    "/products/hoodie-negro-front.jpeg",
-    "/products/aura-tshirt-blanco-front.jpeg",
-    "/products/hoodie-caramel-front.jpeg",
-  ]
 
   return (
     <div>
-      {/* Precargar imágenes críticas */}
-      <ImagePreloader images={criticalImages} priority />
 
       {/* Hero Section con estética de Novamente */}
       <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 py-20 bg-novamente-black">
@@ -220,7 +213,7 @@ export default async function Home() {
             </p>
           </div>
 
-          <StyleGallery limit={4} simplified={true} directToCustomization={true} />
+          <StyleGallery limit={6} simplified={true} directToCustomization={true} />
 
           <div className="text-center mt-12">
             <Link href="/styles">

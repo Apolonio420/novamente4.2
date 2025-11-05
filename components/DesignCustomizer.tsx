@@ -19,6 +19,7 @@ import { saveImageWithoutBackground } from "@/lib/db"
 import { StampSizeSelector } from "./StampSizeSelector"
 import { ImageGenerator } from "./ImageGenerator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
+import { smoothScrollIntoView } from "@/utils/scroll"
 
 interface DesignCustomizerProps {
   initialImageUrl: string
@@ -62,7 +63,7 @@ const getGarmentImage = (garmentType: string, color: string) => {
     case 'astra-oversize-hoodie':
       return `/garments/hoodie-${colorCode}-front.jpeg`
     case 'lienzo':
-      return '/placeholder.svg'
+      return '/garments/lienzo-main.png'
     default:
       return '/placeholder.svg'
   }
@@ -73,7 +74,7 @@ const GARMENT_DEFAULT_IMAGES = {
   "aura-oversize-tshirt": "/garments/tshirt-white-oversize-front.jpeg",
   "aldea-classic-tshirt": "/garments/tshirt-white-classic-front.jpeg", 
   "astra-oversize-hoodie": "/garments/hoodie-black-front.jpeg",
-  "lienzo": "/placeholder.svg",
+  "lienzo": "/garments/lienzo-main.png",
 }
 
 const COLORS_BY_GARMENT: Record<string, string[]> = {
@@ -152,6 +153,9 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   const [mockupImages, setMockupImages] = useState<{front?: string, back?: string}>({})
   const [currentViewIndex, setCurrentViewIndex] = useState(0) // 0: diseño original, 1: mockup frontal, 2: mockup trasero
   const [zoomImageAlt, setZoomImageAlt] = useState<string>('')
+  
+  // Estado para controlar la visibilidad del botón flotante
+  const [showFloatingButton, setShowFloatingButton] = useState(false)
 
   const [isRemovingBg, setIsRemovingBg] = useState(false)
   const [hasBackgroundRemoved, setHasBackgroundRemoved] = useState(false)
@@ -170,6 +174,9 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   // Estado para controlar el flujo dinámico
   const [currentStep, setCurrentStep] = useState<'step1' | 'step2' | 'step3' | 'step3.5' | 'step4' | 'step5'>('step1')
   const [editingStep, setEditingStep] = useState<string | null>(null) // Qué paso específico estás editando
+
+  // Referencia al contenedor del preview/canvas
+  const previewRef = React.useRef<HTMLDivElement | null>(null)
 
   // Función para determinar si mostrar las opciones de prenda (panel derecho)
   const shouldShowGarmentOptions = () => {
@@ -205,6 +212,18 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   // Debug: Monitorear cambios en currentStep
   useEffect(() => {
     console.log('🔍 DEBUG: currentStep changed to:', currentStep)
+  }, [currentStep])
+
+  // Scroll automático al preview cuando se pasa del Paso 2 al Paso 3
+  useEffect(() => {
+    if (currentStep === 'step3') {
+      // Esperar al re-render del DOM antes de scrollear usando requestAnimationFrame
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          smoothScrollIntoView(previewRef.current)
+        })
+      })
+    }
   }, [currentStep])
   
   // Eliminado: estado de selecciones visuales; se reemplaza por flujo por pasos
@@ -348,12 +367,42 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
     if (initialImageUrl) {
       // Para imágenes procesadas (con fondo removido), usar directamente la URL
       // Para imágenes de DALL-E, usar el proxy
-      const processedUrl = initialImageUrl.includes("oaidalleapiprodscus.blob.core.windows.net")
-        ? `/api/proxy-image?url=${encodeURIComponent(initialImageUrl)}`
-        : initialImageUrl
+      console.log('🎯 DesignCustomizer mount - initialImageUrl:', initialImageUrl)
+      
+      let processedUrl = initialImageUrl
+      
+      // Si es URL de DALL-E, usar proxy
+      if (initialImageUrl.includes("oaidalleapiprodscus.blob.core.windows.net")) {
+        processedUrl = `/api/proxy-image?url=${encodeURIComponent(initialImageUrl)}`
+      }
+      // Si es URL firmada de R2 (con X-Amz-), convertir a proxy estable para mejor compatibilidad
+      else if (initialImageUrl.includes('r2.cloudflarestorage.com') && initialImageUrl.includes('X-Amz-')) {
+        try {
+          const url = new URL(initialImageUrl)
+          // Extraer la clave del pathname (ej: /novamente/images/uuid/original/file.png)
+          const keyMatch = url.pathname.match(/\/novamente\/(.+)$/)
+          if (keyMatch?.[1]) {
+            const key = keyMatch[1].split('?')[0] // Remover query params si hay
+            processedUrl = `/api/r2-public?key=${encodeURIComponent(key)}`
+            console.log('🔄 Converted signed R2 URL to proxy:', { original: initialImageUrl.substring(0, 100), key })
+          }
+        } catch (err) {
+          console.warn('⚠️ Could not convert R2 URL to proxy, using original:', err)
+        }
+      }
 
-      setFrontDesign(processedUrl)
-      setOriginalImageUrl(processedUrl)
+      // Normalizar URLs relativas a absolutas por si el navegador o alguna lib requiere origen absoluto
+      let normalizedUrl = processedUrl
+      try {
+        if (typeof window !== 'undefined' && processedUrl.startsWith('/')) {
+          normalizedUrl = new URL(processedUrl, window.location.origin).toString()
+        }
+      } catch {}
+
+      console.log('🧩 DesignCustomizer applying URL to state:', { processedUrl, normalizedUrl })
+
+      setFrontDesign(normalizedUrl)
+      setOriginalImageUrl(normalizedUrl)
       // Setting initial design
 
       toast({
@@ -394,6 +443,14 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   }
 
   const handleStampSizeSelect = (size: 'R1' | 'R2' | 'R3', position?: 'center' | 'left') => {
+    // Para lienzo no hay lados; usar siempre front*
+    if (selectedGarment === 'lienzo') {
+      setFrontStampSize(size)
+      setFrontStampPosition(position || null)
+      setFirstStampDetails({ size, position })
+      return
+    }
+
     if (!firstStampConfirmed) {
       // Primer estampado - configurar lado seleccionado
       if (selectedSide === 'front') {
@@ -721,6 +778,10 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
     if (!frontDesign) return null
 
     try {
+      // Para lienzo no generamos mockups, usamos directamente la imagen del diseño
+      if (selectedGarment === 'lienzo') {
+        return frontDesign
+      }
       const response = await fetch('/api/generate-mockup', {
         method: 'POST',
         headers: {
@@ -762,8 +823,8 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
     setIsAddingToCart(true)
 
     try {
-      // Generar mockup antes de agregar al carrito
-      const mockupUrl = await generateMockupForCart()
+      // Para lienzo no generamos mockup; para prendas sí
+      const mockupUrl = selectedGarment === 'lienzo' ? null : await generateMockupForCart()
       
       const cartItem = {
         id: `${selectedGarment}-${selectedColor}-${selectedSize}-${Date.now()}`,
@@ -773,7 +834,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         size: selectedSize,
         price: finalPrice,
         quantity: 1,
-        image: frontDesign, // Cambiado de imageUrl a image
+        image: selectedGarment === 'lienzo' ? (frontDesign || initialImageUrl) : (mockupUrl || frontDesign),
         frontDesign: frontDesign || undefined,
         backDesign: backDesign || undefined,
       }
@@ -891,7 +952,8 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   }), [handleHistoryImageSelect])
 
   const handleConfirmFirstStamp = () => {
-    if (!selectedSide || !firstStampDetails) {
+    // Para lienzo no se requiere selectedSide
+    if (selectedGarment !== 'lienzo' && (!selectedSide || !firstStampDetails)) {
       toast({
         title: "Error",
         description: "Por favor, selecciona un lado y tamaño para el primer estampado.",
@@ -899,10 +961,28 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       })
       return
     }
+    
+    // Para lienzo, verificar que haya un tamaño seleccionado
+    if (selectedGarment === 'lienzo' && !frontStampSize) {
+      toast({
+        title: "Error",
+        description: "Por favor, selecciona un tamaño para tu lienzo.",
+        variant: "destructive",
+      })
+      return
+    }
 
     setFirstStampConfirmed(true)
-    setFirstStampSide(selectedSide)
+    setFirstStampSide(selectedGarment === 'lienzo' ? 'front' : (selectedSide || 'front'))
 
+    // Para lienzo, saltar directamente al paso 4 (sin doble estampado)
+    if (selectedGarment === 'lienzo') {
+      setCurrentStep('step4')
+      setCompletedSteps((prev) => ({ ...prev, step1: true, step2: true, step3: true, ['step3.5']: true }))
+      setShowDoubleStampingQuestion(false)
+      return
+    }
+    
     // Avanzar a Paso 3: decisión de doble estampado
     setCurrentStep('step3')
     setCompletedSteps((prev) => ({ ...prev, step1: true, step2: true }))
@@ -920,7 +1000,16 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   }
 
   const handleDoubleStampingChoice = (wantsDouble: boolean) => {
-    console.log('🎯 handleDoubleStampingChoice:', { wantsDouble, firstStampSide })
+    console.log('🎯 handleDoubleStampingChoice:', { wantsDouble, firstStampSide, selectedGarment })
+    // Para lienzo, no permitir doble estampado
+    if (selectedGarment === 'lienzo') {
+      setWantsDoubleStamping(false)
+      setShowDoubleStampingQuestion(false)
+      setCurrentStep('step4')
+      setCompletedSteps((prev) => ({ ...prev, step3: true, ['step3.5']: true }))
+      return
+    }
+    
     setWantsDoubleStamping(wantsDouble)
     setShowDoubleStampingQuestion(false)
     
@@ -947,164 +1036,199 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   }
 
   const handleContinueToPurchase = async () => {
-    // Reutilizar mockups existentes si están presentes
-    const haveFront = Boolean(generatedMockups.front || mockupImages.front)
-    const haveBack = Boolean(generatedMockups.back || mockupImages.back)
-    const alreadyHaveMockups = haveFront && (!wantsDoubleStamping || haveBack)
-    let finalMockups: { front?: string; back?: string } = {
-      front: generatedMockups.front || mockupImages.front,
-      back: generatedMockups.back || mockupImages.back,
-    }
+    // Deshabilitar botones y mostrar loading
+    setIsGeneratingMockups(true)
 
-    if (!alreadyHaveMockups) {
-      setIsGeneratingMockups(true)
-      setShowFinalMockups(true)
-      try {
-        const mockups = await generateFinalMockups()
-        setGeneratedMockups(mockups)
-        finalMockups = mockups // Usar los mockups recién generados
-      } catch (error) {
-        console.error("Error generando mockups:", error)
-        toast({
-          title: "Error",
-          description: "Hubo un problema generando las imágenes finales",
-          variant: "destructive",
-        })
-        setIsGeneratingMockups(false)
-        return
+    try {
+      // Asegurar que el mockup esté listo antes de continuar
+      const finalMockups = await ensureMockupReady()
+      
+      // Si no se generaron mockups (error o lienzo), usar los existentes o fallback
+      const mockups = finalMockups || {
+        front: generatedMockups.front || mockupImages.front,
+        back: generatedMockups.back || mockupImages.back,
       }
+
+      // Para lienzo, usar la imagen del diseño directamente
+      // Para prendas, priorizar mockup en el campo image
+      const mockImage = selectedGarment === 'lienzo'
+        ? (frontDesign || getCurrentDesign())
+        : (mockups.front || generatedMockups.front || mockupImages.front || frontDesign || getCurrentDesign())
+      
+      const directPurchaseItem = {
+        id: `${selectedGarment || 'garment'}-${selectedColor}-${selectedSize}-${Date.now()}`,
+        name: selectedGarment ? GARMENT_NAMES[selectedGarment as keyof typeof GARMENT_NAMES] : 'Prenda personalizada',
+        price: GARMENT_PRICES[selectedGarment as keyof typeof GARMENT_PRICES] + (wantsDoubleStamping ? DOUBLE_STAMPING_EXTRA : 0),
+        image: mockImage,
+        mockupUrl: selectedGarment === 'lienzo' ? undefined : (mockups.front || generatedMockups.front || mockupImages.front), // Campo adicional para compatibilidad
+        frontMockup: selectedGarment === 'lienzo' ? undefined : (mockups.front || generatedMockups.front || mockupImages.front),
+        backMockup: selectedGarment === 'lienzo' ? undefined : (mockups.back || generatedMockups.back || mockupImages.back),
+        quantity: 1,
+        color: selectedColor,
+        size: selectedSize,
+        garmentType: selectedGarment || '',
+        frontDesign: frontDesign || undefined,
+        backDesign: backDesign || undefined,
+        // Información del estampado
+        frontStampSize: frontStampSize || undefined,
+        backStampSize: backStampSize || undefined,
+        frontStampPosition: frontStampPosition || undefined,
+        backStampPosition: backStampPosition || undefined,
+        isGeneratingMockups: false, // Ya está generado, no mostrar loading
+      }
+
+      // Limpiar el carrito actual y agregar solo este item
+      const { clearCart, addItem } = useCart.getState()
+      clearCart()
+      addItem(directPurchaseItem)
+      
+      console.log("🛒 Compra directa - Carrito limpiado y item agregado:", {
+        ...directPurchaseItem,
+        frontMockup: directPurchaseItem.frontMockup,
+        backMockup: directPurchaseItem.backMockup,
+        image: directPurchaseItem.image,
+        mockupUrl: directPurchaseItem.mockupUrl
+      })
+      
+      setCompletedSteps((prev) => ({ ...prev, step4: true }))
+      serverLog('stepCompleted', { step: 'step4', mockups: {
+        hasFront: Boolean(mockups.front),
+        hasBack: Boolean(mockups.back)
+      } })
+      
+      toast({
+        title: "Procediendo al checkout",
+        description: "Redirigiendo a la página de pago..."
+      })
+      
+      router.push('/checkout')
+    } catch (error) {
+      console.error("Error en handleContinueToPurchase:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo continuar con la compra. Intenta nuevamente.",
+        variant: "destructive",
+      })
+    } finally {
       setIsGeneratingMockups(false)
     }
+  }
 
-    // Crear el item para compra directa (sin agregar al carrito)
-    const mockImage = finalMockups.front || getGarmentImage(selectedGarment as any, selectedColor)
-    const directPurchaseItem = {
-      id: `${selectedGarment || 'garment'}-${selectedColor}-${selectedSize}-${Date.now()}`,
-      name: selectedGarment ? GARMENT_NAMES[selectedGarment as keyof typeof GARMENT_NAMES] : 'Prenda personalizada',
-      price: GARMENT_PRICES[selectedGarment as keyof typeof GARMENT_PRICES] + (wantsDoubleStamping ? DOUBLE_STAMPING_EXTRA : 0),
-      image: mockImage,
-      frontMockup: finalMockups.front,
-      backMockup: finalMockups.back,
-      quantity: 1,
-      color: selectedColor,
-      size: selectedSize,
-      garmentType: selectedGarment || '',
-      frontDesign: frontDesign || undefined,
-      backDesign: backDesign || undefined,
+  // Helper para asegurar que el mockup esté listo antes de agregar al carrito/checkout
+  const ensureMockupReady = async (): Promise<{ front?: string; back?: string } | null> => {
+    // Si es lienzo, no generar mockup
+    if (selectedGarment === 'lienzo') {
+      return null
     }
 
-    // Limpiar el carrito actual y agregar solo este item
-    const { clearCart, addItem } = useCart.getState()
-    clearCart()
-    addItem(directPurchaseItem)
+    // Verificar si el usuario ya generó mockups manualmente (usando el botón "Generar Mockup")
+    // mockupImages contiene los mockups generados manualmente por el usuario
+    const userGeneratedFront = Boolean(mockupImages.front)
+    const userGeneratedBack = Boolean(mockupImages.back)
     
-    console.log("🛒 Compra directa - Carrito limpiado y item agregado:", directPurchaseItem)
+    // Si el usuario ya generó los mockups manualmente, usarlos y NO generar automáticamente
+    const hasUserGeneratedMockups = userGeneratedFront && (!wantsDoubleStamping || userGeneratedBack)
     
-    setCompletedSteps((prev) => ({ ...prev, step4: true }))
-    serverLog('stepCompleted', { step: 'step4', mockups: {
-      hasFront: Boolean(finalMockups.front),
-      hasBack: Boolean(finalMockups.back)
-    } })
-    
-    toast({
-      title: "Procediendo al checkout",
-      description: "Redirigiendo a la página de pago..."
-    })
-    
-    router.push('/checkout')
+    if (hasUserGeneratedMockups) {
+      console.log("🛒 ensureMockupReady: Usuario ya generó mockups manualmente, usando esos")
+      return {
+        front: mockupImages.front,
+        back: mockupImages.back,
+      }
+    }
+
+    // Si el usuario NO generó mockups manualmente, generarlos automáticamente ahora
+    console.log("🛒 ensureMockupReady: Usuario NO generó mockups, generando automáticamente...")
+    try {
+      const mockups = await generateFinalMockups()
+      // Guardar los mockups generados automáticamente en generatedMockups (no en mockupImages para no confundir)
+      setGeneratedMockups(mockups)
+      // También actualizar mockupImages para que estén disponibles para visualización
+      setMockupImages(mockups)
+      return mockups
+    } catch (error) {
+      console.error("Error generando mockups en ensureMockupReady:", error)
+      // Si falla, retornar null para usar la imagen original como fallback
+      toast({
+        title: "Aviso",
+        description: "No se pudo generar el mockup. Se usará la imagen del diseño.",
+        variant: "default",
+      })
+      return null
+    }
   }
 
   const handleAddToCartOnly = async () => {
-    // Reutilizar mockups existentes si están presentes
-    const haveFront = Boolean(generatedMockups.front || mockupImages.front)
-    const haveBack = Boolean(generatedMockups.back || mockupImages.back)
-    const alreadyHaveMockups = haveFront && (!wantsDoubleStamping || haveBack)
-    console.log("🛒 DEBUG handleAddToCartOnly:", {
-      alreadyHaveMockups,
-      hasFront: Boolean(generatedMockups.front),
-      hasBack: Boolean(generatedMockups.back),
-      wantsDoubleStamping,
-      frontDesign: Boolean(frontDesign),
-      backDesign: Boolean(backDesign)
-    })
-    
-    // Crear item del carrito inmediatamente (con o sin mockups)
-    const mockImage = (generatedMockups.front || mockupImages.front) || getGarmentImage(selectedGarment as any, selectedColor)
-    const item = {
-      id: `${selectedGarment || 'garment'}-${selectedColor}-${selectedSize}-${Date.now()}`,
-      name: selectedGarment ? GARMENT_NAMES[selectedGarment as keyof typeof GARMENT_NAMES] : 'Prenda personalizada',
-      price: GARMENT_PRICES[selectedGarment as keyof typeof GARMENT_PRICES] + (wantsDoubleStamping ? DOUBLE_STAMPING_EXTRA : 0),
-      image: mockImage,
-      frontMockup: generatedMockups.front || mockupImages.front,
-      backMockup: generatedMockups.back || mockupImages.back,
-      quantity: 1,
-      color: selectedColor,
-      size: selectedSize,
-      garmentType: selectedGarment || '',
-      frontDesign: frontDesign || undefined,
-      backDesign: backDesign || undefined,
-      isGeneratingMockups: !alreadyHaveMockups,
-    }
-    
-    console.log("🛒 Item agregado al carrito:", {
-      frontMockup: item.frontMockup,
-      backMockup: item.backMockup,
-      image: item.image
-    })
-    
-    // Agregar al carrito inmediatamente
-    addItem(item)
-    setCompletedSteps((prev) => ({ ...prev, step4: true }))
-    
-    // Mostrar toast y ir al carrito
-    toast({ 
-      title: "Agregado al carrito", 
-      description: alreadyHaveMockups ? "Tu diseño se agregó correctamente." : "Generando mockups en segundo plano..." 
-    })
-    router.push('/cart')
-    
-    // Si no hay mockups, generarlos en segundo plano
-    if (!alreadyHaveMockups) {
-      console.log("🛒 Generando mockups en segundo plano...")
-      try {
-        const mockups = await generateFinalMockups()
-        console.log("🛒 Mockups generados en segundo plano:", mockups)
-        
-        // Actualizar el item en el carrito con los mockups generados
-        const updatedItem = {
-          frontMockup: mockups.front,
-          backMockup: mockups.back,
-          image: mockups.front || item.image,
-          isGeneratingMockups: false
-        }
-        
-        // Actualizar el carrito con los mockups
-        const { updateItem } = useCart.getState()
-        updateItem(item.id, updatedItem)
-        
-        console.log("🛒 Carrito actualizado con mockups:", updatedItem)
-        
-        // Mostrar toast de confirmación
-        toast({ 
-          title: "Mockups generados", 
-          description: "Las imágenes de tu prenda están listas." 
-        })
-        
-      } catch (error) {
-        console.error("Error generando mockups en segundo plano:", error)
-        toast({ 
-          title: "Error", 
-          description: "No se pudieron generar las imágenes finales.", 
-          variant: "destructive" 
-        })
+    // Deshabilitar botones y mostrar loading
+    setIsGeneratingMockups(true)
+
+    try {
+      // Asegurar que el mockup esté listo antes de agregar
+      const mockups = await ensureMockupReady()
+      
+      // Para lienzo, usar la imagen del diseño directamente
+      // Para prendas, priorizar mockup en el campo image
+      const mockImage = selectedGarment === 'lienzo'
+        ? (frontDesign || getCurrentDesign())
+        : (mockups?.front || generatedMockups.front || mockupImages.front || frontDesign || getCurrentDesign())
+      
+      const item = {
+        id: `${selectedGarment || 'garment'}-${selectedColor}-${selectedSize}-${Date.now()}`,
+        name: selectedGarment ? GARMENT_NAMES[selectedGarment as keyof typeof GARMENT_NAMES] : 'Prenda personalizada',
+        price: GARMENT_PRICES[selectedGarment as keyof typeof GARMENT_PRICES] + (wantsDoubleStamping ? DOUBLE_STAMPING_EXTRA : 0),
+        image: mockImage,
+        mockupUrl: selectedGarment === 'lienzo' ? undefined : (mockups?.front || generatedMockups.front || mockupImages.front), // Campo adicional para compatibilidad
+        frontMockup: selectedGarment === 'lienzo' ? undefined : (mockups?.front || generatedMockups.front || mockupImages.front),
+        backMockup: selectedGarment === 'lienzo' ? undefined : (mockups?.back || generatedMockups.back || mockupImages.back),
+        quantity: 1,
+        color: selectedColor,
+        size: selectedSize,
+        garmentType: selectedGarment || '',
+        frontDesign: frontDesign || undefined,
+        backDesign: backDesign || undefined,
+        // Información del estampado
+        frontStampSize: frontStampSize || undefined,
+        backStampSize: backStampSize || undefined,
+        frontStampPosition: frontStampPosition || undefined,
+        backStampPosition: backStampPosition || undefined,
+        isGeneratingMockups: false, // Ya está generado, no mostrar loading
       }
+      
+      console.log("🛒 Item agregado al carrito:", {
+        frontMockup: item.frontMockup,
+        backMockup: item.backMockup,
+        image: item.image,
+        mockupUrl: item.mockupUrl
+      })
+      
+      // Agregar al carrito
+      addItem(item)
+      setCompletedSteps((prev) => ({ ...prev, step4: true }))
+      
+      // Mostrar toast y ir al carrito
+      toast({ 
+        title: "Agregado al carrito", 
+        description: selectedGarment === 'lienzo' ? "Tu lienzo se agregó correctamente." : "Tu diseño se agregó correctamente."
+      })
+      router.push('/cart')
+    } catch (error) {
+      console.error("Error en handleAddToCartOnly:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo agregar al carrito. Intenta nuevamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsGeneratingMockups(false)
     }
   }
 
   const generateFinalMockups = async () => {
+    // NO usar mockupImages aquí porque queremos generar NUEVOS mockups
+    // mockupImages contiene los mockups generados manualmente por el usuario
     const mockups: { front?: string, back?: string } = {
-      front: generatedMockups.front || mockupImages.front,
-      back: generatedMockups.back || mockupImages.back,
+      front: generatedMockups.front, // Solo usar generatedMockups (mockups generados automáticamente)
+      back: generatedMockups.back,
     }
     
     console.log("🛒 generateFinalMockups - Estado actual:", {
@@ -1113,20 +1237,23 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       backDesign: Boolean(backDesign),
       backStampSize,
       selectedGarment,
-      selectedColor
+      selectedColor,
+      hasExistingFront: Boolean(mockupImages.front),
+      hasExistingBack: Boolean(mockupImages.back)
     })
     
-    // Generar mockup frontal solo si no existe aún
-    if (frontDesign && frontStampSize && !mockups.front) {
+    // Generar mockup frontal solo si no existe aún (ni manual ni automático)
+    // Usar valores por defecto si no están configurados
+    if (frontDesign && !mockups.front && !mockupImages.front && selectedGarment && selectedGarment !== 'lienzo') {
       try {
         console.log("🛒 Generando mockup frontal...")
         const frontMockup = await generateStampWithParams(
-          frontDesign || '',
-          selectedGarment || '',
+          frontDesign,
+          selectedGarment,
           selectedColor,
           'front',
-          frontStampSize || 'R2',
-          frontStampPosition || 'center'
+          frontStampSize || 'R2', // Valor por defecto si no está configurado
+          frontStampPosition || 'center' // Valor por defecto si no está configurado
         )
         mockups.front = frontMockup
         console.log("🛒 Mockup frontal generado y asignado:", {
@@ -1136,20 +1263,21 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         })
       } catch (error) {
         console.error("Error generando mockup frontal:", error)
+        throw error // Propagar el error para que ensureMockupReady lo maneje
       }
     }
     
-    // Generar mockup trasero solo si no existe aún
-    if (backDesign && backStampSize && !mockups.back) {
+    // Generar mockup trasero solo si no existe aún (ni manual ni automático) y si hay backDesign
+    if (backDesign && !mockups.back && !mockupImages.back && selectedGarment && selectedGarment !== 'lienzo') {
       try {
         console.log("🛒 Generando mockup trasero...")
         const backMockup = await generateStampWithParams(
-          backDesign || '',
-          selectedGarment || '',
+          backDesign,
+          selectedGarment,
           selectedColor,
           'back',
-          backStampSize || 'R2',
-          backStampPosition || 'center'
+          backStampSize || 'R2', // Valor por defecto si no está configurado
+          backStampPosition || 'center' // Valor por defecto si no está configurado
         )
         mockups.back = backMockup
         console.log("🛒 Mockup trasero generado y asignado:", {
@@ -1159,6 +1287,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         })
       } catch (error) {
         console.error("Error generando mockup trasero:", error)
+        // No propagar error para el back, solo para el front
       }
     }
     
@@ -1190,12 +1319,50 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
     }
   }
 
+  // Helper para convertir URLs firmadas de R2 al proxy si es necesario
+  const normalizeImageUrlForBrowser = (url: string | null): string | null => {
+    if (!url || typeof url !== 'string') return url
+    // Si ya es proxy o placeholder, dejarla tal cual
+    if (url.startsWith('/api/r2-public') || url === 'placeholder-second-stamp' || url.startsWith('/')) {
+      return url
+    }
+    // Si es URL firmada de R2, convertir a proxy
+    if (url.includes('r2.cloudflarestorage.com') && url.includes('X-Amz-')) {
+      try {
+        const urlObj = new URL(url)
+        const keyMatch = urlObj.pathname.match(/\/novamente\/(.+)$/)
+        if (keyMatch?.[1]) {
+          const key = keyMatch[1].split('?')[0]
+          const proxyUrl = `/api/r2-public?key=${encodeURIComponent(key)}`
+          console.log('🔄 Normalized R2 signed URL to proxy in getCurrentViewImage')
+          return proxyUrl
+        }
+      } catch (err) {
+        console.warn('⚠️ Could not normalize R2 URL:', err)
+      }
+    }
+    return url
+  }
+
+  // Helper lienzo: ruta de referencia según tamaño
+  const getLienzoRefImage = (size?: 'R1' | 'R2' | 'R3' | null) => {
+    if (!size) return null
+    if (size === 'R1') return '/garments/red-square/lienzo-medidas-1.png'
+    if (size === 'R2') return '/garments/red-square/Gemini_Generated_Image_ozm8kozm8kozm8ko.png'
+    return '/garments/red-square/lienzo-medidas-3.png'
+  }
+
   // Función para obtener la imagen actual
   const getCurrentViewImage = () => {
-    const views = []
+    const views: Array<'original' | 'front' | 'back'> = []
     views.push('original')
-    if (mockupImages.front) views.push('front')
-    if (mockupImages.back) views.push('back')
+    if (selectedGarment === 'lienzo') {
+      // Para lienzo: agregar vista de tamaño seleccionado si existe
+      if (frontStampSize) views.push('front')
+    } else {
+      if (mockupImages.front) views.push('front')
+      if (mockupImages.back) views.push('back')
+    }
     
     // Asegurar que el índice esté dentro del rango válido
     const safeIndex = Math.max(0, Math.min(currentViewIndex, views.length - 1))
@@ -1217,35 +1384,47 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       return 'placeholder-second-stamp'
     }
     
+    let imageUrl: string | null = null
     switch (currentView) {
       case 'original':
         // En modo doble estampado, mostrar la imagen correspondiente al lado activo
         if (isDoubleStamping) {
           if (activeTab === 'front' && frontDesign) {
-            return frontDesign
+            imageUrl = frontDesign
           } else if (activeTab === 'back' && backDesign) {
-            return backDesign
+            imageUrl = backDesign
           } else if (activeTab === 'back' && !backDesign) {
             console.log('✅ Mostrando placeholder del segundo estampado (case original)')
             return 'placeholder-second-stamp'
           }
+        } else {
+          imageUrl = getCurrentDesign()
         }
-        return getCurrentDesign()
+        break
       case 'front':
-        return mockupImages.front
+        imageUrl = selectedGarment === 'lienzo' ? getLienzoRefImage(frontStampSize) : (mockupImages.front || null)
+        break
       case 'back':
-        return mockupImages.back
+        imageUrl = mockupImages.back || null
+        break
       default:
-        return getCurrentDesign()
+        imageUrl = getCurrentDesign()
     }
+    
+    // Normalizar URL antes de devolverla
+    return normalizeImageUrlForBrowser(imageUrl) || '/placeholder.svg'
   }
 
   // Función para obtener el título de la vista actual
   const getCurrentViewTitle = () => {
     const views = []
     views.push('original')
-    if (mockupImages.front) views.push('front')
-    if (mockupImages.back) views.push('back')
+    if (selectedGarment === 'lienzo') {
+      if (frontStampSize) views.push('front')
+    } else {
+      if (mockupImages.front) views.push('front')
+      if (mockupImages.back) views.push('back')
+    }
     
     // Asegurar que el índice esté dentro del rango válido
     const safeIndex = Math.max(0, Math.min(currentViewIndex, views.length - 1))
@@ -1270,7 +1449,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         }
         return 'Diseño Original'
       case 'front':
-        return 'Mockup Frontal'
+        return selectedGarment === 'lienzo' ? 'Tamaño seleccionado' : 'Mockup Frontal'
       case 'back':
         return 'Mockup Trasero'
       default:
@@ -1294,12 +1473,15 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         'astra-oversize-tshirt': { type: 'tshirt', variant: 'oversize' },
         'astra-classic-tshirt': { type: 'tshirt', variant: 'classic' },
         'aura-oversize-tshirt': { type: 'tshirt', variant: 'oversize' },
-        'aldea-classic-tshirt': { type: 'tshirt', variant: 'classic' }
+        'aldea-classic-tshirt': { type: 'tshirt', variant: 'classic' },
+        'lienzo': { type: 'lienzo', variant: 'classic' }
       }
       
       const mappedGarment = garmentTypeMap[garmentType] || { type: 'tshirt', variant: 'classic' }
       
-      const response = await fetch('/api/generate-stamp', {
+      // Para lienzo usar directamente el generador de mockup por composición
+      const useMockupDirect = garmentType === 'lienzo'
+      const response = await fetch(useMockupDirect ? '/api/generate-mockup' : '/api/generate-stamp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1317,17 +1499,54 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         }),
       })
 
-      if (!response.ok) {
-        throw new Error(`Error generando mockup: ${response.statusText}`)
+      if (response.ok) {
+        const data = await response.json()
+        console.log("🛒 generateStampWithParams response:", data)
+        const publicUrl = data.publicUrl
+        console.log("🛒 generateStampWithParams returning:", publicUrl)
+        return publicUrl
       }
 
-      const data = await response.json()
-      console.log("🛒 generateStampWithParams response:", data)
-      
-      // El endpoint generate-stamp devuelve publicUrl directamente
-      const publicUrl = data.publicUrl
-      console.log("🛒 generateStampWithParams returning:", publicUrl)
-      return publicUrl
+      // Si falla, intentar obtener el mensaje del backend y hacer fallback al generador clásico
+      let backendMessage = ''
+      try {
+        const j = await response.json()
+        backendMessage = j?.error || j?.message || ''
+      } catch {}
+      console.warn('⚠️ /api/generate-stamp falló, intentando fallback a /api/generate-mockup', {
+        status: response.status,
+        statusText: response.statusText,
+        backendMessage,
+      })
+
+      // Fallback: generador de mockup por composición (sin Gemini)
+      const fallbackRes = await fetch('/api/generate-mockup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          designImageUrl: designImage,
+          garmentType: garmentType,
+          garmentColor: garmentColor,
+          side,
+          size,
+          prompt: `Fallback Mockup ${side} ${size}`,
+          originalImageId: imageId,
+        }),
+      })
+
+      if (!fallbackRes.ok) {
+        let fbMsg = backendMessage || 'Error generando mockup'
+        try {
+          const j = await fallbackRes.json()
+          fbMsg = j?.error || j?.message || fbMsg
+        } catch {}
+        throw new Error(`Error generando mockup: ${fbMsg}`)
+      }
+
+      const fbData = await fallbackRes.json()
+      const fbUrl = fbData.publicUrl || fbData.url
+      console.log('🛒 Fallback /api/generate-mockup OK →', fbUrl)
+      return fbUrl
     } catch (error) {
       console.error('Error generando mockup:', error)
       throw error
@@ -1413,6 +1632,17 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         description: `El mockup ${activeTab === 'front' ? 'frontal' : 'trasero'} se ha generado exitosamente`,
       })
 
+      // Hacer scroll hacia el contenedor del mockup después de un pequeño delay para asegurar que se renderice
+      setTimeout(() => {
+        const mockupContainer = document.querySelector('[data-mockup-container]')
+        if (mockupContainer) {
+          mockupContainer.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          })
+        }
+      }, 300)
+
     } catch (error) {
       console.error('Error generando mockup:', error)
       toast({
@@ -1438,6 +1668,40 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       return () => document.removeEventListener('keydown', handleEsc)
     }
   }, [showZoomModal])
+
+  // Hook para detectar scroll y mostrar/ocultar botón flotante
+  useEffect(() => {
+    // Solo activar si hay una imagen generada
+    const hasImage = initialImageUrl || frontDesign || backDesign
+    if (!hasImage || !selectedGarment) {
+      setShowFloatingButton(false)
+      return
+    }
+
+    const handleScroll = () => {
+      // Buscar el contenedor del botón original
+      const buttonContainer = document.querySelector('[data-generate-mockup-button]')
+      if (!buttonContainer) {
+        setShowFloatingButton(false)
+        return
+      }
+
+      const rect = buttonContainer.getBoundingClientRect()
+      // Verificar si el botón está fuera de la vista (arriba o abajo)
+      const isOutOfView = rect.bottom < 0 || rect.top > window.innerHeight
+      
+      // Mostrar botón flotante cuando el original sale de la vista y hay suficiente scroll
+      setShowFloatingButton(isOutOfView && window.scrollY > 100)
+    }
+
+    // Escuchar scroll
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll() // Verificar estado inicial
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [selectedGarment, frontDesign, backDesign, initialImageUrl])
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -1528,7 +1792,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                   Esta es la imagen que se estampará en tu prenda
                 </p>
                 {getCurrentDesign() ? (
-                    <div className="relative aspect-square max-w-2xl mx-auto bg-gray-100 rounded-lg overflow-hidden">
+                    <div ref={previewRef} className="relative aspect-square max-w-2xl mx-auto bg-gray-100 rounded-lg overflow-hidden" data-mockup-container>
                       {/* Imagen principal o placeholder */}
                       {(() => {
                         // LÓGICA SIMPLIFICADA: Si estamos en doble estampado, tab back, y no hay backDesign, mostrar placeholder
@@ -1596,12 +1860,13 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                         
                         // Imagen normal
                         const currentImage = getCurrentViewImage()
+                        console.log('🖼️ Render currentImage:', currentImage)
                         return (
                           <img
                             src={currentImage || "/placeholder.svg"}
                             alt={getCurrentViewTitle()}
                             className="w-full h-full object-contain"
-                            onError={(e) => (e.currentTarget.src = "/placeholder.svg")}
+                            onError={(e) => { console.error('🛑 Error cargando currentImage', currentImage); e.currentTarget.src = "/placeholder.svg" }}
                           />
                         )
                       })()}
@@ -1612,7 +1877,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                       </div>
                       
                       {/* Flechas de navegación (solo si hay mockups generados) */}
-                      {(mockupImages.front || mockupImages.back) && (
+                      {((mockupImages.front || mockupImages.back) || (selectedGarment === 'lienzo' && frontStampSize)) && (
                         <>
                           <Button
                             onClick={() => navigateView('prev')}
@@ -1633,15 +1898,19 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                         </>
                       )}
                       
-        {/* Botón Generar Mockup */}
-        <div className="absolute bottom-4 right-4">
-          {(() => {
+        {/* Botón Generar Mockup - oculto para lienzo */}
+        <div className="absolute bottom-4 right-4" data-generate-mockup-button>
+          {selectedGarment !== 'lienzo' && (() => {
             const isDisabled = isGeneratingMockup || !selectedGarment || !selectedColor || !selectedSize || !(activeTab === 'front' ? frontStampSize : backStampSize)
             return (
               <Button
                 onClick={generateMockup}
                 disabled={isDisabled}
-                className="relative"
+                className={`relative transition-all duration-300 ease-in-out ${
+                  isDisabled 
+                    ? '' 
+                    : 'bg-violet-600 hover:bg-violet-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-violet-900/40'
+                }`}
                 size="sm"
                 variant={isDisabled ? "secondary" : "default"}
                 title={
@@ -1664,7 +1933,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
             )
           })()}
           {/* Indicador de estado */}
-          {(!selectedGarment || !selectedColor || !selectedSize || !(activeTab === 'front' ? frontStampSize : backStampSize)) && !isGeneratingMockup && (
+          {selectedGarment !== 'lienzo' && (!selectedGarment || !selectedColor || !selectedSize || !(activeTab === 'front' ? frontStampSize : backStampSize)) && !isGeneratingMockup && (
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white"></div>
           )}
         </div>
@@ -1675,8 +1944,8 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                   </div>
                 )}
                 
-                 {/* Botones de selección frontal/trasero - Solo mostrar si no se ha confirmado el primer estampado */}
-                 {!firstStampConfirmed && (
+                 {/* Botones de selección frontal/trasero - Solo mostrar si no se ha confirmado el primer estampado y NO es lienzo */}
+                 {!firstStampConfirmed && selectedGarment !== 'lienzo' && (
                    <div className="mt-6" data-section="side-selection">
                      <h4 className="text-lg font-semibold mb-4 text-center">¿Dónde querés estampar tu imagen?</h4>
                      <div className="flex justify-center gap-6">
@@ -1749,47 +2018,94 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                 
                 {/* Selector de tamaño del estampado - Mostrar en paso 2 y paso 3.5 (segundo estampado) */}
                 {(() => {
+                  // Para lienzo, mostrar siempre sin necesidad de selectedSide
+                  if (selectedGarment === 'lienzo' && (currentStep === 'step2' || currentStep === 'step3.5')) {
+                    return true
+                  }
+                  // Para otras prendas, requerir selectedSide
                   const shouldShowStampSelector = selectedSide && (currentStep === 'step2' || currentStep === 'step3.5')
                   console.log('🔍 DEBUG StampSizeSelector condition:', {
                     selectedSide,
                     currentStep,
                     firstStampConfirmed,
                     wantsDoubleStamping,
-                    shouldShowStampSelector
+                    shouldShowStampSelector,
+                    selectedGarment
                   })
                   return shouldShowStampSelector
                 })() && (
                   <div className={`mt-6 transition-all duration-500 ${highlightedSection === 'stamp-size-selection' ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50/10 rounded-lg p-3' : ''}`} data-section="stamp-size-selection">
                     <h4 className="text-lg font-semibold mb-4 text-center">
-                      Tamaño del Estampado {selectedSide === 'front' ? 'Frontal' : 'Trasero'}
+                      {selectedGarment === 'lienzo' ? 'Tamaño del Lienzo' : `Tamaño del Estampado ${selectedSide === 'front' ? 'Frontal' : 'Trasero'}`}
                     </h4>
                 <StampSizeSelector
-                  garmentType={selectedGarment === 'astra-oversize-hoodie' ? 'hoodie' : 'tshirt'}
-                  garmentVariant={selectedGarment.includes('oversize') ? 'oversize' : 'classic'}
+                  garmentType={selectedGarment === 'astra-oversize-hoodie' ? 'hoodie' : selectedGarment === 'lienzo' ? 'lienzo' : 'tshirt'}
+                  garmentVariant={selectedGarment === 'lienzo' ? undefined : (selectedGarment.includes('oversize') ? 'oversize' : 'classic')}
                   garmentColor={selectedColor as 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model'}
-                  side={selectedSide || 'front'}
+                  side={selectedGarment === 'lienzo' ? 'front' : (selectedSide || 'front')}
                   onSizeSelect={handleStampSizeSelect}
-                  selectedSize={selectedSide === 'front' ? frontStampSize || undefined : backStampSize || undefined}
-                  selectedPosition={selectedSide === 'front' ? frontStampPosition || undefined : backStampPosition || undefined}
+                  selectedSize={selectedGarment === 'lienzo' ? (frontStampSize || undefined) : (selectedSide === 'front' ? frontStampSize || undefined : backStampSize || undefined)}
+                  selectedPosition={selectedGarment === 'lienzo' ? (frontStampPosition || undefined) : (selectedSide === 'front' ? frontStampPosition || undefined : backStampPosition || undefined)}
                   onZoomImage={openZoomModal}
                 />
                   </div>
                 )}
                 
                 {/* Botón Siguiente para confirmar primer estampado */}
-                {!firstStampConfirmed && selectedSide && (frontStampSize || backStampSize) && (
-                  <div className="mt-4 flex justify-center">
+                {!firstStampConfirmed && (selectedGarment === 'lienzo' ? frontStampSize : (selectedSide && (frontStampSize || backStampSize))) && (
+                  <div className="mt-4 flex justify-center gap-3 flex-wrap">
                     <Button
                       onClick={handleConfirmFirstStamp}
                       className="px-6"
                     >
                       Siguiente
                     </Button>
+                    {/* Botón Generar Mockup al lado de Siguiente cuando se hace scroll */}
+                    {showFloatingButton && selectedGarment && selectedGarment !== 'lienzo' && (initialImageUrl || frontDesign || backDesign) && (
+                      <div className="relative">
+                        {(() => {
+                          const isDisabled = isGeneratingMockup || !selectedGarment || !selectedColor || !selectedSize || !(activeTab === 'front' ? frontStampSize : backStampSize)
+                          return (
+                            <Button
+                              onClick={generateMockup}
+                              disabled={isDisabled}
+                              className={`transition-all duration-300 ease-in-out ${
+                                isDisabled 
+                                  ? 'bg-gray-400 cursor-not-allowed text-white font-medium px-6 py-3 rounded-xl shadow-lg' 
+                                  : 'bg-violet-600 hover:bg-violet-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-violet-900/40 hover:scale-105'
+                              }`}
+                              size="sm"
+                              variant={isDisabled ? "secondary" : "default"}
+                              title={
+                                !selectedGarment ? "Selecciona una prenda" :
+                                !selectedColor ? "Selecciona un color" :
+                                !selectedSize ? "Selecciona un talle" :
+                                !(activeTab === 'front' ? frontStampSize : backStampSize) ? `Selecciona el tamaño del estampado ${activeTab === 'front' ? 'frontal' : 'trasero'}` :
+                                "Generar mockup"
+                              }
+                            >
+                              {isGeneratingMockup ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Generando...
+                                </>
+                              ) : (
+                                "Generar Mockup"
+                              )}
+                            </Button>
+                          )
+                        })()}
+                        {/* Indicador de estado para botón flotante */}
+                        {(!selectedGarment || !selectedColor || !selectedSize || !(activeTab === 'front' ? frontStampSize : backStampSize)) && !isGeneratingMockup && (
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-orange-500 rounded-full border-2 border-white"></div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Pregunta de doble estampado */}
-                {showDoubleStampingQuestion && (
+                {/* Pregunta de doble estampado - No mostrar para lienzo */}
+                {showDoubleStampingQuestion && selectedGarment !== 'lienzo' && (
                   <div className="mt-8 p-6 bg-muted rounded-lg">
                     <div className="text-center">
                       <h4 className="text-lg font-semibold mb-2">¿Querés un segundo estampado?</h4>
@@ -1804,22 +2120,31 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                         >
                           Agregar un segundo estampado (+{formatCurrency(DOUBLE_STAMPING_EXTRA)})
                         </Button>
-                        <div className="flex gap-3">
+                        {isGeneratingMockups ? (
                           <Button
-                            onClick={handleAddToCartOnly}
-                            variant="secondary"
-                            className="flex-1 text-sm"
-                            disabled={isGeneratingMockups}
+                            disabled
+                            className="w-full text-sm"
                           >
-                            Agregar al carrito
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Generando mockup...
                           </Button>
-                          <Button
-                            onClick={handleContinueToPurchase}
-                            className="flex-1 text-sm"
-                          >
-                            Continuar a la compra
-                          </Button>
-                        </div>
+                        ) : (
+                          <div className="flex gap-3">
+                            <Button
+                              onClick={handleAddToCartOnly}
+                              variant="secondary"
+                              className="flex-1 text-sm"
+                            >
+                              Agregar al carrito
+                            </Button>
+                            <Button
+                              onClick={handleContinueToPurchase}
+                              className="flex-1 text-sm"
+                            >
+                              Continuar a la compra
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1829,43 +2154,36 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                 {/* Botón continuar a compra (solo cuando ya se eligió doble y está listo) */}
                 {firstStampConfirmed && !showDoubleStampingQuestion && (
                   <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button
-                      onClick={handleAddToCartOnly}
-                      disabled={isGeneratingMockups || (wantsDoubleStamping && !(backDesign && backStampSize))}
-                      variant="secondary"
-                      className="px-8 py-3 text-lg"
-                    >
-                      {isGeneratingMockups ? (
-                        <>
-                          <Loader className="w-4 h-4 mr-2 animate-spin" />
-                          Preparando...
-                        </>
-                      ) : (
-                        <>
+                    {isGeneratingMockups ? (
+                      <Button
+                        disabled
+                        className="w-full px-8 py-3 text-lg"
+                      >
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Generando mockup...
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          onClick={handleAddToCartOnly}
+                          disabled={wantsDoubleStamping && !(backDesign && backStampSize)}
+                          variant="secondary"
+                          className="px-8 py-3 text-lg"
+                        >
                           <ShoppingCart className="w-4 h-4 mr-2" />
                           Agregar al carrito
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={handleContinueToPurchase}
-                      disabled={
-                        isGeneratingMockups ||
-                        (wantsDoubleStamping ? !(frontDesign && backDesign && backStampSize) : !frontDesign)
-                      }
-                      className="px-8 py-3 text-lg"
-                    >
-                      {isGeneratingMockups ? (
-                        <>
-                          <Loader className="w-4 h-4 mr-2 animate-spin" />
-                          Generando imágenes...
-                        </>
-                      ) : (
-                        <>
+                        </Button>
+                        <Button
+                          onClick={handleContinueToPurchase}
+                          disabled={
+                            wantsDoubleStamping ? !(frontDesign && backDesign && backStampSize) : !frontDesign
+                          }
+                          className="px-8 py-3 text-lg"
+                        >
                           Finalizar compra
-                        </>
-                      )}
-                    </Button>
+                        </Button>
+                      </>
+                    )}
                   </div>
                 )}
                 
@@ -1956,6 +2274,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                   </div>
 
                   <div className="space-y-4">
+                    {selectedGarment !== 'lienzo' && (
                     <div data-section="color-selection">
                       <h4 className="font-medium mb-3">Color</h4>
                       <div className="grid grid-cols-2 gap-2">
@@ -1982,7 +2301,9 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                         ))}
                       </div>
                     </div>
+                    )}
 
+                    {selectedGarment !== 'lienzo' && (
                     <div data-section="size-selection">
                       <h4 className="font-medium mb-3">Talle</h4>
                       <div className="grid grid-cols-4 gap-2">
@@ -2001,6 +2322,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                         ))}
                       </div>
                     </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -2032,6 +2354,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                   </div>
         </DialogContent>
       </Dialog>
+
 
       {/* Modal de zoom */}
       {showZoomModal && (

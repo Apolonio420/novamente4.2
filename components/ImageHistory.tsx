@@ -61,130 +61,182 @@ export function ImageHistory({
   selectedImage,
   showStyles = true, // Por defecto mostrar estilos
 }: ImageHistoryProps) {
-  const [images, setImages] = useState<SavedImage[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [historyScrollPosition, setHistoryScrollPosition] = useState(0)
-  const [stylesScrollPosition, setStylesScrollPosition] = useState(0)
-
-  // Solo imágenes de diseño del nuevo formato (URLs estables de proxy)
+  // Filtrar imágenes de diseño (excluir mockups y assets estáticos) - debe estar antes de filterDesignImages
   const isDesignImage = (img: SavedImage): boolean => {
     const url = (img?.url || "").toLowerCase()
-    if (!url) return false
+    const key = (img?.key || "").toLowerCase()
     
-    // NUEVO FORMATO: Solo mostrar imágenes con URLs estables de proxy
-    const isNewFormat = url.startsWith('/api/r2-public?key=')
+    if (!url && !key) return false
     
-    if (isNewFormat) {
-      // Verificar que no sea un mockup o stamp derivado
-      const key = url.split('key=')[1] || ''
-      const decodedKey = decodeURIComponent(key)
-      
-      // Excluir stamps y mockups derivados
-      const isDerived = decodedKey.includes('/stamps/') || decodedKey.includes('/mockups/')
-      
-      // Solo incluir imágenes originales y procesadas (no derivadas)
-      const isOriginalOrProcessed = decodedKey.includes('/original/') || decodedKey.includes('/processed/')
-      
-      const result = !isDerived && isOriginalOrProcessed
-      // Filtering new format images
-      return result
+    // Extraer el key del proxy si es una URL de proxy
+    let effectiveKey = key
+    if (url.includes('/api/proxy-image')) {
+      try {
+        const urlObj = new URL(url, 'http://dummy')
+        const keyParam = urlObj.searchParams.get('key')
+        if (keyParam) {
+          effectiveKey = decodeURIComponent(keyParam).toLowerCase()
+        }
+      } catch {
+        // Si falla parsear, usar el key directamente si existe
+      }
     }
     
-    // FORMATO ANTIGUO: Excluir mockups y assets estáticos
-    const isJpeg = url.endsWith('.jpg') || url.endsWith('.jpeg')
+    // Si tenemos un key efectivo, usarlo para validar
+    const checkString = effectiveKey || url
+    
+    // Excluir mockups y assets estáticos locales
     const looksLikeMockup =
-      url.includes('/products/') ||
-      url.includes('/garments/') ||
-      url.includes('/styles/') ||
-      url.includes('/falco/products/') ||
-      url.includes('/placeholder') ||
-      url.includes('/logo')
-
-    // Solo permitir PNGs o URLs de storage que no sean mockups
-    return !looksLikeMockup && !isJpeg && (url.endsWith('.png') || url.includes('r2.dev') || url.includes('supabase.co'))
+      checkString.includes('/products/') ||
+      checkString.includes('/garments/') ||
+      checkString.includes('/styles/') ||
+      checkString.includes('/falco/products/') ||
+      checkString.includes('/placeholder') ||
+      checkString.includes('/logo')
+    
+    if (looksLikeMockup) return false
+    
+    // Excluir JPEGs que son probablemente mockups
+    const isJpeg = checkString.endsWith('.jpg') || checkString.endsWith('.jpeg')
+    if (isJpeg) return false
+    
+    // Excluir stamps y mockups derivados en R2
+    if (checkString.includes('/stamps/') || checkString.includes('/mockups/')) return false
+    
+    // Incluir:
+    // - URLs del proxy que apuntan a imágenes originales o procesadas
+    // - URLs de R2 directas (r2.dev o cloudflarestorage.com) que sean de imágenes originales o procesadas
+    // - PNGs locales válidos (que no sean mockups)
+    // - URLs de Supabase storage (por compatibilidad)
+    
+    const isProxyUrl = url.includes('/api/proxy-image')
+    const isR2Url = url.includes('r2.dev') || url.includes('r2.cloudflarestorage.com')
+    const isSupabaseUrl = url.includes('supabase.co')
+    const isPng = checkString.endsWith('.png')
+    const isOriginalOrProcessed = checkString.includes('/original/') || 
+                                   checkString.includes('/processed/') || 
+                                   checkString.includes('images/')
+    
+    // Si es URL del proxy, verificar que el key sea de una imagen original/procesada
+    if (isProxyUrl) {
+      return isOriginalOrProcessed && !looksLikeMockup
+    }
+    
+    // Si es URL de R2 directa, debe ser original o procesada
+    if (isR2Url) {
+      return isOriginalOrProcessed
+    }
+    
+    // Supabase o PNGs locales válidos
+    return isSupabaseUrl || (isPng && !looksLikeMockup)
   }
 
+  // Función helper para filtrar imágenes
   const filterDesignImages = (list: SavedImage[] = []): SavedImage[] => {
     // Filtrar y evitar duplicados por id/url
     const seen = new Set<string>()
     const result: SavedImage[] = []
-    const excluded: string[] = []
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Filtering images:', list.length, 'items')
+    }
     
     for (const item of list) {
       const isDesign = isDesignImage(item)
       if (!isDesign) {
-        excluded.push(`${item.id}: ${item.url?.substring(0, 50)}...`)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('❌ Filtered out:', item.url?.substring(0, 50), 'key:', item.key?.substring(0, 50))
+        }
         continue
       }
       
-      const key = item.id || item.url
+      const key = item.id || item.url || item.key
       if (key && !seen.has(key)) {
         seen.add(key)
         result.push(item)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Included:', item.url?.substring(0, 50))
+        }
       }
     }
     
-    // Images filtered for history
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Filtered result:', result.length, 'design images')
+    }
     
     return result
   }
+
+  // Inicializar con propImages exactamente como vienen del servidor para evitar hydration mismatch
+  const [images, setImages] = useState<SavedImage[]>(propImages ? filterDesignImages(propImages) : [])
+  const [loading, setLoading] = useState(!propImages || propImages.length === 0)
+  const [error, setError] = useState<string | null>(null)
+  const [historyScrollPosition, setHistoryScrollPosition] = useState(0)
+  const [stylesScrollPosition, setStylesScrollPosition] = useState(0)
 
   const loadImages = async () => {
     try {
       setLoading(true)
       setError(null)
-      console.log("🔄 Loading images...")
 
       if (propImages && propImages.length > 0) {
-        console.log("📋 Using provided images:", propImages.length)
         // Usar solo imágenes de diseño (excluir mockups/prendas)
         setImages(filterDesignImages(propImages))
+        setLoading(false)
         return
       }
 
-      console.log("🔍 Fetching user images for userId:", userId)
+      // Solo hacer fetch si tenemos userId o sessionId
+      if (!userId) {
+        setImages([])
+        setLoading(false)
+        return
+      }
+
       const recentImages = await getUserImages(userId)
-      console.log("✅ Loaded", recentImages.length, "images")
       setImages(filterDesignImages(recentImages))
     } catch (err) {
       console.error("❌ Error loading images:", err)
       setError("Error al cargar las imágenes")
 
-      if (!propImages || propImages.length === 0) {
-        try {
-          console.log("🔄 Trying localStorage fallback...")
-          const localImages = JSON.parse(localStorage.getItem("saved_images") || "[]")
-          console.log("📱 Found", localImages.length, "images in localStorage fallback")
-          setImages(localImages.slice(0, limit))
-          setError(null) // Clear error if localStorage works
-        } catch (localErr) {
-          console.error("❌ Error loading from localStorage:", localErr)
-          setImages([]) // Ensure empty array instead of undefined
-        }
-      } else {
+      if (propImages && propImages.length > 0) {
         // Use prop images as fallback
         setImages(filterDesignImages(propImages))
         setError(null)
+      } else {
+        setImages([])
       }
     } finally {
       setLoading(false)
     }
   }
 
+  // Efecto principal: manejar propImages primero, luego fetch si es necesario
+  // Sincronizar con propImages cuando cambien (mantener cantidad para evitar hydration mismatch)
   useEffect(() => {
-    loadImages()
-  }, [userId, limit, propImages, refreshKey])
-
-  useEffect(() => {
-    if (propImages && propImages.length > 0) {
-      console.log("📋 Prop images updated:", propImages.length)
-      // Usar solo imágenes de diseño (excluir mockups/prendas)
-      setImages(filterDesignImages(propImages))
+    if (propImages) {
+      const filtered = filterDesignImages(propImages)
+      // Solo actualizar si realmente cambió para evitar renders innecesarios
+      setImages(prev => {
+        if (prev.length !== filtered.length || 
+            prev.some((img, i) => img.id !== filtered[i]?.id)) {
+          return filtered
+        }
+        return prev
+      })
+      setLoading(false)
+      setError(null)
+    } else if (userId) {
+      // Solo hacer fetch si no hay propImages y tenemos userId
+      loadImages()
+    } else {
+      // Si no hay userId ni propImages, mantener vacío
+      setImages([])
       setLoading(false)
       setError(null)
     }
-  }, [propImages])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, limit, refreshKey, propImages])
 
   const handleDownload = async (image: SavedImage) => {
     try {
@@ -415,3 +467,4 @@ export function ImageHistory({
     </div>
   )
 }
+

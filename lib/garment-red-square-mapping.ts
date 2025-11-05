@@ -155,8 +155,9 @@ export function getRedSquareGarmentImage(
     return null
   }
 
-  // Solo R1 usa códigos de posición en el nombre del archivo
-  const positionCode = size === 'R1' ? (position === 'center' ? 'C' : position === 'left' ? 'I' : '') : ''
+  // Solo R1 en FRENTE usa códigos de posición en el nombre del archivo
+  // Para DORSO (back), R1 no usa códigos de posición
+  const positionCode = (size === 'R1' && side === 'front') ? (position === 'center' ? 'C' : position === 'left' ? 'I' : '') : ''
   const fileName = `MRoja-${imageNumber}-${typeCode}_${colorCode}_${sideCode}_${size}${positionCode}.png`
   return `/garments/red-square/${fileName}`
 }

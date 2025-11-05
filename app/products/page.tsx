@@ -1,4 +1,5 @@
 import Link from "next/link"
+export const metadata = { title: "Productos | Novamente" }
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"

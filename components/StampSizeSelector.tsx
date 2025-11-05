@@ -8,8 +8,8 @@ import { getAvailableRedSquareOptions } from "@/lib/garment-red-square-mapping"
 import { OptimizedImage } from "./OptimizedImage"
 
 interface StampSizeSelectorProps {
-  garmentType: 'hoodie' | 'tshirt'
-  garmentVariant: 'classic' | 'oversize'
+  garmentType: 'hoodie' | 'tshirt' | 'lienzo'
+  garmentVariant?: 'classic' | 'oversize'
   garmentColor: 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model'
   side: 'front' | 'back'
   onSizeSelect: (size: 'R1' | 'R2' | 'R3', position?: 'center' | 'left') => void
@@ -30,12 +30,23 @@ export function StampSizeSelector({
 }: StampSizeSelectorProps) {
   const [hoveredOption, setHoveredOption] = useState<string | null>(null)
 
-  const availableOptions = getAvailableRedSquareOptions(
-    garmentType,
-    garmentVariant,
-    garmentColor,
-    side
-  )
+  // Opciones especiales para lienzo
+  const getLienzoOptions = () => {
+    return [
+      { size: 'R1' as const, imagePath: '/garments/red-square/lienzo-medidas-1.png' },
+      { size: 'R2' as const, imagePath: '/garments/red-square/Gemini_Generated_Image_ozm8kozm8kozm8ko.png' },
+      { size: 'R3' as const, imagePath: '/garments/red-square/lienzo-medidas-3.png' }
+    ]
+  }
+
+  const availableOptions = garmentType === 'lienzo' 
+    ? getLienzoOptions()
+    : getAvailableRedSquareOptions(
+        garmentType,
+        garmentVariant || 'classic',
+        garmentColor,
+        side
+      )
 
   // StampSizeSelector initialized
 
@@ -50,6 +61,13 @@ export function StampSizeSelector({
   const displayOptions = availableOptions.length > 0 ? availableOptions : fallbackOptions
 
   const getSizeLabel = (size: 'R1' | 'R2' | 'R3') => {
+    if (garmentType === 'lienzo') {
+      switch (size) {
+        case 'R1': return '15cm x 10cm'
+        case 'R2': return '30cm x 20cm'
+        case 'R3': return '40cm x 35cm'
+      }
+    }
     switch (size) {
       case 'R1': return 'Pequeño'
       case 'R2': return 'Mediano'
@@ -68,12 +86,14 @@ export function StampSizeSelector({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Tamaño del Estampado</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Selecciona el tamaño y posición del estampado en tu prenda
-        </p>
-      </div>
+      {garmentType !== 'lienzo' && (
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Tamaño del Estampado</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Selecciona el tamaño y posición del estampado en tu prenda
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {displayOptions.map((option) => {

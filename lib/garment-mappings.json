@@ -288,9 +288,27 @@
     "timestamp": 1755023843496
   },
   {
+    "id": "1755025000000",
+    "name": "Lienzo Base",
+    "garmentPath": "/garments/lienzo-main.png",
+    "margins": {
+      "top": 20,
+      "right": 20,
+      "bottom": 20,
+      "left": 20
+    },
+    "coordinates": {
+      "x": 80,
+      "y": 120,
+      "width": 240,
+      "height": 180
+    },
+    "timestamp": 1755025000000
+  },
+  {
     "id": "1755024175022",
     "name": "T-shirt Caramelo Oversize Frontal",
-    "garmentPath": "/garments/tshirt-caramel-oversize-front.jpeg",
+    "garmentPath": "/garments/tshirt-caramel-oversize-front.png",
     "margins": {
       "top": 24,
       "right": 27,
