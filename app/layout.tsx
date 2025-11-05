@@ -13,23 +13,23 @@ const inter = Inter({ subsets: ["latin"], display: "swap" })
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.novamente.ar"),
-  title: { default: "Novamente | Potenciá tu marca con merchandising sin inversión inicial", template: "%s · Novamente" },
+  title: { default: "Novamente | Ropa personalizada con IA", template: "%s · Novamente" },
   description:
-    "Diseñá, lanzá y vendé tu línea de indumentaria con Novamente. Sin inversión inicial, sin complicaciones.",
+    "Diseñá tu prenda en minutos: elegí modelo, color y estampa generada con IA. Envíos a todo el país y drops on-demand. Tu diseño, tu estilo.",
   openGraph: {
     type: "website",
     url: "https://www.novamente.ar/",
-    title: "Novamente",
-    description: "Potenciá tu marca con merchandising sin inversión inicial.",
-    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "Logo Novamente" }],
+    title: "Novamente | Ropa personalizada con IA",
+    description: "Diseñá tu prenda en minutos: elegí modelo, color y estampa generada con IA. Envíos a todo el país y drops on-demand. Tu diseño, tu estilo.",
+    images: [{ url: "https://www.novamente.ar/novamente-logo.png", width: 1200, height: 630, alt: "Logo Novamente" }],
     siteName: "Novamente",
     locale: "es_AR",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Novamente",
-    description: "Potenciá tu marca con merchandising sin inversión inicial.",
-    images: ["/logo.png"],
+    title: "Novamente | Ropa personalizada con IA",
+    description: "Diseñá tu prenda en minutos: elegí modelo, color y estampa generada con IA. Envíos a todo el país y drops on-demand. Tu diseño, tu estilo.",
+    images: ["https://www.novamente.ar/novamente-logo.png"],
   },
   icons: {
     icon: [

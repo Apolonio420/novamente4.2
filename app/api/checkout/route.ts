@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { MercadoPagoConfig, Preference } from "mercadopago"
+import { createOrder } from "@/lib/db"
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { items, customer, total } = await request.json()
+    const { items, customer, total, cartItems, subtotal, shippingCost } = await request.json()
 
     console.log("🛒 Checkout API received:", {
       itemsCount: items?.length || 0,
@@ -61,6 +62,90 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Price validation failed" }, { status: 400 })
     }
 
+    // Calcular subtotal y shipping si no vienen
+    const finalSubtotal = subtotal || calculatedTotal
+    const finalShippingCost = shippingCost || (calculatedTotal >= 85000 ? 0 : 6500)
+    const finalTotal = finalSubtotal + finalShippingCost
+
+    // Preparar items del pedido desde cartItems si están disponibles, sino desde items simplificados
+    let orderItems: any[] = []
+    if (cartItems && Array.isArray(cartItems) && cartItems.length > 0) {
+      // Usar cartItems completos (tienen toda la información)
+      orderItems = cartItems.map((item: any) => ({
+        item_name: item.name || item.title || `${item.garmentType || 'Producto'} - ${item.color} - Talle ${item.size}`,
+        product_type: item.garmentType || item.product_type || 'unknown',
+        product_color: item.color || item.product_color || 'unknown',
+        product_size: item.size || item.product_size || 'unknown',
+        quantity: item.quantity || 1,
+        unit_price: item.price || item.unit_price || 0,
+        total_price: (item.price || item.unit_price || 0) * (item.quantity || 1),
+        image_url: item.image || item.image_url || null,
+        mockup_url: item.mockupUrl || item.mockup_url || null,
+        front_mockup_url: item.frontMockup || item.front_mockup_url || null,
+        back_mockup_url: item.backMockup || item.back_mockup_url || null,
+        front_design_url: item.frontDesign || item.front_design_url || null,
+        back_design_url: item.backDesign || item.back_design_url || null,
+        front_stamp_size: item.frontStampSize || null,
+        back_stamp_size: item.backStampSize || null,
+        front_stamp_position: item.frontStampPosition || null,
+        back_stamp_position: item.backStampPosition || null,
+        design_position: item.designPosition || null,
+        custom_design: item.customDesign || null,
+        metadata: {
+          itemId: item.id,
+          ...(item.metadata || {})
+        }
+      }))
+    } else {
+      // Fallback: crear items desde items simplificados
+      orderItems = items.map((item: any) => ({
+        item_name: item.title || 'Producto',
+        product_type: 'unknown',
+        product_color: 'unknown',
+        product_size: 'unknown',
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0,
+        total_price: (item.unit_price || 0) * (item.quantity || 1),
+        image_url: null,
+        metadata: {
+          itemId: item.id,
+          description: item.description || null
+        }
+      }))
+    }
+
+    // Crear el pedido en la base de datos ANTES de crear la preferencia
+    const externalReference = `order_${Date.now()}`
+    
+    const newOrder = await createOrder({
+      customer_email: customer.email,
+      customer_first_name: customer.firstName,
+      customer_last_name: customer.lastName,
+      customer_phone: customer.phone || null,
+      shipping_address: customer.address,
+      shipping_city: customer.city,
+      shipping_postal_code: customer.postalCode || null,
+      payment_method: 'mercadopago',
+      payment_status: 'pending',
+      external_reference: externalReference,
+      subtotal: finalSubtotal,
+      shipping_cost: finalShippingCost,
+      total: finalTotal,
+      currency: 'ARS',
+      status: 'pending',
+      items: orderItems,
+    })
+
+    if (!newOrder) {
+      console.error("❌ Failed to create order in database")
+      return NextResponse.json({ 
+        success: false, 
+        error: "Error creating order" 
+      }, { status: 500 })
+    }
+
+    console.log("✅ Order created in database:", newOrder.id, "Number:", newOrder.order_number)
+
     // Crear preferencia de MercadoPago con precios exactos
     const preference = new Preference(client)
 
@@ -94,7 +179,7 @@ export async function POST(request: NextRequest) {
       // auto_return: "approved", // Comentado para evitar problemas con localhost
       notification_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/webhooks/mercadopago`,
       statement_descriptor: "NOVAMENTE",
-      external_reference: `order_${Date.now()}`,
+      external_reference: externalReference, // Usar el mismo external_reference del pedido creado
     }
 
     console.log("🚀 Creating MercadoPago preference:", {
@@ -112,12 +197,22 @@ export async function POST(request: NextRequest) {
     console.log("✅ MercadoPago preference created:", {
       id: result.id,
       init_point: result.init_point,
+      externalReference: externalReference,
+    })
+
+    // Actualizar el pedido con el preference_id de MercadoPago
+    const { updateOrder } = await import("@/lib/db")
+    await updateOrder(newOrder.id!, {
+      mercado_pago_preference_id: result.id,
     })
 
     return NextResponse.json({
       success: true,
       id: result.id,
       init_point: result.init_point,
+      order_id: newOrder.id,
+      order_number: newOrder.order_number,
+      external_reference: externalReference,
     })
   } catch (error: any) {
     console.error("❌ Checkout API error:", error)

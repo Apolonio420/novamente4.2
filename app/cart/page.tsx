@@ -215,10 +215,10 @@ export default function CartPage() {
                   {/* Imagen del producto - priorizar mockup */}
                   <div 
                     className="relative w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:bg-gray-200 transition-colors"
-                    onDoubleClick={() => openZoomModal(
-                      normalizeSrc(item.mockupUrl) || normalizeSrc(item.frontMockup) || normalizeSrc(item.backMockup) || normalizeSrc(item.image), 
-                      item.name
-                    )}
+                    onDoubleClick={() => {
+                      const imageSrc = item.mockupUrl || item.frontMockup || item.backMockup || item.image
+                      openZoomModal(normalizeSrc(imageSrc), item.name)
+                    }}
                     title="Doble click para hacer zoom"
                   >
                     {item.isGeneratingMockups && !item.mockupUrl && !item.frontMockup && !item.backMockup ? (
@@ -226,18 +226,24 @@ export default function CartPage() {
                         <Loader2 className="h-4 w-4 animate-spin text-primary" />
                       </div>
                     ) : (
-                      <Image 
-                        src={normalizeSrc(item.mockupUrl) || normalizeSrc(item.frontMockup) || normalizeSrc(item.backMockup) || normalizeSrc(item.image)} 
-                        alt={item.name} 
-                        fill 
-                        sizes="96px" 
-                        className="object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement
-                          target.src = "/placeholder.svg"
-                        }}
-                        unoptimized={needsUnoptimized(normalizeSrc(item.mockupUrl) || normalizeSrc(item.frontMockup) || normalizeSrc(item.backMockup) || normalizeSrc(item.image))}
-                      />
+                      (() => {
+                        const imageSrc = item.mockupUrl || item.frontMockup || item.backMockup || item.image
+                        const normalizedSrc = normalizeSrc(imageSrc)
+                        return (
+                          <Image 
+                            src={normalizedSrc} 
+                            alt={item.name} 
+                            fill 
+                            sizes="96px" 
+                            className="object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.src = "/placeholder.svg"
+                            }}
+                            unoptimized={needsUnoptimized(normalizedSrc)}
+                          />
+                        )
+                      })()
                     )}
                   </div>
 

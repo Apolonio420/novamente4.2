@@ -806,3 +806,350 @@ function createImageKey(url: string, prompt: string): string {
     return `${url}|${prompt.trim().toLowerCase()}`
   }
 }
+
+// ============================================
+// FUNCIONES DE PEDIDOS (ORDERS)
+// ============================================
+
+export interface OrderItem {
+  item_name: string
+  product_type: string
+  product_color: string
+  product_size: string
+  quantity: number
+  unit_price: number
+  total_price: number
+  image_url?: string | null
+  mockup_url?: string | null
+  front_mockup_url?: string | null
+  back_mockup_url?: string | null
+  front_design_url?: string | null
+  back_design_url?: string | null
+  front_stamp_size?: string | null
+  back_stamp_size?: string | null
+  front_stamp_position?: string | null
+  back_stamp_position?: string | null
+  design_position?: any
+  custom_design?: any
+  metadata?: any
+}
+
+export interface Order {
+  id?: string
+  order_number: string
+  user_id?: string | null
+  customer_email: string
+  customer_first_name: string
+  customer_last_name: string
+  customer_phone?: string | null
+  shipping_address: string
+  shipping_city: string
+  shipping_postal_code?: string | null
+  payment_method: 'mercadopago' | 'transferencia'
+  payment_status?: string
+  payment_id?: string | null
+  external_reference?: string | null
+  mercado_pago_preference_id?: string | null
+  subtotal: number
+  shipping_cost: number
+  total: number
+  currency?: string
+  status?: string
+  notes?: string | null
+  metadata?: any
+  items: OrderItem[]
+}
+
+/**
+ * Genera un número de pedido único en formato NOV-YYYY-NNNN
+ */
+function generateOrderNumber(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
+  return `NOV-${year}${month}${day}-${random}`
+}
+
+/**
+ * Crea un nuevo pedido con todos sus items
+ */
+export async function createOrder(orderData: Omit<Order, 'id' | 'order_number'>): Promise<Order | null> {
+  try {
+    console.log("📦 Creating order with", orderData.items.length, "items")
+    
+    const user = await getCurrentUser()
+    const userId = user?.id || null
+    
+    // Generar número de pedido único
+    let orderNumber = generateOrderNumber()
+    let attempts = 0
+    const maxAttempts = 10
+    
+    // Verificar que el número de pedido sea único
+    while (attempts < maxAttempts) {
+      const { data: existing } = await supabaseAdmin
+        .from("orders")
+        .select("id")
+        .eq("order_number", orderNumber)
+        .single()
+      
+      if (!existing) {
+        break // Número único encontrado
+      }
+      
+      orderNumber = generateOrderNumber()
+      attempts++
+    }
+    
+    if (attempts >= maxAttempts) {
+      console.error("❌ Could not generate unique order number after", maxAttempts, "attempts")
+      return null
+    }
+    
+    // Preparar datos del pedido
+    const orderInsert = {
+      order_number: orderNumber,
+      user_id: userId,
+      customer_email: orderData.customer_email,
+      customer_first_name: orderData.customer_first_name,
+      customer_last_name: orderData.customer_last_name,
+      customer_phone: orderData.customer_phone || null,
+      shipping_address: orderData.shipping_address,
+      shipping_city: orderData.shipping_city,
+      shipping_postal_code: orderData.shipping_postal_code || null,
+      payment_method: orderData.payment_method,
+      payment_status: orderData.payment_status || 'pending',
+      payment_id: orderData.payment_id || null,
+      external_reference: orderData.external_reference || null,
+      mercado_pago_preference_id: orderData.mercado_pago_preference_id || null,
+      subtotal: orderData.subtotal,
+      shipping_cost: orderData.shipping_cost,
+      total: orderData.total,
+      currency: orderData.currency || 'ARS',
+      status: orderData.status || 'pending',
+      notes: orderData.notes || null,
+      metadata: orderData.metadata || null,
+    }
+    
+    // Insertar pedido usando supabaseAdmin para bypass RLS
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .insert(orderInsert)
+      .select()
+      .single()
+    
+    if (orderError) {
+      console.error("❌ Error creating order:", orderError)
+      return null
+    }
+    
+    console.log("✅ Order created:", order.id, "Number:", order.order_number)
+    
+    // Insertar items del pedido
+    const orderItems = orderData.items.map(item => ({
+      order_id: order.id,
+      item_name: item.item_name,
+      product_type: item.product_type,
+      product_color: item.product_color,
+      product_size: item.product_size,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      total_price: item.total_price,
+      image_url: item.image_url || null,
+      mockup_url: item.mockup_url || null,
+      front_mockup_url: item.front_mockup_url || null,
+      back_mockup_url: item.back_mockup_url || null,
+      front_design_url: item.front_design_url || null,
+      back_design_url: item.back_design_url || null,
+      front_stamp_size: item.front_stamp_size || null,
+      back_stamp_size: item.back_stamp_size || null,
+      front_stamp_position: item.front_stamp_position || null,
+      back_stamp_position: item.back_stamp_position || null,
+      design_position: item.design_position || null,
+      custom_design: item.custom_design || null,
+      metadata: item.metadata || null,
+    }))
+    
+    const { error: itemsError } = await supabaseAdmin
+      .from("order_items")
+      .insert(orderItems)
+    
+    if (itemsError) {
+      console.error("❌ Error creating order items:", itemsError)
+      // Intentar eliminar el pedido si falla la inserción de items
+      await supabaseAdmin.from("orders").delete().eq("id", order.id)
+      return null
+    }
+    
+    console.log("✅ Order items created:", orderItems.length)
+    
+    // Obtener el pedido completo con items
+    const fullOrder = await getOrderById(order.id)
+    return fullOrder
+  } catch (error) {
+    console.error("❌ Exception in createOrder:", error)
+    return null
+  }
+}
+
+/**
+ * Obtiene un pedido por ID con todos sus items
+ */
+export async function getOrderById(orderId: string): Promise<Order | null> {
+  try {
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .eq("id", orderId)
+      .single()
+    
+    if (orderError || !order) {
+      console.error("❌ Error fetching order:", orderError)
+      return null
+    }
+    
+    const { data: items, error: itemsError } = await supabaseAdmin
+      .from("order_items")
+      .select("*")
+      .eq("order_id", orderId)
+      .order("created_at", { ascending: true })
+    
+    if (itemsError) {
+      console.error("❌ Error fetching order items:", itemsError)
+      return null
+    }
+    
+    return {
+      ...order,
+      items: items || [],
+    }
+  } catch (error) {
+    console.error("❌ Exception in getOrderById:", error)
+    return null
+  }
+}
+
+/**
+ * Obtiene un pedido por número de pedido
+ */
+export async function getOrderByNumber(orderNumber: string): Promise<Order | null> {
+  try {
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .eq("order_number", orderNumber)
+      .single()
+    
+    if (orderError || !order) {
+      console.error("❌ Error fetching order by number:", orderError)
+      return null
+    }
+    
+    return await getOrderById(order.id)
+  } catch (error) {
+    console.error("❌ Exception in getOrderByNumber:", error)
+    return null
+  }
+}
+
+/**
+ * Obtiene pedidos por external_reference (usado por MercadoPago)
+ */
+export async function getOrderByExternalReference(externalReference: string): Promise<Order | null> {
+  try {
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .eq("external_reference", externalReference)
+      .single()
+    
+    if (orderError || !order) {
+      console.error("❌ Error fetching order by external reference:", orderError)
+      return null
+    }
+    
+    return await getOrderById(order.id)
+  } catch (error) {
+    console.error("❌ Exception in getOrderByExternalReference:", error)
+    return null
+  }
+}
+
+/**
+ * Actualiza un pedido existente
+ */
+export async function updateOrder(orderId: string, updates: Partial<Order>): Promise<boolean> {
+  try {
+    const { items, ...orderUpdates } = updates
+    
+    // Actualizar pedido
+    const updateData: any = {}
+    if (orderUpdates.payment_status !== undefined) updateData.payment_status = orderUpdates.payment_status
+    if (orderUpdates.payment_id !== undefined) updateData.payment_id = orderUpdates.payment_id
+    if (orderUpdates.status !== undefined) updateData.status = orderUpdates.status
+    if (orderUpdates.mercado_pago_preference_id !== undefined) updateData.mercado_pago_preference_id = orderUpdates.mercado_pago_preference_id
+    if (orderUpdates.notes !== undefined) updateData.notes = orderUpdates.notes
+    if (orderUpdates.metadata !== undefined) updateData.metadata = orderUpdates.metadata
+    
+    const { error } = await supabaseAdmin
+      .from("orders")
+      .update(updateData)
+      .eq("id", orderId)
+    
+    if (error) {
+      console.error("❌ Error updating order:", error)
+      return false
+    }
+    
+    console.log("✅ Order updated:", orderId)
+    return true
+  } catch (error) {
+    console.error("❌ Exception in updateOrder:", error)
+    return false
+  }
+}
+
+/**
+ * Obtiene todos los pedidos de un usuario
+ */
+export async function getUserOrders(userId?: string): Promise<Order[]> {
+  try {
+    if (!userId) {
+      return []
+    }
+    
+    const { data: orders, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+    
+    if (error) {
+      console.error("❌ Error fetching user orders:", error)
+      return []
+    }
+    
+    // Obtener items para cada pedido
+    const ordersWithItems = await Promise.all(
+      (orders || []).map(async (order) => {
+        const { data: items } = await supabase
+          .from("order_items")
+          .select("*")
+          .eq("order_id", order.id)
+          .order("created_at", { ascending: true })
+        
+        return {
+          ...order,
+          items: items || [],
+        }
+      })
+    )
+    
+    return ordersWithItems
+  } catch (error) {
+    console.error("❌ Exception in getUserOrders:", error)
+    return []
+  }
+}

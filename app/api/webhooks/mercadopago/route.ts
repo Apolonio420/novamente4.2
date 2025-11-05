@@ -1,5 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase" // Assuming Supabase client is imported here
+import { getOrderByExternalReference, updateOrder } from "@/lib/db"
+import { MercadoPagoConfig, Payment } from "mercadopago"
+
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN!,
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,35 +19,117 @@ export async function POST(request: NextRequest) {
     // Handle payment notifications
     if (body.type === "payment") {
       const paymentId = body.data?.id
+      const externalReference = body.data?.external_reference
 
-      if (paymentId) {
-        console.log("💳 Payment notification for ID:", paymentId)
+      if (paymentId && externalReference) {
+        console.log("💳 Payment notification for ID:", paymentId, "External Ref:", externalReference)
 
-        // Here you would typically:
-        // 1. Fetch payment details from MercadoPago API
-        // 2. Update order status in your database
-        // 3. Send confirmation email to customer
-        // 4. Update inventory
+        // Buscar el pedido por external_reference
+        const order = await getOrderByExternalReference(externalReference)
 
-        // For now, we'll just log the information
-        console.log("📋 Payment data to process:", {
-          paymentId,
-          timestamp: new Date().toISOString(),
-          externalReference: body.data?.external_reference,
-        })
-
-        // TODO: Implement order processing logic here
-        // Example structure for saving to Supabase:
-        const orderData = {
-          payment_id: paymentId,
-          external_reference: body.data?.external_reference,
-          status: "pending", // will be updated when we fetch full payment details
-          created_at: new Date().toISOString(),
-          webhook_data: body,
+        if (!order) {
+          console.error("❌ Order not found for external_reference:", externalReference)
+          return NextResponse.json({ 
+            error: "Order not found",
+            received: true 
+          }, { status: 404 })
         }
 
-        // Save to Supabase orders table
-        await supabase.from("orders").insert([orderData])
+        console.log("✅ Found order:", order.id, "Number:", order.order_number)
+
+        // Obtener detalles completos del pago desde MercadoPago
+        try {
+          const payment = new Payment(client)
+          const paymentDetails = await payment.get({ id: paymentId })
+
+          console.log("📋 Payment details:", {
+            id: paymentDetails.id,
+            status: paymentDetails.status,
+            status_detail: paymentDetails.status_detail,
+            transaction_amount: paymentDetails.transaction_amount,
+          })
+
+          // Mapear estados de MercadoPago a nuestros estados
+          let paymentStatus = 'pending'
+          let orderStatus = 'pending'
+
+          switch (paymentDetails.status) {
+            case 'approved':
+              paymentStatus = 'approved'
+              orderStatus = 'confirmed'
+              break
+            case 'rejected':
+              paymentStatus = 'rejected'
+              orderStatus = 'cancelled'
+              break
+            case 'cancelled':
+              paymentStatus = 'cancelled'
+              orderStatus = 'cancelled'
+              break
+            case 'refunded':
+              paymentStatus = 'refunded'
+              orderStatus = 'cancelled'
+              break
+            case 'pending':
+            case 'in_process':
+            case 'in_meditation':
+              paymentStatus = 'pending'
+              orderStatus = 'pending'
+              break
+            default:
+              paymentStatus = 'pending'
+              orderStatus = 'pending'
+          }
+
+          // Actualizar el pedido con la información del pago
+          const updated = await updateOrder(order.id!, {
+            payment_id: String(paymentId),
+            payment_status: paymentStatus,
+            status: orderStatus,
+            metadata: {
+              webhook_data: body,
+              payment_details: {
+                status: paymentDetails.status,
+                status_detail: paymentDetails.status_detail,
+                transaction_amount: paymentDetails.transaction_amount,
+                currency_id: paymentDetails.currency_id,
+                date_approved: paymentDetails.date_approved,
+                date_created: paymentDetails.date_created,
+                payment_method_id: paymentDetails.payment_method_id,
+                payment_type_id: paymentDetails.payment_type_id,
+              }
+            }
+          })
+
+          if (updated) {
+            console.log("✅ Order updated successfully:", order.id)
+            
+            // Aquí podrías:
+            // 1. Enviar email de confirmación al cliente
+            // 2. Actualizar inventario
+            // 3. Notificar al equipo de logística
+            // 4. Etc.
+            
+            if (paymentStatus === 'approved' && orderStatus === 'confirmed') {
+              console.log("🎉 Payment approved! Order confirmed:", order.order_number)
+            }
+          } else {
+            console.error("❌ Failed to update order:", order.id)
+          }
+        } catch (paymentError: any) {
+          console.error("❌ Error fetching payment details from MercadoPago:", paymentError)
+          
+          // Aun así, actualizar el pedido con la información básica del webhook
+          await updateOrder(order.id!, {
+            payment_id: String(paymentId),
+            metadata: {
+              webhook_data: body,
+              payment_fetch_error: paymentError.message,
+            }
+          })
+        }
+      } else {
+        console.warn("⚠️ Payment ID or external reference missing in webhook")
       }
     }
 

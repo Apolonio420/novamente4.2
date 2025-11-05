@@ -1,8 +1,29 @@
+import { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight } from "lucide-react"
+
+export const metadata: Metadata = {
+  title: "Crea, publica y vendé tu merch con Novamente",
+  description: "Generá estampas con IA, ofrecé talles y colores, cobrá online. Nosotros imprimimos y enviamos directo a tus clientes.",
+  openGraph: {
+    type: "website",
+    url: "https://www.novamente.ar/merch",
+    title: "Crea, publica y vendé tu merch con Novamente",
+    description: "Generá estampas con IA, ofrecé talles y colores, cobrá online. Nosotros imprimimos y enviamos directo a tus clientes.",
+    images: [{ url: "https://www.novamente.ar/novamente-logo.png", width: 1200, height: 630, alt: "Logo Novamente" }],
+    siteName: "Novamente",
+    locale: "es_AR",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Crea, publica y vendé tu merch con Novamente",
+    description: "Generá estampas con IA, ofrecé talles y colores, cobrá online. Nosotros imprimimos y enviamos directo a tus clientes.",
+    images: ["https://www.novamente.ar/novamente-logo.png"],
+  },
+}
 
 export default function MerchPage() {
   const brands = [

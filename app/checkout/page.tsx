@@ -129,6 +129,9 @@ export default function CheckoutPage() {
           items: checkoutItems,
           customer: customerInfo,
           total: total, // Total calculado para validación
+          cartItems: items, // Enviar items completos del carrito
+          subtotal: subtotal,
+          shippingCost: shippingCost,
         }
 
         console.log("📤 Request body:", JSON.stringify(requestBody, null, 2))
@@ -157,14 +160,42 @@ export default function CheckoutPage() {
           throw new Error(data.error || "Error al procesar el pago")
         }
       } else {
-        // Transferencia bancaria - mostrar datos de transferencia
+        // Transferencia bancaria - crear pedido primero
+        console.log("🔄 Creating transfer order...")
+        
+        const transferResponse = await fetch("/api/checkout/transfer", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            customer: customerInfo,
+            items: items,
+            subtotal: subtotal,
+            shippingCost: shippingCost,
+            total: total,
+          }),
+        })
+
+        if (!transferResponse.ok) {
+          const errorData = await transferResponse.json()
+          console.error("❌ Transfer API Error:", errorData)
+          throw new Error(errorData.error || "Error al crear el pedido")
+        }
+
+        const transferDataResponse = await transferResponse.json()
+        console.log("✅ Transfer order created:", transferDataResponse)
+
+        // Preparar datos de transferencia para mostrar en página
         const transferData = {
           bank: "MercadoPago",
           cvu: "0000003100011214870727",
           alias: "novamente",
           amount: total,
           customer: customerInfo,
-          items: items
+          items: items,
+          order_id: transferDataResponse.order_id,
+          order_number: transferDataResponse.order_number,
         }
         
         // Guardar datos de transferencia en localStorage para mostrar en página de confirmación

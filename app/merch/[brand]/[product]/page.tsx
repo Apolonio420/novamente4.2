@@ -8,10 +8,11 @@ import { Badge } from "@/components/ui/badge"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, ShoppingCart, Heart, Star } from "lucide-react"
+import { ArrowLeft, ShoppingCart, Heart, Star, Zap } from "lucide-react"
 import { useCart } from "@/lib/cartStore"
 import { useToast } from "@/hooks/use-toast"
 import { notFound } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 interface ProductPageProps {
   params: {
@@ -27,6 +28,7 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const { addItem } = useCart()
   const { toast } = useToast()
+  const router = useRouter()
 
   // Por ahora solo tenemos FALCO
   if (params.brand !== "falco") {
@@ -395,14 +397,43 @@ export default function ProductPage({ params }: ProductPageProps) {
       size: selectedSize,
       price: product.price,
       quantity: quantity,
-      imageUrl: selectedColorData.images.front,
-      brand: product.brand,
+      image: selectedColorData.images.front,
     })
 
     toast({
       title: "Producto agregado",
       description: `${product.name} agregado al carrito`,
     })
+  }
+
+  const handleBuyNow = () => {
+    if (!selectedColor || !selectedSize) {
+      toast({
+        title: "Selección incompleta",
+        description: "Por favor selecciona color y talle antes de comprar",
+        variant: "destructive",
+      })
+      return
+    }
+
+    addItem({
+      id: `${product.id}-${selectedColor}-${selectedSize}-${Date.now()}`,
+      name: `${product.name} - ${product.brand}`,
+      garmentType: product.category,
+      color: selectedColorData.name,
+      size: selectedSize,
+      price: product.price,
+      quantity: quantity,
+      image: selectedColorData.images.front,
+    })
+
+    toast({
+      title: "Producto agregado",
+      description: `${product.name} agregado al carrito`,
+    })
+
+    // Redirigir al checkout
+    router.push("/checkout")
   }
 
   const formatPrice = (price: number) => {
@@ -567,9 +598,9 @@ export default function ProductPage({ params }: ProductPageProps) {
               Agregar al carrito - {formatPrice(product.price * quantity)}
             </Button>
 
-            <Button variant="outline" className="w-full" size="lg">
-              <Heart className="mr-2 h-4 w-4" />
-              Agregar a favoritos
+            <Button onClick={handleBuyNow} variant="outline" className="w-full" size="lg" disabled={!selectedColor || !selectedSize}>
+              <Zap className="mr-2 h-4 w-4" />
+              Comprar ahora
             </Button>
           </div>
 

@@ -20,6 +20,8 @@ interface TransferData {
   cbu?: string
   alias: string
   amount: number
+  order_id?: string
+  order_number?: string
   customer: {
     email: string
     firstName: string
@@ -277,7 +279,7 @@ export default function TransferPage() {
 
           {!receiptUploaded ? (
             <ReceiptUploader
-              orderId={`order_${Date.now()}`}
+              orderId={transferData.order_id || transferData.order_number || `order_${Date.now()}`}
               customerEmail={transferData.customer.email}
               onUploadSuccess={handleReceiptUploadSuccess}
             />
