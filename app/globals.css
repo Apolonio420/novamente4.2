@@ -192,3 +192,13 @@
 .novamente-gradient-text {
   @apply bg-gradient-to-r from-novamente-blue to-novamente-magenta bg-clip-text text-transparent;
 }
+
+/* Ocultar scrollbar pero mantener funcionalidad */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}

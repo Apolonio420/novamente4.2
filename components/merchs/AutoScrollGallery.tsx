@@ -1,7 +1,8 @@
 "use client"
 
 import Image from "next/image"
-import React from "react"
+import React, { useRef, useState, useEffect } from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { MERCHS_GALLERY } from "@/lib/merchsGallery"
 
 type Props = {
@@ -17,7 +18,10 @@ export default function AutoScrollGallery({
   pauseOnHover = true,
   speedSec = 38,
 }: Props) {
-  
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(true)
+  const [isAutoScrolling, setIsAutoScrolling] = useState(true)
 
   // Cache-busting simple para forzar el refresco cuando se actualizan las imágenes del carrusel
   const VERSION = "merch-20251030"
@@ -31,19 +35,148 @@ export default function AutoScrollGallery({
 
   const items = [...base, ...base]
 
+  // Verificar si se puede hacer scroll
+  const checkScrollability = () => {
+    if (!scrollContainerRef.current) return
+    
+    const container = scrollContainerRef.current
+    const { scrollLeft, scrollWidth, clientWidth } = container
+    
+    setCanScrollLeft(scrollLeft > 0)
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+  }
+
+  // Scroll manual hacia la izquierda
+  const scrollLeft = () => {
+    if (!scrollContainerRef.current) return
+    
+    const container = scrollContainerRef.current
+    const scrollAmount = container.clientWidth * 0.8
+    container.scrollBy({ left: -scrollAmount, behavior: "smooth" })
+    setIsAutoScrolling(false)
+    
+    // Reanudar auto-scroll después de un tiempo
+    setTimeout(() => setIsAutoScrolling(true), 3000)
+  }
+
+  // Scroll manual hacia la derecha
+  const scrollRight = () => {
+    if (!scrollContainerRef.current) return
+    
+    const container = scrollContainerRef.current
+    const scrollAmount = container.clientWidth * 0.8
+    container.scrollBy({ left: scrollAmount, behavior: "smooth" })
+    setIsAutoScrolling(false)
+    
+    // Reanudar auto-scroll después de un tiempo
+    setTimeout(() => setIsAutoScrolling(true), 3000)
+  }
+
+  // Manejar scroll con rueda del mouse
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (!scrollContainerRef.current) return
+    
+    e.preventDefault()
+    const container = scrollContainerRef.current
+    container.scrollBy({ left: e.deltaY, behavior: "auto" })
+    setIsAutoScrolling(false)
+    
+    // Reanudar auto-scroll después de un tiempo
+    setTimeout(() => setIsAutoScrolling(true), 3000)
+  }
+
+  // Auto-scroll cuando está habilitado
+  useEffect(() => {
+    if (!isAutoScrolling || !scrollContainerRef.current) return
+
+    const container = scrollContainerRef.current
+    const halfWidth = container.scrollWidth / 2 // Como duplicamos los items, la mitad es el punto de reinicio
+    
+    let animationFrameId: number
+    let lastTimestamp = performance.now()
+    const pixelsPerSecond = (container.scrollWidth / 2) / speedSec // Velocidad basada en el ancho total
+
+    const animate = (timestamp: number) => {
+      if (!isAutoScrolling || !scrollContainerRef.current) return
+
+      const delta = timestamp - lastTimestamp
+      lastTimestamp = timestamp
+
+      if (container) {
+        container.scrollLeft += (pixelsPerSecond * delta) / 1000
+        
+        // Si llegamos a la mitad (fin del primer conjunto duplicado), reiniciamos suavemente
+        if (container.scrollLeft >= halfWidth - 10) {
+          container.scrollLeft = 0
+        }
+      }
+
+      animationFrameId = requestAnimationFrame(animate)
+    }
+
+    animationFrameId = requestAnimationFrame(animate)
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
+      }
+    }
+  }, [isAutoScrolling, speedSec])
+
+  // Verificar scrollability cuando cambia el tamaño o el contenido
+  useEffect(() => {
+    checkScrollability()
+    const container = scrollContainerRef.current
+    if (container) {
+      container.addEventListener("scroll", checkScrollability)
+      window.addEventListener("resize", checkScrollability)
+      
+      return () => {
+        container.removeEventListener("scroll", checkScrollability)
+        window.removeEventListener("resize", checkScrollability)
+      }
+    }
+  }, [])
+
   return (
     <section aria-label="Galería de merch" className="mx-auto w-full px-4 md:px-6 lg:px-8">
       <div className={`relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 ${heightClass}`}>
+        {/* Botón de scroll izquierdo - flecha transparente */}
+        {canScrollLeft && (
+          <button
+            onClick={scrollLeft}
+            aria-label="Scroll izquierda"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full transition-all duration-200 hover:bg-white/20 active:bg-white/30 group"
+          >
+            <ChevronLeft className="h-8 w-8 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] group-hover:scale-110 transition-transform" strokeWidth={2.5} />
+          </button>
+        )}
+
+        {/* Botón de scroll derecho - flecha transparente */}
+        {canScrollRight && (
+          <button
+            onClick={scrollRight}
+            aria-label="Scroll derecha"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full transition-all duration-200 hover:bg-white/20 active:bg-white/30 group"
+          >
+            <ChevronRight className="h-8 w-8 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] group-hover:scale-110 transition-transform" strokeWidth={2.5} />
+          </button>
+        )}
+
+        {/* Contenedor con scroll manual */}
         <div
-          className={`absolute inset-0 flex ${gapClass} animate-marquee will-change-transform`}
-          style={{ ["--marquee-duration" as any]: `${speedSec}s` }}
-          onMouseEnter={(e) => {
-            if (!pauseOnHover) return
-            ;(e.currentTarget as HTMLDivElement).style.animationPlayState = "paused"
+          ref={scrollContainerRef}
+          className={`absolute inset-0 flex ${gapClass} overflow-x-auto overflow-y-hidden scrollbar-hide`}
+          onWheel={handleWheel}
+          onMouseEnter={() => {
+            if (pauseOnHover) {
+              setIsAutoScrolling(false)
+            }
           }}
-          onMouseLeave={(e) => {
-            if (!pauseOnHover) return
-            ;(e.currentTarget as HTMLDivElement).style.animationPlayState = "running"
+          onMouseLeave={() => {
+            if (pauseOnHover) {
+              setIsAutoScrolling(true)
+            }
           }}
         >
           {items.map((img, i) => (
