@@ -23,16 +23,16 @@ export async function POST(request: NextRequest) {
   const debugId = uuidv4()
   try {
     console.log(`[${debugId}] 🎨 STAMP-GEN: Starting stamp generation...`)
-    
+
     let body: any
     try {
       body = await request.json()
     } catch (parseErr: any) {
       console.error(`[${debugId}] STAMP-GEN: Error parsing JSON:`, parseErr.message)
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: "Body inválido (JSON malformado)",
-        debugId 
-      }, { 
+        debugId
+      }, {
         status: 400,
         headers: { 'X-Debug-Id': debugId }
       })
@@ -53,22 +53,22 @@ export async function POST(request: NextRequest) {
         stampPosition: body.stampPosition,
         originalImageId: body.originalImageId
       })
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: `Parámetros inválidos: ${errors}`,
-        debugId 
-      }, { 
+        debugId
+      }, {
         status: 400,
         headers: { 'X-Debug-Id': debugId }
       })
     }
 
-    const { 
+    const {
       designImageUrl,
-      garmentType, 
+      garmentType,
       garmentVariant,
-      garmentColor, 
-      side, 
-      stampSize, 
+      garmentColor,
+      side,
+      stampSize,
       stampPosition,
       prompt,
       originalImageId,
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         if (matchProcessed?.[1]) return matchProcessed[1]
         const matchImages = url.match(/\/images\/([^\/]+)/)
         if (matchImages?.[1]) return matchImages[1]
-      } catch {}
+      } catch { }
       return uuidv4()
     }
     const baseImageId = resolveBaseImageId()
@@ -108,15 +108,15 @@ export async function POST(request: NextRequest) {
     const fetchImageWithRetry = async (url: string, maxRetries = 2, originalDesignUrl?: string): Promise<Buffer> => {
       let lastError: Error | null = null
       let currentUrl = url
-      
+
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
           console.log(`[${debugId}] STAMP-GEN: Fetching designImageUrl (attempt ${attempt + 1}/${maxRetries + 1}) →`, currentUrl.substring(0, 100) + "...")
-          
+
           const response = await fetch(currentUrl, {
             signal: AbortSignal.timeout(30000), // 30 segundos timeout
           })
-          
+
           if (!response.ok) {
             // Si es 404 y no estamos usando el proxy, intentar usar el proxy como fallback
             if (response.status === 404 && attempt < maxRetries && !currentUrl.includes('/api/r2-public') && originalDesignUrl) {
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
                 console.warn(`[${debugId}] STAMP-GEN: Could not create proxy URL:`, proxyErr.message)
               }
             }
-            
+
             // Si es 403/404 y es URL firmada, intentar regenerar
             if ((response.status === 403 || response.status === 404) && attempt < maxRetries && currentUrl.includes('X-Amz-')) {
               console.warn(`[${debugId}] STAMP-GEN: URL expired (${response.status}), regenerating signed URL...`)
@@ -154,19 +154,19 @@ export async function POST(request: NextRequest) {
                 continue
               }
             }
-            
+
             throw new Error(`HTTP ${response.status}: ${response.statusText}`)
           }
-          
+
           const buffer = await response.arrayBuffer()
           const size = buffer.byteLength
           console.log(`[${debugId}] STAMP-GEN: Image fetched OK →`, { size, url: currentUrl.substring(0, 100) })
           return Buffer.from(buffer)
-          
+
         } catch (err: any) {
           lastError = err
           console.error(`[${debugId}] STAMP-GEN: Fetch attempt ${attempt + 1} failed:`, err.message)
-          
+
           if (attempt < maxRetries && (err.message.includes('expired') || err.message.includes('403') || err.message.includes('404'))) {
             // Último intento: usar el proxy si no lo estamos usando ya
             if (!currentUrl.includes('/api/r2-public') && originalDesignUrl) {
@@ -191,13 +191,13 @@ export async function POST(request: NextRequest) {
           }
         }
       }
-      
+
       throw new Error(`Error descargando imagen después de ${maxRetries + 1} intentos: ${lastError?.message}`)
     }
 
     // 1) Descargar la imagen de diseño (sin fondo)
     console.log(`[${debugId}] STAMP-GEN: Fetching designImageUrl →`, designImageUrl.substring(0, 100) + "...")
-    
+
     // Normalizar la URL del diseño para que sea accesible desde el servidor
     let absoluteDesignUrl = designImageUrl
     try {
@@ -250,10 +250,10 @@ export async function POST(request: NextRequest) {
       // No lanzar error inmediatamente, intentar con la URL original
       console.warn(`[${debugId}] STAMP-GEN: Will try with original URL as fallback`)
     }
-    
+
     // Descargar con reintentos (pasar la URL original para fallback)
     let designBuffer = await fetchImageWithRetry(absoluteDesignUrl, 2, designImageUrl)
-    
+
     // Si la imagen es de estilos inspiradores (/styles/), aplicar remoción de fondo automáticamente
     const isStyleImage = designImageUrl.includes('/styles/') || absoluteDesignUrl.includes('/styles/')
     if (isStyleImage) {
@@ -262,7 +262,7 @@ export async function POST(request: NextRequest) {
         // Convertir buffer a base64 para la API de remoción de fondo
         const styleImageBase64 = designBuffer.toString('base64')
         const styleImageDataUrl = `data:image/png;base64,${styleImageBase64}`
-        
+
         // Llamar al endpoint de remoción de fondo (espera base64 con prefijo data:image)
         const removeBgUrl = new URL('/api/remove-bg', request.url).toString()
         const removeBgResponse = await fetch(removeBgUrl, {
@@ -274,7 +274,7 @@ export async function POST(request: NextRequest) {
             imageUrl: styleImageDataUrl,
           }),
         })
-        
+
         if (removeBgResponse.ok) {
           const removeBgData = await removeBgResponse.json()
           if (removeBgData.success && removeBgData.processedImageUrl) {
@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
         // Continuar con la imagen original si falla la remoción de fondo
       }
     }
-    
+
     const designBase64 = designBuffer.toString('base64')
     console.log(`[${debugId}] STAMP-GEN: Design image processed successfully →`, { sizeBytes: designBase64.length, isStyleImage })
 
@@ -344,39 +344,49 @@ export async function POST(request: NextRequest) {
       baseGarmentBytes: baseGarmentBase64.length,
       redSquareBytes: redSquareBase64.length
     })
-    
-    const stampPrompt = `You are a professional garment printing expert. I need you to create a high-quality stamp/print on a garment.
 
-CRITICAL INSTRUCTIONS:
-1. Use the design image (transparent background) as the stamp/print
-2. Place it EXACTLY where the red square indicates on the reference image
-3. The red square shows the exact position, size, and area where the stamp should be placed
-4. The base garment image shows the CORRECT garment type - use this exact garment
-5. The reference image with red square shows the EXACT size and position - follow it precisely
-6. Maintain the design's quality and proportions
-7. Make sure the stamp looks natural and professional on the garment
-8. The final result should be a realistic garment with the design properly stamped
+    const stampPrompt = `You are a professional garment printing expert creating a realistic product mockup.
 
-SIZE REFERENCE (follow the red square exactly):
-- R1: SMALL LOGO - the red square will be very small (about 8-12% of the garment width)
-- R2: MEDIUM LOGO - the red square will be medium (about 20-25% of the garment width)  
-- R3: LARGE LOGO - the red square will be large (about 30-40% of the garment width)
+🎯 YOUR TASK - TWO STEPS:
 
-CRITICAL: The red square in the reference image shows the EXACT size the stamp should be. 
-- If the red square is SMALL (R1), make the logo SMALL - like a small chest logo
-- If the red square is MEDIUM (R2), make the logo MEDIUM - like a medium chest design
-- If the red square is LARGE (R3), make the logo LARGE - like a large front design
-- The stamp should fill the red square area completely but not exceed it
-- For R1 (small), think of it like a small brand logo on a t-shirt
+STEP 1: PLACE THE DESIGN EXACTLY WHERE THE RED SQUARE IS
+Look at IMAGE 3 (reference with red square). The red square shows you the EXACT POSITION and SIZE where the design should go.
+- DO NOT place the design in the center of the garment
+- DO NOT place the design anywhere else
+- PLACE IT EXACTLY WHERE THE RED SQUARE IS LOCATED
+- Match the size of the red square exactly
+- The design should perfectly fill the red square area
 
-IMPORTANT: Use the base garment image as the foundation and place the design exactly where the red square indicates. Do not change the garment type or size.
+STEP 2: REMOVE THE RED SQUARE
+After placing the design in the correct position, DELETE the red square completely.
+The final output must show ONLY the garment with the design - NO red square visible.
 
-Generate a high-quality, realistic garment with the design properly stamped in the indicated area.`
+📐 SIZE GUIDE (match the red square size):
+- R1 SMALL: Red square is tiny (8-12% of garment width) - like a small chest logo
+- R2 MEDIUM: Red square is medium (20-25% of garment width) - like a medium chest print  
+- R3 LARGE: Red square is large (30-40% of garment width) - like a large front design
+
+🚨 CRITICAL POSITIONING RULES:
+1. Look at IMAGE 3 carefully - see where the red square is positioned on the garment
+2. That exact location is where the design must go (NOT the center, EXACTLY where the square is)
+3. If the red square is on the upper chest (above pocket), place design there
+4. If the red square is on the left side, place design there
+5. If the red square is centered, place design centered
+6. After perfect placement, completely remove the red square from the output
+
+✅ FINAL OUTPUT REQUIREMENTS:
+- Use IMAGE 2 (base garment) as the foundation
+- Place IMAGE 1 (design) EXACTLY where IMAGE 3's red square indicates
+- Remove all red squares, guides, and reference markers
+- Result should look like a professional product photo
+- The design should appear naturally printed on the garment at the correct position
+
+Generate a realistic garment mockup with the design placed EXACTLY where the red square shows, then remove the red square.`
 
     let result
     try {
       result = await genAI.models.generateContent({
-        model: "gemini-2.5-flash-image-preview",
+        model: "gemini-3-pro-image-preview",
         contents: [
           {
             text: stampPrompt
@@ -427,7 +437,7 @@ Generate a high-quality, realistic garment with the design properly stamped in t
     try {
       if (result.candidates && result.candidates[0] && result.candidates[0].content) {
         const content = result.candidates[0].content
-        
+
         if (content.parts && content.parts.length > 0) {
           for (const part of content.parts) {
             if (part.inlineData && part.inlineData.data) {
@@ -454,14 +464,14 @@ Generate a high-quality, realistic garment with the design properly stamped in t
       })
       throw new Error("Gemini no devolvió una imagen válida")
     }
-    
+
     console.log(`[${debugId}] STAMP-GEN: Image extracted from Gemini →`, { sizeBytes: stampedImageBase64.length })
 
     // 6) Subir imagen estampada a Cloudflare R2
     console.log(`[${debugId}] STAMP-GEN: Uploading mockup to R2...`)
     const stampId = uuidv4()
     const stampedBuffer = Buffer.from(stampedImageBase64, 'base64')
-    
+
     const description = prompt ? prompt.split(' ').slice(0, 2).join(' ') : 'estampado'
     // Nombre con tokens descriptivos: tipo_variant_color_side_size_pos
     const token = [
@@ -478,7 +488,7 @@ Generate a high-quality, realistic garment with the design properly stamped in t
     const fileName = generateImageName(description, token)
     // Guardar bajo la carpeta de la imagen base: images/<baseId>/stamps/<stampId>/<fileName>
     const r2Key = `images/${baseImageId}/stamps/${stampId}/${fileName}`
-    
+
     let publicUrl: string
     try {
       publicUrl = await uploadToR2(stampedBuffer, r2Key, "image/png")
@@ -496,14 +506,14 @@ Generate a high-quality, realistic garment with the design properly stamped in t
 
     console.log(`[${debugId}] STAMP-GEN: Mockup generated OK →`, { mockupUrl: publicUrl.substring(0, 100) })
 
-    return NextResponse.json({ 
-      success: true, 
-      publicUrl, 
+    return NextResponse.json({
+      success: true,
+      publicUrl,
       r2Key,
       stampId,
       baseImageId,
       debugId
-    }, { 
+    }, {
       status: 200,
       headers: { 'X-Debug-Id': debugId }
     })
@@ -518,10 +528,10 @@ Generate a high-quality, realistic garment with the design properly stamped in t
       code: error.code,
       cause: error.cause
     })
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: error.message || "Error generando estampado",
       debugId: finalDebugId
-    }, { 
+    }, {
       status: 500,
       headers: { 'X-Debug-Id': finalDebugId }
     })

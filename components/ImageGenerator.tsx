@@ -53,7 +53,7 @@ export function ImageGenerator({
   // Estados del generador
   type GenState = "idle" | "generating" | "ready"
   const [genState, setGenState] = useState<GenState>("idle")
-  
+
   const [prompt, setPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [isOptimizing, setIsOptimizing] = useState(false)
@@ -71,12 +71,12 @@ export function ImageGenerator({
   const { toast } = useToast()
   const isModal = mode === 'modal'
   const viewerRef = useRef<HTMLDivElement>(null)
-  
+
   // Reset inteligente de estado
   useEffect(() => {
     setGenState("idle")
   }, [prompt, selectedStyle, selectedSize])
-  
+
   // Efecto para flash y scroll cuando imagen está lista
   useEffect(() => {
     if (genState === "ready" && viewerRef.current) {
@@ -85,7 +85,7 @@ export function ImageGenerator({
       setTimeout(() => {
         viewerRef.current?.classList.remove("ring-2", "ring-emerald-500/60")
       }, 800)
-      
+
       // Mobile: scroll automático
       if (window.innerWidth < 1024) {
         setTimeout(() => {
@@ -97,10 +97,10 @@ export function ImageGenerator({
 
   // Asegurar sesión anónima antes de generar/procesar
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       try {
         await fetch('/api/user/session', { cache: 'no-store' })
-      } catch {}
+      } catch { }
     })()
   }, [])
 
@@ -114,13 +114,13 @@ export function ImageGenerator({
         setGeneratedImage(url)
         setImageError(false)
         setOptimizedPrompt(null)
-        // Guardar el id para navegación directa si se usa "usar este diseño"
-        ;(window as any).__selectedHistoryImageId = imageId || null
+          // Guardar el id para navegación directa si se usa "usar este diseño"
+          ; (window as any).__selectedHistoryImageId = imageId || null
         toast({ title: "Imagen seleccionada", description: "Cargada desde el historial" })
         // Hacer scroll al generador si existe un ancla
         const container = document.getElementById('generator')
         if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      } catch {}
+      } catch { }
     }
     window.addEventListener('loadImageInGenerator', handler as EventListener)
     return () => window.removeEventListener('loadImageInGenerator', handler as EventListener)
@@ -137,7 +137,7 @@ export function ImageGenerator({
         return "aspect-square" // Cuadrada
     }
   }
-  
+
   // Mapeo de tamaños a parámetros para la API
   const getSizeParams = () => {
     switch (selectedSize) {
@@ -232,10 +232,10 @@ export function ImageGenerator({
 
       const data = await response.json()
       console.log("📦 Full response data:", JSON.stringify(data, null, 2))
-      
+
       const first = data?.images?.[0]
       console.log("🖼️ First image data:", JSON.stringify(first, null, 2))
-      
+
       if (!first) {
         console.error("❌ No images in response")
         throw new Error("Respuesta inválida de generación")
@@ -255,7 +255,7 @@ export function ImageGenerator({
       if (first.data) {
         try {
           console.log("🔄 Processing image to R2...")
-          
+
           // Obtener el token de autenticación de Supabase si hay sesión activa
           let authToken: string | null = null
           try {
@@ -271,11 +271,11 @@ export function ImageGenerator({
           const processHeaders: HeadersInit = {
             "Content-Type": "application/json",
           }
-          
+
           if (authToken) {
             processHeaders["Authorization"] = `Bearer ${authToken}`
           }
-          
+
           const processResponse = await fetch("/api/process-design", {
             method: "POST",
             headers: processHeaders,
@@ -288,16 +288,16 @@ export function ImageGenerator({
           if (processResponse.ok) {
             const processResult = await processResponse.json()
             console.log("✅ Image processed and saved to R2:", processResult.success)
-            
+
             // El endpoint ahora devuelve { success: true, image: {...}, debugId }
             const resultImageId = processResult.image?.id || processResult.imageId
             const resultImageUrl = processResult.image?.url || processResult.imageUrl || imageUrl
-            
+
             // Guardar el ID de la imagen procesada para evitar reprocesamiento
             if (resultImageId) {
               setProcessedImageId(resultImageId)
             }
-            
+
             if (onImageGenerated) {
               onImageGenerated(resultImageUrl)
             }
@@ -310,7 +310,7 @@ export function ImageGenerator({
             const errorData = await processResponse.json().catch(() => ({}))
             const debugId = processResponse.headers.get('X-Debug-Id') || errorData.debugId || 'unknown'
             console.error(`❌ Error processing image [${debugId}]:`, processResponse.statusText, errorData.error)
-            
+
             if (onImageGenerated) {
               onImageGenerated(imageUrl)
             }
@@ -333,7 +333,7 @@ export function ImageGenerator({
         try {
           const savedImage = await saveGeneratedImage(imageUrl, prompt.trim(), undefined)
           console.log("✅ Image saved to database")
-          
+
           if (onImageGenerated) {
             onImageGenerated(imageUrl)
           }
@@ -353,7 +353,7 @@ export function ImageGenerator({
 
       // Reset a idle después de 3 segundos
       setTimeout(() => setGenState("idle"), 3000)
-      
+
       toast({
         title: "¡Imagen generada!",
         description: `Tu diseño está listo (${selectedSize}). Optimizado con IA.`,
@@ -376,7 +376,7 @@ export function ImageGenerator({
     if (!generatedImage) return
 
     setIsProcessing(true)
-    
+
     try {
       console.log("🎨 Usar diseño:", generatedImage)
 
@@ -385,7 +385,7 @@ export function ImageGenerator({
       if (selectedId) {
         if (isModal && onImageGenerated) {
           onImageGenerated(generatedImage)
-          ;(window as any).__selectedHistoryImageId = null
+            ; (window as any).__selectedHistoryImageId = null
           return
         }
         window.location.href = `/design/${selectedId}`
@@ -419,7 +419,7 @@ export function ImageGenerator({
       const headers: HeadersInit = {
         "Content-Type": "application/json",
       }
-      
+
       // Agregar token de autenticación si está disponible
       if (authToken) {
         headers["Authorization"] = `Bearer ${authToken}`
@@ -452,7 +452,7 @@ export function ImageGenerator({
       if (!response.ok) {
         const errorData = await response.json()
         const debugId = response.headers.get('X-Debug-Id') || errorData.debugId || 'unknown'
-        
+
         // Manejo específico por código de estado
         if (response.status === 401 || response.status === 403) {
           toast({
@@ -490,22 +490,22 @@ export function ImageGenerator({
       }
 
       const data = await response.json()
-      
+
       // El endpoint ahora devuelve { success: true, image: {...}, debugId }
       const imageId = data.image?.id || data.imageId
       const imageUrl = data.image?.url || data.imageUrl || generatedImage
-      
+
       if (!imageId) {
         console.error("❌ No imageId in response:", data)
         throw new Error("Respuesta inválida del servidor")
       }
-      
+
       if (isModal && onImageGenerated) {
         onImageGenerated(imageUrl)
       } else {
         window.location.href = `/design/${imageId}`
       }
-      
+
     } catch (error) {
       console.error("❌ Error procesando diseño:", error)
       toast({
@@ -677,11 +677,10 @@ export function ImageGenerator({
               <button
                 key={option.value}
                 onClick={() => setSelectedSize(option.value)}
-                className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
-                  selectedSize === option.value
+                className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${selectedSize === option.value
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-zinc-700/70 bg-zinc-900/60 text-zinc-200 hover:bg-zinc-800"
-                }`}
+                  }`}
               >
                 {option.label}
               </button>
@@ -695,16 +694,15 @@ export function ImageGenerator({
           <StylesCarousel onStyleSelect={handleStyleSelect} selectedStyle={selectedStyle} compact />
 
           {/* CTA Generar - compacto con estados */}
-          <Button 
-            onClick={generateImage} 
-            disabled={genState === "generating" || !prompt.trim()} 
-            className={`mt-2 inline-flex items-center justify-center rounded-lg px-4 py-2 transition-colors disabled:opacity-60 ${
-              genState === "generating"
+          <Button
+            onClick={generateImage}
+            disabled={genState === "generating" || !prompt.trim()}
+            className={`mt-2 inline-flex items-center justify-center rounded-lg px-4 py-2 transition-colors disabled:opacity-60 ${genState === "generating"
                 ? "bg-zinc-700 text-zinc-300"
                 : genState === "ready"
-                ? "bg-emerald-600 text-white hover:bg-emerald-500"
-                : "bg-violet-600 text-white hover:bg-violet-500"
-            }`}
+                  ? "bg-emerald-600 text-white hover:bg-emerald-500"
+                  : "bg-violet-600 text-white hover:bg-violet-500"
+              }`}
           >
             {genState === "generating" ? (
               <>
@@ -727,7 +725,7 @@ export function ImageGenerator({
 
         {/* Columna derecha - Visor */}
         <div ref={viewerRef} className="rounded-xl border border-zinc-800/70 bg-zinc-950/40 p-3 lg:p-4 shadow-lg">
-          <div className="aspect-[5/6] w-full overflow-hidden rounded-md bg-zinc-900/40 grid place-items-center">
+          <div className={`${getImageContainerClasses()} w-full overflow-hidden rounded-md bg-zinc-900/40 grid place-items-center`}>
             {generatedImage && !imageError ? (
               <div className="relative w-full h-full">
                 <Image
@@ -786,8 +784,8 @@ export function ImageGenerator({
           {/* Acciones de la imagen */}
           {generatedImage && !imageError && (
             <div className="flex gap-2 mt-4">
-              <Button 
-                onClick={handleUseDesign} 
+              <Button
+                onClick={handleUseDesign}
                 disabled={isProcessing}
                 className="flex-1"
               >

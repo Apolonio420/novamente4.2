@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 export const runtime = "nodejs"
 
 // ==== Config ====
-const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-1.5-flash"
+const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3-pro-image-preview"
 const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-1.5-pro"
 const DEBUG = (process.env.DEBUG_GEMINI || "").toLowerCase() === "true"
 
@@ -14,7 +14,7 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
 
-type Body = { prompt: string; n?: number } | { instruction: string; lastPrompt: string; n?: number }
+type Body = { prompt: string; n?: number; size?: { width: number; height: number } } | { instruction: string; lastPrompt: string; n?: number; size?: { width: number; height: number } }
 
 function ok(data: unknown, status = 200) {
   return new NextResponse(JSON.stringify(data), {
@@ -65,11 +65,27 @@ export async function POST(req: Request) {
       return ok({ error: "El prompt está vacío. Escribe qué imagen querés generar." }, 400)
     }
 
-    // 2) Forzar intención de imagen
+    // 2) Determinar aspect ratio
+    const size = (body as any).size
+    let aspectRatioHint = ""
+
+    if (size?.width && size?.height) {
+      if (size.width > size.height) {
+        aspectRatioHint = " Composición HORIZONTAL (landscape orientation, wider than tall)."
+      } else if (size.height > size.width) {
+        aspectRatioHint = " Composición VERTICAL (portrait orientation, taller than wide)."
+      } else {
+        aspectRatioHint = " Composición CUADRADA (square, equal width and height)."
+      }
+      console.log("GEN-IMG aspect ratio:", { width: size.width, height: size.height, hint: aspectRatioHint })
+    }
+
+    // 3) Forzar intención de imagen
     const forcePrefix =
       "Crea UNA imagen para estampa, estilo limpio, SIN texto superpuesto," +
       " PNG con fondo transparente si corresponde. Evita marcos o mockups." +
-      " Composición clara, altos contrastes, ideal para impresión en prenda. "
+      " Composición clara, altos contrastes, ideal para impresión en prenda." +
+      aspectRatioHint
     const finalPrompt = `${forcePrefix}\n${basePrompt}`.trim()
 
     const n = Math.max(1, Math.min(4, (body as any).n ?? 1))
@@ -127,10 +143,10 @@ export async function POST(req: Request) {
       )
     }
 
-    const out = imagesBase64.map((b64) => ({ 
-      data: b64, 
+    const out = imagesBase64.map((b64) => ({
+      data: b64,
       url: `https://pub-4508cc283d34b79746e7b0a6e7c61f16.r2.dev/generated/dalle-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.png`,
-      hasBgRemoved: true 
+      hasBgRemoved: true
     }))
     const t1 = Date.now()
     console.log("GEN-IMG done", { totalMs: t1 - t0, count: out.length })
