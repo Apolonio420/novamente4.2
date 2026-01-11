@@ -3,20 +3,20 @@
 function getPublicBase(): string {
   // 1. Priorizar NEXT_PUBLIC_R2_PUBLIC_BASE (si existe)
   const base = process.env.NEXT_PUBLIC_R2_PUBLIC_BASE
-  if (base) {
+  if (base && !base.includes('r2.dev')) {
     return base.replace(/\/$/, "")
   }
 
   // 2. Usar CLOUDFLARE_R2_PUBLIC_DOMAIN (nuevo ID)
+  // IMPORTANTE: Ignorar dominios *.r2.dev ya que suelen requerir autenticación si el bucket no es público
+  // y causan errores 502 en Next.js Image optimization o 401 en el navegador.
   const publicDomain = process.env.CLOUDFLARE_R2_PUBLIC_DOMAIN || process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN
-  if (publicDomain) {
+  if (publicDomain && !publicDomain.includes('r2.dev')) {
     const formattedDomain = publicDomain.startsWith('http') ? publicDomain : `https://${publicDomain}`
     return formattedDomain.replace(/\/$/, "")
   }
 
-  // 3. NO usar fallback automático a pub-<id>.r2.dev ya que requiere activación manual en CF dashboard
-  // y suele fallar con 401 si no está configurado correctamente.
-  // Devolver vacío para forzar el uso del proxy local /api/proxy-image
+  // 3. Devolver vacío para forzar el uso del proxy local /api/proxy-image
   return ''
 }
 
