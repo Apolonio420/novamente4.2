@@ -36,6 +36,7 @@ import { ExamplesCarousel } from "@/components/ExamplesCarousel"
 import { StylesCarousel } from "@/components/StylesCarousel"
 import { buildPrompt, type StyleId } from "@/lib/generator/prompt"
 import { supabase } from "@/lib/supabase"
+import { toPublicR2Url } from "@/lib/r2"
 
 interface ImageGeneratorProps {
   onImageGenerated?: (imageUrl: string) => void
@@ -581,13 +582,19 @@ export function ImageGenerator({
 
   const createProxyUrl = useCallback(
     (originalUrl: string) => {
-      // Solo usar proxy para imágenes de DALL-E, no para Supabase
-      if (originalUrl && originalUrl.includes("oaidalleapiprodscus.blob.core.windows.net")) {
+      if (!originalUrl) return originalUrl
+
+      // 1. Intentar usar la utilidad central de R2
+      const r2Url = toPublicR2Url(originalUrl)
+      if (r2Url && r2Url !== originalUrl) return r2Url
+
+      // 2. Solo usar proxy para imágenes de DALL-E (legacy check logic)
+      if (originalUrl.includes("oaidalleapiprodscus.blob.core.windows.net")) {
         const timestamp = Date.now()
         const random = Math.random().toString(36).substring(7)
         return `/api/proxy-image?url=${encodeURIComponent(originalUrl)}&t=${timestamp}&r=${random}&retry=${retryCount}&key=${imageKey}`
       }
-      // Para imágenes de Supabase o base64, usar directamente
+
       return originalUrl
     },
     [retryCount, imageKey],
@@ -720,8 +727,8 @@ export function ImageGenerator({
                   key={style.key}
                   onClick={() => handleStyleSelect(style.key)}
                   className={`relative group overflow-hidden rounded-lg border p-2 text-left transition-all hover:border-zinc-600 ${selectedStyle === style.key
-                      ? "border-primary/60 bg-primary/5 shadow-[0_0_10px_rgba(139,92,246,0.1)]"
-                      : "border-zinc-800 bg-zinc-900/40"
+                    ? "border-primary/60 bg-primary/5 shadow-[0_0_10px_rgba(139,92,246,0.1)]"
+                    : "border-zinc-800 bg-zinc-900/40"
                     }`}
                 >
                   <div className="text-xs font-semibold text-zinc-200 mb-0.5">{style.name}</div>

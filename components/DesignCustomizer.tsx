@@ -20,6 +20,7 @@ import { StampSizeSelector } from "./StampSizeSelector"
 import { ImageGenerator } from "./ImageGenerator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 import { smoothScrollIntoView } from "@/utils/scroll"
+import { toPublicR2Url } from "@/lib/r2"
 
 interface DesignCustomizerProps {
   initialImageUrl: string
@@ -378,26 +379,11 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       // Para imágenes de DALL-E, usar el proxy
       console.log('🎯 DesignCustomizer mount - initialImageUrl:', initialImageUrl)
 
-      let processedUrl = initialImageUrl
+      let processedUrl = toPublicR2Url(initialImageUrl) || initialImageUrl
 
-      // Si es URL de DALL-E, usar proxy
-      if (initialImageUrl.includes("oaidalleapiprodscus.blob.core.windows.net")) {
-        processedUrl = `/api/proxy-image?url=${encodeURIComponent(initialImageUrl)}`
-      }
-      // Si es URL firmada de R2 (con X-Amz-), convertir a proxy estable para mejor compatibilidad
-      else if (initialImageUrl.includes('r2.cloudflarestorage.com') && initialImageUrl.includes('X-Amz-')) {
-        try {
-          const url = new URL(initialImageUrl)
-          // Extraer la clave del pathname (ej: /novamente/images/uuid/original/file.png)
-          const keyMatch = url.pathname.match(/\/novamente\/(.+)$/)
-          if (keyMatch?.[1]) {
-            const key = keyMatch[1].split('?')[0] // Remover query params si hay
-            processedUrl = `/api/r2-public?key=${encodeURIComponent(key)}`
-            console.log('🔄 Converted signed R2 URL to proxy:', { original: initialImageUrl.substring(0, 100), key })
-          }
-        } catch (err) {
-          console.warn('⚠️ Could not convert R2 URL to proxy, using original:', err)
-        }
+      // Si sigue siendo URL de DALL-E (toPublicR2Url solo maneja R2 y Supabase), usar proxy directo
+      if (processedUrl.includes("oaidalleapiprodscus.blob.core.windows.net")) {
+        processedUrl = `/api/proxy-image?url=${encodeURIComponent(processedUrl)}`
       }
 
       // Normalizar URLs relativas a absolutas por si el navegador o alguna lib requiere origen absoluto
@@ -1409,25 +1395,16 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   // Helper para convertir URLs firmadas de R2 al proxy si es necesario
   const normalizeImageUrlForBrowser = (url: string | null): string | null => {
     if (!url || typeof url !== 'string') return url
-    // Si ya es proxy o placeholder, dejarla tal cual
-    if (url.startsWith('/api/r2-public') || url === 'placeholder-second-stamp' || url.startsWith('/')) {
-      return url
+
+    // Usar la utilidad central de R2 que maneja DALL-E, R2 y Supabase
+    const normalized = toPublicR2Url(url)
+    if (normalized) return normalized
+
+    // Fallback manual para DALL-E si no lo manejó toPublicR2Url
+    if (url.includes("oaidalleapiprodscus.blob.core.windows.net")) {
+      return `/api/proxy-image?url=${encodeURIComponent(url)}`
     }
-    // Si es URL firmada de R2, convertir a proxy
-    if (url.includes('r2.cloudflarestorage.com') && url.includes('X-Amz-')) {
-      try {
-        const urlObj = new URL(url)
-        const keyMatch = urlObj.pathname.match(/\/novamente\/(.+)$/)
-        if (keyMatch?.[1]) {
-          const key = keyMatch[1].split('?')[0]
-          const proxyUrl = `/api/r2-public?key=${encodeURIComponent(key)}`
-          console.log('🔄 Normalized R2 signed URL to proxy in getCurrentViewImage')
-          return proxyUrl
-        }
-      } catch (err) {
-        console.warn('⚠️ Could not normalize R2 URL:', err)
-      }
-    }
+
     return url
   }
 
@@ -2012,8 +1989,8 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                                 onClick={generateMockup}
                                 disabled={isDisabled}
                                 className={`relative transition-all duration-300 ease-in-out ${isDisabled
-                                    ? ''
-                                    : 'bg-violet-600 hover:bg-violet-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-violet-900/40'
+                                  ? ''
+                                  : 'bg-violet-600 hover:bg-violet-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-violet-900/40'
                                   }`}
                                 size="sm"
                                 variant={isDisabled ? "secondary" : "default"}
@@ -2061,8 +2038,8 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                             }}
                             onDoubleClick={() => openZoomModal(getCurrentGarmentImage('front'), 'Frente de la prenda')}
                             className={`group relative border-2 rounded-lg overflow-hidden transition-all duration-200 hover:scale-105 ${selectedSide === 'front'
-                                ? 'border-primary ring-2 ring-primary/20'
-                                : 'border-muted hover:border-primary/50'
+                              ? 'border-primary ring-2 ring-primary/20'
+                              : 'border-muted hover:border-primary/50'
                               }`}
                           >
                             <div className="relative w-32 h-40 overflow-hidden">
@@ -2092,8 +2069,8 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                             }}
                             onDoubleClick={() => openZoomModal(getCurrentGarmentImage('back'), 'Dorso de la prenda')}
                             className={`group relative border-2 rounded-lg overflow-hidden transition-all duration-200 hover:scale-105 ${selectedSide === 'back'
-                                ? 'border-primary ring-2 ring-primary/20'
-                                : 'border-muted hover:border-primary/50'
+                              ? 'border-primary ring-2 ring-primary/20'
+                              : 'border-muted hover:border-primary/50'
                               }`}
                           >
                             <div className="relative w-32 h-40 overflow-hidden">
@@ -2172,8 +2149,8 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                                   onClick={generateMockup}
                                   disabled={isDisabled}
                                   className={`transition-all duration-300 ease-in-out ${isDisabled
-                                      ? 'bg-gray-400 cursor-not-allowed text-white font-medium px-6 py-3 rounded-xl shadow-lg'
-                                      : 'bg-violet-600 hover:bg-violet-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-violet-900/40 hover:scale-105'
+                                    ? 'bg-gray-400 cursor-not-allowed text-white font-medium px-6 py-3 rounded-xl shadow-lg'
+                                    : 'bg-violet-600 hover:bg-violet-500 text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-violet-900/40 hover:scale-105'
                                     }`}
                                   size="sm"
                                   variant={isDisabled ? "secondary" : "default"}
@@ -2382,8 +2359,8 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                             key={color}
                             onClick={() => handleColorSelect(color)}
                             className={`p-3 rounded-lg border-2 transition-all duration-200 capitalize hover:scale-105 ${selectedColor === color
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-muted hover:border-muted-foreground"
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-muted hover:border-muted-foreground"
                               }`}
                           >
                             {color === "black"
@@ -2410,8 +2387,8 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                             key={size}
                             onClick={() => handleSizeSelect(size)}
                             className={`p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${selectedSize === size
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-muted hover:border-muted-foreground"
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-muted hover:border-muted-foreground"
                               }`}
                           >
                             {size}

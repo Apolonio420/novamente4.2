@@ -42,30 +42,11 @@ export async function GET(
       url: (imageData.url as string | null)?.substring(0, 50) + "...",
     })
 
-    // Normalizar clave y generar URL firmada
+    // Normalizar clave y generar URL pública/proxy
     const resolveUrl = async (maybeKeyOrUrl: string | null): Promise<string | null> => {
       if (!maybeKeyOrUrl) return null
-
-      // Si es un data URI o ya es una URL de Supabase Storage, devolver tal cual
-      if (maybeKeyOrUrl.startsWith('data:') || maybeKeyOrUrl.includes('supabase.co/storage')) {
-        return maybeKeyOrUrl
-      }
-
-      try {
-        const key = normalizeR2Key(maybeKeyOrUrl)
-        if (!key) return maybeKeyOrUrl
-
-        // Intentar generar URL firmada de R2
-        try {
-          return await getSignedR2Url(key, 86400) // 24 horas
-        } catch (r2Err) {
-          // Si R2 falla (SSL/conexión), devolvemos la URL pública proxy que tiene fallback a Supabase integrado
-          return `/api/r2-public?key=${encodeURIComponent(key)}`
-        }
-      } catch (err) {
-        console.error("⚠️ Error resolviendo URL:", err)
-        return maybeKeyOrUrl
-      }
+      const { toPublicR2Url } = await import("@/lib/r2")
+      return toPublicR2Url(maybeKeyOrUrl)
     }
 
     const storageKey = (data as any).storage_key || (data as any).url || ''

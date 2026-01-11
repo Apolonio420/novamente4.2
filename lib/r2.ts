@@ -14,20 +14,9 @@ function getPublicBase(): string {
     return formattedDomain.replace(/\/$/, "")
   }
 
-  // 3. Fallback: Extraer del endpoint (ej: https://<id>.r2.cloudflarestorage.com)
-  const endpoint = process.env.CLOUDFLARE_R2_ENDPOINT
-  const bucket = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'novamente'
-
-  if (endpoint) {
-    // Buscar el ID de cuenta entre 'https://' y '.r2.cloudflarestorage.com'
-    const accountIdMatch = endpoint.match(/https?:\/\/([^.]+)\.r2\.cloudflarestorage\.com/)
-    if (accountIdMatch && accountIdMatch[1]) {
-      const accountId = accountIdMatch[1]
-      return `https://pub-${accountId}.r2.dev/${bucket}`
-    }
-  }
-
-  console.error('❌ Could not determine R2 public base URL')
+  // 3. NO usar fallback automático a pub-<id>.r2.dev ya que requiere activación manual en CF dashboard
+  // y suele fallar con 401 si no está configurado correctamente.
+  // Devolver vacío para forzar el uso del proxy local /api/proxy-image
   return ''
 }
 
@@ -149,8 +138,8 @@ export function normalizeR2Key(maybeKeyOrUrl: string): string {
     // NO reemplazar espacios si ya es un key limpio que puede tener guiones
     // result = result.replace(/\s+/g, '-').replace(/%20/g, '-')
 
-    // Remover prefijos de bucket conocidos (recursivamente por si hay duplicados como images/images/)
-    const bucketsToRemove = ['novamente', 'novamente-images', 'images', 'generated-images', 'public']
+    // Remover prefijos de bucket conocidos (solo si estamos seguros que son parte del dominio y no de la ruta)
+    const bucketsToRemove = ['novamente', 'novamente-images']
     let modified = true
     while (modified) {
       modified = false
@@ -184,26 +173,37 @@ export function getPublicR2Url(objectKey: string): string {
 export function toPublicR2Url(maybeKeyOrUrl: string | null | undefined): string | null {
   if (!maybeKeyOrUrl) return null
 
+  // 0. Si ya tiene el proxy o el public-r2 local, normalizar para asegurar formato limpio
+  if (maybeKeyOrUrl.includes('/api/proxy-image') || maybeKeyOrUrl.includes('/api/r2-public')) {
+    const key = normalizeR2Key(maybeKeyOrUrl)
+    if (!key) return maybeKeyOrUrl
+
+    // Ver si ahora tenemos una base pública real (ej: cdn.novamente.ar)
+    const base = getPublicBase()
+    if (base) return `${base}/${key.replace(/^\/+/, '')}`
+
+    // Si no, reconstruir el proxy para asegurar que sea el endpoint correcto
+    return `/api/proxy-image?key=${encodeURIComponent(key)}`
+  }
+
   // 1. Data URI: devolver tal cual
   if (maybeKeyOrUrl.startsWith('data:')) {
     return maybeKeyOrUrl
   }
 
-  // 2. Ya es una URL de proxy: normalizar el key y reconstruir (o devolver directo si R2 es público)
-  if (maybeKeyOrUrl.includes('/api/proxy-image') || maybeKeyOrUrl.includes('/api/r2-public')) {
-    const key = normalizeR2Key(maybeKeyOrUrl)
-    if (key) {
-      // Intentar obtener la URL pública directa primero
-      const publicUrl = getPublicR2Url(key)
-      return publicUrl || `/api/proxy-image?key=${encodeURIComponent(key)}`
-    }
+  // 2. Normalizar cualquier otra cadena/URL
+  const normalized = normalizeR2Key(maybeKeyOrUrl)
+  if (!normalized) return maybeKeyOrUrl
+
+  // 3. Intentar obtener URL pública directa
+  const base = getPublicBase()
+  if (base) {
+    return `${base}/${normalized.replace(/^\/+/, '')}`
   }
 
-  // 3. Normalizar cualquier otra cadena/URL
-  const normalized = normalizeR2Key(maybeKeyOrUrl)
-  if (!normalized) return maybeKeyOrUrl // Si no se puede normalizar, devolver original
-
-  return getPublicR2Url(normalized) || maybeKeyOrUrl
+  // 4. Fallback final: USAR PROXY LOCAL
+  // (Esto evita el 401 Unauthorized de r2.dev cuando no está habilitado)
+  return `/api/proxy-image?key=${encodeURIComponent(normalized)}`
 }
 
 
