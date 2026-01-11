@@ -146,9 +146,28 @@ export async function POST(request: NextRequest) {
       const designImage = await loadImage(Buffer.from(designBuffer))
       console.log('Imagen de diseño cargada, dibujando...')
 
-      const { x, y, width, height } = mapping.coordinates
-      console.log('Coordenadas del diseño:', { x, y, width, height })
-      ctx.drawImage(designImage, x, y, width, height)
+      const { x: mapX, y: mapY, width: mapWidth, height: mapHeight } = mapping.coordinates
+      console.log('Coordenadas del mapeo:', { mapX, mapY, mapWidth, mapHeight })
+
+      // Ajustar tamaño según stampSize (R1, R2, R3)
+      let scaleFactor = 1.0
+      switch (size) {
+        case 'R1': scaleFactor = 0.35; break; // Logo pequeño
+        case 'R2': scaleFactor = 0.65; break; // Estampado mediano
+        case 'R3': scaleFactor = 1.0; break;  // Full
+        default: scaleFactor = 1.0; break;
+      }
+
+      const drawWidth = mapWidth * scaleFactor
+      const drawHeight = mapHeight * scaleFactor // Asumimos que el height también escala proporcionalmente al área de impresión
+
+      // Calcular posición centrada en el área de impresión
+      // Opcional: si supported positions (left, center) se pasaran, aquí sería el lugar
+      const drawX = mapX + (mapWidth - drawWidth) / 2
+      const drawY = mapY + (mapHeight - drawHeight) / 2
+
+      console.log('Dibujando diseño escalado:', { size, scaleFactor, drawX, drawY, drawWidth, drawHeight })
+      ctx.drawImage(designImage, drawX, drawY, drawWidth, drawHeight)
       console.log('Diseño dibujado exitosamente')
     } catch (error: any) {
       console.error('Error cargando imagen de diseño:', error)
