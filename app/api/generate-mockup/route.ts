@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from "uuid"
 export async function POST(request: NextRequest) {
   try {
     console.log("GENERATE-MOCKUP starting...")
-    
+
     // Dynamic import for canvas to support Vercel deployment
     let createCanvas, loadImage;
     if (process.env.NODE_ENV === 'production') {
@@ -25,21 +25,21 @@ export async function POST(request: NextRequest) {
       createCanvas = nodeCanvasCreateCanvas;
       loadImage = nodeCanvasLoadImage;
     }
-    
+
     const body = await request.json()
-    const { 
-      designImageUrl, 
-      garmentType, 
-      garmentColor, 
-      side, 
+    const {
+      designImageUrl,
+      garmentType,
+      garmentColor,
+      side,
       size = 'R3',
       prompt,
       originalImageId, // id de la imagen generada base
     } = body
 
     if (!designImageUrl || !garmentType || !garmentColor || !side) {
-      return NextResponse.json({ 
-        error: "designImageUrl, garmentType, garmentColor y side son requeridos" 
+      return NextResponse.json({
+        error: "designImageUrl, garmentType, garmentColor y side son requeridos"
       }, { status: 400 })
     }
 
@@ -54,24 +54,62 @@ export async function POST(request: NextRequest) {
     // 1) Obtener el mapeo de la prenda
     const mapping = getGarmentMapping(garmentType, garmentColor, side)
     if (!mapping) {
-      return NextResponse.json({ 
-        error: `No se encontró mapeo para ${garmentType}-${garmentColor}-${side}` 
+      return NextResponse.json({
+        error: `No se encontró mapeo para ${garmentType}-${garmentColor}-${side}`
       }, { status: 400 })
     }
 
     // 2) Descargar la imagen del diseño
-    const designUrl = designImageUrl.startsWith('http') 
-      ? designImageUrl 
-      : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}${designImageUrl}`
-    
-    console.log('Descargando imagen de diseño desde:', designUrl)
-    const designResponse = await fetch(designUrl)
-    console.log('Respuesta de diseño:', designResponse.status, designResponse.statusText)
-    if (!designResponse.ok) {
-      throw new Error(`Error descargando imagen de diseño: ${designResponse.status}`)
+    console.log('Resolviendo imagen de diseño:', designImageUrl.substring(0, 50))
+    let designBuffer: Buffer | null = null
+
+    // Intentar resolver como key de R2 primero para evitar fetch externo innecesario
+    const { normalizeR2Key } = await import("@/lib/r2")
+    const storageKey = normalizeR2Key(designImageUrl)
+
+    if (storageKey && !storageKey.startsWith('http')) {
+      console.log('Intentando descarga directa desde Storage usando key:', storageKey)
+      try {
+        const { r2Client, BUCKET_NAME } = await import("@/lib/cloudflare-r2")
+        const { GetObjectCommand } = await import("@aws-sdk/client-s3")
+        const command = new GetObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: storageKey,
+        })
+        const r2Response = await r2Client.send(command)
+        if (r2Response.Body) {
+          if (typeof (r2Response.Body as any).transformToByteArray === 'function') {
+            const uint8Array = await (r2Response.Body as any).transformToByteArray()
+            designBuffer = Buffer.from(uint8Array)
+          } else {
+            const chunks: Buffer[] = []
+            for await (const chunk of (r2Response.Body as any)) {
+              chunks.push(Buffer.from(chunk))
+            }
+            designBuffer = Buffer.concat(chunks)
+          }
+          console.log('✅ Descarga directa desde R2 exitosa, tamaño:', designBuffer.length)
+        }
+      } catch (r2Error: any) {
+        console.warn('⚠️ Falló descarga directa desde R2, intentando fallback a fetch:', r2Error.message)
+      }
     }
-    const designBuffer = await designResponse.arrayBuffer()
-    console.log('Buffer de diseño descargado, tamaño:', designBuffer.byteLength)
+
+    // Si no se pudo descargar directamente, usar fetch (para URLs externas o fallbacks)
+    if (!designBuffer) {
+      const designUrl = designImageUrl.startsWith('http')
+        ? designImageUrl
+        : `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}${designImageUrl}`
+
+      console.log('Descargando imagen de diseño vía fetch desde:', designUrl)
+      const designResponse = await fetch(designUrl)
+      if (!designResponse.ok) {
+        throw new Error(`Error descargando imagen de diseño: ${designResponse.status}`)
+      }
+      const arrayBuffer = await designResponse.arrayBuffer()
+      designBuffer = Buffer.from(arrayBuffer)
+      console.log('✅ Imagen de diseño descargada vía fetch, tamaño:', designBuffer.length)
+    }
 
     // 3) Descargar la imagen de la prenda
     const garmentUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}${mapping.garmentPath}`
@@ -97,7 +135,7 @@ export async function POST(request: NextRequest) {
       console.log('Imagen de prenda cargada, dibujando...')
       ctx.drawImage(garmentImage, 0, 0, 400, 500)
       console.log('Prenda dibujada exitosamente')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error cargando imagen de prenda:', error)
       throw new Error(`Error cargando imagen de prenda: ${error.message}`)
     }
@@ -107,12 +145,12 @@ export async function POST(request: NextRequest) {
     try {
       const designImage = await loadImage(Buffer.from(designBuffer))
       console.log('Imagen de diseño cargada, dibujando...')
-      
+
       const { x, y, width, height } = mapping.coordinates
       console.log('Coordenadas del diseño:', { x, y, width, height })
       ctx.drawImage(designImage, x, y, width, height)
       console.log('Diseño dibujado exitosamente')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error cargando imagen de diseño:', error)
       throw new Error(`Error cargando imagen de diseño: ${error.message}`)
     }
@@ -131,7 +169,7 @@ export async function POST(request: NextRequest) {
         if (matchProcessed?.[1]) return matchProcessed[1]
         const matchImages = url.match(/\/images\/([^\/]+)/)
         if (matchImages?.[1]) return matchImages[1]
-      } catch {}
+      } catch { }
       return uuidv4()
     }
     const baseImageId = resolveBaseImageId()
@@ -171,8 +209,8 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error("GENERATE-MOCKUP error:", error)
-    return NextResponse.json({ 
-      error: error.message || "Error generando mockup" 
+    return NextResponse.json({
+      error: error.message || "Error generando mockup"
     }, { status: 500 })
   }
 }

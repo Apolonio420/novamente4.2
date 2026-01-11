@@ -31,7 +31,30 @@ export function normalizeR2Key(maybeKeyOrUrl: string): string {
     // FIX: Normalizar espacios alrededor de barras (ej: "images / id" -> "images/id")
     cleaned = cleaned.replace(/\s*\/\s*/g, '/')
 
-    // Si es URL HTTP(S), extraer el pathname y limpiar
+    // 0. Si ya es /api/r2-public?key=... o /api/proxy-image?key=..., extraer el key del parámetro
+    // HACER ESTO PRIMERO para evitar que sea tratado como una URL genérica y devuelva "/api/proxy-image"
+    if (cleaned.includes('/api/r2-public') || cleaned.includes('/api/proxy-image')) {
+      try {
+        const searchPart = cleaned.split('?')[1]
+        if (searchPart) {
+          const params = new URLSearchParams(searchPart)
+          const rawKey = params.get('key') || ''
+          if (rawKey) {
+            // Decodificar y limpiar
+            let decoded = rawKey
+            // Solo decodificar si parece estar codificado (evitar doble decodificación)
+            if (rawKey.includes('%')) {
+              try { decoded = decodeURIComponent(rawKey); } catch { }
+            }
+            return decoded.split('?')[0].split('#')[0].replace(/^\/+/, '')
+          }
+        }
+      } catch {
+        // Si falla, continuar con el proceso normal
+      }
+    }
+
+    // 1. Si es URL HTTP(S), extraer el pathname y limpiar
     if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
       try {
         const u = new URL(cleaned)
@@ -95,27 +118,6 @@ export function normalizeR2Key(maybeKeyOrUrl: string): string {
       }
     }
 
-    // Si es /api/r2-public?key=... o /api/proxy-image?key=..., extraer el key del parámetro
-    if (cleaned.includes('/api/r2-public') || cleaned.includes('/api/proxy-image')) {
-      try {
-        const searchPart = cleaned.split('?')[1]
-        if (searchPart) {
-          const params = new URLSearchParams(searchPart)
-          const rawKey = params.get('key') || ''
-          if (rawKey) {
-            // Decodificar y limpiar
-            let decoded = rawKey
-            // Solo decodificar si parece estar codificado (evitar doble decodificación)
-            if (rawKey.includes('%')) {
-              try { decoded = decodeURIComponent(rawKey); } catch { }
-            }
-            return decoded.split('?')[0].split('#')[0].replace(/^\/+/, '')
-          }
-        }
-      } catch {
-        // Si falla, continuar con el proceso normal
-      }
-    }
 
     // Para cualquier otra cadena, limpiar:
     // ... rest of the existing logic ...
