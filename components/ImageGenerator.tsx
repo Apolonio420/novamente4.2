@@ -68,6 +68,7 @@ export function ImageGenerator({
   const [isProcessing, setIsProcessing] = useState(false)
   const [processedImageId, setProcessedImageId] = useState<string | null>(null)
   const [selectedStyle, setSelectedStyle] = useState<StyleId | undefined>(undefined)
+  const [showAllStyles, setShowAllStyles] = useState(false)
   const { toast } = useToast()
   const isModal = mode === 'modal'
   const viewerRef = useRef<HTMLDivElement>(null)
@@ -126,17 +127,7 @@ export function ImageGenerator({
     return () => window.removeEventListener('loadImageInGenerator', handler as EventListener)
   }, [toast])
 
-  // Función para obtener clases CSS del contenedor según resolución
-  const getImageContainerClasses = () => {
-    switch (selectedSize) {
-      case "1792x1024":
-        return "aspect-[1792/1024]" // Horizontal
-      case "1024x1792":
-        return "aspect-[1024/1792]" // Vertical
-      default:
-        return "aspect-square" // Cuadrada
-    }
-  }
+
 
   // Mapeo de tamaños a parámetros para la API
   const getSizeParams = () => {
@@ -652,12 +643,12 @@ export function ImageGenerator({
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8 min-h-[calc(100vh-9rem)]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8 items-start">
         {/* Columna izquierda - Formulario compacto */}
         <div className="flex flex-col gap-4">
-          {/* Área de texto principal - compacta */}
+          {/* Área de texto principal - expandida */}
           <div>
-            <label htmlFor="prompt" className="block text-xs text-zinc-400 mb-1.5">
+            <label htmlFor="prompt" className="block text-xs text-zinc-400 mb-1.5 px-1">
               Describe tu diseño
             </label>
             <Textarea
@@ -665,21 +656,21 @@ export function ImageGenerator({
               placeholder="Ej: Un león majestuoso con corona dorada, fondo negro..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              className="w-full resize-none h-20 rounded-md bg-zinc-900/60 border border-zinc-800 px-3 py-2 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-primary/60"
+              className="w-full resize-none h-32 rounded-xl bg-zinc-900/60 border border-zinc-800 px-4 py-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-primary/60 transition-all"
               disabled={isGenerating}
             />
-            <p className="mt-1 text-[11px] text-zinc-500">Optimizado automáticamente con IA.</p>
+            <p className="mt-1.5 text-[11px] text-zinc-500 px-1">Optimizado automáticamente con IA para mejor calidad.</p>
           </div>
 
-          {/* Resoluciones - fila compacta */}
+          {/* Resoluciones - fila */}
           <div className="flex flex-wrap items-center gap-2">
             {sizeOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => setSelectedSize(option.value)}
-                className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${selectedSize === option.value
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-zinc-700/70 bg-zinc-900/60 text-zinc-200 hover:bg-zinc-800"
+                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${selectedSize === option.value
+                  ? "border-primary/50 bg-primary/10 text-primary shadow-sm shadow-primary/10"
+                  : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-300"
                   }`}
               >
                 {option.label}
@@ -687,21 +678,68 @@ export function ImageGenerator({
             ))}
           </div>
 
-          {/* Carrusel de ejemplos */}
-          <ExamplesCarousel onExampleClick={handleExampleClick} compact />
+          {/* Ejemplos rápidos - Grid visible */}
+          <div className="space-y-2">
+            <Label className="text-xs text-zinc-400 px-1">Ideas para Estampar</Label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                "Calavera Cyberpunk Neon",
+                "Gato Astronauta Vintage",
+                "Atardecer Retro 80s",
+                "Lobo Geométrico Minimalista",
+                "Dragón Japonés Tatuaje",
+                "Astronauta Meditando",
+                "Pizza Alienígena",
+                "Samurai Urbano Futurista"
+              ].map((example) => (
+                <button
+                  key={example}
+                  onClick={() => setPrompt(example)}
+                  className="text-[11px] px-2.5 py-1.5 rounded-md border border-zinc-800 bg-zinc-900/30 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 hover:bg-zinc-800 transition-all"
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
+          </div>
 
-          {/* Carrusel de estilos */}
-          <StylesCarousel onStyleSelect={handleStyleSelect} selectedStyle={selectedStyle} compact />
+          {/* Estilos - Grid colapsable */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <Label className="text-xs text-zinc-400">Estilo Artístico</Label>
+              <button
+                onClick={() => setShowAllStyles(!showAllStyles)}
+                className="text-[10px] text-primary hover:underline font-medium"
+              >
+                {showAllStyles ? "Ver menos" : "Ver todos los estilos"}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {(showAllStyles ? novamenteStyles : novamenteStyles.slice(0, 6)).map((style) => (
+                <button
+                  key={style.key}
+                  onClick={() => handleStyleSelect(style.key)}
+                  className={`relative group overflow-hidden rounded-lg border p-2 text-left transition-all hover:border-zinc-600 ${selectedStyle === style.key
+                      ? "border-primary/60 bg-primary/5 shadow-[0_0_10px_rgba(139,92,246,0.1)]"
+                      : "border-zinc-800 bg-zinc-900/40"
+                    }`}
+                >
+                  <div className="text-xs font-semibold text-zinc-200 mb-0.5">{style.name}</div>
+                  <div className="text-[10px] text-zinc-500 line-clamp-1">{style.description}</div>
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* CTA Generar - compacto con estados */}
           <Button
             onClick={generateImage}
             disabled={genState === "generating" || !prompt.trim()}
             className={`mt-2 inline-flex items-center justify-center rounded-lg px-4 py-2 transition-colors disabled:opacity-60 ${genState === "generating"
-                ? "bg-zinc-700 text-zinc-300"
-                : genState === "ready"
-                  ? "bg-emerald-600 text-white hover:bg-emerald-500"
-                  : "bg-violet-600 text-white hover:bg-violet-500"
+              ? "bg-zinc-700 text-zinc-300"
+              : genState === "ready"
+                ? "bg-emerald-600 text-white hover:bg-emerald-500"
+                : "bg-violet-600 text-white hover:bg-violet-500"
               }`}
           >
             {genState === "generating" ? (
@@ -724,35 +762,48 @@ export function ImageGenerator({
         </div>
 
         {/* Columna derecha - Visor */}
-        <div ref={viewerRef} className="rounded-xl border border-zinc-800/70 bg-zinc-950/40 p-3 lg:p-4 shadow-lg">
-          <div className={`${getImageContainerClasses()} w-full overflow-hidden rounded-md bg-zinc-900/40 grid place-items-center`}>
+        <div ref={viewerRef} className="rounded-xl border border-zinc-800/70 bg-zinc-950/40 p-3 lg:p-4 shadow-lg flex flex-col items-center justify-center bg-grid-white/[0.02] min-h-[300px] lg:min-h-[450px]">
+          {/* Container "hugs" the content. No fixed size unless placeholder. */}
+          <div className={`overflow-hidden rounded-lg relative group flex items-center justify-center transition-all duration-300 ${!generatedImage ? 'w-full max-w-[380px] aspect-square bg-zinc-900/40 border-2 border-dashed border-zinc-800/50' : 'bg-zinc-900/20 shadow-xl border border-zinc-800/50'}`}>
             {generatedImage && !imageError ? (
-              <div className="relative w-full h-full">
-                <Image
-                  key={`${imageKey}-${retryCount}`}
-                  src={createProxyUrl(generatedImage) || "/placeholder.svg"}
-                  alt="Imagen generada"
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  onError={handleImageError}
-                  onLoad={handleImageLoad}
-                  priority
-                  unoptimized
-                />
+              <div className="relative p-1">
+                {/* Explicit dimensions to let container hug the image */}
+                {(() => {
+                  // Logic to fit image within a display box (e.g. max 500px tall, max 100% wide)
+                  const { width, height } = getSizeParams()
+                  const MAX_HEIGHT = 500
+                  const aspectRatio = width / height
+
+                  // Simple scaling logic
+                  let displayHeight = Math.min(height, MAX_HEIGHT)
+                  let displayWidth = displayHeight * aspectRatio
+
+                  return (
+                    <Image
+                      key={`${imageKey}-${retryCount}`}
+                      src={createProxyUrl(generatedImage) || "/placeholder.svg"}
+                      alt="Imagen generada"
+                      width={displayWidth}
+                      height={displayHeight}
+                      className="object-contain rounded-md w-full h-auto max-w-full"
+                      priority
+                      unoptimized
+                    />
+                  )
+                })()}
               </div>
             ) : imageError ? (
-              <div className="text-center p-4">
-                <div className="h-10 w-10 mx-auto mb-3 animate-pulse rounded-lg bg-zinc-800/70" />
-                <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-red-500" />
-                <p className="text-sm mb-2">Error cargando imagen</p>
-                <p className="text-[11px] text-zinc-500 mb-3">
-                  {retryCount >= 3 ? "Máximo de reintentos alcanzado" : `Intento ${retryCount + 1} de 3`}
+              <div className="text-center p-8 w-full h-full flex flex-col items-center justify-center">
+                <div className="h-12 w-12 mb-4 animate-pulse rounded-full bg-zinc-800/70" />
+                <AlertTriangle className="h-10 w-10 mb-3 text-red-500/80" />
+                <p className="text-sm font-medium mb-1">Error cargando imagen</p>
+                <p className="text-xs text-zinc-500 mb-4 px-4">
+                  {retryCount >= 3 ? "No se pudo recuperar la imagen tras varios intentos." : `Reintentando conexión (${retryCount + 1}/3)...`}
                 </p>
                 {retryCount < 3 && (
-                  <Button variant="outline" size="sm" onClick={retryImageLoad} className="bg-transparent text-xs">
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Reintentar
+                  <Button variant="ghost" size="sm" onClick={retryImageLoad} className="text-xs h-8">
+                    <RefreshCw className="h-3 w-3 mr-2 animate-spin-slow" />
+                    Reintentando...
                   </Button>
                 )}
                 {retryCount >= 3 && (
@@ -765,18 +816,22 @@ export function ImageGenerator({
                       setImageKey((prev) => prev + 1)
                       generateImage()
                     }}
-                    className="bg-transparent text-xs"
+                    className="text-xs h-8 border-zinc-700 hover:bg-zinc-800"
                   >
-                    <Wand2 className="h-3 w-3 mr-1" />
-                    Generar Nueva
+                    <Wand2 className="h-3 w-3 mr-2" />
+                    Intentar de nuevo
                   </Button>
                 )}
               </div>
             ) : (
-              <div className="text-center">
-                <div className="h-10 w-10 mx-auto mb-2 animate-pulse rounded-lg bg-zinc-800/70" />
-                <p className="text-sm text-zinc-400">Tu diseño aparecerá aquí</p>
-                <p className="text-[11px] mt-1 text-zinc-500">Optimizado con IA</p>
+              <div className="text-center p-8 w-full h-full flex flex-col items-center justify-center">
+                <div className="h-16 w-16 mb-4 rounded-2xl bg-zinc-800/40 border border-zinc-700/30 flex items-center justify-center shadow-inner">
+                  <Zap className="h-8 w-8 text-zinc-600" />
+                </div>
+                <p className="text-sm font-medium text-zinc-300">Tu diseño aparecerá aquí</p>
+                <p className="text-xs mt-1 text-zinc-500 max-w-[200px]">
+                  Elegí un estilo y describí tu idea para comenzar.
+                </p>
               </div>
             )}
           </div>
@@ -800,9 +855,6 @@ export function ImageGenerator({
                     Usar este Diseño
                   </>
                 )}
-              </Button>
-              <Button variant="outline" onClick={handleDownload}>
-                <Download className="h-4 w-4" />
               </Button>
             </div>
           )}

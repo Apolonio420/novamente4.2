@@ -48,12 +48,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es" className="h-full">
+    <html lang="es" className="h-full" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://api.openai.com" crossOrigin="" />
         <link rel="preconnect" href="https://api.remove.bg" crossOrigin="" />
         <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossOrigin="" />
-        <link rel="dns-prefetch" href="https://novamente.4508cc283d34b79746e7b0a6e7c61f16.r2.cloudflarestorage.com" />
       </head>
       <body className={`min-h-screen bg-zinc-950 text-zinc-100 ${inter.className}`}>
         <Background />

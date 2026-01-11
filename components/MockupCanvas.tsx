@@ -45,13 +45,12 @@ export function MockupCanvas({
       return side === "front" ? "/garments/hoodie-model-front.jpeg" : "/garments/hoodie-model-back.jpeg"
     }
 
-    // Mapeo específico para cada prenda y color - COMPLETO
     const garmentImageMap: Record<string, Record<string, Record<string, string>>> = {
       "aura-oversize-tshirt": {
         front: {
-          black: "/products/aura-tshirt-negro-front.jpeg",
-          white: "/products/tshirt-blanca-front.jpeg",
-          caramel: "/products/aura-tshirt-caramel-front.jpeg",
+          black: "/garments/tshirt-black-oversize-front.jpeg",
+          white: "/garments/tshirt-white-oversize-front.jpeg",
+          caramel: "/garments/tshirt-caramel-oversize-front.png",
         },
         back: {
           black: "/garments/tshirt-black-oversize-back.jpeg",
@@ -61,8 +60,8 @@ export function MockupCanvas({
       },
       "aldea-classic-tshirt": {
         front: {
-          black: "/products/tshirt-aldea-negro-front.jpeg",
-          white: "/products/tshirt-aldea-blanco-front.jpeg",
+          black: "/garments/tshirt-black-classic-front.jpeg",
+          white: "/garments/tshirt-white-classic-front.jpeg",
         },
         back: {
           black: "/garments/tshirt-black-classic-back.jpeg",
@@ -71,13 +70,13 @@ export function MockupCanvas({
       },
       "astra-oversize-hoodie": {
         front: {
-          black: "/products/hoodie-negro-front.jpeg",
-          caramel: "/products/hoodie-caramel-front.jpeg",
-          cream: "/products/hoodie-crema-front.png",
-          gray: "/products/hoodie-gris-front.png",
+          black: "/garments/hoodie-black-front.jpeg",
+          caramel: "/garments/hoodie-caramel-front.jpeg",
+          cream: "/garments/hoodie-cream-front.jpeg",
+          gray: "/garments/hoodie-gray-front.jpeg",
         },
         back: {
-          black: "/garments/hoodie-black-back.png",
+          black: "/garments/hoodie-black-back.jpeg",
           caramel: "/garments/hoodie-caramel-back.png",
           cream: "/garments/hoodie-cream-back.png",
           gray: "/garments/hoodie-gray-back.png",
@@ -85,390 +84,200 @@ export function MockupCanvas({
       },
       lienzo: {
         front: {
-          custom: "/products/lienzo-main.png",
+          custom: "/garments/lienzo-main.png",
         },
         back: {
-          custom: "/products/lienzo-main.png",
+          custom: "/garments/lienzo-main.png",
         },
       },
     }
 
-    // Obtener la imagen correspondiente
     const garmentImages = garmentImageMap[garmentType]
     if (garmentImages && garmentImages[side] && garmentImages[side][garmentColor]) {
-      const imageUrl = garmentImages[side][garmentColor]
-      console.log(`🖼️ Loading ${side} image for ${garmentType} - ${garmentColor}:`, imageUrl)
-      return imageUrl
+      return garmentImages[side][garmentColor]
     }
 
-    // Fallback mejorado
-    console.warn(`⚠️ No image found for ${garmentType} - ${garmentColor} - ${side}, using fallback`)
-
-    // Fallback específico por tipo de prenda
     if (garmentType === "aura-oversize-tshirt") {
-      return side === "front" ? "/products/aura-tshirt-negro-front.jpeg" : "/garments/tshirt-black-oversize-back.jpeg"
+      return side === "front" ? "/garments/tshirt-black-oversize-front.jpeg" : "/garments/tshirt-black-oversize-back.jpeg"
     } else if (garmentType === "aldea-classic-tshirt") {
-      return side === "front" ? "/products/tshirt-aldea-negro-front.jpeg" : "/garments/tshirt-black-classic-back.jpeg"
+      return side === "front" ? "/garments/tshirt-black-classic-front.jpeg" : "/garments/tshirt-black-classic-back.jpeg"
     } else if (garmentType === "astra-oversize-hoodie") {
-      return side === "front" ? "/products/hoodie-negro-front.jpeg" : "/garments/hoodie-black-back.png"
-    } else if (garmentType === "lienzo") {
-      return "/products/lienzo-main.png"
+      return side === "front" ? "/garments/hoodie-black-front.jpeg" : "/garments/hoodie-black-back.jpeg"
     }
 
-    // Fallback final
-    return side === "front" ? "/products/hoodie-negro-front.jpeg" : "/garments/hoodie-black-back.png"
+    return side === "front" ? "/garments/hoodie-black-front.jpeg" : "/garments/hoodie-black-back.jpeg"
   }, [garmentType, garmentColor, side, showModel])
 
-  // Precargar imagen de prenda
   const preloadGarmentImage = useCallback(async (imageUrl: string) => {
-    const cacheKey = imageUrl
-
-    if (imageCache.current.has(cacheKey)) {
-      console.log("📦 Using cached garment image:", imageUrl)
+    if (imageCache.current.has(imageUrl)) {
       setGarmentImageLoaded(true)
       return
     }
 
-    console.log("⬇️ Preloading garment image:", imageUrl)
-
     return new Promise<void>((resolve, reject) => {
       const img = new Image()
       img.onload = () => {
-        console.log("✅ Garment image loaded:", imageUrl)
-        imageCache.current.set(cacheKey, img)
+        imageCache.current.set(imageUrl, img)
         setGarmentImageLoaded(true)
         resolve()
       }
-      img.onerror = (error) => {
-        console.error("❌ Failed to load garment image:", imageUrl, error)
-        reject(error)
-      }
+      img.onerror = reject
       img.src = imageUrl
     })
   }, [])
 
-  // Validar y procesar imagen de diseño - CORREGIDA
-  const validateDesignImage = useCallback((imageUrl: string) => {
-    console.log("🔍 Validating design image URL:", imageUrl.substring(0, 100) + "...")
+  const currentGarmentUrl = useRef<string>("")
 
-    // Verificar si es una URL válida
-    if (!imageUrl || typeof imageUrl !== "string") {
-      console.error("❌ Invalid image URL type:", typeof imageUrl)
-      throw new Error("URL de imagen inválida")
-    }
-
-    // Verificar longitud mínima
-    if (imageUrl.length < 10) {
-      console.error("❌ URL too short:", imageUrl.length)
-      throw new Error("URL demasiado corta")
-    }
-
-    // Verificar si es una URL de v0 preview (problema conocido)
-    if (imageUrl.includes("preview-novamente-storefront") && imageUrl.includes("vusercontent.net")) {
-      console.error("❌ Detected corrupted v0 preview URL:", imageUrl)
-      throw new Error("URL corrupta detectada - imagen no válida")
-    }
-
-    // Verificar si es base64 - VÁLIDO
-    if (imageUrl.startsWith("data:image/")) {
-      console.log("✅ Valid base64 image detected")
-      return true
-    }
-
-    // Verificar si es HTTPS - VÁLIDO
-    if (imageUrl.startsWith("https://")) {
-      console.log("✅ Valid HTTPS URL detected:", imageUrl)
-      return true
-    }
-
-    // Verificar si es HTTP (menos seguro pero puede funcionar)
-    if (imageUrl.startsWith("http://")) {
-      console.warn("⚠️ HTTP URL detected (not secure):", imageUrl)
-      return true
-    }
-
-    // Si llegamos aquí, la URL no es válida
-    console.error("❌ Invalid URL format:", imageUrl)
-    throw new Error(`Formato de URL no válido: ${imageUrl.substring(0, 50)}...`)
-  }, [])
-
-  // Efecto para manejar cambios en la imagen de diseño
   useEffect(() => {
-    console.log("🎨 Design image changed:", design.image.substring(0, 50) + "...")
+    const imageUrl = getGarmentImageUrl()
+    if (imageUrl === currentGarmentUrl.current && garmentImageLoaded) return
+
+    currentGarmentUrl.current = imageUrl
     setIsLoading(true)
-    setError(null)
-    setDesignImageLoaded(false)
-
-    try {
-      // Validar imagen de diseño
-      validateDesignImage(design.image)
-
-      // Si la validación pasa, marcar como cargada
-      setDesignImageLoaded(true)
-      console.log("✅ Design image validation passed")
-    } catch (validationError) {
-      console.error("❌ Design image validation failed:", validationError)
-      setError(validationError instanceof Error ? validationError.message : "Error de validación")
-    }
-  }, [design.image, validateDesignImage])
-
-  // Efecto para precargar imagen de prenda
-  useEffect(() => {
-    const garmentImageUrl = getGarmentImageUrl()
     setGarmentImageLoaded(false)
-
-    preloadGarmentImage(garmentImageUrl).catch((error) => {
-      console.error("❌ Failed to preload garment image:", error)
-      // No marcar como error crítico, usar fallback
-      setGarmentImageLoaded(true)
-    })
-  }, [getGarmentImageUrl, preloadGarmentImage])
-
-  // Efecto para controlar estado de carga
-  useEffect(() => {
-    if (garmentImageLoaded && designImageLoaded && !error) {
-      console.log("✅ All images loaded successfully")
+    preloadGarmentImage(imageUrl).catch(() => {
+      setError("Error al cargar la imagen de la prenda")
       setIsLoading(false)
-    }
-  }, [garmentImageLoaded, designImageLoaded, error])
+    })
+  }, [getGarmentImageUrl, preloadGarmentImage, garmentImageLoaded])
 
-  // Obtener el área de impresión según el tipo de prenda y vista
+  useEffect(() => {
+    if (!design.image) {
+      setDesignImageLoaded(false)
+      return
+    }
+    setDesignImageLoaded(false)
+    const img = new Image()
+    img.onload = () => setDesignImageLoaded(true)
+    img.onerror = () => setDesignImageLoaded(true)
+    img.src = design.image
+  }, [design.image])
+
+  useEffect(() => {
+    if (garmentImageLoaded && (!design.image || designImageLoaded)) {
+      const timer = setTimeout(() => setIsLoading(false), 100)
+      return () => clearTimeout(timer)
+    }
+  }, [garmentImageLoaded, designImageLoaded, design.image])
+
   const getPrintArea = useCallback(() => {
     const printAreas: Record<string, Record<string, { x: number; y: number; width: number; height: number }>> = {
       "aura-oversize-tshirt": {
-        front: { x: 250, y: 300, width: 400, height: 500 },
-        back: { x: 250, y: 250, width: 400, height: 500 },
+        front: { x: 85, y: 110, width: 230, height: 280 },
+        back: { x: 85, y: 90, width: 230, height: 310 },
       },
       "aldea-classic-tshirt": {
-        front: { x: 280, y: 320, width: 350, height: 450 },
-        back: { x: 280, y: 270, width: 350, height: 450 },
+        front: { x: 90, y: 120, width: 220, height: 270 },
+        back: { x: 90, y: 90, width: 220, height: 310 },
       },
       "astra-oversize-hoodie": {
-        front: showModel ? { x: 220, y: 280, width: 260, height: 300 } : { x: 250, y: 300, width: 500, height: 600 },
-        back: showModel ? { x: 220, y: 250, width: 260, height: 300 } : { x: 250, y: 250, width: 500, height: 600 },
+        front: showModel ? { x: 220, y: 280, width: 260, height: 300 } : { x: 80, y: 140, width: 240, height: 240 },
+        back: showModel ? { x: 220, y: 250, width: 260, height: 300 } : { x: 80, y: 140, width: 240, height: 260 },
       },
       lienzo: {
-        front: { x: 100, y: 100, width: 600, height: 600 },
-        back: { x: 100, y: 100, width: 600, height: 600 },
+        front: { x: 50, y: 50, width: 300, height: 300 },
+        back: { x: 50, y: 50, width: 300, height: 300 },
       },
     }
-
-    return printAreas[garmentType]?.[side] || { x: 250, y: 300, width: 500, height: 600 }
+    return printAreas[garmentType]?.[side] || { x: 100, y: 160, width: 200, height: 180 }
   }, [garmentType, side, showModel])
 
-  // Calcular el estilo para la imagen del diseño
-  const getDesignStyle = useCallback(() => {
+  const getImprovedDesignStyle = useCallback(() => {
     const printArea = getPrintArea()
+    const printAreaCenterX = printArea.x + printArea.width / 2
+    const printAreaCenterY = printArea.y + printArea.height / 2
 
-    // Calcular el tamaño del diseño basado en la escala
-    const designWidth = printArea.width * design.scale
-    const designHeight = printArea.height * design.scale
+    // El punto central del diseño en la escala 400x400
+    const centerX = printAreaCenterX + design.position.x
+    const centerY = printAreaCenterY + design.position.y
 
-    // Calcular la posición centrada del diseño dentro del área de impresión
-    const designX = printArea.x + (printArea.width - designWidth) / 2 + design.position.x
-    const designY = printArea.y + (printArea.height - designHeight) / 2 + design.position.y
+    // Tamaño del diseño en porcentajes (base 400)
+    // Usamos el área de impresión como referencia de escala 1.0
+    const dWidth = printArea.width * design.scale
+    const dHeight = printArea.height * design.scale
 
     return {
       position: "absolute" as const,
-      left: `${designX}px`,
-      top: `${designY}px`,
-      width: `${designWidth}px`,
-      height: `${designHeight}px`,
+      left: `${(centerX / 400) * 100}%`,
+      top: `${(centerY / 400) * 100}%`,
+      width: `${(dWidth / 400) * 100}%`,
+      height: `${(dHeight / 400) * 100}%`,
       objectFit: "contain" as const,
       cursor: isDragging ? "grabbing" : "grab",
       zIndex: 10,
+      transform: "translate(-50%, -50%)",
     }
   }, [getPrintArea, design.scale, design.position, isDragging])
 
-  // Verificar si la imagen está centrada (con tolerancia de 10px)
   const isImageCentered = useCallback(() => {
-    const tolerance = 10
-    return Math.abs(design.position.x) < tolerance && Math.abs(design.position.y) < tolerance
+    return Math.abs(design.position.x) < 3 && Math.abs(design.position.y) < 3
   }, [design.position])
 
-  // Verificar si la imagen está cerca de los bordes del área de impresión
   const isNearPrintAreaEdge = useCallback(() => {
     const printArea = getPrintArea()
-    const designStyle = getDesignStyle()
+    const style = getImprovedDesignStyle()
+    const left = parseFloat(style.left)
+    const top = parseFloat(style.top)
+    const width = parseFloat(style.width)
+    const height = parseFloat(style.height)
 
-    // Extraer valores numéricos de los estilos
-    const designX = Number.parseInt(designStyle.left.replace("px", ""))
-    const designY = Number.parseInt(designStyle.top.replace("px", ""))
-    const designWidth = Number.parseInt(designStyle.width.replace("px", ""))
-    const designHeight = Number.parseInt(designStyle.height.replace("px", ""))
+    const paX = (printArea.x / 400) * 100
+    const paY = (printArea.y / 400) * 100
+    const paW = (printArea.width / 400) * 100
+    const paH = (printArea.height / 400) * 100
 
-    const margin = 20 // Margen de seguridad en píxeles
+    const dLeft = left - width / 2
+    const dTop = top - height / 2
 
-    // Verificar si alguna parte del diseño está fuera o cerca del borde del área de impresión
     return (
-      designX < printArea.x + margin ||
-      designY < printArea.y + margin ||
-      designX + designWidth > printArea.x + printArea.width - margin ||
-      designY + designHeight > printArea.y + printArea.height - margin
+      dLeft < paX - 1 || dTop < paY - 1 || (dLeft + width) > (paX + paW + 1) || (dTop + height) > (paY + paH + 1)
     )
-  }, [getPrintArea, getDesignStyle])
+  }, [getPrintArea, getImprovedDesignStyle])
 
-  // Manejadores de eventos para arrastrar y soltar
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent<HTMLImageElement>) => {
-      e.preventDefault()
-      setIsDragging(true)
-      setShowGuides(true)
-      setDragStart({
-        x: e.clientX - design.position.x,
-        y: e.clientY - design.position.y,
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+    setShowGuides(true)
+    setDragStart({ x: e.clientX, y: e.clientY })
+  }
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging) return
+    const dx = e.clientX - dragStart.x
+    const dy = e.clientY - dragStart.y
+
+    const container = containerRef.current
+    if (container) {
+      const rect = container.getBoundingClientRect()
+      const scaleX = 400 / rect.width
+      const scaleY = 400 / rect.height
+      onPositionChange({
+        x: design.position.x + dx * scaleX,
+        y: design.position.y + dy * scaleY
       })
-    },
-    [design.position],
-  )
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!isDragging) return
-
-      const newPosition = {
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      }
-
-      onPositionChange(newPosition)
-    },
-    [isDragging, dragStart, onPositionChange],
-  )
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false)
-    // Ocultar las guías después de un breve delay
-    setTimeout(() => setShowGuides(false), 1000)
-  }, [])
-
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent<HTMLImageElement>) => {
-      e.preventDefault()
-      if (e.touches.length === 1) {
-        setIsDragging(true)
-        setShowGuides(true)
-        setDragStart({
-          x: e.touches[0].clientX - design.position.x,
-          y: e.touches[0].clientY - design.position.y,
-        })
-      }
-    },
-    [design.position],
-  )
-
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent<HTMLDivElement>) => {
-      if (!isDragging || e.touches.length !== 1) return
-
-      const newPosition = {
-        x: e.touches[0].clientX - dragStart.x,
-        y: e.touches[0].clientY - dragStart.y,
-      }
-
-      onPositionChange(newPosition)
-    },
-    [isDragging, dragStart, onPositionChange],
-  )
-
-  const handleTouchEnd = useCallback(() => {
-    setIsDragging(false)
-    setTimeout(() => setShowGuides(false), 1000)
-  }, [])
-
-  // Manejar errores de carga de imagen del diseño
-  const handleDesignImageError = useCallback((e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    const target = e.target as HTMLImageElement
-    const imageUrl = target.src
-    console.error("❌ Error loading design image. URL:", imageUrl)
-    console.error("❌ Error details:", e.nativeEvent)
-
-    // Intentar determinar el tipo de error
-    let errorMessage = "Error al cargar la imagen del diseño"
-    if (imageUrl.includes("data:image")) {
-      errorMessage = "Error al procesar la imagen base64"
-    } else if (imageUrl.includes("https://")) {
-      errorMessage = "Error al cargar la imagen desde URL externa"
-    } else if (imageUrl.includes("preview-novamente-storefront")) {
-      errorMessage = "URL corrupta detectada - imagen no válida"
     }
+    setDragStart({ x: e.clientX, y: e.clientY })
+  }, [isDragging, dragStart, design.position, onPositionChange])
 
-    setError(errorMessage)
-  }, [])
-
-  // Manejar errores de carga de imagen de la prenda
-  const handleGarmentImageError = useCallback((e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    const target = e.target as HTMLImageElement
-    const imageUrl = target.src
-    console.error("❌ Error loading garment image:", imageUrl)
-
-    // Fallback en caso de error
-    target.src = "/placeholder.svg?height=600&width=600&text=Prenda+no+disponible"
-  }, [])
-
-  // Efecto para manejar eventos globales de mouse/touch
   useEffect(() => {
-    const handleGlobalMouseUp = () => {
+    const up = () => {
       setIsDragging(false)
-      setTimeout(() => setShowGuides(false), 1000)
+      setTimeout(() => setShowGuides(false), 1500)
     }
-
-    const handleGlobalTouchEnd = () => {
-      setIsDragging(false)
-      setTimeout(() => setShowGuides(false), 1000)
+    if (isDragging) {
+      window.addEventListener("mousemove", handleMouseMove as any)
+      window.addEventListener("mouseup", up)
     }
-
-    window.addEventListener("mouseup", handleGlobalMouseUp)
-    window.addEventListener("touchend", handleGlobalTouchEnd)
-
     return () => {
-      window.removeEventListener("mouseup", handleGlobalMouseUp)
-      window.removeEventListener("touchend", handleGlobalTouchEnd)
+      window.removeEventListener("mousemove", handleMouseMove as any)
+      window.removeEventListener("mouseup", up)
     }
-  }, [])
+  }, [isDragging, handleMouseMove])
 
   if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-muted/20">
-        <div className="flex flex-col items-center space-y-3">
-          <Loader className="h-8 w-8 animate-spin text-primary" />
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Cargando mockup...</p>
-            <div className="flex items-center space-x-2 mt-2">
-              <div className={`w-2 h-2 rounded-full ${garmentImageLoaded ? "bg-green-500" : "bg-gray-300"}`}></div>
-              <span className="text-xs">Prenda</span>
-              <div className={`w-2 h-2 rounded-full ${designImageLoaded ? "bg-green-500" : "bg-gray-300"}`}></div>
-              <span className="text-xs">Diseño</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-muted/20">
-        <div className="text-center p-4">
-          <p className="text-destructive mb-2">❌ Error al cargar el mockup</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
-          <button
-            onClick={() => {
-              setError(null)
-              setIsLoading(true)
-              setGarmentImageLoaded(false)
-              setDesignImageLoaded(false)
-              // Reintentar después de un breve delay
-              setTimeout(() => {
-                const garmentImageUrl = getGarmentImageUrl()
-                preloadGarmentImage(garmentImageUrl)
-              }, 1000)
-            }}
-            className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
-          >
-            🔄 Reintentar
-          </button>
-        </div>
+        <Loader className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -477,105 +286,63 @@ export function MockupCanvas({
   const garmentImageUrl = getGarmentImageUrl()
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full relative"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      {/* Imagen de la prenda */}
+    <div ref={containerRef} className="w-full h-full relative overflow-hidden">
       <div className="w-full h-full flex items-center justify-center">
         <img
-          ref={garmentRef}
-          src={garmentImageUrl || "/placeholder.svg"}
-          alt={`${garmentType} ${garmentColor} ${side}`}
-          className="max-w-full max-h-full object-contain"
-          key={`${garmentType}-${garmentColor}-${side}`} // Key para forzar re-render
-          onError={handleGarmentImageError}
-          onLoad={() => {
-            console.log("✅ Garment image rendered successfully")
-            setGarmentImageLoaded(true)
-          }}
+          src={garmentImageUrl}
+          alt="Prenda"
+          className="max-w-full max-h-full object-contain pointer-events-none"
+          onLoad={() => setGarmentImageLoaded(true)}
         />
       </div>
 
-      {/* Área de impresión (solo visible durante el arrastre o cuando está cerca del borde) */}
-      {(showGuides || isNearPrintAreaEdge()) && (
+      {/* Solo mostrar guías si el usuario está interactuando o está cerca del borde */}
+      {(showGuides || (isDragging && isNearPrintAreaEdge())) && (
         <div
-          className={`absolute border-2 ${isNearPrintAreaEdge() ? "border-red-500" : "border-blue-400"} border-dashed pointer-events-none`}
+          className={`absolute border-2 border-dashed pointer-events-none transition-colors ${isNearPrintAreaEdge() ? "border-red-500/50" : "border-blue-400/30"}`}
           style={{
-            left: `${printArea.x}px`,
-            top: `${printArea.y}px`,
-            width: `${printArea.width}px`,
-            height: `${printArea.height}px`,
-            zIndex: 5,
-          }}
-        >
-          {/* Etiqueta del área de impresión */}
-          <div
-            className={`absolute -top-6 left-0 text-xs px-2 py-1 rounded ${isNearPrintAreaEdge() ? "bg-red-500 text-white" : "bg-blue-400 text-white"}`}
-          >
-            {isNearPrintAreaEdge() ? "Fuera del área recomendada" : "Área de impresión"}
-          </div>
-        </div>
-      )}
-
-      {/* Líneas guía de centrado */}
-      {(showGuides || isImageCentered()) && (
-        <>
-          {/* Línea vertical central */}
-          <div
-            className="absolute border-l-2 border-green-400 border-dashed pointer-events-none"
-            style={{
-              left: `${printArea.x + printArea.width / 2}px`,
-              top: `${printArea.y}px`,
-              height: `${printArea.height}px`,
-              zIndex: 6,
-            }}
-          />
-          {/* Línea horizontal central */}
-          <div
-            className="absolute border-t-2 border-green-400 border-dashed pointer-events-none"
-            style={{
-              left: `${printArea.x}px`,
-              top: `${printArea.y + printArea.height / 2}px`,
-              width: `${printArea.width}px`,
-              zIndex: 6,
-            }}
-          />
-          {/* Indicador de centrado */}
-          {isImageCentered() && (
-            <div
-              className="absolute bg-green-400 text-white text-xs px-2 py-1 rounded pointer-events-none"
-              style={{
-                left: `${printArea.x + printArea.width / 2 - 30}px`,
-                top: `${printArea.y - 30}px`,
-                zIndex: 7,
-              }}
-            >
-              Centrado
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Imagen del diseño */}
-      {design.image && designImageLoaded && (
-        <img
-          ref={designRef}
-          src={design.image || "/placeholder.svg"}
-          alt="Design"
-          style={getDesignStyle()}
-          onMouseDown={handleMouseDown}
-          onTouchStart={handleTouchStart}
-          onError={handleDesignImageError}
-          onLoad={() => {
-            console.log("✅ Design image rendered successfully:", design.image.substring(0, 50) + "...")
+            left: `${(printArea.x / 400) * 100}%`,
+            top: `${(printArea.y / 400) * 100}%`,
+            width: `${(printArea.width / 400) * 100}%`,
+            height: `${(printArea.height / 400) * 100}%`,
           }}
         />
       )}
+
+      {/* Línea de centrado solo durante el arrastre */}
+      {showGuides && (
+        <div
+          className={cn(
+            "absolute border-l border-dashed pointer-events-none transition-all duration-300",
+            isImageCentered() ? "border-green-400/80 scale-y-110" : "border-zinc-500/20"
+          )}
+          style={{
+            left: `${((printArea.x + printArea.width / 2) / 400) * 100}%`,
+            top: `${(printArea.y / 400) * 100}%`,
+            height: `${(printArea.height / 400) * 100}%`,
+          }}
+        />
+      )}
+
+      {design.image && (
+        <img
+          src={design.image}
+          style={getImprovedDesignStyle()}
+          onMouseDown={handleMouseDown}
+          className="absolute drop-shadow-md hover:filter hover:brightness-110 transition-[filter]"
+          alt="Diseño"
+        />
+      )}
+
+      {isImageCentered() && showGuides && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-green-500/80 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm pointer-events-none">
+          Centrado
+        </div>
+      )}
     </div>
   )
+}
+
+function cn(...classes: any[]) {
+  return classes.filter(Boolean).join(" ")
 }
