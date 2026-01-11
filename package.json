@@ -67,7 +67,7 @@
     "localforage": "^1.10.0",
     "lucide-react": "^0.454.0",
     "mercadopago": "latest",
-    "next": "latest",
+    "next": "^15.2.6",
     "next-themes": "latest",
     "path": "latest",
     "react": "^19",
