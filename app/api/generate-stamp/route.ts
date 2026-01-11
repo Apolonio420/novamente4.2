@@ -104,21 +104,14 @@ export async function POST(request: NextRequest) {
       apiKey: process.env.GEMINI_API_KEY!,
     })
 
-    // Helper para obtener imagen (usa fs para local, fetch para remoto)
+    // Helper para obtener imagen (usa fetch para evitar que Vercel bundlee archivos locales)
     const getImageBuffer = async (urlOrPath: string): Promise<Buffer> => {
       // Si es una ruta local de la carpeta public
       if (urlOrPath.startsWith('/garments/')) {
-        const path = require('path')
-        const fs = require('fs')
-        // En Next.js, 'public' es la raíz para archivos estáticos, pero en FS está en process.cwd() + '/public'
-        const fullPath = path.join(process.cwd(), 'public', urlOrPath)
-        console.log(`[${debugId}] STAMP-GEN: Reading local file with fs →`, fullPath)
-        try {
-          return fs.readFileSync(fullPath)
-        } catch (fsErr: any) {
-          console.error(`[${debugId}] STAMP-GEN: fs read error:`, fsErr.message)
-          throw new Error(`Local file not found: ${urlOrPath}`)
-        }
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `https://${request.headers.get('host')}`
+        const fullUrl = `${baseUrl.replace(/\/$/, '')}${urlOrPath}`
+        console.log(`[${debugId}] STAMP-GEN: Fetching local asset via URL (to avoid bundling) →`, fullUrl)
+        return fetchImageWithRetry(fullUrl)
       }
 
       // Si es un data:uri (ya manejado arriba, pero por si acaso)

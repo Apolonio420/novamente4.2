@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { uploadFile } from "@/lib/cloudflare-r2"
+import { toPublicR2Url } from "@/lib/r2"
 
 export const runtime = "nodejs"
 
@@ -143,10 +145,29 @@ export async function POST(req: Request) {
       )
     }
 
-    const out = imagesBase64.map((b64) => ({
-      data: b64,
-      url: `https://pub-4508cc283d34b79746e7b0a6e7c61f16.r2.dev/generated/dalle-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.png`,
-      hasBgRemoved: true
+    const out = await Promise.all(imagesBase64.map(async (b64) => {
+      const buffer = Buffer.from(b64, 'base64')
+      const timestamp = Date.now()
+      const storageKey = `v1/raw-designs/${timestamp}-${Math.random().toString(36).substring(2, 7)}.png`
+
+      try {
+        const { url: publicUrl, provider } = await uploadFile(buffer, storageKey, "image/png")
+        console.log(`[STORAGE] Generated image saved to ${provider.toUpperCase()}: ${storageKey}`)
+        return {
+          data: b64,
+          url: publicUrl,
+          hasBgRemoved: false,
+          storageProvider: provider
+        }
+      } catch (err: any) {
+        console.error(`[STORAGE] Failed to save generated image:`, err.message)
+        return {
+          data: b64,
+          url: `data:image/png;base64,${b64}`,
+          hasBgRemoved: false,
+          isFallback: true
+        }
+      }
     }))
     const t1 = Date.now()
     console.log("GEN-IMG done", { totalMs: t1 - t0, count: out.length })
@@ -154,13 +175,18 @@ export async function POST(req: Request) {
     return ok({ success: true, promptUsed: finalPrompt, images: out })
   } catch (e: any) {
     const t1 = Date.now()
-    console.error("GEN-IMG FATAL", {
-      ms: t1 - t0,
-      message: e?.message,
-      status: e?.status,
-      code: e?.code,
-      details: e?.details,
-    })
+    // 🔔 Notificar por Telegram
+    try {
+      const { notifyError } = await import("@/lib/notifications")
+      await notifyError({
+        area: "Generador de Imágenes (Gemini)",
+        endpoint: "/api/generate-image",
+        message: e.message || "Unknown error"
+      })
+    } catch (notifErr: any) {
+      console.error("❌ Error sending error notification:", notifErr.message)
+    }
+
     return ok({ error: e?.message ?? "Error generando imagen" }, 500)
   }
 }

@@ -32,7 +32,7 @@ if (process.env.NODE_ENV === 'development') {
       }),
     })
     console.log('🛡️ R2: SSL verification disabled for local development')
-  } catch (e) {
+  } catch (e: any) {
     console.warn('⚠️ Could not load SSL workaround dependencies:', e.message)
   }
 }
@@ -131,6 +131,25 @@ export async function getSignedR2Url(key: string, expiresIn: number = 3600): Pro
 export async function deleteFromR2(key: string): Promise<void> {
   const command = new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: key })
   await r2Client.send(command)
+}
+
+/**
+ * Genera un nombre de archivo consistente y limpio
+ */
+export function generateImageName(description: string, token: string = ''): string {
+  const cleanDescription = description
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]/gi, '_')
+    .slice(0, 30)
+
+  const timestamp = Date.now()
+  const random = Math.random().toString(36).substring(2, 7)
+
+  if (token) {
+    return `${cleanDescription}_${token}_${timestamp}_${random}.png`
+  }
+  return `${cleanDescription}_${timestamp}_${random}.png`
 }
 
 export { r2Client, BUCKET_NAME }
