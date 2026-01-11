@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenAI } from "@google/genai"
-import { uploadToR2, generateImageName } from "@/lib/cloudflare-r2"
+import { uploadFile } from "@/lib/cloudflare-r2"
 import { v4 as uuidv4 } from "uuid"
 import { z } from "zod"
 
@@ -104,158 +104,94 @@ export async function POST(request: NextRequest) {
       apiKey: process.env.GEMINI_API_KEY!,
     })
 
-    // Helper para descargar imagen con reintentos y fallback a proxy
-    const fetchImageWithRetry = async (url: string, maxRetries = 2, originalDesignUrl?: string): Promise<Buffer> => {
+    // Helper para obtener imagen (usa fs para local, fetch para remoto)
+    const getImageBuffer = async (urlOrPath: string): Promise<Buffer> => {
+      // Si es una ruta local de la carpeta public
+      if (urlOrPath.startsWith('/garments/')) {
+        const path = require('path')
+        const fs = require('fs')
+        // En Next.js, 'public' es la raíz para archivos estáticos, pero en FS está en process.cwd() + '/public'
+        const fullPath = path.join(process.cwd(), 'public', urlOrPath)
+        console.log(`[${debugId}] STAMP-GEN: Reading local file with fs →`, fullPath)
+        try {
+          return fs.readFileSync(fullPath)
+        } catch (fsErr: any) {
+          console.error(`[${debugId}] STAMP-GEN: fs read error:`, fsErr.message)
+          throw new Error(`Local file not found: ${urlOrPath}`)
+        }
+      }
+
+      // Si es un data:uri (ya manejado arriba, pero por si acaso)
+      if (urlOrPath.startsWith('data:')) {
+        const base64 = urlOrPath.split(',')[1]
+        return Buffer.from(base64, 'base64')
+      }
+
+      // Si es una URL remota
+      return fetchImageWithRetry(urlOrPath)
+    }
+
+    const fetchImageWithRetry = async (url: string, maxRetries = 2): Promise<Buffer> => {
       let lastError: Error | null = null
       let currentUrl = url
 
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-          console.log(`[${debugId}] STAMP-GEN: Fetching designImageUrl (attempt ${attempt + 1}/${maxRetries + 1}) →`, currentUrl.substring(0, 100) + "...")
-
-          const response = await fetch(currentUrl, {
-            signal: AbortSignal.timeout(30000), // 30 segundos timeout
-          })
-
-          if (!response.ok) {
-            // Si es 404 y no estamos usando el proxy, intentar usar el proxy como fallback
-            if (response.status === 404 && attempt < maxRetries && !currentUrl.includes('/api/r2-public') && originalDesignUrl) {
-              console.warn(`[${debugId}] STAMP-GEN: 404 error, trying proxy fallback...`)
-              try {
-                // Si la URL original era del proxy, usarla directamente
-                if (originalDesignUrl.startsWith('/api/r2-public')) {
-                  currentUrl = new URL(originalDesignUrl, request.url).toString()
-                  console.log(`[${debugId}] STAMP-GEN: Using original proxy URL as fallback`)
-                  continue
-                }
-                // Si no, intentar extraer la clave y usar el proxy
-                const { normalizeR2Key } = await import("@/lib/r2")
-                const key = normalizeR2Key(originalDesignUrl)
-                if (key) {
-                  const encodedKey = encodeURIComponent(key)
-                  currentUrl = new URL(`/api/r2-public?key=${encodedKey}`, request.url).toString()
-                  console.log(`[${debugId}] STAMP-GEN: Using proxy with extracted key as fallback`)
-                  continue
-                }
-              } catch (proxyErr: any) {
-                console.warn(`[${debugId}] STAMP-GEN: Could not create proxy URL:`, proxyErr.message)
-              }
-            }
-
-            // Si es 403/404 y es URL firmada, intentar regenerar
-            if ((response.status === 403 || response.status === 404) && attempt < maxRetries && currentUrl.includes('X-Amz-')) {
-              console.warn(`[${debugId}] STAMP-GEN: URL expired (${response.status}), regenerating signed URL...`)
-              const { normalizeR2Key } = await import("@/lib/r2")
-              const { getSignedR2Url } = await import("@/lib/cloudflare-r2")
-              const key = normalizeR2Key(currentUrl)
-              if (key) {
-                currentUrl = await getSignedR2Url(key, 3600)
-                console.log(`[${debugId}] STAMP-GEN: Regenerated signed URL, retrying...`)
-                continue
-              }
-            }
-
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-          }
-
+          console.log(`[${debugId}] STAMP-GEN: Fetching remote URL (attempt ${attempt + 1}/${maxRetries + 1}) →`, currentUrl.substring(0, 100) + "...")
+          const response = await fetch(currentUrl, { signal: AbortSignal.timeout(30000) })
+          if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`)
           const buffer = await response.arrayBuffer()
-          const size = buffer.byteLength
-          console.log(`[${debugId}] STAMP-GEN: Image fetched OK →`, { size, url: currentUrl.substring(0, 100) })
           return Buffer.from(buffer)
-
         } catch (err: any) {
           lastError = err
           console.error(`[${debugId}] STAMP-GEN: Fetch attempt ${attempt + 1} failed:`, err.message)
-
-          if (attempt < maxRetries && (err.message.includes('expired') || err.message.includes('403') || err.message.includes('404'))) {
-            // Último intento: usar el proxy si no lo estamos usando ya
-            if (!currentUrl.includes('/api/r2-public') && originalDesignUrl) {
-              try {
-                if (originalDesignUrl.startsWith('/api/r2-public')) {
-                  currentUrl = new URL(originalDesignUrl, request.url).toString()
-                  console.log(`[${debugId}] STAMP-GEN: Last attempt with original proxy URL`)
-                  continue
-                }
-                const { normalizeR2Key } = await import("@/lib/r2")
-                const key = normalizeR2Key(originalDesignUrl)
-                if (key) {
-                  const encodedKey = encodeURIComponent(key)
-                  currentUrl = new URL(`/api/r2-public?key=${encodedKey}`, request.url).toString()
-                  console.log(`[${debugId}] STAMP-GEN: Last attempt with proxy`)
-                  continue
-                }
-              } catch (proxyErr: any) {
-                console.error(`[${debugId}] STAMP-GEN: Could not use proxy fallback:`, proxyErr.message)
-              }
-            }
-          }
         }
       }
-
       throw new Error(`Error descargando imagen después de ${maxRetries + 1} intentos: ${lastError?.message}`)
     }
 
-    // 1) Descargar la imagen de diseño (sin fondo)
-    console.log(`[${debugId}] STAMP-GEN: Fetching designImageUrl →`, designImageUrl.substring(0, 100) + "...")
+    // 1) Descargar la imagen de diseño (soporta base64 o URL remota)
+    console.log(`[${debugId}] STAMP-GEN: Processing designImageUrl →`, designImageUrl.substring(0, 100) + "...")
 
-    // Normalizar la URL del diseño para que sea accesible desde el servidor
-    let absoluteDesignUrl = designImageUrl
-    try {
-      if (designImageUrl.startsWith('/api/r2-public')) {
-        // Si viene del proxy, usar el proxy directamente (convertir a URL absoluta)
-        // El proxy ya sabe cómo acceder a R2 correctamente
-        absoluteDesignUrl = new URL(designImageUrl, request.url).toString()
-        console.log(`[${debugId}] STAMP-GEN: Using proxy URL directly:`, absoluteDesignUrl.substring(0, 150))
-      } else if (designImageUrl.startsWith('/api/')) {
-        // Otros endpoints de proxy - convertir a URL absoluta
-        absoluteDesignUrl = new URL(designImageUrl, request.url).toString()
-        console.log(`[${debugId}] STAMP-GEN: Converted relative proxy URL to absolute`)
-      } else if (designImageUrl.includes('r2.dev') || designImageUrl.includes('r2.cloudflarestorage.com')) {
-        // Si es URL de R2 (pública o firmada), intentar extraer clave y regenerar URL firmada
-        // Pero si falla, intentar usar el proxy en su lugar
-        try {
-          const { normalizeR2Key } = await import("@/lib/r2")
-          const { getSignedR2Url } = await import("@/lib/cloudflare-r2")
-          const key = normalizeR2Key(designImageUrl)
-          if (key) {
-            absoluteDesignUrl = await getSignedR2Url(key, 3600)
-            console.log(`[${debugId}] STAMP-GEN: Using signed URL for R2 image`)
-          } else {
-            // Si no se pudo normalizar, usar la URL original
-            console.warn(`[${debugId}] STAMP-GEN: Could not normalize key, using original URL`)
-          }
-        } catch (r2Err: any) {
-          console.warn(`[${debugId}] STAMP-GEN: Could not get signed URL, using proxy fallback:`, r2Err.message)
-          // Fallback: usar el proxy con la clave extraída si es posible
+    let designBuffer: Buffer
+
+    // normalizar la base si existe
+    let absoluteDesignUrl: string | undefined
+
+    if (designImageUrl.startsWith('data:')) {
+      console.log(`[${debugId}] STAMP-GEN: Design is base64, converting directly...`)
+      const base64Content = designImageUrl.split(',')[1]
+      designBuffer = Buffer.from(base64Content, 'base64')
+    } else {
+      // Normalizar la URL del diseño para que sea accesible desde el servidor
+      absoluteDesignUrl = designImageUrl
+      try {
+        if (designImageUrl.startsWith('/api/r2-public')) {
+          absoluteDesignUrl = new URL(designImageUrl, request.url).toString()
+        } else if (designImageUrl.startsWith('/api/')) {
+          absoluteDesignUrl = new URL(designImageUrl, request.url).toString()
+        } else if (designImageUrl.includes('r2.dev') || designImageUrl.includes('r2.cloudflarestorage.com')) {
           try {
             const { normalizeR2Key } = await import("@/lib/r2")
+            const { getSignedR2Url } = await import("@/lib/cloudflare-r2")
             const key = normalizeR2Key(designImageUrl)
             if (key) {
-              const encodedKey = encodeURIComponent(key)
-              absoluteDesignUrl = new URL(`/api/r2-public?key=${encodedKey}`, request.url).toString()
-              console.log(`[${debugId}] STAMP-GEN: Using proxy fallback with normalized key`)
+              absoluteDesignUrl = await getSignedR2Url(key, 3600)
             }
-          } catch (fallbackErr: any) {
-            console.warn(`[${debugId}] STAMP-GEN: Proxy fallback also failed:`, fallbackErr.message)
-            // Último recurso: usar la URL original
+          } catch (r2Err: any) {
+            console.warn(`[${debugId}] STAMP-GEN: R2 sign error, using original URL`)
           }
         }
+      } catch (urlErr) {
+        console.warn(`[${debugId}] STAMP-GEN: URL normalizer failed, using raw URL`)
       }
-    } catch (urlErr: any) {
-      console.error(`[${debugId}] STAMP-GEN: Error normalizing URL:`, {
-        error: urlErr.message,
-        stack: urlErr.stack,
-        designImageUrl: designImageUrl.substring(0, 150)
-      })
-      // No lanzar error inmediatamente, intentar con la URL original
-      console.warn(`[${debugId}] STAMP-GEN: Will try with original URL as fallback`)
+
+      // Obtener buffer (soporta fs local si absoluteDesignUrl es para public)
+      designBuffer = await getImageBuffer(absoluteDesignUrl)
     }
 
-    // Descargar con reintentos (pasar la URL original para fallback)
-    let designBuffer = await fetchImageWithRetry(absoluteDesignUrl, 2, designImageUrl)
-
     // Si la imagen es de estilos inspiradores (/styles/), aplicar remoción de fondo automáticamente
-    const isStyleImage = designImageUrl.includes('/styles/') || absoluteDesignUrl.includes('/styles/')
+    const isStyleImage = (designImageUrl.includes('/styles/') || (absoluteDesignUrl && absoluteDesignUrl.includes('/styles/')))
     if (isStyleImage) {
       console.log(`[${debugId}] STAMP-GEN: Style image detected, applying background removal...`)
       try {
@@ -311,10 +247,10 @@ export async function POST(request: NextRequest) {
       throw new Error(`No se encontró imagen base para: ${garmentType}-${garmentVariant}-${garmentColor}-${side}`)
     }
 
-    console.log(`[${debugId}] STAMP-GEN: Downloading base garment image →`, baseGarmentPath)
-    const baseGarmentBuffer = await fetchImageWithRetry(new URL(baseGarmentPath, request.url).toString())
+    console.log(`[${debugId}] STAMP-GEN: Getting base garment image buffer →`, baseGarmentPath)
+    const baseGarmentBuffer = await getImageBuffer(baseGarmentPath)
     const baseGarmentBase64 = baseGarmentBuffer.toString('base64')
-    console.log(`[${debugId}] STAMP-GEN: Base garment downloaded →`, { sizeBytes: baseGarmentBase64.length })
+    console.log(`[${debugId}] STAMP-GEN: Base garment ready →`, { sizeBytes: baseGarmentBase64.length })
 
     // 3) Obtener la imagen de referencia con cuadrado rojo
     console.log(`[${debugId}] STAMP-GEN: Getting red square reference image...`)
@@ -332,10 +268,10 @@ export async function POST(request: NextRequest) {
       throw new Error(`No se encontró imagen de referencia con cuadrado rojo para: ${garmentType}-${garmentVariant}-${garmentColor}-${side}-${stampSize}-${stampPosition}`)
     }
 
-    console.log(`[${debugId}] STAMP-GEN: Downloading red square reference →`, redSquarePath)
-    const redSquareBuffer = await fetchImageWithRetry(new URL(redSquarePath, request.url).toString())
+    console.log(`[${debugId}] STAMP-GEN: Getting red square reference buffer →`, redSquarePath)
+    const redSquareBuffer = await getImageBuffer(redSquarePath)
     const redSquareBase64 = redSquareBuffer.toString('base64')
-    console.log(`[${debugId}] STAMP-GEN: Red square reference downloaded →`, { sizeBytes: redSquareBase64.length })
+    console.log(`[${debugId}] STAMP-GEN: Red square reference ready →`, { sizeBytes: redSquareBase64.length })
 
     // 4) Generar el estampado con Gemini
     console.log(`[${debugId}] STAMP-GEN: Calling Gemini for stamp generation...`)
@@ -345,79 +281,37 @@ export async function POST(request: NextRequest) {
       redSquareBytes: redSquareBase64.length
     })
 
-    const stampPrompt = `You are a professional garment printing expert creating a realistic product mockup.
+    const stampPrompt = `You are a professional industrial garment printer. 
+Your task is to apply a design to a garment following STRICT PHYSICAL LIMITS.
 
-🎯 YOUR TASK - TWO STEPS:
+🎯 OBJECTIVE:
+Produce ONE realistic product photo of the garment with the design applied.
 
-STEP 1: PLACE THE DESIGN EXACTLY WHERE THE RED SQUARE IS
-Look at IMAGE 3 (reference with red square). The red square shows you the EXACT POSITION and SIZE where the design should go.
-- DO NOT place the design in the center of the garment
-- DO NOT place the design anywhere else
-- PLACE IT EXACTLY WHERE THE RED SQUARE IS LOCATED
-- Match the size of the red square exactly
-- The design should perfectly fill the red square area
+🚨 THE "RED SQUARE" IS A RIGID PRINTING BOUNDARY:
+1. Look at IMAGE 3. The RED SQUARE is the ONLY place where ink is allowed.
+2. PLACE the design (IMAGE 1) inside that exact square area on the garment (IMAGE 2).
+3. If the design is bigger than the red square, you MUST SCALE IT DOWN or CROP IT. 
+4. 🚨 ABSOLUTELY FORBIDDEN: Not a single pixel of the design can be outside the red square boundaries.
+5. 🚨 SLEEVES AND HOOD ARE OFF-LIMITS: Never, under any circumstances, allow the design to touch the sleeves, hood, neck, or bottom edges of the garment.
+6. If the red square is small, the design must be small.
 
-STEP 2: REMOVE THE RED SQUARE
-After placing the design in the correct position, DELETE the red square completely.
-The final output must show ONLY the garment with the design - NO red square visible.
+✅ FINAL RESULT:
+- One clean, professional image.
+- NO red square visible in the final result (remove it).
+- NO text, NO labels, NO side-by-side versions.
+- The design should look like it's part of the fabric, but strictly confined to the area indicated by the red square.
 
-📐 SIZE GUIDE (match the red square size):
-- R1 SMALL: Red square is tiny (8-12% of garment width) - like a small chest logo
-- R2 MEDIUM: Red square is medium (20-25% of garment width) - like a medium chest print  
-- R3 LARGE: Red square is large (30-40% of garment width) - like a large front design
-
-🚨 CRITICAL POSITIONING RULES:
-1. Look at IMAGE 3 carefully - see where the red square is positioned on the garment
-2. That exact location is where the design must go (NOT the center, EXACTLY where the square is)
-3. If the red square is on the upper chest (above pocket), place design there
-4. If the red square is on the left side, place design there
-5. If the red square is centered, place design centered
-6. After perfect placement, completely remove the red square from the output
-
-✅ FINAL OUTPUT REQUIREMENTS:
-- Use IMAGE 2 (base garment) as the foundation
-- Place IMAGE 1 (design) EXACTLY where IMAGE 3's red square indicates
-- Remove all red squares, guides, and reference markers
-- Result should look like a professional product photo
-- The design should appear naturally printed on the garment at the correct position
-
-Generate a realistic garment mockup with the design placed EXACTLY where the red square shows, then remove the red square.`
+STRICT BOUNDARY ENFORCEMENT. DO NOT CROSS THE RED LINES.`
 
     let result
     try {
       result = await genAI.models.generateContent({
         model: "gemini-3-pro-image-preview",
         contents: [
-          {
-            text: stampPrompt
-          },
-          {
-            text: "IMAGE 1: Design to be stamped (transparent background)"
-          },
-          {
-            inlineData: {
-              data: designBase64,
-              mimeType: "image/png",
-            },
-          },
-          {
-            text: "IMAGE 2: Base garment (the correct garment type to use)"
-          },
-          {
-            inlineData: {
-              data: baseGarmentBase64,
-              mimeType: "image/jpeg",
-            },
-          },
-          {
-            text: "IMAGE 3: Reference image with red square showing EXACT position and size for the stamp"
-          },
-          {
-            inlineData: {
-              data: redSquareBase64,
-              mimeType: "image/png",
-            },
-          },
+          { text: stampPrompt },
+          { inlineData: { data: designBase64, mimeType: "image/png" } },
+          { inlineData: { data: baseGarmentBase64, mimeType: "image/jpeg" } },
+          { inlineData: { data: redSquareBase64, mimeType: "image/png" } },
         ],
       })
     } catch (geminiErr: any) {
@@ -467,37 +361,20 @@ Generate a realistic garment mockup with the design placed EXACTLY where the red
 
     console.log(`[${debugId}] STAMP-GEN: Image extracted from Gemini →`, { sizeBytes: stampedImageBase64.length })
 
-    // 6) Subir imagen estampada a Cloudflare R2
-    console.log(`[${debugId}] STAMP-GEN: Uploading mockup to R2...`)
+    // 6) Subir imagen estampada a almacenamiento resiliente
+    console.log(`[${debugId}] STAMP-GEN: Uploading mockup...`)
     const stampId = uuidv4()
     const stampedBuffer = Buffer.from(stampedImageBase64, 'base64')
-
-    const description = prompt ? prompt.split(' ').slice(0, 2).join(' ') : 'estampado'
-    // Nombre con tokens descriptivos: tipo_variant_color_side_size_pos
-    const token = [
-      String(garmentType || '').toLowerCase(),
-      String(garmentVariant || 'classic').toLowerCase(),
-      String(garmentColor || '').toLowerCase(),
-      String(side || '').toLowerCase(),
-      String(stampSize || '').toUpperCase(),
-      (stampPosition ? String(stampPosition).toLowerCase() : undefined),
-    ]
-      .filter(Boolean)
-      .join('_')
-
-    const fileName = generateImageName(description, token)
-    // Guardar bajo la carpeta de la imagen base: images/<baseId>/stamps/<stampId>/<fileName>
-    const r2Key = `images/${baseImageId}/stamps/${stampId}/${fileName}`
+    // v1/stamps/${baseImageId}/${stampId}.png
+    const storageKey = `v1/stamps/${baseImageId}/${stampId}.png`
 
     let publicUrl: string
     try {
-      publicUrl = await uploadToR2(stampedBuffer, r2Key, "image/png")
-      console.log(`[${debugId}] STAMP-GEN: Uploaded to R2 →`, { r2Key, publicUrl: publicUrl.substring(0, 100) })
+      const uploadResult = await uploadFile(stampedBuffer, storageKey, "image/png")
+      publicUrl = uploadResult.url
+      console.log(`[${debugId}] STAMP-GEN: Upload SUCCESS to ${uploadResult.provider.toUpperCase()} →`, { storageKey, publicUrl: publicUrl.substring(0, 100) })
     } catch (uploadError: any) {
-      console.error(`[${debugId}] STAMP-GEN: Error uploading to R2:`, {
-        message: uploadError.message,
-        stack: uploadError.stack
-      })
+      console.error(`[${debugId}] STAMP-GEN: CRITICAL storage failure:`, uploadError.message)
       throw new Error(`Error subiendo imagen estampada: ${uploadError.message}`)
     }
 
@@ -509,7 +386,7 @@ Generate a realistic garment mockup with the design placed EXACTLY where the red
     return NextResponse.json({
       success: true,
       publicUrl,
-      r2Key,
+      r2Key: storageKey,
       stampId,
       baseImageId,
       debugId
@@ -521,13 +398,19 @@ Generate a realistic garment mockup with the design placed EXACTLY where the red
   } catch (error: any) {
     // Si el error ya tiene un debugId (de un paso anterior), usarlo; si no, crear uno nuevo
     const finalDebugId = error.debugId || uuidv4()
-    console.error(`[${finalDebugId}] STAMP-GEN: Error generating stamp:`, {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      code: error.code,
-      cause: error.cause
-    })
+    // 🔔 Notificar por Telegram
+    try {
+      const { notifyError } = await import("@/lib/notifications")
+      await notifyError({
+        area: "Generador de Estampados (Mockups)",
+        endpoint: "/api/generate-stamp",
+        message: error.message || "Unknown error",
+        debugId: finalDebugId
+      })
+    } catch (notifErr: any) {
+      console.error("❌ Error sending error notification:", notifErr.message)
+    }
+
     return NextResponse.json({
       error: error.message || "Error generando estampado",
       debugId: finalDebugId

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createOrder } from "@/lib/db"
+import { toPublicR2Url } from "@/lib/r2"
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,12 +39,12 @@ export async function POST(request: NextRequest) {
       quantity: item.quantity || 1,
       unit_price: item.price || 0,
       total_price: (item.price || 0) * (item.quantity || 1),
-      image_url: item.image || null,
-      mockup_url: item.mockupUrl || null,
-      front_mockup_url: item.frontMockup || null,
-      back_mockup_url: item.backMockup || null,
-      front_design_url: item.frontDesign || null,
-      back_design_url: item.backDesign || null,
+      image_url: toPublicR2Url(item.image || null),
+      mockup_url: toPublicR2Url(item.mockupUrl || null),
+      front_mockup_url: toPublicR2Url(item.frontMockup || null),
+      back_mockup_url: toPublicR2Url(item.backMockup || null),
+      front_design_url: toPublicR2Url(item.frontDesign || null),
+      back_design_url: toPublicR2Url(item.backDesign || null),
       front_stamp_size: item.frontStampSize || null,
       back_stamp_size: item.backStampSize || null,
       front_stamp_position: item.frontStampPosition || null,
@@ -52,13 +53,14 @@ export async function POST(request: NextRequest) {
       custom_design: item.customDesign || null,
       metadata: {
         itemId: item.id,
+        originalImageId: item.originalImageId || null,
         ...(item.metadata || {})
       }
     }))
 
     // Crear el pedido en la base de datos
     const externalReference = `order_transfer_${Date.now()}`
-    
+
     const newOrder = await createOrder({
       customer_email: customer.email,
       customer_first_name: customer.firstName,
@@ -81,9 +83,9 @@ export async function POST(request: NextRequest) {
 
     if (!newOrder) {
       console.error("❌ Failed to create transfer order in database")
-      return NextResponse.json({ 
-        success: false, 
-        error: "Error creating order" 
+      return NextResponse.json({
+        success: false,
+        error: "Error creating order"
       }, { status: 500 })
     }
 
@@ -98,8 +100,8 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error("❌ Transfer checkout API error:", error)
-    return NextResponse.json({ 
-      success: false, 
+    return NextResponse.json({
+      success: false,
       error: "Error creating transfer order",
       details: error?.message || 'Unknown error'
     }, { status: 500 })

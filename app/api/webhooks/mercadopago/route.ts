@@ -29,9 +29,9 @@ export async function POST(request: NextRequest) {
 
         if (!order) {
           console.error("❌ Order not found for external_reference:", externalReference)
-          return NextResponse.json({ 
+          return NextResponse.json({
             error: "Order not found",
-            received: true 
+            received: true
           }, { status: 404 })
         }
 
@@ -103,22 +103,42 @@ export async function POST(request: NextRequest) {
 
           if (updated) {
             console.log("✅ Order updated successfully:", order.id)
-            
+
             // Aquí podrías:
             // 1. Enviar email de confirmación al cliente
             // 2. Actualizar inventario
             // 3. Notificar al equipo de logística
             // 4. Etc.
-            
+
             if (paymentStatus === 'approved' && orderStatus === 'confirmed') {
               console.log("🎉 Payment approved! Order confirmed:", order.order_number)
+
+              // 🔔 Notificar por Telegram
+              try {
+                const { notifySale } = await import("@/lib/notifications")
+                await notifySale({
+                  orderNumber: order.order_number || order.id || 'N/A',
+                  total: order.total || 0,
+                  email: order.customer_email || 'N/A',
+                  items: (order.items || []).map((item: any) => ({
+                    name: item.item_name || 'Producto',
+                    quantity: item.quantity || 1,
+                    size: item.product_size || 'N/A',
+                    color: item.product_color || 'N/A',
+                    price: item.unit_price || 0,
+                    imageUrl: item.image_url || item.mockup_url || null
+                  }))
+                })
+              } catch (notifErr: any) {
+                console.error("❌ Error sending sale notification:", notifErr.message)
+              }
             }
           } else {
             console.error("❌ Failed to update order:", order.id)
           }
         } catch (paymentError: any) {
           console.error("❌ Error fetching payment details from MercadoPago:", paymentError)
-          
+
           // Aun así, actualizar el pedido con la información básica del webhook
           await updateOrder(order.id!, {
             payment_id: String(paymentId),

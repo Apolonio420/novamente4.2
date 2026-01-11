@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { MercadoPagoConfig, Preference } from "mercadopago"
 import { createOrder } from "@/lib/db"
+import { toPublicR2Url } from "@/lib/r2"
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
   try {
     // Verificar que el token de MercadoPago esté configurado
     console.log("🔑 MP_ACCESS_TOKEN configured:", !!process.env.MP_ACCESS_TOKEN)
-    
+
     if (!process.env.MP_ACCESS_TOKEN) {
       console.error("❌ MP_ACCESS_TOKEN not configured - using mock response")
       // Para testing, devolver una respuesta simulada
@@ -79,12 +80,12 @@ export async function POST(request: NextRequest) {
         quantity: item.quantity || 1,
         unit_price: item.price || item.unit_price || 0,
         total_price: (item.price || item.unit_price || 0) * (item.quantity || 1),
-        image_url: item.image || item.image_url || null,
-        mockup_url: item.mockupUrl || item.mockup_url || null,
-        front_mockup_url: item.frontMockup || item.front_mockup_url || null,
-        back_mockup_url: item.backMockup || item.back_mockup_url || null,
-        front_design_url: item.frontDesign || item.front_design_url || null,
-        back_design_url: item.backDesign || item.back_design_url || null,
+        image_url: toPublicR2Url(item.image || item.image_url || null),
+        mockup_url: toPublicR2Url(item.mockupUrl || item.mockup_url || null),
+        front_mockup_url: toPublicR2Url(item.frontMockup || item.front_mockup_url || null),
+        back_mockup_url: toPublicR2Url(item.backMockup || item.back_mockup_url || null),
+        front_design_url: toPublicR2Url(item.frontDesign || item.front_design_url || null),
+        back_design_url: toPublicR2Url(item.backDesign || item.back_design_url || null),
         front_stamp_size: item.frontStampSize || null,
         back_stamp_size: item.backStampSize || null,
         front_stamp_position: item.frontStampPosition || null,
@@ -93,6 +94,7 @@ export async function POST(request: NextRequest) {
         custom_design: item.customDesign || null,
         metadata: {
           itemId: item.id,
+          originalImageId: item.originalImageId || null,
           ...(item.metadata || {})
         }
       }))
@@ -106,7 +108,7 @@ export async function POST(request: NextRequest) {
         quantity: item.quantity || 1,
         unit_price: item.unit_price || 0,
         total_price: (item.unit_price || 0) * (item.quantity || 1),
-        image_url: null,
+        image_url: item.image_url || "https://placehold.co/600x400", // Fallback to satisfy NOT NULL constraint
         metadata: {
           itemId: item.id,
           description: item.description || null
@@ -116,7 +118,7 @@ export async function POST(request: NextRequest) {
 
     // Crear el pedido en la base de datos ANTES de crear la preferencia
     const externalReference = `order_${Date.now()}`
-    
+
     const newOrder = await createOrder({
       customer_email: customer.email,
       customer_first_name: customer.firstName,
@@ -138,9 +140,9 @@ export async function POST(request: NextRequest) {
 
     if (!newOrder) {
       console.error("❌ Failed to create order in database")
-      return NextResponse.json({ 
-        success: false, 
-        error: "Error creating order" 
+      return NextResponse.json({
+        success: false,
+        error: "Error creating order"
       }, { status: 500 })
     }
 
@@ -189,7 +191,7 @@ export async function POST(request: NextRequest) {
       backUrls: preferenceData.back_urls,
       baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
     })
-    
+
     console.log("📋 Full preference data:", JSON.stringify(preferenceData, null, 2))
 
     const result = await preference.create({ body: preferenceData })
@@ -223,19 +225,19 @@ export async function POST(request: NextRequest) {
       cause: error?.cause,
       stack: error?.stack,
     })
-    
+
     // Si es un error de MercadoPago, devolver más detalles
     if (error?.status === 400) {
-      return NextResponse.json({ 
-        success: false, 
+      return NextResponse.json({
+        success: false,
         error: "MercadoPago validation error",
         details: error.message,
         mercadopagoError: error.error
       }, { status: 400 })
     }
-    
-    return NextResponse.json({ 
-      success: false, 
+
+    return NextResponse.json({
+      success: false,
       error: "Error creating payment preference",
       details: error?.message || 'Unknown error'
     }, { status: 500 })

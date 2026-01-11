@@ -40,7 +40,7 @@ async function checkImageExists(url: string, prompt: string, userId?: string): P
     const key = createImageKey(url, prompt)
     console.log("🔑 Generated key:", key)
 
-    let query = supabase.from("images").select("*").order("created_at", { ascending: false }).limit(100)
+    let query = (supabase.from("images") as any).select("*").order("created_at", { ascending: false }).limit(100)
 
     if (userId) {
       query = query.eq("user_id", userId)
@@ -129,29 +129,33 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
     // pero no dependemos de columnas inexistentes en BD para expiración.
 
     const imageId = uuidv4()
-    
+
     // Normalizar URL a key limpio (sin firmas, sin proxy, sin query params)
-    // Solo guardar el key en la base de datos, nunca URLs firmadas o proxy
     const cleanKey = normalizeR2Key(url)
-    
+
     if (!cleanKey) {
       console.error("❌ Could not normalize URL to key:", url.substring(0, 100))
       return null
     }
-    
+
+    // Obtener la URL pública completa para guardar en la base de datos
+    // Esto evita que el usuario vea "links locales" y permite ver la imagen directamente en Supabase
+    const finalUrlToSave = toPublicR2Url(url)
+
     console.log("✅ Normalized URL to clean key:", cleanKey.substring(0, 100))
-    
+    console.log("🔗 URL to be saved in DB:", finalUrlToSave ? finalUrlToSave.substring(0, 100) : "null")
+
     const newImage = {
       id: imageId,
-      url: cleanKey, // Guardar solo el key limpio
-      storage_key: cleanKey, // También en storage_key para compatibilidad
+      url: finalUrlToSave, // Guardar la URL pública completa
+      storage_key: cleanKey, // Mantener el key limpio para uso interno
       prompt,
       user_id: finalUserId,
       has_bg_removed: false,
       url_without_bg: null,
     }
 
-    const { data, error } = await supabase.from("images").insert(newImage).select().single()
+    const { data, error } = await (supabase.from("images") as any).insert(newImage).select().single()
 
     if (error) {
       console.error("❌ Error saving image to Supabase:", error)
@@ -159,11 +163,11 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
     }
 
     console.log("✅ Image saved successfully to database with permanent storage")
-    
+
     // Devolver imagen con URL pública transformada (no el key)
     const publicUrl = toPublicR2Url(data.url || data.storage_key || cleanKey)
     const publicUrlWithoutBg = data.url_without_bg ? toPublicR2Url(data.url_without_bg) : null
-    
+
     return {
       ...data,
       url: publicUrl, // Devolver URL pública al cliente
@@ -182,17 +186,19 @@ export async function saveImageWithoutBackground(imageId: string, urlWithoutBg: 
 
     // Normalizar la URL a key limpio antes de guardar
     const cleanKey = normalizeR2Key(urlWithoutBg)
-    
+
     if (!cleanKey) {
       console.error("❌ Could not normalize urlWithoutBg:", urlWithoutBg.substring(0, 100))
       return false
     }
 
-    // Update in database (guardar solo el key limpio)
-    const { error } = await supabase
-      .from("images")
+    // Obtener la URL pública completa para guardar
+    const finalUrlToSave = toPublicR2Url(urlWithoutBg)
+
+    // Update in database (guardar la URL pública completa)
+    const { error } = await (supabase.from("images") as any)
       .update({
-        url_without_bg: cleanKey,
+        url_without_bg: finalUrlToSave,
         has_bg_removed: true,
       })
       .eq("id", imageId)
@@ -580,28 +586,21 @@ export async function getUserImages(userId?: string, sessionId?: string): Promis
     if (typeof window !== 'undefined') {
       const { normalizeR2Key } = require('./r2')
       const clientImages = (data || []).map((item) => {
-        // Normalizar el key (puede venir como URL firmada, proxy, o key limpio)
-        const cleanKey = normalizeR2Key(item.url || item.storage_key || item.key || '')
-        let imageUrl = ''
-        if (cleanKey) {
-          // Si el key parece ser de R2, usar proxy
-          if (cleanKey.includes('images/') || cleanKey.includes('original/') || cleanKey.includes('processed/')) {
-            imageUrl = `/api/proxy-image?key=${encodeURIComponent(cleanKey)}`
-          } else {
-            // Si no, puede ser una URL local o externa
-            imageUrl = cleanKey.startsWith('/') || cleanKey.startsWith('http') ? cleanKey : `/${cleanKey}`
-          }
+        const cleanKey = normalizeR2Key(item.storage_key || item.url || item.key || '')
+
+        let imageUrl = item.url || ''
+        if (cleanKey && !cleanKey.startsWith('data:')) {
+          imageUrl = `/api/proxy-image?key=${encodeURIComponent(cleanKey)}`
         }
+
+        const urlWithoutBgKey = item.url_without_bg ? normalizeR2Key(item.url_without_bg) : null
+
         return {
           ...item,
           url: imageUrl,
           key: cleanKey,
           hasBgRemoved: item.has_bg_removed || false,
-          urlWithoutBg: item.url_without_bg ? 
-            (normalizeR2Key(item.url_without_bg) ? 
-              `/api/proxy-image?key=${encodeURIComponent(normalizeR2Key(item.url_without_bg))}` : 
-              null) : 
-            null,
+          urlWithoutBg: urlWithoutBgKey ? `/api/proxy-image?key=${encodeURIComponent(urlWithoutBgKey)}` : null,
         }
       })
       return clientImages.slice(0, 20) as any
@@ -612,7 +611,7 @@ export async function getUserImages(userId?: string, sessionId?: string): Promis
       // Normalizar el key actual (puede ser URL firmada, proxy, o key limpio)
       const currentValue = item.url || item.storage_key || item.key || ''
       const cleanKey = normalizeR2Key(currentValue)
-      
+
       // Usar proxy para imágenes de R2
       let imageUrl = ''
       if (cleanKey) {
@@ -630,10 +629,10 @@ export async function getUserImages(userId?: string, sessionId?: string): Promis
         url: imageUrl,
         key: cleanKey, // Guardar el key limpio también
         hasBgRemoved: item.has_bg_removed || false,
-        urlWithoutBg: item.url_without_bg ? 
-          (normalizeR2Key(item.url_without_bg) ? 
-            `/api/proxy-image?key=${encodeURIComponent(normalizeR2Key(item.url_without_bg))}` : 
-            null) : 
+        urlWithoutBg: item.url_without_bg ?
+          (normalizeR2Key(item.url_without_bg) ?
+            `/api/proxy-image?key=${encodeURIComponent(normalizeR2Key(item.url_without_bg))}` :
+            null) :
           null,
       }
     })
@@ -878,15 +877,15 @@ function generateOrderNumber(): string {
 export async function createOrder(orderData: Omit<Order, 'id' | 'order_number'>): Promise<Order | null> {
   try {
     console.log("📦 Creating order with", orderData.items.length, "items")
-    
+
     const user = await getCurrentUser()
     const userId = user?.id || null
-    
+
     // Generar número de pedido único
     let orderNumber = generateOrderNumber()
     let attempts = 0
     const maxAttempts = 10
-    
+
     // Verificar que el número de pedido sea único
     while (attempts < maxAttempts) {
       const { data: existing } = await supabaseAdmin
@@ -894,20 +893,20 @@ export async function createOrder(orderData: Omit<Order, 'id' | 'order_number'>)
         .select("id")
         .eq("order_number", orderNumber)
         .single()
-      
+
       if (!existing) {
         break // Número único encontrado
       }
-      
+
       orderNumber = generateOrderNumber()
       attempts++
     }
-    
+
     if (attempts >= maxAttempts) {
       console.error("❌ Could not generate unique order number after", maxAttempts, "attempts")
       return null
     }
-    
+
     // Preparar datos del pedido
     const orderInsert = {
       order_number: orderNumber,
@@ -927,35 +926,43 @@ export async function createOrder(orderData: Omit<Order, 'id' | 'order_number'>)
       subtotal: orderData.subtotal,
       shipping_cost: orderData.shipping_cost,
       total: orderData.total,
+      total_amount: orderData.total, // Populate legacy/alternative column
       currency: orderData.currency || 'ARS',
       status: orderData.status || 'pending',
       notes: orderData.notes || null,
       metadata: orderData.metadata || null,
+      id: uuidv4(), // Explicitly generate ID to avoid "null value in column id" error
     }
-    
+
     // Insertar pedido usando supabaseAdmin para bypass RLS
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .insert(orderInsert)
       .select()
       .single()
-    
+
     if (orderError) {
       console.error("❌ Error creating order:", orderError)
       return null
     }
-    
+
     console.log("✅ Order created:", order.id, "Number:", order.order_number)
-    
+
     // Insertar items del pedido
     const orderItems = orderData.items.map(item => ({
+      id: uuidv4(), // Explicitly generate ID
       order_id: order.id,
       item_name: item.item_name,
+      name: item.item_name, // Populate legacy/alternative column
       product_type: item.product_type,
+      garment_type: item.product_type, // Populate legacy/alternative column
       product_color: item.product_color,
+      color: item.product_color, // Populate legacy/alternative column
       product_size: item.product_size,
+      size: item.product_size, // Populate legacy/alternative column
       quantity: item.quantity,
       unit_price: item.unit_price,
+      price: item.unit_price, // Populate legacy/alternative column
       total_price: item.total_price,
       image_url: item.image_url || null,
       mockup_url: item.mockup_url || null,
@@ -971,20 +978,20 @@ export async function createOrder(orderData: Omit<Order, 'id' | 'order_number'>)
       custom_design: item.custom_design || null,
       metadata: item.metadata || null,
     }))
-    
+
     const { error: itemsError } = await supabaseAdmin
       .from("order_items")
       .insert(orderItems)
-    
+
     if (itemsError) {
       console.error("❌ Error creating order items:", itemsError)
       // Intentar eliminar el pedido si falla la inserción de items
       await supabaseAdmin.from("orders").delete().eq("id", order.id)
       return null
     }
-    
+
     console.log("✅ Order items created:", orderItems.length)
-    
+
     // Obtener el pedido completo con items
     const fullOrder = await getOrderById(order.id)
     return fullOrder
@@ -1004,23 +1011,23 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
       .select("*")
       .eq("id", orderId)
       .single()
-    
+
     if (orderError || !order) {
       console.error("❌ Error fetching order:", orderError)
       return null
     }
-    
+
     const { data: items, error: itemsError } = await supabaseAdmin
       .from("order_items")
       .select("*")
       .eq("order_id", orderId)
       .order("created_at", { ascending: true })
-    
+
     if (itemsError) {
       console.error("❌ Error fetching order items:", itemsError)
       return null
     }
-    
+
     return {
       ...order,
       items: items || [],
@@ -1041,12 +1048,12 @@ export async function getOrderByNumber(orderNumber: string): Promise<Order | nul
       .select("*")
       .eq("order_number", orderNumber)
       .single()
-    
+
     if (orderError || !order) {
       console.error("❌ Error fetching order by number:", orderError)
       return null
     }
-    
+
     return await getOrderById(order.id)
   } catch (error) {
     console.error("❌ Exception in getOrderByNumber:", error)
@@ -1064,12 +1071,12 @@ export async function getOrderByExternalReference(externalReference: string): Pr
       .select("*")
       .eq("external_reference", externalReference)
       .single()
-    
+
     if (orderError || !order) {
       console.error("❌ Error fetching order by external reference:", orderError)
       return null
     }
-    
+
     return await getOrderById(order.id)
   } catch (error) {
     console.error("❌ Exception in getOrderByExternalReference:", error)
@@ -1083,7 +1090,7 @@ export async function getOrderByExternalReference(externalReference: string): Pr
 export async function updateOrder(orderId: string, updates: Partial<Order>): Promise<boolean> {
   try {
     const { items, ...orderUpdates } = updates
-    
+
     // Actualizar pedido
     const updateData: any = {}
     if (orderUpdates.payment_status !== undefined) updateData.payment_status = orderUpdates.payment_status
@@ -1092,17 +1099,17 @@ export async function updateOrder(orderId: string, updates: Partial<Order>): Pro
     if (orderUpdates.mercado_pago_preference_id !== undefined) updateData.mercado_pago_preference_id = orderUpdates.mercado_pago_preference_id
     if (orderUpdates.notes !== undefined) updateData.notes = orderUpdates.notes
     if (orderUpdates.metadata !== undefined) updateData.metadata = orderUpdates.metadata
-    
+
     const { error } = await supabaseAdmin
       .from("orders")
       .update(updateData)
       .eq("id", orderId)
-    
+
     if (error) {
       console.error("❌ Error updating order:", error)
       return false
     }
-    
+
     console.log("✅ Order updated:", orderId)
     return true
   } catch (error) {
@@ -1119,18 +1126,18 @@ export async function getUserOrders(userId?: string): Promise<Order[]> {
     if (!userId) {
       return []
     }
-    
+
     const { data: orders, error } = await supabase
       .from("orders")
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-    
+
     if (error) {
       console.error("❌ Error fetching user orders:", error)
       return []
     }
-    
+
     // Obtener items para cada pedido
     const ordersWithItems = await Promise.all(
       (orders || []).map(async (order) => {
@@ -1139,14 +1146,14 @@ export async function getUserOrders(userId?: string): Promise<Order[]> {
           .select("*")
           .eq("order_id", order.id)
           .order("created_at", { ascending: true })
-        
+
         return {
           ...order,
           items: items || [],
         }
       })
     )
-    
+
     return ordersWithItems
   } catch (error) {
     console.error("❌ Exception in getUserOrders:", error)
