@@ -35,41 +35,53 @@ export async function GET(
       return NextResponse.json({ error: "Imagen no encontrada" }, { status: 404 })
     }
 
+    const imageData = data as any;
     console.log("✅ Imagen encontrada:", {
-      id: data.id,
-      hasBgRemoved: data.has_bg_removed,
-      url: (data.url as string | null)?.substring(0, 50) + "...",
+      id: imageData.id,
+      hasBgRemoved: imageData.has_bg_removed,
+      url: (imageData.url as string | null)?.substring(0, 50) + "...",
     })
 
-    // Normalizar clave y generar URL firmada (funciona siempre, incluso si el bucket no es público)
+    // Normalizar clave y generar URL firmada
     const resolveUrl = async (maybeKeyOrUrl: string | null): Promise<string | null> => {
       if (!maybeKeyOrUrl) return null
+
+      // Si es un data URI o ya es una URL de Supabase Storage, devolver tal cual
+      if (maybeKeyOrUrl.startsWith('data:') || maybeKeyOrUrl.includes('supabase.co/storage')) {
+        return maybeKeyOrUrl
+      }
+
       try {
         const key = normalizeR2Key(maybeKeyOrUrl)
-        if (!key) return null
-        // Usar URL firmada para garantizar acceso
-        return await getSignedR2Url(key, 86400) // 24 horas
+        if (!key) return maybeKeyOrUrl
+
+        // Intentar generar URL firmada de R2
+        try {
+          return await getSignedR2Url(key, 86400) // 24 horas
+        } catch (r2Err) {
+          // Si R2 falla (SSL/conexión), devolvemos la URL pública proxy que tiene fallback a Supabase integrado
+          return `/api/r2-public?key=${encodeURIComponent(key)}`
+        }
       } catch (err) {
-        console.error("⚠️ Error resolviendo URL firmada:", err)
-        return null
+        console.error("⚠️ Error resolviendo URL:", err)
+        return maybeKeyOrUrl
       }
     }
 
-    const key = normalizeR2Key((data as any).storage_key || (data as any).url || '')
-    const resolvedUrl = key ? await resolveUrl(key) : (data.url as string | null)
-    const urlWithoutBgKey = normalizeR2Key((data as any).url_without_bg || '')
-    const resolvedUrlWithoutBg = urlWithoutBgKey ? await resolveUrl(urlWithoutBgKey) : ((data as any).url_without_bg as string | null)
+    const storageKey = (data as any).storage_key || (data as any).url || ''
+    const resolvedUrl = await resolveUrl(storageKey)
+    const resolvedUrlWithoutBg = await resolveUrl((data as any).url_without_bg || null)
 
     return NextResponse.json({
       success: true,
       image: {
-        id: data.id,
-        url: resolvedUrl || data.url,
-        prompt: data.prompt,
-        has_bg_removed: data.has_bg_removed || false,
+        id: imageData.id,
+        url: resolvedUrl || imageData.url,
+        prompt: imageData.prompt,
+        has_bg_removed: imageData.has_bg_removed || false,
         url_without_bg: resolvedUrlWithoutBg || null,
-        created_at: data.created_at,
-        user_id: data.user_id,
+        created_at: imageData.created_at,
+        user_id: imageData.user_id,
       },
     })
 

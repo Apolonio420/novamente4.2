@@ -7,7 +7,7 @@ const SESSION_COOKIE_NAME = "novamente_session_id"
 
 export async function GET() {
   try {
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     let sessionId = cookieStore.get(SESSION_COOKIE_NAME)?.value
 
     // Si no hay ID de sesión, crear uno nuevo

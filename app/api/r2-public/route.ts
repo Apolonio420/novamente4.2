@@ -10,14 +10,14 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const rawKey = searchParams.get("key") || ""
-    
+
     if (!rawKey) {
       return NextResponse.json({ error: "key requerido" }, { status: 400 })
     }
 
     // Normalizar la clave usando la función de utilidad (maneja prefijos, URLs, etc.)
     const normalizedKey = normalizeR2Key(rawKey)
-    
+
     if (!normalizedKey) {
       console.error("R2-PUBLIC: Could not normalize key from:", rawKey.substring(0, 100))
       return NextResponse.json({ error: "key inválido" }, { status: 400 })
@@ -34,87 +34,73 @@ export async function GET(request: NextRequest) {
       bucket: BUCKET_NAME
     })
 
-    // Descargar imagen desde R2 y servirla directamente
-    const command = new GetObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: normalizedKey,
-    })
-
+    // 1. INTENTAR DESCARGAR DESDE R2
     let response
-    try {
-      response = await r2Client.send(command)
-    } catch (r2Error: any) {
-      console.error("R2-PUBLIC: Error from R2:", {
-        message: r2Error.message,
-        code: r2Error.Code || r2Error.code,
-        name: r2Error.name,
-        key: normalizedKey.substring(0, 100),
-        bucket: BUCKET_NAME
-      })
-      throw r2Error
-    }
-    
-    if (!response.Body) {
-      console.error("R2-PUBLIC: No body in response for key:", normalizedKey)
-      return NextResponse.json({ error: "Imagen no encontrada" }, { status: 404 })
-    }
+    let r2Buffer: Buffer | null = null
 
-    // Leer el cuerpo como buffer (el SDK de AWS S3 devuelve un stream que se puede convertir)
-    let buffer: Buffer
     try {
-      // Método preferido: transformToByteArray (más confiable)
-      if (typeof (response.Body as any).transformToByteArray === 'function') {
-        const uint8Array = await (response.Body as any).transformToByteArray()
-        buffer = Buffer.from(uint8Array)
-      } else {
-        // Fallback: leer como stream
-        const chunks: Buffer[] = []
-        const stream = response.Body as any
-        
-        // Intentar diferentes métodos según el tipo de stream
-        if (stream instanceof ReadableStream) {
-          const reader = stream.getReader()
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-            if (value) chunks.push(Buffer.from(value))
-          }
+      const command = new GetObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: normalizedKey,
+      })
+      response = await r2Client.send(command)
+
+      if (response.Body) {
+        if (typeof (response.Body as any).transformToByteArray === 'function') {
+          const uint8Array = await (response.Body as any).transformToByteArray()
+          r2Buffer = Buffer.from(uint8Array)
         } else {
-          // Intentar iterar directamente
-          for await (const chunk of stream) {
+          const chunks: Buffer[] = []
+          for await (const chunk of (response.Body as any)) {
             chunks.push(Buffer.from(chunk))
           }
+          r2Buffer = Buffer.concat(chunks)
         }
-        buffer = Buffer.concat(chunks)
       }
-    } catch (streamError: any) {
-      console.error("R2-PUBLIC: Error reading stream:", streamError)
-      return NextResponse.json({ 
-        error: `Error leyendo imagen: ${streamError.message}` 
-      }, { status: 500 })
+    } catch (r2Error: any) {
+      const isSSL = r2Error.message?.includes('EPROTO') || r2Error.code === 'EPROTO'
+      const is404 = r2Error.name === 'NoSuchKey' || r2Error.$metadata?.httpStatusCode === 404
+
+      if (!is404) {
+        console.warn(`⚠️ R2-PUBLIC: R2 failed (${isSSL ? 'SSL Error' : r2Error.message}). Trying Supabase fallback...`)
+      }
     }
 
-    const contentType = response.ContentType || 'image/png'
-    console.log("R2-PUBLIC: Successfully fetched image, size:", buffer.length, "bytes")
+    // 2. FALLBACK A SUPABASE SI R2 FALLÓ O NO TIENE BODY
+    if (!r2Buffer) {
+      try {
+        const { supabaseAdmin } = await import('@/lib/supabase-admin')
+        const bucket = 'generated-images'
 
-    // Convertir Buffer a Uint8Array para Response
-    return new Response(new Uint8Array(buffer), {
+        console.log(`🔍 R2-PUBLIC: Trying Supabase fallback for ${normalizedKey}...`)
+        const { data, error } = await supabaseAdmin.storage
+          .from(bucket)
+          .download(normalizedKey)
+
+        if (error || !data) {
+          console.error(`❌ R2-PUBLIC: Failed to find image in both R2 and Supabase:`, normalizedKey)
+          return NextResponse.json({ error: "Imagen no encontrada en ningún almacenamiento" }, { status: 404 })
+        }
+
+        const arrayBuffer = await data.arrayBuffer()
+        r2Buffer = Buffer.from(arrayBuffer)
+        console.log(`✅ R2-PUBLIC: Image found in Supabase fallback!`)
+      } catch (sbError: any) {
+        console.error(`❌ R2-PUBLIC: Supabase fallback also failed:`, sbError.message)
+        return NextResponse.json({ error: "Error recuperando imagen" }, { status: 500 })
+      }
+    }
+
+    const contentType = response?.ContentType || 'image/png'
+    return new Response(new Uint8Array(r2Buffer), {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=31536000', // 1 año
+        'Cache-Control': 'public, max-age=31536000',
       },
     })
-
   } catch (error: any) {
-    console.error("R2-PUBLIC: Error fetching image:", error)
-    console.error("R2-PUBLIC: Error details:", {
-      message: error.message,
-      code: error.Code || error.code,
-      name: error.name
-    })
-    return NextResponse.json({ 
-      error: error.message || "Error obteniendo imagen" 
-    }, { status: 500 })
+    console.error("R2-PUBLIC: Fatal error:", error.message)
+    return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
   }
 }
 
