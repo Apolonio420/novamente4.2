@@ -46,7 +46,7 @@ export default function MerchsPage() {
       description: "Te ayudamos a definir la imagen que querés para tu marca o negocio. Podés usar nuestro generador con IA o crear con nuestro equipo de diseño."
     },
     {
-      number: "2", 
+      number: "2",
       title: "Elegís tus prendas y modalidad",
       description: (
         <>
@@ -83,14 +83,14 @@ export default function MerchsPage() {
           <br />
           <span className="text-violet-600 font-medium">Sin stock, sin inversión y con ingresos pasivos gracias a tu marca personal.</span>
         </p>
-        
+
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-          <a href="mailto:contact@novamente.ar">
+          <Link href="/merchs/join">
             <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500">
               <ArrowRight className="h-4 w-4 mr-2" />
               Sumate como Partner
             </Button>
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -138,14 +138,14 @@ export default function MerchsPage() {
             </div>
           ))}
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-          <a href="mailto:contact@novamente.ar">
+          <Link href="/merchs/join">
             <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500">
               <ArrowRight className="h-4 w-4 mr-2" />
               Sumate como Partner
             </Button>
-          </a>
+          </Link>
           <Link href="/#generator-section">
             <Button variant="outline" size="lg" className="w-full sm:w-auto border-gray-300 bg-white text-gray-900 hover:bg-gray-200 hover:border-gray-400">
               <Zap className="h-4 w-4 mr-2" />
@@ -166,7 +166,7 @@ export default function MerchsPage() {
             Hacemos tu pedido ajustado a tu necesidad.
           </p>
           <Link href={WHATSAPP_URL} target="_blank">
-            <Button size="md" className="bg-[#25D366] hover:bg-[#20BA5A] text-white border-0 shadow-md hover:shadow-lg transition-all px-6 py-3 tracking-wide">
+            <Button size="default" className="bg-[#25D366] hover:bg-[#20BA5A] text-white border-0 shadow-md hover:shadow-lg transition-all px-6 py-3 tracking-wide">
               Hace tu pedido único
             </Button>
           </Link>
