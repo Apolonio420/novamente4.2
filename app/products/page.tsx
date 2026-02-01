@@ -136,8 +136,12 @@ export default function ProductsPage() {
       description: "Remera oversize con efecto lavado Stone Wash. Un acabado vintage auténtico sobre nuestro algodón premium de alto gramaje.",
       images: {
         main: "/products/aura-oversize-tshirt-stone-wash/main.png",
-        lifestyle: ["/products/aura-oversize-tshirt-stone-wash/lifestyle.jpeg"],
-        measurements: "/products/aura-tshirt-negro/Aura_Negra_Medidas.png"
+        lifestyle: [
+          "/products/aura-oversize-tshirt-stone-wash/lifestyle1.jpg",
+          "/products/aura-oversize-tshirt-stone-wash/lifestyle2.jpg",
+          "/products/aura-oversize-tshirt-stone-wash/lifestyle3.jpg"
+        ],
+        measurements: "/products/aura-oversize-tshirt-stone-wash/tshirt-blanca-medidas.png"
       },
       category: "T-Shirts",
       color: "Stone Wash",
