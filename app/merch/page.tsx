@@ -37,14 +37,14 @@ export default function MerchPage() {
       productCount: 6,
       featured: true,
     },
-    // Aquí se pueden agregar más marcas en el futuro
+
   ]
 
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="text-center mb-12">
-        <h1 className="novamente-heading text-4xl md:text-5xl mb-4">MERCH</h1>
+        <h1 className="novamente-heading text-4xl md:text-5xl mb-4">PARTNERS</h1>
         <p className="text-muted-foreground max-w-3xl mx-auto text-lg">
           Descubrí el merchandising oficial de tus marcas favoritas. Productos únicos, diseños exclusivos y la calidad
           que esperás, todo en un solo lugar.
@@ -102,21 +102,78 @@ export default function MerchPage() {
         ))}
       </div>
 
-      {/* Coming Soon Section */}
-      <div className="text-center">
-        <div className="bg-secondary/30 rounded-xl p-8">
-          <h3 className="novamente-heading text-2xl mb-4">MÁS MARCAS PRÓXIMAMENTE</h3>
-          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Estamos trabajando para traerte el merchandising de más marcas increíbles. Mantente atento a las próximas
-            incorporaciones a nuestra plataforma.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="https://www.instagram.com/novamente.ar/" target="_blank">
-              <Button variant="outline">Seguinos para novedades</Button>
-            </Link>
-            <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
-              <Button>¿Querés vender tu merch?</Button>
-            </Link>
+      {/* Become a Partner Section */}
+      <div className="mt-24 mb-16">
+        <div className="bg-gradient-to-br from-gray-900 to-black rounded-2xl overflow-hidden shadow-2xl border border-gray-800">
+          <div className="grid grid-cols-1 lg:grid-cols-2">
+            <div className="p-8 md:p-12 flex flex-col justify-center">
+              <Badge className="w-fit mb-6 bg-primary/20 text-primary border-primary/50 hover:bg-primary/30">
+                SUMATE A NOVAMENTE
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
+                Potenciá tu marca con merchandising <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">premium y sin riesgos</span>.
+              </h2>
+
+              <div className="space-y-6 mb-8">
+                <div className="flex gap-4">
+                  <div className="h-10 w-10 rounded-full bg-purple-900/30 flex items-center justify-center flex-shrink-0 border border-purple-500/30">
+                    <span className="text-purple-400 font-bold">01</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold text-lg">Cero stock, cero logística</h3>
+                    <p className="text-gray-400 text-sm mt-1">Nos encargamos de la producción, el stock y los envíos. Vos solo te enfocas en crear y vender.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="h-10 w-10 rounded-full bg-pink-900/30 flex items-center justify-center flex-shrink-0 border border-pink-500/30">
+                    <span className="text-pink-400 font-bold">02</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold text-lg">Calidad de exportación</h3>
+                    <p className="text-gray-400 text-sm mt-1">Prendas de algodón premium y estampados DTG de última generación que duran para siempre.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="h-10 w-10 rounded-full bg-blue-900/30 flex items-center justify-center flex-shrink-0 border border-blue-500/30">
+                    <span className="text-blue-400 font-bold">03</span>
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold text-lg">Tu propia tienda oficial</h3>
+                    <p className="text-gray-400 text-sm mt-1">Un espacio exclusivo para tu marca dentro de nuestra plataforma, con URL personalizada.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+                  <Button size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-gray-100 font-semibold px-8">
+                    Quiero ser Partner
+                  </Button>
+                </Link>
+                <Link href="/products">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800">
+                    Ver calidad de prendas
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            <div className="relative h-64 lg:h-auto bg-zinc-900">
+              {/* Abstract decorative background */}
+              <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative w-full h-full max-w-md max-h-96 p-8">
+                  {/* Mockup visual representation */}
+                  <div className="w-full h-full border border-gray-700/50 rounded-xl bg-gray-900/50 backdrop-blur-sm p-6 flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-full mb-4 animate-pulse"></div>
+                    <h3 className="text-xl font-bold text-gray-200 mb-2">Tu Marca Aquí</h3>
+                    <p className="text-gray-500 text-sm">Convertite en el próximo caso de éxito.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

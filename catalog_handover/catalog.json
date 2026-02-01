@@ -1,0 +1,492 @@
+[
+  {
+    "name": "Buzo cuello redondo unisex stone wash - Friza premium - Estilo Oversize",
+    "url": "https://dreamful.mitiendanube.com/productos/buzo-cuello-redondo-unisex-stone-wash-friza-premium-estilo-oversize/",
+    "base_image": "https://acdn-us.mitiendanube.com/stores/006/351/266/products/7dd88943-3a46-486f-a06f-acff7d85650c-ee030b1ba90b7e6a8217501266615517-1024-1024.webp",
+    "variants": [
+      {
+        "id": "1320513898",
+        "price": 36000,
+        "size": "XS",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320513905",
+        "price": 36000,
+        "size": "S",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320513918",
+        "price": 36000,
+        "size": "M",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320513929",
+        "price": 36000,
+        "size": "L",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320513947",
+        "price": 36000,
+        "size": "XL",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      }
+    ]
+  },
+  {
+    "name": "Buzo hoddie unisex blanco",
+    "url": "https://dreamful.mitiendanube.com/productos/buzo-hoddie-unisex-blanco/",
+    "base_image": "https://acdn-us.mitiendanube.com/stores/006/351/266/products/5d395610-0df3-4a38-ad98-a241bbb8b2ea-28ab4538fc839022fa17501247959512-1024-1024.webp",
+    "variants": [
+      {
+        "id": "1320516823",
+        "price": 55000,
+        "size": "XS",
+        "garment_color": "Blanco",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320516840",
+        "price": 55000,
+        "size": "S",
+        "garment_color": "Blanco",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320516858",
+        "price": 55000,
+        "size": "M",
+        "garment_color": "Blanco",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320516871",
+        "price": 55000,
+        "size": "L",
+        "garment_color": "Blanco",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320516879",
+        "price": 55000,
+        "size": "XL",
+        "garment_color": "Blanco",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320516890",
+        "price": 55000,
+        "size": "XXL",
+        "garment_color": "Blanco",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      }
+    ]
+  },
+  {
+    "name": "Buzo hoddie unisex negro",
+    "url": "https://dreamful.mitiendanube.com/productos/buzo-hoddie-unisex-negro/",
+    "base_image": "https://acdn-us.mitiendanube.com/stores/006/351/266/products/chatgpt-image-11-jun-2025-03_38_09-p-m-858058cdff9b8c25c617496673508282-1024-1024.webp",
+    "variants": [
+      {
+        "id": "1320522584",
+        "price": 55000,
+        "size": "XS",
+        "garment_color": "Negro",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320522591",
+        "price": 55000,
+        "size": "S",
+        "garment_color": "Negro",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320522593",
+        "price": 55000,
+        "size": "M",
+        "garment_color": "Negro",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320522598",
+        "price": 55000,
+        "size": "L",
+        "garment_color": "Negro",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320522605",
+        "price": 55000,
+        "size": "XL",
+        "garment_color": "Negro",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320522608",
+        "price": 55000,
+        "size": "XXL",
+        "garment_color": "Negro",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      }
+    ]
+  },
+  {
+    "name": "Buzo hoddie unisex stone wash",
+    "url": "https://dreamful.mitiendanube.com/productos/buzo-hoddie-unisex-stone-wash/",
+    "base_image": "https://acdn-us.mitiendanube.com/stores/006/351/266/products/cee194b5-1328-411b-bf59-6171499756b3-fe2889ec38b2db28f217501184012240-1024-1024.webp",
+    "variants": [
+      {
+        "id": "1320517961",
+        "price": 55000,
+        "size": "XS",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320517976",
+        "price": 55000,
+        "size": "S",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320517988",
+        "price": 55000,
+        "size": "M",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320517999",
+        "price": 55000,
+        "size": "L",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320518010",
+        "price": 55000,
+        "size": "XL",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      }
+    ]
+  },
+  {
+    "name": "Musculosa de morley",
+    "url": "https://dreamful.mitiendanube.com/productos/musculosa-de-morley-ywszf/",
+    "base_image": "https://acdn-us.mitiendanube.com/stores/006/351/266/products/03253339803-e1-0bc62d9da37430b49c17647803410067-1024-1024.webp",
+    "variants": [
+      {
+        "id": "1379905911",
+        "price": 21800,
+        "size": "S",
+        "garment_color": "Gris",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1379905926",
+        "price": 21800,
+        "size": "S",
+        "garment_color": "Blanco",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1379905944",
+        "price": 21800,
+        "size": "M",
+        "garment_color": "Gris",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1379905950",
+        "price": 21800,
+        "size": "M",
+        "garment_color": "Blanco",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1379905987",
+        "price": 21800,
+        "size": "L",
+        "garment_color": "Gris",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1379905997",
+        "price": 21800,
+        "size": "L",
+        "garment_color": "Blanco",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1379906013",
+        "price": 21800,
+        "size": "XL",
+        "garment_color": "Gris",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1379906017",
+        "price": 21800,
+        "size": "XL",
+        "garment_color": "Blanco",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1379906031",
+        "price": 21800,
+        "size": "XXL",
+        "garment_color": "Gris",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1379906038",
+        "price": 21800,
+        "size": "XXL",
+        "garment_color": "Blanco",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      }
+    ]
+  },
+  {
+    "name": "Aura Oversize T-Shirt - Stone Wash",
+    "url": "https://dreamful.mitiendanube.com/productos/aura-oversize-tshirt-stone-wash",
+    "base_image": "/products/aura-oversize-tshirt-stone-wash/main.png",
+    "variants": [
+      {
+        "id": "aura-stone-wash-s",
+        "price": 29300,
+        "size": "S",
+        "garment_color": "Stone Wash",
+        "available": true
+      },
+      {
+        "id": "aura-stone-wash-m",
+        "price": 29300,
+        "size": "M",
+        "garment_color": "Stone Wash",
+        "available": true
+      },
+      {
+        "id": "aura-stone-wash-l",
+        "price": 29300,
+        "size": "L",
+        "garment_color": "Stone Wash",
+        "available": true
+      },
+      {
+        "id": "aura-stone-wash-xl",
+        "price": 29300,
+        "size": "XL",
+        "garment_color": "Stone Wash",
+        "available": true
+      }
+    ]
+  },
+  {
+    "name": "Remera crop de mujer",
+    "url": "https://dreamful.mitiendanube.com/productos/remera-crop-de-mujer/",
+    "base_image": "https://acdn-us.mitiendanube.com/stores/006/351/266/products/02335559812-e1-60d436d7decd03e68017609145879512-1024-1024.webp",
+    "variants": [
+      {
+        "id": "1342802988",
+        "price": 23500,
+        "size": "S",
+        "garment_color": "Gris melange",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342802997",
+        "price": 23500,
+        "size": "S",
+        "garment_color": "Crema",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803005",
+        "price": 23500,
+        "size": "S",
+        "garment_color": "Chocolate",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803014",
+        "price": 23500,
+        "size": "S",
+        "garment_color": "Visón",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803020",
+        "price": 23500,
+        "size": "M",
+        "garment_color": "Gris melange",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803026",
+        "price": 23500,
+        "size": "M",
+        "garment_color": "Crema",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803031",
+        "price": 23500,
+        "size": "M",
+        "garment_color": "Chocolate",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803040",
+        "price": 23500,
+        "size": "M",
+        "garment_color": "Visón",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803050",
+        "price": 23500,
+        "size": "L",
+        "garment_color": "Gris melange",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803058",
+        "price": 23500,
+        "size": "L",
+        "garment_color": "Crema",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803063",
+        "price": 23500,
+        "size": "L",
+        "garment_color": "Chocolate",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803071",
+        "price": 23500,
+        "size": "L",
+        "garment_color": "Visón",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803076",
+        "price": 23500,
+        "size": "XL",
+        "garment_color": "Gris melange",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803085",
+        "price": 23500,
+        "size": "XL",
+        "garment_color": "Crema",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803091",
+        "price": 23500,
+        "size": "XL",
+        "garment_color": "Chocolate",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803098",
+        "price": 23500,
+        "size": "XL",
+        "garment_color": "Visón",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803104",
+        "price": 23500,
+        "size": "XXL",
+        "garment_color": "Gris melange",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803111",
+        "price": 23500,
+        "size": "XXL",
+        "garment_color": "Crema",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803117",
+        "price": 23500,
+        "size": "XXL",
+        "garment_color": "Chocolate",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1342803127",
+        "price": 23500,
+        "size": "XXL",
+        "garment_color": "Visón",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      }
+    ]
+  },
+  {
+    "name": "Remera oversize unisex stone wash",
+    "url": "https://dreamful.mitiendanube.com/productos/remera-oversize-unisex-stone-wash/",
+    "base_image": "https://acdn-us.mitiendanube.com/stores/006/351/266/products/remera-over-lavada-frente-18ceed708342ee917d17496615999755-1024-1024.webp",
+    "variants": [
+      {
+        "id": "1320523573",
+        "price": 29300,
+        "size": "XS",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320523590",
+        "price": 29300,
+        "size": "S",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320523601",
+        "price": 29300,
+        "size": "M",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320523607",
+        "price": 29300,
+        "size": "L",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320523614",
+        "price": 29300,
+        "size": "XL",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      },
+      {
+        "id": "1320523623",
+        "price": 29300,
+        "size": "XXL",
+        "garment_color": "Stone wash",
+        "print_option": "1 ESTAMPA (frente o espalda)"
+      }
+    ]
+  }
+]

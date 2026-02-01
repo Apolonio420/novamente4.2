@@ -54,7 +54,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://api.remove.bg" crossOrigin="" />
         <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossOrigin="" />
       </head>
-      <body className={`min-h-screen bg-zinc-950 text-zinc-100 ${inter.className}`}>
+      <body className={`min-h-screen bg-zinc-950 text-zinc-100 ${inter.className}`} suppressHydrationWarning>
         <Background />
         <ImageHistoryProvider>
           <div className="min-h-screen flex flex-col">

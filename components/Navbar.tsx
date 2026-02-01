@@ -48,6 +48,7 @@ export function Navbar() {
     { label: "PRODUCTOS", href: "/products" },
     { label: "ESTILOS", href: "/styles" },
     { label: "MERCH", href: "/merchs" },
+    { label: "PARTNERS", href: "/merch" },
     { label: "DISEÑA", href: "/#generator-section", isButton: true },
   ]
 
