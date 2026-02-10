@@ -1,7 +1,9 @@
 import { Suspense } from "react"
 import { DesignCustomizer } from "@/components/DesignCustomizer"
 
-export default function PlaceholderPage({ searchParams }: { searchParams: { image?: string; imageUrl?: string } }) {
+export default async function PlaceholderPage(props: { searchParams: Promise<{ image?: string; imageUrl?: string }> }) {
+  const searchParams = await props.searchParams
+
   const raw = searchParams?.image || searchParams?.imageUrl || ""
   const initialImageUrl = raw
     ? raw.includes("oaidalleapiprodscus.blob.core.windows.net")

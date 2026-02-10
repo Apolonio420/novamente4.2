@@ -11,17 +11,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, ShoppingCart, Heart, Star, Zap } from "lucide-react"
 import { useCart } from "@/lib/cartStore"
 import { useToast } from "@/hooks/use-toast"
-import { notFound } from "next/navigation"
-import { useRouter } from "next/navigation"
+import { notFound, useRouter, useParams } from "next/navigation"
 
-interface ProductPageProps {
-  params: {
-    brand: string
-    product: string
-  }
-}
 
-export default function ProductPage({ params }: ProductPageProps) {
+// ... imports ...
+
+export default function ProductPage() {
+  const params = useParams<{ brand: string; product: string }>()
+
+
   const [selectedColor, setSelectedColor] = useState("negro")
   const [selectedSize, setSelectedSize] = useState("M")
   const [quantity, setQuantity] = useState(1)
@@ -475,9 +473,8 @@ export default function ProductPage({ params }: ProductPageProps) {
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`w-2 h-2 rounded-full transition-colors ${
-                      currentImageIndex === index ? "bg-white" : "bg-white/50"
-                    }`}
+                    className={`w-2 h-2 rounded-full transition-colors ${currentImageIndex === index ? "bg-white" : "bg-white/50"
+                      }`}
                   />
                 ))}
               </div>
@@ -489,9 +486,8 @@ export default function ProductPage({ params }: ProductPageProps) {
             {galleryImages.map((image, index) => (
               <div
                 key={index}
-                className={`aspect-square relative rounded-md overflow-hidden cursor-pointer transition-all ${
-                  currentImageIndex === index ? "ring-2 ring-primary" : "hover:opacity-80"
-                }`}
+                className={`aspect-square relative rounded-md overflow-hidden cursor-pointer transition-all ${currentImageIndex === index ? "ring-2 ring-primary" : "hover:opacity-80"
+                  }`}
                 onClick={() => setCurrentImageIndex(index)}
               >
                 <Image

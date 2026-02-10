@@ -198,7 +198,7 @@ export default async function Home() {
             <h2 className="novamente-heading text-3xl">TUS DISEÑOS RECIENTES</h2>
           </div>
           <Suspense fallback={<div className="h-64 w-full bg-muted/30 animate-pulse rounded-lg"></div>}>
-            <ImageHistory images={recentImages} scrollToGenerator={true} />
+            <ImageHistory images={recentImages} />
           </Suspense>
         </div>
       </section>

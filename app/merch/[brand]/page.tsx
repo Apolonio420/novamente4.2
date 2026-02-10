@@ -6,12 +6,14 @@ import { ArrowLeft } from "lucide-react"
 import { notFound } from "next/navigation"
 
 interface BrandPageProps {
-  params: {
+  params: Promise<{
     brand: string
-  }
+  }>
 }
 
-export default function BrandPage({ params }: BrandPageProps) {
+export default async function BrandPage(props: BrandPageProps) {
+  const params = await props.params
+
   const brandsData: Record<string, any> = {
     falco: {
       id: "falco",

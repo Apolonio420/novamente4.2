@@ -29,8 +29,8 @@ interface DesignCustomizerProps {
 }
 
 const GARMENT_PRICES = {
-  "aura-oversize-tshirt": 37000,
-  "aldea-classic-tshirt": 33000,
+  "aura-oversize-tshirt": 31000,
+  "aldea-classic-tshirt": 28600,
   "astra-oversize-hoodie": 60000,
   lienzo: 59900,
 }

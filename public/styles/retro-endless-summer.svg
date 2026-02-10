@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="100%" height="100%" fill="#2b3a42"/>
-  <circle cx="256" cy="220" r="100" fill="#f59e0b"/>
-  <rect x="140" y="300" width="232" height="40" fill="#94a3b8" rx="10"/>
-  <text x="50%" y="380" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="36" font-weight="700">ENDLESS SUMMER</text>
-</svg>
-

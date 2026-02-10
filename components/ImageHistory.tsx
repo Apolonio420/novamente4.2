@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { OptimizedImage } from "./OptimizedImage"
 import { getUserImages, type SavedImage } from "@/lib/db"
 import { Button } from "./ui/button"
@@ -65,9 +65,9 @@ export function ImageHistory({
   const isDesignImage = (img: SavedImage): boolean => {
     const url = (img?.url || "").toLowerCase()
     const key = (img?.key || "").toLowerCase()
-    
+
     if (!url && !key) return false
-    
+
     // Extraer el key del proxy si es una URL de proxy
     let effectiveKey = key
     if (url.includes('/api/proxy-image')) {
@@ -81,10 +81,10 @@ export function ImageHistory({
         // Si falla parsear, usar el key directamente si existe
       }
     }
-    
+
     // Si tenemos un key efectivo, usarlo para validar
     const checkString = effectiveKey || url
-    
+
     // Excluir mockups y assets estáticos locales
     const looksLikeMockup =
       checkString.includes('/products/') ||
@@ -93,40 +93,40 @@ export function ImageHistory({
       checkString.includes('/falco/products/') ||
       checkString.includes('/placeholder') ||
       checkString.includes('/logo')
-    
+
     if (looksLikeMockup) return false
-    
+
     // Excluir JPEGs que son probablemente mockups
     const isJpeg = checkString.endsWith('.jpg') || checkString.endsWith('.jpeg')
     if (isJpeg) return false
-    
+
     // Excluir stamps y mockups derivados en R2
     if (checkString.includes('/stamps/') || checkString.includes('/mockups/')) return false
-    
+
     // Incluir:
     // - URLs del proxy que apuntan a imágenes originales o procesadas
     // - URLs de R2 directas (r2.dev o cloudflarestorage.com) que sean de imágenes originales o procesadas
     // - PNGs locales válidos (que no sean mockups)
     // - URLs de Supabase storage (por compatibilidad)
-    
+
     const isProxyUrl = url.includes('/api/proxy-image')
     const isR2Url = url.includes('r2.dev') || url.includes('r2.cloudflarestorage.com')
     const isSupabaseUrl = url.includes('supabase.co')
     const isPng = checkString.endsWith('.png')
-    const isOriginalOrProcessed = checkString.includes('/original/') || 
-                                   checkString.includes('/processed/') || 
-                                   checkString.includes('images/')
-    
+    const isOriginalOrProcessed = checkString.includes('/original/') ||
+      checkString.includes('/processed/') ||
+      checkString.includes('images/')
+
     // Si es URL del proxy, verificar que el key sea de una imagen original/procesada
     if (isProxyUrl) {
       return isOriginalOrProcessed && !looksLikeMockup
     }
-    
+
     // Si es URL de R2 directa, debe ser original o procesada
     if (isR2Url) {
       return isOriginalOrProcessed
     }
-    
+
     // Supabase o PNGs locales válidos
     return isSupabaseUrl || (isPng && !looksLikeMockup)
   }
@@ -136,11 +136,11 @@ export function ImageHistory({
     // Filtrar y evitar duplicados por id/url
     const seen = new Set<string>()
     const result: SavedImage[] = []
-    
+
     if (process.env.NODE_ENV === 'development') {
       console.log('🔍 Filtering images:', list.length, 'items')
     }
-    
+
     for (const item of list) {
       const isDesign = isDesignImage(item)
       if (!isDesign) {
@@ -149,7 +149,7 @@ export function ImageHistory({
         }
         continue
       }
-      
+
       const key = item.id || item.url || item.key
       if (key && !seen.has(key)) {
         seen.add(key)
@@ -159,11 +159,11 @@ export function ImageHistory({
         }
       }
     }
-    
+
     if (process.env.NODE_ENV === 'development') {
       console.log('✅ Filtered result:', result.length, 'design images')
     }
-    
+
     return result
   }
 
@@ -213,13 +213,18 @@ export function ImageHistory({
 
   // Efecto principal: manejar propImages primero, luego fetch si es necesario
   // Sincronizar con propImages cuando cambien (mantener cantidad para evitar hydration mismatch)
+  // Create a stable signature for images to avoid re-running effect on new array references
+  const imagesSignature = useMemo(() => {
+    return propImages?.map(img => img.id || img.url).join(',') || ''
+  }, [propImages])
+
   useEffect(() => {
     if (propImages) {
       const filtered = filterDesignImages(propImages)
       // Solo actualizar si realmente cambió para evitar renders innecesarios
       setImages(prev => {
-        if (prev.length !== filtered.length || 
-            prev.some((img, i) => img.id !== filtered[i]?.id)) {
+        if (prev.length !== filtered.length ||
+          prev.some((img, i) => img.id !== filtered[i]?.id)) {
           return filtered
         }
         return prev
@@ -236,7 +241,7 @@ export function ImageHistory({
       setError(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, limit, refreshKey, propImages])
+  }, [userId, limit, refreshKey, imagesSignature]) // Use stable signature
 
   const handleDownload = async (image: SavedImage) => {
     try {
@@ -261,7 +266,7 @@ export function ImageHistory({
       onImageSelect(imageUrl, imageId)
     } else {
       // Si no hay onImageSelect, buscar el generador en la página y cargar la imagen
-      const event = new CustomEvent('loadImageInGenerator', { 
+      const event = new CustomEvent('loadImageInGenerator', {
         detail: { imageUrl, imageId }
       })
       window.dispatchEvent(event)
@@ -386,11 +391,10 @@ export function ImageHistory({
               <button
                 key={image.id}
                 onClick={() => handleImageClick(image.url, image.id)}
-                className={`flex-shrink-0 w-20 h-20 relative aspect-square rounded-lg overflow-hidden border-2 transition-all group ${
-                  selectedImage === image.url
-                    ? "border-purple-500 ring-2 ring-purple-500/50"
-                    : "border-gray-600 hover:border-gray-500"
-                }`}
+                className={`flex-shrink-0 w-20 h-20 relative aspect-square rounded-lg overflow-hidden border-2 transition-all group ${selectedImage === image.url
+                  ? "border-purple-500 ring-2 ring-purple-500/50"
+                  : "border-gray-600 hover:border-gray-500"
+                  }`}
               >
                 <OptimizedImage
                   src={image.url}
@@ -442,11 +446,10 @@ export function ImageHistory({
               <button
                 key={style.id}
                 onClick={() => handleImageClick(style.url)}
-                className={`w-20 h-20 relative aspect-square rounded-lg overflow-hidden border-2 transition-all group ${
-                  selectedImage === style.url
-                    ? "border-purple-500 ring-2 ring-purple-500/50"
-                    : "border-gray-600 hover:border-gray-500"
-                }`}
+                className={`w-20 h-20 relative aspect-square rounded-lg overflow-hidden border-2 transition-all group ${selectedImage === style.url
+                  ? "border-purple-500 ring-2 ring-purple-500/50"
+                  : "border-gray-600 hover:border-gray-500"
+                  }`}
               >
                 <OptimizedImage
                   src={style.url}

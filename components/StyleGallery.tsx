@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -257,6 +257,7 @@ export function StyleGallery({ onStyleSelect, limit = 8, simplified, directToCus
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null)
   const [failedImageById, setFailedImageById] = useState<Record<string, boolean>>({})
+  const [visibleCount, setVisibleCount] = useState(limit)
 
   const categories = Array.from(new Set(BASE_STYLES.map((style) => style.category)))
 
@@ -264,7 +265,16 @@ export function StyleGallery({ onStyleSelect, limit = 8, simplified, directToCus
     ? BASE_STYLES.filter((style) => style.category === selectedCategory)
     : BASE_STYLES
 
-  const displayedStyles = filteredStyles.slice(0, limit)
+  const displayedStyles = filteredStyles.slice(0, visibleCount)
+
+  useEffect(() => {
+    // Reset to initial limit when category changes or simplified prop changes
+    setVisibleCount(limit)
+  }, [selectedCategory, limit])
+
+  const loadMoreStyles = () => {
+    setVisibleCount((prev) => prev + 12)
+  }
 
   const copyPrompt = async (style: any) => {
     try {
@@ -346,9 +356,9 @@ export function StyleGallery({ onStyleSelect, limit = 8, simplified, directToCus
         ))}
       </div>
 
-      {!simplified && filteredStyles.length > limit && (
+      {!simplified && visibleCount < filteredStyles.length && (
         <div className="text-center">
-          <Button variant="outline" onClick={() => setSelectedCategory(null)}>
+          <Button variant="outline" onClick={loadMoreStyles}>
             Ver más estilos
           </Button>
         </div>

@@ -72,7 +72,7 @@ export default function ProductsPage() {
     {
       id: "aura-tshirt-blanco",
       name: "Aura Oversize T-Shirt - Blanco",
-      price: "$29.300",
+      price: "$31.000",
       description:
         "Remera oversize blanca en algodón 100% peinado de máxima pureza. Su composición natural es el canvas ideal para estampado DTG, ofreciendo una superficie perfecta donde los colores se expresan con máxima fidelidad. Ligera, cómoda y con excelente caída, diseñada para que tu arte digital cobre vida con durabilidad profesional.",
       images: {
@@ -87,7 +87,7 @@ export default function ProductsPage() {
     {
       id: "aura-tshirt-negro",
       name: "Aura Oversize T-Shirt - Negro",
-      price: "$29.300",
+      price: "$31.000",
       description:
         "Remera oversize negra de algodón 100% peinado premium. La fibra natural pre-tratada optimiza la adherencia de tintas DTG, creando contrastes impactantes ideales para diseños en colores vibrantes o neón. Corte amplio y moderno con base oscura que hace explotar la intensidad de cualquier estampado personalizado.",
       images: {
@@ -102,7 +102,7 @@ export default function ProductsPage() {
     {
       id: "aura-tshirt-caramel",
       name: "Aura Oversize T-Shirt - Caramel",
-      price: "$29.300",
+      price: "$31.000",
       description:
         "Remera oversize color caramelo en algodón 100% de fibra larga. Su composición natural permite una penetración profunda de las tintas DTG, garantizando estampados duraderos con colores que se integran perfectamente a la tela. Ideal para un estilo urbano y sobrio, con tono cálido que potencia cualquier diseño creativo.",
       images: {
@@ -132,7 +132,7 @@ export default function ProductsPage() {
     {
       id: "aura-tshirt-stone-wash",
       name: "Aura Oversize T-Shirt - Stone Wash",
-      price: "$29.300",
+      price: "$31.000",
       description: "Remera oversize con efecto lavado Stone Wash. Un acabado vintage auténtico sobre nuestro algodón premium de alto gramaje.",
       images: {
         main: "/products/aura-oversize-tshirt-stone-wash/main.png",
@@ -320,7 +320,7 @@ export default function ProductsPage() {
     {
       id: "buzo-cuello-redondo-negro",
       name: "Buzo Cuello Redondo - Negro",
-      price: "$36.000",
+      price: "$43.000",
       description: "Buzo de cuello redondo estilo oversize en negro. Clásico y versátil, ideal para cualquier ocasión. Algodón premium.",
       images: {
         main: "/products/buzo-cuello-redondo-unisex-negro-estilo-oversize/mockups nuevos productos-8.png",
@@ -348,7 +348,7 @@ export default function ProductsPage() {
     {
       id: "buzo-cuello-redondo-blanco",
       name: "Buzo Cuello Redondo - Blanco",
-      price: "$36.000",
+      price: "$43.000",
       description: "Buzo de cuello redondo estilo oversize en blanco. Lienzo puro para tu creatividad. Algodón de alta calidad y fit relajado.",
       images: {
         main: "/products/buzo-cuello-redondo-unisex-blanco-estilo-oversize/mockups nuevos productos-9.png",
@@ -362,7 +362,7 @@ export default function ProductsPage() {
     {
       id: "buzo-cuello-redondo-stone-wash",
       name: "Buzo Cuello Redondo - Stone Wash",
-      price: "$36.000",
+      price: "$43.000",
       description: "Buzo de cuello redondo con efecto Stone Wash. Estilo único y textura premium frizada. Oversize y super cómodo.",
       images: {
         main: "/products/buzo-cuello-redondo-unisex-stone-wash-friza-premium-estilo-oversize/mockups nuevos productos-10.png",
