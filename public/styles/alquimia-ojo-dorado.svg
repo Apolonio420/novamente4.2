@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="100%" height="100%" fill="#0b0b0b"/>
+  <g fill="none" stroke="#fbbf24" stroke-width="3">
+    <ellipse cx="256" cy="256" rx="160" ry="90"/>
+    <circle cx="256" cy="256" r="30" fill="#1e3a8a"/>
+    <path d="M96 256h60M356 256h60M256 166v-40M256 346v40"/>
+    <path d="M216 386l40-60 40 60"/>
+  </g>
+  <text x="50%" y="480" text-anchor="middle" fill="#fbbf24" font-family="system-ui, sans-serif" font-size="18">Ojo Alquímico</text>
+</svg>
+
