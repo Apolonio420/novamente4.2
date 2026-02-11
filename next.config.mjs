@@ -98,6 +98,16 @@ const nextConfig = {
   // Compresión y optimización
   compress: true,
   poweredByHeader: false,
+  // Redirects para Meta Commerce feed
+  async redirects() {
+    return [
+      {
+        source: '/meta/catalog.tsv',
+        destination: '/meta/catalog',
+        permanent: true, // 308 redirect
+      },
+    ];
+  },
   // Headers de cache para assets estáticos
   async headers() {
     return [
