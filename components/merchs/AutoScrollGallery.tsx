@@ -38,10 +38,10 @@ export default function AutoScrollGallery({
   // Verificar si se puede hacer scroll
   const checkScrollability = () => {
     if (!scrollContainerRef.current) return
-    
+
     const container = scrollContainerRef.current
     const { scrollLeft, scrollWidth, clientWidth } = container
-    
+
     setCanScrollLeft(scrollLeft > 0)
     setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
   }
@@ -49,12 +49,12 @@ export default function AutoScrollGallery({
   // Scroll manual hacia la izquierda
   const scrollLeft = () => {
     if (!scrollContainerRef.current) return
-    
+
     const container = scrollContainerRef.current
     const scrollAmount = container.clientWidth * 0.8
     container.scrollBy({ left: -scrollAmount, behavior: "smooth" })
     setIsAutoScrolling(false)
-    
+
     // Reanudar auto-scroll después de un tiempo
     setTimeout(() => setIsAutoScrolling(true), 3000)
   }
@@ -62,12 +62,12 @@ export default function AutoScrollGallery({
   // Scroll manual hacia la derecha
   const scrollRight = () => {
     if (!scrollContainerRef.current) return
-    
+
     const container = scrollContainerRef.current
     const scrollAmount = container.clientWidth * 0.8
     container.scrollBy({ left: scrollAmount, behavior: "smooth" })
     setIsAutoScrolling(false)
-    
+
     // Reanudar auto-scroll después de un tiempo
     setTimeout(() => setIsAutoScrolling(true), 3000)
   }
@@ -75,12 +75,12 @@ export default function AutoScrollGallery({
   // Manejar scroll con rueda del mouse
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     if (!scrollContainerRef.current) return
-    
+
     e.preventDefault()
     const container = scrollContainerRef.current
     container.scrollBy({ left: e.deltaY, behavior: "auto" })
     setIsAutoScrolling(false)
-    
+
     // Reanudar auto-scroll después de un tiempo
     setTimeout(() => setIsAutoScrolling(true), 3000)
   }
@@ -91,7 +91,7 @@ export default function AutoScrollGallery({
 
     const container = scrollContainerRef.current
     const halfWidth = container.scrollWidth / 2 // Como duplicamos los items, la mitad es el punto de reinicio
-    
+
     let animationFrameId: number
     let lastTimestamp = performance.now()
     const pixelsPerSecond = (container.scrollWidth / 2) / speedSec // Velocidad basada en el ancho total
@@ -104,7 +104,7 @@ export default function AutoScrollGallery({
 
       if (container) {
         container.scrollLeft += (pixelsPerSecond * delta) / 1000
-        
+
         // Si llegamos a la mitad (fin del primer conjunto duplicado), reiniciamos suavemente
         if (container.scrollLeft >= halfWidth - 10) {
           container.scrollLeft = 0
@@ -130,7 +130,7 @@ export default function AutoScrollGallery({
     if (container) {
       container.addEventListener("scroll", checkScrollability)
       window.addEventListener("resize", checkScrollability)
-      
+
       return () => {
         container.removeEventListener("scroll", checkScrollability)
         window.removeEventListener("resize", checkScrollability)
@@ -140,7 +140,7 @@ export default function AutoScrollGallery({
 
   return (
     <section aria-label="Galería de merch" className="mx-auto w-full px-4 md:px-6 lg:px-8">
-      <div className={`relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 ${heightClass}`}>
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50" style={{ position: 'relative', height: 'clamp(15rem, 30vw, 24rem)' }}>
         {/* Botón de scroll izquierdo - flecha transparente */}
         {canScrollLeft && (
           <button
@@ -198,10 +198,10 @@ export default function AutoScrollGallery({
                 }}
                 {...(i < 3
                   ? {
-                      placeholder: "blur" as const,
-                      blurDataURL:
-                        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO1hX9EAAAAASUVORK5CYII=",
-                    }
+                    placeholder: "blur" as const,
+                    blurDataURL:
+                      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO1hX9EAAAAASUVORK5CYII=",
+                  }
                   : {})}
               />
             </figure>
