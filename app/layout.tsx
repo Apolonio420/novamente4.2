@@ -8,6 +8,7 @@ import { Toaster } from "@/components/Toaster"
 import { WhatsAppButton } from "@/components/WhatsAppButton"
 import { ImageHistoryProvider } from "@/contexts/ImageHistoryContext"
 import { Background } from "@/components/ui/Background"
+import FacebookPixel from "@/components/FacebookPixel"
 
 const inter = Inter({ subsets: ["latin"], display: "swap" })
 
@@ -55,6 +56,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossOrigin="" />
       </head>
       <body className={`min-h-screen bg-zinc-950 text-zinc-100 ${inter.className}`} suppressHydrationWarning>
+        <FacebookPixel />
         <Background />
         <ImageHistoryProvider>
           <div className="min-h-screen flex flex-col">
