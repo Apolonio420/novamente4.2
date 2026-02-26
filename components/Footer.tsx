@@ -21,27 +21,27 @@ export function Footer() {
             <ul className="space-y-3 text-sm">
               <li>
                 <Link href="/" className="text-white/60 hover:text-white">
-                  Home
+                  HOME
                 </Link>
               </li>
               <li>
                 <Link href="/styles" className="text-white/60 hover:text-white">
-                  Estilos
+                  ESTILOS
                 </Link>
               </li>
               <li>
                 <Link href="/products" className="text-white/60 hover:text-white">
-                  Productos
+                  PRODUCTOS
                 </Link>
               </li>
               <li>
                 <Link href="/merchs" className="text-white/60 hover:text-white">
-                  Merch B2B
+                  QUIERO SER PARTNER
                 </Link>
               </li>
               <li>
                 <Link href="/merch" className="text-white/60 hover:text-white">
-                  Catálogo
+                  PARTNERS
                 </Link>
               </li>
             </ul>

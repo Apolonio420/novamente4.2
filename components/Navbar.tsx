@@ -9,13 +9,23 @@ import { useEffect } from "react"
 import { getClientSupabase } from "@/lib/auth-client"
 import { User, LogOut, Menu } from "lucide-react"
 import { Logo } from "./Logo"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { scrollToGenerator } from "@/lib/scrollToGenerator"
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden"
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { ChevronDown } from "lucide-react"
 
 export function Navbar() {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [authTab, setAuthTab] = useState<"signin" | "signup">("signin")
   const [user, setUser] = useState<any>(null)
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
   const supabase = getClientSupabase()
 
   useEffect(() => {
@@ -44,11 +54,20 @@ export function Navbar() {
     window.location.reload()
   }
 
+  const closeSheet = () => setIsSheetOpen(false)
+
   const navItems = [
     { label: "PRODUCTOS", href: "/products" },
     { label: "ESTILOS", href: "/styles" },
-    { label: "MERCH", href: "/merchs" },
-    { label: "PARTNERS", href: "/merch" },
+    {
+      label: "PARTNERS",
+      href: "/merch",
+      isDropdown: true,
+      subItems: [
+        { label: "QUIERO SER PARTNER", href: "/merchs" },
+        { label: "PARTNERS", href: "/merch" }
+      ]
+    },
     { label: "DISEÑA", href: "/#generator-section", isButton: true },
   ]
 
@@ -71,6 +90,28 @@ export function Navbar() {
                 >
                   {item.label}
                 </button>
+              )
+            }
+            if ((item as any).isDropdown) {
+              return (
+                <DropdownMenu key={item.label}>
+                  <DropdownMenuTrigger className="flex items-center gap-1 text-sm tracking-widest font-medium uppercase transition-colors hover:text-primary outline-none">
+                    {item.label}
+                    <ChevronDown className="h-4 w-4" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="bg-background border-border/40">
+                    {(item as any).subItems.map((sub: any) => (
+                      <DropdownMenuItem key={sub.href} asChild>
+                        <Link
+                          href={sub.href}
+                          className="w-full cursor-pointer text-xs tracking-widest font-medium uppercase py-2"
+                        >
+                          {sub.label}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )
             }
             return (
@@ -113,13 +154,16 @@ export function Navbar() {
 
           <CartBadge />
 
-          <Sheet>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild className="md:hidden">
               <Button variant="ghost" size="icon">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
+              <VisuallyHidden.Root>
+                <SheetTitle>Menú de navegación</SheetTitle>
+              </VisuallyHidden.Root>
               <div className="flex flex-col gap-6 mt-8">
                 <div className="flex items-center justify-center mb-4">
                   <Logo />
@@ -130,9 +174,8 @@ export function Navbar() {
                       <button
                         key={item.href}
                         onClick={() => {
-                          const sheet = document.querySelector('[data-state="open"]')
-                          if (sheet) (sheet as any).click()
-                          scrollToGenerator()
+                          closeSheet()
+                          setTimeout(scrollToGenerator, 300)
                         }}
                         className="text-lg tracking-widest font-medium uppercase transition-colors hover:text-primary text-center"
                         data-cta="header-design-mobile"
@@ -141,11 +184,31 @@ export function Navbar() {
                       </button>
                     )
                   }
+                  if ((item as any).isDropdown) {
+                    return (
+                      <div key={item.label} className="flex flex-col gap-3">
+                        <span className="text-lg tracking-widest font-medium uppercase text-muted-foreground text-center">
+                          {item.label}
+                        </span>
+                        {(item as any).subItems.map((sub: any) => (
+                          <Link
+                            key={sub.href}
+                            href={sub.href}
+                            className="text-sm tracking-widest font-normal uppercase transition-colors hover:text-primary text-center text-zinc-500 dark:text-zinc-400"
+                            onClick={closeSheet}
+                          >
+                            {sub.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )
+                  }
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       className="text-lg tracking-widest font-medium uppercase transition-colors hover:text-primary text-center"
+                      onClick={closeSheet}
                     >
                       {item.label}
                     </Link>

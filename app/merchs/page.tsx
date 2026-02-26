@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Clock, Package, Sparkles, Target, Users, Zap } from "lucide-react"
-import { WHATSAPP_URL } from "@/lib/config/links"
+import { WHATSAPP_MESSAGES, getWhatsAppLink } from "@/lib/config/links"
 import AutoScrollGallery from "@/components/merchs/AutoScrollGallery"
 
 export const metadata: Metadata = {
@@ -85,7 +85,7 @@ export default function MerchsPage() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-          <Link href="/merchs/join">
+          <Link href={getWhatsAppLink(WHATSAPP_MESSAGES.PARTNER)} target="_blank">
             <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500">
               <ArrowRight className="h-4 w-4 mr-2" />
               Sumate como Partner
@@ -140,7 +140,7 @@ export default function MerchsPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-          <Link href="/merchs/join">
+          <Link href={getWhatsAppLink(WHATSAPP_MESSAGES.PARTNER)} target="_blank">
             <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500">
               <ArrowRight className="h-4 w-4 mr-2" />
               Sumate como Partner
@@ -159,13 +159,18 @@ export default function MerchsPage() {
       <div className="max-w-4xl mx-auto mb-16">
         <div className="border-t border-gray-300 my-8"></div>
         <div className="text-center">
+          <div className="mb-6">
+            <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 uppercase">
+              MAYORISTA
+            </h3>
+          </div>
           <p className="text-gray-700 text-base md:text-lg mb-4">
             También realizamos pedidos <span className="font-bold text-violet-600">puntuales</span> para empresas, equipos, eventos y acciones especiales, <span className="font-bold text-violet-600">sin</span> necesidad de comprometerse con cantidades <span className="font-bold text-violet-600">mínimas</span> y <span className="font-bold text-violet-600">stock</span>.
           </p>
           <p className="text-gray-700 text-base md:text-lg font-bold mb-6">
             Hacemos tu pedido ajustado a tu necesidad.
           </p>
-          <Link href={WHATSAPP_URL} target="_blank">
+          <Link href={getWhatsAppLink(WHATSAPP_MESSAGES.MAYORISTA)} target="_blank">
             <Button size="default" className="bg-[#25D366] hover:bg-[#20BA5A] text-white border-0 shadow-md hover:shadow-lg transition-all px-6 py-3 tracking-wide">
               Hace tu pedido único
             </Button>

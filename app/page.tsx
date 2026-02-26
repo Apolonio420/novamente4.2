@@ -21,6 +21,14 @@ export const revalidate = 0
 
 export const metadata = { title: "Tienda Oficial de Novamente" }
 
+// Helper to race a promise against a timeout so SSR never hangs indefinitely
+function withTimeout<T>(promise: Promise<T>, ms = 5000): Promise<T | null> {
+  return Promise.race([
+    promise,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ])
+}
+
 export default async function Home() {
   // Ejecutar la política de retención de imágenes (eliminar imágenes de más de 15 días)
   await setupImageRetentionPolicy()
@@ -30,7 +38,7 @@ export default async function Home() {
 
   let user = null
   try {
-    user = await getCurrentUser()
+    user = await withTimeout(getCurrentUser())
   } catch (error) {
     console.error("Error getting current user:", error)
     // Continuar sin usuario si hay error
@@ -43,8 +51,8 @@ export default async function Home() {
   let generationCount = 0
   if (!user && sessionId) {
     try {
-      const { count } = await checkGenerationLimit(sessionId)
-      generationCount = count
+      const result = await withTimeout(checkGenerationLimit(sessionId))
+      generationCount = result?.count ?? 0
     } catch (error) {
       console.error("Error checking generation limit:", error)
       // Continuar con count = 0 si hay un error
@@ -56,10 +64,10 @@ export default async function Home() {
   try {
     // Si el usuario está autenticado, obtener sus imágenes
     if (user?.id) {
-      recentImages = await getUserImages(user.id)
+      recentImages = (await withTimeout(getUserImages(user.id))) ?? []
     } else if (sessionId) {
       // Para invitados, filtrar por session_id para que el historial sea personal
-      recentImages = await getUserImages(undefined, sessionId)
+      recentImages = (await withTimeout(getUserImages(undefined, sessionId))) ?? []
     }
     // Si no hay user ni sessionId, recentImages queda como array vacío
     // (no hacer fetch innecesario)

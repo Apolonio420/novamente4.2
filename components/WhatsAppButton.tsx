@@ -3,8 +3,10 @@
 import Image from "next/image"
 import { motion } from "framer-motion"
 
+import { WHATSAPP_MESSAGES, getWhatsAppLink } from "@/lib/config/links"
+
 export function WhatsAppButton() {
-  const whatsappUrl = "https://wa.me/message/DRWR3O2HZY2JG1"
+  const whatsappUrl = getWhatsAppLink(WHATSAPP_MESSAGES.GENERIC)
 
   return (
     <motion.div
@@ -25,7 +27,7 @@ export function WhatsAppButton() {
         target="_blank"
         rel="noopener noreferrer"
         className="block w-16 h-16 hover:shadow-2xl transition-all duration-300 group"
-        aria-label="Contactar por WhatsApp"
+        aria-label="Contactar por WhatsApp para info de merchandising"
       >
         <div className="relative w-full h-full">
           <Image

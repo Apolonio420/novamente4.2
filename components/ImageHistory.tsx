@@ -137,31 +137,15 @@ export function ImageHistory({
     const seen = new Set<string>()
     const result: SavedImage[] = []
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 Filtering images:', list.length, 'items')
-    }
-
     for (const item of list) {
       const isDesign = isDesignImage(item)
-      if (!isDesign) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('❌ Filtered out:', item.url?.substring(0, 50), 'key:', item.key?.substring(0, 50))
-        }
-        continue
-      }
+      if (!isDesign) continue
 
       const key = item.id || item.url || item.key
       if (key && !seen.has(key)) {
         seen.add(key)
         result.push(item)
-        if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Included:', item.url?.substring(0, 50))
-        }
       }
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Filtered result:', result.length, 'design images')
     }
 
     return result
