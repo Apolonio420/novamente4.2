@@ -65,6 +65,7 @@ export default function ProductsPage() {
                           priority={index < 3}
                           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           quality={80}
+                          unoptimized
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
 
@@ -139,6 +140,7 @@ export default function ProductsPage() {
                                       fill
                                       sizes="150px"
                                       quality={70}
+                                      unoptimized
                                       className="object-cover"
                                     />
                                   </div>
@@ -158,6 +160,7 @@ export default function ProductsPage() {
                                       fill
                                       sizes="300px"
                                       quality={85}
+                                      unoptimized
                                       className="object-contain p-2"
                                     />
                                     <div className="absolute inset-0 bg-black/0 group-hover/zoom:bg-black/10 transition-colors duration-300 flex items-center justify-center">
@@ -173,6 +176,7 @@ export default function ProductsPage() {
                                       alt={`Medidas ${product.name}`}
                                       fill
                                       quality={100}
+                                      unoptimized
                                       className="object-contain p-4"
                                     />
                                   </div>

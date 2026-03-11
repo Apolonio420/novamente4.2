@@ -170,14 +170,10 @@ export function ImageHistory({
         return
       }
 
-      // Solo hacer fetch si tenemos userId o sessionId
-      if (!userId) {
-        setImages([])
-        setLoading(false)
-        return
-      }
-
-      const recentImages = await getUserImages(userId)
+      // Intentar fetch desde browser getRecentImages
+      // Incluso si no hay userId, pasamos undefined para que intente con las guardadas en local/sesion
+      const { getImageHistory } = await import("@/lib/db")
+      const recentImages = await getImageHistory(limit)
       setImages(filterDesignImages(recentImages))
     } catch (err) {
       console.error("❌ Error loading images:", err)
@@ -195,37 +191,25 @@ export function ImageHistory({
     }
   }
 
-  // Efecto principal: manejar propImages primero, luego fetch si es necesario
-  // Sincronizar con propImages cuando cambien (mantener cantidad para evitar hydration mismatch)
-  // Create a stable signature for images to avoid re-running effect on new array references
-  const imagesSignature = useMemo(() => {
-    return propImages?.map(img => img.id || img.url).join(',') || ''
-  }, [propImages])
-
   useEffect(() => {
-    if (propImages) {
+    // Si pasaron propImages explicitamente como un array CON elementos
+    if (propImages && propImages.length > 0) {
       const filtered = filterDesignImages(propImages)
-      // Solo actualizar si realmente cambió para evitar renders innecesarios
       setImages(prev => {
-        if (prev.length !== filtered.length ||
-          prev.some((img, i) => img.id !== filtered[i]?.id)) {
+        if (prev.length !== filtered.length || prev.some((img, i) => img.id !== filtered[i]?.id)) {
           return filtered
         }
         return prev
       })
       setLoading(false)
       setError(null)
-    } else if (userId) {
-      // Solo hacer fetch si no hay propImages y tenemos userId
-      loadImages()
     } else {
-      // Si no hay userId ni propImages, mantener vacío
-      setImages([])
-      setLoading(false)
-      setError(null)
+      // Si propImages está vacío, o no se pasó nada, intentar cargar (fetch del browser)
+      // Especialmente útil cuando pasamos "[]" desde el SSR para no bloquear la página
+      loadImages()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, limit, refreshKey, imagesSignature]) // Use stable signature
+  }, [userId, limit, refreshKey, propImages])
 
   const handleDownload = async (image: SavedImage) => {
     try {

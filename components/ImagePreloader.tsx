@@ -8,19 +8,26 @@ interface ImagePreloaderProps {
 }
 
 export function ImagePreloader({ images, priority = false }: ImagePreloaderProps) {
+  // Crear una clave estable para las imágenes para evitar loops de renderizado
+  // causados por arrays con nuevas referencias (ej: passar images={[]})
+  const imagesKey = images.join(',')
+
   useEffect(() => {
-    if (!priority || typeof window === "undefined") return
+    if (!priority || typeof window === "undefined" || !images.length) return
 
     // Precargar imágenes críticas
     const preloadImages = images.slice(0, 3) // Solo las primeras 3 imágenes
 
     preloadImages.forEach((src) => {
       if (src && !src.includes("placeholder.svg")) {
-        const link = document.createElement("link")
-        link.rel = "preload"
-        link.as = "image"
-        link.href = src
-        document.head.appendChild(link)
+        // Verificar si ya existe para evitar duplicados en el DOM
+        if (!document.querySelector(`link[href="${src}"]`)) {
+          const link = document.createElement("link")
+          link.rel = "preload"
+          link.as = "image"
+          link.href = src
+          document.head.appendChild(link)
+        }
       }
     })
 
@@ -35,7 +42,7 @@ export function ImagePreloader({ images, priority = false }: ImagePreloaderProps
         }
       })
     }
-  }, [images, priority])
+  }, [imagesKey, priority]) // Usamos imagesKey en lugar de images
 
   return null
 }

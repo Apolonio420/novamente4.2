@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight } from "lucide-react"
+import { partners } from "@/src/data/partners"
 
 export const metadata: Metadata = {
   title: "Crea, publica y vendé tu merch con Novamente",
@@ -26,20 +27,6 @@ export const metadata: Metadata = {
 }
 
 export default function MerchPage() {
-  const brands = [
-    {
-      id: "falco",
-      name: "FALCO",
-      description: "Libertad. Identidad. Argentina que avanza.",
-      fullDescription:
-        "Marca nacida del espíritu de 'Las Tres Anclas', símbolo de una visión renovadora y de un presente que proyecta futuro.",
-      image: "/falco/halcon-logo.png",
-      productCount: 6,
-      featured: true,
-    },
-
-  ]
-
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -51,15 +38,20 @@ export default function MerchPage() {
         </p>
       </div>
 
+      {/* DEBUG — remove after confirming deploy */}
+      <div className="text-xs text-center text-muted-foreground mb-4 font-mono">
+        DEBUG partners: {partners.map((p) => p.id).join(", ")}
+      </div>
+
       {/* Brands Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-        {brands.map((brand) => (
+        {partners.map((brand) => (
           <Link key={brand.id} href={`/merch/${brand.id}`} className="group">
             <div className="border rounded-xl overflow-hidden bg-card hover:shadow-lg transition-all duration-300 group-hover:scale-105">
               {/* Brand Image */}
               <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-background to-secondary/30">
                 <Image
-                  src={brand.image || "/placeholder.svg"}
+                  src={brand.cardImage || brand.logo || "/placeholder.svg"}
                   alt={`${brand.name} Logo`}
                   fill
                   className="object-contain p-8 group-hover:scale-110 transition-transform duration-300"
@@ -81,19 +73,18 @@ export default function MerchPage() {
                 </div>
 
                 {/* Slogan principal */}
-                <p className="text-primary font-medium mb-2 text-sm uppercase tracking-wide">{brand.description}</p>
+                <p className="text-primary font-medium mb-2 text-sm uppercase tracking-wide">{brand.slogan}</p>
 
                 {/* Descripción extendida */}
-                <p className="text-muted-foreground mb-4 text-sm">{brand.fullDescription}</p>
+                <p className="text-muted-foreground mb-4 text-sm">{brand.description}</p>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{brand.productCount} productos disponibles</span>
+                  <span className="text-sm text-muted-foreground">{brand.products.length} productos disponibles</span>
                   <Button
-                    variant="ghost"
                     size="sm"
-                    className="group-hover:bg-primary group-hover:text-white transition-colors"
+                    className="bg-zinc-700 text-zinc-100 border border-zinc-600 hover:bg-primary hover:text-white hover:border-primary transition-all duration-200"
                   >
-                    Ver catálogo
+                    Comprar
                   </Button>
                 </div>
               </div>

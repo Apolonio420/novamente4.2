@@ -31,6 +31,6 @@ export async function GET() {
     return res
   } catch (error) {
     console.error("Error getting session:", error)
-    return NextResponse.json({ error: "Failed to get session" }, { status: 500 })
+    return Response.json({ error: "Failed to get session" }, { status: 500 })
   }
 }
