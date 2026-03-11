@@ -38,11 +38,6 @@ export default function MerchPage() {
         </p>
       </div>
 
-      {/* DEBUG — remove after confirming deploy */}
-      <div className="text-xs text-center text-muted-foreground mb-4 font-mono">
-        DEBUG partners: {partners.map((p) => p.id).join(", ")}
-      </div>
-
       {/* Brands Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
         {partners.map((brand) => (
