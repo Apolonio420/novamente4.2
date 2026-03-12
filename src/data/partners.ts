@@ -37,6 +37,8 @@ export interface Product {
     sizes: string[]
     category: string
     lifestyleImages: string[]
+    /** Optional close-up photo of the stamp/print area (front or back) */
+    closeUp?: string
     description: string
     detailedDescription: string
     features: string[]
@@ -624,7 +626,7 @@ const mindset: Partner = {
     products: [
         {
             id: "buzo-alce",
-            name: "Buzo Alce — MINDSET",
+            name: "Buzo ALCE Oversized",
             price: 65000,
             priceLabel: "$65.000",
             colors: [
@@ -665,7 +667,7 @@ const mindset: Partner = {
         },
         {
             id: "buzo-pan",
-            name: "Buzo Pan — MINDSET",
+            name: "Buzo PAN Oversized",
             price: 65000,
             priceLabel: "$65.000",
             colors: [
@@ -706,7 +708,7 @@ const mindset: Partner = {
         },
         {
             id: "remera-oversize-fe-mindset",
-            name: "Remera Oversize Fe — MINDSET",
+            name: "Remera FE Oversized",
             price: 40000,
             priceLabel: "$40.000",
             colors: [
@@ -756,7 +758,7 @@ const mindset: Partner = {
         },
         {
             id: "remera-oversize-pan-mindset",
-            name: "Remera Oversize Pan — MINDSET",
+            name: "Remera PAN Oversized",
             price: 40000,
             priceLabel: "$40.000",
             colors: [
