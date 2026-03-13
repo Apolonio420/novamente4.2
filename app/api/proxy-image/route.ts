@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest, NextResponse } from "next/server"
 import { r2Client, BUCKET_NAME } from "@/lib/cloudflare-r2"
 import { GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3"

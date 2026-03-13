@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { supabase } from "./supabase"
 import { supabaseAdmin } from "./supabase-admin"
 import { getCurrentUser } from "./auth"

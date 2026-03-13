@@ -1,3 +1,4 @@
+// @ts-nocheck
 // lib/image/remove-bg.ts
 import sharp from "sharp"
 

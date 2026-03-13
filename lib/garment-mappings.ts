@@ -25,7 +25,7 @@ export function getGarmentMapping(garmentType: string, color: string, side: "fro
     return null
   }
 
-  const needle = builder(color.toLowerCase(), side.toLowerCase())
+  const needle = builder(color.toLowerCase(), side.toLowerCase() as "front" | "back")
   // Searching for garment mapping
 
   const mapping = garmentMappings.find((g) => g.garmentPath.toLowerCase().includes(needle))

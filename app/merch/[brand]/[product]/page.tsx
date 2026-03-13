@@ -34,8 +34,19 @@ export default function ProductPage() {
 
   const selectedColorData = product.colors.find((c) => c.value === selectedColor) || product.colors[0]
 
-  // Para productos con lifestyle images, incluirlas en la galería
-  const galleryImages = [selectedColorData.images.front, selectedColorData.images.back, ...product.lifestyleImages]
+  // Galería: frente+dorso del color elegido → close-up → lifestyle (sin talles, máx 2) → frente+dorso del resto de colores
+  const galleryImages = [
+    selectedColorData.images.front,
+    selectedColorData.images.back,
+    ...(product.closeUp ? [product.closeUp] : []),
+    ...product.lifestyleImages.filter((src) => !src.toLowerCase().includes("talles")).slice(0, 2),
+    ...product.colors
+      .filter((c) => c.value !== selectedColor)
+      .flatMap((c) => [c.images.front, c.images.back]),
+  ].filter(Boolean)
+
+  // Imágenes de talles — se muestran en la pestaña Medidas
+  const sizingImages = product.lifestyleImages.filter((src) => src.toLowerCase().includes("talles"))
 
   const handleAddToCart = () => {
     if (!selectedColor || !selectedSize) {
@@ -280,15 +291,25 @@ export default function ProductPage() {
 
             <TabsContent value="sizing" className="mt-4">
               <div className="space-y-3">
-                <p className="text-sm text-muted-foreground mb-4">
-                  {product.sizes.includes("Talle único") ? "Especificaciones técnicas" : "Medidas en centímetros (cm)"}
-                </p>
-                {Object.entries(product.sizing).map(([size, measurements]) => (
-                  <div key={size} className="flex justify-between items-center py-2 border-b border-muted">
-                    <span className="font-medium">{size}</span>
-                    <span className="text-sm text-muted-foreground">{measurements}</span>
-                  </div>
-                ))}
+                {sizingImages.length > 0 ? (
+                  sizingImages.map((src, i) => (
+                    <div key={i} className="relative w-full rounded-lg overflow-hidden">
+                      <Image src={src} alt={`Guía de talles ${i + 1}`} width={600} height={400} className="w-full h-auto object-contain" />
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {product.sizes.includes("Talle único") ? "Especificaciones técnicas" : "Medidas en centímetros (cm)"}
+                    </p>
+                    {Object.entries(product.sizing).map(([size, measurements]) => (
+                      <div key={size} className="flex justify-between items-center py-2 border-b border-muted">
+                        <span className="font-medium">{size}</span>
+                        <span className="text-sm text-muted-foreground">{measurements}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
             </TabsContent>
           </Tabs>

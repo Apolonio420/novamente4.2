@@ -38,7 +38,7 @@ export default async function BrandPage(props: BrandPageProps) {
       {/* Brand Header */}
       <div className="mb-12">
         {/* Banner */}
-        <div className="relative h-48 md:h-64 rounded-xl overflow-hidden mb-8 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
+        <div className="relative min-h-[200px] md:min-h-64 rounded-xl overflow-hidden mb-8 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
           {brandInfo.id === "falco" ? (
             /* Falco: watermark sutil (comportamiento original) */
             <>
@@ -61,8 +61,8 @@ export default async function BrandPage(props: BrandPageProps) {
             )
           )}
 
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <div className="text-center text-white">
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center py-8">
+            <div className="text-center text-white w-full">
               <div className="flex items-center justify-center mb-4">
                 <Image
                   src={brandInfo.logo}
@@ -72,8 +72,8 @@ export default async function BrandPage(props: BrandPageProps) {
                   className={`object-contain ${brandInfo.id === "falco" ? "filter invert" : ""}`}
                 />
               </div>
-              <h1 className="text-4xl md:text-6xl font-bold tracking-wider mb-2">{brandInfo.name}</h1>
-              <p className="text-lg md:text-xl opacity-90 font-medium tracking-wide">{brandInfo.slogan}</p>
+              <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-wider mb-2 px-4">{brandInfo.name}</h1>
+              <p className="text-sm sm:text-lg md:text-xl opacity-90 font-medium tracking-wide px-4">{brandInfo.slogan}</p>
             </div>
           </div>
         </div>

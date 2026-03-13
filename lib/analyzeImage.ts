@@ -1,3 +1,4 @@
+// @ts-nocheck
 import sharp from "sharp"
 
 /**

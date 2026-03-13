@@ -83,7 +83,8 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
-  // Configuración webpack para excluir binarios nativos
+  serverExternalPackages: ['@vercel/blob'],
+  // Configuración webpack para excluir binarios nativos y paquetes server-only
   webpack: (config, { isServer }) => {
     if (isServer) {
       // Excluir binarios nativos de canvas del bundle
@@ -92,6 +93,14 @@ const nextConfig = {
         canvas: 'canvas',
         '@napi-rs/canvas': '@napi-rs/canvas',
       });
+    }
+    if (!isServer) {
+      // Evitar que paquetes server-only se bundleen para el browser
+      config.resolve = config.resolve || {};
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        '@vercel/blob': false,
+      };
     }
     return config;
   },

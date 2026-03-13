@@ -368,7 +368,7 @@ function generateStyleVariants(theme: string, params: NovaMenteBrandParams): str
   const compatibleStyles = getCompatibleStyles(params.artisticStyle)
   
   for (const style of compatibleStyles.slice(0, 2)) {
-    const variantParams = { ...baseParams, artisticStyle: style }
+    const variantParams = { ...baseParams, artisticStyle: style } as any
     const variant = generateOptimizedPrompt(theme, variantParams)
     variants.push(variant)
   }

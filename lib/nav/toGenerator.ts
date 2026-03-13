@@ -1,3 +1,4 @@
+import React from 'react'
 export const GENERATOR_HASH = "#generator-section"
 
 export function getGeneratorHref(base = "/") {

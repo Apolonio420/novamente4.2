@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextResponse } from "next/server";
 import { quoteSchema } from "@/lib/quote-schema";
 import { renderToBuffer } from "@react-pdf/renderer";

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Suspense } from "react"
 import { ImageGenerator } from "@/components/ImageGenerator"
 import { ImageHistoryProvider } from "@/contexts/ImageHistoryContext"

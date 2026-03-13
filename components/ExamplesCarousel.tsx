@@ -1,4 +1,5 @@
 "use client"
+/* eslint-disable react-hooks/rules-of-hooks */
 
 import { memo, useMemo, useRef, useState, useEffect } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"

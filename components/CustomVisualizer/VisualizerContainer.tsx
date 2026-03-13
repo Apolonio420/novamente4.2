@@ -111,7 +111,7 @@ export function VisualizerContainer() {
                         </li>
                         <li className="flex gap-2">
                             <span className="bg-zinc-800 text-zinc-200 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
-                            Usá "Remover Fondo" para limpiar tu diseño automáticamente.
+                            Usá &quot;Remover Fondo&quot; para limpiar tu diseño automáticamente.
                         </li>
                         <li className="flex gap-2">
                             <span className="bg-zinc-800 text-zinc-200 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>

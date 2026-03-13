@@ -33,6 +33,18 @@ export default function CheckoutSuccessPage() {
       merchantOrderId,
       timestamp: new Date().toISOString(),
     })
+
+    // Fallback de confirmación server-side (no depende de que el webhook llegue primero)
+    if (paymentId) {
+      fetch("/api/payments/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payment_id: paymentId }),
+      })
+        .then((res) => res.json())
+        .then((data) => console.log("✅ Payment confirm fallback:", data))
+        .catch((err) => console.warn("⚠️ Payment confirm fallback failed:", err))
+    }
   }, [searchParams])
 
   return (

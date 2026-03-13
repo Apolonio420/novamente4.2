@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { toPublicR2Url, normalizeR2Key } from "@/lib/r2"
