@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import {
-  Lock,
   Rss,
   Copy,
   Check,
@@ -17,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { LockedFeature } from '@/components/partners/locked-feature'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -130,18 +130,20 @@ export default function FeedsPage() {
   // Non-Pro locked state
   if (!tenant || tenant.plan !== 'pro') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-        <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6">
-          <Lock className="w-8 h-8 text-purple-400" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Feed Export</h2>
-        <p className="text-zinc-400 max-w-md mb-6">
-          Exporta tu catalogo a Google Shopping y Meta Commerce Manager.
-          Disponible en plan Pro.
-        </p>
-        <Button className="bg-purple-600 hover:bg-purple-500">
-          Actualizar a Pro
-        </Button>
+      <div className="max-w-3xl">
+        <LockedFeature
+          title="Feeds de productos"
+          description="Exporta tu catalogo en formatos compatibles con Google Shopping y Meta Commerce. Sincroniza tus productos automaticamente con las plataformas de venta."
+          requiredPlan="pro"
+          icon={Rss}
+          features={[
+            'Feed XML para Google Shopping',
+            'Feed TSV para Meta Commerce Manager',
+            'Validacion automatica de productos',
+            'Sincronizacion en tiempo real',
+            'Guias de configuracion paso a paso',
+          ]}
+        />
       </div>
     )
   }

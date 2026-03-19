@@ -8,7 +8,7 @@ import {
   MessageSquare,
   Clock,
   ChevronRight,
-  Lock,
+  ChevronDown,
   ArrowUpRight,
   Send,
   X,
@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { LockedFeature } from '@/components/partners/locked-feature'
 
 // --- Types ---
 
@@ -210,27 +211,57 @@ export default function SupportPage() {
           <h1 className="text-xl sm:text-2xl font-semibold text-zinc-100">Soporte</h1>
         </div>
 
-        <Card className="bg-zinc-900/60 border-zinc-800">
-          <CardContent className="flex flex-col items-center justify-center py-16 px-6 text-center">
-            <div className="rounded-full bg-zinc-800 p-4 mb-4">
-              <Lock className="h-8 w-8 text-zinc-500" />
+        <div className="space-y-8">
+          <LockedFeature
+            title="Soporte por tickets"
+            description="Crea tickets de soporte y recibilos resueltos por nuestro equipo. Seguimiento completo del estado de cada consulta."
+            requiredPlan="growth"
+            icon={LifeBuoy}
+            features={[
+              'Crea tickets de soporte ilimitados',
+              'Seguimiento de estado en tiempo real',
+              'Historial completo de consultas',
+              'Soporte WhatsApp prioritario (plan Pro)',
+            ]}
+          />
+
+          {/* FAQ section accessible to ALL plans */}
+          <div>
+            <h2 className="text-lg font-semibold text-zinc-100 mb-4">Preguntas frecuentes</h2>
+            <div className="space-y-3">
+              {[
+                {
+                  q: 'Como personalizo mi storefront?',
+                  a: 'Anda a la seccion Branding en el menu lateral. Ahi podes cambiar logo, colores, tipografia y textos de tu tienda.',
+                },
+                {
+                  q: 'Como agrego productos a mi catalogo?',
+                  a: 'En la seccion Catalogo podes agregar productos con nombre, precio, imagenes y variantes. Los productos aparecen automaticamente en tu storefront.',
+                },
+                {
+                  q: 'Como recibo pagos?',
+                  a: 'Los pagos se procesan a traves de MercadoPago. Los clientes pagan directamente en tu storefront y vos recibis el dinero en tu cuenta.',
+                },
+                {
+                  q: 'Puedo usar mi propio dominio?',
+                  a: 'Actualmente tu storefront esta disponible en novamente.ar/merch/tu-slug. Dominios personalizados estan disponibles en planes Growth y Pro.',
+                },
+                {
+                  q: 'Como funciona el Design Engine?',
+                  a: 'El Design Engine usa inteligencia artificial para generar disenos para tus productos. Accede desde la seccion Studio en el menu lateral.',
+                },
+              ].map(({ q, a }) => (
+                <details key={q} className="group rounded-xl border border-zinc-800 bg-zinc-900/60">
+                  <summary className="flex items-center justify-between p-4 cursor-pointer text-sm font-medium text-zinc-200 hover:text-zinc-100">
+                    {q}
+                    <ChevronDown className="w-4 h-4 text-zinc-500 group-open:rotate-180 transition-transform" />
+                  </summary>
+                  <div className="px-4 pb-4 text-sm text-zinc-400">{a}</div>
+                </details>
+              ))}
             </div>
-            <h2 className="text-lg font-medium text-zinc-200 mb-2">
-              Soporte por tickets
-            </h2>
-            <p className="text-sm text-zinc-400 max-w-md mb-6">
-              Actualiza a Growth para acceder a soporte por tickets por email.
-              Con Pro, ademas obtenes soporte prioritario por WhatsApp.
-            </p>
-            <Button
-              className="gap-2 bg-purple-600 hover:bg-purple-700 text-white"
-              onClick={() => window.location.href = '/workspace/billing'}
-            >
-              <ArrowUpRight className="h-4 w-4" />
-              Actualizar plan
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     )
   }

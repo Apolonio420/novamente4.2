@@ -132,7 +132,7 @@ export function validateDesignAccess(
   // Plan-level feature determines the floor
   const planMode = PLAN_FEATURES[plan].designEngine
 
-  // Use the more restrictive of (plan mode, tenant mode)
+  // Plan mode is the FLOOR — tenant can upgrade but not downgrade
   // priority: disabled < mockups_only < presets < full_brand_fit
   const modePriority: Record<DesignEngineMode, number> = {
     disabled: 0,
@@ -141,7 +141,7 @@ export function validateDesignAccess(
     full_brand_fit: 3,
   }
 
-  const effectivePriority = Math.min(modePriority[planMode], modePriority[tenantDesignMode])
+  const effectivePriority = Math.max(modePriority[planMode], modePriority[tenantDesignMode])
   const effectiveMode = (Object.entries(modePriority).find(
     ([, p]) => p === effectivePriority,
   )?.[0] ?? 'disabled') as DesignEngineMode

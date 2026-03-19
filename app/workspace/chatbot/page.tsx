@@ -270,16 +270,38 @@ function MetricCard({
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900 py-20">
-      <div className="rounded-2xl bg-zinc-800 p-4">
-        <MessageSquare className="h-8 w-8 text-zinc-600" />
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-8 space-y-6">
+      {/* Icon + title */}
+      <div className="flex flex-col items-center text-center gap-4">
+        <div className="rounded-2xl bg-violet-500/10 p-5">
+          <MessageSquare className="h-10 w-10 text-violet-400" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold text-zinc-100">Chatbot IA para tu storefront</h2>
+          <p className="mt-2 text-sm text-zinc-400 leading-relaxed max-w-md mx-auto">
+            Cuando un visitante entre a tu storefront y use el chat, sus conversaciones van a aparecer aca.
+            El chatbot esta entrenado con los productos de tu catalogo y responde consultas automaticamente.
+          </p>
+        </div>
       </div>
-      <div className="text-center max-w-sm">
-        <p className="font-medium text-zinc-300">Sin conversaciones aun</p>
-        <p className="mt-2 text-sm text-zinc-500 leading-relaxed">
-          Cuando los visitantes chateen con tu asistente virtual en tu storefront,
-          las conversaciones van a aparecer aca.
-        </p>
+
+      {/* Como funciona */}
+      <div className="rounded-lg border border-zinc-800 bg-zinc-800/30 p-5 max-w-md mx-auto w-full">
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">Como funciona</p>
+        <ol className="space-y-3">
+          {[
+            'Un visitante entra a tu storefront y abre el chat',
+            'El chatbot responde usando IA, entrenado con tus productos',
+            'Ves las conversaciones aca en tiempo real',
+          ].map((step, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-[11px] font-bold text-violet-400 mt-0.5">
+                {i + 1}
+              </span>
+              <span className="text-sm text-zinc-300 leading-relaxed">{step}</span>
+            </li>
+          ))}
+        </ol>
       </div>
     </div>
   )

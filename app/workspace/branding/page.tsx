@@ -29,7 +29,9 @@ import {
   Trophy,
   Building2,
   Music,
+  ExternalLink,
 } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -208,6 +210,7 @@ export default function BrandingPage() {
   const [toast, setToast] = useState<Toast | null>(null)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [plan, setPlan] = useState<string>('starter')
+  const [tenantSlug, setTenantSlug] = useState<string | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isStarter = plan === 'starter'
 
@@ -226,6 +229,7 @@ export default function BrandingPage() {
       const data = await res.json()
       if (data.plan) setPlan(data.plan)
       const brandingData = data.branding || data
+      if (brandingData.slug) setTenantSlug(brandingData.slug)
       const merged: BrandingData = { ...EMPTY_BRANDING }
       for (const key of Object.keys(EMPTY_BRANDING) as (keyof BrandingData)[]) {
         if (brandingData[key] !== undefined && brandingData[key] !== null) {
@@ -341,6 +345,17 @@ export default function BrandingPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
               Cambios sin guardar
             </span>
+          )}
+          {tenantSlug && (
+            <Link
+              href={`/merch/${tenantSlug}`}
+              target="_blank"
+              className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-zinc-100"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Ver mi storefront</span>
+              <span className="sm:hidden">Ver tienda</span>
+            </Link>
           )}
           <Button
             onClick={handleSave}

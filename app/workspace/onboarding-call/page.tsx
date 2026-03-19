@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Lock, Phone, Calendar, Clock, CheckCircle, Download, X, Loader2, AlertCircle } from 'lucide-react'
+import { Phone, Calendar, Clock, CheckCircle, Download, X, Loader2, AlertCircle } from 'lucide-react'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { LockedFeature } from '@/components/partners/locked-feature'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -227,23 +228,20 @@ export default function OnboardingCallPage() {
 
   if (locked) {
     return (
-      <div className="min-h-screen bg-zinc-950 p-4 sm:p-8">
-        <div className="max-w-lg mx-auto mt-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-6">
-            <Lock className="w-8 h-8 text-zinc-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-white mb-3">Onboarding Call</h1>
-          <p className="text-zinc-400 mb-6">
-            Disponible en plan <span className="text-purple-400 font-semibold">Pro</span>.
-            Agenda una llamada de 30 minutos con un asesor para configurar tu cuenta.
-          </p>
-          <a
-            href="/workspace/settings"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
-          >
-            Upgrade a Pro
-          </a>
-        </div>
+      <div className="p-4 sm:p-8 max-w-3xl">
+        <LockedFeature
+          title="Llamada de onboarding"
+          description="Agenda una llamada personalizada con nuestro equipo. Te ayudamos a configurar tu storefront, optimizar tu catalogo y definir tu estrategia de ventas."
+          requiredPlan="pro"
+          icon={Phone}
+          features={[
+            'Llamada 1:1 con nuestro equipo',
+            'Configuracion guiada de tu storefront',
+            'Estrategia personalizada de ventas',
+            'Tips de optimizacion de catalogo',
+            'Descarga de calendario (.ics)',
+          ]}
+        />
       </div>
     )
   }

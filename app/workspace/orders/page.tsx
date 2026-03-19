@@ -17,6 +17,7 @@ import {
   Factory,
   Clock,
   StickyNote,
+  ShoppingBag,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -648,19 +649,64 @@ export default function OrdersPage() {
           </>
         ) : orders.length === 0 ? (
           /* Empty state */
-          <div className="py-16 px-6 flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
-              <Inbox className="w-6 h-6 text-zinc-500" />
+          filter !== 'all' ? (
+            <div className="py-16 px-6 flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
+                <Inbox className="w-6 h-6 text-zinc-500" />
+              </div>
+              <h3 className="text-sm font-semibold text-zinc-200 mb-1">Sin pedidos</h3>
+              <p className="text-xs text-zinc-500 max-w-xs">
+                {`No hay pedidos con estado "${FILTER_TABS.find((t) => t.value === filter)?.label}".`}
+              </p>
             </div>
-            <h3 className="text-sm font-semibold text-zinc-200 mb-1">
-              No hay pedidos
-            </h3>
-            <p className="text-xs text-zinc-500 max-w-xs">
-              {filter === 'all'
-                ? 'Todavia no recibiste ningun pedido. Aparecen aca cuando tus clientes compran.'
-                : `No hay pedidos con estado "${FILTER_TABS.find((t) => t.value === filter)?.label}".`}
-            </p>
-          </div>
+          ) : (
+            <div className="py-12 px-6 flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-2xl bg-zinc-800/80 flex items-center justify-center mb-5">
+                <ShoppingBag className="w-8 h-8 text-zinc-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-zinc-100 mb-2">
+                Pedidos de tu storefront
+              </h3>
+              <p className="text-sm text-zinc-400 max-w-sm mb-8">
+                Cuando un cliente compra productos en tu storefront, los pedidos aparecen aca. Podes gestionar el estado de cada pedido desde la produccion hasta la entrega.
+              </p>
+
+              {/* Order cycle */}
+              <div className="w-full max-w-md text-left">
+                <h4 className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-3">
+                  Ciclo del pedido
+                </h4>
+                <div className="space-y-0">
+                  {[
+                    { icon: Clock, label: 'Pendiente', desc: 'El cliente realizo el pago', color: 'text-zinc-400', bg: 'bg-zinc-800/60' },
+                    { icon: CheckCircle2, label: 'Confirmado', desc: 'Confirmaste el pedido', color: 'text-blue-400', bg: 'bg-blue-500/10' },
+                    { icon: Factory, label: 'En produccion', desc: 'El producto se esta fabricando', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+                    { icon: Truck, label: 'Enviado', desc: 'El pedido fue despachado', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+                    { icon: Package, label: 'Entregado', desc: 'El cliente recibio su pedido', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                  ].map((step, idx, arr) => {
+                    const StepIcon = step.icon
+                    return (
+                      <div key={step.label} className="flex items-start gap-3">
+                        <div className="flex flex-col items-center">
+                          <div className={`w-8 h-8 rounded-lg ${step.bg} flex items-center justify-center shrink-0`}>
+                            <StepIcon className={`w-4 h-4 ${step.color}`} />
+                          </div>
+                          {idx < arr.length - 1 && (
+                            <div className="w-px h-5 bg-zinc-800 my-1" />
+                          )}
+                        </div>
+                        <div className="pt-1 pb-1 min-w-0">
+                          <span className="text-sm font-medium text-zinc-200">{step.label}</span>
+                          <span className="text-zinc-600 mx-1.5">—</span>
+                          <span className="text-sm text-zinc-500">{step.desc}</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )
         ) : (
           <>
             {/* Desktop table */}

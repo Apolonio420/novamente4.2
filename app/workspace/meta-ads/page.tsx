@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import {
-  Lock,
   ArrowLeft,
   Copy,
   Check,
@@ -21,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { LockedFeature } from '@/components/partners/locked-feature'
 import {
   AD_TEMPLATES,
   generateAdCopy,
@@ -107,18 +107,20 @@ export default function MetaAdsPage() {
   // Non-Pro locked state
   if (!loading && tenant?.plan !== 'pro') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-        <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6">
-          <Lock className="w-8 h-8 text-purple-400" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Meta Ads Templates</h2>
-        <p className="text-zinc-400 max-w-md mb-6">
-          Disponible en plan Pro. Crea anuncios profesionales para Meta con templates
-          predefinidos, copy auto-generado y links con UTM.
-        </p>
-        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-sm px-4 py-1">
-          Disponible en plan Pro
-        </Badge>
+      <div className="max-w-3xl">
+        <LockedFeature
+          title="Meta Ads Templates"
+          description="Crea anuncios profesionales para Facebook e Instagram con plantillas optimizadas. Genera copies, enlaces UTM y materiales listos para publicar."
+          requiredPlan="pro"
+          icon={Megaphone}
+          features={[
+            '6 plantillas de anuncios profesionales',
+            'Generacion automatica de copies publicitarios',
+            'Enlaces UTM para tracking de campanas',
+            'Recomendaciones de presupuesto por industria',
+            'Guia paso a paso para lanzar anuncios',
+          ]}
+        />
       </div>
     )
   }

@@ -407,20 +407,49 @@ export default function LeadsPage() {
           </>
         ) : leads.length === 0 ? (
           /* Empty state */
-          <div className="py-16 px-6 flex flex-col items-center text-center">
-            <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
-              <Inbox className="w-6 h-6 text-zinc-500" />
+          <div className="py-10 px-6 flex flex-col items-center text-center gap-6">
+            {/* Icon + title */}
+            <div className="flex flex-col items-center gap-4">
+              <div className="rounded-2xl bg-violet-500/10 p-5">
+                <Users className="w-10 h-10 text-violet-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-zinc-100 mb-1.5">
+                  Leads de tu storefront
+                </h3>
+                <p className="text-sm text-zinc-400 max-w-sm leading-relaxed">
+                  Los leads son consultas de clientes potenciales que llegan a traves de tu storefront.
+                  Cada vez que alguien completa el formulario de contacto o solicita informacion, aparece aca.
+                </p>
+              </div>
             </div>
-            <h3 className="text-sm font-semibold text-zinc-200 mb-1">
-              Todavia no recibiste leads
-            </h3>
-            <p className="text-xs text-zinc-500 max-w-xs mb-4">
-              Comparti tu storefront para empezar a recibir consultas de clientes potenciales.
-            </p>
-            <div className="flex items-center gap-1.5 text-xs text-violet-400">
-              <Share2 className="w-3.5 h-3.5" />
-              Comparti tu storefront
-              <ExternalLink className="w-3 h-3" />
+
+            {/* Pipeline stages */}
+            <div className="rounded-lg border border-zinc-800 bg-zinc-800/30 p-5 w-full max-w-sm text-left">
+              <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">Pipeline de leads</p>
+              <ul className="space-y-2.5">
+                {[
+                  { status: 'Nuevo', desc: 'Acaba de llegar, sin contactar', color: 'bg-blue-500' },
+                  { status: 'Contactado', desc: 'Ya le respondiste', color: 'bg-yellow-500' },
+                  { status: 'Calificado', desc: 'Es un potencial cliente real', color: 'bg-purple-500' },
+                  { status: 'Convertido', desc: 'Se convirtio en venta', color: 'bg-green-500' },
+                  { status: 'Perdido', desc: 'No se concreto', color: 'bg-red-500' },
+                ].map(({ status, desc, color }) => (
+                  <li key={status} className="flex items-start gap-2.5">
+                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${color}`} />
+                    <div>
+                      <span className="text-xs font-medium text-zinc-200">{status}:</span>{' '}
+                      <span className="text-xs text-zinc-400">{desc}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Tip */}
+            <div className="flex items-center gap-2 text-xs text-zinc-400 bg-zinc-800/40 rounded-lg px-4 py-2.5 border border-zinc-700/60">
+              <Share2 className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+              <span>Comparte el link de tu storefront para empezar a recibir consultas</span>
             </div>
           </div>
         ) : (

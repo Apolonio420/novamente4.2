@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { LockedFeature } from '@/components/partners/locked-feature'
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -94,17 +95,35 @@ export default function AnalyticsPage() {
   // Starter: show locked state
   if (error && plan === 'starter') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-        <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6">
-          <Lock className="w-8 h-8 text-purple-400" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Analytics no disponible</h2>
-        <p className="text-zinc-400 max-w-md mb-6">
-          Actualiza a Growth para ver metricas de tu storefront: visitas, leads, productos populares y mas.
-        </p>
-        <Button className="bg-purple-600 hover:bg-purple-500" onClick={() => window.location.href = '/workspace/billing'}>
-          Actualizar plan
-        </Button>
+      <div className="max-w-4xl mx-auto space-y-6 pt-2">
+        <LockedFeature
+          title="Analytics de tu storefront"
+          description="Accede a metricas detalladas de visitas, leads, conversiones y rendimiento de tu storefront. Toma decisiones basadas en datos reales."
+          requiredPlan="growth"
+          icon={BarChart3}
+          features={[
+            'Visitas totales y unicas por periodo',
+            'Tasa de conversion de visitantes a leads',
+            'Fuentes de trafico (organico, redes, directo)',
+            'Productos mas vistos',
+            'Exportar datos a CSV (plan Pro)',
+          ]}
+        >
+          {/* Demo preview with fake data */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {[
+              { label: 'Visitas', value: '1,247' },
+              { label: 'Visitantes unicos', value: '892' },
+              { label: 'Leads', value: '34' },
+              { label: 'Conversion', value: '3.8%' },
+            ].map((m) => (
+              <div key={m.label} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+                <p className="text-xs text-zinc-500 mb-1">{m.label}</p>
+                <p className="text-2xl font-bold text-zinc-100">{m.value}</p>
+              </div>
+            ))}
+          </div>
+        </LockedFeature>
       </div>
     )
   }

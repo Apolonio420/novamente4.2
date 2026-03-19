@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import {
-  Lock,
   Check,
   ChevronDown,
   ChevronUp,
@@ -18,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { LockedFeature } from '@/components/partners/locked-feature'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -142,18 +142,20 @@ export default function MetaBusinessPage() {
   // Non-Pro locked state
   if (!loading && plan !== 'pro') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-        <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-6">
-          <Lock className="w-8 h-8 text-purple-400" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2">Meta Business Setup</h2>
-        <p className="text-zinc-400 max-w-md mb-6">
-          Disponible en plan Pro. Configura tu Meta Pixel, pagina de Facebook,
-          Instagram Business y catalogo de productos desde un solo lugar.
-        </p>
-        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-sm px-4 py-1">
-          Disponible en plan Pro
-        </Badge>
+      <div className="max-w-3xl">
+        <LockedFeature
+          title="Meta Business Setup"
+          description="Configura tu presencia completa en Meta (Facebook + Instagram). Te guiamos paso a paso para conectar tu negocio con las plataformas de Meta."
+          requiredPlan="pro"
+          icon={Globe}
+          features={[
+            'Instalacion del Meta Pixel para tracking',
+            'Creacion de pagina de Facebook',
+            'Conversion a cuenta de Instagram Business',
+            'Configuracion de Meta Business Suite',
+            'Catalogo de productos en Meta',
+          ]}
+        />
       </div>
     )
   }
