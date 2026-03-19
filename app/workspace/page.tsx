@@ -22,6 +22,9 @@ import {
   PartyPopper,
   Wand2,
   AlertTriangle,
+  Rocket,
+  HelpCircle,
+  X,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -272,8 +275,23 @@ function buildChecklist(data: DashboardData): ChecklistItem[] {
       href: '/workspace/branding',
     },
     {
+      label: 'Agregar banner o imagen hero',
+      done: !!t.banner_url,
+      href: '/workspace/branding',
+    },
+    {
+      label: 'Escribir tagline de tu marca',
+      done: !!t.tagline,
+      href: '/workspace/branding',
+    },
+    {
       label: 'Agregar descripcion de tu marca',
       done: !!t.description,
+      href: '/workspace/branding',
+    },
+    {
+      label: 'Configurar colores de branding',
+      done: !!t.primary_color && t.primary_color !== '#000000',
       href: '/workspace/branding',
     },
     {
@@ -282,9 +300,19 @@ function buildChecklist(data: DashboardData): ChecklistItem[] {
       href: '/workspace/catalog',
     },
     {
-      label: 'Configurar colores de branding',
-      done: !!t.primary_color && t.primary_color !== '#000000',
-      href: '/workspace/branding',
+      label: 'Cargar 3 o mas productos',
+      done: data.products >= 3,
+      href: '/workspace/catalog',
+    },
+    {
+      label: 'Generar tu primer diseno con IA',
+      done: false, // TODO: track from design assets
+      href: '/workspace/design-engine',
+    },
+    {
+      label: 'Elegir industria o categoria',
+      done: !!t.industry,
+      href: '/workspace/settings',
     },
     {
       label: 'Publicar tu storefront',
@@ -494,6 +522,8 @@ export default function WorkspaceDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [checklistOpen, setChecklistOpen] = useState(true)
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false)
+  const [showScoreTooltip, setShowScoreTooltip] = useState(false)
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -590,6 +620,7 @@ export default function WorkspaceDashboard() {
       icon: TrendingUp,
       color: 'text-violet-400',
       iconBg: 'bg-violet-500/10',
+      hasTooltip: true,
     },
   ]
 
@@ -653,6 +684,51 @@ export default function WorkspaceDashboard() {
       </div>
 
       {/* ================================================================= */}
+      {/* WELCOME BANNER (new partners)                                     */}
+      {/* ================================================================= */}
+      {!data.tenant.onboarding_completed && !welcomeDismissed && (
+        <div className="relative rounded-xl border border-violet-500/20 bg-gradient-to-r from-violet-600/10 via-fuchsia-600/5 to-zinc-900/60 p-6 overflow-hidden">
+          <button
+            onClick={() => setWelcomeDismissed(true)}
+            className="absolute top-3 right-3 p-1 rounded-md text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-violet-500/20 flex items-center justify-center shrink-0">
+              <Rocket className="w-6 h-6 text-violet-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-zinc-100 mb-1">
+                Bienvenido a Novamente Partners!
+              </h2>
+              <p className="text-sm text-zinc-400 mb-3 max-w-xl">
+                Tu workspace esta listo. Completa los pasos del checklist para configurar tu marca,
+                agregar productos y publicar tu storefront. Cuantos mas pasos completes, mejor sera
+                tu Storefront Score.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/workspace/branding"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium px-3 py-1.5 transition-colors"
+                >
+                  <Palette className="w-3 h-3" />
+                  Configurar mi marca
+                </Link>
+                <Link
+                  href="/workspace/catalog"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium px-3 py-1.5 transition-colors border border-zinc-700"
+                >
+                  <Plus className="w-3 h-3" />
+                  Agregar productos
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================= */}
       {/* METRIC CARDS                                                      */}
       {/* ================================================================= */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -675,9 +751,29 @@ export default function WorkspaceDashboard() {
                   className="opacity-60 group-hover:opacity-100 transition-opacity"
                 />
               </div>
-              <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider mb-1">
-                {m.label}
-              </p>
+              <div className="flex items-center gap-1.5 mb-1">
+                <p className="text-xs text-zinc-500 font-medium uppercase tracking-wider">
+                  {m.label}
+                </p>
+                {(m as any).hasTooltip && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowScoreTooltip(!showScoreTooltip)}
+                      className="text-zinc-600 hover:text-zinc-400 transition-colors"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5" />
+                    </button>
+                    {showScoreTooltip && m.key === 'score' && (
+                      <div className="absolute left-0 top-full mt-2 w-64 p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 shadow-xl z-50">
+                        <p className="font-medium text-zinc-100 mb-1.5">Que es el Storefront Score?</p>
+                        <p className="text-zinc-400 leading-relaxed">
+                          Es un puntaje que mide que tan completa esta tu storefront. Se calcula en base a: logo, banner, descripcion, colores, productos, tagline e industria. Cuanto mas alto, mas profesional se ve tu tienda.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               <p className="text-2xl lg:text-3xl font-bold text-zinc-100 tracking-tight">
                 {m.value}
               </p>
