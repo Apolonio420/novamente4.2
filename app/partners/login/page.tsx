@@ -46,11 +46,16 @@ function LoginForm() {
         return
       }
 
-      // Set auth token as cookie so middleware can read it
-      // (supabase-js stores in localStorage, but middleware needs cookies)
+      // Set auth cookie server-side so middleware can detect session
       if (authData?.session?.access_token) {
-        const ref = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/\/\/([^.]+)/)?.[1] || 'sb'
-        document.cookie = `sb-${ref}-auth-token=${JSON.stringify([authData.session.access_token, authData.session.refresh_token])}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+        await fetch('/api/auth/set-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_token: authData.session.access_token,
+            refresh_token: authData.session.refresh_token,
+          }),
+        })
       }
 
       window.location.href = redirectTo

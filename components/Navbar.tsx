@@ -55,9 +55,8 @@ export function Navbar() {
   const handleSignOut = async () => {
     if (!supabase) return
     await supabase.auth.signOut()
-    // Clear auth cookie used by middleware
-    const ref = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/\/\/([^.]+)/)?.[1] || 'sb'
-    document.cookie = `sb-${ref}-auth-token=; path=/; max-age=0`
+    // Clear auth cookie server-side
+    await fetch('/api/auth/set-session', { method: 'DELETE' }).catch(() => {})
     window.location.reload()
   }
 

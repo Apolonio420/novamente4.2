@@ -69,12 +69,18 @@ function CallbackHandler() {
     }
 
     async function handleAuthenticatedUser(userId: string) {
-      // Set auth cookie so middleware can read it (supabase-js uses localStorage)
+      // Set auth cookie server-side so middleware can detect session
       try {
         const { data: { session: cookieSession } } = await supabase.auth.getSession()
         if (cookieSession?.access_token) {
-          const ref = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/\/\/([^.]+)/)?.[1] || 'sb'
-          document.cookie = `sb-${ref}-auth-token=${JSON.stringify([cookieSession.access_token, cookieSession.refresh_token])}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+          await fetch('/api/auth/set-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              access_token: cookieSession.access_token,
+              refresh_token: cookieSession.refresh_token,
+            }),
+          })
         }
       } catch {}
 
