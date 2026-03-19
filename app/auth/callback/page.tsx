@@ -69,6 +69,15 @@ function CallbackHandler() {
     }
 
     async function handleAuthenticatedUser(userId: string) {
+      // Set auth cookie so middleware can read it (supabase-js uses localStorage)
+      try {
+        const { data: { session: cookieSession } } = await supabase.auth.getSession()
+        if (cookieSession?.access_token) {
+          const ref = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/\/\/([^.]+)/)?.[1] || 'sb'
+          document.cookie = `sb-${ref}-auth-token=${JSON.stringify([cookieSession.access_token, cookieSession.refresh_token])}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+        }
+      } catch {}
+
       // Check if user has a tenant linked
       try {
         const res = await fetch('/api/partners/me', {

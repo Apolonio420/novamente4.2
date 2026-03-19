@@ -31,7 +31,7 @@ function LoginForm() {
     setLoading(true)
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
@@ -44,6 +44,13 @@ function LoginForm() {
         )
         setLoading(false)
         return
+      }
+
+      // Set auth token as cookie so middleware can read it
+      // (supabase-js stores in localStorage, but middleware needs cookies)
+      if (authData?.session?.access_token) {
+        const ref = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/\/\/([^.]+)/)?.[1] || 'sb'
+        document.cookie = `sb-${ref}-auth-token=${JSON.stringify([authData.session.access_token, authData.session.refresh_token])}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
       }
 
       window.location.href = redirectTo
