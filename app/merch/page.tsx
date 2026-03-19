@@ -29,6 +29,13 @@ export const metadata: Metadata = {
 export default async function MerchPage() {
   const entries = await getDirectoryEntries()
 
+  // Featured partners first, then the rest
+  const sorted = [...entries].sort((a, b) => {
+    if (a.featured && !b.featured) return -1
+    if (!a.featured && b.featured) return 1
+    return 0
+  })
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -42,11 +49,11 @@ export default async function MerchPage() {
 
       {/* Brands Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-        {entries.map((brand) => (
+        {sorted.map((brand) => (
           <Link key={brand.slug} href={`/merch/${brand.slug}`} className="group">
             <div className="border rounded-xl overflow-hidden bg-card hover:shadow-lg transition-all duration-300 group-hover:scale-105">
-              {/* Brand Image */}
-              <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-background to-secondary/30">
+              {/* Brand Image — solid dark bg eliminates transparency checkerboard */}
+              <div className="aspect-square relative overflow-hidden bg-[#1a1a2e]">
                 {brand.cardImage || brand.logo ? (
                   <Image
                     src={brand.cardImage || brand.logo || ""}
