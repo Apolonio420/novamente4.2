@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import {
   CreditCard,
   Crown,
@@ -15,6 +16,8 @@ import {
   X,
   Calendar,
   Clock,
+  Phone,
+  Minus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -325,7 +328,145 @@ export default function BillingPage() {
         </CardContent>
       </Card>
 
-      {/* 2. Subscription Details */}
+      {/* 2. Plan Comparison Table */}
+      <Card className="bg-zinc-900/60 border-zinc-800 overflow-hidden">
+        <CardHeader>
+          <CardTitle className="text-base font-medium text-zinc-100">
+            Comparar planes
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-zinc-800">
+                  <th className="text-left text-xs text-zinc-500 font-medium px-4 py-3 w-1/4">Caracteristica</th>
+                  {(['starter', 'growth', 'pro'] as const).map((p) => {
+                    const isCurrent = billing.plan === p
+                    return (
+                      <th key={p} className={`text-center px-4 py-3 w-1/4 ${isCurrent ? 'bg-violet-500/5' : ''}`}>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className={`text-sm font-semibold ${isCurrent ? 'text-violet-400' : 'text-zinc-200'}`}>
+                            {PLAN_LABELS[p]}
+                          </span>
+                          <span className="text-xs text-zinc-500">
+                            {p === 'starter' ? 'Gratis' : `US$${p === 'growth' ? '25' : '100'}/mes`}
+                          </span>
+                          {isCurrent && (
+                            <Badge className="bg-violet-500/20 text-violet-400 text-[10px] px-2 py-0">Plan actual</Badge>
+                          )}
+                        </div>
+                      </th>
+                    )
+                  })}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/50">
+                {[
+                  { feature: 'Productos', starter: '10', growth: 'Ilimitados', pro: 'Ilimitados' },
+                  { feature: 'Leads / mes', starter: '20', growth: 'Ilimitados', pro: 'Ilimitados' },
+                  { feature: 'Design Engine', starter: 'Presets', growth: 'Presets', pro: 'Completo' },
+                  { feature: 'Branding completo', starter: false, growth: true, pro: true },
+                  { feature: 'SEO + GEO', starter: false, growth: true, pro: true },
+                  { feature: 'Analytics', starter: false, growth: 'Basico', pro: 'Avanzado' },
+                  { feature: 'Chatbot IA', starter: false, growth: false, pro: true },
+                  { feature: 'Meta Ads templates', starter: false, growth: false, pro: true },
+                  { feature: 'Feed export', starter: false, growth: false, pro: true },
+                  { feature: 'Soporte', starter: false, growth: 'Email', pro: 'WhatsApp' },
+                  { feature: 'Onboarding call', starter: false, growth: false, pro: true },
+                  { feature: 'Badge removible', starter: false, growth: true, pro: true },
+                ].map((row) => (
+                  <tr key={row.feature} className="hover:bg-zinc-800/20 transition-colors">
+                    <td className="px-4 py-2.5 text-zinc-300 text-xs font-medium">{row.feature}</td>
+                    {(['starter', 'growth', 'pro'] as const).map((p) => {
+                      const val = row[p]
+                      const isCurrent = billing.plan === p
+                      return (
+                        <td key={p} className={`text-center px-4 py-2.5 ${isCurrent ? 'bg-violet-500/5' : ''}`}>
+                          {val === true ? (
+                            <Check className="w-4 h-4 text-emerald-400 mx-auto" />
+                          ) : val === false ? (
+                            <Minus className="w-4 h-4 text-zinc-700 mx-auto" />
+                          ) : (
+                            <span className="text-xs text-zinc-300">{val}</span>
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 2b. Usage Meters */}
+      <Card className="bg-zinc-900/60 border-zinc-800">
+        <CardHeader>
+          <CardTitle className="text-base font-medium text-zinc-100">
+            Uso de tu plan
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[
+            {
+              label: 'Productos',
+              max: billing.plan === 'starter' ? 10 : null,
+              note: billing.plan === 'starter' ? 'Limite de 10 en Starter' : 'Ilimitados',
+            },
+            {
+              label: 'Leads este mes',
+              max: billing.plan === 'starter' ? 20 : null,
+              note: billing.plan === 'starter' ? 'Limite de 20/mes en Starter' : 'Ilimitados',
+            },
+          ].map((meter) => (
+            <div key={meter.label} className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-zinc-300">{meter.label}</span>
+                <span className="text-xs text-zinc-500">{meter.note}</span>
+              </div>
+              {meter.max ? (
+                <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+                  <div className="h-full rounded-full bg-violet-500 transition-all" style={{ width: '0%' }} />
+                </div>
+              ) : (
+                <div className="h-2 rounded-full bg-emerald-500/20 overflow-hidden">
+                  <div className="h-full rounded-full bg-emerald-500/40 w-full" />
+                </div>
+              )}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* 2c. Onboarding Call CTA */}
+      {billing.plan === 'pro' && (
+        <Card className="bg-zinc-900/60 border-zinc-800">
+          <CardContent className="py-5">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                  <Phone className="w-5 h-5 text-violet-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-zinc-100">Llamada de onboarding incluida</p>
+                  <p className="text-xs text-zinc-500">Agenda una llamada personalizada con nuestro equipo</p>
+                </div>
+              </div>
+              <Link
+                href="/workspace/onboarding-call"
+                className="inline-flex items-center gap-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium px-4 py-2 transition-colors"
+              >
+                <Phone className="w-4 h-4" />
+                Agendar llamada
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 3. Subscription Details */}
       {isPaid && (
         <Card className="bg-zinc-900/60 border-zinc-800">
           <CardHeader>
