@@ -1,12 +1,62 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const response = NextResponse.next()
   const { pathname } = request.nextUrl
 
-  // Skip security headers for API routes and static assets
-  if (pathname.startsWith('/_next/') || pathname.startsWith('/api/')) {
+  // Skip security headers for static assets
+  if (pathname.startsWith('/_next/')) {
+    return response
+  }
+
+  // --- Workspace auth protection ---
+  if (pathname.startsWith('/workspace')) {
+    // Extract token from Supabase auth cookie
+    let token: string | null = null
+    const allCookies = request.cookies.getAll()
+    for (const cookie of allCookies) {
+      if (cookie.name.startsWith('sb-') && cookie.name.endsWith('-auth-token')) {
+        try {
+          const parsed = JSON.parse(cookie.value)
+          token = Array.isArray(parsed) ? parsed[0] : parsed
+        } catch {
+          token = cookie.value
+        }
+        break
+      }
+    }
+
+    if (!token) {
+      // No session — redirect to partner login
+      const loginUrl = new URL('/partners/login', request.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+
+    // Validate token is still valid (lightweight check)
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+      if (supabaseUrl && supabaseServiceKey) {
+        const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        })
+        const { data, error } = await supabase.auth.getUser(token)
+        if (error || !data?.user) {
+          const loginUrl = new URL('/partners/login', request.url)
+          loginUrl.searchParams.set('redirect', pathname)
+          return NextResponse.redirect(loginUrl)
+        }
+      }
+    } catch {
+      // If validation fails, allow through — API routes will handle auth
+    }
+  }
+
+  // Skip remaining headers for API routes
+  if (pathname.startsWith('/api/')) {
     return response
   }
 
@@ -60,7 +110,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all routes except static files and API
+    // Match all routes except static files
     '/((?!_next/static|_next/image|favicon.ico|logo.png|.*\\.png$|.*\\.jpg$|.*\\.svg$|.*\\.ico$).*)',
   ],
 }

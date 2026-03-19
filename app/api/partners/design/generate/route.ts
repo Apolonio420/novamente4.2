@@ -10,6 +10,9 @@ import { getGeminiClient } from '@/lib/gemini'
 import { uploadFile } from '@/lib/cloudflare-r2'
 import { v4 as uuidv4 } from 'uuid'
 import type { Plan } from '@/lib/partners/types'
+import { checkPromptModeration, getGeminiSafetySettings } from '@/lib/partners/studio/moderation'
+import { checkUsageLimit, recordUsage } from '@/lib/partners/studio/usage-tracker'
+import { extractBrandEssence, buildBrandAwarePrompt } from '@/lib/partners/studio/prompt-builder'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -21,7 +24,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
-    const { tenant } = result
+    const { userId, tenant } = result
     const config = await getDesignConfig(tenant.id)
 
     // Validate access
@@ -36,25 +39,67 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { prompt, style, garmentColor, garmentType } = body
+    const { prompt, style, garmentColor, garmentType, sessionId, useBrandEssence } = body
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
       return NextResponse.json({ error: 'El prompt es obligatorio' }, { status: 400 })
     }
 
-    // Build tenant-aware prompt
-    const optimizedPrompt = buildTenantPrompt(config, prompt.trim(), style, garmentColor)
+    // Content moderation
+    const moderation = checkPromptModeration(prompt)
+    if (!moderation.passed) {
+      return NextResponse.json(
+        { error: moderation.reason, moderation: 'blocked' },
+        { status: 400 },
+      )
+    }
+
+    // Usage limit check
+    const { allowed, usage } = await checkUsageLimit(tenant.id, tenant.plan)
+    if (!allowed) {
+      return NextResponse.json(
+        {
+          error: `Alcanzaste el límite de ${usage.limit} generaciones ${usage.resetLabel}. Upgrade tu plan para más.`,
+          usage,
+          moderation: 'usage_exceeded',
+        },
+        { status: 429 },
+      )
+    }
+
+    // Build prompt — optionally with brand essence
+    let optimizedPrompt: string
+    if (useBrandEssence !== false) {
+      const essence = extractBrandEssence(tenant as any, config as any)
+      const brandPrompt = buildBrandAwarePrompt(prompt.trim(), essence, style)
+      optimizedPrompt = buildTenantPrompt(config, brandPrompt, style, garmentColor)
+    } else {
+      optimizedPrompt = buildTenantPrompt(config, prompt.trim(), style, garmentColor)
+    }
 
     console.log(`[design-engine] Generating for tenant ${tenant.slug}:`, optimizedPrompt.substring(0, 100))
 
-    // Call Gemini to generate image
+    // Call Gemini with safety settings
     const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({
       model: process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image-preview',
+      safetySettings: getGeminiSafetySettings() as any,
     })
 
     const geminiResult = await model.generateContent([optimizedPrompt])
     const response = await geminiResult.response
+
+    // Check for safety blocks
+    if (response.promptFeedback?.blockReason) {
+      return NextResponse.json(
+        {
+          error: 'El contenido fue bloqueado por nuestros filtros de seguridad. Probá con otro prompt.',
+          moderation: 'gemini_blocked',
+        },
+        { status: 400 },
+      )
+    }
+
     const candidates = response.candidates || []
 
     let imageBase64: string | null = null
@@ -94,13 +139,18 @@ export async function POST(request: NextRequest) {
         garmentColor: garmentColor || null,
         garmentType: garmentType || null,
         optimizedPrompt: optimizedPrompt.substring(0, 200),
+        sessionId: sessionId || null,
       },
     )
+
+    // Record usage
+    await recordUsage(tenant.id, userId, 'design', sessionId, asset?.id).catch(() => {})
 
     return NextResponse.json({
       imageUrl: uploadResult.url,
       imageBase64: `data:image/png;base64,${imageBase64}`,
       assetId: asset?.id || assetId,
+      usage: { used: usage.used + 1, limit: usage.limit, resetLabel: usage.resetLabel },
     })
   } catch (error: any) {
     console.error('POST /api/partners/design/generate error:', error)

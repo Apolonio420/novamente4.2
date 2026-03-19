@@ -38,7 +38,7 @@ const navItems = [
   { label: 'Catalogo', href: '/workspace/catalog', icon: Package },
   { label: 'Leads', href: '/workspace/leads', icon: Users },
   { label: 'Pedidos', href: '/workspace/orders', icon: ShoppingBag },
-  { label: 'Design Engine', href: '/workspace/design-engine', icon: Sparkles },
+  { label: 'Studio', href: '/workspace/design-engine', icon: Sparkles },
   { label: 'Chatbot', href: '/workspace/chatbot', icon: MessageSquare },
   { label: 'Soporte', href: '/workspace/support', icon: LifeBuoy },
   { label: 'Meta Business', href: '/workspace/meta-business', icon: Globe },

@@ -1741,6 +1741,7 @@ export default function PartnersJoinPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showResume, setShowResume] = useState(false)
+  const [credentials, setCredentials] = useState<{ email: string; password: string | null } | null>(null)
 
   // Check for saved progress on mount
   useEffect(() => {
@@ -1804,9 +1805,13 @@ export default function PartnersJoinPage() {
     try {
       const result = await callOnboardingAPI(payload)
 
-      // Datos basicos (step 1) returns the new tenant — save its id
+      // Datos basicos (step 1) returns the new tenant + credentials
       if (step === 0 && result.tenant?.id) {
         setData((prev) => ({ ...prev, tenantId: result.tenant.id }))
+        // Show credentials if a new account was created
+        if ((result as any).credentials?.password) {
+          setCredentials((result as any).credentials)
+        }
       }
 
       setApiFailCount(0)
@@ -1847,6 +1852,16 @@ export default function PartnersJoinPage() {
           }).catch(() => {}) // Non-blocking — products can be added manually later
         }
         clearWizardProgress()
+        // Auto-login if we have credentials, otherwise redirect to login
+        if (credentials?.password) {
+          try {
+            const { getSupabase } = await import('@/lib/supabase')
+            const sb = getSupabase()
+            if (sb) {
+              await sb.auth.signInWithPassword({ email: credentials.email, password: credentials.password })
+            }
+          } catch {}
+        }
         window.location.href = '/workspace'
       } else {
         // Paid plan — save plan, then redirect to MercadoPago
@@ -2031,6 +2046,40 @@ export default function PartnersJoinPage() {
           .
         </p>
       </main>
+
+      {/* Credentials modal — shown once after account creation */}
+      {credentials?.password && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md p-6 text-center">
+            <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+              <Check className="w-6 h-6 text-green-400" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Cuenta creada</h3>
+            <p className="text-sm text-zinc-400 mb-6">
+              Guardá estas credenciales. Las vas a necesitar para acceder a tu workspace después.
+            </p>
+            <div className="bg-zinc-800 rounded-xl p-4 mb-6 text-left space-y-3">
+              <div>
+                <p className="text-xs text-zinc-500 mb-1">Email</p>
+                <p className="text-sm text-zinc-200 font-mono select-all">{credentials.email}</p>
+              </div>
+              <div>
+                <p className="text-xs text-zinc-500 mb-1">Contraseña</p>
+                <p className="text-sm text-zinc-200 font-mono select-all">{credentials.password}</p>
+              </div>
+            </div>
+            <p className="text-xs text-amber-400/80 mb-4">
+              Esta contraseña se muestra una sola vez. Podés cambiarla después en tu workspace.
+            </p>
+            <Button
+              onClick={() => setCredentials(null)}
+              className="w-full bg-violet-600 hover:bg-violet-500 text-white"
+            >
+              Entendido, continuar
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

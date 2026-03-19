@@ -25,7 +25,7 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     seoIndexable: false,
     geoOptimized: false,
     semReady: false,
-    designEngine: 'disabled',
+    designEngine: 'presets',
     chatbot: false,
     metaBusinessSetup: false,
     metaAdsTemplates: false,
