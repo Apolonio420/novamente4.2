@@ -5,7 +5,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/products/', '/styles/', '/faq/', '/merch/', '/partners/', '/p/'],
+        allow: ['/', '/products/', '/styles/', '/faq/', '/merch/', '/partners/', '/p/',
+                '/nosotros', '/comparar', '/guia-estampado', '/envios',
+                '/terminos', '/privacidad', '/arrepentimiento'],
         disallow: ['/workspace/', '/api/', '/partners/payment/', '/admin/', '/checkout/', '/cart/'],
       },
       // Explicitly allow AI crawlers for GEO

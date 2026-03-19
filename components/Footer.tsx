@@ -5,7 +5,7 @@ export function Footer() {
   return (
     <footer className="border-t border-white/10 bg-novamente-black">
       <div className="container py-12 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
           <div className="md:col-span-2">
             <Link href="/" className="font-bold text-xl tracking-[0.2em] novamente-gradient-text">
               Novamente
@@ -49,6 +49,52 @@ export function Footer() {
                   MARCAS
                 </Link>
               </li>
+              <li>
+                <Link href="/nosotros" className="text-white/60 hover:text-white">
+                  NOSOTROS
+                </Link>
+              </li>
+              <li>
+                <Link href="/guia-estampado" className="text-white/60 hover:text-white">
+                  GUÍA DE ESTAMPADO
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold mb-4 uppercase tracking-wider text-white/80">Legal</h3>
+            <ul className="space-y-3 text-sm">
+              <li>
+                <Link href="/terminos" className="text-white/60 hover:text-white">
+                  Términos y Condiciones
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacidad" className="text-white/60 hover:text-white">
+                  Política de Privacidad
+                </Link>
+              </li>
+              <li>
+                <Link href="/envios" className="text-white/60 hover:text-white">
+                  Envíos y Devoluciones
+                </Link>
+              </li>
+              <li>
+                <Link href="/arrepentimiento" className="text-amber-400 hover:text-amber-300 font-medium">
+                  Botón de Arrepentimiento
+                </Link>
+              </li>
+              <li>
+                <a
+                  href="https://autogestion.produccion.gob.ar/consumidores"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/60 hover:text-white"
+                >
+                  Defensa del Consumidor
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -83,7 +129,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-6 border-t border-white/10 text-center text-sm text-white/40">
-          <p>© {new Date().getFullYear()} Novamente. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} Novamente — CUIT 20-40207637-3. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>
