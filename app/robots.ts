@@ -15,6 +15,16 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/workspace/', '/api/', '/admin/'],
       },
       {
+        userAgent: 'OAI-SearchBot',
+        allow: '/',
+        disallow: ['/workspace/', '/api/', '/admin/'],
+      },
+      {
+        userAgent: 'ChatGPT-User',
+        allow: '/',
+        disallow: ['/workspace/', '/api/', '/admin/'],
+      },
+      {
         userAgent: 'ClaudeBot',
         allow: '/',
         disallow: ['/workspace/', '/api/', '/admin/'],

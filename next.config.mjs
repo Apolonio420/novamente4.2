@@ -120,6 +120,10 @@ const nextConfig = {
         source: '/llms.txt',
         destination: '/api/llms',
       },
+      {
+        source: '/openai-products.jsonl',
+        destination: '/api/openai-feed',
+      },
     ];
   },
   async redirects() {
