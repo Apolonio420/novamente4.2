@@ -7,6 +7,7 @@ export interface PlanFeatures {
   geoOptimized: boolean
   semReady: boolean
   designEngine: DesignEngineMode
+  storefrontDesigner: boolean
   chatbot: boolean
   metaBusinessSetup: boolean
   metaAdsTemplates: boolean
@@ -26,6 +27,7 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     geoOptimized: false,
     semReady: false,
     designEngine: 'presets',
+    storefrontDesigner: false,
     chatbot: false,
     metaBusinessSetup: false,
     metaAdsTemplates: false,
@@ -43,6 +45,7 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     geoOptimized: true,
     semReady: false,
     designEngine: 'presets',
+    storefrontDesigner: true,
     chatbot: false,
     metaBusinessSetup: false,
     metaAdsTemplates: false,
@@ -60,6 +63,7 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     geoOptimized: true,
     semReady: true,
     designEngine: 'full_brand_fit',
+    storefrontDesigner: true,
     chatbot: true,
     metaBusinessSetup: true,
     metaAdsTemplates: true,

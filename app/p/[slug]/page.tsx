@@ -20,6 +20,7 @@ import { PartnerFaqSection } from '@/components/partners/faq-section'
 import ContactForm from './contact-form'
 import ChatWidget from '@/components/partners/chat-widget'
 import { StorefrontTracker } from '@/components/partners/storefront-tracker'
+import { StorefrontDesigner } from '@/components/partners/storefront-designer'
 
 // ---------------------------------------------------------------------------
 // Metadata
@@ -155,6 +156,15 @@ export default async function PartnerStorefrontPage({ params, searchParams }: Pa
       {/* ── Products ──────────────────────────────────────────── */}
       {products.length > 0 && (
         <ProductsGrid tenant={tenant} products={products} />
+      )}
+
+      {/* ── Storefront Designer (Growth+ only) ────────────────── */}
+      {features.storefrontDesigner && (
+        <StorefrontDesigner
+          slug={tenant.slug}
+          primaryColor={tenant.primary_color}
+          ctaPhone={tenant.phone}
+        />
       )}
 
       {/* ── CTA ───────────────────────────────────────────────── */}

@@ -1,11 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
 import {
   Sparkles, Loader2, ImageIcon, Shirt, X, ZoomIn, Send, Plus, Menu, Trash2,
   Download, ArrowUp, Clock, Palette, ChevronDown, Upload as UploadIcon, ExternalLink,
-  Package, ChevronRight, Check,
 } from 'lucide-react'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import type { StudioMessage, StudioSession, UsageInfo } from '@/lib/partners/studio/types'
@@ -51,22 +49,11 @@ const COLOR_LABELS: Record<string, string> = {
 
 const STAMP_INTENT_RE = /estampa|stampe|ponel[oae]?|aplica|aplicalo|mockup|pone[mr]?lo|ubicalo|coloca/i
 
-interface CatalogProduct {
-  id: string
-  name: string
-  images: string[]
-  status: string
-}
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
 export default function DesignStudioPage() {
-  const searchParams = useSearchParams()
-  const productParam = searchParams.get('product')
-  const actionParam = searchParams.get('action')
-
   // Config/access state
   const [loading, setLoading] = useState(true)
   const [plan, setPlan] = useState('')
@@ -92,13 +79,6 @@ export default function DesignStudioPage() {
   const [styleModalOpen, setStyleModalOpen] = useState(false)
   const [useBrandEssence, setUseBrandEssence] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  // Catalog
-  const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([])
-  const [catalogOpen, setCatalogOpen] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState<CatalogProduct | null>(null)
-  const [applyingToProduct, setApplyingToProduct] = useState<string | null>(null) // imageUrl being applied
-  const [applyProductPickerOpen, setApplyProductPickerOpen] = useState(false)
 
   // Usage
   const [usage, setUsage] = useState<UsageInfo | null>(null)
@@ -170,41 +150,6 @@ export default function DesignStudioPage() {
   useEffect(() => {
     fetchUsageStats().then((u) => { if (u) setUsage(u) }).catch(() => {})
   }, [])
-
-  // Fetch catalog products
-  useEffect(() => {
-    async function loadCatalog() {
-      try {
-        const res = await authFetch('/api/partners/catalog')
-        if (res.ok) {
-          const data = await res.json()
-          setCatalogProducts((data.products || []).map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            images: p.images || [],
-            status: p.status,
-          })))
-        }
-      } catch {}
-    }
-    loadCatalog()
-  }, [])
-
-  // Pre-fill prompt from ?product= query param
-  useEffect(() => {
-    if (productParam && !prompt) {
-      if (actionParam === 'mockup') {
-        setPrompt(`Crear un diseño para estampar en "${productParam}"`)
-      } else {
-        setPrompt(`Diseño para "${productParam}"`)
-      }
-      // Try to select matching product
-      const match = catalogProducts.find(p =>
-        p.name.toLowerCase() === productParam.toLowerCase()
-      )
-      if (match) setSelectedProduct(match)
-    }
-  }, [productParam, actionParam, catalogProducts])
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -445,30 +390,6 @@ export default function DesignStudioPage() {
   }
 
   // ---------------------------------------------------------------------------
-  // Apply image to catalog product
-  // ---------------------------------------------------------------------------
-
-  const handleApplyToProduct = async (imageUrl: string, product: CatalogProduct) => {
-    try {
-      const updatedImages = [imageUrl, ...product.images.filter(img => img !== imageUrl)]
-      const res = await authFetch(`/api/partners/catalog/${product.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ images: updatedImages }),
-      })
-      if (!res.ok) throw new Error('Error actualizando producto')
-      // Update local catalog state
-      setCatalogProducts(prev => prev.map(p =>
-        p.id === product.id ? { ...p, images: updatedImages } : p
-      ))
-      setApplyProductPickerOpen(false)
-      setApplyingToProduct(null)
-    } catch (e: any) {
-      setError(e.message)
-    }
-  }
-
-  // ---------------------------------------------------------------------------
   // Key handler for input
   // ---------------------------------------------------------------------------
 
@@ -604,31 +525,6 @@ export default function DesignStudioPage() {
             </div>
           )}
 
-          {/* Selected product badge */}
-          {selectedProduct && (
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-violet-600/20 border border-violet-600/30 text-xs text-violet-300">
-              <Package className="h-3 w-3" />
-              <span className="max-w-[100px] truncate">{selectedProduct.name}</span>
-              <button onClick={() => setSelectedProduct(null)} className="hover:text-white">
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-
-          {/* Catalog toggle */}
-          {catalogProducts.length > 0 && (
-            <button
-              onClick={() => setCatalogOpen(!catalogOpen)}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors ${
-                catalogOpen ? 'bg-violet-600/20 text-violet-300 border border-violet-600/30' : 'bg-zinc-800 text-zinc-500'
-              }`}
-              title="Ver productos del catálogo"
-            >
-              <Package className="h-3 w-3" />
-              Catálogo
-            </button>
-          )}
-
           {/* Brand Essence Toggle */}
           <button
             onClick={() => setUseBrandEssence(!useBrandEssence)}
@@ -649,58 +545,12 @@ export default function DesignStudioPage() {
               <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mb-4">
                 <Sparkles className="h-8 w-8 text-violet-400" />
               </div>
-              <h3 className="text-lg font-semibold text-zinc-300 mb-2">
-                {selectedProduct ? `Diseñar para "${selectedProduct.name}"` : 'Bienvenido al Studio'}
-              </h3>
+              <h3 className="text-lg font-semibold text-zinc-300 mb-2">Bienvenido al Studio</h3>
               <p className="text-zinc-500 text-sm max-w-md">
-                {selectedProduct
-                  ? 'Generá diseños con IA y aplicalos directo a este producto de tu catálogo.'
-                  : 'Generá diseños con IA y aplicalos directo a los productos de tu catálogo. Después podés crear mockups y publicarlos en tu tienda.'
-                }
+                Describí lo que querés diseñar y la IA va a generar estampas únicas para tu marca.
+                Después podés crear mockups sobre las prendas base y publicarlos en tu tienda.
               </p>
-
-              {/* Product context badge */}
-              {selectedProduct && (
-                <div className="flex items-center gap-2 mt-4 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20">
-                  {selectedProduct.images[0] ? (
-                    <img src={selectedProduct.images[0]} alt="" className="w-8 h-8 rounded object-cover" />
-                  ) : (
-                    <Package className="h-5 w-5 text-violet-400" />
-                  )}
-                  <span className="text-sm text-violet-300">{selectedProduct.name}</span>
-                  <button onClick={() => setSelectedProduct(null)} className="p-0.5 rounded hover:bg-zinc-700 text-zinc-400">
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              )}
-
-              {/* Catalog products quick-pick */}
-              {catalogProducts.length > 0 && !selectedProduct && (
-                <div className="mt-6 w-full max-w-md">
-                  <p className="text-xs text-zinc-500 mb-2">Elegí un producto de tu catálogo:</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {catalogProducts.slice(0, 6).map(p => (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          setSelectedProduct(p)
-                          setPrompt(`Diseño para "${p.name}"`)
-                        }}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-700 text-xs text-zinc-400 hover:text-white hover:border-violet-500 transition-colors"
-                      >
-                        {p.images[0] ? (
-                          <img src={p.images[0]} alt="" className="w-4 h-4 rounded object-cover" />
-                        ) : (
-                          <Package className="h-3 w-3" />
-                        )}
-                        {p.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-2 mt-4 justify-center">
+              <div className="flex flex-wrap gap-2 mt-6 justify-center">
                 {['Logo minimalista', 'Ilustracion botanica', 'Diseño cyberpunk', 'Pattern geometrico'].map(ex => (
                   <button
                     key={ex}
@@ -721,10 +571,6 @@ export default function DesignStudioPage() {
                 onMockup={(url) => handleMockup(url)}
                 onDownload={(url) => handleDownload(url)}
                 onPublish={(url) => { setPublishUrl(url); setPublishSlot('hero') }}
-                onApplyToProduct={catalogProducts.length > 0 ? (url) => {
-                  setApplyingToProduct(url)
-                  setApplyProductPickerOpen(true)
-                } : undefined}
               />
             ))
           )}
@@ -900,92 +746,6 @@ export default function DesignStudioPage() {
         </div>
       )}
 
-      {/* ---- Catalog Panel (slide-in from right) ---- */}
-      {catalogOpen && (
-        <>
-          <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setCatalogOpen(false)} />
-          <div className="fixed inset-y-0 right-0 z-40 w-72 bg-zinc-900/95 backdrop-blur border-l border-zinc-800 flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-              <h3 className="font-semibold text-sm text-zinc-300">Tus Productos</h3>
-              <button onClick={() => setCatalogOpen(false)} className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
-              {catalogProducts.length === 0 ? (
-                <p className="text-zinc-500 text-xs text-center py-8">No tenés productos aún</p>
-              ) : (
-                catalogProducts.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => {
-                      setSelectedProduct(p)
-                      setPrompt(`Diseño para "${p.name}"`)
-                      setCatalogOpen(false)
-                    }}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
-                      selectedProduct?.id === p.id ? 'bg-violet-600/20 text-violet-300' : 'hover:bg-zinc-800 text-zinc-400'
-                    }`}
-                  >
-                    {p.images[0] ? (
-                      <img src={p.images[0]} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0" />
-                    ) : (
-                      <div className="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                        <Package className="h-4 w-4 text-zinc-600" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate font-medium">{p.name}</p>
-                      <p className="text-xs text-zinc-500">{p.images.length} imagen{p.images.length !== 1 ? 'es' : ''}</p>
-                    </div>
-                    <ChevronRight className="h-3 w-3 text-zinc-600" />
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* ---- Apply to Product Picker ---- */}
-      {applyProductPickerOpen && applyingToProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-              <h3 className="font-semibold">Aplicar imagen a producto</h3>
-              <button onClick={() => { setApplyProductPickerOpen(false); setApplyingToProduct(null) }} className="p-1 rounded-lg hover:bg-zinc-800">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-4">
-              <img src={applyingToProduct} alt="Preview" className="w-full h-32 object-contain bg-zinc-800 rounded-lg mb-4" />
-              <p className="text-xs text-zinc-500 mb-3">Elegí el producto donde aplicar esta imagen:</p>
-            </div>
-            <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
-              {catalogProducts.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => handleApplyToProduct(applyingToProduct, p)}
-                  className="w-full flex items-center gap-3 p-3 rounded-lg border border-zinc-700 hover:border-violet-500 transition-colors text-left"
-                >
-                  {p.images[0] ? (
-                    <img src={p.images[0]} alt="" className="w-10 h-10 rounded object-cover flex-shrink-0" />
-                  ) : (
-                    <div className="w-10 h-10 rounded bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                      <Package className="h-5 w-5 text-zinc-600" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{p.name}</p>
-                    <p className="text-xs text-zinc-500">{p.images.length} imagen{p.images.length !== 1 ? 'es' : ''}</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-zinc-600" />
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -1000,14 +760,12 @@ function ChatBubble({
   onMockup,
   onDownload,
   onPublish,
-  onApplyToProduct,
 }: {
   msg: StudioMessage
   onZoom: (url: string) => void
   onMockup: (url: string) => void
   onDownload: (url: string) => void
   onPublish: (url: string) => void
-  onApplyToProduct?: (url: string) => void
 }) {
   if (msg.role === 'system') {
     return (
@@ -1093,15 +851,6 @@ function ChatBubble({
               >
                 <ExternalLink className="h-3.5 w-3.5" />
               </button>
-              {onApplyToProduct && (
-                <button
-                  onClick={() => onApplyToProduct(msg.imageUrl!)}
-                  className="p-1.5 rounded-lg bg-emerald-600/80 hover:bg-emerald-500 text-white text-xs"
-                  title="Aplicar a producto"
-                >
-                  <Package className="h-3.5 w-3.5" />
-                </button>
-              )}
             </div>
           </div>
         )}

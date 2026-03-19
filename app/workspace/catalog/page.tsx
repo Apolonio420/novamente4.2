@@ -604,20 +604,12 @@ export default function CatalogPage() {
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-200 delay-75">
                     <Link
-                      href={`/workspace/design-engine?product=${encodeURIComponent(product.name)}`}
+                      href="/workspace/design-engine"
                       onClick={(e) => e.stopPropagation()}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-violet-600/80 hover:bg-violet-500 text-white text-xs font-medium backdrop-blur-sm transition-colors"
                     >
                       <Wand2 className="w-3 h-3" />
                       Disenar con IA
-                    </Link>
-                    <Link
-                      href={`/workspace/design-engine?product=${encodeURIComponent(product.name)}&action=mockup`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-zinc-700/80 hover:bg-zinc-600 text-white text-xs font-medium backdrop-blur-sm transition-colors"
-                    >
-                      <ImageIcon className="w-3 h-3" />
-                      Mockup
                     </Link>
                   </div>
                 </div>
