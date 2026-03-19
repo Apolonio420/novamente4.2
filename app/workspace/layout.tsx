@@ -26,28 +26,70 @@ import {
   Rss,
   Phone,
   CreditCard,
+  Lock,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import { supabase } from '@/lib/supabase'
 
-const navItems = [
-  { label: 'Dashboard', href: '/workspace', icon: LayoutDashboard },
-  { label: 'Analytics', href: '/workspace/analytics', icon: BarChart3 },
-  { label: 'Branding', href: '/workspace/branding', icon: Palette },
-  { label: 'Catalogo', href: '/workspace/catalog', icon: Package },
-  { label: 'Leads', href: '/workspace/leads', icon: Users },
-  { label: 'Pedidos', href: '/workspace/orders', icon: ShoppingBag },
-  { label: 'Studio', href: '/workspace/design-engine', icon: Sparkles },
-  { label: 'Chatbot', href: '/workspace/chatbot', icon: MessageSquare },
-  { label: 'Soporte', href: '/workspace/support', icon: LifeBuoy },
-  { label: 'Meta Business', href: '/workspace/meta-business', icon: Globe },
-  { label: 'Meta Ads', href: '/workspace/meta-ads', icon: Megaphone },
-  { label: 'Feeds', href: '/workspace/feeds', icon: Rss },
-  { label: 'Onboarding Call', href: '/workspace/onboarding-call', icon: Phone },
-  { label: 'Billing', href: '/workspace/billing', icon: CreditCard },
-  { label: 'Configuracion', href: '/workspace/settings', icon: Settings },
+interface NavItem {
+  label: string
+  href: string
+  icon: LucideIcon
+  requiredPlan?: 'growth' | 'pro'
+}
+
+interface NavSection {
+  title: string
+  items: NavItem[]
+}
+
+const navSections: NavSection[] = [
+  {
+    title: 'Tu Marca',
+    items: [
+      { label: 'Dashboard', href: '/workspace', icon: LayoutDashboard },
+      { label: 'Branding', href: '/workspace/branding', icon: Palette },
+      { label: 'Catalogo', href: '/workspace/catalog', icon: Package },
+      { label: 'Studio', href: '/workspace/design-engine', icon: Sparkles },
+    ],
+  },
+  {
+    title: 'Ventas',
+    items: [
+      { label: 'Leads', href: '/workspace/leads', icon: Users },
+      { label: 'Pedidos', href: '/workspace/orders', icon: ShoppingBag },
+      { label: 'Analytics', href: '/workspace/analytics', icon: BarChart3, requiredPlan: 'growth' },
+    ],
+  },
+  {
+    title: 'Comunicacion',
+    items: [
+      { label: 'Chatbot', href: '/workspace/chatbot', icon: MessageSquare, requiredPlan: 'growth' },
+      { label: 'Soporte', href: '/workspace/support', icon: LifeBuoy, requiredPlan: 'growth' },
+    ],
+  },
+  {
+    title: 'Marketing',
+    items: [
+      { label: 'Meta Business', href: '/workspace/meta-business', icon: Globe, requiredPlan: 'pro' },
+      { label: 'Meta Ads', href: '/workspace/meta-ads', icon: Megaphone, requiredPlan: 'pro' },
+      { label: 'Feeds', href: '/workspace/feeds', icon: Rss, requiredPlan: 'pro' },
+    ],
+  },
+  {
+    title: 'Cuenta',
+    items: [
+      { label: 'Billing', href: '/workspace/billing', icon: CreditCard },
+      { label: 'Configuracion', href: '/workspace/settings', icon: Settings },
+      { label: 'Onboarding Call', href: '/workspace/onboarding-call', icon: Phone, requiredPlan: 'pro' },
+    ],
+  },
 ]
+
+// Flat list for page titles
+const allNavItems = navSections.flatMap((s) => s.items)
 
 const pageTitles: Record<string, string> = {
   '/workspace': 'Dashboard',
@@ -166,30 +208,53 @@ export default function WorkspaceLayout({
         )}
       </div>
 
-      {/* Nav links */}
-      <div className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
-          const Icon = item.icon
-          const active = isActive(item.href)
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setSidebarOpen(false)}
-              title={sidebarCollapsed ? item.label : undefined}
-              className={cn(
-                'flex items-center gap-3 rounded-lg text-sm font-medium transition-all',
-                sidebarCollapsed ? 'px-2.5 py-2.5 justify-center' : 'px-3 py-2.5',
-                active
-                  ? 'bg-violet-600/20 text-violet-400'
-                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
-              )}
-            >
-              <Icon className="w-[18px] h-[18px] shrink-0" />
-              {!sidebarCollapsed && item.label}
-            </Link>
-          )
-        })}
+      {/* Nav links grouped by section */}
+      <div className="flex-1 py-2 px-3 overflow-y-auto">
+        {navSections.map((section) => (
+          <div key={section.title} className="mb-1">
+            {!sidebarCollapsed && (
+              <p className="px-3 pt-4 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
+                {section.title}
+              </p>
+            )}
+            {sidebarCollapsed && <div className="h-3" />}
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const Icon = item.icon
+                const active = isActive(item.href)
+                const planOrder = { starter: 0, growth: 1, pro: 2 }
+                const tenantPlanLevel = planOrder[(tenant?.plan as keyof typeof planOrder) || 'starter'] ?? 0
+                const requiredLevel = item.requiredPlan ? planOrder[item.requiredPlan] : 0
+                const isLocked = requiredLevel > tenantPlanLevel
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    title={sidebarCollapsed ? item.label : undefined}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg text-sm font-medium transition-all',
+                      sidebarCollapsed ? 'px-2.5 py-2 justify-center' : 'px-3 py-2',
+                      active
+                        ? 'bg-violet-600/20 text-violet-400'
+                        : isLocked
+                          ? 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/40'
+                          : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
+                    )}
+                  >
+                    <Icon className={cn('w-[18px] h-[18px] shrink-0', isLocked && !active && 'opacity-50')} />
+                    {!sidebarCollapsed && (
+                      <>
+                        <span className="flex-1 truncate">{item.label}</span>
+                        {isLocked && <Lock className="w-3 h-3 text-zinc-600 shrink-0" />}
+                      </>
+                    )}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Storefront link */}
