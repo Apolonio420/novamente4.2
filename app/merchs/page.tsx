@@ -13,6 +13,12 @@ export const metadata: Metadata = {
     description: "Creá tu línea de productos con Novamente y hacé que tu marca llegue a más personas. Sin riesgo, sin stock y con dos formas de generar ingresos.",
     images: ["/novamente-logo.png"],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "B2B Merch — Potenciá tu marca | Novamente",
+    description: "Creá tu línea de productos con Novamente. Sin riesgo, sin stock y con dos formas de generar ingresos.",
+  },
+  alternates: { canonical: "https://www.novamente.ar/merchs" },
 }
 
 export default function MerchsPage() {

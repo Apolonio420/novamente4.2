@@ -115,6 +115,7 @@ const novamenteMundial: Partner = {
             ],
             category: "Hoodies",
             lifestyleImages: [
+                "/partners/novamente-mundial/products/buzo-copa-novamente-mundial1-lifestyle.png",
                 "/partners/novamente-mundial/products/buzo-copa-novamente-mundial1-talles.png",
             ],
             description: "Buzo oversize premium inspirado en la Copa y la previa mundialista.",
@@ -169,6 +170,7 @@ const novamenteMundial: Partner = {
             ],
             category: "Remeras",
             lifestyleImages: [
+                "/partners/novamente-mundial/products/remera-copa-novamente-mundial1-lifestyle.png",
                 "/partners/novamente-mundial/products/remera-copa-novamente-mundial1-talles.png",
             ],
             description: "Remera Copa de la colección Mundial 2026. Algodón premium y estampa de alta definición.",
@@ -223,6 +225,7 @@ const novamenteMundial: Partner = {
             ],
             category: "Remeras",
             lifestyleImages: [
+                "/partners/novamente-mundial/products/remera-sticker-novamente-mundial3-lifestyle.png",
                 "/partners/novamente-mundial/products/remera-sticker-novamente-mundial3-talles.png",
             ],
             description: "Remera Sticker de la colección Mundial 2026. Gráfica de impacto, algodón premium.",
@@ -496,7 +499,9 @@ const falco: Partner = {
                 "XL",
             ],
             category: "Remeras",
-            lifestyleImages: [],
+            lifestyleImages: [
+                "/falco/products/remera-emision-falco-lifestyle.png",
+            ],
             description: "La Remera \"Emisión\" presenta un diseño tipográfico disruptivo con la fórmula matemática de expansión monetaria. Combina estilo callejero con conciencia política, ideal para quienes buscan una estética irónica y provocativa.",
             detailedDescription: "Esta remera oversize lleva estampada la fórmula \"Emisión = iPR + CR - [SP + %ROx(k+i)]\", representando el concepto económico de expansión monetaria con una impronta irónica. El diseño tipográfico central se complementa con el pequeño halcón FALCO en el pecho, creando una prenda que fusiona conciencia económica con identidad patriótica.",
             features: [
@@ -842,6 +847,7 @@ const mindset: Partner = {
             ],
             category: "Hoodies",
             lifestyleImages: [
+                "/partners/mindset/products/buzo-alce-lifestyle.png",
                 "/partners/mindset/products/buzo-alce-talles.png",
             ],
             description: "Buzo Alce de MINDSET. Algodón premium, calce oversize y gráfica de identidad.",
@@ -887,6 +893,7 @@ const mindset: Partner = {
             ],
             category: "Hoodies",
             lifestyleImages: [
+                "/partners/mindset/products/buzo-pan-lifestyle.png",
                 "/partners/mindset/products/buzo-pan-talles.png",
             ],
             description: "Buzo Pan de MINDSET. Tono crema, calce oversize y construcción premium.",
@@ -941,6 +948,7 @@ const mindset: Partner = {
             ],
             category: "Remeras",
             lifestyleImages: [
+                "/partners/mindset/products/remera-oversize-fe-mindset-lifestyle.png",
                 "/partners/mindset/products/remera-oversize-fe-mindset-talles.png",
             ],
             description: "Remera Oversize Fe de MINDSET. Algodón suave, calce amplio y gráfica de convicción.",
@@ -986,6 +994,7 @@ const mindset: Partner = {
             ],
             category: "Remeras",
             lifestyleImages: [
+                "/partners/mindset/products/remera-oversize-pan-mindset-lifestyle.png",
                 "/partners/mindset/products/remera-oversize-pan-mindset-talles.png",
             ],
             description: "Remera Oversize Pan de MINDSET. Blanco limpio, calce amplio y diseño gráfico de identidad.",

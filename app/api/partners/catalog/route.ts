@@ -1,0 +1,73 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getRequestTenant } from '@/lib/partners/auth'
+import { getAllProducts, createProduct, countProducts } from '@/lib/partners/catalog'
+import { canAddProduct } from '@/lib/partners/plans'
+
+export async function GET(request: NextRequest) {
+  try {
+    const result = await getRequestTenant(request)
+    if (!result) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
+    const products = await getAllProducts(result.tenant.id)
+    const count = products.length
+
+    return NextResponse.json({
+      products,
+      count,
+      plan: result.tenant.plan,
+      maxProducts: result.tenant.max_products,
+    })
+  } catch (error) {
+    console.error('GET /api/partners/catalog error:', error)
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const result = await getRequestTenant(request)
+    if (!result) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
+    const { tenant } = result
+    const currentCount = await countProducts(tenant.id)
+
+    if (!canAddProduct(tenant.plan, currentCount)) {
+      return NextResponse.json(
+        {
+          error: `Limite de productos alcanzado para el plan ${tenant.plan}. Actualiza tu plan para agregar mas.`,
+        },
+        { status: 403 },
+      )
+    }
+
+    const body = await request.json()
+
+    if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
+      return NextResponse.json({ error: 'El nombre es obligatorio' }, { status: 400 })
+    }
+
+    const product = await createProduct(tenant.id, {
+      name: body.name.trim(),
+      description: body.description || undefined,
+      category: body.category || undefined,
+      price: body.price != null ? Number(body.price) : undefined,
+      images: Array.isArray(body.images) ? body.images : undefined,
+      tags: Array.isArray(body.tags) ? body.tags : undefined,
+      collection: body.collection || undefined,
+      metadata: body.metadata || undefined,
+    })
+
+    if (!product) {
+      return NextResponse.json({ error: 'No se pudo crear el producto' }, { status: 500 })
+    }
+
+    return NextResponse.json({ product }, { status: 201 })
+  } catch (error) {
+    console.error('POST /api/partners/catalog error:', error)
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 })
+  }
+}

@@ -1,5 +1,7 @@
+export const revalidate = 3600 // ISR: revalidate every hour
+
 import Link from "next/link"
-export const metadata = { title: "Productos | Novamente" }
+import type { Metadata } from "next"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -8,8 +10,77 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/
 import { Palette, Sparkles, ZoomIn } from "lucide-react"
 import { PRODUCTS } from "@/lib/products"
 
+export const metadata: Metadata = {
+  title: "Catálogo de Productos — Remeras, Hoodies y Buzos personalizados",
+  description:
+    "Explorá el catálogo completo de Novamente: hoodies oversize desde $55.000, remeras desde $28.600, buzos crewneck, musculosas y lienzos. Algodón 100% premium con estampado DTG. Todos personalizables con diseño de IA.",
+  openGraph: {
+    title: "Productos Novamente — Ropa personalizada con IA",
+    description: "Hoodies, remeras, buzos y más. Algodón 100% premium con estampado DTG personalizado con inteligencia artificial.",
+    url: "https://www.novamente.ar/products",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Productos Novamente — Ropa personalizada con IA",
+    description: "Hoodies, remeras, buzos y más. Algodón 100% premium con estampado DTG personalizado.",
+  },
+  alternates: { canonical: "https://www.novamente.ar/products" },
+}
+
+// Generate Product schema for each product
+function generateProductsJsonLd() {
+  const baseUrl = "https://www.novamente.ar"
+  return PRODUCTS.filter(p => p.available).map((product) => {
+    const numericPrice = parseInt(product.price.replace(/[$.]/g, ""), 10)
+    return {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: product.name,
+      description: product.description,
+      image: `${baseUrl}${product.images.main}`,
+      brand: {
+        "@type": "Brand",
+        name: "Novamente",
+      },
+      category: product.category,
+      color: product.color,
+      material: "Algodón 100%",
+      offers: {
+        "@type": "Offer",
+        url: `${baseUrl}/products#${product.id}`,
+        priceCurrency: "ARS",
+        price: numericPrice,
+        availability: "https://schema.org/InStock",
+        seller: { "@id": "https://www.novamente.ar/#organization" },
+        shippingDetails: {
+          "@type": "OfferShippingDetails",
+          shippingDestination: {
+            "@type": "DefinedRegion",
+            addressCountry: "AR",
+          },
+          shippingRate: {
+            "@type": "MonetaryAmount",
+            currency: "ARS",
+            value: "5500",
+          },
+        },
+      },
+    }
+  })
+}
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Inicio", item: "https://www.novamente.ar/" },
+    { "@type": "ListItem", position: 2, name: "Productos", item: "https://www.novamente.ar/products" },
+  ],
+}
+
 export default function ProductsPage() {
   const products = PRODUCTS
+  const productsJsonLd = generateProductsJsonLd()
 
 
   // Agrupar productos por categoría
@@ -22,6 +93,15 @@ export default function ProductsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productsJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+
       <div className="text-center mb-12">
         <h1 className="novamente-heading text-4xl md:text-5xl mb-4">CATÁLOGO DE PRODUCTOS</h1>
         <p className="text-muted-foreground max-w-3xl mx-auto text-lg">
@@ -53,19 +133,19 @@ export default function ProductsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {group.items.map((product, index) => (
-                <div key={product.id} className="group">
+                <article key={product.id} className="group" aria-label={product.name}>
                   <div className="border rounded-xl overflow-hidden bg-card hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                     {/* Imagen principal clickeable - va a #generator-section */}
                     <Link href="/#generator-section" className="block" data-cta="products-page-image-click">
                       <div className="aspect-square relative overflow-hidden cursor-pointer">
                         <Image
                           src={product.images.main || "/placeholder.svg"}
-                          alt={product.name}
+                          alt={`${product.name} — prenda personalizable de Novamente`}
                           fill
                           priority={index < 3}
                           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           quality={80}
-                          unoptimized
+
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
 
@@ -101,7 +181,7 @@ export default function ProductsPage() {
 
                     <div className="p-6 flex flex-col flex-1">
                       <div className="flex items-start justify-between mb-3">
-                        <h2 className="text-xl font-semibold leading-tight">{product.name}</h2>
+                        <h3 className="text-xl font-semibold leading-tight">{product.name}</h3>
                         <span className="text-2xl font-bold text-primary ml-4 whitespace-nowrap">{product.price}</span>
                       </div>
 
@@ -140,7 +220,7 @@ export default function ProductsPage() {
                                       fill
                                       sizes="150px"
                                       quality={70}
-                                      unoptimized
+            
                                       className="object-cover"
                                     />
                                   </div>
@@ -160,7 +240,7 @@ export default function ProductsPage() {
                                       fill
                                       sizes="300px"
                                       quality={85}
-                                      unoptimized
+            
                                       className="object-contain p-2"
                                     />
                                     <div className="absolute inset-0 bg-black/0 group-hover/zoom:bg-black/10 transition-colors duration-300 flex items-center justify-center">
@@ -176,7 +256,7 @@ export default function ProductsPage() {
                                       alt={`Medidas ${product.name}`}
                                       fill
                                       quality={100}
-                                      unoptimized
+            
                                       className="object-contain p-4"
                                     />
                                   </div>
@@ -204,7 +284,7 @@ export default function ProductsPage() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           </div>

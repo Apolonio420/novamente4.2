@@ -143,3 +143,90 @@ ${application.message || 'Sin mensaje adicional.'}
 
     return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
 }
+
+/**
+ * Notifies a new partner subscription payment
+ */
+export async function notifyPartnerSubscription(subscription: {
+    tenantName: string;
+    plan: string;
+    priceUsd: number;
+    priceArs: number;
+    billingCycle: string;
+    tenantEmail: string;
+    tenantSlug: string;
+}) {
+    const message = `
+🎉 <b>¡NUEVA SUSCRIPCIÓN PARTNER!</b> 🎉
+
+<b>Marca:</b> ${subscription.tenantName}
+<b>Plan:</b> ${subscription.plan.toUpperCase()}
+<b>Ciclo:</b> ${subscription.billingCycle === 'annual' ? 'Anual (-15%)' : 'Mensual'}
+<b>Precio:</b> US$${subscription.priceUsd} (ARS $${subscription.priceArs.toLocaleString('es-AR')})
+<b>Email:</b> ${subscription.tenantEmail}
+<b>Storefront:</b> novamente.ar/p/${subscription.tenantSlug}
+
+💰 <i>¡Nuevo ingreso recurrente!</i>
+  `.trim();
+
+    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
+}
+
+/**
+ * Notifies a partner subscription expiring soon
+ */
+export async function notifySubscriptionExpiring(tenant: { name: string; plan: string; expiresAt: string }) {
+    const message = `
+⚠️ <b>SUSCRIPCIÓN POR VENCER</b>
+
+<b>Partner:</b> ${tenant.name}
+<b>Plan:</b> ${tenant.plan.toUpperCase()}
+<b>Vence:</b> ${new Date(tenant.expiresAt).toLocaleDateString('es-AR')}
+
+📌 <i>Contactar al partner para renovación.</i>
+  `.trim();
+    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
+}
+
+/**
+ * Notifies a partner has been suspended for non-payment
+ */
+export async function notifySubscriptionSuspended(tenant: { name: string; plan: string; email: string }) {
+    const message = `
+🔴 <b>PARTNER SUSPENDIDO</b>
+
+<b>Partner:</b> ${tenant.name}
+<b>Plan:</b> ${tenant.plan.toUpperCase()}
+<b>Email:</b> ${tenant.email}
+<b>Motivo:</b> 3+ pagos fallidos
+
+⛔ <i>Storefront desactivado. Contactar para resolver.</i>
+  `.trim();
+    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
+}
+
+/**
+ * Notifies a new lead from a partner storefront
+ */
+export async function notifyNewLead(lead: {
+    tenantName: string;
+    tenantSlug: string;
+    leadName: string;
+    leadEmail: string;
+    leadPhone?: string;
+    message?: string;
+}) {
+    const msg = `
+📩 <b>NUEVO LEAD</b>
+
+<b>Partner:</b> ${lead.tenantName}
+<b>Nombre:</b> ${lead.leadName}
+<b>Email:</b> ${lead.leadEmail}
+<b>Teléfono:</b> ${lead.leadPhone || 'No indicado'}
+${lead.message ? `<b>Mensaje:</b> ${lead.message}` : ''}
+
+🔗 <a href="https://www.novamente.ar/p/${lead.tenantSlug}">Ver storefront</a>
+  `.trim();
+
+    return sendToTelegram(SALES_CHAT_ID, msg, SALES_BOT_TOKEN);
+}

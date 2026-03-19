@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import NextImage from "next/image"
 import { MockupCanvas } from "@/components/MockupCanvas"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
@@ -260,7 +261,7 @@ export function MockupViewer({
                             className="bg-zinc-900 p-2 rounded-[2rem] border border-zinc-800 shadow-2xl max-w-4xl w-full relative overflow-hidden"
                         >
                             <div className="aspect-square relative rounded-[1.8rem] overflow-hidden bg-zinc-950">
-                                <img src={mockupResult} alt="Mockup Final" className="w-full h-full object-contain" />
+                                <NextImage src={mockupResult} alt="Mockup Final" fill className="object-contain" unoptimized />
 
                                 <div className="absolute top-6 right-6 flex gap-3">
                                     <Button

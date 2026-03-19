@@ -110,7 +110,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
 
   // Debug: Monitorear cambios en backDesign
   useEffect(() => {
-    console.log('🔍 DEBUG: backDesign state updated to:', backDesign)
   }, [backDesign])
 
   const [isAddingToCart, setIsAddingToCart] = useState(false)
@@ -198,21 +197,10 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   // Debug: Log para shouldShowGarmentOptions
   const showGarmentOptions = shouldShowGarmentOptions()
   const currentSection = getCurrentSection()
-  console.log('🔍 DEBUG shouldShowGarmentOptions:', {
-    selectedGarment,
-    currentStep,
-    currentSection,
-    editingStep,
-    showGarmentOptions,
-    selectedSide,
-    firstStampConfirmed,
-    wantsDoubleStamping
-  })
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null)
 
   // Debug: Monitorear cambios en currentStep
   useEffect(() => {
-    console.log('🔍 DEBUG: currentStep changed to:', currentStep)
   }, [currentStep])
 
   // Scroll automático al preview cuando se pasa del Paso 2 al Paso 3
@@ -258,13 +246,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       widthPct: (width * scaleX / nat.w) * 100,
       heightPct: (height * scaleY / nat.h) * 100,
     }
-    console.log("[DesignCustomizer] FramePct calculation:", {
-      coordinates: { x, y, width, height },
-      baseDimensions: { baseWidth, baseHeight },
-      nat: { w: nat.w, h: nat.h },
-      scale: { scaleX, scaleY },
-      result
-    })
     return result
   }, [mapping, nat])
 
@@ -334,13 +315,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         // Forzar lado opuesto y pestaña correcta, y mostrar vista original para placeholder
         if (firstStampSide) {
           const targetSide = firstStampSide === 'front' ? 'back' : 'front'
-          console.log('🔍 DEBUG step3.5 navigation:', {
-            firstStampSide,
-            targetSide,
-            currentActiveTab: activeTab,
-            currentBackDesign: backDesign,
-            currentFrontDesign: frontDesign
-          })
           setSelectedSide(targetSide)
           handleTabChange(targetSide)
           setCurrentViewIndex(0)
@@ -377,7 +351,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
     if (initialImageUrl) {
       // Para imágenes procesadas (con fondo removido), usar directamente la URL
       // Para imágenes de DALL-E, usar el proxy
-      console.log('🎯 DesignCustomizer mount - initialImageUrl:', initialImageUrl)
 
       let processedUrl = toPublicR2Url(initialImageUrl) || initialImageUrl
 
@@ -394,7 +367,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         }
       } catch { }
 
-      console.log('🧩 DesignCustomizer applying URL to state:', { processedUrl, normalizedUrl })
 
       setFrontDesign(normalizedUrl)
       setOriginalImageUrl(normalizedUrl)
@@ -471,14 +443,11 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   }
 
   const handleSelectionClick = (selection: { type: string; value: string; label: string }) => {
-    console.log('🔍 DEBUG handleSelectionClick:', selection)
-    console.log('🔍 DEBUG currentStep antes:', currentStep)
 
     // Siempre volver al paso 2 (configuración completa) cuando se edita cualquier selección
     setCurrentStep('step2')
     setEditingStep(selection.type)
 
-    console.log('✅ Cambiando a paso: step2 (configuración completa)')
 
     // Asegurar que el lado correcto esté seleccionado para estampados
     if (selection.type === 'stamp') {
@@ -515,9 +484,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       const section = document.querySelector(`[data-section="${targetSection}"]`)
       if (section) {
         section.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        console.log(`✅ Haciendo scroll hacia ${targetSection}`)
       } else {
-        console.log(`❌ No se encontró la sección ${targetSection}`)
       }
     }, 100)
 
@@ -716,7 +683,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         }
 
         const frontData = await frontResponse.json()
-        console.log('Estampado frontal generado:', frontData)
         setStampedImageUrl(frontData.publicUrl)
       }
 
@@ -745,7 +711,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         }
 
         const backData = await backResponse.json()
-        console.log('Estampado trasero generado:', backData)
         // Aquí podrías manejar el estampado trasero por separado si es necesario
       }
 
@@ -797,7 +762,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       }
 
       const data = await response.json()
-      console.log('Mockup generado:', data)
       return data.publicUrl
     } catch (error) {
       console.error("Error generating mockup:", error)
@@ -834,7 +798,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         backDesign: backDesign || undefined,
       }
 
-      console.log("🛒 Adding to cart:", cartItem)
 
       addItem(cartItem)
 
@@ -898,41 +861,21 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
 
   // Función para manejar el cambio de tab
   const handleTabChange = (newTab: 'front' | 'back') => {
-    console.log('🔍 DEBUG handleTabChange:', {
-      newTab,
-      currentActiveTab: activeTab,
-      isDoubleStamping,
-      backDesign,
-      currentViewIndex
-    })
 
     setActiveTab(newTab)
 
     // Si cambiamos al tab back en modo doble estampado y no hay backDesign, resetear la vista
     if (isDoubleStamping && newTab === 'back' && !backDesign) {
-      console.log('✅ Reseteando currentViewIndex a 0 para mostrar placeholder')
       setCurrentViewIndex(0) // Volver a la vista original (placeholder)
     }
   }
 
   // Función para manejar la selección de imágenes del historial
   const handleHistoryImageSelect = (imageUrl: string, selectedId?: string) => {
-    console.log('🔍 DEBUG handleHistoryImageSelect:', {
-      imageUrl,
-      selectedId,
-      isDoubleStamping,
-      activeTab,
-      backDesign,
-      frontDesign,
-      firstStampSide,
-      condition1: isDoubleStamping && activeTab === 'back' && !backDesign,
-      condition2: isDoubleStamping && activeTab === 'front' && !frontDesign && firstStampSide === 'back'
-    })
 
     // Si estamos en doble estampado y estamos en el lado del segundo estampado sin diseño
     if (isDoubleStamping && activeTab === 'back' && !backDesign) {
       // Segundo estampado trasero: reemplazar placeholder por la imagen elegida
-      console.log('✅ Asignando imagen al segundo estampado (backDesign) y limpiando mockups previos del back')
       setBackDesign(imageUrl)
       // Asegurar que el carrusel muestre primero la imagen nueva (vista original)
       setCurrentViewIndex(0)
@@ -944,7 +887,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       })
     } else if (isDoubleStamping && activeTab === 'front' && !frontDesign && firstStampSide === 'back') {
       // Segundo estampado frontal (cuando vienes desde back): reemplazar placeholder por la imagen elegida
-      console.log('✅ Asignando imagen al segundo estampado (frontDesign) y limpiando mockups previos del front')
       setFrontDesign(imageUrl)
       // Asegurar que el carrusel muestre primero la imagen nueva (vista original)
       setCurrentViewIndex(0)
@@ -956,11 +898,9 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       })
     } else if (onImageSelect) {
       // Si hay callback del componente padre, usarlo
-      console.log('✅ Usando callback del componente padre')
       onImageSelect(imageUrl, selectedId)
     } else {
       // Comportamiento por defecto
-      console.log('✅ Comportamiento por defecto - asignando a frontDesign')
       setFrontDesign(imageUrl)
       setOriginalImageUrl(imageUrl)
       toast({
@@ -1029,7 +969,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   }
 
   const handleDoubleStampingChoice = (wantsDouble: boolean) => {
-    console.log('🎯 handleDoubleStampingChoice:', { wantsDouble, firstStampSide, selectedGarment })
     // Para lienzo, no permitir doble estampado
     if (selectedGarment === 'lienzo') {
       setWantsDoubleStamping(false)
@@ -1045,7 +984,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
     if (wantsDouble) {
       // Configurar segundo estampado en lado opuesto
       const targetSide = firstStampSide === 'front' ? 'back' : 'front'
-      console.log('🎯 Configurando doble estampado:', { targetSide, firstStampSide })
       setSelectedSide(targetSide)
       handleTabChange(targetSide)
       setStampingMode('both')
@@ -1060,7 +998,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         setFrontDesign(null)
       }
 
-      console.log('✅ Estados actualizados para doble estampado')
       // Paso 3.5: configuración del segundo estampado
       setCurrentStep('step3.5')
       setCompletedSteps((prev) => ({ ...prev, step3: true }))
@@ -1127,13 +1064,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       clearCart()
       addItem(directPurchaseItem)
 
-      console.log("🛒 Compra directa - Carrito limpiado y item agregado:", {
-        ...directPurchaseItem,
-        frontMockup: directPurchaseItem.frontMockup,
-        backMockup: directPurchaseItem.backMockup,
-        image: directPurchaseItem.image,
-        mockupUrl: directPurchaseItem.mockupUrl
-      })
 
       setCompletedSteps((prev) => ({ ...prev, step4: true }))
       serverLog('stepCompleted', {
@@ -1183,7 +1113,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
 
     // Si el usuario ya generó todos los mockups necesarios manualmente, usarlos
     if (!needsFront && !needsBack) {
-      console.log("🛒 ensureMockupReady: Usuario ya generó todos los mockups necesarios manualmente")
       return {
         front: userGeneratedFront ? mockupImages.front : undefined,
         back: userGeneratedBack ? mockupImages.back : undefined,
@@ -1191,12 +1120,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
     }
 
     // Si faltan mockups, generarlos automáticamente SOLO para los lados que el usuario configuró
-    console.log("🛒 ensureMockupReady: Generando mockups automáticamente para lados configurados:", {
-      needsFront,
-      needsBack,
-      userConfiguredFront,
-      userConfiguredBack
-    })
 
     try {
       const mockups = await generateFinalMockups()
@@ -1258,12 +1181,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         isGeneratingMockups: false, // Ya está generado, no mostrar loading
       }
 
-      console.log("🛒 Item agregado al carrito:", {
-        frontMockup: item.frontMockup,
-        backMockup: item.backMockup,
-        image: item.image,
-        mockupUrl: item.mockupUrl
-      })
 
       // Agregar al carrito
       addItem(item)
@@ -1295,16 +1212,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       back: generatedMockups.back,
     }
 
-    console.log("🛒 generateFinalMockups - Estado actual:", {
-      frontDesign: Boolean(frontDesign),
-      frontStampSize,
-      backDesign: Boolean(backDesign),
-      backStampSize,
-      selectedGarment,
-      selectedColor,
-      hasExistingFront: Boolean(mockupImages.front),
-      hasExistingBack: Boolean(mockupImages.back)
-    })
 
     // Generar mockup frontal solo si:
     // 1. El usuario configuró un estampado frontal (tiene frontStampSize)
@@ -1314,7 +1221,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
     const frontDesignImage = frontDesign || initialImageUrl
     if (frontDesignImage && frontStampSize && !mockups.front && !mockupImages.front && selectedGarment && selectedGarment !== 'lienzo') {
       try {
-        console.log("🛒 Generando mockup frontal...")
         const frontMockup = await generateStampWithParams(
           frontDesignImage,
           selectedGarment,
@@ -1324,11 +1230,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
           frontStampPosition || 'center' // Valor por defecto si no está configurado
         )
         mockups.front = frontMockup
-        console.log("🛒 Mockup frontal generado y asignado:", {
-          frontMockup,
-          mockupsFront: mockups.front,
-          mockupsObject: mockups
-        })
       } catch (error) {
         console.error("Error generando mockup frontal:", error)
         throw error // Propagar el error para que ensureMockupReady lo maneje
@@ -1343,7 +1244,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
     const backDesignImage = backDesign || frontDesign || initialImageUrl
     if (backDesignImage && backStampSize && !mockups.back && !mockupImages.back && selectedGarment && selectedGarment !== 'lienzo') {
       try {
-        console.log("🛒 Generando mockup trasero...")
         const backMockup = await generateStampWithParams(
           backDesignImage,
           selectedGarment,
@@ -1353,18 +1253,12 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
           backStampPosition || 'center' // Valor por defecto si no está configurado
         )
         mockups.back = backMockup
-        console.log("🛒 Mockup trasero generado y asignado:", {
-          backMockup,
-          mockupsBack: mockups.back,
-          mockupsObject: mockups
-        })
       } catch (error) {
         console.error("Error generando mockup trasero:", error)
         // No propagar error para el back, solo para el front
       }
     }
 
-    console.log("🛒 Mockups finales:", mockups)
     return mockups
   }
 
@@ -1433,14 +1327,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
     const currentView = views[safeIndex]
 
     // DEBUG: Log para entender qué está pasando
-    console.log('🔍 DEBUG getCurrentViewImage:', {
-      isDoubleStamping,
-      activeTab,
-      backDesign,
-      currentView,
-      currentViewIndex,
-      views
-    })
 
     // Si estamos en modo doble estampado y no hay diseño para el lado activo, mostrar placeholder
     // Si vienes desde 'front' y agregas 'back' → activeTab === 'back' && !backDesign
@@ -1449,7 +1335,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       (activeTab === 'back' && !backDesign) ||
       (activeTab === 'front' && !frontDesign && firstStampSide === 'back')
     )) {
-      console.log('✅ Mostrando placeholder del segundo estampado')
       return 'placeholder-second-stamp'
     }
 
@@ -1463,7 +1348,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
           } else if (activeTab === 'back' && backDesign) {
             imageUrl = backDesign
           } else if ((activeTab === 'back' && !backDesign) || (activeTab === 'front' && !frontDesign && firstStampSide === 'back')) {
-            console.log('✅ Mostrando placeholder del segundo estampado (case original)')
             return 'placeholder-second-stamp'
           }
         } else {
@@ -1575,9 +1459,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
 
       if (response.ok) {
         const data = await response.json()
-        console.log("🛒 generateStampWithParams response:", data)
         const publicUrl = data.publicUrl
-        console.log("🛒 generateStampWithParams returning:", publicUrl)
         return publicUrl
       }
 
@@ -1587,11 +1469,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         const j = await response.json()
         backendMessage = j?.error || j?.message || ''
       } catch { }
-      console.warn('⚠️ /api/generate-stamp falló, intentando fallback a /api/generate-mockup', {
-        status: response.status,
-        statusText: response.statusText,
-        backendMessage,
-      })
 
       // Fallback: generador de mockup por composición (sin Gemini)
       const fallbackRes = await fetch('/api/generate-mockup', {
@@ -1619,7 +1496,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
 
       const fbData = await fallbackRes.json()
       const fbUrl = fbData.publicUrl || fbData.url
-      console.log('🛒 Fallback /api/generate-mockup OK →', fbUrl)
       return fbUrl
     } catch (error) {
       console.error('Error generando mockup:', error)
@@ -1628,10 +1504,8 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   }
 
   const generateMockup = async () => {
-    console.log('🚀 Generando mockup...')
 
     if (!getCurrentDesign() || !selectedGarment || !selectedColor || !selectedSize) {
-      console.log('❌ Faltan selecciones básicas')
       toast({
         title: "Error",
         description: "Selecciona una prenda, color y talle para generar el mockup",
@@ -1878,18 +1752,8 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                             (activeTab === 'front' && firstStampSide === 'back' && !frontDesign)
                           )
 
-                          console.log('🔍 DEBUG placeholder logic (render):', {
-                            isDoubleStamping,
-                            activeTab,
-                            backDesign,
-                            frontDesign,
-                            firstStampSide,
-                            shouldShowPlaceholder,
-                            timestamp: new Date().toISOString()
-                          })
 
                           if (shouldShowPlaceholder) {
-                            console.log('🎨 Mostrando placeholder del segundo estampado')
                             return (
                               <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg">
                                 <div className="text-center p-8">
@@ -1908,7 +1772,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                                     {/* Botón para ir al generador */}
                                     <Button
                                       onClick={() => {
-                                        console.log('🎯 Botón "Generar Nueva Imagen" clickeado')
                                         // Scroll hacia el generador de imágenes
                                         const generatorSection = document.querySelector('[data-section="image-generator"]')
                                         if (generatorSection) {
@@ -1942,7 +1805,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
 
                           // Imagen normal
                           const currentImage = getCurrentViewImage()
-                          console.log('🖼️ Render currentImage:', currentImage)
                           return (
                             <img
                               src={currentImage || "/placeholder.svg"}
@@ -2103,14 +1965,6 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                       }
                       // Para otras prendas, requerir selectedSide
                       const shouldShowStampSelector = selectedSide && (currentStep === 'step2' || currentStep === 'step3.5')
-                      console.log('🔍 DEBUG StampSizeSelector condition:', {
-                        selectedSide,
-                        currentStep,
-                        firstStampConfirmed,
-                        wantsDoubleStamping,
-                        shouldShowStampSelector,
-                        selectedGarment
-                      })
                       return shouldShowStampSelector
                     })() && (
                         <div className={`mt-6 transition-all duration-500 ${highlightedSection === 'stamp-size-selection' ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50/10 rounded-lg p-3' : ''}`} data-section="stamp-size-selection">

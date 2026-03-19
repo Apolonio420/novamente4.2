@@ -35,13 +35,18 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/merchs" className="text-white/60 hover:text-white">
+                <Link href="/faq" className="text-white/60 hover:text-white">
+                  PREGUNTAS FRECUENTES
+                </Link>
+              </li>
+              <li>
+                <Link href="/partners" className="text-white/60 hover:text-white">
                   QUIERO SER PARTNER
                 </Link>
               </li>
               <li>
                 <Link href="/merch" className="text-white/60 hover:text-white">
-                  PARTNERS
+                  MARCAS
                 </Link>
               </li>
             </ul>

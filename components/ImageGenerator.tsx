@@ -183,16 +183,11 @@ export function ImageGenerator({
     try {
       // Construir el prompt final con el estilo aplicado
       const finalPrompt = buildPrompt(prompt, selectedStyle)
-      console.log("🎨 Generating image with prompt:", finalPrompt)
-      if (selectedStyle) {
-        console.log("🎨 Style applied:", selectedStyle)
-      }
 
       // Usar el prompt con estilo aplicado
       setOptimizedPrompt(finalPrompt)
       setIsOptimizing(false)
 
-      console.log("📡 Making request to /api/generate-image...")
       const response = await fetch("/api/generate-image", {
         method: "POST",
         headers: {
@@ -206,7 +201,6 @@ export function ImageGenerator({
         }),
       })
 
-      console.log("📊 Response status:", response.status, response.statusText)
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -223,10 +217,8 @@ export function ImageGenerator({
       }
 
       const data = await response.json()
-      console.log("📦 Full response data:", JSON.stringify(data, null, 2))
 
       const first = data?.images?.[0]
-      console.log("🖼️ First image data:", JSON.stringify(first, null, 2))
 
       if (!first) {
         console.error("❌ No images in response")
@@ -235,7 +227,6 @@ export function ImageGenerator({
 
       // Usar base64 si está disponible, sino URL
       const imageUrl = first.data ? `data:image/png;base64,${first.data}` : first.url
-      console.log("✅ Image URL/base64 set:", imageUrl ? "OK" : "MISSING")
 
       setGeneratedImage(imageUrl)
 
@@ -246,7 +237,6 @@ export function ImageGenerator({
       // Procesar la imagen inmediatamente para convertirla a URL de R2
       if (first.data) {
         try {
-          console.log("🔄 Processing image to R2...")
 
           // Obtener el token de autenticación de Supabase si hay sesión activa
           let authToken: string | null = null
@@ -254,10 +244,8 @@ export function ImageGenerator({
             const { data: { session } } = await supabase.auth.getSession()
             if (session?.access_token) {
               authToken = session.access_token
-              console.log("✅ Auth token obtained for process-design")
             }
           } catch (authError) {
-            console.warn("⚠️ Could not get auth token for process-design:", authError)
           }
 
           const processHeaders: HeadersInit = {
@@ -279,7 +267,6 @@ export function ImageGenerator({
 
           if (processResponse.ok) {
             const processResult = await processResponse.json()
-            console.log("✅ Image processed and saved to R2:", processResult.success)
 
             // El endpoint ahora devuelve { success: true, image: {...}, debugId }
             const resultImageId = processResult.image?.id || processResult.imageId
@@ -324,7 +311,6 @@ export function ImageGenerator({
         // Si no hay base64, guardar la URL directamente
         try {
           const savedImage = await saveGeneratedImage(imageUrl, prompt.trim(), undefined)
-          console.log("✅ Image saved to database")
 
           if (onImageGenerated) {
             onImageGenerated(imageUrl)
@@ -370,7 +356,6 @@ export function ImageGenerator({
     setIsProcessing(true)
 
     try {
-      console.log("🎨 Usar diseño:", generatedImage)
 
       // Si la imagen viene del historial
       const selectedId = (window as any).__selectedHistoryImageId as string | null
@@ -386,7 +371,6 @@ export function ImageGenerator({
 
       // Si ya tenemos un imageId procesado, navegar directamente
       if (processedImageId) {
-        console.log("✅ Using already processed image ID:", processedImageId)
         if (isModal && onImageGenerated) {
           onImageGenerated(generatedImage)
           return
@@ -402,10 +386,8 @@ export function ImageGenerator({
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.access_token) {
           authToken = session.access_token
-          console.log("✅ Auth token obtained from Supabase session")
         }
       } catch (authError) {
-        console.warn("⚠️ Could not get auth token:", authError)
       }
 
       const headers: HeadersInit = {
@@ -429,7 +411,6 @@ export function ImageGenerator({
         finalPrompt = "Diseño personalizado"
       }
 
-      console.log("📝 Enviando prompt a process-design:", finalPrompt)
 
       const response = await fetch("/api/process-design", {
         method: "POST",
@@ -514,7 +495,6 @@ export function ImageGenerator({
     if (!generatedImage) return
 
     try {
-      console.log("⬇️ Downloading image:", generatedImage)
 
       const proxyUrl = createProxyUrl(generatedImage)
       const response = await fetch(proxyUrl)
@@ -606,7 +586,6 @@ export function ImageGenerator({
   }, [retryCount])
 
   const handleImageLoad = useCallback(() => {
-    console.log("✅ Image loaded successfully")
     setImageError(false)
     setRetryCount(0)
   }, [])
@@ -614,7 +593,6 @@ export function ImageGenerator({
   const retryImageLoad = useCallback(() => {
     if (!generatedImage || retryCount >= 3) return
 
-    console.log("🔄 Retrying image load, attempt:", retryCount + 1)
     setImageError(false)
     setRetryCount((prev) => prev + 1)
     setImageKey((prev) => prev + 1)
@@ -625,7 +603,6 @@ export function ImageGenerator({
         img.crossOrigin = "anonymous"
 
         img.onload = () => {
-          console.log("✅ Retry successful")
           setImageError(false)
         }
 
@@ -766,6 +743,9 @@ export function ImageGenerator({
               </>
             )}
           </Button>
+          <span className="sr-only" aria-live="polite" role="status">
+            {genState === "generating" ? "Generando imagen con inteligencia artificial..." : genState === "ready" ? "Imagen generada exitosamente" : ""}
+          </span>
         </div>
 
         {/* Columna derecha - Visor */}

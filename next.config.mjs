@@ -67,6 +67,12 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'www.novamente.ar',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'fvsjvvyohaarivametxq.supabase.co',
         port: '',
         pathname: '/**',
@@ -108,6 +114,14 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   // Redirects para Meta Commerce feed
+  async rewrites() {
+    return [
+      {
+        source: '/llms.txt',
+        destination: '/api/llms',
+      },
+    ];
+  },
   async redirects() {
     return [
       {
@@ -117,9 +131,18 @@ const nextConfig = {
       },
     ];
   },
-  // Headers de cache para assets estáticos
+  // Headers de cache y seguridad para assets estáticos
   async headers() {
     return [
+      {
+        // Global security headers for all routes (belt-and-suspenders with middleware)
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        ],
+      },
       {
         source: '/images/:path*',
         headers: [

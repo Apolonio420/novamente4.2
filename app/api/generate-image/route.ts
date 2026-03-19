@@ -1,9 +1,12 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { uploadFile } from "@/lib/cloudflare-r2"
 import { toPublicR2Url } from "@/lib/r2"
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
 
 export const runtime = "nodejs"
+
+const limiter = rateLimit({ limit: 10, windowSeconds: 60, prefix: 'gen-img' })
 
 // ==== Config ====
 const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3-pro-image-preview"
@@ -29,7 +32,11 @@ export async function OPTIONS() {
   return ok({ ok: true })
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
+  // Rate limit: 10 requests/min per IP
+  const { success, resetAt } = limiter.check(req)
+  if (!success) return rateLimitResponse(resetAt)
+
   const t0 = Date.now()
   try {
     const apiKey = process.env.GEMINI_API_KEY

@@ -1,0 +1,478 @@
+'use client'
+
+import { useEffect, useState, useCallback } from 'react'
+import {
+  Users,
+  Package,
+  ExternalLink,
+  MoreHorizontal,
+  ArrowUpCircle,
+  PauseCircle,
+  PlayCircle,
+  AlertCircle,
+  Loader2,
+  Crown,
+  Rocket,
+  Zap,
+} from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { authFetch } from '@/lib/partners/auth-fetch'
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface Partner {
+  id: string
+  name: string
+  slug: string
+  email: string
+  plan: string
+  status: string
+  storefront_published: boolean
+  created_at: string
+  products_count: number
+  leads_count: number
+}
+
+type Plan = 'starter' | 'growth' | 'pro'
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const PLAN_BADGE: Record<string, { label: string; style: string; icon: typeof Zap }> = {
+  starter: {
+    label: 'Starter',
+    style: 'bg-zinc-700/40 text-zinc-300 border-zinc-600/50',
+    icon: Zap,
+  },
+  growth: {
+    label: 'Growth',
+    style: 'bg-violet-600/20 text-violet-300 border-violet-500/30',
+    icon: Rocket,
+  },
+  pro: {
+    label: 'Pro',
+    style: 'bg-amber-600/20 text-amber-300 border-amber-500/30',
+    icon: Crown,
+  },
+}
+
+const STATUS_BADGE: Record<string, { label: string; style: string }> = {
+  onboarding: { label: 'Onboarding', style: 'bg-blue-600/20 text-blue-300 border-blue-500/30' },
+  active: { label: 'Activo', style: 'bg-emerald-600/20 text-emerald-300 border-emerald-500/30' },
+  paused: { label: 'Pausado', style: 'bg-amber-600/20 text-amber-300 border-amber-500/30' },
+  suspended: { label: 'Suspendido', style: 'bg-red-600/20 text-red-300 border-red-500/30' },
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export default function AdminPartnersPage() {
+  const [partners, setPartners] = useState<Partner[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [planDialogOpen, setPlanDialogOpen] = useState(false)
+  const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null)
+  const [updating, setUpdating] = useState(false)
+
+  const fetchPartners = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const res = await authFetch('/api/admin/partners')
+      if (!res.ok) {
+        if (res.status === 401) {
+          setError('No autorizado. Solo administradores pueden acceder.')
+          return
+        }
+        setError('Error al cargar partners.')
+        return
+      }
+      const json = await res.json()
+      setPartners(json.partners)
+    } catch {
+      setError('Error de conexion.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchPartners()
+  }, [fetchPartners])
+
+  const updatePartner = async (tenantId: string, updates: Record<string, unknown>) => {
+    setUpdating(true)
+    try {
+      const res = await authFetch('/api/admin/partners', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId, updates }),
+      })
+      if (res.ok) {
+        await fetchPartners()
+      }
+    } finally {
+      setUpdating(false)
+      setPlanDialogOpen(false)
+    }
+  }
+
+  const toggleStatus = (partner: Partner) => {
+    const newStatus = partner.status === 'active' ? 'paused' : 'active'
+    updatePartner(partner.id, { status: newStatus })
+  }
+
+  const openPlanDialog = (partner: Partner) => {
+    setSelectedPartner(partner)
+    setPlanDialogOpen(true)
+  }
+
+  // Stats
+  const total = partners.length
+  const byPlan = {
+    starter: partners.filter((p) => p.plan === 'starter').length,
+    growth: partners.filter((p) => p.plan === 'growth').length,
+    pro: partners.filter((p) => p.plan === 'pro').length,
+  }
+  const active = partners.filter((p) => p.status === 'active').length
+  const paused = partners.filter((p) => p.status === 'paused' || p.status === 'suspended').length
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/40 p-12 text-center max-w-md">
+          <AlertCircle className="w-10 h-10 text-amber-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-zinc-100 mb-2">Acceso denegado</h2>
+          <p className="text-zinc-400 mb-6">{error}</p>
+          <Button
+            onClick={fetchPartners}
+            className="bg-violet-600 hover:bg-violet-500 text-white border-0"
+          >
+            Reintentar
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-8">
+        {/* ================================================================= */}
+        {/* HEADER                                                            */}
+        {/* ================================================================= */}
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">
+            Gestion de Partners
+          </h1>
+          <p className="text-sm text-zinc-500 mt-1">
+            Administra marcas, planes y estados
+          </p>
+        </div>
+
+        {/* ================================================================= */}
+        {/* STATS CARDS                                                       */}
+        {/* ================================================================= */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <Card className="bg-zinc-900/40 border-zinc-800/50">
+            <CardContent className="p-4">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Total</p>
+              <p className="text-2xl font-bold">{total}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-zinc-900/40 border-zinc-800/50">
+            <CardContent className="p-4">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Starter</p>
+              <p className="text-2xl font-bold text-zinc-400">{byPlan.starter}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-zinc-900/40 border-zinc-800/50">
+            <CardContent className="p-4">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Growth</p>
+              <p className="text-2xl font-bold text-violet-400">{byPlan.growth}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-zinc-900/40 border-zinc-800/50">
+            <CardContent className="p-4">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Pro</p>
+              <p className="text-2xl font-bold text-amber-400">{byPlan.pro}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-zinc-900/40 border-zinc-800/50">
+            <CardContent className="p-4">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
+                Activos / Pausados
+              </p>
+              <p className="text-2xl font-bold">
+                <span className="text-emerald-400">{active}</span>
+                <span className="text-zinc-600 mx-1">/</span>
+                <span className="text-amber-400">{paused}</span>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ================================================================= */}
+        {/* TABLE                                                             */}
+        {/* ================================================================= */}
+        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/40 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-zinc-800/50">
+                  <th className="text-left px-4 py-3 text-xs text-zinc-500 uppercase tracking-wider font-medium">
+                    Marca
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs text-zinc-500 uppercase tracking-wider font-medium">
+                    Plan
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs text-zinc-500 uppercase tracking-wider font-medium">
+                    Status
+                  </th>
+                  <th className="text-center px-4 py-3 text-xs text-zinc-500 uppercase tracking-wider font-medium">
+                    Productos
+                  </th>
+                  <th className="text-center px-4 py-3 text-xs text-zinc-500 uppercase tracking-wider font-medium">
+                    Leads
+                  </th>
+                  <th className="text-center px-4 py-3 text-xs text-zinc-500 uppercase tracking-wider font-medium">
+                    Publicado
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs text-zinc-500 uppercase tracking-wider font-medium">
+                    Fecha
+                  </th>
+                  <th className="text-right px-4 py-3 text-xs text-zinc-500 uppercase tracking-wider font-medium">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {partners.map((partner) => {
+                  const plan = PLAN_BADGE[partner.plan] || PLAN_BADGE.starter
+                  const status = STATUS_BADGE[partner.status] || STATUS_BADGE.onboarding
+                  const PlanIcon = plan.icon
+                  return (
+                    <tr
+                      key={partner.id}
+                      className="border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <div>
+                          <p className="font-medium text-zinc-100">{partner.name}</p>
+                          <p className="text-xs text-zinc-500">{partner.email}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge className={`text-xs border px-2 py-0.5 gap-1 ${plan.style}`}>
+                          <PlanIcon className="w-3 h-3" />
+                          {plan.label}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge className={`text-xs border px-2 py-0.5 ${status.style}`}>
+                          {status.label}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Package className="w-3.5 h-3.5 text-zinc-500" />
+                          <span>{partner.products_count}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Users className="w-3.5 h-3.5 text-zinc-500" />
+                          <span>{partner.leads_count}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div
+                          className={`w-2.5 h-2.5 rounded-full mx-auto ${
+                            partner.storefront_published
+                              ? 'bg-emerald-400'
+                              : 'bg-zinc-600'
+                          }`}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-zinc-400 text-xs">
+                        {new Date(partner.created_at).toLocaleDateString('es-AR', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="h-8 w-8 p-0 text-zinc-400 hover:text-zinc-100"
+                            >
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="bg-zinc-900 border-zinc-800 text-zinc-200"
+                          >
+                            {partner.slug && (
+                              <DropdownMenuItem
+                                className="cursor-pointer hover:bg-zinc-800 focus:bg-zinc-800"
+                                onClick={() =>
+                                  window.open(`/merch/${partner.slug}`, '_blank')
+                                }
+                              >
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                Ver storefront
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              className="cursor-pointer hover:bg-zinc-800 focus:bg-zinc-800"
+                              onClick={() => openPlanDialog(partner)}
+                            >
+                              <ArrowUpCircle className="w-4 h-4 mr-2" />
+                              Cambiar plan
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator className="bg-zinc-800" />
+                            <DropdownMenuItem
+                              className="cursor-pointer hover:bg-zinc-800 focus:bg-zinc-800"
+                              onClick={() => toggleStatus(partner)}
+                            >
+                              {partner.status === 'active' ? (
+                                <>
+                                  <PauseCircle className="w-4 h-4 mr-2 text-amber-400" />
+                                  Suspender
+                                </>
+                              ) : (
+                                <>
+                                  <PlayCircle className="w-4 h-4 mr-2 text-emerald-400" />
+                                  Activar
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  )
+                })}
+                {partners.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-12 text-center text-zinc-500">
+                      No hay partners registrados todavia
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* ================================================================= */}
+      {/* PLAN CHANGE DIALOG                                                */}
+      {/* ================================================================= */}
+      <Dialog open={planDialogOpen} onOpenChange={setPlanDialogOpen}>
+        <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+          <DialogHeader>
+            <DialogTitle>Cambiar plan</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              {selectedPartner
+                ? `Cambiar plan de ${selectedPartner.name} (actualmente ${selectedPartner.plan})`
+                : ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-3 py-4">
+            {(['starter', 'growth', 'pro'] as Plan[]).map((plan) => {
+              const info = PLAN_BADGE[plan]
+              const PlanIcon = info.icon
+              const isCurrent = selectedPartner?.plan === plan
+              return (
+                <button
+                  key={plan}
+                  disabled={isCurrent || updating}
+                  onClick={() =>
+                    selectedPartner && updatePartner(selectedPartner.id, { plan })
+                  }
+                  className={`flex items-center gap-3 rounded-lg border p-4 transition-all text-left ${
+                    isCurrent
+                      ? 'border-violet-500/50 bg-violet-600/10 cursor-default'
+                      : 'border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/40 cursor-pointer'
+                  }`}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-zinc-800/60 flex items-center justify-center">
+                    <PlanIcon
+                      className={`w-5 h-5 ${
+                        plan === 'starter'
+                          ? 'text-zinc-400'
+                          : plan === 'growth'
+                            ? 'text-violet-400'
+                            : 'text-amber-400'
+                      }`}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-zinc-100">{info.label}</p>
+                    <p className="text-xs text-zinc-500">
+                      {plan === 'starter' && '10 productos, 20 leads/mes'}
+                      {plan === 'growth' && 'Productos ilimitados, SEO, Design Engine'}
+                      {plan === 'pro' && 'Todo incluido, chatbot, Meta Ads'}
+                    </p>
+                  </div>
+                  {isCurrent && (
+                    <Badge className="bg-violet-600/20 text-violet-300 border-violet-500/30 text-xs">
+                      Actual
+                    </Badge>
+                  )}
+                  {updating && !isCurrent && (
+                    <Loader2 className="w-4 h-4 text-zinc-400 animate-spin" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setPlanDialogOpen(false)}
+              className="text-zinc-400 hover:text-zinc-100"
+            >
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

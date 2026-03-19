@@ -1,22 +1,204 @@
 export const dynamic = 'force-dynamic'
 
+import { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, ExternalLink } from "lucide-react"
 import { notFound } from "next/navigation"
 import { getPartnerById } from "@/src/data/partners"
+import { getStorefrontBySlug } from "@/lib/partners/unified-directory"
+import { generateOrganizationSchema, generateBreadcrumbSchema, generateFAQSchema, getDefaultPartnerFAQs } from "@/lib/partners/seo"
+import { JsonLd } from "@/components/partners/json-ld"
+import { FaqSection } from "@/components/partners/faq-section"
+import ChatWidget from "@/components/partners/chat-widget"
+import { dbProductToProduct } from "@/lib/partners/product-metadata"
 import { ProductCard } from "./ProductCard"
 
 interface BrandPageProps {
   params: Promise<{ brand: string }>
 }
 
+export async function generateMetadata({ params }: BrandPageProps): Promise<Metadata> {
+  const { brand } = await params
+  const storefront = await getStorefrontBySlug(brand)
+
+  if (!storefront) {
+    return { title: 'Marca no encontrada' }
+  }
+
+  const title = `${storefront.name} — Merch oficial en Novamente`
+  const description = storefront.description
+    || storefront.slogan
+    || `Descubrí el merchandising oficial de ${storefront.name}. Productos únicos y diseños exclusivos.`
+
+  return {
+    title,
+    description,
+    openGraph: {
+      type: 'website',
+      url: `https://www.novamente.ar/merch/${storefront.slug}`,
+      title,
+      description,
+      ...(storefront.logo && { images: [{ url: storefront.logo, width: 400, height: 400, alt: storefront.name }] }),
+      siteName: 'Novamente',
+      locale: 'es_AR',
+    },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
+      ...(storefront.logo && { images: [storefront.logo] }),
+    },
+    alternates: {
+      canonical: `https://www.novamente.ar/merch/${storefront.slug}`,
+    },
+  }
+}
+
 export default async function BrandPage(props: BrandPageProps) {
   const params = await props.params
-  const brandInfo = getPartnerById(params.brand)
+  const storefront = await getStorefrontBySlug(params.brand)
 
+  if (!storefront) {
+    notFound()
+  }
+
+  // DB-backed storefront — render with same layout as static partners
+  if (storefront.source === 'db' && storefront.tenant) {
+    const tenant = storefront.tenant
+    const orgSchema = generateOrganizationSchema(tenant)
+    const breadcrumbSchema = generateBreadcrumbSchema([
+      { name: 'Novamente', url: 'https://www.novamente.ar' },
+      { name: 'Partners', url: 'https://www.novamente.ar/merch' },
+      { name: storefront.name, url: `https://www.novamente.ar/merch/${storefront.slug}` },
+    ])
+    const faqs = tenant.custom_faqs?.length ? tenant.custom_faqs : getDefaultPartnerFAQs(storefront.name)
+    const faqSchema = generateFAQSchema(faqs)
+
+    // Transform DB products → static Product interface for ProductCard
+    const products = storefront.products.map((p) => dbProductToProduct(p, tenant))
+
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <JsonLd data={orgSchema} />
+        <JsonLd data={breadcrumbSchema} />
+        <JsonLd data={faqSchema} />
+        <div className="mb-6">
+          <Link href="/merch">
+            <Button variant="ghost" className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Volver al catálogo de marcas
+            </Button>
+          </Link>
+        </div>
+
+        {/* Brand Header — identical to static path */}
+        <div className="mb-12">
+          <div className="relative min-h-[200px] md:min-h-64 rounded-xl overflow-hidden mb-8 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
+            {storefront.banner && (
+              <>
+                <Image src={storefront.banner} alt={`${storefront.name} banner`} fill className="object-cover opacity-25" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/40" />
+              </>
+            )}
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center py-8">
+              <div className="text-center text-white w-full">
+                {storefront.logo && (
+                  <div className="flex items-center justify-center mb-4">
+                    <Image src={storefront.logo} alt={`${storefront.name} Logo`} width={80} height={80} className="object-contain" />
+                  </div>
+                )}
+                <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-wider mb-2 px-4">{storefront.name}</h1>
+                {storefront.slogan && (
+                  <p className="text-sm sm:text-lg md:text-xl opacity-90 font-medium tracking-wide px-4">{storefront.slogan}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Brand Story — 3 paragraphs like static */}
+          {(storefront.description || storefront.values) && (
+            <div className="bg-secondary/20 rounded-xl p-6 md:p-8 mb-8">
+              <h2 className="text-2xl font-bold mb-4">La Historia de {storefront.name}</h2>
+              <div className="space-y-4 text-muted-foreground">
+                {storefront.description && <p className="leading-relaxed">{storefront.description}</p>}
+                {storefront.values && <p className="leading-relaxed">{storefront.values}</p>}
+                {storefront.slogan && (
+                  <p className="leading-relaxed font-medium text-foreground">{storefront.slogan}</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Products Grid — uses ProductCard with carousel, same as static */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-6">Productos Disponibles</h2>
+          {products.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {products.map((product) => (
+                <ProductCard key={product.id} brandId={params.brand} product={product} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-lg">Esta marca aún no tiene productos publicados.</p>
+              <p className="text-sm mt-2">Volvé pronto para ver las novedades.</p>
+            </div>
+          )}
+        </div>
+
+        {/* FAQ Section */}
+        <div className="mt-16 mb-16">
+          <FaqSection faqs={faqs} />
+        </div>
+
+        {/* Brand Values Footer — identical to static path */}
+        <div className="mt-16 text-center">
+          <div className="bg-secondary/30 rounded-xl p-8">
+            <div className="relative z-10">
+              {storefront.logo && (
+                <div className="flex items-center justify-center mb-4">
+                  <Image src={storefront.logo} alt={`${storefront.name} Logo`} width={100} height={100} className="object-contain" />
+                </div>
+              )}
+              <h3 className="text-2xl font-bold mb-2">{storefront.name}</h3>
+              {storefront.slogan && (
+                <p className="text-primary font-medium mb-4 uppercase tracking-wide">{storefront.slogan}</p>
+              )}
+              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                Cada producto de {storefront.name} está pensado para reflejar su identidad única.{" "}
+                {storefront.description}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                {storefront.instagram && (
+                  <Link href={storefront.instagram.startsWith('http') ? storefront.instagram : `https://instagram.com/${storefront.instagram.replace('@', '')}`} target="_blank" rel="noreferrer">
+                    <Button variant="outline">Seguir a {storefront.name}</Button>
+                  </Link>
+                )}
+                <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+                  <Button>Consultá por WhatsApp</Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Chat Widget for Pro plan */}
+        {storefront.plan === 'pro' && (
+          <ChatWidget
+            tenantSlug={storefront.slug}
+            tenantName={storefront.name}
+            primaryColor={storefront.primaryColor}
+          />
+        )}
+      </div>
+    )
+  }
+
+  // Static/legacy partner — render with hardcoded data
+  const brandInfo = getPartnerById(params.brand)
   if (!brandInfo) {
     notFound()
   }
@@ -40,7 +222,6 @@ export default async function BrandPage(props: BrandPageProps) {
         {/* Banner */}
         <div className="relative min-h-[200px] md:min-h-64 rounded-xl overflow-hidden mb-8 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
           {brandInfo.id === "falco" ? (
-            /* Falco: watermark sutil (comportamiento original) */
             <>
               {brandInfo.banner && brandInfo.banner !== "/placeholder.svg" && (
                 <div className="absolute inset-0 opacity-10">
@@ -52,7 +233,6 @@ export default async function BrandPage(props: BrandPageProps) {
               </div>
             </>
           ) : (
-            /* Otros partners: banner como fondo real con overlay para legibilidad */
             brandInfo.banner && brandInfo.banner !== "/placeholder.svg" && (
               <>
                 <Image src={brandInfo.banner} alt={`${brandInfo.name} banner`} fill className="object-cover opacity-25" />
@@ -103,7 +283,6 @@ export default async function BrandPage(props: BrandPageProps) {
       {/* Brand Values Footer */}
       <div className="mt-16 text-center">
         <div className="bg-secondary/30 rounded-xl p-8 relative overflow-hidden">
-          {/* Fondo decorativo sutil — Solo Falco */}
           {brandInfo.id === "falco" && (
             <div className="absolute inset-0 opacity-5">
               <Image src="/falco/tres-anclas.png" alt="FALCO Anclas" fill className="object-contain" />

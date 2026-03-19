@@ -1,0 +1,16 @@
+{
+  "name": "Ventolito",
+  "slug": "ventolito-wind-surf",
+  "email": "ventolito@novamente.ar",
+  "password": "Ventolito2026!",
+  "plan": "pro",
+  "industry": "windsurf y deportes acuáticos",
+  "tagline": "El mar no calma, forma carácter.",
+  "description": "Ventolito Wind & Surf nace de la conexión real entre el mar, el viento y quienes encuentran en el agua una forma de libertad. Inspirada en la intensidad del windsurf y en la mística de los días bravos, la marca transforma esa energía en diseños con carácter, movimiento y profundidad visual.",
+  "primaryColor": "#1a1a1a",
+  "secondaryColor": "#333333",
+  "accentColor": "#707070",
+  "visualStyle": "editorial",
+  "commerceMode": "whatsapp",
+  "ctaText": "Contactar"
+}

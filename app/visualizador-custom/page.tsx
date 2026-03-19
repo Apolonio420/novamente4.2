@@ -1,4 +1,16 @@
+import type { Metadata } from "next"
 import { VisualizerContainer } from "@/components/CustomVisualizer/VisualizerContainer"
+
+export const metadata: Metadata = {
+  title: "Visualizador de Diseños — Previsualizá tu prenda",
+  description: "Visualizá cómo queda tu diseño en remeras, hoodies y buzos antes de comprar. Previsualizador 3D interactivo de Novamente.",
+  openGraph: {
+    title: "Visualizador de Diseños — Novamente",
+    description: "Previsualizá cómo queda tu diseño en prendas reales.",
+    url: "https://www.novamente.ar/visualizador-custom",
+  },
+  alternates: { canonical: "https://www.novamente.ar/visualizador-custom" },
+}
 
 export default function CustomVisualizerPage() {
     return (

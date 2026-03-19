@@ -1,0 +1,353 @@
+import { Metadata } from "next"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  ArrowRight, Store, Palette, BarChart3, Bot,
+  Zap, Shield, Globe, Check, Sparkles
+} from "lucide-react"
+import { PLAN_NAMES, PLAN_DESCRIPTIONS, PLAN_PRICING_USD } from "@/lib/partners/plans"
+import type { Plan } from "@/lib/partners/types"
+
+export const metadata: Metadata = {
+  title: "Partners — Lanzá tu marca con Novamente",
+  description: "Storefront, catálogo, diseño con IA y precios mayoristas. Todo lo que necesitás para vender tu merch, sin stock ni logística.",
+  alternates: {
+    canonical: "https://www.novamente.ar/partners",
+  },
+  openGraph: {
+    type: "website",
+    url: "https://www.novamente.ar/partners",
+    title: "Novamente Partners — Lanzá tu marca",
+    description: "Storefront, catálogo, diseño con IA y precios mayoristas. Todo lo que necesitás para vender tu merch.",
+    images: [{ url: "https://www.novamente.ar/novamente-logo.png", width: 1200, height: 630, alt: "Novamente Partners" }],
+    siteName: "Novamente",
+    locale: "es_AR",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Novamente Partners — Lanzá tu marca",
+    description: "Storefront, catálogo, diseño con IA y precios mayoristas. Todo lo que necesitás para vender tu merch.",
+  },
+}
+
+const FEATURES = [
+  {
+    icon: Store,
+    title: "Tu storefront lista",
+    description: "Página profesional con tu logo, colores y productos. Lista en minutos, sin código.",
+  },
+  {
+    icon: Palette,
+    title: "Design Engine con IA",
+    description: "Generá diseños y mockups con inteligencia artificial. 37 estilos artísticos disponibles.",
+  },
+  {
+    icon: Globe,
+    title: "SEO & Discovery",
+    description: "Tu tienda optimizada para Google, buscadores AI y redes sociales desde el día uno.",
+  },
+  {
+    icon: Bot,
+    title: "Chatbot de ventas",
+    description: "Asistente WhatsApp que vende por vos 24/7. Setup completo de Meta Business incluido.",
+  },
+  {
+    icon: BarChart3,
+    title: "Analytics y leads",
+    description: "Dashboard con métricas, leads y pedidos. Sabé exactamente cómo rinde tu tienda.",
+  },
+  {
+    icon: Shield,
+    title: "Cero stock, cero riesgo",
+    description: "Nosotros producimos, almacenamos y enviamos. Vos solo vendés y cobrás.",
+  },
+]
+
+const TIERS: { plan: Plan; popular?: boolean; features: string[] }[] = [
+  {
+    plan: 'starter',
+    features: [
+      'Storefront básica con tu marca',
+      'Hasta 10 productos',
+      '20 leads por mes',
+      'Precios mayoristas en prendas',
+      'Badge "Powered by Novamente"',
+    ],
+  },
+  {
+    plan: 'growth',
+    popular: true,
+    features: [
+      'Todo lo de Starter +',
+      'Branding completo (colores, hero, CTA)',
+      'Productos ilimitados',
+      'Leads ilimitados',
+      'SEO completo + indexación',
+      'Design Engine (mockups + estilos)',
+      'Analytics básico',
+      'Sin badge de Novamente',
+      'Soporte por email',
+    ],
+  },
+  {
+    plan: 'pro',
+    features: [
+      'Todo lo de Growth +',
+      'Chatbot WhatsApp personalizado',
+      'Setup Meta Business completo',
+      'Plantillas de Meta Ads',
+      'Design Engine completo (brand-fit)',
+      'Analytics avanzado',
+      'Feed Meta Commerce / Google',
+      'Soporte WhatsApp prioritario',
+      'Onboarding call 1:1',
+    ],
+  },
+]
+
+const partnersFaqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "¿Qué es Novamente Partners?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Novamente Partners es una plataforma para empresas, marcas y emprendedores que quieren crear su propia línea de merchandising sin inversión inicial. Incluye storefront personalizada, diseño con IA, producción on-demand, precios mayoristas y envío a todo Argentina.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "¿Cuánto cuesta ser Partner de Novamente?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Hay 3 planes: Starter es gratis (hasta 10 productos, 20 leads/mes), Growth cuesta $25 USD/mes (productos ilimitados, SEO, Design Engine) y Pro cuesta $100 USD/mes (chatbot WhatsApp, Meta Ads, analytics avanzado). Todos incluyen precios mayoristas.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "¿Necesito tener stock o logística?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "No. Novamente se encarga de toda la producción, almacenamiento y envío. El partner solo se dedica a vender y cobrar. Producción on-demand significa cero riesgo de inventario.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "¿Qué incluye la storefront de Partners?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Cada partner recibe una página profesional en novamente.ar con su logo, colores, productos y formulario de contacto. Los planes Growth y Pro incluyen branding completo, SEO, indexación en Google y Design Engine con IA.",
+      },
+    },
+  ],
+}
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Inicio", item: "https://www.novamente.ar/" },
+    { "@type": "ListItem", position: 2, name: "Partners", item: "https://www.novamente.ar/partners" },
+  ],
+}
+
+export default function PartnersPage() {
+  return (
+    <div className="min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(partnersFaqJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+
+      {/* Hero */}
+      <section className="relative overflow-hidden py-20 md:py-32">
+        <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 via-transparent to-transparent" />
+        <div className="container mx-auto px-4 relative">
+          <div className="text-center max-w-4xl mx-auto">
+            <Badge className="mb-6 bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500/20">
+              NOVAMENTE PARTNERS
+            </Badge>
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
+              Lanzá tu marca de
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-purple-400"> merch premium</span>
+            </h1>
+            <p className="text-lg md:text-xl text-zinc-400 mb-10 max-w-2xl mx-auto">
+              Storefront profesional, catálogo, diseño con IA y precios mayoristas.
+              Sin stock, sin logística, sin riesgo. Nosotros producimos y enviamos.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/partners/join">
+                <Button size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-zinc-200 font-semibold px-8 h-12 text-base">
+                  Empezar gratis
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 h-12 text-base">
+                  Hablar con un asesor
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="py-20 border-t border-zinc-800/50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Todo lo que necesitás para vender</h2>
+            <p className="text-zinc-400 max-w-2xl mx-auto">
+              Una plataforma completa para que tu marca tenga presencia profesional desde el primer día.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {FEATURES.map((feature) => (
+              <div
+                key={feature.title}
+                className="p-6 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 hover:border-zinc-700 transition-all"
+              >
+                <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center mb-4">
+                  <feature.icon className="w-6 h-6 text-purple-400" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                <p className="text-zinc-400 text-sm leading-relaxed">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="py-20 border-t border-zinc-800/50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Cómo funciona</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+            {[
+              { step: "01", title: "Registrate", desc: "Creá tu cuenta y cargá tu marca en minutos." },
+              { step: "02", title: "Configurá", desc: "Logo, colores, productos y estilo visual." },
+              { step: "03", title: "Publicá", desc: "Tu storefront queda online al instante." },
+              { step: "04", title: "Vendé", desc: "Recibí leads y pedidos. Nosotros producimos y enviamos." },
+            ].map((item) => (
+              <div key={item.step} className="text-center">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-white font-bold text-lg">{item.step}</span>
+                </div>
+                <h3 className="font-semibold mb-2">{item.title}</h3>
+                <p className="text-zinc-400 text-sm">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="py-20 border-t border-zinc-800/50" id="pricing">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Planes transparentes</h2>
+            <p className="text-zinc-400 max-w-2xl mx-auto">
+              Empezá gratis y escalá cuando quieras. Todos los planes incluyen acceso a precios mayoristas.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {TIERS.map(({ plan, popular, features }) => (
+              <div
+                key={plan}
+                className={`relative p-6 rounded-xl border transition-all ${
+                  popular
+                    ? 'border-purple-500 bg-purple-500/5 shadow-lg shadow-purple-500/10'
+                    : 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700'
+                }`}
+              >
+                {popular && (
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500 text-white border-0">
+                    Más popular
+                  </Badge>
+                )}
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold mb-1">{PLAN_NAMES[plan]}</h3>
+                  <p className="text-zinc-400 text-sm mb-4">{PLAN_DESCRIPTIONS[plan]}</p>
+                  <div className="flex items-baseline gap-1">
+                    {PLAN_PRICING_USD[plan] === 0 ? (
+                      <span className="text-3xl font-bold">Gratis</span>
+                    ) : (
+                      <>
+                        <span className="text-3xl font-bold">${PLAN_PRICING_USD[plan]}</span>
+                        <span className="text-zinc-400 text-sm">USD/mes</span>
+                      </>
+                    )}
+                  </div>
+                  {PLAN_PRICING_USD[plan] > 0 && (
+                    <p className="text-zinc-500 text-xs mt-1">
+                      Facturado en ARS al tipo de cambio del día
+                      <br />
+                      <span className="text-emerald-500">Plan anual: -15% (US${Math.round(PLAN_PRICING_USD[plan] * 0.85)}/mes)</span>
+                    </p>
+                  )}
+                </div>
+                <ul className="space-y-3 mb-8">
+                  {features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-zinc-300">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/partners/join" className="block">
+                  <Button
+                    className={`w-full ${
+                      popular
+                        ? 'bg-purple-500 hover:bg-purple-400 text-white'
+                        : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200'
+                    }`}
+                  >
+                    {plan === 'starter' ? 'Empezar gratis' : 'Elegir plan'}
+                  </Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-20 border-t border-zinc-800/50">
+        <div className="container mx-auto px-4 text-center">
+          <Sparkles className="w-10 h-10 text-purple-400 mx-auto mb-6" />
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            ¿Listo para lanzar tu marca?
+          </h2>
+          <p className="text-zinc-400 mb-8 max-w-xl mx-auto">
+            Sumate a novamente Partners y empezá a vender merch premium con tu identidad.
+            Sin inversión inicial, sin riesgo.
+          </p>
+          <Link href="/partners/join">
+            <Button size="lg" className="bg-white text-black hover:bg-zinc-200 font-semibold px-8 h-12 text-base">
+              Crear mi storefront
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
+          <div className="mt-8 flex items-center justify-center gap-4 text-xs text-zinc-500">
+            <Link href="/partners/terms" className="hover:text-zinc-300 transition-colors">
+              Terminos y Condiciones
+            </Link>
+            <span className="text-zinc-700">|</span>
+            <Link href="/partners/privacy" className="hover:text-zinc-300 transition-colors">
+              Politica de Privacidad
+            </Link>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}

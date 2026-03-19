@@ -27,7 +27,10 @@ export function Navbar() {
   const [authTab, setAuthTab] = useState<"signin" | "signup">("signin")
   const [user, setUser] = useState<any>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const supabase = getClientSupabase()
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     const checkUser = async () => {
@@ -60,13 +63,15 @@ export function Navbar() {
   const navItems = [
     { label: "PRODUCTOS", href: "/products" },
     { label: "ESTILOS", href: "/styles" },
+    { label: "FAQ", href: "/faq" },
     {
       label: "PARTNERS",
-      href: "/merch",
+      href: "/partners",
       isDropdown: true,
       subItems: [
-        { label: "QUIERO SER PARTNER", href: "/merchs" },
-        { label: "PARTNERS", href: "/merch" }
+        { label: "PROGRAMA PARTNERS", href: "/partners" },
+        { label: "DIRECTORIO", href: "/partners/directory" },
+        { label: "MARCAS", href: "/merch" }
       ]
     },
     { label: "DISEÑA", href: "/#generator-section", isButton: true },
@@ -94,6 +99,19 @@ export function Navbar() {
               )
             }
             if ((item as any).isDropdown) {
+              // Render as plain link on server, upgrade to dropdown after hydration
+              if (!mounted) {
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="flex items-center gap-1 text-sm tracking-widest font-medium uppercase transition-colors hover:text-primary"
+                  >
+                    {item.label}
+                    <ChevronDown className="h-4 w-4" />
+                  </Link>
+                )
+              }
               return (
                 <DropdownMenu key={item.label}>
                   <DropdownMenuTrigger className="flex items-center gap-1 text-sm tracking-widest font-medium uppercase transition-colors hover:text-primary outline-none">

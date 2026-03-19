@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight } from "lucide-react"
-import { partners } from "@/src/data/partners"
+import { getDirectoryEntries } from "@/lib/partners/unified-directory"
 
 export const metadata: Metadata = {
   title: "Crea, publica y vendé tu merch con Novamente",
@@ -26,7 +26,9 @@ export const metadata: Metadata = {
   },
 }
 
-export default function MerchPage() {
+export default async function MerchPage() {
+  const entries = await getDirectoryEntries()
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -40,17 +42,25 @@ export default function MerchPage() {
 
       {/* Brands Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-        {partners.map((brand) => (
-          <Link key={brand.id} href={`/merch/${brand.id}`} className="group">
+        {entries.map((brand) => (
+          <Link key={brand.slug} href={`/merch/${brand.slug}`} className="group">
             <div className="border rounded-xl overflow-hidden bg-card hover:shadow-lg transition-all duration-300 group-hover:scale-105">
               {/* Brand Image */}
               <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-background to-secondary/30">
-                <Image
-                  src={brand.cardImage || brand.logo || "/placeholder.svg"}
-                  alt={`${brand.name} Logo`}
-                  fill
-                  className="object-contain p-8 group-hover:scale-110 transition-transform duration-300"
-                />
+                {brand.cardImage || brand.logo ? (
+                  <Image
+                    src={brand.cardImage || brand.logo || ""}
+                    alt={`${brand.name} Logo`}
+                    fill
+                    className="object-contain p-8 group-hover:scale-110 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-6xl font-bold text-muted-foreground/30">
+                      {brand.name.charAt(0)}
+                    </span>
+                  </div>
+                )}
 
                 {/* Featured Badge */}
                 {brand.featured && (
@@ -68,18 +78,24 @@ export default function MerchPage() {
                 </div>
 
                 {/* Slogan principal */}
-                <p className="text-primary font-medium mb-2 text-sm uppercase tracking-wide">{brand.slogan}</p>
+                {brand.slogan && (
+                  <p className="text-primary font-medium mb-2 text-sm uppercase tracking-wide">{brand.slogan}</p>
+                )}
 
-                {/* Descripción extendida */}
-                <p className="text-muted-foreground mb-4 text-sm">{brand.description}</p>
+                {/* Descripción */}
+                {brand.description && (
+                  <p className="text-muted-foreground mb-4 text-sm line-clamp-2">{brand.description}</p>
+                )}
 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{brand.products.length} productos disponibles</span>
+                  {brand.productCount > 0 && (
+                    <span className="text-sm text-muted-foreground">{brand.productCount} productos disponibles</span>
+                  )}
                   <Button
                     size="sm"
-                    className="bg-zinc-700 text-zinc-100 border border-zinc-600 hover:bg-primary hover:text-white hover:border-primary transition-all duration-200"
+                    className="bg-zinc-700 text-zinc-100 border border-zinc-600 hover:bg-primary hover:text-white hover:border-primary transition-all duration-200 ml-auto"
                   >
-                    Comprar
+                    Ver tienda
                   </Button>
                 </div>
               </div>
@@ -133,7 +149,7 @@ export default function MerchPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+                <Link href="/partners/join">
                   <Button size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-gray-100 font-semibold px-8">
                     Quiero ser Partner
                   </Button>
@@ -147,11 +163,9 @@ export default function MerchPage() {
             </div>
 
             <div className="relative h-64 lg:h-auto bg-zinc-900">
-              {/* Abstract decorative background */}
               <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="relative w-full h-full max-w-md max-h-96 p-8">
-                  {/* Mockup visual representation */}
                   <div className="w-full h-full border border-gray-700/50 rounded-xl bg-gray-900/50 backdrop-blur-sm p-6 flex flex-col items-center justify-center text-center">
                     <div className="w-16 h-16 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-full mb-4 animate-pulse"></div>
                     <h3 className="text-xl font-bold text-gray-200 mb-2">Tu Marca Aquí</h3>

@@ -4,6 +4,17 @@ import JoinForm from "@/components/merchs/JoinForm"
 export const metadata: Metadata = {
     title: "Sumate como Partner | Novamente",
     description: "Completá el formulario para sumarte al programa de partners de Novamente y lanzar tu línea de merchandising oficial.",
+    openGraph: {
+        title: "Sumate como Partner — Novamente",
+        description: "Lanzá tu línea de merchandising oficial con Novamente.",
+        url: "https://www.novamente.ar/merchs/join",
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "Sumate como Partner — Novamente",
+        description: "Lanzá tu línea de merchandising oficial con Novamente.",
+    },
+    alternates: { canonical: "https://www.novamente.ar/merchs/join" },
 }
 
 export default function JoinPage() {

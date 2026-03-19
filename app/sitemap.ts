@@ -1,0 +1,94 @@
+import type { MetadataRoute } from 'next'
+import { getPublishedTenants } from '@/lib/partners/tenant'
+import { getPublishedProducts } from '@/lib/partners/catalog'
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const baseUrl = 'https://www.novamente.ar'
+
+  // Static pages with SEO priorities
+  const staticPages: MetadataRoute.Sitemap = [
+    {
+      url: baseUrl,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/products`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/styles`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/faq`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/partners`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/partners/join`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/partners/directory`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/merch`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+  ]
+
+  // Dynamic partner storefront pages
+  const dynamicPages: MetadataRoute.Sitemap = []
+
+  try {
+    const tenants = await getPublishedTenants()
+
+    for (const tenant of tenants) {
+      // Skip Starter tenants — they have noindex, adding to sitemap is contradictory
+      if (!tenant.seo_indexable) continue
+
+      // Tenant storefront page (Growth+)
+      dynamicPages.push({
+        url: `${baseUrl}/p/${tenant.slug}`,
+        lastModified: new Date(tenant.updated_at),
+        changeFrequency: 'weekly',
+        priority: 0.8,
+      })
+
+      // Product pages
+      const products = await getPublishedProducts(tenant.id)
+      for (const product of products) {
+        dynamicPages.push({
+          url: `${baseUrl}/p/${tenant.slug}/${product.slug}`,
+          lastModified: new Date(product.updated_at),
+          changeFrequency: 'weekly',
+          priority: 0.6,
+        })
+      }
+    }
+  } catch (error) {
+    console.error('[Sitemap] Error fetching dynamic pages:', error)
+  }
+
+  return [...staticPages, ...dynamicPages]
+}

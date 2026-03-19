@@ -1,0 +1,241 @@
+'use client'
+
+import { useState } from 'react'
+import { X, Check, Sparkles, Zap, Crown } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
+
+interface UpgradeModalProps {
+  currentPlan: string
+  tenantId: string
+  onClose: () => void
+}
+
+const plans = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    priceMonthly: 0,
+    priceAnnualMonth: 0,
+    icon: Zap,
+    features: [
+      'Hasta 10 productos',
+      '20 leads/mes',
+      'Storefront basica',
+      'Branding limitado',
+    ],
+    notIncluded: [
+      'SEO / GEO',
+      'Design Engine',
+      'Chatbot IA',
+      'Analytics',
+      'Meta Ads',
+    ],
+  },
+  {
+    id: 'growth',
+    name: 'Growth',
+    priceMonthly: 25,
+    priceAnnualMonth: 21.25,
+    icon: Sparkles,
+    popular: true,
+    features: [
+      'Productos ilimitados',
+      'Leads ilimitados',
+      'SEO + GEO optimizado',
+      'Branding completo',
+      'Design Engine (presets)',
+      'Analytics basico',
+      'Soporte por email',
+      'CSV import',
+    ],
+    notIncluded: [
+      'Chatbot IA',
+      'Meta Ads templates',
+      'Soporte WhatsApp',
+    ],
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    priceMonthly: 100,
+    priceAnnualMonth: 85,
+    icon: Crown,
+    features: [
+      'Todo de Growth',
+      'Chatbot IA en storefront',
+      'Design Engine completo',
+      'Meta Ads templates',
+      'Analytics avanzado',
+      'Feed export',
+      'Soporte WhatsApp',
+      'Onboarding call',
+    ],
+    notIncluded: [],
+  },
+]
+
+export function UpgradeModal({ currentPlan, tenantId, onClose }: UpgradeModalProps) {
+  const [loading, setLoading] = useState<string | null>(null)
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
+
+  async function handleUpgrade(planId: string) {
+    if (planId === currentPlan || planId === 'starter') return
+    setLoading(planId)
+
+    try {
+      const res = await fetch('/api/partners/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId, plan: planId, billingCycle }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        if (data.init_point) {
+          window.location.href = data.init_point
+        }
+      }
+    } catch {
+      // Error handling
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-zinc-950 border border-zinc-800 p-6 md:p-8">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-1.5 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-zinc-100 mb-2">Elegí tu plan</h2>
+          <p className="text-zinc-400 text-sm">Actualizá tu plan para desbloquear más funciones</p>
+        </div>
+
+        {/* Billing cycle toggle */}
+        <div className="flex items-center justify-center gap-3 mb-8">
+          <button
+            onClick={() => setBillingCycle('monthly')}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+              billingCycle === 'monthly'
+                ? 'bg-violet-600 text-white'
+                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+            )}
+          >
+            Mensual
+          </button>
+          <button
+            onClick={() => setBillingCycle('annual')}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium transition-colors relative',
+              billingCycle === 'annual'
+                ? 'bg-violet-600 text-white'
+                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+            )}
+          >
+            Anual
+            <Badge className="absolute -top-2 -right-3 bg-emerald-600 text-white text-[10px] px-1.5 py-0">
+              -15%
+            </Badge>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {plans.map((plan) => {
+            const Icon = plan.icon
+            const isCurrent = plan.id === currentPlan
+            const isUpgrade = plans.findIndex((p) => p.id === plan.id) > plans.findIndex((p) => p.id === currentPlan)
+            const price = billingCycle === 'annual' ? plan.priceAnnualMonth : plan.priceMonthly
+
+            return (
+              <div
+                key={plan.id}
+                className={cn(
+                  'relative rounded-xl border p-5 flex flex-col',
+                  plan.popular
+                    ? 'border-violet-500/50 bg-violet-500/5'
+                    : 'border-zinc-800 bg-zinc-900/50',
+                  isCurrent && 'ring-2 ring-violet-500'
+                )}
+              >
+                {plan.popular && (
+                  <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-violet-600 text-white text-xs">
+                    Popular
+                  </Badge>
+                )}
+
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon className="w-5 h-5 text-violet-400" />
+                  <h3 className="font-bold text-zinc-100">{plan.name}</h3>
+                </div>
+
+                <div className="mb-4">
+                  {price === 0 ? (
+                    <p className="text-2xl font-bold text-zinc-100">Gratis</p>
+                  ) : (
+                    <>
+                      <p className="text-2xl font-bold text-zinc-100">
+                        US${price}<span className="text-sm font-normal text-zinc-400">/mes</span>
+                      </p>
+                      {billingCycle === 'annual' && (
+                        <p className="text-xs text-emerald-400 mt-1">
+                          US${Math.round(price * 12)}/año — ahorras US${Math.round(plan.priceMonthly * 12 - price * 12)}
+                        </p>
+                      )}
+                      {billingCycle === 'monthly' && plan.priceMonthly > 0 && (
+                        <p className="text-xs text-zinc-500 mt-1">
+                          o US${plan.priceAnnualMonth}/mes con plan anual
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <ul className="space-y-2 mb-6 flex-1">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-zinc-300">
+                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                      {f}
+                    </li>
+                  ))}
+                  {plan.notIncluded.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-zinc-600">
+                      <X className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                {isCurrent ? (
+                  <Button disabled className="w-full bg-zinc-800 text-zinc-400">
+                    Plan actual
+                  </Button>
+                ) : isUpgrade ? (
+                  <Button
+                    onClick={() => handleUpgrade(plan.id)}
+                    disabled={!!loading}
+                    className="w-full bg-violet-600 hover:bg-violet-500 text-white"
+                  >
+                    {loading === plan.id ? 'Procesando...' : `Upgrade a ${plan.name}`}
+                  </Button>
+                ) : (
+                  <Button disabled variant="outline" className="w-full border-zinc-700 text-zinc-500">
+                    —
+                  </Button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}

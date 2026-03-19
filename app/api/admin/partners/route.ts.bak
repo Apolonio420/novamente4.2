@@ -1,0 +1,130 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { updateTenant, getAllTenants } from '@/lib/partners/tenant'
+import { PLAN_FEATURES } from '@/lib/partners/plans'
+import type { Plan } from '@/lib/partners/types'
+
+const db = () => supabaseAdmin as any
+
+// Emails authorized to access the admin panel
+const ADMIN_EMAILS = [
+  'apolonio@novamente.ar',
+  'sambu@novamente.ar',
+]
+
+async function authenticateAdmin(request: NextRequest): Promise<{ error?: string }> {
+  const authHeader = request.headers.get('authorization')
+  let token: string | null = authHeader?.replace('Bearer ', '') ?? null
+
+  if (!token) {
+    const allCookies = request.cookies.getAll()
+    for (const cookie of allCookies) {
+      if (cookie.name.startsWith('sb-') && cookie.name.endsWith('-auth-token')) {
+        try {
+          const parsed = JSON.parse(cookie.value)
+          token = Array.isArray(parsed) ? parsed[0] : parsed
+        } catch {
+          token = cookie.value
+        }
+        break
+      }
+    }
+  }
+
+  if (!token) return { error: 'No autenticado' }
+
+  const { data: userData, error } = await supabaseAdmin.auth.getUser(token)
+  if (error || !userData?.user) return { error: 'Token invalido' }
+
+  const email = userData.user.email
+  if (!email || !ADMIN_EMAILS.includes(email)) {
+    return { error: 'No autorizado' }
+  }
+
+  return {}
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const auth = await authenticateAdmin(request)
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: 401 })
+    }
+
+    const tenants = await getAllTenants()
+
+    // Fetch products and leads counts for each tenant in parallel
+    const partnersWithCounts = await Promise.all(
+      tenants.map(async (tenant) => {
+        const [productsResult, leadsResult] = await Promise.all([
+          db()
+            .from('partner_products')
+            .select('*', { count: 'exact', head: true })
+            .eq('tenant_id', tenant.id),
+          db()
+            .from('partner_leads')
+            .select('*', { count: 'exact', head: true })
+            .eq('tenant_id', tenant.id)
+            .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
+        ])
+
+        return {
+          id: tenant.id,
+          name: tenant.name,
+          slug: tenant.slug,
+          email: tenant.email,
+          plan: tenant.plan,
+          status: tenant.status,
+          storefront_published: tenant.storefront_published,
+          created_at: tenant.created_at,
+          products_count: productsResult.count || 0,
+          leads_count: leadsResult.count || 0,
+        }
+      }),
+    )
+
+    return NextResponse.json({ partners: partnersWithCounts })
+  } catch (error) {
+    console.error('GET /api/admin/partners error:', error)
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const auth = await authenticateAdmin(request)
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { tenantId, updates } = body
+
+    if (!tenantId || !updates) {
+      return NextResponse.json(
+        { error: 'tenantId y updates son requeridos' },
+        { status: 400 },
+      )
+    }
+
+    // If plan is being changed, apply PLAN_FEATURES limits
+    const finalUpdates = { ...updates }
+    if (updates.plan && ['starter', 'growth', 'pro'].includes(updates.plan)) {
+      const features = PLAN_FEATURES[updates.plan as Plan]
+      finalUpdates.max_products = features.maxProducts
+      finalUpdates.max_leads_per_month = features.maxLeadsPerMonth
+      finalUpdates.seo_indexable = features.seoIndexable
+      finalUpdates.design_engine_mode = features.designEngine
+    }
+
+    const updated = await updateTenant(tenantId, finalUpdates)
+    if (!updated) {
+      return NextResponse.json({ error: 'No se pudo actualizar' }, { status: 404 })
+    }
+
+    return NextResponse.json({ partner: updated })
+  } catch (error) {
+    console.error('PATCH /api/admin/partners error:', error)
+    return NextResponse.json({ error: 'Error interno' }, { status: 500 })
+  }
+}

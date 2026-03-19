@@ -31,7 +31,7 @@ export default function FacebookPixel() {
         <>
             <Script
                 id="fb-pixel"
-                strategy="afterInteractive"
+                strategy="lazyOnload"
                 src={`https://connect.facebook.net/en_US/fbevents.js`}
                 onLoad={() => {
                     ; (window as any).fbq('init', pixelId)
@@ -41,7 +41,7 @@ export default function FacebookPixel() {
             {/* Fallback script in case onLoad doesn't fire as expected or for faster init */}
             <Script
                 id="fb-pixel-init"
-                strategy="afterInteractive"
+                strategy="lazyOnload"
                 dangerouslySetInnerHTML={{
                     __html: `
             !function(f,b,e,v,n,t,s)

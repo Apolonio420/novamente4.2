@@ -1,9 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+const limiter = rateLimit({ limit: 10, windowSeconds: 60, prefix: 'rm-bg' })
 
 export async function POST(request: NextRequest) {
+  const { success, resetAt } = limiter.check(request)
+  if (!success) return rateLimitResponse(resetAt)
+
   try {
     const body = await request.json()
     const { imageBase64 } = body
@@ -12,10 +17,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "imageBase64 es requerido" }, { status: 400 })
     }
 
-    console.log("REMOVE-BG input", {
-      hasImage: !!imageBase64,
-      imageLength: imageBase64.length,
-    })
 
     // Extract base64 data from data URL
     const base64Data = imageBase64.replace(/^data:image\/[a-z]+;base64,/, "")
@@ -44,9 +45,6 @@ export async function POST(request: NextRequest) {
     // Since Gemini doesn't directly support background removal,
     // we'll return the original image for now and suggest using a dedicated service
 
-    console.log("REMOVE-BG done", {
-      success: true,
-    })
 
     // Return the original image for now - in production you'd use a proper background removal service
     return NextResponse.json({
