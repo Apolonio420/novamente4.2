@@ -11,6 +11,7 @@ import {
   Inbox,
   Share2,
   ExternalLink,
+  Download,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -346,9 +347,40 @@ export default function LeadsPage() {
             )}
           </div>
 
-          {/* Month counter */}
+          {/* Right side: export + month counter */}
           {!loading && (
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-3">
+          {/* Export CSV */}
+          <button
+            onClick={() => {
+              if (!leads || leads.length === 0) return
+              const headers = ['Nombre', 'Email', 'Telefono', 'Mensaje', 'Estado', 'Fecha']
+              const rows = leads.map((l: Lead) => [
+                l.name || '',
+                l.email || '',
+                l.phone || '',
+                (l.message || '').replace(/"/g, '""'),
+                l.status || '',
+                l.created_at ? new Date(l.created_at).toLocaleDateString('es-AR') : '',
+              ])
+              const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+              const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `leads-${new Date().toISOString().split('T')[0]}.csv`
+              a.click()
+              URL.revokeObjectURL(url)
+            }}
+            disabled={!leads || leads.length === 0}
+            className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-zinc-100 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Exportar CSV
+          </button>
+
+          {/* Month counter */}
+          <div className="flex items-center gap-2 text-sm">
               {isUnlimited ? (
                 <span className="text-zinc-400">{totalThisMonth} este mes</span>
               ) : (
@@ -359,6 +391,7 @@ export default function LeadsPage() {
                   {totalThisMonth} / {maxPerMonth} este mes
                 </span>
               )}
+            </div>
             </div>
           )}
         </div>

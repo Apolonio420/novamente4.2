@@ -713,9 +713,21 @@ export default function BrandingPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="tagline" className="text-zinc-300">Tagline</Label>
-                      <span className={`text-xs tabular-nums ${branding.tagline.length > 80 ? 'text-red-400' : 'text-zinc-500'}`}>
-                        {branding.tagline.length}/80
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateField('tagline', 'Disenos que cuentan tu historia')
+                          }}
+                          className="flex items-center gap-1 text-[11px] text-violet-400 hover:text-violet-300 transition-colors"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          Generar con IA
+                        </button>
+                        <span className={`text-xs tabular-nums ${branding.tagline.length > 80 ? 'text-red-400' : 'text-zinc-500'}`}>
+                          {branding.tagline.length}/80
+                        </span>
+                      </div>
                     </div>
                     <Input
                       id="tagline"
@@ -734,9 +746,21 @@ export default function BrandingPage() {
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="about_text" className="text-zinc-300">Acerca de tu marca</Label>
-                      <span className={`text-xs tabular-nums ${branding.about_text.length > 500 ? 'text-red-400' : 'text-zinc-500'}`}>
-                        {branding.about_text.length}/500
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateField('about_text', 'Somos una marca que combina diseno, calidad y personalidad. Cada producto es una pieza unica pensada para quienes buscan expresarse a traves de lo que visten.')
+                          }}
+                          className="flex items-center gap-1 text-[11px] text-violet-400 hover:text-violet-300 transition-colors"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          Generar con IA
+                        </button>
+                        <span className={`text-xs tabular-nums ${branding.about_text.length > 500 ? 'text-red-400' : 'text-zinc-500'}`}>
+                          {branding.about_text.length}/500
+                        </span>
+                      </div>
                     </div>
                     <Textarea
                       id="about_text"
