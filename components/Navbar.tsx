@@ -71,7 +71,8 @@ export function Navbar() {
       subItems: [
         { label: "PROGRAMA PARTNERS", href: "/partners" },
         { label: "DIRECTORIO", href: "/partners/directory" },
-        { label: "MARCAS", href: "/merch" }
+        { label: "MARCAS", href: "/merch" },
+        { label: "MI WORKSPACE", href: "/partners/login" }
       ]
     },
     { label: "DISEÑA", href: "/#generator-section", isButton: true },

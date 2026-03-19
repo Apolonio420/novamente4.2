@@ -195,6 +195,12 @@ export default function PartnersPage() {
                 </Button>
               </Link>
             </div>
+            <p className="mt-4 text-sm text-zinc-500">
+              ¿Ya sos partner?{" "}
+              <Link href="/partners/login" className="text-purple-400 hover:text-purple-300 underline">
+                Iniciá sesión
+              </Link>
+            </p>
           </div>
         </div>
       </section>
