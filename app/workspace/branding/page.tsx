@@ -30,6 +30,7 @@ import {
   Building2,
   Music,
   ExternalLink,
+  Package,
 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -116,84 +117,118 @@ interface Toast {
 // Live Preview Component
 // ---------------------------------------------------------------------------
 
-function LivePreview({ branding }: { branding: BrandingData }) {
+function LivePreview({ branding, slug }: { branding: BrandingData; slug: string | null }) {
   const font = FONT_OPTIONS.find((f) => f.value === branding.font_preference)
   const fontFamily = font?.family || 'Inter, system-ui, sans-serif'
+  const brandColor = branding.primary_color === '#000000' ? '#e4e4e7' : branding.primary_color
 
   return (
     <div className="rounded-xl border border-zinc-700/50 bg-zinc-900/80 overflow-hidden shadow-2xl">
-      {/* Preview header bar */}
-      <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center gap-2">
-        <Eye className="w-3.5 h-3.5 text-zinc-500" />
-        <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Vista previa</span>
+      {/* Browser chrome bar */}
+      <div className="px-3 py-2 border-b border-zinc-800 flex items-center gap-2">
+        <div className="flex gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-zinc-700" />
+          <span className="w-2 h-2 rounded-full bg-zinc-700" />
+          <span className="w-2 h-2 rounded-full bg-zinc-700" />
+        </div>
+        <div className="flex-1 mx-2 h-5 rounded bg-zinc-800/80 flex items-center px-2">
+          <span className="text-[9px] text-zinc-600 truncate">novamente.ar/merch/{slug || 'tu-marca'}</span>
+        </div>
       </div>
 
-      {/* Mini storefront */}
-      <div className="p-4 space-y-3">
-        {/* Banner area */}
+      {/* Mini storefront simulation */}
+      <div style={{ backgroundColor: branding.secondary_color }} className="transition-colors duration-300">
+        {/* Header */}
         <div
-          className="relative w-full h-16 rounded-lg flex items-center justify-center overflow-hidden"
+          className="flex items-center gap-2 px-3 py-2 transition-colors duration-300"
           style={{ backgroundColor: branding.primary_color }}
         >
-          {branding.banner_url ? (
-            <NextImage src={branding.banner_url} alt="Banner" fill className="object-cover" unoptimized />
+          {branding.logo_url ? (
+            <div className="relative w-6 h-6 rounded shrink-0 overflow-hidden">
+              <NextImage src={branding.logo_url} alt="Logo" fill className="object-cover" unoptimized />
+            </div>
           ) : (
-            <span className="text-xs opacity-50" style={{ color: branding.secondary_color }}>
-              Banner
-            </span>
+            <div className="w-6 h-6 rounded flex items-center justify-center" style={{ backgroundColor: branding.accent_color }}>
+              <span className="text-[8px] font-bold" style={{ color: branding.secondary_color }}>
+                {(slug || 'M').charAt(0).toUpperCase()}
+              </span>
+            </div>
+          )}
+          <span className="text-[10px] font-semibold truncate" style={{ fontFamily, color: branding.secondary_color }}>
+            {slug?.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Tu Marca'}
+          </span>
+        </div>
+
+        {/* Hero banner */}
+        <div
+          className="relative w-full h-14 flex items-center justify-center overflow-hidden transition-colors duration-300"
+          style={{ backgroundColor: branding.primary_color + '15' }}
+        >
+          {branding.hero_url || branding.banner_url ? (
+            <NextImage
+              src={branding.hero_url || branding.banner_url}
+              alt="Hero"
+              fill
+              className="object-cover"
+              unoptimized
+            />
+          ) : (
+            <div className="text-center px-2">
+              <p className="text-[9px] font-semibold" style={{ fontFamily, color: brandColor }}>
+                {branding.tagline || 'Tu tagline aparece aca'}
+              </p>
+            </div>
           )}
         </div>
 
-        {/* Logo + Brand name */}
-        <div className="flex items-center gap-3">
+        {/* Products grid */}
+        <div className="px-2 py-2">
+          <p className="text-[8px] font-semibold mb-1.5 px-1" style={{ fontFamily, color: brandColor }}>
+            Productos
+          </p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {['Remera Oversize', 'Hoodie', 'Classic Fit', 'Canvas'].map((name) => (
+              <div key={name} className="rounded border border-zinc-200/10 overflow-hidden" style={{ backgroundColor: branding.secondary_color }}>
+                <div className="h-12 bg-zinc-800/30 flex items-center justify-center">
+                  <Package className="w-4 h-4 text-zinc-600/50" />
+                </div>
+                <div className="p-1.5">
+                  <p className="text-[7px] font-medium truncate" style={{ fontFamily, color: brandColor }}>{name}</p>
+                  <p className="text-[7px]" style={{ color: branding.accent_color }}>$24,900</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA bar */}
+        <div className="px-2 pb-2">
           <div
-            className="relative w-10 h-10 rounded-lg shrink-0 flex items-center justify-center overflow-hidden border border-zinc-700/50"
-            style={{ backgroundColor: branding.primary_color + '20' }}
+            className="w-full py-1.5 rounded text-center text-[8px] font-semibold transition-colors duration-300"
+            style={{
+              backgroundColor: branding.accent_color,
+              color: branding.secondary_color,
+              fontFamily,
+            }}
           >
-            {branding.logo_url ? (
-              <NextImage src={branding.logo_url} alt="Logo" fill className="object-cover rounded-lg" unoptimized />
-            ) : (
-              <ImageIcon className="w-4 h-4 text-zinc-600" />
-            )}
-          </div>
-          <div className="min-w-0">
-            <p
-              className="text-sm font-bold truncate"
-              style={{ fontFamily, color: branding.primary_color === '#000000' ? '#e4e4e7' : branding.primary_color }}
-            >
-              Tu Marca
-            </p>
-            <p className="text-xs text-zinc-500 truncate" style={{ fontFamily }}>
-              {branding.tagline || 'Tu tagline aparece aqui'}
-            </p>
+            {branding.cta_text || 'Ver catalogo completo'}
           </div>
         </div>
-
-        {/* Color bar */}
-        <div className="flex gap-1 h-2 rounded-full overflow-hidden">
-          <div className="flex-1 rounded-l-full" style={{ backgroundColor: branding.primary_color }} />
-          <div className="flex-1" style={{ backgroundColor: branding.secondary_color }} />
-          <div className="flex-1 rounded-r-full" style={{ backgroundColor: branding.accent_color }} />
-        </div>
-
-        {/* Sample content */}
-        <div className="space-y-1.5">
-          <div className="h-2 w-3/4 rounded bg-zinc-800" />
-          <div className="h-2 w-1/2 rounded bg-zinc-800/60" />
-        </div>
-
-        {/* CTA button */}
-        <button
-          className="w-full py-2 rounded-lg text-xs font-semibold transition-colors"
-          style={{
-            backgroundColor: branding.accent_color,
-            color: branding.secondary_color,
-            fontFamily,
-          }}
-        >
-          {branding.cta_text || 'Comprar ahora'}
-        </button>
       </div>
+
+      {/* Storefront link */}
+      {slug && (
+        <div className="px-3 py-2 border-t border-zinc-800">
+          <Link
+            href={`/merch/${slug}`}
+            target="_blank"
+            className="flex items-center justify-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Ver mi storefront
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
@@ -391,7 +426,7 @@ export default function BrandingPage() {
         </button>
         {previewOpen && (
           <div className="mt-3">
-            <LivePreview branding={branding} />
+            <LivePreview branding={branding} slug={tenantSlug} />
           </div>
         )}
       </div>
@@ -751,7 +786,7 @@ export default function BrandingPage() {
 
         {/* Right: live preview (desktop only) */}
         <div className="hidden lg:block w-72 shrink-0 sticky top-6">
-          <LivePreview branding={branding} />
+          <LivePreview branding={branding} slug={tenantSlug} />
         </div>
       </div>
 
