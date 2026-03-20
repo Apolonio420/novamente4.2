@@ -9,8 +9,8 @@ const LOGO_OVERRIDES: Record<string, string> = {
   'ventolito': '/partners/ventolito-wind-surf/logo.png',
 }
 
-// DB slugs to hide (duplicates or test tenants)
-const HIDDEN_DB_SLUGS = new Set(['ventolito'])
+// DB slugs to hide (duplicates, test tenants, or broken assets)
+const HIDDEN_DB_SLUGS = new Set(['ventolito', 'hard-demonio'])
 
 export interface DirectoryEntry {
   slug: string
