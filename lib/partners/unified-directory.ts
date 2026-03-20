@@ -9,10 +9,8 @@ const LOGO_OVERRIDES: Record<string, string> = {
   'ventolito': '/partners/ventolito-wind-surf/logo.png',
 }
 
-// DB slug → static slug mapping (prevents duplicates when slugs differ)
-const DB_TO_STATIC_SLUG: Record<string, string> = {
-  'ventolito': 'ventolito-wind-surf',
-}
+// DB slugs to hide (duplicates or test tenants)
+const HIDDEN_DB_SLUGS = new Set(['ventolito'])
 
 export interface DirectoryEntry {
   slug: string
@@ -50,9 +48,9 @@ export interface StorefrontData {
  * Deduplicates by slug (DB wins over static).
  */
 export async function getDirectoryEntries(): Promise<DirectoryEntry[]> {
-  const dbTenants = await getPublishedTenants()
-  // Include both DB slugs and their static aliases for dedup
-  const dbSlugs = new Set(dbTenants.flatMap((t) => [t.slug, DB_TO_STATIC_SLUG[t.slug]].filter(Boolean)))
+  const allDbTenants = await getPublishedTenants()
+  const dbTenants = allDbTenants.filter((t) => !HIDDEN_DB_SLUGS.has(t.slug))
+  const dbSlugs = new Set(dbTenants.map((t) => t.slug))
 
   const dbEntries: DirectoryEntry[] = dbTenants.map((t) => ({
     slug: t.slug,
