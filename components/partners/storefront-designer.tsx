@@ -4,6 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import {
   Sparkles, Loader2, Shirt, X, Send, Download, ZoomIn, ChevronDown,
 } from 'lucide-react'
+import {
+  GARMENT_PRICING,
+  formatPrice as formatGarmentPrice,
+} from '@/lib/partners/garment-pricing'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -252,7 +256,14 @@ export function StorefrontDesigner({
                   )}
                 </div>
                 <p className="text-sm font-medium text-zinc-200">{g.name}</p>
-                <p className="text-xs text-zinc-500">{g.colors.length} color{g.colors.length > 1 ? 'es' : ''}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-zinc-500">{g.colors.length} color{g.colors.length > 1 ? 'es' : ''}</p>
+                  {GARMENT_PRICING[g.key] && (
+                    <p className="text-xs font-semibold" style={{ color: primaryColor }}>
+                      {formatGarmentPrice(GARMENT_PRICING[g.key].b2c_suggested)}
+                    </p>
+                  )}
+                </div>
               </button>
             ))}
           </div>

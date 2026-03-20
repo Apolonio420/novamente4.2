@@ -4,10 +4,21 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Sparkles, Loader2, ImageIcon, Shirt, X, ZoomIn, Send, Plus, Menu, Trash2,
   Download, ArrowUp, Clock, Palette, ChevronDown, Upload as UploadIcon, ExternalLink,
+  ChevronRight, TrendingUp, Info,
 } from 'lucide-react'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import type { StudioMessage, StudioSession, UsageInfo } from '@/lib/partners/studio/types'
 import { createStudioMessage, createStudioSession } from '@/lib/partners/studio/types'
+import {
+  GARMENT_PRICING,
+  TIER_THRESHOLDS,
+  getTierForVolume,
+  getTierLabel,
+  getNextTier,
+  formatPrice as formatGarmentPrice,
+  type PricingTier,
+  type GarmentPricing,
+} from '@/lib/partners/garment-pricing'
 import {
   fetchStudioSessions,
   fetchSessionMessages,
@@ -49,6 +60,26 @@ const COLOR_LABELS: Record<string, string> = {
 
 const STAMP_INTENT_RE = /estampa|stampe|ponel[oae]?|aplica|aplicalo|mockup|pone[mr]?lo|ubicalo|coloca/i
 
+// Garment thumbnail mapping (key → front image path)
+const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = {
+  'aura-oversize-tshirt': {
+    black: '/garments/tshirt-black-oversize-front.jpeg',
+    white: '/garments/tshirt-white-oversize-front.jpeg',
+  },
+  'aldea-classic-tshirt': {
+    black: '/garments/tshirt-black-classic-front.jpeg',
+    white: '/garments/tshirt-white-classic-front.jpeg',
+  },
+  'astra-oversize-hoodie': {
+    black: '/garments/hoodie-black-front.jpeg',
+    cream: '/garments/hoodie-cream-front.jpeg',
+    gray: '/garments/hoodie-gray-front.jpeg',
+  },
+  lienzo: {
+    white: '/garments/lienzo-main.png',
+  },
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -82,6 +113,10 @@ export default function DesignStudioPage() {
 
   // Usage
   const [usage, setUsage] = useState<UsageInfo | null>(null)
+
+  // Right panel
+  const [rightPanelOpen, setRightPanelOpen] = useState(true)
+  const [showPricingTable, setShowPricingTable] = useState(false)
 
   // Lightbox
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null)
@@ -577,7 +612,7 @@ export default function DesignStudioPage() {
           <div ref={chatEndRef} />
         </div>
 
-        {/* Controls bar: garment + color + side */}
+        {/* Compact controls bar: style + side */}
         <div className="flex items-center gap-2 px-4 py-2 border-t border-zinc-800/50 bg-zinc-900/30 overflow-x-auto">
           {/* Style selector */}
           <button
@@ -588,29 +623,15 @@ export default function DesignStudioPage() {
             {styles.find(s => s.key === selectedStyle)?.name || 'Estilo'}
           </button>
 
-          {/* Garment */}
-          <select
-            value={selectedGarment}
-            onChange={e => setSelectedGarment(e.target.value)}
-            className="bg-zinc-800 text-xs text-zinc-300 rounded-lg px-2.5 py-1.5 border-0 outline-none"
+          {/* Current garment indicator (click opens right panel on mobile) */}
+          <button
+            onClick={() => setRightPanelOpen(!rightPanelOpen)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-800 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors whitespace-nowrap lg:hidden"
           >
-            {garments.map(g => <option key={g.key} value={g.key}>{g.name}</option>)}
-          </select>
-
-          {/* Color dots */}
-          <div className="flex items-center gap-1">
-            {(garments.find(g => g.key === selectedGarment)?.colors || ['black']).map(c => (
-              <button
-                key={c}
-                onClick={() => setSelectedColor(c)}
-                className={`w-5 h-5 rounded-full border-2 transition-all ${
-                  selectedColor === c ? 'border-violet-500 scale-110' : 'border-zinc-600'
-                }`}
-                style={{ backgroundColor: COLOR_MAP[c] || c }}
-                title={COLOR_LABELS[c] || c}
-              />
-            ))}
-          </div>
+            <Shirt className="h-3 w-3" />
+            {garments.find(g => g.key === selectedGarment)?.name || 'Prenda'}
+            <ChevronRight className={`h-3 w-3 transition-transform ${rightPanelOpen ? 'rotate-90' : ''}`} />
+          </button>
 
           {/* Side toggle */}
           <div className="flex items-center bg-zinc-800 rounded-lg overflow-hidden text-xs">
@@ -627,6 +648,15 @@ export default function DesignStudioPage() {
               Espalda
             </button>
           </div>
+
+          <div className="ml-auto" />
+
+          {/* Selected garment price badge */}
+          {selectedGarment && GARMENT_PRICING[selectedGarment] && (
+            <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md whitespace-nowrap">
+              Costo: {formatGarmentPrice(GARMENT_PRICING[selectedGarment].on_demand)}
+            </span>
+          )}
         </div>
 
         {/* Input area */}
@@ -663,6 +693,187 @@ export default function DesignStudioPage() {
           </div>
         </div>
       </div>
+
+      {/* ---- Right Panel: Garments + Pricing ---- */}
+      <div className={`
+        fixed inset-y-0 right-0 z-40 w-80 bg-zinc-900/95 backdrop-blur border-l border-zinc-800
+        transform transition-transform duration-200
+        lg:relative lg:translate-x-0
+        ${rightPanelOpen ? 'translate-x-0' : 'translate-x-full'}
+      `}>
+        <div className="flex flex-col h-full">
+          {/* Panel header */}
+          <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+            <h3 className="font-semibold text-sm text-zinc-300 flex items-center gap-2">
+              <Shirt className="h-4 w-4 text-violet-400" />
+              Prendas Base
+            </h3>
+            <button onClick={() => setRightPanelOpen(false)} className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 lg:hidden">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Garment cards */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {garments.map(g => {
+              const pricing = GARMENT_PRICING[g.key]
+              const isSelected = selectedGarment === g.key
+              const thumbKey = Object.keys(GARMENT_THUMBNAILS[g.key] || {})[0] || 'black'
+              const thumbUrl = GARMENT_THUMBNAILS[g.key]?.[selectedColor] || GARMENT_THUMBNAILS[g.key]?.[thumbKey]
+
+              return (
+                <button
+                  key={g.key}
+                  onClick={() => {
+                    setSelectedGarment(g.key)
+                    // Reset color if not available for this garment
+                    if (!g.colors.includes(selectedColor)) {
+                      setSelectedColor(g.colors[0] || 'black')
+                    }
+                  }}
+                  className={`w-full text-left rounded-xl border transition-all ${
+                    isSelected
+                      ? 'border-violet-500 bg-violet-500/10 shadow-lg shadow-violet-500/5'
+                      : 'border-zinc-800 hover:border-zinc-600 bg-zinc-800/30'
+                  }`}
+                >
+                  <div className="flex gap-3 p-3">
+                    {/* Thumbnail */}
+                    {thumbUrl && (
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
+                        <img src={thumbUrl} alt={g.name} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium truncate ${isSelected ? 'text-violet-300' : 'text-zinc-200'}`}>
+                        {g.name}
+                      </p>
+
+                      {/* Price */}
+                      {pricing && (
+                        <p className="text-sm font-semibold text-emerald-400 mt-0.5">
+                          {formatGarmentPrice(pricing.on_demand)}
+                        </p>
+                      )}
+
+                      {/* Color dots */}
+                      <div className="flex items-center gap-1 mt-1.5">
+                        {g.colors.map(c => (
+                          <button
+                            key={c}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setSelectedGarment(g.key)
+                              setSelectedColor(c)
+                            }}
+                            className={`w-4 h-4 rounded-full border transition-all ${
+                              isSelected && selectedColor === c
+                                ? 'border-violet-500 scale-110 ring-1 ring-violet-500/50'
+                                : 'border-zinc-600'
+                            }`}
+                            style={{ backgroundColor: COLOR_MAP[c] || c }}
+                            title={COLOR_LABELS[c] || c}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+
+            {/* Tier progression card */}
+            <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-800/30 p-3">
+              <button
+                onClick={() => setShowPricingTable(!showPricingTable)}
+                className="w-full flex items-center justify-between text-sm"
+              >
+                <span className="flex items-center gap-2 text-zinc-300 font-medium">
+                  <TrendingUp className="h-4 w-4 text-emerald-400" />
+                  Precios por volumen
+                </span>
+                <ChevronDown className={`h-4 w-4 text-zinc-500 transition-transform ${showPricingTable ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Current tier info */}
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-xs bg-violet-600/20 text-violet-300 px-2 py-0.5 rounded-full">
+                  On Demand
+                </span>
+                <span className="text-xs text-zinc-500">Tu tier actual</span>
+              </div>
+
+              <p className="text-xs text-zinc-500 mt-2 flex items-start gap-1">
+                <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                Vendé más y desbloqueá precios más bajos automáticamente.
+              </p>
+
+              {/* Expandable pricing table */}
+              {showPricingTable && (
+                <div className="mt-3 space-y-3">
+                  {/* Tier thresholds */}
+                  <div className="space-y-1">
+                    {TIER_THRESHOLDS.map((t, i) => (
+                      <div key={t.tier} className={`flex items-center justify-between text-xs px-2 py-1.5 rounded-lg ${
+                        i === 0 ? 'bg-violet-600/10 text-violet-300' : 'text-zinc-400'
+                      }`}>
+                        <span className="font-medium">{t.label}</span>
+                        <span>{t.minUnits === 0 ? 'Base' : `${t.minUnits}+ uds/mes`}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Price table per garment */}
+                  <div className="border-t border-zinc-700 pt-3">
+                    <p className="text-xs font-medium text-zinc-400 mb-2">Precios por prenda</p>
+                    <div className="space-y-2">
+                      {Object.values(GARMENT_PRICING).map(gp => (
+                        <div key={gp.key} className="text-xs">
+                          <p className="text-zinc-300 font-medium mb-1">{gp.name}</p>
+                          <div className="grid grid-cols-4 gap-1">
+                            <span className="text-violet-300">{formatGarmentPrice(gp.on_demand)}</span>
+                            <span className="text-zinc-400">{formatGarmentPrice(gp.b2b_starter)}</span>
+                            <span className="text-zinc-400">{formatGarmentPrice(gp.b2b_pro)}</span>
+                            <span className="text-emerald-400">{formatGarmentPrice(gp.b2b_drop)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-4 gap-1 mt-2 text-[10px] text-zinc-600">
+                      <span>On Demand</span>
+                      <span>Starter</span>
+                      <span>Pro</span>
+                      <span>Drop</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* B2C suggested price hint */}
+            {selectedGarment && GARMENT_PRICING[selectedGarment] && (
+              <div className="rounded-xl border border-zinc-800 bg-zinc-800/30 p-3">
+                <p className="text-xs text-zinc-400">
+                  <span className="font-medium text-zinc-300">Precio sugerido de venta:</span>{' '}
+                  {formatGarmentPrice(GARMENT_PRICING[selectedGarment].b2c_suggested)}
+                </p>
+                <p className="text-[10px] text-zinc-600 mt-1">
+                  Margen estimado: {formatGarmentPrice(
+                    GARMENT_PRICING[selectedGarment].b2c_suggested - GARMENT_PRICING[selectedGarment].on_demand
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Right panel overlay (mobile) */}
+      {rightPanelOpen && (
+        <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setRightPanelOpen(false)} />
+      )}
 
       {/* ---- Style Modal ---- */}
       {styleModalOpen && (

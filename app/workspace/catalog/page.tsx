@@ -26,6 +26,10 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { ImageUpload } from '@/components/partners/image-upload'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import {
+  ALL_GARMENT_PRICING,
+  formatPrice as formatGarmentPrice,
+} from '@/lib/partners/garment-pricing'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -562,6 +566,30 @@ export default function CatalogPage() {
             Limpiar filtros
           </button>
         </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* Base garment costs reference                                     */}
+      {/* ============================================================== */}
+      {!loading && products.length > 0 && (
+        <details className="mb-4 rounded-xl border border-zinc-800/50 bg-zinc-900/40">
+          <summary className="flex items-center gap-2 px-4 py-3 text-sm text-zinc-400 cursor-pointer hover:text-zinc-300 transition-colors select-none">
+            <ShoppingBag className="h-4 w-4 text-emerald-400" />
+            <span className="font-medium">Costo base de prendas Novamente</span>
+            <span className="text-xs text-zinc-600 ml-auto">Click para ver</span>
+          </summary>
+          <div className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {Object.values(ALL_GARMENT_PRICING).map(gp => (
+              <div key={gp.key} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-zinc-800/40 text-xs">
+                <span className="text-zinc-300 truncate">{gp.name}</span>
+                <span className="text-emerald-400 font-semibold whitespace-nowrap">{formatGarmentPrice(gp.on_demand)}</span>
+              </div>
+            ))}
+          </div>
+          <p className="px-4 pb-3 text-[11px] text-zinc-600">
+            Estos son tus costos actuales (On Demand). Vendé más y desbloqueá precios más bajos automáticamente.
+          </p>
+        </details>
       )}
 
       {/* ============================================================== */}
