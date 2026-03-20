@@ -7,8 +7,8 @@ import { ImageHistory } from "@/components/ImageHistory"
 import { ImageGenerator } from "@/components/ImageGenerator"
 import { Loader2, AlertTriangle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { getUserImages } from "@/lib/db"
 import { getCurrentUser } from "@/lib/auth"
+import type { HistoryImage } from "@/components/ImageHistory"
 
 interface DesignPageClientProps {
   imageId: string
@@ -92,31 +92,21 @@ export function DesignPageClient({ imageId }: DesignPageClientProps) {
     }
   }, [imageId, router, toast])
 
-  // Cargar historial de imágenes
+  // Load image history via server-side API (session cookie handles identity)
   useEffect(() => {
     const loadImageHistory = async () => {
       try {
         const currentUser = await getCurrentUser()
         setUser(currentUser)
-
-        if (currentUser?.id) {
-          const images = await getUserImages(currentUser.id)
-          setRecentImages(images)
-          console.log("📋 Historial de imágenes cargado (user):", images.length)
-        } else {
-          // Obtener sessionId del backend
-          const res = await fetch('/api/user/session')
+        const res = await fetch("/api/images/history?limit=50", { credentials: "include" })
+        if (res.ok) {
           const data = await res.json()
-          const sessionId = data?.sessionId as string | undefined
-          const images = await getUserImages(undefined, sessionId)
-          setRecentImages(images)
-          console.log("📋 Historial de imágenes cargado (session):", images.length)
+          setRecentImages(data.images || [])
         }
       } catch (error) {
-        console.error("❌ Error cargando historial de imágenes:", error)
+        console.error("Error loading image history:", error)
       }
     }
-
     loadImageHistory()
   }, [])
 
@@ -166,16 +156,11 @@ export function DesignPageClient({ imageId }: DesignPageClientProps) {
       imageUrl: imageUrl
     } : null)
     
-    // Recargar el historial para incluir la nueva imagen
-    const loadImageHistory = async () => {
-      try {
-        const images = await getUserImages(user?.id)
-        setRecentImages(images)
-      } catch (error) {
-        console.error("❌ Error recargando historial:", error)
-      }
-    }
-    loadImageHistory()
+    // Reload history to include new image
+    fetch("/api/images/history?limit=50", { credentials: "include" })
+      .then(r => r.json())
+      .then(data => setRecentImages(data.images || []))
+      .catch(() => {})
   }
 
   if (loading) {

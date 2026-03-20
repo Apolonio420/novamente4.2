@@ -84,7 +84,7 @@ async function checkImageExists(url: string, prompt: string, userId?: string): P
 }
 
 // Export que necesitas - saveGeneratedImage
-export async function saveGeneratedImage(url: string, prompt: string, userId?: string): Promise<SavedImage | null> {
+export async function saveGeneratedImage(url: string, prompt: string, userId?: string, sessionId?: string): Promise<SavedImage | null> {
   try {
     console.log("💾 Saving image to database with parameters:", {
       urlType: typeof url,
@@ -146,14 +146,19 @@ export async function saveGeneratedImage(url: string, prompt: string, userId?: s
     console.log("✅ Normalized URL to clean key:", cleanKey.substring(0, 100))
     console.log("🔗 URL to be saved in DB:", finalUrlToSave ? finalUrlToSave.substring(0, 100) : "null")
 
-    const newImage = {
+    const newImage: Record<string, unknown> = {
       id: imageId,
-      url: finalUrlToSave, // Guardar la URL pública completa
-      storage_key: cleanKey, // Mantener el key limpio para uso interno
+      url: finalUrlToSave,
+      storage_key: cleanKey,
       prompt,
       user_id: finalUserId,
       has_bg_removed: false,
       url_without_bg: null,
+    }
+
+    // Save session_id for anonymous users so we can retrieve their history
+    if (!finalUserId && sessionId) {
+      newImage.session_id = sessionId
     }
 
     const { data, error } = await (supabase.from("images") as any).insert(newImage).select().single()

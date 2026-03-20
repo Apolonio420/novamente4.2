@@ -15,7 +15,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowRight, Zap, Shirt, Star, Sparkles, Palette, Wand2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { type SavedImage } from "@/lib/db"
+// Image history now fetches via /api/images/history (session-based)
 import { ScrollButton } from "@/components/scroll-button"
 import { INTERNAL_LINKS } from "@/lib/config/links"
 

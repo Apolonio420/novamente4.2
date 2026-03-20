@@ -310,7 +310,12 @@ export function ImageGenerator({
       } else {
         // Si no hay base64, guardar la URL directamente
         try {
-          const savedImage = await saveGeneratedImage(imageUrl, prompt.trim(), undefined)
+          // Read session cookie for anonymous user tracking
+          const sessionId = document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("novamente_session_id="))
+            ?.split("=")[1]
+          const savedImage = await saveGeneratedImage(imageUrl, prompt.trim(), undefined, sessionId)
 
           if (onImageGenerated) {
             onImageGenerated(imageUrl)
