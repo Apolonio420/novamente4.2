@@ -3,6 +3,11 @@ import { getPublishedProducts } from './catalog'
 import { partners as staticPartners, getPartnerById } from '@/src/data/partners'
 import type { Tenant, PartnerProduct } from './types'
 
+// Override logos that have baked-in checkerboard patterns (bad exports)
+const LOGO_OVERRIDES: Record<string, string> = {
+  'hard-demonio': '/brands/hard-demonio-logo.jpeg',
+}
+
 export interface DirectoryEntry {
   slug: string
   name: string
@@ -47,8 +52,8 @@ export async function getDirectoryEntries(): Promise<DirectoryEntry[]> {
     name: t.name,
     slogan: t.tagline,
     description: t.description,
-    logo: t.logo_url,
-    cardImage: t.logo_url,
+    logo: LOGO_OVERRIDES[t.slug] || t.logo_url,
+    cardImage: LOGO_OVERRIDES[t.slug] || t.logo_url,
     banner: t.banner_url,
     featured: t.plan === 'pro',
     productCount: 0, // Will be enriched below
@@ -91,7 +96,7 @@ export async function getStorefrontBySlug(slug: string): Promise<StorefrontData 
       description: tenant.description,
       values: tenant.about_text,
       mission: null,
-      logo: tenant.logo_url,
+      logo: LOGO_OVERRIDES[tenant.slug] || tenant.logo_url,
       banner: tenant.banner_url,
       instagram: tenant.instagram,
       primaryColor: tenant.primary_color,
