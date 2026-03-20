@@ -52,8 +52,8 @@ export default async function MerchPage() {
         {sorted.map((brand) => (
           <Link key={brand.slug} href={`/merch/${brand.slug}`} className="group">
             <div className="border rounded-xl overflow-hidden bg-card hover:shadow-lg transition-all duration-300 group-hover:scale-105">
-              {/* Brand Image — solid black bg for transparent PNGs */}
-              <div className="aspect-square relative overflow-hidden bg-black">
+              {/* Brand Image — solid dark bg for transparent PNGs */}
+              <div className="aspect-square relative overflow-hidden bg-[#1a1a2e]">
                 {brand.cardImage || brand.logo ? (
                   <Image
                     src={brand.cardImage || brand.logo || ""}

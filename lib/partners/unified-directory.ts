@@ -3,9 +3,15 @@ import { getPublishedProducts } from './catalog'
 import { partners as staticPartners, getPartnerById } from '@/src/data/partners'
 import type { Tenant, PartnerProduct } from './types'
 
-// Override logos that have baked-in checkerboard patterns (bad exports)
+// Override logos (fix bad exports or missing logos in DB)
 const LOGO_OVERRIDES: Record<string, string> = {
   'hard-demonio': '/brands/hard-demonio-logo.jpeg',
+  'ventolito': '/partners/ventolito-wind-surf/logo.png',
+}
+
+// DB slug → static slug mapping (prevents duplicates when slugs differ)
+const DB_TO_STATIC_SLUG: Record<string, string> = {
+  'ventolito': 'ventolito-wind-surf',
 }
 
 export interface DirectoryEntry {
@@ -45,7 +51,8 @@ export interface StorefrontData {
  */
 export async function getDirectoryEntries(): Promise<DirectoryEntry[]> {
   const dbTenants = await getPublishedTenants()
-  const dbSlugs = new Set(dbTenants.map((t) => t.slug))
+  // Include both DB slugs and their static aliases for dedup
+  const dbSlugs = new Set(dbTenants.flatMap((t) => [t.slug, DB_TO_STATIC_SLUG[t.slug]].filter(Boolean)))
 
   const dbEntries: DirectoryEntry[] = dbTenants.map((t) => ({
     slug: t.slug,
