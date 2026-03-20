@@ -137,8 +137,8 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-novamente-blue/10 to-novamente-magenta/10 opacity-30"></div>
         <div className="relative z-10 max-w-4xl mx-auto">
           <p className="novamente-heading text-lg md:text-xl mb-4 text-white/80">CREÁ TU ESTILO ÚNICO</p>
-          <h1 className="text-5xl md:text-7xl font-light tracking-[0.2em] mb-8">
-            <span className="novamente-gradient-text">Ropa personalizada con IA</span>
+          <h1 className="text-3xl sm:text-5xl md:text-7xl font-light tracking-[0.08em] sm:tracking-[0.15em] md:tracking-[0.2em] mb-8">
+            <span className="novamente-gradient-text">Ropa Personalizada con IA</span>
             <span className="sr-only"> — Novamente, indumentaria personalizada con inteligencia artificial en Argentina</span>
           </h1>
           <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto mb-12">
