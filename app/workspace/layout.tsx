@@ -28,6 +28,8 @@ import {
   CreditCard,
   Lock,
 } from 'lucide-react'
+import { AssistantWidget } from '@/components/workspace/assistant-widget'
+import { AssistantProvider } from '@/lib/assistant/assistant-context'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authFetch } from '@/lib/partners/auth-fetch'
@@ -313,6 +315,7 @@ export default function WorkspaceLayout({
   )
 
   return (
+    <AssistantProvider>
     <div className="flex h-screen bg-zinc-950 text-zinc-100 overflow-hidden">
       {/* Desktop sidebar */}
       <aside className={cn(
@@ -439,6 +442,10 @@ export default function WorkspaceLayout({
           {children}
         </main>
       </div>
+
+      {/* AI Assistant */}
+      <AssistantWidget />
     </div>
+    </AssistantProvider>
   )
 }
