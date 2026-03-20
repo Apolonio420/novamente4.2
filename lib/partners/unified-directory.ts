@@ -9,8 +9,13 @@ const LOGO_OVERRIDES: Record<string, string> = {
   'ventolito': '/partners/ventolito-wind-surf/logo.png',
 }
 
-// DB slugs to hide (duplicates, test tenants, or broken assets)
-const HIDDEN_DB_SLUGS = new Set(['ventolito', 'hard-demonio'])
+// Card-only image overrides for entries whose logo export does not work well in the square grid.
+const CARD_IMAGE_OVERRIDES: Record<string, string> = {
+  'hard-demonio': '/partners/hard-demonio/banner.png',
+}
+
+// DB slugs to hide (duplicates or test tenants)
+const HIDDEN_DB_SLUGS = new Set(['ventolito'])
 
 export interface DirectoryEntry {
   slug: string
@@ -58,7 +63,7 @@ export async function getDirectoryEntries(): Promise<DirectoryEntry[]> {
     slogan: t.tagline,
     description: t.description,
     logo: LOGO_OVERRIDES[t.slug] || t.logo_url,
-    cardImage: LOGO_OVERRIDES[t.slug] || t.logo_url,
+    cardImage: CARD_IMAGE_OVERRIDES[t.slug] || LOGO_OVERRIDES[t.slug] || t.logo_url,
     banner: t.banner_url,
     featured: t.plan === 'pro',
     productCount: 0, // Will be enriched below

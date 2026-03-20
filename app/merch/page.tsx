@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight } from "lucide-react"
 import { getDirectoryEntries } from "@/lib/partners/unified-directory"
+import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
   title: "Crea, publica y vendé tu merch con Novamente",
@@ -49,17 +50,29 @@ export default async function MerchPage() {
 
       {/* Brands Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-        {sorted.map((brand) => (
-          <Link key={brand.slug} href={`/merch/${brand.slug}`} className="group">
-            <div className="border rounded-xl overflow-hidden bg-card hover:shadow-lg transition-all duration-300 group-hover:scale-105">
+        {sorted.map((brand) => {
+          const isHardDemonio = brand.slug === "hard-demonio"
+
+          return (
+            <Link key={brand.slug} href={`/merch/${brand.slug}`} className="group">
+              <div className="border rounded-xl overflow-hidden bg-card hover:shadow-lg transition-all duration-300 group-hover:scale-105">
               {/* Brand Image — solid dark bg for transparent PNGs */}
-              <div className="aspect-square relative overflow-hidden bg-[#1a1a2e]">
+              <div
+                className={cn(
+                  "aspect-square relative overflow-hidden bg-[#1a1a2e]",
+                  isHardDemonio &&
+                    "bg-[radial-gradient(circle_at_top,_rgba(127,29,29,0.38),_transparent_42%),linear-gradient(180deg,_#050505_0%,_#121212_100%)]",
+                )}
+              >
                 {brand.cardImage || brand.logo ? (
                   <Image
                     src={brand.cardImage || brand.logo || ""}
                     alt={`${brand.name} Logo`}
                     fill
-                    className="object-contain p-8 group-hover:scale-110 transition-transform duration-300"
+                    className={cn(
+                      "object-contain p-8 group-hover:scale-110 transition-transform duration-300",
+                      isHardDemonio && "p-3 scale-110 group-hover:scale-[1.16]",
+                    )}
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -67,6 +80,10 @@ export default async function MerchPage() {
                       {brand.name.charAt(0)}
                     </span>
                   </div>
+                )}
+
+                {isHardDemonio && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black via-black/55 to-transparent" />
                 )}
 
                 {/* Featured Badge */}
@@ -106,9 +123,10 @@ export default async function MerchPage() {
                   </Button>
                 </div>
               </div>
-            </div>
-          </Link>
-        ))}
+              </div>
+            </Link>
+          )
+        })}
       </div>
 
       {/* Become a Partner Section */}
