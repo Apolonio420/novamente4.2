@@ -88,7 +88,7 @@ export default function GuiaEstampadoPage() {
           Volver al inicio
         </Link>
         <Link
-          href="https://wa.me/5491131370561?text=Hola!%20Quiero%20estampar%20mis%20prendas"
+          href="https://wa.me/5491162747588?text=Hola!%20Quiero%20estampar%20mis%20prendas"
           target="_blank"
           className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium px-4 py-2 rounded-full transition-colors"
         >
@@ -356,7 +356,7 @@ export default function GuiaEstampadoPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="https://wa.me/5491131370561?text=Hola!%20Quiero%20mi%20prenda%20con%20estampado%20DTG"
+              href="https://wa.me/5491162747588?text=Hola!%20Quiero%20mi%20prenda%20con%20estampado%20DTG"
               target="_blank"
               className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white font-medium px-6 py-3 rounded-full transition-colors"
             >

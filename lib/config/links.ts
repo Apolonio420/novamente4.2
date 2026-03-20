@@ -9,7 +9,7 @@ export const INTERNAL_LINKS = {
 
 // Enlaces externos y atajos usados en varias páginas
 export const WHATSAPP_URL = "https://wa.me/message/DRWR3O2HZY2JG1"
-export const WHATSAPP_BOT_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_BOT_NUMBER || "5492235169720"
+export const WHATSAPP_BOT_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_BOT_NUMBER || "5491162747588"
 export const GENERATOR_URL = INTERNAL_LINKS.generator
 
 export const getWhatsAppLink = (text: string) => {

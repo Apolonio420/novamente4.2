@@ -56,10 +56,10 @@ export default function NosotrosPage() {
     paymentAccepted: 'MercadoPago, Transferencia Bancaria',
     areaServed: { '@type': 'Country', name: 'Argentina' },
     sameAs: ['https://instagram.com/novamente.ar', 'https://twitter.com/Novamentear'],
-    founder: {
-      '@type': 'Person',
-      name: 'Fundador de Novamente',
-    },
+    founder: [
+      { '@type': 'Person', name: 'Juan Ignacio Sambuceti', jobTitle: 'Co-Fundador' },
+      { '@type': 'Person', name: 'Valentin Nunez', jobTitle: 'Co-Fundador & Desarrollador' },
+    ],
   }
 
   return (
@@ -79,7 +79,7 @@ export default function NosotrosPage() {
           Volver al inicio
         </Link>
         <Link
-          href="https://wa.me/5491131370561?text=Hola!%20Quiero%20saber%20m%C3%A1s%20sobre%20Novamente"
+          href="https://wa.me/5491162747588?text=Hola!%20Quiero%20saber%20m%C3%A1s%20sobre%20Novamente"
           target="_blank"
           className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium px-4 py-2 rounded-full transition-colors"
         >
@@ -186,21 +186,53 @@ export default function NosotrosPage() {
 
         {/* Equipo */}
         <section className="mb-16">
-          <h2 className="text-2xl font-bold text-purple-400 mb-4">El Equipo</h2>
-          <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 rounded-full bg-purple-600/30 border border-purple-500/30 flex items-center justify-center">
-                <Users className="w-8 h-8 text-purple-400" />
+          <h2 className="text-2xl font-bold text-purple-400 mb-6">El Equipo</h2>
+          <div className="grid sm:grid-cols-2 gap-6">
+            {/* Juan Ignacio */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <Image
+                  src="/team/juan-ignacio.jpg"
+                  alt="Juan Ignacio Sambuceti"
+                  width={64}
+                  height={64}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-purple-500/30"
+                />
+                <div>
+                  <p className="text-white font-medium">Juan Ignacio Sambuceti</p>
+                  <p className="text-purple-400 text-sm font-medium">Co-Fundador</p>
+                </div>
               </div>
-              <div>
-                <p className="text-white font-medium">[Nombre del fundador]</p>
-                <p className="text-white/50 text-sm">Fundador y Director Creativo</p>
-              </div>
+              <p className="text-white/60 text-sm leading-relaxed">
+                Juan Ignacio es el motor comercial y estrategico detras de Novamente. Con foco en el
+                desarrollo de negocio y la relacion con clientes, se encarga de traducir las necesidades
+                del mercado en soluciones concretas. Su vision emprendedora y su capacidad para conectar
+                personas e ideas son el corazon del proyecto.
+              </p>
             </div>
-            <p className="text-white/60 text-sm italic">
-              Informacion del equipo proximamente. Estamos construyendo algo increible y pronto
-              compartiremos mas sobre las personas detras de Novamente.
-            </p>
+
+            {/* Valentin */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <Image
+                  src="/team/valentin.jpg"
+                  alt="Valentin Nunez"
+                  width={64}
+                  height={64}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-purple-500/30"
+                />
+                <div>
+                  <p className="text-white font-medium">Valentin Nunez</p>
+                  <p className="text-purple-400 text-sm font-medium">Co-Fundador &amp; Desarrollador</p>
+                </div>
+              </div>
+              <p className="text-white/60 text-sm leading-relaxed">
+                Valentin es el arquitecto tecnico de Novamente. Diseno y construyo la plataforma desde
+                cero, siendo responsable de toda la infraestructura, el desarrollo web y los sistemas que
+                hacen posible la experiencia del usuario. Su pasion por la programacion y el detalle
+                tecnico garantizan que todo funcione a la perfeccion.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -237,14 +269,14 @@ export default function NosotrosPage() {
               </div>
             </Link>
             <Link
-              href="https://wa.me/5491131370561"
+              href="https://wa.me/5491162747588"
               target="_blank"
               className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/10 transition-colors"
             >
               <Phone className="w-5 h-5 text-green-400 shrink-0" />
               <div>
                 <p className="text-white font-medium">WhatsApp</p>
-                <p className="text-white/50 text-sm">+54 9 11 3137-0561</p>
+                <p className="text-white/50 text-sm">+54 9 11 6274-7588</p>
               </div>
             </Link>
             <Link

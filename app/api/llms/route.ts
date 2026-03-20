@@ -49,7 +49,7 @@ export async function GET() {
 - Ciudad: Villa Martelli, Buenos Aires
 - Idioma: Español
 - Fundación: 2024
-- Método de contacto: WhatsApp (+54 9 11 3137-0561), email (contact@novamente.ar)
+- Método de contacto: WhatsApp (+54 9 11 6274-7588), email (contact@novamente.ar)
 
 ## Productos Disponibles
 | Producto | Precio (ARS) | Material | Ideal para |
@@ -86,7 +86,7 @@ Novamente ofrece storefronts a marcas y creadores para vender merch premium sin 
 - **Pro** ($100 USD/mes): Google Shopping feed, prioridad de producción, soporte dedicado
 ${partnersSection}
 ## Contacto
-- WhatsApp: +54 9 11 3137-0561
+- WhatsApp: +54 9 11 6274-7588
 - Email: contact@novamente.ar
 - Instagram: @novamente.ar
 - Twitter/X: @Novamentear
