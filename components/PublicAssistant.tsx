@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useCart } from "@/lib/cartStore"
 import {
-  MessageSquare, X, Maximize2, Minimize2, Send, Trash2,
-  ShoppingCart, Loader2, Sparkles, Palette, ChevronRight,
+  X, Maximize2, Minimize2, Send, Trash2,
+  ShoppingCart, Loader2, Sparkles, Palette, ChevronRight, Share2, Copy, Check,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -15,6 +15,7 @@ interface Message {
   text: string
   images?: string[]
   actions?: ParsedAction[]
+  suggestions?: string[]
   timestamp: number
 }
 
@@ -29,7 +30,6 @@ const STORAGE_KEY = "novamente-public-assistant"
 const MAX_STORED = 50
 const MAX_HISTORY = 16
 
-// Products for catalog cards
 const CATALOG = [
   { name: "Aura Oversize T-Shirt", price: 31000, colors: "negro, blanco, caramel", image: "/products/oversize-negro-front.jpeg", garmentType: "aura-oversize-tshirt" },
   { name: "Aldea Classic T-Shirt", price: 28600, colors: "negro, blanco", image: "/products/classic-negro-front.jpeg", garmentType: "aldea-classic-tshirt" },
@@ -37,6 +37,54 @@ const CATALOG = [
   { name: "Buzo Hoodie Unisex", price: 55000, colors: "negro, stone-wash, blanco", image: "/products/hoodie-negro-front.jpeg", garmentType: "buzo-hoodie-unisex" },
   { name: "Musculosa Bali", price: 21800, colors: "blanca, negra, gris", image: "/products/musculosa-bali-front.jpeg", garmentType: "musculosa-bali" },
 ]
+
+// Quick replies based on page context
+const PAGE_SUGGESTIONS: Record<string, string[]> = {
+  "/": ["Quiero diseñar algo", "¿Cómo funciona?", "Ver productos"],
+  "/products": ["¿Qué talle me conviene?", "¿Qué colores hay?", "Quiero diseñar"],
+  "/styles": ["¿Cuál es el mejor estilo?", "Quiero ver manga anime", "Diseñame algo"],
+  "/faq": ["¿Cuánto tarda el envío?", "¿Puedo subir mi logo?", "¿Tienen devoluciones?"],
+  "/nosotros": ["¿Cómo funciona el DTG?", "Quiero ser Partner", "Ver productos"],
+  "/merch": ["¿Puedo personalizar?", "¿Cuánto sale?", "Quiero diseñar algo"],
+}
+const DEFAULT_SUGGESTIONS = ["Ver productos", "Quiero diseñar algo", "¿Cómo funciona?"]
+
+// Welcome bubble messages
+const WELCOME_BUBBLES = [
+  "¡Diseñá tu remera con IA! ✨",
+  "¡Hola! ¿Necesitás ayuda? 👋",
+  "¡Creá tu diseño único! 🎨",
+]
+
+// Typing indicator phrases
+const TYPING_PHRASES = [
+  "Pensando...",
+  "Buscando info...",
+  "Preparando respuesta...",
+  "Analizando...",
+  "Diseñando ideas...",
+]
+
+// Follow-up suggestions based on response content
+function getSuggestions(text: string, actions?: ParsedAction[]): string[] {
+  const hasDesign = actions?.some(a => a.type === "GENERATE_DESIGN" && a.status === "done")
+  const hasMockup = actions?.some(a => a.type === "SHOW_MOCKUP" && a.status === "done")
+  const hasCart = actions?.some(a => a.type === "ADD_TO_CART" && a.status === "done")
+  const hasCatalog = actions?.some(a => a.type === "SHOW_CATALOG")
+
+  if (hasCart) return ["Ir a pagar", "Agregar otra prenda", "¿Cuánto sale el envío?"]
+  if (hasMockup) return ["Quiero comprarlo", "Probalo en otro color", "Generar otro diseño"]
+  if (hasDesign) return ["Verlo en una remera", "Verlo en un hoodie", "Generar otro diseño"]
+  if (hasCatalog) return ["Quiero diseñar algo", "¿Qué talle me conviene?", "¿Hacen envíos?"]
+
+  const lower = text.toLowerCase()
+  if (lower.includes("envío") || lower.includes("envio")) return ["Ver productos", "¿Cuánto tarda?", "Quiero comprar"]
+  if (lower.includes("talle")) return ["Ver productos", "Quiero diseñar", "¿Tienen hoodie?"]
+  if (lower.includes("dtg") || lower.includes("estampad")) return ["Ver productos", "¿Cuántos lavados resiste?", "Quiero diseñar"]
+  if (lower.includes("partner")) return ["¿Cuánto cuesta ser Partner?", "Ver productos", "Contactar por WhatsApp"]
+
+  return ["Ver productos", "Diseñar algo", "¿Cómo funciona?"]
+}
 
 function formatPrice(n: number) {
   return `$${n.toLocaleString("es-AR")}`
@@ -55,28 +103,31 @@ export function PublicAssistant() {
   const router = useRouter()
   const { addItem, getTotalItems } = useCart()
 
-  // Don't render on workspace or admin pages
   if (pathname?.startsWith("/workspace") || pathname?.startsWith("/admin")) return null
 
-  return <AssistantInner addItem={addItem} getTotalItems={getTotalItems} router={router} />
+  return <AssistantInner addItem={addItem} getTotalItems={getTotalItems} router={router} pathname={pathname || "/"} />
 }
 
 function AssistantInner({
   addItem,
   getTotalItems,
   router,
+  pathname,
 }: {
   addItem: (item: any) => void
   getTotalItems: () => number
   router: ReturnType<typeof useRouter>
+  pathname: string
 }) {
   const [open, setOpen] = useState(false)
   const [fullScreen, setFullScreen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [streaming, setStreaming] = useState(false)
+  const [typingPhrase, setTypingPhrase] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const sendRef = useRef<(text?: string) => void>(() => {})
 
   // Load from localStorage
   useEffect(() => {
@@ -105,6 +156,15 @@ function AssistantInner({
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 100)
   }, [open])
+
+  // Rotate typing phrases while streaming
+  useEffect(() => {
+    if (!streaming) return
+    const interval = setInterval(() => {
+      setTypingPhrase(p => (p + 1) % TYPING_PHRASES.length)
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [streaming])
 
   const addMessage = useCallback((msg: Message) => {
     setMessages(prev => [...prev, msg])
@@ -139,7 +199,7 @@ function AssistantInner({
     try {
       switch (action.type) {
         case "GENERATE_DESIGN": {
-          const [prompt, style] = action.params
+          const [prompt] = action.params
           const res = await fetch("/api/generate-image", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -148,8 +208,13 @@ function AssistantInner({
           const data = await res.json()
           if (data.success && data.images?.[0]?.url) {
             updateAction("done", data.images[0].url)
+            // Add guided purchase suggestions after design
+            setMessages(prev => prev.map(m => {
+              if (m.id !== msgId) return m
+              return { ...m, suggestions: ["Verlo en una remera", "Verlo en un hoodie", "Generar otro diseño"] }
+            }))
           } else {
-            updateAction("error", data.error || "No se pudo generar el diseno")
+            updateAction("error", data.error || "No se pudo generar el diseño")
           }
           break
         }
@@ -205,17 +270,19 @@ function AssistantInner({
     }
   }, [addItem, router])
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim()
+  const sendMessage = useCallback(async (overrideText?: string) => {
+    const text = (overrideText || input).trim()
     if (!text || streaming) return
 
-    setInput("")
+    if (!overrideText) setInput("")
     const userMsg: Message = { id: `u-${Date.now()}`, role: "user", text, timestamp: Date.now() }
     addMessage(userMsg)
 
-    const modelMsg: Message = { id: `m-${Date.now()}`, role: "model", text: "", timestamp: Date.now() }
+    const modelMsgId = `m-${Date.now()}`
+    const modelMsg: Message = { id: modelMsgId, role: "model", text: "", timestamp: Date.now() }
     addMessage(modelMsg)
     setStreaming(true)
+    setTypingPhrase(0)
 
     try {
       const history = messages.slice(-MAX_HISTORY).map(m => ({ role: m.role, text: m.text }))
@@ -226,7 +293,7 @@ function AssistantInner({
       })
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Error de conexion" }))
+        const err = await res.json().catch(() => ({ error: "Error de conexión" }))
         updateLastModel(m => ({ ...m, text: err.error || "Error al procesar tu mensaje." }))
         setStreaming(false)
         return
@@ -259,7 +326,7 @@ function AssistantInner({
         }
       }
 
-      // Parse actions from final text
+      // Parse actions
       const actionRegex = /\[ACTION:(\w+)\]\s*(.*)/g
       const actions: ParsedAction[] = []
       let match
@@ -271,23 +338,32 @@ function AssistantInner({
         })
       }
 
-      if (actions.length > 0) {
-        const cleanText = fullText.replace(/\[ACTION:\w+\]\s*.*/g, "").trim()
-        updateLastModel(m => ({ ...m, text: cleanText, actions }))
+      const cleanText = fullText.replace(/\[ACTION:\w+\]\s*.*/g, "").trim()
+      const suggestions = getSuggestions(cleanText, actions)
+      updateLastModel(m => ({
+        ...m,
+        text: cleanText,
+        ...(actions.length > 0 ? { actions } : {}),
+        suggestions,
+      }))
 
-        // Auto-execute SHOW_CATALOG, SHOW_STYLES, GENERATE_DESIGN, SHOW_MOCKUP
+      // Auto-execute visual actions
+      if (actions.length > 0) {
         for (const action of actions) {
           if (["GENERATE_DESIGN", "SHOW_MOCKUP", "SHOW_CATALOG", "SHOW_STYLES"].includes(action.type)) {
-            executeAction(action, modelMsg.id)
+            executeAction(action, modelMsgId)
           }
         }
       }
-    } catch (err) {
-      updateLastModel(m => ({ ...m, text: "Error de conexion. Intenta de nuevo." }))
+    } catch {
+      updateLastModel(m => ({ ...m, text: "Error de conexión. Intentá de nuevo." }))
     } finally {
       setStreaming(false)
     }
   }, [input, streaming, messages, addMessage, updateLastModel, executeAction])
+
+  // Keep sendRef updated for suggestion chips
+  sendRef.current = sendMessage
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -303,7 +379,32 @@ function AssistantInner({
 
   const cartCount = getTotalItems()
 
-  // Periodic wiggle animation
+  // Welcome bubble
+  const [showBubble, setShowBubble] = useState(false)
+  const [bubbleDismissed, setBubbleDismissed] = useState(false)
+  const [bubbleIndex] = useState(() => Math.floor(Math.random() * WELCOME_BUBBLES.length))
+
+  useEffect(() => {
+    if (open || bubbleDismissed) return
+    // Check if dismissed this session
+    try {
+      if (sessionStorage.getItem("nova-bubble-dismissed")) {
+        setBubbleDismissed(true)
+        return
+      }
+    } catch { /* ignore */ }
+    const timer = setTimeout(() => setShowBubble(true), 5000)
+    const hide = setTimeout(() => setShowBubble(false), 15000)
+    return () => { clearTimeout(timer); clearTimeout(hide) }
+  }, [open, bubbleDismissed])
+
+  const dismissBubble = () => {
+    setShowBubble(false)
+    setBubbleDismissed(true)
+    try { sessionStorage.setItem("nova-bubble-dismissed", "1") } catch { /* ignore */ }
+  }
+
+  // Periodic wiggle
   const [wiggle, setWiggle] = useState(false)
   useEffect(() => {
     if (open) return
@@ -311,7 +412,6 @@ function AssistantInner({
       setWiggle(true)
       setTimeout(() => setWiggle(false), 1200)
     }, 8000)
-    // First wiggle after 3s
     const first = setTimeout(() => {
       setWiggle(true)
       setTimeout(() => setWiggle(false), 1200)
@@ -319,9 +419,11 @@ function AssistantInner({
     return () => { clearInterval(interval); clearTimeout(first) }
   }, [open])
 
+  // Page-aware suggestions
+  const quickReplies = PAGE_SUGGESTIONS[pathname] || DEFAULT_SUGGESTIONS
+
   // --- RENDER ---
 
-  // FAB button
   if (!open) {
     return (
       <>
@@ -342,16 +444,47 @@ function AssistantInner({
             0%, 100% { opacity: 0; transform: scale(0.8); }
             50% { opacity: 0.4; transform: scale(1.4); }
           }
+          @keyframes nova-bubble-in {
+            0% { opacity: 0; transform: translateY(8px) scale(0.9); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+          }
+          @keyframes nova-dots {
+            0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1); }
+          }
           .nova-fab { animation: nova-glow 4s ease-in-out infinite; }
           .nova-wiggle { animation: nova-wiggle 1.2s ease-in-out; }
           .nova-ring { animation: nova-wave 1.2s ease-out; }
+          .nova-bubble { animation: nova-bubble-in 0.4s ease-out; }
+          .nova-dot-1 { animation: nova-dots 1.4s infinite 0s; }
+          .nova-dot-2 { animation: nova-dots 1.4s infinite 0.2s; }
+          .nova-dot-3 { animation: nova-dots 1.4s infinite 0.4s; }
         `}</style>
+
+        {/* Welcome bubble */}
+        {showBubble && !bubbleDismissed && (
+          <div className="nova-bubble fixed bottom-[7.5rem] right-4 z-50 max-w-[220px]">
+            <div className="relative bg-zinc-800 border border-purple-500/30 rounded-2xl rounded-br-sm px-4 py-3 shadow-lg shadow-purple-900/20">
+              <button
+                onClick={dismissBubble}
+                className="absolute -top-2 -right-2 w-5 h-5 bg-zinc-700 hover:bg-zinc-600 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+                aria-label="Cerrar"
+              >
+                <X className="w-3 h-3" />
+              </button>
+              <button onClick={() => { dismissBubble(); setOpen(true) }} className="text-left">
+                <p className="text-sm text-zinc-200 font-medium">{WELCOME_BUBBLES[bubbleIndex]}</p>
+                <p className="text-[10px] text-purple-400 mt-1">Clickeá para chatear con Nova</p>
+              </button>
+            </div>
+          </div>
+        )}
+
         <button
-          onClick={() => setOpen(true)}
+          onClick={() => { dismissBubble(); setOpen(true) }}
           className="nova-fab fixed bottom-24 right-4 z-50 flex items-center gap-2 bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 text-white rounded-full pl-1.5 pr-4 py-1.5 transition-all hover:scale-110 group"
           aria-label="Abrir asistente Nova"
         >
-          {/* Pulse ring behind avatar */}
           {wiggle && <span className="nova-ring absolute left-1 w-10 h-10 rounded-full border-2 border-purple-400 pointer-events-none" />}
           <Image
             src="/nova-avatar.svg"
@@ -377,11 +510,13 @@ function AssistantInner({
   return (
     <div className={`${panelClass} bg-zinc-950 border border-zinc-800 flex flex-col overflow-hidden ${fullScreen ? "" : "rounded-2xl"}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-purple-600/90 backdrop-blur-sm border-b border-purple-500/30 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600/90 to-purple-700/90 backdrop-blur-sm border-b border-purple-500/30 shrink-0">
         <div className="flex items-center gap-2">
           <Image src="/nova-avatar.svg" alt="Nova" width={28} height={28} className="rounded-full" />
-          <span className="font-semibold text-white">Nova</span>
-          <span className="text-purple-200 text-xs">Asistente IA</span>
+          <div>
+            <span className="font-semibold text-white text-sm">Nova</span>
+            <span className="text-purple-200 text-[10px] ml-1.5">Asistente IA</span>
+          </div>
         </div>
         <div className="flex items-center gap-1">
           {cartCount > 0 && (
@@ -405,18 +540,18 @@ function AssistantInner({
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.length === 0 && (
-          <div className="text-center py-8 space-y-3">
-            <Sparkles className="w-10 h-10 text-purple-400 mx-auto" />
-            <p className="text-zinc-300 font-medium">Hola! Soy Nova</p>
-            <p className="text-zinc-500 text-sm max-w-[280px] mx-auto">
-              Te ayudo a disenar tu ropa personalizada con IA. Preguntame lo que quieras o pedime que te genere un diseno.
+          <div className="text-center py-6 space-y-3">
+            <Image src="/nova-avatar.svg" alt="Nova" width={56} height={56} className="mx-auto rounded-full" />
+            <p className="text-zinc-200 font-semibold">¡Hola! Soy Nova</p>
+            <p className="text-zinc-400 text-sm max-w-[280px] mx-auto">
+              Te ayudo a diseñar tu ropa personalizada con IA. ¡Preguntame lo que quieras!
             </p>
             <div className="flex flex-wrap gap-2 justify-center pt-2">
-              {["Ver productos", "Generar un diseno", "Como funciona?"].map(q => (
+              {quickReplies.map(q => (
                 <button
                   key={q}
-                  onClick={() => { setInput(q); setTimeout(sendMessage, 50) }}
-                  className="text-xs px-3 py-1.5 rounded-full bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors border border-zinc-700"
+                  onClick={() => sendRef.current(q)}
+                  className="text-xs px-3 py-1.5 rounded-full bg-zinc-800 text-zinc-300 hover:bg-purple-600 hover:text-white transition-colors border border-zinc-700 hover:border-purple-500"
                 >
                   {q}
                 </button>
@@ -425,27 +560,51 @@ function AssistantInner({
           </div>
         )}
 
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
-              msg.role === "user"
-                ? "bg-purple-600 text-white"
-                : "bg-zinc-800 text-zinc-200"
-            }`}>
-              {msg.role === "model" && !msg.text && streaming ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
-                  <span className="text-zinc-400 text-sm">Pensando...</span>
-                </div>
-              ) : (
-                <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.text) }} />
+        {messages.map((msg, idx) => (
+          <div key={msg.id}>
+            <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start gap-2"}`}>
+              {msg.role === "model" && (
+                <Image src="/nova-avatar.svg" alt="" width={24} height={24} className="rounded-full mt-1 shrink-0" />
               )}
+              <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
+                msg.role === "user"
+                  ? "bg-purple-600 text-white"
+                  : "bg-zinc-800/80 text-zinc-200"
+              }`}>
+                {msg.role === "model" && !msg.text && streaming ? (
+                  <div className="flex items-center gap-2 py-1">
+                    <div className="flex gap-1">
+                      <span className="nova-dot-1 w-2 h-2 bg-purple-400 rounded-full inline-block" />
+                      <span className="nova-dot-2 w-2 h-2 bg-purple-400 rounded-full inline-block" />
+                      <span className="nova-dot-3 w-2 h-2 bg-purple-400 rounded-full inline-block" />
+                    </div>
+                    <span className="text-zinc-500 text-xs">{TYPING_PHRASES[typingPhrase]}</span>
+                  </div>
+                ) : (
+                  <div className="text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.text) }} />
+                )}
 
-              {/* Action cards */}
-              {msg.actions?.map((action, i) => (
-                <ActionCard key={i} action={action} onExecute={() => executeAction(action, msg.id)} />
-              ))}
+                {/* Action cards */}
+                {msg.actions?.map((action, i) => (
+                  <ActionCard key={i} action={action} onExecute={() => executeAction(action, msg.id)} />
+                ))}
+              </div>
             </div>
+
+            {/* Follow-up suggestion chips */}
+            {msg.role === "model" && msg.suggestions && !streaming && idx === messages.length - 1 && (
+              <div className="flex flex-wrap gap-1.5 mt-2 ml-8">
+                {msg.suggestions.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => sendRef.current(s)}
+                    className="text-[11px] px-3 py-1 rounded-full bg-zinc-800/60 text-purple-300 hover:bg-purple-600 hover:text-white transition-colors border border-zinc-700/60 hover:border-purple-500"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         <div ref={messagesEndRef} />
@@ -459,20 +618,62 @@ function AssistantInner({
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Escribi tu mensaje..."
+            placeholder="Escribí tu mensaje..."
             rows={1}
             className="flex-1 bg-zinc-800 text-white text-sm rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-1 focus:ring-purple-500 placeholder-zinc-500 max-h-24"
           />
           <button
-            onClick={sendMessage}
+            onClick={() => sendMessage()}
             disabled={!input.trim() || streaming}
             className="p-2.5 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-xl transition-colors shrink-0"
           >
             {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
         </div>
-        <p className="text-[10px] text-zinc-600 mt-1 text-center">Respuestas generadas por IA. Pueden contener errores.</p>
+        <p className="text-[10px] text-zinc-600 mt-1 text-center">Respuestas generadas por IA · Pueden contener errores</p>
       </div>
+    </div>
+  )
+}
+
+// --- Share Button ---
+function ShareButton({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch { /* ignore */ }
+    setShowMenu(false)
+  }
+
+  const shareWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(`Mirá el diseño que hice con Novamente! ${url}`)}`, "_blank")
+    setShowMenu(false)
+  }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setShowMenu(!showMenu)}
+        className="p-1 hover:bg-zinc-700 rounded transition-colors"
+        title="Compartir"
+      >
+        {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Share2 className="w-3.5 h-3.5 text-zinc-400" />}
+      </button>
+      {showMenu && (
+        <div className="absolute bottom-8 right-0 bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg p-1 min-w-[140px] z-10">
+          <button onClick={copyLink} className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 rounded">
+            <Copy className="w-3 h-3" /> Copiar link
+          </button>
+          <button onClick={shareWhatsApp} className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 rounded">
+            <Share2 className="w-3 h-3" /> WhatsApp
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -485,7 +686,7 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
         <p className="text-xs text-zinc-400 font-medium">Nuestros productos:</p>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {CATALOG.map(p => (
-            <div key={p.name} className="shrink-0 w-32 bg-zinc-900 rounded-lg overflow-hidden border border-zinc-700">
+            <div key={p.name} className="shrink-0 w-32 bg-zinc-900 rounded-lg overflow-hidden border border-zinc-700 hover:border-purple-500/50 transition-colors">
               <div className="h-24 bg-zinc-800 relative">
                 <Image src={p.image} alt={p.name} fill className="object-cover" sizes="128px" />
               </div>
@@ -508,11 +709,11 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
         <div className="grid grid-cols-4 gap-1">
           {["acuarela-digital", "manga-anime", "pixel-art-retro", "geometrico-abstracto", "neon-cyberpunk", "vintage-poster", "sticker-style", "line-art-tatuaje"].map(s => (
             <div key={s} className="relative aspect-square rounded-md overflow-hidden bg-zinc-800">
-              <Image src={`/styles/${s.replace(/-/g, "-")}.png`} alt={s} fill className="object-cover" sizes="60px" />
+              <Image src={`/styles/${s}.png`} alt={s} fill className="object-cover" sizes="60px" />
             </div>
           ))}
         </div>
-        <p className="text-[10px] text-zinc-500 mt-1">y 29 mas... Pedime cualquier estilo!</p>
+        <p className="text-[10px] text-zinc-500 mt-1">y 29 más... ¡Pedime cualquier estilo!</p>
       </div>
     )
   }
@@ -520,27 +721,38 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
   if (action.type === "GENERATE_DESIGN") {
     if (action.status === "loading") {
       return (
-        <div className="mt-3 flex items-center gap-2 bg-zinc-900 rounded-lg p-3 border border-zinc-700">
-          <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
-          <span className="text-xs text-zinc-300">Generando diseno con IA...</span>
+        <div className="mt-3 bg-zinc-900 rounded-lg p-4 border border-zinc-700">
+          <div className="flex items-center gap-3">
+            <div className="relative w-12 h-12 shrink-0">
+              <div className="absolute inset-0 rounded-lg bg-purple-500/20 animate-pulse" />
+              <Sparkles className="w-6 h-6 text-purple-400 absolute top-3 left-3 animate-spin" style={{ animationDuration: "3s" }} />
+            </div>
+            <div>
+              <p className="text-sm text-zinc-200 font-medium">Generando diseño...</p>
+              <p className="text-[10px] text-zinc-500">Esto puede tardar unos segundos</p>
+            </div>
+          </div>
         </div>
       )
     }
     if (action.status === "done" && action.result) {
       return (
-        <div className="mt-3 rounded-lg overflow-hidden border border-zinc-700">
-          <div className="relative aspect-square max-w-[240px]">
-            <Image src={action.result} alt="Diseno generado" fill className="object-contain bg-zinc-900" sizes="240px" />
+        <div className="mt-3 rounded-xl overflow-hidden border border-zinc-700">
+          <div className="relative aspect-square w-full">
+            <Image src={action.result} alt="Diseño generado" fill className="object-contain bg-zinc-900" sizes="(max-width: 640px) 80vw, 320px" />
           </div>
-          <div className="p-2 bg-zinc-900 flex items-center gap-2">
-            <Sparkles className="w-3 h-3 text-purple-400" />
-            <span className="text-[10px] text-zinc-400">Diseno generado con IA</span>
+          <div className="p-2 bg-zinc-900/80 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-3 h-3 text-purple-400" />
+              <span className="text-[10px] text-zinc-400">Diseño generado con IA</span>
+            </div>
+            <ShareButton url={action.result} />
           </div>
         </div>
       )
     }
     if (action.status === "error") {
-      return <p className="mt-2 text-xs text-red-400">{action.result || "Error generando diseno"}</p>
+      return <p className="mt-2 text-xs text-red-400">{action.result || "Error generando diseño"}</p>
     }
     return null
   }
@@ -548,21 +760,29 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
   if (action.type === "SHOW_MOCKUP") {
     if (action.status === "loading") {
       return (
-        <div className="mt-3 flex items-center gap-2 bg-zinc-900 rounded-lg p-3 border border-zinc-700">
-          <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
-          <span className="text-xs text-zinc-300">Creando mockup...</span>
+        <div className="mt-3 bg-zinc-900 rounded-lg p-4 border border-zinc-700">
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-6 h-6 animate-spin text-purple-400 shrink-0" />
+            <div>
+              <p className="text-sm text-zinc-200 font-medium">Creando mockup...</p>
+              <p className="text-[10px] text-zinc-500">Estampando en la prenda</p>
+            </div>
+          </div>
         </div>
       )
     }
     if (action.status === "done" && action.result) {
       return (
-        <div className="mt-3 rounded-lg overflow-hidden border border-zinc-700">
-          <div className="relative aspect-[4/5] max-w-[240px]">
-            <Image src={action.result} alt="Mockup" fill className="object-contain bg-zinc-900" sizes="240px" />
+        <div className="mt-3 rounded-xl overflow-hidden border border-zinc-700">
+          <div className="relative aspect-[4/5] w-full">
+            <Image src={action.result} alt="Mockup" fill className="object-contain bg-zinc-900" sizes="(max-width: 640px) 80vw, 320px" />
           </div>
-          <div className="p-2 bg-zinc-900 flex items-center gap-2">
-            <Palette className="w-3 h-3 text-purple-400" />
-            <span className="text-[10px] text-zinc-400">Vista previa en prenda</span>
+          <div className="p-2 bg-zinc-900/80 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Palette className="w-3 h-3 text-purple-400" />
+              <span className="text-[10px] text-zinc-400">Vista previa en prenda</span>
+            </div>
+            <ShareButton url={action.result} />
           </div>
         </div>
       )
@@ -578,7 +798,7 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
       return (
         <button
           onClick={onExecute}
-          className="mt-3 flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors w-full justify-center"
+          className="mt-3 flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white rounded-xl px-4 py-2.5 text-sm font-medium transition-all hover:scale-[1.02] w-full justify-center"
         >
           <ShoppingCart className="w-4 h-4" />
           Agregar al carrito
@@ -589,7 +809,11 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
       return <div className="mt-2 text-xs text-zinc-400 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Agregando...</div>
     }
     if (action.status === "done") {
-      return <div className="mt-2 text-xs text-green-400 font-medium">Agregado al carrito!</div>
+      return (
+        <div className="mt-2 flex items-center gap-1.5 text-xs text-green-400 font-medium">
+          <Check className="w-3.5 h-3.5" /> ¡Agregado al carrito!
+        </div>
+      )
     }
     return null
   }
@@ -598,7 +822,7 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
     return (
       <button
         onClick={onExecute}
-        className="mt-3 flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors w-full justify-center"
+        className="mt-3 flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl px-4 py-2.5 text-sm font-medium transition-all hover:scale-[1.02] w-full justify-center"
       >
         <ChevronRight className="w-4 h-4" />
         Ir a pagar
