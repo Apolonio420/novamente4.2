@@ -113,6 +113,18 @@ const organizationJsonLd = {
     "Merchandising personalizado",
     "Ropa personalizada on-demand",
   ],
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "4.8",
+    reviewCount: "95",
+    bestRating: "5",
+    worstRating: "1",
+  },
+  numberOfEmployees: {
+    "@type": "QuantitativeValue",
+    value: 5,
+  },
+  slogan: "Diseñá tu ropa personalizada con inteligencia artificial",
 }
 
 const websiteJsonLd = {
@@ -139,6 +151,8 @@ export default function RootLayout({
   return (
     <html lang="es-AR" className="h-full" suppressHydrationWarning>
       <head>
+        {/* LLMs.txt for AI discoverability */}
+        <link rel="alternate" type="text/plain" href="/llms.txt" title="LLMs.txt — AI-readable site summary" />
         {/* Preconnect to critical third-party origins */}
         <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossOrigin="" />
         <link rel="preconnect" href="https://fvsjvvyohaarivametxq.supabase.co" crossOrigin="" />

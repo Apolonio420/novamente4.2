@@ -60,6 +60,35 @@ export default function NosotrosPage() {
       { '@type': 'Person', name: 'Juan Ignacio Sambuceti', jobTitle: 'Co-Fundador' },
       { '@type': 'Person', name: 'Valentin Nunez', jobTitle: 'Co-Fundador & Desarrollador' },
     ],
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.8',
+      reviewCount: '95',
+      bestRating: '5',
+      worstRating: '1',
+    },
+  }
+
+  const webPageJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'AboutPage',
+    '@id': 'https://www.novamente.ar/nosotros#webpage',
+    name: 'Sobre Novamente — Ropa Personalizada con IA en Argentina',
+    description: 'Novamente es la primera marca argentina de indumentaria personalizada con inteligencia artificial. Fundada en 2024 en Villa Martelli, Buenos Aires.',
+    url: 'https://www.novamente.ar/nosotros',
+    isPartOf: { '@id': 'https://www.novamente.ar/#website' },
+    about: { '@id': 'https://www.novamente.ar/#organization' },
+    speakable: {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['h1', '[data-speakable]'],
+    },
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Inicio', item: 'https://www.novamente.ar/' },
+        { '@type': 'ListItem', position: 2, name: 'Sobre Nosotros', item: 'https://www.novamente.ar/nosotros' },
+      ],
+    },
   }
 
   return (
@@ -67,6 +96,10 @@ export default function NosotrosPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageJsonLd) }}
       />
 
       {/* Navigation */}

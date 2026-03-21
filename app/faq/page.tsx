@@ -160,12 +160,37 @@ const breadcrumbJsonLd = {
   ],
 }
 
+const webPageJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "@id": "https://www.novamente.ar/faq#webpage",
+  name: "Preguntas Frecuentes — Novamente",
+  description: "Respondemos todas tus dudas sobre Novamente: precios, envíos, diseño con inteligencia artificial, estampado DTG, pedidos mayoristas y más.",
+  url: "https://www.novamente.ar/faq",
+  isPartOf: { "@id": "https://www.novamente.ar/#website" },
+  about: { "@id": "https://www.novamente.ar/#organization" },
+  speakable: {
+    "@type": "SpeakableSpecification",
+    cssSelector: ["h1", "summary", "details p"],
+  },
+  mainEntity: FAQ_ITEMS.flatMap((category) =>
+    category.questions.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.a,
+      },
+    }))
+  ),
+}
+
 export default function FAQPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageJsonLd) }}
       />
       <script
         type="application/ld+json"

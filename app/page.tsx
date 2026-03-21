@@ -134,6 +134,32 @@ export default function Home() {
     ],
   }
 
+  // Speakable schema for AI voice assistants
+  const speakableJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": "https://www.novamente.ar/#webpage",
+    name: "Novamente — Ropa personalizada con IA en Argentina",
+    description: "La primera marca argentina de indumentaria personalizada con inteligencia artificial. 37 estilos artísticos, estampado DTG premium, envíos a todo el país.",
+    url: "https://www.novamente.ar/",
+    isPartOf: { "@id": "https://www.novamente.ar/#website" },
+    about: { "@id": "https://www.novamente.ar/#organization" },
+    primaryImageOfPage: {
+      "@type": "ImageObject",
+      url: "https://www.novamente.ar/novamente-logo.png",
+    },
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: ["h1", ".novamente-heading", "[data-speakable]"],
+    },
+    breadcrumb: {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Inicio", item: "https://www.novamente.ar/" },
+      ],
+    },
+  }
+
   return (
     <div>
       <script
@@ -148,6 +174,10 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(speakableJsonLd) }}
+      />
 
       {/* Hero Section con estética de Novamente */}
       <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 py-20 bg-novamente-black">
@@ -158,7 +188,7 @@ export default function Home() {
             <span className="novamente-gradient-text">Ropa Personalizada con IA</span>
             <span className="sr-only"> — Novamente, indumentaria personalizada con inteligencia artificial en Argentina</span>
           </h1>
-          <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto mb-12">
+          <p data-speakable="true" className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto mb-12">
             La primera marca argentina de indumentaria que te permite crear tu diseño con inteligencia artificial.
             37 estilos artísticos, estampado DTG premium y envíos a todo el país.
           </p>

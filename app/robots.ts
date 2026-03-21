@@ -7,7 +7,9 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: '*',
         allow: ['/', '/products/', '/styles/', '/faq/', '/merch/', '/partners/', '/p/',
                 '/nosotros', '/comparar', '/guia-estampado', '/envios',
-                '/terminos', '/privacidad', '/arrepentimiento'],
+                '/terminos', '/privacidad', '/arrepentimiento',
+                '/disena-tu-remera', '/hoodie-personalizado', '/dtg-vs-serigrafia',
+                '/llms.txt', '/llms-full.txt'],
         disallow: ['/workspace/', '/api/', '/partners/payment/', '/admin/', '/checkout/', '/cart/'],
       },
       // Explicitly allow AI crawlers for GEO
@@ -48,5 +50,6 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: 'https://www.novamente.ar/sitemap.xml',
+    host: 'https://www.novamente.ar',
   }
 }

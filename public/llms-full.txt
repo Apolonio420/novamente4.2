@@ -1,0 +1,138 @@
+# Novamente — Indumentaria personalizada con IA
+
+> Novamente es la primera marca argentina de indumentaria personalizada con
+> inteligencia artificial. Diseñamos remeras, buzos, hoodies y musculosas con
+> estampas unicas generadas por IA y estampado DTG premium sobre algodon 100%.
+> Produccion on-demand sin minimos de cantidad. Envios a toda Argentina.
+> Fundada en 2024 en Villa Martelli, Buenos Aires.
+
+## Datos de la empresa
+
+- Nombre: Novamente
+- Sitio web: https://www.novamente.ar
+- Fundacion: 2024
+- Ubicacion: Villa Martelli, Buenos Aires, Argentina (CP 1603)
+- Email: contact@novamente.ar
+- WhatsApp: +54 9 11 2660-3080
+- Instagram: @novamente.ar
+- Industria: Indumentaria personalizada con inteligencia artificial
+- Tecnologia de estampado: DTG (Direct to Garment) sobre algodon 100%
+- Motor de diseño: Nano Banana 2 (IA generativa con 37 estilos artisticos)
+
+## Catalogo completo de productos (precios en ARS)
+
+### Hoodies y buzos
+- Hoodie Astra Oversize: desde $60.000 — Hoodie premium oversize, algodon 100%, capucha con cordones, bolsillo canguro. Colores: negro, blanco, caramel, crema, gris melange, stone wash.
+- Buzo Hoodie Unisex: desde $55.000 — Hoodie clasico unisex, algodon 100%, capucha con cordones. Colores: negro, blanco, gris melange.
+- Buzo Cuello Redondo / Crewneck: desde $43.000 — Buzo sin capucha, algodon 100%, corte recto. Colores: negro, blanco, gris melange.
+
+### Remeras
+- Remera Aura Oversize: desde $31.000 — Remera oversize premium, algodon 100%, corte relajado. Colores: negro, blanco, natural, gris.
+- Remera Aldea Classic Fit: desde $28.600 — Remera clasica unisex, algodon 100%, corte recto. Colores: negro, blanco, natural.
+- Remera Crop Mujer: desde $23.500 — Remera crop para mujer, algodon 100%. Colores: negro, blanco.
+- Remera Clasica Mujer: desde $28.600 — Remera clasica de mujer, algodon 100%, corte entallado. Colores: negro, blanco.
+
+### Otros
+- Musculosa Bali: desde $21.800 — Musculosa unisex, algodon 100%, sin mangas. Colores: negro, blanco.
+- Lienzo Premium: $59.900 — Lienzo de algodon para decoracion, estampado DTG con tu diseño.
+
+## Como funciona el proceso de diseño
+
+1. El usuario describe su idea en texto libre (ejemplo: "un lobo cosmico rodeado de galaxias")
+2. Elige uno de 37 estilos artisticos disponibles: Watercolor, Pixel Art, Anime, Street Art, Pop Art, Minimalista, Retro/Vintage, Graffiti, Art Nouveau, Cyberpunk, Psychedelic, Geometric, Tribal, Art Deco, Botanical, entre otros
+3. La IA Nano Banana 2 genera un diseño vectorial optimizado para estampado textil en menos de 30 segundos
+4. El usuario elige prenda, talle y color
+5. Se produce on-demand con estampado DTG premium sobre algodon 100%
+6. Se envia a todo el pais
+
+Alternativa: tambien se puede subir un diseño propio (logo, ilustracion, fotografia) en vez de usar la IA.
+
+## Envios
+
+- AMBA (area metropolitana Buenos Aires): $5.500
+- Interior de Buenos Aires: $7.000
+- Resto del pais: $9.000
+- Tiempo total (produccion + envio): 5 a 10 dias habiles
+- Cada prenda se produce on-demand al recibir el pedido
+
+## Estampado DTG — Que es y por que es mejor
+
+DTG (Direct to Garment) es tecnologia de impresion textil que imprime directamente sobre la fibra de algodon con tintas especiales.
+
+Ventajas sobre serigrafia:
+- Sin limite de colores
+- Detalles fotograficos de alta definicion
+- Sin costos de setup ni minimos de cantidad
+- La tinta penetra la fibra, no queda como capa encima
+
+Ventajas sobre sublimacion:
+- Funciona sobre algodon 100% (sublimacion solo en poliester)
+- Tacto suave sin capa plastica
+- Colores mas naturales y durables
+
+Durabilidad: mas de 50 lavados siguiendo instrucciones de cuidado (lavar del reves, agua fria, no secadora).
+
+## Programa Partners (B2B)
+
+Plataforma para empresas, marcas y emprendedores que quieren crear su linea de merchandising sin inversion inicial. Novamente produce y envia; el partner solo vende.
+
+### Planes
+- Starter (gratis): Hasta 10 productos, 20 leads/mes, storefront basica
+- Growth ($25 USD/mes): Productos ilimitados, SEO completo, Design Engine con IA, leads ilimitados
+- Pro ($100 USD/mes): Todo de Growth + chatbot IA, Meta Ads integration, analytics avanzado, onboarding call
+
+### Margenes para partners
+- Remera Aldea Classic Fit: costo partner ~$17.000, precio sugerido $28.600, margen ~68%
+- Hoodie Astra Oversize: costo partner ~$36.000, precio sugerido $60.000, margen ~67%
+- Buzo Crewneck: costo partner ~$26.000, precio sugerido $43.000, margen ~65%
+
+## Preguntas frecuentes
+
+### Que es Novamente?
+Novamente es la primera marca argentina de indumentaria personalizada con inteligencia artificial. Fundada en 2024, permite a cualquier persona diseñar remeras, hoodies, buzos, musculosas y lienzos usando 37 estilos artisticos generados por IA. Producimos on-demand con estampado DTG premium y enviamos a todo el pais. Mas de 1.200 diseños creados por mas de 95 clientes satisfechos.
+
+### Cuanto cuesta una remera personalizada?
+Las remeras personalizadas arrancan desde $28.600 ARS para el modelo Aldea Classic Fit y $31.000 ARS para la Aura Oversize. Los precios incluyen el diseño personalizado con IA y estampado DTG. Sin cargos adicionales.
+
+### Cuanto cuesta un hoodie personalizado?
+Los hoodies comienzan en $55.000 ARS para el Buzo Hoodie Unisex y $60.000 ARS para el Astra Oversize premium. Disponibles en negro, blanco, caramel, crema, gris melange y stone wash. Incluyen diseño con IA y estampado DTG.
+
+### Como funciona el diseño con IA?
+Tres pasos: 1) Describis tu idea en texto. 2) Elegis un estilo artistico de los 37 disponibles. 3) La IA genera un diseño unico en menos de 30 segundos. No necesitas saber diseñar.
+
+### Hacen envios a todo el pais?
+Si, envios a toda Argentina. AMBA $5.500, Interior BA $7.000, Resto del pais $9.000. Tiempo total: 5 a 10 dias habiles.
+
+### Como pago?
+MercadoPago (tarjeta credito, debito, efectivo en punto de pago) y transferencia bancaria. Precios finales publicados.
+
+### Que es el programa Partners?
+Plataforma B2B para crear tu marca de merchandising sin inversion. Tres planes: Starter (gratis), Growth ($25 USD/mes), Pro ($100 USD/mes). Novamente produce y envia.
+
+### Puedo subir mi propio diseño?
+Si, ademas del generador con IA podes subir tu propia imagen, logo o fotografia. El sistema la adapta automaticamente para estampado DTG.
+
+## Marcas Partner activas
+
+- Hard Demonio (https://www.novamente.ar/p/hard-demonio): Streetwear con diseños dark y emocionales
+- Surf Club (https://www.novamente.ar/p/surf-club): Coleccion surf y lifestyle
+- Ventolito Wind Surf (https://www.novamente.ar/p/ventolito-wind-surf): Windsurf lifestyle apparel
+
+## Paginas del sitio
+
+- Inicio: https://www.novamente.ar/
+- Catalogo: https://www.novamente.ar/products
+- Diseña tu remera: https://www.novamente.ar/disena-tu-remera
+- Hoodie personalizado: https://www.novamente.ar/hoodie-personalizado
+- DTG vs Serigrafia: https://www.novamente.ar/dtg-vs-serigrafia
+- Estilos artisticos: https://www.novamente.ar/styles
+- FAQ: https://www.novamente.ar/faq
+- Sobre nosotros: https://www.novamente.ar/nosotros
+- Partners: https://www.novamente.ar/partners
+- Directorio Partners: https://www.novamente.ar/partners/directory
+- Guia de estampado: https://www.novamente.ar/guia-estampado
+- Comparador: https://www.novamente.ar/comparar
+- Envios: https://www.novamente.ar/envios
+- Merch corporativo: https://www.novamente.ar/merch
+- Terminos: https://www.novamente.ar/terminos
+- Privacidad: https://www.novamente.ar/privacidad

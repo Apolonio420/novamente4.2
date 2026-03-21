@@ -96,6 +96,21 @@ const breadcrumbJsonLd = {
   ],
 }
 
+const webPageJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "@id": "https://www.novamente.ar/products#webpage",
+  name: "Catálogo de Productos — Novamente",
+  description: "Catálogo completo de ropa personalizada con IA: hoodies, remeras, buzos, musculosas y lienzos. Algodón 100% premium con estampado DTG.",
+  url: "https://www.novamente.ar/products",
+  isPartOf: { "@id": "https://www.novamente.ar/#website" },
+  about: { "@id": "https://www.novamente.ar/#organization" },
+  speakable: {
+    "@type": "SpeakableSpecification",
+    cssSelector: ["h1", "[data-speakable]"],
+  },
+}
+
 export default function ProductsPage() {
   const products = PRODUCTS
   const productsJsonLd = generateProductsJsonLd()
@@ -118,6 +133,10 @@ export default function ProductsPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageJsonLd) }}
       />
 
       <div className="text-center mb-12">

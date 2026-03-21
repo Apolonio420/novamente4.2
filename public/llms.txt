@@ -1,41 +1,49 @@
 # Novamente
 
 > Novamente es la primera marca argentina de indumentaria personalizada con
-> inteligencia artificial. Diseñamos remeras, buzos y hoodies con estampas
-> unicas generadas por IA y estampado DTG premium. Operamos desde Villa
-> Martelli, Buenos Aires, Argentina. Fundada en 2024.
+> inteligencia artificial. Diseñamos remeras, buzos, hoodies y musculosas con
+> estampas unicas generadas por IA y estampado DTG premium sobre algodon 100%.
+> Produccion on-demand sin minimos de cantidad. Envios a toda Argentina.
+> Fundada en 2024 en Villa Martelli, Buenos Aires.
 
-Novamente ofrece diseño de indumentaria con IA para consumidores finales (B2C)
-y empresas (B2B/merchandising corporativo). Cada prenda se produce bajo demanda
-con tecnologia de estampado directo a tela (DTG) que garantiza durabilidad de
-mas de 50 lavados. Nuestro motor de diseño Nano Banana 2 ofrece 37 estilos
-artisticos unicos.
+## Productos y precios
 
-## Productos
+- [Catalogo completo](https://www.novamente.ar/products): Remeras, hoodies, buzos y mas desde ARS $21.800
+- [Diseña tu remera](https://www.novamente.ar/disena-tu-remera): Remeras personalizadas desde $28.600 con IA
+- [Hoodie personalizado](https://www.novamente.ar/hoodie-personalizado): Hoodies desde $43.000 con estampado DTG
+- [Estilos artisticos](https://www.novamente.ar/styles): 37 estilos de diseño IA (acuarela, anime, cyberpunk, minimalista y mas)
 
-- [Catalogo completo](https://novamente.ar/products): Remeras, hoodies, buzos y mas con precios desde ARS $21,800
-- [Estilos artisticos](https://novamente.ar/styles): 37 estilos de diseño IA incluyendo acuarela, manga, cyberpunk, minimalista y mas
-- [Preguntas frecuentes](https://novamente.ar/faq): Informacion sobre productos, envios, tecnologia DTG y proceso de diseño
+## Informacion util
+
+- [Preguntas frecuentes](https://www.novamente.ar/faq): Todo sobre productos, envios, DTG y proceso de diseño
+- [DTG vs Serigrafia vs Sublimacion](https://www.novamente.ar/dtg-vs-serigrafia): Comparacion detallada de metodos de estampado
+- [Guia de estampado](https://www.novamente.ar/guia-estampado): Como funciona el estampado DTG
+- [Comparador de productos](https://www.novamente.ar/comparar): Compara modelos lado a lado
+- [Informacion de envios](https://www.novamente.ar/envios): Costos y tiempos de envio a todo el pais
 
 ## Marcas Partner
 
-- [Hard Demonio](https://novamente.ar/p/hard-demonio): Marca de streetwear con diseños dark y emocionales
-- [Surf Club](https://novamente.ar/p/surf-club): Coleccion de surf y lifestyle
-- [Ventolito Wind Surf](https://novamente.ar/p/ventolito-wind-surf): Windsurf lifestyle apparel
+- [Hard Demonio](https://www.novamente.ar/p/hard-demonio): Streetwear con diseños dark y emocionales
+- [Surf Club](https://www.novamente.ar/p/surf-club): Coleccion surf y lifestyle
+- [Ventolito Wind Surf](https://www.novamente.ar/p/ventolito-wind-surf): Windsurf lifestyle apparel
 
 ## Programa Partners (B2B)
 
-- [Partners](https://novamente.ar/partners): Programa para lanzar tu marca de ropa sin inversion inicial
-- [Unirse](https://novamente.ar/partners/join): Onboarding para nuevos partners con 3 planes (Starter gratis, Growth $25 USD/mes, Pro $100 USD/mes)
+- [Partners](https://www.novamente.ar/partners): Lanza tu marca de ropa sin inversion inicial
+- [Unirse](https://www.novamente.ar/partners/join): Onboarding con 3 planes (Starter gratis, Growth $25 USD/mes, Pro $100 USD/mes)
+- [Directorio de partners](https://www.novamente.ar/partners/directory): Marcas que usan la plataforma
 
 ## Empresa
 
-- [Inicio](https://novamente.ar): Pagina principal con generador de diseños interactivo
+- [Inicio](https://www.novamente.ar): Pagina principal con generador de diseños interactivo
+- [Sobre nosotros](https://www.novamente.ar/nosotros): Historia, equipo y mision
 - Contacto: contact@novamente.ar | WhatsApp +5491126603080
 - Ubicacion: Villa Martelli, Buenos Aires (1603), Argentina
 - Horario: Lunes a Viernes 9:00-18:00
 
 ## Optional
 
-- [Directorio de partners](https://novamente.ar/partners/directory): Marcas que usan la plataforma Novamente
-- [Merchandising corporativo](https://novamente.ar/merch): Soluciones de indumentaria para empresas y eventos
+- [Merchandising corporativo](https://www.novamente.ar/merch): Soluciones de indumentaria para empresas y eventos
+- [Terminos y condiciones](https://www.novamente.ar/terminos)
+- [Politica de privacidad](https://www.novamente.ar/privacidad)
+- [llms-full.txt](https://www.novamente.ar/llms-full.txt): Version completa con FAQ, precios detallados y especificaciones
