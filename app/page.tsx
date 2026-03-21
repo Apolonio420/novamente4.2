@@ -12,7 +12,7 @@ const HomeGeneratorWrapper = dynamic(() => import("@/components/HomeGeneratorWra
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowRight, Zap, Shirt, Star, Sparkles, Palette, Wand2 } from "lucide-react"
+import { ArrowRight, Zap, Shirt, Star, Sparkles, Palette, Wand2, Quote, Users, TrendingUp, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 // Image history now fetches via /api/images/history (session-based)
@@ -502,6 +502,128 @@ export default function Home() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof Section */}
+      <section className="py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="novamente-heading text-3xl md:text-4xl mb-4">LO QUE DICEN NUESTROS CLIENTES</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+              Más de 1.200 diseños creados por clientes de toda Argentina
+            </p>
+          </div>
+
+          {/* Stats Bar */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+            <div className="text-center p-6 rounded-2xl bg-secondary/30 border border-white/5">
+              <Sparkles className="w-8 h-8 text-primary mx-auto mb-3" />
+              <div className="text-3xl md:text-4xl font-bold text-white mb-1">1.200+</div>
+              <div className="text-sm text-muted-foreground">Diseños creados con IA</div>
+            </div>
+            <div className="text-center p-6 rounded-2xl bg-secondary/30 border border-white/5">
+              <Users className="w-8 h-8 text-primary mx-auto mb-3" />
+              <div className="text-3xl md:text-4xl font-bold text-white mb-1">95+</div>
+              <div className="text-sm text-muted-foreground">Clientes satisfechos</div>
+            </div>
+            <div className="text-center p-6 rounded-2xl bg-secondary/30 border border-white/5">
+              <Star className="w-8 h-8 text-yellow-400 mx-auto mb-3" />
+              <div className="text-3xl md:text-4xl font-bold text-white mb-1">4.8/5</div>
+              <div className="text-sm text-muted-foreground">Rating promedio</div>
+            </div>
+            <div className="text-center p-6 rounded-2xl bg-secondary/30 border border-white/5">
+              <TrendingUp className="w-8 h-8 text-green-400 mx-auto mb-3" />
+              <div className="text-3xl md:text-4xl font-bold text-white mb-1">37</div>
+              <div className="text-sm text-muted-foreground">Estilos artísticos</div>
+            </div>
+          </div>
+
+          {/* Testimonials */}
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
+            <Card className="relative border-white/10 bg-secondary/20">
+              <CardContent className="p-8">
+                <Quote className="w-8 h-8 text-primary/30 mb-4" />
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-white/80 mb-6 leading-relaxed">
+                  &ldquo;Increíble la calidad del estampado DTG. Pedí una remera con un diseño en watercolor y quedó exactamente como se veía en la preview. Ya hice 3 pedidos más.&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">M</div>
+                  <div>
+                    <div className="font-semibold text-white text-sm">Martín G.</div>
+                    <div className="text-xs text-muted-foreground">Buenos Aires — Hoodie Oversize</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="relative border-white/10 bg-secondary/20">
+              <CardContent className="p-8">
+                <Quote className="w-8 h-8 text-primary/30 mb-4" />
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-white/80 mb-6 leading-relaxed">
+                  &ldquo;Usé Novamente para hacer merch de mi marca. La IA me generó diseños que yo nunca podría haber hecho sola. El proceso es re fácil y el envío llegó en 5 días.&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold">S</div>
+                  <div>
+                    <div className="font-semibold text-white text-sm">Sofía R.</div>
+                    <div className="text-xs text-muted-foreground">Córdoba — Partner B2B</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="relative border-white/10 bg-secondary/20">
+              <CardContent className="p-8">
+                <Quote className="w-8 h-8 text-primary/30 mb-4" />
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className={`w-4 h-4 ${i < 4 ? "fill-yellow-400 text-yellow-400" : "fill-yellow-400/50 text-yellow-400/50"}`} />
+                  ))}
+                </div>
+                <p className="text-white/80 mb-6 leading-relaxed">
+                  &ldquo;Le regalé una remera personalizada a mi novia con un diseño en estilo anime. La calidad de la tela es buenísima y el estampado no se fue después de varios lavados.&rdquo;
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold">L</div>
+                  <div>
+                    <div className="font-semibold text-white text-sm">Lucas P.</div>
+                    <div className="text-xs text-muted-foreground">Rosario — Remera Classic Fit</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Trust Signals */}
+          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12 pt-8 border-t border-white/10">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <ShieldCheck className="w-5 h-5 text-green-400" />
+              <span className="text-sm">Pago seguro con MercadoPago</span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Shirt className="w-5 h-5 text-primary" />
+              <span className="text-sm">Algodón 100% premium</span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Zap className="w-5 h-5 text-yellow-400" />
+              <span className="text-sm">Estampado DTG de alta calidad</span>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <TrendingUp className="w-5 h-5 text-cyan-400" />
+              <span className="text-sm">Envíos a todo el país</span>
+            </div>
           </div>
         </div>
       </section>
