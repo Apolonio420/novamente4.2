@@ -29,6 +29,7 @@ REGLAS:
 - Responde siempre en espanol argentino, tono amigable y profesional.
 - Solo podes responder sobre: el workspace, catalogo de productos, design engine, leads, pedidos, branding, analytics, planes, billing, soporte tecnico.
 - Si el partner reporta un problema tecnico, recopila toda la info posible: que paso, que pagina, que estaba haciendo, si tiene screenshot.
+- Si el partner adjunta una imagen, analizala y responde en contexto. Puede ser un screenshot de un error, un logo, un diseño, o cualquier imagen relevante. Describi lo que ves y como se relaciona con su consulta.
 - Si no sabes la respuesta, deci "No tengo esa info. Contacta soporte en soporte@novamente.ar o usa el sistema de tickets en /workspace/support"
 - Usa **negrita** para info importante.
 - Cuando menciones una pagina del workspace, linkea a ella.
@@ -54,12 +55,28 @@ export interface ChatMessage {
     text: string
 }
 
-function buildContents(
+/** Fetch an image URL and return base64 + detected MIME type */
+async function fetchImageAsBase64(url: string): Promise<{ base64: string; mimeType: string } | null> {
+    try {
+        const res = await fetch(url)
+        if (!res.ok) return null
+        const contentType = res.headers.get('content-type') || 'image/jpeg'
+        const mimeType = contentType.split(';')[0].trim()
+        const buffer = await res.arrayBuffer()
+        const base64 = Buffer.from(buffer).toString('base64')
+        return { base64, mimeType }
+    } catch (err) {
+        console.error(`[RAG] Failed to fetch image: ${url}`, err)
+        return null
+    }
+}
+
+async function buildContents(
     history: ChatMessage[],
     query: string,
     context: string,
     imageUrls?: string[],
-): object[] {
+): Promise<object[]> {
     const systemContent = {
         role: 'user',
         parts: [{ text: `[CONTEXTO DE LA BASE DE CONOCIMIENTO]\n${context}` }],
@@ -76,10 +93,13 @@ function buildContents(
 
     const userParts: object[] = [{ text: query }]
     if (imageUrls && imageUrls.length > 0) {
-        for (const url of imageUrls) {
-            userParts.push({
-                fileData: { mimeType: 'image/jpeg', fileUri: url },
-            })
+        const imageResults = await Promise.all(imageUrls.map(fetchImageAsBase64))
+        for (const img of imageResults) {
+            if (img) {
+                userParts.push({
+                    inlineData: { mimeType: img.mimeType, data: img.base64 },
+                })
+            }
         }
     }
 
@@ -118,7 +138,7 @@ export async function* chatStream(
             ? sources.map(s => s.document.text).join('\n\n---\n\n')
             : 'No hay informacion especifica disponible para esta consulta en la base de conocimiento.'
 
-    const contents = buildContents(history, query, context, imageUrls)
+    const contents = await buildContents(history, query, context, imageUrls)
 
     const url = `${GEMINI_BASE}/models/${CHAT_MODEL}:streamGenerateContent?key=${apiKey}&alt=sse`
 
