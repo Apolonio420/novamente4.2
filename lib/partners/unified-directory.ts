@@ -17,6 +17,15 @@ const CARD_IMAGE_OVERRIDES: Record<string, string> = {
 // DB slugs to hide (duplicates or test tenants)
 const HIDDEN_DB_SLUGS = new Set(['ventolito'])
 
+// Category mapping for static partners (DB partners use their `industry` field)
+const STATIC_CATEGORIES: Record<string, string> = {
+  'novamente-mundial': 'Deportes',
+  'falco': 'Streetwear',
+  'novamente-originals': 'Streetwear',
+  'mindset': 'Lifestyle',
+  'ventolito-wind-surf': 'Deportes',
+}
+
 export interface DirectoryEntry {
   slug: string
   name: string
@@ -28,6 +37,7 @@ export interface DirectoryEntry {
   featured: boolean
   productCount: number
   instagram: string | null
+  category: string | null
   source: 'db' | 'static'
 }
 
@@ -68,6 +78,7 @@ export async function getDirectoryEntries(): Promise<DirectoryEntry[]> {
     featured: t.plan === 'pro',
     productCount: 0, // Will be enriched below
     instagram: t.instagram,
+    category: t.industry || null,
     source: 'db' as const,
   }))
 
@@ -85,6 +96,7 @@ export async function getDirectoryEntries(): Promise<DirectoryEntry[]> {
       featured: p.featured || false,
       productCount: p.products.length,
       instagram: p.instagramUrl || null,
+      category: STATIC_CATEGORIES[p.id] || null,
       source: 'static' as const,
     }))
 

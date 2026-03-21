@@ -1,28 +1,27 @@
 import { Metadata } from "next"
-import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Rocket, Package, Palette, Truck } from "lucide-react"
 import { getDirectoryEntries } from "@/lib/partners/unified-directory"
-import { cn } from "@/lib/utils"
+import MerchFilter from "@/components/MerchFilter"
 
 export const metadata: Metadata = {
-  title: "Crea, publica y vendé tu merch con Novamente",
-  description: "Generá estampas con IA, ofrecé talles y colores, cobrá online. Nosotros imprimimos y enviamos directo a tus clientes.",
+  title: "Merch de tus marcas favoritas | Novamente",
+  description: "Descubri el merchandising oficial de tus marcas favoritas. Productos unicos, disenos exclusivos y calidad premium DTG. Envios a todo el pais.",
   openGraph: {
     type: "website",
     url: "https://www.novamente.ar/merch",
-    title: "Crea, publica y vendé tu merch con Novamente",
-    description: "Generá estampas con IA, ofrecé talles y colores, cobrá online. Nosotros imprimimos y enviamos directo a tus clientes.",
-    images: [{ url: "https://www.novamente.ar/novamente-logo.png", width: 1200, height: 630, alt: "Logo Novamente" }],
+    title: "Merch de tus marcas favoritas | Novamente",
+    description: "Descubri el merchandising oficial de tus marcas favoritas. Productos unicos, disenos exclusivos y calidad premium DTG.",
+    images: [{ url: "https://www.novamente.ar/novamente-logo.png", width: 1200, height: 630, alt: "Novamente Merch" }],
     siteName: "Novamente",
     locale: "es_AR",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Crea, publica y vendé tu merch con Novamente",
-    description: "Generá estampas con IA, ofrecé talles y colores, cobrá online. Nosotros imprimimos y enviamos directo a tus clientes.",
+    title: "Merch de tus marcas favoritas | Novamente",
+    description: "Descubri el merchandising oficial de tus marcas favoritas. Productos unicos, disenos exclusivos y calidad premium DTG.",
     images: ["https://www.novamente.ar/novamente-logo.png"],
   },
 }
@@ -37,171 +36,139 @@ export default async function MerchPage() {
     return 0
   })
 
+  // Extract unique categories
+  const categories = Array.from(
+    new Set(entries.map((e) => e.category).filter(Boolean))
+  ).sort() as string[]
+
+  // Serialize for client component
+  const serialized = sorted.map((e) => ({
+    slug: e.slug,
+    name: e.name,
+    slogan: e.slogan,
+    description: e.description,
+    logo: e.logo,
+    cardImage: e.cardImage,
+    featured: e.featured,
+    productCount: e.productCount,
+    category: e.category,
+  }))
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="text-center mb-12">
-        <h1 className="novamente-heading text-4xl md:text-5xl mb-4">PARTNERS</h1>
-        <p className="text-muted-foreground max-w-3xl mx-auto text-lg">
-          Descubrí el merchandising oficial de tus marcas favoritas. Productos únicos, diseños exclusivos y la calidad
-          que esperás, todo en un solo lugar.
-        </p>
-      </div>
+    <div className="min-h-screen">
+      {/* Hero */}
+      <section className="relative overflow-hidden py-16 md:py-24">
+        <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 via-transparent to-transparent" />
+        <div className="container relative mx-auto px-4 text-center">
+          <Badge className="mb-4 bg-purple-500/10 text-purple-400 border-purple-500/30">
+            MARCAS OFICIALES
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-tight">
+            Merch que{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
+              habla por vos
+            </span>
+          </h1>
+          <p className="text-zinc-400 max-w-2xl mx-auto text-lg mb-8">
+            Descubri el merchandising oficial de marcas que eligen Novamente. Disenos exclusivos, calidad DTG premium y envios a todo el pais.
+          </p>
+          <Link href="/partners/join">
+            <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold gap-2 px-8 shadow-lg shadow-purple-500/20">
+              <Rocket className="h-4 w-4" />
+              Crea tu propia marca
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+      </section>
 
-      {/* Brands Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-        {sorted.map((brand) => {
-          const isHardDemonio = brand.slug === "hard-demonio"
+      {/* Brands Grid with Filters */}
+      <section className="container mx-auto px-4 pb-12">
+        <MerchFilter entries={serialized} categories={categories} />
+      </section>
 
-          return (
-            <Link key={brand.slug} href={`/merch/${brand.slug}`} className="group">
-              <div className="border rounded-xl overflow-hidden bg-card hover:shadow-lg transition-all duration-300 group-hover:scale-105">
-              {/* Brand Image — solid dark bg for transparent PNGs */}
-              <div
-                className={cn(
-                  "aspect-square relative overflow-hidden bg-[#1a1a2e]",
-                  isHardDemonio &&
-                    "bg-[radial-gradient(circle_at_top,_rgba(127,29,29,0.38),_transparent_42%),linear-gradient(180deg,_#050505_0%,_#121212_100%)]",
-                )}
-              >
-                {brand.cardImage || brand.logo ? (
-                  <Image
-                    src={brand.cardImage || brand.logo || ""}
-                    alt={`${brand.name} Logo`}
-                    fill
-                    className={cn(
-                      "object-contain p-8 group-hover:scale-110 transition-transform duration-300",
-                      isHardDemonio && "p-3 scale-110 group-hover:scale-[1.16]",
-                    )}
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-6xl font-bold text-muted-foreground/30">
-                      {brand.name.charAt(0)}
-                    </span>
-                  </div>
-                )}
+      {/* Become a Partner CTA — Prominent */}
+      <section className="container mx-auto px-4 pb-20">
+        <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-gradient-to-br from-gray-900 via-zinc-900 to-black">
+          {/* Background decoration */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,_rgba(168,85,247,0.08),_transparent_50%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,_rgba(236,72,153,0.06),_transparent_50%)]" />
 
-                {isHardDemonio && (
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black via-black/55 to-transparent" />
-                )}
-
-                {/* Featured Badge */}
-                {brand.featured && (
-                  <div className="absolute top-4 right-4">
-                    <Badge className="bg-primary text-white">Destacado</Badge>
-                  </div>
-                )}
-              </div>
-
-              {/* Brand Info */}
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-2xl font-bold tracking-wider">{brand.name}</h2>
-                  <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                </div>
-
-                {/* Slogan principal */}
-                {brand.slogan && (
-                  <p className="text-primary font-medium mb-2 text-sm uppercase tracking-wide">{brand.slogan}</p>
-                )}
-
-                {/* Descripción */}
-                {brand.description && (
-                  <p className="text-muted-foreground mb-4 text-sm line-clamp-2">{brand.description}</p>
-                )}
-
-                <div className="flex items-center justify-between">
-                  {brand.productCount > 0 && (
-                    <span className="text-sm text-muted-foreground">{brand.productCount} productos disponibles</span>
-                  )}
-                  <Button
-                    size="sm"
-                    className="bg-zinc-700 text-zinc-100 border border-zinc-600 hover:bg-primary hover:text-white hover:border-primary transition-all duration-200 ml-auto"
-                  >
-                    Ver tienda
-                  </Button>
-                </div>
-              </div>
-              </div>
-            </Link>
-          )
-        })}
-      </div>
-
-      {/* Become a Partner Section */}
-      <div className="mt-24 mb-16">
-        <div className="bg-gradient-to-br from-gray-900 to-black rounded-2xl overflow-hidden shadow-2xl border border-gray-800">
-          <div className="grid grid-cols-1 lg:grid-cols-2">
-            <div className="p-8 md:p-12 flex flex-col justify-center">
-              <Badge className="w-fit mb-6 bg-primary/20 text-primary border-primary/50 hover:bg-primary/30">
+          <div className="relative grid grid-cols-1 lg:grid-cols-5 gap-0">
+            {/* Left: Content */}
+            <div className="lg:col-span-3 p-8 md:p-12 lg:p-16 flex flex-col justify-center">
+              <Badge className="w-fit mb-6 bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 border-purple-500/30">
                 SUMATE A NOVAMENTE
               </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
-                Potenciá tu marca con merchandising <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">premium y sin riesgos</span>.
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+                Tu marca,{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
+                  sin riesgos
+                </span>
               </h2>
+              <p className="text-zinc-400 text-lg mb-8 max-w-lg">
+                Nosotros imprimimos, stockeamos y enviamos. Vos te enfocas en crear y vender.
+              </p>
 
-              <div className="space-y-6 mb-8">
-                <div className="flex gap-4">
-                  <div className="h-10 w-10 rounded-full bg-purple-900/30 flex items-center justify-center flex-shrink-0 border border-purple-500/30">
-                    <span className="text-purple-400 font-bold">01</span>
+              {/* Features grid */}
+              <div className="grid grid-cols-2 gap-4 mb-10">
+                {[
+                  { icon: Package, label: 'Cero stock', desc: 'Sin inversion inicial' },
+                  { icon: Palette, label: 'Disenos con IA', desc: 'Crea en minutos' },
+                  { icon: Truck, label: 'Envios incluidos', desc: 'A todo el pais' },
+                  { icon: Rocket, label: 'Tu tienda online', desc: 'URL personalizada' },
+                ].map(({ icon: Icon, label, desc }) => (
+                  <div key={label} className="flex items-start gap-3">
+                    <div className="mt-0.5 h-9 w-9 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center flex-shrink-0">
+                      <Icon className="h-4 w-4 text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold text-sm">{label}</p>
+                      <p className="text-zinc-500 text-xs">{desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-white font-semibold text-lg">Cero stock, cero logística</h3>
-                    <p className="text-gray-400 text-sm mt-1">Nos encargamos de la producción, el stock y los envíos. Vos solo te enfocas en crear y vender.</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="h-10 w-10 rounded-full bg-pink-900/30 flex items-center justify-center flex-shrink-0 border border-pink-500/30">
-                    <span className="text-pink-400 font-bold">02</span>
-                  </div>
-                  <div>
-                    <h3 className="text-white font-semibold text-lg">Calidad de exportación</h3>
-                    <p className="text-gray-400 text-sm mt-1">Prendas de algodón premium y estampados DTG de última generación que duran para siempre.</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <div className="h-10 w-10 rounded-full bg-blue-900/30 flex items-center justify-center flex-shrink-0 border border-blue-500/30">
-                    <span className="text-blue-400 font-bold">03</span>
-                  </div>
-                  <div>
-                    <h3 className="text-white font-semibold text-lg">Tu propia tienda oficial</h3>
-                    <p className="text-gray-400 text-sm mt-1">Un espacio exclusivo para tu marca dentro de nuestra plataforma, con URL personalizada.</p>
-                  </div>
-                </div>
+                ))}
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Link href="/partners/join">
-                  <Button size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-gray-100 font-semibold px-8">
+                  <Button size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-zinc-100 font-bold px-8 shadow-lg">
                     Quiero ser Partner
+                    <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
                 <Link href="/products">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800">
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800">
                     Ver calidad de prendas
                   </Button>
                 </Link>
               </div>
             </div>
 
-            <div className="relative h-64 lg:h-auto bg-zinc-900">
-              <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative w-full h-full max-w-md max-h-96 p-8">
-                  <div className="w-full h-full border border-gray-700/50 rounded-xl bg-gray-900/50 backdrop-blur-sm p-6 flex flex-col items-center justify-center text-center">
-                    <div className="w-16 h-16 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-full mb-4 animate-pulse"></div>
-                    <h3 className="text-xl font-bold text-gray-200 mb-2">Tu Marca Aquí</h3>
-                    <p className="text-gray-500 text-sm">Convertite en el próximo caso de éxito.</p>
+            {/* Right: Visual */}
+            <div className="lg:col-span-2 relative min-h-[280px] lg:min-h-0 flex items-center justify-center">
+              <div className="absolute inset-0 bg-gradient-to-r from-zinc-900 to-transparent lg:block hidden z-10" />
+              <div className="relative z-0 w-full h-full flex items-center justify-center p-8">
+                <div className="w-full max-w-xs border border-zinc-700/50 rounded-2xl bg-zinc-800/30 backdrop-blur-sm p-8 flex flex-col items-center text-center">
+                  <div className="w-20 h-20 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-2xl mb-5 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                    <Rocket className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Tu Marca Aqui</h3>
+                  <p className="text-zinc-500 text-sm mb-4">Unite a las marcas que ya venden con Novamente</p>
+                  <div className="flex -space-x-2">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="h-8 w-8 rounded-full bg-gradient-to-br from-zinc-600 to-zinc-700 border-2 border-zinc-800" />
+                    ))}
+                    <div className="h-8 w-8 rounded-full bg-purple-600 border-2 border-zinc-800 flex items-center justify-center text-[10px] font-bold text-white">
+                      +{entries.length}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   )
 }
