@@ -87,7 +87,7 @@ const nextConfig = {
   },
   // Optimizaciones de rendimiento
   experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons', 'framer-motion'],
   },
   serverExternalPackages: ['@vercel/blob'],
   // Configuración webpack para excluir binarios nativos y paquetes server-only
@@ -180,6 +180,15 @@ const nextConfig = {
           {
             key: 'Cache-Control',
             value: 'public, max-age=86400, s-maxage=86400',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },

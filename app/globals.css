@@ -202,3 +202,15 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Chrome, Safari and Opera */
 }
+
+/* WhatsApp button entrance animation (replaces framer-motion) */
+@keyframes whatsapp-in {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Content-visibility for below-fold sections to improve INP/rendering */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
+}

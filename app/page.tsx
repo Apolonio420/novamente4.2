@@ -311,7 +311,7 @@ export default function Home() {
       </section>
 
       {/* Explorar Estilos - LIMITADO A 4 IMÁGENES */}
-      <section className="py-16 md:py-24 bg-secondary/20">
+      <section className="py-16 md:py-24 bg-secondary/20 cv-auto">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="novamente-heading text-3xl md:text-4xl mb-4">EXPLORÁ NUESTROS ESTILOS</h2>
@@ -352,6 +352,7 @@ export default function Home() {
                     src="/products/hoodie-negro-front.jpeg"
                     alt="Astra Oversize Hoodie"
                     fill
+                    priority
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                     sizes="(max-width: 768px) 100vw, 33vw"
                   />
@@ -537,7 +538,7 @@ export default function Home() {
       </section>
 
       {/* Social Proof Section */}
-      <section className="py-16 md:py-24">
+      <section className="py-16 md:py-24 cv-auto">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="novamente-heading text-3xl md:text-4xl mb-4">LO QUE DICEN NUESTROS CLIENTES</h2>
@@ -659,7 +660,7 @@ export default function Home() {
       </section>
 
       {/* FAQ Section — alto impacto GEO */}
-      <section className="py-16 md:py-24 bg-secondary/10">
+      <section className="py-16 md:py-24 bg-secondary/10 cv-auto">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="novamente-heading text-3xl md:text-4xl mb-4">PREGUNTAS FRECUENTES</h2>

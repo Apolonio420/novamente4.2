@@ -1,7 +1,6 @@
 "use client"
 
 import Image from "next/image"
-import { motion } from "framer-motion"
 
 import { WHATSAPP_MESSAGES, getWhatsAppLink } from "@/lib/config/links"
 
@@ -9,19 +8,7 @@ export function WhatsAppButton() {
   const whatsappUrl = getWhatsAppLink(WHATSAPP_MESSAGES.GENERIC)
 
   return (
-    <motion.div
-      className="fixed bottom-6 right-6 z-50"
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{
-        delay: 1,
-        duration: 0.3,
-        type: "spring",
-        stiffness: 200,
-      }}
-      whileHover={{ scale: 1.1 }}
-      whileTap={{ scale: 0.95 }}
-    >
+    <div className="fixed bottom-6 right-6 z-50 animate-[whatsapp-in_0.4s_ease-out_1s_both] hover:scale-110 active:scale-95 transition-transform duration-200">
       <a
         href={whatsappUrl}
         target="_blank"
@@ -35,17 +22,11 @@ export function WhatsAppButton() {
             alt="WhatsApp"
             width={64}
             height={64}
+            loading="lazy"
             className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200 filter drop-shadow-lg"
-            priority
           />
         </div>
       </a>
-
-      {/* Tooltip */}
-      <div className="absolute bottom-full right-0 mb-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none shadow-lg">
-        ¡Chateá con nosotros!
-        <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-      </div>
-    </motion.div>
+    </div>
   )
 }
