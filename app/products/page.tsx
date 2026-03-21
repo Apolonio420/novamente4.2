@@ -172,8 +172,8 @@ export default function ProductsPage() {
               {group.items.map((product, index) => (
                 <article key={product.id} className="group" aria-label={product.name}>
                   <div className="border rounded-xl overflow-hidden bg-card hover:shadow-lg transition-all duration-300 h-full flex flex-col">
-                    {/* Imagen principal clickeable - va a #generator-section */}
-                    <Link href="/#generator-section" className="block" data-cta="products-page-image-click">
+                    {/* Imagen principal clickeable - va a pagina de producto */}
+                    <Link href={`/products/${product.id}`} className="block" data-cta="products-page-image-click">
                       <div className="aspect-square relative overflow-hidden cursor-pointer">
                         <Image
                           src={product.images.main || "/placeholder.svg"}
@@ -304,13 +304,13 @@ export default function ProductsPage() {
                         </Tabs>
                       )}
 
-                      {/* Botón personalizar mejorado - va a #generator-section */}
+                      {/* Botón ver producto - va a pagina de detalle */}
                       <div className="flex gap-2 mt-auto">
                         {product.available ? (
-                          <Link href="/#generator-section" className="flex-1" data-cta="products-page-personalize">
+                          <Link href={`/products/${product.id}`} className="flex-1" data-cta="products-page-view-detail">
                             <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-lg py-3 px-6 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
                               <Sparkles className="w-4 h-4 mr-2" />
-                              Personalizar Ahora
+                              Ver Producto
                             </Button>
                           </Link>
                         ) : (

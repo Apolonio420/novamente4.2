@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { getPublishedTenants } from '@/lib/partners/tenant'
 import { getPublishedProducts } from '@/lib/partners/catalog'
+import { PRODUCTS as CATALOG_PRODUCTS } from '@/lib/products'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.novamente.ar'
@@ -116,6 +117,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    // Individual product pages
+    ...CATALOG_PRODUCTS.filter(p => p.available).map(p => ({
+      url: `${baseUrl}/products/${p.id}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    })),
     // Blog posts
     {
       url: `${baseUrl}/blog/como-crear-merch-sin-inversion`,
