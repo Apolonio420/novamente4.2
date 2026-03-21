@@ -36,6 +36,19 @@ export const metadata = {
 }
 
 export default function Home() {
+  // MerchantReturnPolicy JSON-LD
+  const returnPolicyJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "MerchantReturnPolicy",
+    "@id": "https://www.novamente.ar/#return-policy",
+    name: "Politica de devoluciones Novamente",
+    applicableCountry: "AR",
+    returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+    merchantReturnDays: 10,
+    returnMethod: "https://schema.org/ReturnByMail",
+    returnFees: "https://schema.org/FreeReturn",
+  }
+
   // HowTo JSON-LD for design process
   const howToJsonLd = {
     "@context": "https://schema.org",
@@ -123,6 +136,10 @@ export default function Home() {
 
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(returnPolicyJsonLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}

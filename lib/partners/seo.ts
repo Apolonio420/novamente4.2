@@ -73,6 +73,8 @@ export function generateProductSchema(
     }
 
     if (enhanced) {
+      offers.itemCondition = 'https://schema.org/NewCondition'
+      offers.priceValidUntil = '2026-12-31'
       offers.seller = {
         '@type': 'Organization',
         name: tenant.name,
@@ -84,7 +86,28 @@ export function generateProductSchema(
           '@type': 'DefinedRegion',
           addressCountry: tenant.country || 'AR',
         },
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          currency: 'ARS',
+          value: '5500',
+        },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 3,
+            unitCode: 'DAY',
+          },
+          transitTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 3,
+            maxValue: 7,
+            unitCode: 'DAY',
+          },
+        },
       }
+      offers.hasMerchantReturnPolicy = { '@id': 'https://www.novamente.ar/#return-policy' }
     } else {
       offers.seller = {
         '@type': 'Organization',

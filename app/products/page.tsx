@@ -51,6 +51,8 @@ function generateProductsJsonLd() {
         priceCurrency: "ARS",
         price: numericPrice,
         availability: "https://schema.org/InStock",
+        itemCondition: "https://schema.org/NewCondition",
+        priceValidUntil: "2026-12-31",
         seller: { "@id": "https://www.novamente.ar/#organization" },
         shippingDetails: {
           "@type": "OfferShippingDetails",
@@ -63,7 +65,23 @@ function generateProductsJsonLd() {
             currency: "ARS",
             value: "5500",
           },
+          deliveryTime: {
+            "@type": "ShippingDeliveryTime",
+            handlingTime: {
+              "@type": "QuantitativeValue",
+              minValue: 1,
+              maxValue: 3,
+              unitCode: "DAY",
+            },
+            transitTime: {
+              "@type": "QuantitativeValue",
+              minValue: 3,
+              maxValue: 7,
+              unitCode: "DAY",
+            },
+          },
         },
+        hasMerchantReturnPolicy: { "@id": "https://www.novamente.ar/#return-policy" },
       },
     }
   })

@@ -125,7 +125,7 @@ const FAQ_ITEMS = [
       },
       {
         q: "¿Cuánto cuesta ser Partner?",
-        a: "Hay 3 planes: Starter (gratis, hasta 10 productos y 20 leads/mes), Growth ($29 USD/mes, productos ilimitados, SEO completo, Design Engine) y Pro ($79 USD/mes, chatbot WhatsApp, Meta Ads, analytics avanzado). Todos incluyen acceso a precios mayoristas.",
+        a: "Hay 3 planes: Starter (gratis, hasta 10 productos y 20 leads/mes), Growth ($25 USD/mes, productos ilimitados, SEO completo, Design Engine) y Pro ($100 USD/mes, chatbot WhatsApp, Meta Ads, analytics avanzado). Todos incluyen acceso a precios mayoristas.",
       },
       {
         q: "¿Hacen pedidos mayoristas para empresas?",

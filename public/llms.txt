@@ -1,78 +1,41 @@
 # Novamente
 
-> Novamente es la primera marca argentina de indumentaria personalizada con inteligencia artificial. Permite diseñar remeras, hoodies, buzos y más usando 37 estilos artísticos generados por IA, con estampado DTG premium y envíos a todo el país.
+> Novamente es la primera marca argentina de indumentaria personalizada con
+> inteligencia artificial. Diseñamos remeras, buzos y hoodies con estampas
+> unicas generadas por IA y estampado DTG premium. Operamos desde Villa
+> Martelli, Buenos Aires, Argentina. Fundada en 2024.
 
-## Información clave
+Novamente ofrece diseño de indumentaria con IA para consumidores finales (B2C)
+y empresas (B2B/merchandising corporativo). Cada prenda se produce bajo demanda
+con tecnologia de estampado directo a tela (DTG) que garantiza durabilidad de
+mas de 50 lavados. Nuestro motor de diseño Nano Banana 2 ofrece 37 estilos
+artisticos unicos.
 
-- **Sitio web**: https://www.novamente.ar
-- **Ubicación**: Villa Martelli, Buenos Aires, Argentina (CP 1603)
-- **Contacto**: contact@novamente.ar | +54 9 11 2660-3080 | WhatsApp
-- **Redes sociales**: Instagram @novamente.ar | Twitter @Novamentear
-- **Fundación**: 2024
-- **Industria**: Indumentaria personalizada, merchandising, moda con IA
+## Productos
 
-## Qué hacemos
+- [Catalogo completo](https://novamente.ar/products): Remeras, hoodies, buzos y mas con precios desde ARS $21,800
+- [Estilos artisticos](https://novamente.ar/styles): 37 estilos de diseño IA incluyendo acuarela, manga, cyberpunk, minimalista y mas
+- [Preguntas frecuentes](https://novamente.ar/faq): Informacion sobre productos, envios, tecnologia DTG y proceso de diseño
 
-Novamente combina diseño con inteligencia artificial y estampado DTG (Direct to Garment) para crear ropa personalizada on-demand. Los clientes describen su idea, eligen un estilo artístico y nuestra IA genera un diseño único en menos de 30 segundos, sin necesidad de conocimientos de diseño gráfico.
+## Marcas Partner
 
-## Productos y precios (ARS)
-
-| Producto | Precio desde |
-|----------|-------------|
-| Musculosa Bali | $21.800 |
-| Remera Crop Mujer | $23.500 |
-| Remera Aldea Classic Fit | $28.600 |
-| Remera Clásica Mujer | $28.600 |
-| Remera Aura Oversize | $31.000 |
-| Buzo Cuello Redondo (Crewneck) | $43.000 |
-| Buzo Hoodie Unisex | $55.000 |
-| Astra Oversize Hoodie | $60.000 |
-| Lienzo Premium | $59.900 |
-
-Todos los productos son algodón 100% premium con estampado DTG de alta calidad. Disponibles en múltiples colores: negro, blanco, caramel, crema, gris melange, stone wash, chocolate, amarillo.
-
-## Estilos artísticos de IA
-
-37 estilos disponibles incluyendo: Watercolor, Pixel Art, Anime, Street Art, Pop Art, Minimalista, Retro/Vintage, Graffiti, Art Nouveau, Cyberpunk, Psychedelic, Geometric, Tribal, Art Deco, Botanical, y más.
-
-## Tecnología
-
-- **Motor de diseño**: Nano Banana 2 (IA generativa optimizada para diseño textil)
-- **Estampado**: DTG (Direct to Garment) — impresión directa sobre algodón
-- **Plataforma**: Next.js, desplegada en Vercel
-- **Pagos**: MercadoPago (tarjeta crédito/débito, efectivo, transferencia)
-
-## Envíos
-
-- AMBA: $5.500
-- Interior Buenos Aires: $7.000
-- Resto del país: $9.000
-- Tiempo de producción + envío: 5-10 días hábiles
-- Despacho desde Villa Martelli, Buenos Aires
+- [Hard Demonio](https://novamente.ar/p/hard-demonio): Marca de streetwear con diseños dark y emocionales
+- [Surf Club](https://novamente.ar/p/surf-club): Coleccion de surf y lifestyle
+- [Ventolito Wind Surf](https://novamente.ar/p/ventolito-wind-surf): Windsurf lifestyle apparel
 
 ## Programa Partners (B2B)
 
-Novamente Partners permite a empresas, marcas y emprendedores crear su propia línea de merchandising sin inversión inicial:
+- [Partners](https://novamente.ar/partners): Programa para lanzar tu marca de ropa sin inversion inicial
+- [Unirse](https://novamente.ar/partners/join): Onboarding para nuevos partners con 3 planes (Starter gratis, Growth $25 USD/mes, Pro $100 USD/mes)
 
-- **Starter** (gratis): Storefront básica, hasta 10 productos, 20 leads/mes
-- **Growth** ($29 USD/mes): Branding completo, productos ilimitados, SEO, Design Engine
-- **Pro** ($79 USD/mes): Chatbot WhatsApp, Meta Ads, analytics avanzado
+## Empresa
 
-Nosotros producimos, almacenamos y enviamos. El partner solo vende.
+- [Inicio](https://novamente.ar): Pagina principal con generador de diseños interactivo
+- Contacto: contact@novamente.ar | WhatsApp +5491126603080
+- Ubicacion: Villa Martelli, Buenos Aires (1603), Argentina
+- Horario: Lunes a Viernes 9:00-18:00
 
-## Páginas principales
+## Optional
 
-- [Inicio](https://www.novamente.ar/) — Generador de diseños con IA
-- [Productos](https://www.novamente.ar/products) — Catálogo completo con precios
-- [Estilos](https://www.novamente.ar/styles) — Galería de 37 estilos artísticos
-- [FAQ](https://www.novamente.ar/faq) — Preguntas frecuentes
-- [Partners](https://www.novamente.ar/partners) — Programa para marcas y empresas
-- [Directorio](https://www.novamente.ar/merch) — Storefronts de partners
-
-## Estadísticas
-
-- Más de 1.200 diseños creados con IA
-- 95+ clientes satisfechos
-- 4.8/5 rating promedio
-- 37 estilos artísticos disponibles
-- Envíos a todo Argentina
+- [Directorio de partners](https://novamente.ar/partners/directory): Marcas que usan la plataforma Novamente
+- [Merchandising corporativo](https://novamente.ar/merch): Soluciones de indumentaria para empresas y eventos

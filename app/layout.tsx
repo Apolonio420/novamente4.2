@@ -102,7 +102,9 @@ const organizationJsonLd = {
     "https://www.instagram.com/novamente.ar/",
     "https://x.com/Novamentear",
     "https://www.facebook.com/share/1CevJ8w7hK/",
+    "https://wa.me/5491126603080",
   ],
+  hasMerchantReturnPolicy: { "@id": "https://www.novamente.ar/#return-policy" },
   foundingDate: "2024",
   knowsAbout: [
     "Diseño de indumentaria con inteligencia artificial",
