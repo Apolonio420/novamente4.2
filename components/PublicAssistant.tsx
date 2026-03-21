@@ -125,6 +125,7 @@ function AssistantInner({
 }) {
   const [open, setOpen] = useState(false)
   const [fullScreen, setFullScreen] = useState(false)
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [streaming, setStreaming] = useState(false)
@@ -159,6 +160,11 @@ function AssistantInner({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages, streaming])
+
+  // Auto-fullscreen on mobile when opening
+  useEffect(() => {
+    if (open && isMobile) setFullScreen(true)
+  }, [open, isMobile])
 
   // Focus input when opening
   useEffect(() => {
@@ -592,15 +598,15 @@ function AssistantInner({
     )
   }
 
-  // Panel / Full-screen
+  // Panel / Full-screen — on mobile always fullscreen
   const panelClass = fullScreen
     ? "fixed inset-0 z-50"
-    : "fixed bottom-4 right-4 z-50 w-[400px] h-[600px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] rounded-2xl shadow-2xl shadow-black/40"
+    : "fixed bottom-4 right-4 z-50 w-[400px] h-[600px] max-sm:inset-0 max-sm:w-auto max-sm:h-auto max-sm:bottom-0 max-sm:right-0 max-w-[calc(100vw-2rem)] max-sm:max-w-none max-h-[calc(100vh-2rem)] max-sm:max-h-none rounded-2xl max-sm:rounded-none shadow-2xl shadow-black/40"
 
   return (
     <div className={`${panelClass} bg-zinc-950 border border-zinc-800 flex flex-col overflow-hidden ${fullScreen ? "" : "rounded-2xl"}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-600/90 to-purple-700/90 backdrop-blur-sm border-b border-purple-500/30 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] bg-gradient-to-r from-purple-600/90 to-purple-700/90 backdrop-blur-sm border-b border-purple-500/30 shrink-0">
         <div className="flex items-center gap-2">
           <Image src="/nova-avatar.svg" alt="Nova" width={28} height={28} className="rounded-full" />
           <div>
@@ -615,14 +621,16 @@ function AssistantInner({
               <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{cartCount}</span>
             </button>
           )}
-          <button onClick={clearChat} className="p-1.5 hover:bg-purple-500/50 rounded-lg transition-colors" title="Limpiar chat">
-            <Trash2 className="w-4 h-4 text-purple-200" />
+          <button onClick={clearChat} className="p-2 sm:p-1.5 hover:bg-purple-500/50 rounded-lg transition-colors" title="Limpiar chat">
+            <Trash2 className="w-5 h-5 sm:w-4 sm:h-4 text-purple-200" />
           </button>
-          <button onClick={() => setFullScreen(!fullScreen)} className="p-1.5 hover:bg-purple-500/50 rounded-lg transition-colors" title={fullScreen ? "Minimizar" : "Pantalla completa"}>
-            {fullScreen ? <Minimize2 className="w-4 h-4 text-purple-200" /> : <Maximize2 className="w-4 h-4 text-purple-200" />}
-          </button>
-          <button onClick={() => { setOpen(false); setFullScreen(false) }} className="p-1.5 hover:bg-purple-500/50 rounded-lg transition-colors" title="Cerrar">
-            <X className="w-4 h-4 text-purple-200" />
+          {!isMobile && (
+            <button onClick={() => setFullScreen(!fullScreen)} className="p-1.5 hover:bg-purple-500/50 rounded-lg transition-colors" title={fullScreen ? "Minimizar" : "Pantalla completa"}>
+              {fullScreen ? <Minimize2 className="w-4 h-4 text-purple-200" /> : <Maximize2 className="w-4 h-4 text-purple-200" />}
+            </button>
+          )}
+          <button onClick={() => { setOpen(false); setFullScreen(false) }} className="p-2 sm:p-1.5 hover:bg-purple-500/50 rounded-lg transition-colors" title="Cerrar">
+            <X className="w-5 h-5 sm:w-4 sm:h-4 text-purple-200" />
           </button>
         </div>
       </div>
@@ -641,7 +649,7 @@ function AssistantInner({
                 <button
                   key={q}
                   onClick={() => sendRef.current(q)}
-                  className="text-xs px-3 py-1.5 rounded-full bg-zinc-800 text-zinc-300 hover:bg-purple-600 hover:text-white transition-colors border border-zinc-700 hover:border-purple-500"
+                  className="text-sm sm:text-xs px-4 sm:px-3 py-2 sm:py-1.5 rounded-full bg-zinc-800 text-zinc-300 hover:bg-purple-600 hover:text-white transition-colors border border-zinc-700 hover:border-purple-500"
                 >
                   {q}
                 </button>
@@ -723,7 +731,7 @@ function AssistantInner({
       </div>
 
       {/* Input */}
-      <div className="border-t border-zinc-800 px-3 py-2 shrink-0 bg-zinc-900/80">
+      <div className="border-t border-zinc-800 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shrink-0 bg-zinc-900/80">
         {/* Pending image previews */}
         {pendingImages.length > 0 && (
           <div className="flex gap-2 mb-2">
@@ -752,10 +760,10 @@ function AssistantInner({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={pendingImages.length >= 3 || streaming}
-            className="p-2.5 text-zinc-400 hover:text-purple-400 disabled:text-zinc-600 transition-colors shrink-0"
+            className="p-3 sm:p-2.5 text-zinc-400 hover:text-purple-400 disabled:text-zinc-600 transition-colors shrink-0"
             title="Adjuntar imagen"
           >
-            <ImagePlus className="w-4 h-4" />
+            <ImagePlus className="w-5 h-5 sm:w-4 sm:h-4" />
           </button>
           <textarea
             ref={inputRef}
@@ -764,14 +772,14 @@ function AssistantInner({
             onKeyDown={handleKeyDown}
             placeholder="Escribí tu mensaje..."
             rows={1}
-            className="flex-1 bg-zinc-800 text-white text-sm rounded-xl px-3 py-2.5 resize-none focus:outline-none focus:ring-1 focus:ring-purple-500 placeholder-zinc-500 max-h-24"
+            className="flex-1 bg-zinc-800 text-white text-sm sm:text-sm text-base rounded-xl px-3 py-3 sm:py-2.5 resize-none focus:outline-none focus:ring-1 focus:ring-purple-500 placeholder-zinc-500 max-h-24"
           />
           <button
             onClick={() => sendMessage()}
             disabled={(!input.trim() && pendingImages.length === 0) || streaming}
-            className="p-2.5 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-xl transition-colors shrink-0"
+            className="p-3 sm:p-2.5 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-xl transition-colors shrink-0"
           >
-            {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            {streaming ? <Loader2 className="w-5 h-5 sm:w-4 sm:h-4 animate-spin" /> : <Send className="w-5 h-5 sm:w-4 sm:h-4" />}
           </button>
         </div>
         <p className="text-[10px] text-zinc-600 mt-1 text-center">Respuestas generadas por IA · Pueden contener errores</p>
