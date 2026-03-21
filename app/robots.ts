@@ -9,6 +9,7 @@ export default function robots(): MetadataRoute.Robots {
                 '/nosotros', '/comparar', '/guia-estampado', '/envios',
                 '/terminos', '/privacidad', '/arrepentimiento',
                 '/disena-tu-remera', '/hoodie-personalizado', '/dtg-vs-serigrafia',
+                '/blog/',
                 '/llms.txt', '/llms-full.txt'],
         disallow: ['/workspace/', '/api/', '/partners/payment/', '/admin/', '/checkout/', '/cart/'],
       },

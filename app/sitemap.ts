@@ -116,6 +116,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    // Blog posts
+    {
+      url: `${baseUrl}/blog/como-crear-merch-sin-inversion`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
   ]
 
   // Dynamic partner storefront pages
