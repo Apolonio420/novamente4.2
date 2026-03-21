@@ -1,257 +1,70 @@
-# Estilos Artisticos — Novamente
+# Estilos Artísticos de Novamente
 
-Novamente ofrece 37 estilos artisticos para generar diseños con inteligencia artificial. Cada estilo produce resultados distintos en terminos de trazo, paleta y composicion. La mayoria estan optimizados para estampado textil DTG (colores planos, contraste alto, sin gradientes complejos que se degraden en tela).
+Novamente ofrece 37 estilos artísticos para generar diseños con IA. Cada estilo produce un resultado visual único, optimizado para impresión textil DTG.
 
-El motor de IA es Nano Banana 2, optimizado especificamente para arte textil. El optimizador de prompts traduce la descripcion del usuario en instrucciones precisas para la IA segun el estilo elegido.
+## Minimalista (3 estilos)
+- **Minimalista Lineal** (minimalista-lineal): Líneas limpias, formas simples, mucho espacio en blanco.
+- **Line Art Minimalista** (line-art-tatuaje): Trazos negros finos tipo tatuaje. Perfecto para retratos.
+- **Minimalismo Brutalista** (brutalista-minimalista): Formas crudas, sin adornos, muy plano.
 
----
+## Pop & Retro (7 estilos)
+- **Sticker Style** (sticker-style): Colores planos con borde grueso, estética coleccionable.
+- **Arte Pop Minimalista** (pop-minimalista): Estilo Warhol, colores planos y gráficos bold.
+- **Ilustración Vintage de Poster** (vintage-poster): Como afiches de los 60/70, estilo retro.
+- **Vintage/Retro** (vintage): Colores desaturados y texturas envejecidas.
+- **Pixel Art Retro** (pixel-art-retro): Arte pixelado 8-bit, estilo gaming retro.
+- **Vaporwave / Synthwave** (retro-vaporwave): Estética retro-futurista con gradientes neón y grids 80s.
+- **Retro Cassette** (retro-cassette): Nostalgia musical con cassettes y tipografía retro.
 
-## Estilos de Linea y Minimalismo
+## Oriental (4 estilos)
+- **Manga / Anime Linework** (manga-anime): Líneas dinámicas estilo manga/anime japonés.
+- **Manga Estilizado** (manga-estilizado): Inspirado en manga con sombreado suave.
+- **Estilo Ghibli** (ghibli-like): Inspirado en Studio Ghibli, suave, orgánico, colores pastel.
+- **Chibi 3D / Mascota** (chibi-3d): Personajes chibi en 3D, estilo mascota kawaii.
 
-Estos estilos usan trazos limpios, pocos colores y espacio negativo. Son los mas versatiles para estampado en cualquier prenda.
+## Digital & Futurista (5 estilos)
+- **Voxel Art / Lego Style** (voxel-lego): Arte voxel estilo Lego, pixelado 3D.
+- **Isométrico Futurista** (isometrico-futurista): Diseño isométrico con elementos futuristas.
+- **Glow Neón Cyberpunk** (neon-cyberpunk): Efecto neón brillante, ideal sobre fondo negro.
+- **Arte 3D Translúcido** (3d-translucido): Efecto de vidrio/gel con transparencias.
+- **Arte Conceptual Isométrico** (conceptual-isometrico): Tipo maquetas digitales.
 
-### Minimalista Lineal
-Descripcion: Lineas limpias, formas simples, mucho espacio en blanco.
-Keywords: minimalist line art, clean lines, simple shapes, negative space, monochrome.
-Optimizado para impresion: Si.
+## Textural (4 estilos)
+- **Arte Acuarela Digital** (acuarela-digital): Fondos suaves con técnica acuarela.
+- **Estilo Psicodélico** (psicodelico): Colores vibrantes y patrones fractales.
+- **Grunge / Distressed** (grunge-distressed): Texturas desgastadas, ideal para streetwear.
+- **Arte Tribal / Étnico** (tribal-etnico): Líneas simbólicas y patrones repetitivos.
 
-### Line Art Minimalista (Tatuaje)
-Descripcion: Trazos negros finos, tipo tatuaje. Lineas delgadas y precisas sin relleno.
-Keywords: line art, thin black lines, tattoo style, minimalist, clean strokes.
-Optimizado para impresion: Si.
+## Geométrico (2 estilos)
+- **Arte Geométrico Abstracto** (geometrico-abstracto): Formas geométricas abstractas con patrones complejos.
+- **Arte Geométrico** (geometrico): Formas geométricas con colores planos, estilo vectorial.
 
-### Arte Tipografico
-Descripcion: Las letras son las protagonistas del diseño. Juego visual con tipografias y texto como arte.
-Keywords: typography art, lettering design, text as art, creative typography, word art.
-Optimizado para impresion: Si.
+## Ilustración (5 estilos)
+- **Cartoon Western** (cartoon-western): Caricatura simple con textura.
+- **Cartoon / Ilustración** (cartoon): Estilo caricaturesco con colores brillantes.
+- **Collage Digital Surrealista** (collage-surrealista): Collage con elementos surrealistas.
+- **Surrealista** (surrealista): Elementos oníricos, composiciones inusuales.
+- **Arte Surreal Vectorial** (surreal-vectorial): Formas imposibles y perspectivas raras.
 
-### Minimalismo Brutalista
-Descripcion: Formas crudas, sin adornos, muy plano. Diseño stark y directo.
-Keywords: brutalist minimalism, raw forms, no decorations, very flat, stark design.
-Optimizado para impresion: Si.
+## Tipográfico (2 estilos)
+- **Arte Tipográfico** (tipografico): Letras como protagonistas de la estampa.
+- **Diseño Editorial** (editorial-tipografia): Tipografía + geometría, estilo portada de revista.
 
----
+## Vectorial (1 estilo)
+- **Ilustración Vectorial** (vectorial): Diseño vectorial con colores planos. Perfecto para impresión.
 
-## Estilos Vectoriales y Geometricos
+## Naturaleza (3 estilos)
+- **Ilustración Botánica Vintage** (botanica-vintage): Plantas y flores detalladas tipo enciclopedia.
+- **Acuarela Naturaleza** (acuarela-naturaleza): Paisajes y fauna en acuarela.
+- **Acuarela Urbana** (acuarela-urbana): Ciudades y paisajes urbanos en acuarela.
 
-Diseños con formas definidas, colores planos y composiciones estructuradas. Excelentes para DTG.
+## Urbano (1 estilo)
+- **Urbano Streetwear** (urbano-streetwear): Estética callejera con autos clásicos y retratos urbanos.
 
-### Ilustracion Vectorial
-Descripcion: Diseño vectorial, colores planos, perfecto para impresion. Limpio y escalable.
-Keywords: vector illustration, flat design, clean graphics, print ready, scalable.
-Optimizado para impresion: Si.
+## Cómo usar los estilos
+1. Describí tu idea de diseño (ej: "un león con corona")
+2. Elegí un estilo (ej: "geometrico-abstracto")
+3. La IA genera tu diseño único en menos de 30 segundos
+4. Probá distintos estilos con la misma idea hasta encontrar el tuyo
 
-### Arte Geometrico
-Descripcion: Formas geometricas, patrones abstractos, colores planos. Composiciones estructuradas.
-Keywords: geometric art, abstract patterns, flat colors, vector graphics, bold shapes.
-Optimizado para impresion: Si.
-
-### Arte Geometrico Abstracto
-Descripcion: Formas geometricas abstractas, patrones complejos. Mas elaborado que el geometrico basico.
-Keywords: abstract geometric art, complex patterns, geometric shapes, modern abstract.
-Optimizado para impresion: Si.
-
-### Arte Pop Minimalista
-Descripcion: Estilo Warhol-esque, colores planos y graficos en negrita. Cultura pop simplificada.
-Keywords: pop art minimal, warhol style, flat colors, bold graphics, pop culture.
-Optimizado para impresion: Si.
-
-### Arte Surreal Vectorial
-Descripcion: Formas imposibles, perspectivas raras, colores planos. Surrealismo con trazo vectorial.
-Keywords: surreal vector art, impossible shapes, weird perspectives, flat colors, abstract surreal.
-Optimizado para impresion: Si.
-
-### Diseno Editorial / Tipografia mas Geometria
-Descripcion: Inspirado en portadas de revistas. Mezcla de tipografia con elementos geometricos.
-Keywords: editorial design, typography geometry, magazine cover style, layout design, graphic design.
-Optimizado para impresion: Si.
-
----
-
-## Estilos Urbanos y Streetwear
-
-Perfectos para prendas oversize y un look urbano autentico.
-
-### Sticker Style
-Descripcion: Colores planos, borde grueso blanco o negro, estetica coleccionable. Muy popular en streetwear.
-Keywords: sticker style, flat colors, thick border, collectible aesthetic, bold outline.
-Optimizado para impresion: Si.
-
-### Grunge / Distressed Texture
-Descripcion: Texturas desgastadas y aspecto gastado. Ideal para oversize streetwear. Efecto urbano autentico.
-Keywords: grunge style, distressed texture, streetwear aesthetic, worn look, urban design.
-Optimizado para impresion: Si.
-
-### Glow Neon Cyberpunk
-Descripcion: Efecto neon brillante, ideal en prendas oscuras como negro. Colores electricos sobre fondo oscuro.
-Keywords: neon glow, cyberpunk style, glowing effects, dark background, electric colors.
-Optimizado para impresion: Si.
-
----
-
-## Estilos Manga y Anime
-
-### Manga / Anime Linework
-Descripcion: Lineas dinamicas estilo manga japones. Trazo limpio, expresivo y energico.
-Keywords: manga linework, anime style, dynamic lines, japanese illustration, clean line art.
-Optimizado para impresion: Si.
-
-### Manga Estilizado
-Descripcion: Inspirado en manga y anime, lineas dinamicas con sombreado suave. Mas elaborado que el linework puro.
-Keywords: manga style, anime inspired, dynamic lines, soft shading, japanese art.
-Optimizado para impresion: Si.
-
-### Chibi 3D / Mascota Estilizada
-Descripcion: Personajes chibi en 3D, estilo kawaii y mascotas estilizadas. Adorable y coleccionable.
-Keywords: chibi 3d, cute mascot style, kawaii, 3d character, stylized.
-Optimizado para impresion: Si.
-
-### Estilo Ghibli
-Descripcion: Inspirado en Studio Ghibli. Lineas suaves, formas organicas, colores pastel y atmosfera magica.
-Keywords: studio ghibli style, soft lines, organic shapes, pastel colors, whimsical.
-Optimizado para impresion: Si.
-
----
-
-## Estilos Retro y Vintage
-
-### Ilustracion Vintage de Poster
-Descripcion: Como afiches de los anos 60 y 70. Estilo retro psicodelico clasico.
-Keywords: vintage poster, 60s 70s style, retro illustration, psychedelic poster, classic design.
-Optimizado para impresion: Si.
-
-### Vintage / Retro
-Descripcion: Estilo retro con colores desaturados y texturas envejecidas. Estetica clasica y atemporal.
-Keywords: vintage style, retro design, muted colors, aged textures, classic.
-Optimizado para impresion: Si.
-
-### Pixel Art Retro
-Descripcion: Arte pixelado retro, estilo 8-bit. Pixeles grandes y aspecto de videojuego clasico.
-Keywords: pixel art, 8-bit style, retro gaming, pixelated graphics, chunky pixels.
-Optimizado para impresion: Si.
-
-### Voxel Art / Lego Style
-Descripcion: Arte voxel o estilo Lego. Pixelado 3D, bloques y estetica de videojuego en 3D.
-Keywords: voxel art, lego style, pixelated 3d, blocky, retro gaming.
-Optimizado para impresion: Si.
-
----
-
-## Estilos 3D e Isometricos
-
-### Isometrico Futurista
-Descripcion: Diseño isometrico con elementos futuristas. Perspectiva geometrica 3D.
-Keywords: isometric futurist, 3d isometric, futuristic design, geometric perspective.
-Optimizado para impresion: Si.
-
-### Arte Conceptual Isometrico
-Descripcion: Tipo maquetas digitales. Diseño conceptual con perspectiva isometrica.
-Keywords: conceptual isometric, digital mockup, architectural visualization, 3d concept.
-Optimizado para impresion: Si.
-
-### Arte 3D Translucido
-Descripcion: Efecto vidrio o gel con transparencias. Objetos cristalinos y materiales translucidos en 3D.
-Keywords: 3d translucent, glass effect, gel material, transparent 3d, crystal design.
-Optimizado para impresion: Si.
-
----
-
-## Estilos Ilustracion y Cartoon
-
-### Cartoon / Ilustracion
-Descripcion: Estilo caricaturesco con colores brillantes y lineas definidas. Playful y expresivo.
-Keywords: cartoon illustration, bold outlines, bright colors, playful design, character art.
-Optimizado para impresion: Si.
-
-### Estilo Cartoon Western
-Descripcion: Caricatura simple pero con textura. Estetica de dibujos animados con touch vintage.
-Keywords: cartoon western, simple caricature, textured illustration, vintage cartoon.
-Optimizado para impresion: Si.
-
-### Arte Acuarela Digital
-Descripcion: Fondos suaves y difuminados, ideal para prendas claras. Pintura digital con efecto acuarela.
-Keywords: digital watercolor, soft backgrounds, gentle colors, artistic painting.
-Optimizado para impresion: Si.
-
-### Ilustracion Botanica Vintage
-Descripcion: Plantas y flores detalladas como en enciclopedias antiguas. Estilo cientifico ilustrado.
-Keywords: vintage botanical illustration, detailed plants, encyclopedia style, scientific drawing.
-Optimizado para impresion: Si.
-
----
-
-## Estilos Surrealistas y Conceptuales
-
-### Surrealista
-Descripcion: Elementos oniricos, composiciones inusuales, colores vibrantes. Arte surreal complejo.
-Keywords: surreal art, dreamlike elements, unusual composition, vibrant colors, artistic.
-Optimizado para impresion: No (requiere simplificacion para mejor resultado en tela).
-
-### Collage Digital Surrealista
-Descripcion: Collage digital con elementos surrealistas. Mezcla de medios y composicion onírica.
-Keywords: digital collage, surrealist art, mixed media, dreamlike composition.
-Optimizado para impresion: No (requiere simplificacion para mejor resultado en tela).
-
----
-
-## Estilos con Cautela para Impresion
-
-Estos estilos generan diseños muy detallados o con gradientes complejos que pueden no reproducirse perfectamente en DTG. Se recomienda simplificar la descripcion para obtener mejores resultados en tela.
-
-### Estilo Psicodelico
-Descripcion: Colores vibrantes, patrones fractales y composiciones trippy.
-Keywords: psychedelic art, vibrant colors, fractal patterns, trippy design, neon colors.
-Optimizado para impresion: No.
-
----
-
-## Arte Tribal y Etnico
-
-### Arte Tribal / Etnico
-Descripcion: Lineas simbolicas, patrones repetitivos y motivos culturales.
-Keywords: tribal art, ethnic patterns, symbolic lines, repetitive motifs, cultural design.
-Optimizado para impresion: Si.
-
----
-
-## Resumen: los 37 estilos disponibles
-
-1. Minimalista Lineal
-2. Line Art Minimalista (Tatuaje)
-3. Sticker Style
-4. Manga / Anime Linework
-5. Chibi 3D / Mascota Estilizada
-6. Voxel Art / Lego Style
-7. Isometrico Futurista
-8. Ilustracion Vintage de Poster
-9. Arte Geometrico Abstracto
-10. Estilo Psicodelico
-11. Collage Digital Surrealista
-12. Arte Pop Minimalista
-13. Pixel Art Retro
-14. Grunge / Distressed Texture
-15. Arte Tribal / Etnico
-16. Arte Tipografico
-17. Glow Neon Cyberpunk
-18. Arte 3D Translucido
-19. Arte Conceptual Isometrico
-20. Estilo Cartoon Western
-21. Arte Acuarela Digital
-22. Minimalismo Brutalista
-23. Ilustracion Botanica Vintage
-24. Arte Surreal Vectorial
-25. Diseno Editorial / Tipografia mas Geometria
-26. Arte Geometrico
-27. Surrealista
-28. Cartoon / Ilustracion
-29. Estilo Ghibli
-30. Vintage / Retro
-31. Ilustracion Vectorial
-32. Manga Estilizado
-33. Arte Pop Minimalista (variante)
-34. Chibi 3D
-35. Conceptual Isometrico
-36. Grunge Distressed
-37. Botanica Vintage
-
-De los 37 estilos, 33 estan optimizados para impresion DTG. Los 4 restantes (psicodelico, collage surrealista, surrealista y algunos gradientes complejos) requieren simplificacion para mejores resultados en tela.
+Todos los estilos están optimizados para impresión DTG sobre algodón.

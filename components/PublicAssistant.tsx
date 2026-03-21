@@ -4,10 +4,17 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useCart } from "@/lib/cartStore"
 import {
-  X, Maximize2, Minimize2, Send, Trash2,
+  X, Maximize2, Minimize2, Send, Trash2, ImagePlus, RotateCcw,
   ShoppingCart, Loader2, Sparkles, Palette, ChevronRight, Share2, Copy, Check,
 } from "lucide-react"
 import Image from "next/image"
+import { PRODUCTS, formatPrice } from "@/lib/catalog"
+
+interface SourceRef {
+  title: string
+  category: string
+  score: number
+}
 
 interface Message {
   id: string
@@ -16,6 +23,7 @@ interface Message {
   images?: string[]
   actions?: ParsedAction[]
   suggestions?: string[]
+  sources?: SourceRef[]
   timestamp: number
 }
 
@@ -29,14 +37,6 @@ interface ParsedAction {
 const STORAGE_KEY = "novamente-public-assistant"
 const MAX_STORED = 50
 const MAX_HISTORY = 16
-
-const CATALOG = [
-  { name: "Aura Oversize T-Shirt", price: 31000, colors: "negro, blanco, caramel", image: "/products/oversize-negro-front.jpeg", garmentType: "aura-oversize-tshirt" },
-  { name: "Aldea Classic T-Shirt", price: 28600, colors: "negro, blanco", image: "/products/classic-negro-front.jpeg", garmentType: "aldea-classic-tshirt" },
-  { name: "Astra Oversize Hoodie", price: 60000, colors: "negro, caramel, crema, gris", image: "/products/hoodie-negro-front.jpeg", garmentType: "astra-oversize-hoodie" },
-  { name: "Buzo Hoodie Unisex", price: 55000, colors: "negro, stone-wash, blanco", image: "/products/hoodie-negro-front.jpeg", garmentType: "buzo-hoodie-unisex" },
-  { name: "Musculosa Bali", price: 21800, colors: "blanca, negra, gris", image: "/products/musculosa-bali-front.jpeg", garmentType: "musculosa-bali" },
-]
 
 // Quick replies based on page context
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
@@ -86,14 +86,18 @@ function getSuggestions(text: string, actions?: ParsedAction[]): string[] {
   return ["Ver productos", "Diseñar algo", "¿Cómo funciona?"]
 }
 
-function formatPrice(n: number) {
-  return `$${n.toLocaleString("es-AR")}`
-}
-
+/** Safe markdown renderer — escapes HTML first, then applies formatting */
 function renderMarkdown(text: string) {
-  return text
+  // Escape HTML entities first to prevent XSS
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+  // Then apply safe markdown formatting
+  return escaped
     .replace(/\*\*(.+?)\*\*/g, '<strong class="text-zinc-100">$1</strong>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-purple-400 underline hover:text-purple-300">$1</a>')
+    .replace(/\[([^\]]+)\]\(((\/|https:\/\/novamente\.ar)[^)]*)\)/g, '<a href="$2" class="text-purple-400 underline hover:text-purple-300">$1</a>')
     .replace(/`([^`]+)`/g, '<code class="bg-zinc-700 px-1 rounded text-sm">$1</code>')
     .replace(/\n/g, "<br/>")
 }
@@ -125,9 +129,13 @@ function AssistantInner({
   const [input, setInput] = useState("")
   const [streaming, setStreaming] = useState(false)
   const [typingPhrase, setTypingPhrase] = useState(0)
+  const [pendingImages, setPendingImages] = useState<string[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const sendRef = useRef<(text?: string) => void>(() => {})
+  const lastDesignUrlRef = useRef<string | null>(null)
+  const lastMockupUrlRef = useRef<string | null>(null)
 
   // Load from localStorage
   useEffect(() => {
@@ -156,6 +164,27 @@ function AssistantInner({
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 100)
   }, [open])
+
+  // ESC to close fullscreen or panel
+  useEffect(() => {
+    if (!open) return
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (fullScreen) setFullScreen(false)
+        else setOpen(false)
+      }
+    }
+    window.addEventListener("keydown", handleEsc)
+    return () => window.removeEventListener("keydown", handleEsc)
+  }, [open, fullScreen])
+
+  // Auto-resize textarea
+  const autoResize = useCallback(() => {
+    const el = inputRef.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${Math.min(el.scrollHeight, 96)}px`
+  }, [])
 
   // Rotate typing phrases while streaming
   useEffect(() => {
@@ -207,6 +236,7 @@ function AssistantInner({
           })
           const data = await res.json()
           if (data.success && data.images?.[0]?.url) {
+            lastDesignUrlRef.current = data.images[0].url
             updateAction("done", data.images[0].url)
             // Add guided purchase suggestions after design
             setMessages(prev => prev.map(m => {
@@ -235,6 +265,7 @@ function AssistantInner({
           })
           const data = await res.json()
           if (data.success && data.publicUrl) {
+            lastMockupUrlRef.current = data.publicUrl
             updateAction("done", data.publicUrl)
           } else {
             updateAction("error", data.error || "No se pudo crear el mockup")
@@ -275,8 +306,14 @@ function AssistantInner({
     if (!text || streaming) return
 
     if (!overrideText) setInput("")
-    const userMsg: Message = { id: `u-${Date.now()}`, role: "user", text, timestamp: Date.now() }
+    const imageUrls = [...pendingImages]
+    setPendingImages([])
+
+    const userMsg: Message = { id: `u-${Date.now()}`, role: "user", text, images: imageUrls.length > 0 ? imageUrls : undefined, timestamp: Date.now() }
     addMessage(userMsg)
+
+    // Reset textarea height
+    if (inputRef.current) inputRef.current.style.height = "auto"
 
     const modelMsgId = `m-${Date.now()}`
     const modelMsg: Message = { id: modelMsgId, role: "model", text: "", timestamp: Date.now() }
@@ -285,11 +322,38 @@ function AssistantInner({
     setTypingPhrase(0)
 
     try {
-      const history = messages.slice(-MAX_HISTORY).map(m => ({ role: m.role, text: m.text }))
+      // Build history with design context injected
+      const history = messages.slice(-MAX_HISTORY).map(m => {
+        let enrichedText = m.text
+        // Inject action results into history so Nova knows what happened
+        if (m.actions) {
+          for (const a of m.actions) {
+            if (a.status === "done" && a.result) {
+              if (a.type === "GENERATE_DESIGN") enrichedText += `\n[Diseno generado: ${a.result}]`
+              if (a.type === "SHOW_MOCKUP") enrichedText += `\n[Mockup creado: ${a.result}]`
+            }
+          }
+        }
+        return { role: m.role, text: enrichedText }
+      })
+
+      // Add context about last design/mockup for continuity
+      let contextQuery = text
+      if (lastDesignUrlRef.current && !text.includes("http")) {
+        contextQuery += `\n[Contexto: ultimo diseno generado = ${lastDesignUrlRef.current}]`
+      }
+      if (lastMockupUrlRef.current && !text.includes("http")) {
+        contextQuery += `\n[Contexto: ultimo mockup = ${lastMockupUrlRef.current}]`
+      }
+
       const res = await fetch("/api/assistant/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: text, history }),
+        body: JSON.stringify({
+          query: contextQuery,
+          history,
+          ...(imageUrls.length > 0 ? { imageUrls } : {}),
+        }),
       })
 
       if (!res.ok) {
@@ -321,6 +385,8 @@ function AssistantInner({
             if (event.type === "chunk") {
               fullText += event.text
               updateLastModel(m => ({ ...m, text: fullText }))
+            } else if (event.type === "sources" && event.sources) {
+              updateLastModel(m => ({ ...m, sources: event.sources }))
             }
           } catch { /* skip */ }
         }
@@ -350,7 +416,7 @@ function AssistantInner({
       // Auto-execute visual actions
       if (actions.length > 0) {
         for (const action of actions) {
-          if (["GENERATE_DESIGN", "SHOW_MOCKUP", "SHOW_CATALOG", "SHOW_STYLES"].includes(action.type)) {
+          if (["GENERATE_DESIGN", "SHOW_MOCKUP", "SHOW_CATALOG", "SHOW_STYLES", "SHOW_PRICING"].includes(action.type)) {
             executeAction(action, modelMsgId)
           }
         }
@@ -360,7 +426,7 @@ function AssistantInner({
     } finally {
       setStreaming(false)
     }
-  }, [input, streaming, messages, addMessage, updateLastModel, executeAction])
+  }, [input, streaming, messages, pendingImages, addMessage, updateLastModel, executeAction])
 
   // Keep sendRef updated for suggestion chips
   sendRef.current = sendMessage
@@ -372,8 +438,32 @@ function AssistantInner({
     }
   }
 
+  const handleImageUpload = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    const newUrls: string[] = []
+    for (let i = 0; i < Math.min(files.length, 3 - pendingImages.length); i++) {
+      const file = files[i]
+      if (!file.type.startsWith("image/")) continue
+      // Convert to data URL for preview, will be sent as blob URL
+      const url = URL.createObjectURL(file)
+      newUrls.push(url)
+    }
+    setPendingImages(prev => [...prev, ...newUrls].slice(0, 3))
+  }, [pendingImages.length])
+
+  const removeImage = useCallback((idx: number) => {
+    setPendingImages(prev => {
+      const copy = [...prev]
+      URL.revokeObjectURL(copy[idx])
+      copy.splice(idx, 1)
+      return copy
+    })
+  }, [])
+
   const clearChat = () => {
     setMessages([])
+    lastDesignUrlRef.current = null
+    lastMockupUrlRef.current = null
     localStorage.removeItem(STORAGE_KEY)
   }
 
@@ -591,6 +681,28 @@ function AssistantInner({
               </div>
             </div>
 
+            {/* User attached images */}
+            {msg.role === "user" && msg.images && msg.images.length > 0 && (
+              <div className="flex gap-1 justify-end mt-1">
+                {msg.images.map((img, i) => (
+                  <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-purple-500/30">
+                    <Image src={img} alt="Adjunto" fill className="object-cover" sizes="64px" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Sources badges */}
+            {msg.role === "model" && msg.sources && msg.sources.length > 0 && !streaming && (
+              <div className="flex flex-wrap gap-1 mt-1.5 ml-8">
+                {msg.sources.slice(0, 3).map((s, i) => (
+                  <span key={i} className="text-[9px] px-2 py-0.5 rounded-full bg-zinc-800/50 text-zinc-500 border border-zinc-700/40">
+                    {s.title || s.category}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* Follow-up suggestion chips */}
             {msg.role === "model" && msg.suggestions && !streaming && idx === messages.length - 1 && (
               <div className="flex flex-wrap gap-1.5 mt-2 ml-8">
@@ -612,11 +724,43 @@ function AssistantInner({
 
       {/* Input */}
       <div className="border-t border-zinc-800 px-3 py-2 shrink-0 bg-zinc-900/80">
+        {/* Pending image previews */}
+        {pendingImages.length > 0 && (
+          <div className="flex gap-2 mb-2">
+            {pendingImages.map((img, i) => (
+              <div key={i} className="relative w-14 h-14 rounded-lg overflow-hidden border border-purple-500/30 group">
+                <Image src={img} alt="" fill className="object-cover" sizes="56px" />
+                <button
+                  onClick={() => removeImage(i)}
+                  className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex items-end gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={e => { handleImageUpload(e.target.files); e.target.value = "" }}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={pendingImages.length >= 3 || streaming}
+            className="p-2.5 text-zinc-400 hover:text-purple-400 disabled:text-zinc-600 transition-colors shrink-0"
+            title="Adjuntar imagen"
+          >
+            <ImagePlus className="w-4 h-4" />
+          </button>
           <textarea
             ref={inputRef}
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={e => { setInput(e.target.value); autoResize() }}
             onKeyDown={handleKeyDown}
             placeholder="Escribí tu mensaje..."
             rows={1}
@@ -624,7 +768,7 @@ function AssistantInner({
           />
           <button
             onClick={() => sendMessage()}
-            disabled={!input.trim() || streaming}
+            disabled={(!input.trim() && pendingImages.length === 0) || streaming}
             className="p-2.5 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-xl transition-colors shrink-0"
           >
             {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -685,7 +829,7 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
       <div className="mt-3 space-y-2">
         <p className="text-xs text-zinc-400 font-medium">Nuestros productos:</p>
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {CATALOG.map(p => (
+          {PRODUCTS.map(p => (
             <div key={p.name} className="shrink-0 w-32 bg-zinc-900 rounded-lg overflow-hidden border border-zinc-700 hover:border-purple-500/50 transition-colors">
               <div className="h-24 bg-zinc-800 relative">
                 <Image src={p.image} alt={p.name} fill className="object-cover" sizes="128px" />
@@ -693,7 +837,7 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
               <div className="p-2">
                 <p className="text-xs font-medium text-zinc-200 truncate">{p.name}</p>
                 <p className="text-xs text-purple-400 font-bold">{formatPrice(p.price)}</p>
-                <p className="text-[10px] text-zinc-500 truncate">{p.colors}</p>
+                <p className="text-[10px] text-zinc-500 truncate">{p.colors.join(", ")}</p>
               </div>
             </div>
           ))}
@@ -707,13 +851,40 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
       <div className="mt-3">
         <p className="text-xs text-zinc-400 font-medium mb-2">37 estilos disponibles:</p>
         <div className="grid grid-cols-4 gap-1">
-          {["acuarela-digital", "manga-anime", "pixel-art-retro", "geometrico-abstracto", "neon-cyberpunk", "vintage-poster", "sticker-style", "line-art-tatuaje"].map(s => (
+          {["acuarela-leon", "geometrico-colibri", "pixel-art-astronauta", "pop-art-comic", "japones-gran-ola", "retro-vaporwave-synthwave", "line-art-retrato", "surrealista-leopardo"].map(s => (
             <div key={s} className="relative aspect-square rounded-md overflow-hidden bg-zinc-800">
               <Image src={`/styles/${s}.png`} alt={s} fill className="object-cover" sizes="60px" />
             </div>
           ))}
         </div>
         <p className="text-[10px] text-zinc-500 mt-1">y 29 más... ¡Pedime cualquier estilo!</p>
+      </div>
+    )
+  }
+
+  if (action.type === "SHOW_PRICING") {
+    const pricing = [
+      { name: "Musculosa Bali", price: 21800 },
+      { name: "Crop Mujer", price: 23500 },
+      { name: "Aldea Classic", price: 28600 },
+      { name: "Clásica Mujer", price: 28600 },
+      { name: "Aura Oversize", price: 31000 },
+      { name: "Buzo Cuello Redondo", price: 43000 },
+      { name: "Hoodie Unisex", price: 55000 },
+      { name: "Astra Oversize", price: 60000 },
+    ]
+    return (
+      <div className="mt-3">
+        <p className="text-xs text-zinc-400 font-medium mb-2">Precios (incluyen diseño + DTG):</p>
+        <div className="space-y-1">
+          {pricing.map(p => (
+            <div key={p.name} className="flex items-center justify-between bg-zinc-900 rounded-lg px-3 py-1.5 border border-zinc-800">
+              <span className="text-xs text-zinc-300">{p.name}</span>
+              <span className="text-xs text-purple-400 font-bold">{formatPrice(p.price)}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-[10px] text-zinc-500 mt-1.5">Descuentos por cantidad disponibles para B2B</p>
       </div>
     )
   }
@@ -752,7 +923,14 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
       )
     }
     if (action.status === "error") {
-      return <p className="mt-2 text-xs text-red-400">{action.result || "Error generando diseño"}</p>
+      return (
+        <div className="mt-2 flex items-center gap-2">
+          <p className="text-xs text-red-400">{action.result || "Error generando diseño"}</p>
+          <button onClick={onExecute} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1">
+            <RotateCcw className="w-3 h-3" /> Reintentar
+          </button>
+        </div>
+      )
     }
     return null
   }
@@ -788,7 +966,14 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
       )
     }
     if (action.status === "error") {
-      return <p className="mt-2 text-xs text-red-400">{action.result || "Error creando mockup"}</p>
+      return (
+        <div className="mt-2 flex items-center gap-2">
+          <p className="text-xs text-red-400">{action.result || "Error creando mockup"}</p>
+          <button onClick={onExecute} className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1">
+            <RotateCcw className="w-3 h-3" /> Reintentar
+          </button>
+        </div>
+      )
     }
     return null
   }

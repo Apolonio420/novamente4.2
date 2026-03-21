@@ -1,148 +1,73 @@
-# Preguntas Frecuentes — Novamente
-
-Respuestas a las dudas mas comunes sobre Novamente: diseño con inteligencia artificial, productos, precios, envios, estampado DTG, calidad, talles y el programa de partners.
-
----
+# Preguntas Frecuentes
 
 ## Sobre Novamente
 
-### Que es Novamente
+### ¿Qué es Novamente?
+Primera marca argentina que combina diseño con IA, impresión DTG premium y producción on-demand. Ropa personalizada única sin mínimos de compra.
 
-Novamente es la primera marca argentina de indumentaria personalizada con inteligencia artificial. Fundada en 2024, permite a cualquier persona disenar remeras, hoodies, buzos, musculosas y lienzos usando 37 estilos artisticos generados por IA. Se producen on-demand con estampado DTG premium y se envian a todo el pais. Mas de 1.200 disenos creados por mas de 95 clientes satisfechos con una calificacion promedio de 4.8 sobre 5.
+### ¿Dónde están ubicados?
+Villa Martelli, zona norte de Buenos Aires. No tenemos showroom físico — producimos directo de fábrica al cliente.
 
-### Donde estan ubicados
+### ¿Qué los diferencia?
+Únicos en Argentina combinando: diseño con IA (37 estilos), impresión DTG premium sobre algodón, y producción on-demand sin stock ni mínimos.
 
-La base de operaciones esta en Villa Martelli, Buenos Aires, Argentina (CP 1603). Desde ahi se producen y despachan todos los pedidos a nivel nacional.
+## Diseño con IA
 
-### Que diferencia a Novamente de otras marcas de ropa personalizada
+### ¿Cómo funciona?
+3 pasos: 1) Describí tu idea, 2) Elegí estilo (37 disponibles), 3) La IA genera tu diseño en menos de 30 segundos.
 
-Novamente es la unica marca en Argentina que combina diseno con inteligencia artificial, estampado DTG premium y produccion on-demand. No es necesario saber disenar: el cliente describe su idea, elige un estilo artistico y la IA genera un diseno profesional en menos de 30 segundos. No hay minimos de cantidad ni stock disponible previo: cada prenda se produce al pedido.
+### ¿Puedo subir mi propio diseño o logo?
+Sí. Subí PNG o JPG. El sistema detecta automáticamente si es logo para estampar o diseño completo.
 
----
+### ¿El diseño es único?
+Sí, cada diseño generado es completamente único y te pertenece.
 
-## Proceso de diseño con IA
+### ¿Cuántos estilos hay?
+37 estilos: Acuarela, Pixel Art, Anime, Pop Art, Minimalista, Retro, Cyberpunk, Psicodélico, Geométrico, Tribal, Botánico, Surrealista, Tipográfico, y más.
 
-### Como funciona el diseno con inteligencia artificial
+## Productos y Precios
 
-El proceso tiene 3 pasos simples: primero, el cliente describe su idea en texto (por ejemplo: "un lobo cosmico con galaxias"). Segundo, elige uno de los 37 estilos artisticos disponibles. Tercero, la IA Nano Banana 2 genera un diseno vectorial optimizado para estampado textil en menos de 30 segundos. No se requieren conocimientos de diseno grafico.
+### ¿Qué productos tienen?
+Remeras: Aldea Classic ($28,600), Aura Oversize ($31,000), Clásica Mujer ($28,600), Crop Mujer ($23,500). Musculosa Bali ($21,800). Buzos: Cuello Redondo ($43,000), Hoodie Unisex ($55,000), Astra Oversize ($60,000). Lienzo Premium ($59,900).
 
-### Cuantos estilos artisticos hay disponibles
+### ¿Los precios incluyen el diseño?
+Sí. Incluyen diseño con IA + impresión DTG premium (frente y espalda). Sin cargos adicionales.
 
-Hay 37 estilos artisticos disponibles, incluyendo: Minimalista Lineal, Line Art Tatuaje, Sticker Style, Manga Anime, Chibi 3D, Voxel Art, Isometrico Futurista, Vintage Poster, Geometrico Abstracto, Psicodelico, Collage Surrealista, Arte Pop, Pixel Art Retro, Grunge Distressed, Tribal Etnico, Tipografico, Neon Cyberpunk, 3D Translucido, Conceptual Isometrico, Cartoon Western, Acuarela Digital, Brutalista Minimalista, Botanica Vintage, Surreal Vectorial, Editorial Tipografia, Geometrico, Surrealista, Cartoon, Ghibli, Vintage Retro, Vectorial y Manga Estilizado, entre otros. Cada estilo esta optimizado para producir disenos que se ven bien en estampado textil.
+### ¿Hay descuentos por cantidad?
+Sí para pedidos B2B: 5-9 unidades (Starter), 10-29 (Pro), 30+ (Drop, mejor precio). Contactanos por WhatsApp.
 
-### Puedo subir mi propio diseno o logo
+## Impresión DTG
 
-Si, ademas del generador con IA se puede subir una imagen propia o un logo. El sistema detecta automaticamente si se quiere hacer una estampa con la imagen y la adapta para estampado DTG. Es ideal para logos de empresas, ilustraciones propias o fotografias.
+### ¿Qué es DTG?
+Direct to Garment: impresión directa sobre algodón con tintas a base de agua que penetran la fibra. Colores vibrantes, alta definición.
 
-### El diseno generado es unico
+### ¿Por qué DTG y no serigrafía?
+Colores ilimitados, detalles fotorrealistas, sin costos de setup, tintas que penetran la fibra (no quedan encima), resiste 50+ lavados. Sublimación solo funciona en poliéster; nosotros usamos 100% algodón.
 
-Si, cada diseno generado por la IA es completamente unico y original. No se repiten disenos entre clientes. El diseno es propiedad del cliente una vez que lo genera.
+### ¿Cuántos lavados resiste?
+50+ lavados. Lavar del revés, agua fría, no usar secadora.
 
-### El diseno de IA tiene algun costo adicional
+## Envíos
 
-No. El precio de la prenda ya incluye el diseno personalizado con IA y el estampado DTG. No hay cargos adicionales por generar el diseno.
+### ¿Hacen envíos a todo el país?
+Sí por Andreani: AMBA $5,500 (24-72h), Interior BA $7,000 (2-4 días), Resto $9,000 (2-4 días).
 
----
+### ¿Cuánto tarda?
+5-10 días hábiles total (24-48h producción + envío según zona).
 
-## Productos y precios
+### ¿Cómo pago?
+MercadoPago (tarjeta, débito, efectivo) o transferencia bancaria. Precios finales.
 
-### Que productos ofrece Novamente
+### ¿Aceptan devoluciones?
+Productos personalizados: no por talle/arrepentimiento. Sí por defectos de fabricación.
 
-El catalogo incluye: Hoodies Oversize Astra (desde $60.000), Buzos Hoodie Unisex (desde $55.000), Buzos Cuello Redondo Crewneck (desde $43.000), Remeras Oversize Aura (desde $31.000), Remeras Classic Fit Aldea (desde $28.600), Remeras Clasicas Mujer (desde $28.600), Remeras Crop Mujer (desde $23.500), Musculosas Bali (desde $21.800) y Lienzos Premium ($59.900). Todos disponibles en multiples colores.
+## Partners
 
-### Cuanto cuesta una remera personalizada con IA
+### ¿Qué es Novamente Partners?
+Plataforma para crear tu línea de merch sin inversión. Nosotros producimos y enviamos, vos vendés.
 
-Las remeras personalizadas arrancan desde $28.600 ARS para el modelo Aldea Classic Fit y $31.000 ARS para la Aura Oversize. Los precios incluyen el diseno personalizado con IA y estampado DTG de alta calidad. No hay cargos adicionales por el diseno.
-
-### Cuanto cuesta un hoodie personalizado
-
-Los hoodies comienzan en $55.000 ARS para el Buzo Hoodie Unisex y $60.000 ARS para el Astra Oversize Hoodie premium. Disponibles en negro, blanco, caramel, crema, gris melange y stone wash. Incluyen diseno con IA y estampado DTG.
-
-### Tienen talles para todos
-
-Las prendas estan disponibles en talles S, M, L, XL y XXL. Las prendas oversize tienen un fit relajado que se adapta a diferentes cuerpos. Cada producto tiene tabla de medidas detallada visible en la pagina del producto. Se recomienda revisar las medidas antes de comprar ya que no se admiten cambios por talle.
-
-### Cuales son las medidas de los talles
-
-Medidas aproximadas (contorno de pecho / largo): S = 96 cm / 70 cm, M = 100 cm / 72 cm, L = 106 cm / 74 cm, XL = 112 cm / 76 cm, XXL = 118 cm / 78 cm. Las medidas pueden variar +/- 2 cm segun el modelo.
-
----
-
-## Estampado DTG
-
-### Que es el estampado DTG
-
-DTG (Direct to Garment) es la tecnologia de impresion textil que imprime directamente sobre la fibra de algodon usando tintas especiales a base de agua. Logra colores vibrantes, alta definicion fotografica y durabilidad excepcional en cada lavado.
-
-### Por que DTG es mejor que serigrafia o sublimacion
-
-El DTG ofrece varias ventajas frente a otras tecnicas: no tiene limite de colores como la serigrafia; permite detalles fotograficos imposibles con otras tecnicas; no requiere costos de setup ni minimos de cantidad; la tinta penetra la fibra del algodon en vez de quedar como una capa encima; resiste lavados manteniendo la intensidad del color. La sublimacion solo funciona en poliester, mientras que Novamente usa algodon 100% premium.
-
-### Cuantos lavados resiste el estampado
-
-El estampado DTG de Novamente esta disenado para durar mas de 50 lavados. Para maximizar la durabilidad se recomienda: lavar la prenda del reves, usar agua fria, no usar secadora y planchar al reves sin tocar el estampado. Se usan tintas de grado profesional sobre algodon 100% optimizado para DTG.
-
-### Sobre que material se estampa
-
-Todos los productos de Novamente son algodon 100%. La composicion de fibras naturales esta optimizada para la absorcion de tintas DTG, lo que garantiza mayor durabilidad y colores mas vibrantes que en telas sinteticas.
-
----
-
-## Envios y produccion
-
-### Hacen envios a todo el pais
-
-Si, se realizan envios a toda la Argentina. Costos: AMBA $5.500, Interior de Buenos Aires $7.000, Resto del pais $9.000. Se despacha desde Villa Martelli, Buenos Aires.
-
-### Cuanto tarda en llegar el pedido
-
-El tiempo total desde el pedido hasta la entrega es de 5 a 15 dias habiles. Incluye produccion (2 a 5 dias habiles) mas envio (3 a 10 dias habiles segun la zona).
-
-### Como sigo el estado de mi pedido
-
-Una vez despachado el pedido, el cliente recibe el codigo de seguimiento por WhatsApp al numero proporcionado durante la compra.
-
-### Como pago
-
-Se acepta pago por MercadoPago (tarjeta de credito, debito, efectivo en punto de pago) y transferencia bancaria. El proceso de pago es seguro y los precios publicados son los precios finales.
-
----
-
-## Devoluciones y cambios
-
-### Puedo cambiar el talle si me queda mal
-
-No es posible realizar cambios por talle. Al ser un producto personalizado producido bajo demanda, cada prenda se fabrica especificamente para ese pedido. Los productos personalizados estan excluidos del derecho de arrepentimiento conforme al Art. 1116 del Codigo Civil y Comercial de la Nacion Argentina. Es fundamental revisar la tabla de talles antes de comprar.
-
-### Que pasa si la prenda llega con un defecto
-
-Si la prenda llego con un defecto de estampa o fabricacion, el cliente debe contactar dentro de las 72 horas de recibido el producto a contact@novamente.ar con fotos del defecto. Novamente repone el producto sin cargo.
-
-### Que pasa si el paquete llega danado
-
-Si el paquete llego danado, el cliente debe contactar inmediatamente con fotos del paquete y del producto. Novamente gestiona el reclamo con el correo y comunica la resolucion. Contacto: contact@novamente.ar o WhatsApp +54 9 11 2660-3080.
-
----
-
-## Partners y mayoristas
-
-### Que es el programa Novamente Partners
-
-Novamente Partners es la plataforma para empresas, marcas y emprendedores que quieren crear su propia linea de merchandising sin inversion inicial. Incluye storefront personalizada con la marca del partner, diseno con IA, produccion on-demand, precios mayoristas y envio. Novamente produce y envia; el partner solo vende.
-
-### Cuanto cuesta ser Partner
-
-Hay 3 planes: Starter (gratis, hasta 10 productos y 20 leads por mes), Growth ($25 USD por mes, productos ilimitados, SEO completo, Design Engine) y Pro ($100 USD por mes, chatbot WhatsApp, Meta Ads, analytics avanzado). Todos incluyen acceso a precios mayoristas.
-
-### Hacen pedidos mayoristas para empresas
-
-Si, tanto a traves del programa Partners como por pedidos directos. Contacto para cotizaciones: WhatsApp +54 9 11 2660-3080 o email contact@novamente.ar.
-
----
+### ¿Cuánto cuesta?
+Starter (gratis, hasta 20 productos), Growth ($25 USD/mes, ilimitado + SEO), Pro ($100 USD/mes, todo incluido + envío gratis).
 
 ## Contacto
-
-- Email: contact@novamente.ar
-- WhatsApp: +54 9 11 2660-3080
-- Instagram: @novamente.ar
-- Sitio web: novamente.ar
+WhatsApp: +54 9 11 3137-0561 | B2B: +54 9 11 6274-7588 | Email: contact@novamente.ar | IG: @novamente.ar

@@ -1,175 +1,65 @@
-# Programa Novamente Partners — Lanza tu marca de merch
+# Programa Novamente Partners
 
-## Que es Novamente Partners
+## ¿Qué es?
+Plataforma para que empresas, marcas personales y emprendedores creen y vendan su propia línea de merchandising personalizado sin inversión inicial. Nosotros producimos y enviamos.
 
-Novamente Partners es la plataforma para empresas, marcas y emprendedores que quieren crear su propia linea de merchandising personalizado sin inversion inicial en stock, sin logistica y sin riesgo de inventario.
+## ¿Cómo Funciona?
+1. Te registrás como Partner en novamente.ar
+2. Creás tu storefront personalizado con tu marca
+3. Diseñás productos usando nuestro motor de IA con 37 estilos
+4. Tus clientes compran desde tu storefront
+5. Nosotros producimos y enviamos al cliente final
+6. Vos ganás la diferencia entre tu precio y nuestro precio mayorista
 
-El partner tiene una storefront profesional en novamente.ar con su logo, colores y productos. Novamente se encarga de toda la produccion, el estampado DTG, el almacenamiento y el envio. El partner solo vende y cobra.
+## Planes
 
-Es el modelo ideal para: marcas de moda que quieren lanzar merch, empresas que necesitan uniformes o regalos corporativos, influencers o creadores de contenido con su propia linea, agencias de diseno que ofrecen productos personalizados, gyms o clubes deportivos con su marca.
+### Starter — Gratis
+- Hasta 20 productos, 20 leads/mes
+- Precios mayoristas, producción on-demand, diseño con IA
+- Ideal para probar
 
----
-
-## Como funciona
-
-El proceso tiene cuatro pasos:
-
-1. Registrate. Crea tu cuenta y carga tu marca en minutos en novamente.ar/partners/join.
-2. Configura. Sube tu logo, define colores, selecciona productos y estilo visual.
-3. Publica. Tu storefront queda online al instante en novamente.ar/merch/tu-marca.
-4. Vende. Recibe leads y pedidos. Novamente produce y envia directamente al cliente final.
-
-No se necesita stock previo, no se necesita logistica propia y no hay inversion inicial.
-
----
-
-## Planes disponibles
-
-### Plan Starter — Gratis
-
-El plan Starter es gratuito. Ideal para empezar y validar la idea sin inversion.
-
-Que incluye:
-- Storefront basica con logo y marca propia
-- Hasta 10 productos en catalogo
-- 20 leads por mes
-- Acceso a precios mayoristas en todas las prendas
-- Badge "Powered by Novamente" en la tienda
-
-Para quienes: emprendedores que estan empezando, marcas pequenas que quieren testear el canal, personas que quieren validar si hay demanda antes de invertir.
-
-### Plan Growth — $25 USD por mes
-
-El plan mas popular. Para marcas que quieren crecer con presencia profesional completa.
-
-Que incluye todo lo del plan Starter mas:
-- Branding completo: colores personalizados, imagen hero, CTA propio
-- Productos ilimitados en el catalogo
-- Leads ilimitados
-- SEO completo con indexacion en Google
-- Design Engine con IA (generacion de disenos y mockups, 37 estilos)
-- Analytics basico del rendimiento de la tienda
-- Sin badge de Novamente (marca 100% propia)
+### Growth — $25 USD/mes
+- Productos y leads ilimitados
+- Motor de diseño (modo preset), SEO completo, analytics básico
+- Gestión de leads, diseñador de storefront
 - Soporte por email
 
-Para quienes: marcas con volumen de ventas regular, emprendedores que quieren aparecer en Google, negocios que necesitan catalogo amplio.
+### Pro — $100 USD/mes
+- Todo de Growth más: chatbot con IA + WhatsApp, analytics avanzado
+- Dominio personalizado, envío gratis en todos los pedidos
+- Meta Business setup, templates para Meta Ads
+- Soporte premium por WhatsApp, onboarding call
 
-Precio anual con descuento: $21 USD por mes (15% menos).
+## Precios Mayoristas
 
-### Plan Pro — $100 USD por mes
+| Producto | Costo Partner | Precio Web | Ganancia/unidad |
+|----------|--------------|------------|-----------------|
+| Aldea Classic Fit | $24,696 | $28,600 | $3,904 |
+| Aura Oversize | $25,496 | $31,000 | $5,504 |
+| Clásica Mujer | $24,696 | $28,600 | $3,904 |
+| Crop Mujer | $20,156 | $23,500 | $3,344 |
+| Musculosa Bali | $18,096 | $21,800 | $3,704 |
+| Buzo Cuello Redondo | $28,088 | $43,000 | $14,912 |
+| Hoodie Unisex | $30,120 | $55,000 | $24,880 |
+| Astra Oversize | $45,000 | $60,000 | $15,000 |
 
-El plan completo para marcas que quieren maximo alcance y automatizacion.
+### Descuentos por Volumen
+- On-Demand (1+): Precio base
+- Starter (5-9): ~4% descuento
+- Pro (10-29): ~8% descuento
+- Drop (30+): ~12% descuento
 
-Que incluye todo lo del plan Growth mas:
-- Chatbot WhatsApp personalizado que vende de forma automatica las 24 horas
-- Setup completo de Meta Business (Facebook e Instagram Business)
-- Plantillas de Meta Ads para campanas de publicidad
-- Design Engine completo con ajuste de marca (brand-fit)
-- Analytics avanzado con metricas detalladas
-- Feed Meta Commerce y Google Shopping
-- Soporte por WhatsApp prioritario
-- Onboarding call 1 a 1 con el equipo de Novamente
+## Beneficios
+- Cero inversión en stock
+- Sin riesgo: solo producimos cuando hay venta
+- Vos controlás precios y margen
+- 37 estilos de IA, mockups profesionales automáticos
+- Dashboard con analytics
+- Storefront personalizado
+- Producción en 24-48h + envío nacional
 
-Para quienes: marcas con ambicion de crecimiento digital, negocios que quieren automatizar ventas por WhatsApp, empresas que invierten en publicidad paga en Meta.
+## ¿Para Quién?
+Marcas personales, emprendedores, empresas (merch corporativo), artistas, influencers, negocios.
 
-Precio anual con descuento: $85 USD por mes (15% menos).
-
----
-
-## Comparativa de planes
-
-| Caracteristica | Starter | Growth | Pro |
-|---|---|---|---|
-| Precio mensual | Gratis | $25 USD | $100 USD |
-| Productos | Hasta 10 | Ilimitados | Ilimitados |
-| Leads por mes | 20 | Ilimitados | Ilimitados |
-| Branding personalizado | Basico | Completo | Completo |
-| SEO e indexacion Google | No | Si | Si |
-| Design Engine IA | No | Si | Si (brand-fit) |
-| Chatbot WhatsApp | No | No | Si |
-| Meta Business setup | No | No | Si |
-| Meta Ads | No | No | Plantillas incluidas |
-| Analytics | No | Basico | Avanzado |
-| Soporte | No | Email | WhatsApp prioritario |
-| Onboarding call | No | No | Si |
-
-Los planes Growth y Pro se facturan en pesos argentinos (ARS) al tipo de cambio del dia de la facturacion.
-
----
-
-## Produccion y productos disponibles para partners
-
-Los partners acceden a todo el catalogo de Novamente con precios mayoristas:
-
-- Hoodies Oversize Astra (negro, caramel, crema, gris melange)
-- Buzos Hoodie Unisex (negro, blanco, stone wash)
-- Buzos Cuello Redondo Crewneck (negro, blanco, stone wash)
-- Remeras Oversize Aura (blanco, negro, caramel, stone wash)
-- Remeras Classic Fit Aldea (negro, blanco)
-- Remeras Clasicas Mujer (blanca, negra)
-- Remeras Crop Mujer (negra, chocolate, gris melange, amarillo)
-- Musculosas Bali (blanco, negro, gris)
-- Lienzos Premium
-
-Todos los productos son algodon 100% con estampado DTG. Talles S, M, L, XL y XXL. Produccion bajo demanda: sin stock minimo, sin riesgo de inventario.
-
----
-
-## Ventajas del modelo on-demand para partners
-
-Cero inversion inicial: el partner no paga por stock que quiza no venda. Solo se produce lo que se vende.
-
-Cero riesgo de inventario: si una prenda no se vende, no hay perdida economica. No hay deposito lleno de remeras sin vender.
-
-Escala ilimitada: si el partner vende 1 prenda o 1.000 en un mes, Novamente puede absorber el volumen sin cambios operativos para el partner.
-
-Envio directo al cliente final: Novamente despacha directamente desde Villa Martelli al cliente del partner. El partner no toca el producto.
-
----
-
-## Diseño con IA para partners
-
-Los planes Growth y Pro incluyen acceso al Design Engine de Novamente. El partner puede generar disenos con IA usando los 37 estilos artisticos disponibles, ver mockups del diseno sobre las prendas y adaptar la generacion a los colores y estetica de su marca (brand-fit en el plan Pro).
-
----
-
-## Como unirse
-
-Para registrarse en el programa Partners: novamente.ar/partners/join.
-
-Para hablar con un asesor antes de decidir: WhatsApp +54 9 11 2660-3080.
-
-Para iniciar sesion si ya sos partner: novamente.ar/partners/login.
-
----
-
-## Preguntas frecuentes sobre Partners
-
-### Necesito tener stock o logistica propia
-
-No. Novamente se encarga de toda la produccion, el almacenamiento y el envio al cliente final. El partner solo se dedica a vender y cobrar.
-
-### Cuanto tarda en estar lista mi storefront
-
-La storefront queda online al instante una vez configurada. En el plan Starter se puede estar activo en minutos. En Growth y Pro hay proceso de branding personalizado que puede tomar unas horas.
-
-### Puedo tener mi propio dominio
-
-El plan Pro incluye posibilidades de integracion avanzada. Por defecto la tienda esta en novamente.ar/merch/nombre-de-marca.
-
-### Que pasa si quiero cambiar de plan
-
-Es posible cambiar de plan en cualquier momento desde el workspace de partner en novamente.ar/workspace/billing.
-
-### Cuales son los precios mayoristas
-
-Los precios mayoristas son mas bajos que los precios de venta al publico (B2C). El margen queda para el partner. Para conocer los precios exactos contactar al equipo: contact@novamente.ar o WhatsApp +54 9 11 2660-3080.
-
----
-
-## Contacto para el programa Partners
-
-- Sitio: novamente.ar/partners
-- Registro: novamente.ar/partners/join
-- Email: contact@novamente.ar
-- WhatsApp: +54 9 11 2660-3080
+## Contacto Partners
+WhatsApp B2B: +54 9 11 6274-7588 | Email: contact@novamente.ar | Web: novamente.ar/partners

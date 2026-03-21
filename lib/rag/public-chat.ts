@@ -11,6 +11,7 @@ import { chunkMarkdown } from './chunker'
 import { embedDocuments, embedQuery } from './embeddings'
 import { InMemoryVectorStore } from './vector-store'
 import type { VectorDocument, SearchResult } from './vector-store'
+import { buildProductListForPrompt, buildShippingForPrompt, SIZES } from '@/lib/catalog'
 
 const CHAT_MODEL = 'gemini-2.0-flash'
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta'
@@ -135,6 +136,9 @@ Cuando necesites ejecutar una accion en la interfaz, agrega al final de tu respu
 [ACTION:SHOW_STYLES]
   Usar cuando: el cliente pregunta por estilos o quiere ver las opciones artisticas
 
+[ACTION:SHOW_PRICING]
+  Usar cuando: el cliente pregunta cuanto sale, cuanto cuesta, precios, o quiere ver la lista de precios
+
 [ACTION:CHECKOUT]
   Usar cuando: el cliente dice que quiere pagar o ir al checkout
 
@@ -145,19 +149,10 @@ IMPORTANTE sobre acciones:
 - Podes combinar texto + accion en la misma respuesta.
 
 PRODUCTOS DISPONIBLES (precios en ARS):
-- Aura Oversize T-Shirt: $31,000 (negro, blanco, caramel, stone-wash)
-- Aldea Classic T-Shirt: $28,600 (negro, blanco)
-- Astra Oversize Hoodie: $60,000 (negro, caramel, crema, gris)
-- Buzo Hoodie Unisex: $55,000 (negro, stone-wash, blanco)
-- Buzo Cuello Redondo: $43,000 (negro, blanco, stone-wash)
-- Remera Clasica Mujer: $28,600 (blanca, negra)
-- Remera Crop Mujer: $23,500 (negra, chocolate, gris, amarillo)
-- Musculosa Bali: $21,800 (blanca, negra, gris)
-- Lienzo: $59,900
+${buildProductListForPrompt()}
 
-TALLES: S, M, L, XL, XXL
-ENVIO: AMBA $5,500 | Interior BA $7,000 | Resto del pais $9,000 | Gratis arriba de $85,000
-PRODUCCION: 2-5 dias habiles | ENTREGA: 3-10 dias habiles segun zona`
+TALLES: ${SIZES.join(', ')}
+${buildShippingForPrompt()}`
 
 export interface ChatMessage {
     role: 'user' | 'model'
@@ -282,7 +277,7 @@ export async function* publicChatStream(
 
 // Parse action tags from assistant response
 export interface AssistantAction {
-    type: 'GENERATE_DESIGN' | 'SHOW_MOCKUP' | 'ADD_TO_CART' | 'SHOW_CATALOG' | 'SHOW_STYLES' | 'CHECKOUT'
+    type: 'GENERATE_DESIGN' | 'SHOW_MOCKUP' | 'ADD_TO_CART' | 'SHOW_CATALOG' | 'SHOW_STYLES' | 'SHOW_PRICING' | 'CHECKOUT'
     params: string[]
 }
 
