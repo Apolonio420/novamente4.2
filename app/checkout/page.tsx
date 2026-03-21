@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCart } from "@/lib/cartStore"
 import { formatCurrency } from "@/lib/utils"
-import { Loader2, ArrowLeft, CreditCard, Smartphone, Building2 } from "lucide-react"
+import { Loader2, ArrowLeft, CreditCard, Smartphone, Building2, Shield, Truck, Clock } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Separator } from "@/components/ui/separator"
@@ -219,6 +219,25 @@ export default function CheckoutPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Progress indicator */}
+      <div className="flex items-center justify-center gap-2 mb-6 text-sm">
+        <span className="text-muted-foreground">Carrito</span>
+        <span className="text-muted-foreground">—</span>
+        <span className="font-semibold text-primary">Checkout</span>
+        <span className="text-muted-foreground">—</span>
+        <span className="text-muted-foreground">Confirmacion</span>
+      </div>
+
+      {/* Urgency banner */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center mb-6">
+        <div className="flex items-center justify-center gap-2">
+          <Clock className="w-4 h-4 text-amber-600" />
+          <p className="text-sm font-medium text-amber-800">
+            Produccion sale hoy — completa tu pedido para entrar en esta tanda
+          </p>
+        </div>
+      </div>
+
       <div className="flex items-center gap-4 mb-8">
         <Link href="/cart">
           <Button variant="ghost" size="sm">
@@ -515,9 +534,17 @@ export default function CheckoutPage() {
                   </span>
                 </div>
                 {subtotal < shippingThreshold && (
-                  <p className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                    💡 Agrega {formatCurrency(shippingThreshold - subtotal)} más para envío gratuito
-                  </p>
+                  <div className="bg-blue-50 p-2 rounded space-y-1.5">
+                    <p className="text-xs text-muted-foreground">
+                      Te faltan {formatCurrency(shippingThreshold - subtotal)} para envio gratuito
+                    </p>
+                    <div className="w-full bg-blue-200 rounded-full h-1.5">
+                      <div
+                        className="bg-blue-600 h-1.5 rounded-full transition-all"
+                        style={{ width: `${Math.min(100, (subtotal / shippingThreshold) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -530,28 +557,40 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          <Button onClick={handleCheckout} disabled={isProcessing || !validateForm()} className="w-full" size="lg">
+          <Button onClick={handleCheckout} disabled={isProcessing || !validateForm()} className="w-full text-base" size="lg">
             {isProcessing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Procesando...
+                Procesando tu pedido...
               </>
             ) : (
               <>
                 {paymentMethod === 'mercadopago' ? (
-                  <CreditCard className="mr-2 h-4 w-4" />
+                  <CreditCard className="mr-2 h-5 w-5" />
                 ) : (
-                  <Building2 className="mr-2 h-4 w-4" />
+                  <Building2 className="mr-2 h-5 w-5" />
                 )}
-                {paymentMethod === 'mercadopago' ? 'Pagar con MercadoPago' : 'Continuar con Transferencia'} - {formatCurrency(total)}
+                {paymentMethod === 'mercadopago' ? 'Confirmar y Pagar' : 'Confirmar Pedido'} — {formatCurrency(total)}
               </>
             )}
           </Button>
 
+          {/* Trust signals */}
+          <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground py-2">
+            <span className="flex items-center gap-1">
+              <Shield className="w-3.5 h-3.5" />
+              Pago 100% seguro
+            </span>
+            <span className="flex items-center gap-1">
+              <Truck className="w-3.5 h-3.5" />
+              Envio a todo el pais
+            </span>
+          </div>
+
           <p className="text-xs text-muted-foreground text-center">
-            {paymentMethod === 'mercadopago' 
-              ? 'Al hacer clic serás redirigido a MercadoPago para completar tu compra de forma segura.'
-              : 'Al hacer clic verás los datos de transferencia bancaria para completar tu pago.'
+            {paymentMethod === 'mercadopago'
+              ? 'Seras redirigido a MercadoPago para completar tu compra de forma segura.'
+              : 'Veras los datos de transferencia bancaria para completar tu pago.'
             }
           </p>
         </div>

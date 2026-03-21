@@ -353,18 +353,33 @@ export default function CartPage() {
               <CardTitle>Resumen del Pedido</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Urgency banner */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+                <p className="text-sm font-medium text-amber-800">
+                  Produccion sale hoy a las 18hs
+                </p>
+                <p className="text-xs text-amber-600 mt-0.5">
+                  Completa tu pedido para entrar en esta tanda
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
                   <span>{formatCurrency(getTotalPrice())}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Envío</span>
+                  <span>Envio</span>
                   <span className="text-green-600">{getTotalPrice() >= 50000 ? "Gratis" : formatCurrency(5000)}</span>
                 </div>
                 {getTotalPrice() >= 50000 && (
                   <div className="text-sm text-green-600">
-                    ¡Envío gratis por compras mayores a {formatCurrency(50000)}!
+                    Envio gratis por compras mayores a {formatCurrency(50000)}!
+                  </div>
+                )}
+                {getTotalPrice() < 50000 && (
+                  <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
+                    Agrega {formatCurrency(50000 - getTotalPrice())} mas para envio gratuito
                   </div>
                 )}
               </div>
@@ -378,13 +393,25 @@ export default function CartPage() {
 
               <div className="space-y-3 pt-4">
                 <Button onClick={handleCheckout} className="w-full" size="lg">
-                  Proceder al Checkout
+                  Finalizar Compra
                 </Button>
+
+                {/* Trust signals */}
+                <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground py-1">
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Pago seguro
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Datos protegidos
+                  </span>
+                </div>
 
                 <Link href="/#generator-section" className="block" data-cta="cart-with-items-continue-designing">
                   <Button variant="outline" className="w-full bg-transparent">
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Continuar Diseñando
+                    Continuar Disenando
                   </Button>
                 </Link>
 
