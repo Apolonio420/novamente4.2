@@ -310,10 +310,10 @@ function AssistantInner({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-4 z-50 flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white rounded-full px-4 py-3 shadow-lg shadow-purple-900/30 transition-all hover:scale-105"
-        aria-label="Abrir asistente"
+        className="fixed bottom-24 right-4 z-50 flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white rounded-full pl-2 pr-4 py-2 shadow-lg shadow-purple-900/30 transition-all hover:scale-105 group"
+        aria-label="Abrir asistente Nova"
       >
-        <Sparkles className="w-5 h-5" />
+        <Image src="/nova-avatar.svg" alt="Nova" width={32} height={32} className="rounded-full group-hover:animate-pulse" />
         <span className="text-sm font-medium hidden sm:inline">Nova</span>
         {cartCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{cartCount}</span>
@@ -332,7 +332,7 @@ function AssistantInner({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-purple-600/90 backdrop-blur-sm border-b border-purple-500/30 shrink-0">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-white" />
+          <Image src="/nova-avatar.svg" alt="Nova" width={28} height={28} className="rounded-full" />
           <span className="font-semibold text-white">Nova</span>
           <span className="text-purple-200 text-xs">Asistente IA</span>
         </div>

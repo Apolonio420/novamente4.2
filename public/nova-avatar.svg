@@ -1,0 +1,61 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle with gradient -->
+  <circle cx="40" cy="40" r="40" fill="url(#bg)"/>
+
+  <!-- Simplified brain shape (top) -->
+  <g transform="translate(18, 10) scale(0.55)">
+    <!-- Left hemisphere -->
+    <path d="M38 8C28 8 20 14 18 22C14 22 8 26 8 34C8 38 10 42 14 44C12 48 12 54 16 58C20 62 26 62 30 60C32 64 36 66 40 66"
+          fill="url(#leftBrain)" stroke="#1a1a3e" stroke-width="2"/>
+    <!-- Right hemisphere -->
+    <path d="M42 8C52 8 60 14 62 22C66 22 72 26 72 34C72 38 70 42 66 44C68 48 68 54 64 58C60 62 54 62 50 60C48 64 44 66 40 66"
+          fill="url(#rightBrain)" stroke="#1a1a3e" stroke-width="2"/>
+    <!-- Center line -->
+    <line x1="40" y1="8" x2="40" y2="66" stroke="#1a1a3e" stroke-width="2"/>
+  </g>
+
+  <!-- Friendly face -->
+  <!-- Left eye -->
+  <ellipse cx="30" cy="50" rx="4" ry="4.5" fill="white"/>
+  <circle cx="31" cy="49.5" r="2.2" fill="#1a1a3e"/>
+  <circle cx="32" cy="48.5" r="0.8" fill="white"/>
+
+  <!-- Right eye -->
+  <ellipse cx="50" cy="50" rx="4" ry="4.5" fill="white"/>
+  <circle cx="51" cy="49.5" r="2.2" fill="#1a1a3e"/>
+  <circle cx="52" cy="48.5" r="0.8" fill="white"/>
+
+  <!-- Happy smile -->
+  <path d="M30 58 Q34 66 40 66 Q46 66 50 58" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+  <!-- Rosy cheeks -->
+  <circle cx="25" cy="57" r="3" fill="#ff6b9d" opacity="0.4"/>
+  <circle cx="55" cy="57" r="3" fill="#ff6b9d" opacity="0.4"/>
+
+  <!-- Sparkle accents -->
+  <g fill="white" opacity="0.8">
+    <path d="M64 16 L65.5 20 L64 24 L62.5 20Z"/>
+    <path d="M64 16 L68 17.5 L64 19 L60 17.5Z" transform="translate(0,2.5)"/>
+  </g>
+  <g fill="white" opacity="0.6">
+    <circle cx="14" cy="28" r="1.5"/>
+    <circle cx="12" cy="24" r="1"/>
+  </g>
+
+  <defs>
+    <radialGradient id="bg" cx="0.3" cy="0.3" r="0.7">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </radialGradient>
+    <linearGradient id="leftBrain" x1="8" y1="8" x2="40" y2="66" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="50%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="rightBrain" x1="40" y1="8" x2="72" y2="66" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="50%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#f472b6"/>
+    </linearGradient>
+  </defs>
+</svg>
