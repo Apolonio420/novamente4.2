@@ -303,22 +303,69 @@ function AssistantInner({
 
   const cartCount = getTotalItems()
 
+  // Periodic wiggle animation
+  const [wiggle, setWiggle] = useState(false)
+  useEffect(() => {
+    if (open) return
+    const interval = setInterval(() => {
+      setWiggle(true)
+      setTimeout(() => setWiggle(false), 1200)
+    }, 8000)
+    // First wiggle after 3s
+    const first = setTimeout(() => {
+      setWiggle(true)
+      setTimeout(() => setWiggle(false), 1200)
+    }, 3000)
+    return () => { clearInterval(interval); clearTimeout(first) }
+  }, [open])
+
   // --- RENDER ---
 
   // FAB button
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-4 z-50 flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white rounded-full pl-2 pr-4 py-2 shadow-lg shadow-purple-900/30 transition-all hover:scale-105 group"
-        aria-label="Abrir asistente Nova"
-      >
-        <Image src="/nova-avatar.svg" alt="Nova" width={32} height={32} className="rounded-full group-hover:animate-pulse" />
-        <span className="text-sm font-medium hidden sm:inline">Nova</span>
-        {cartCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{cartCount}</span>
-        )}
-      </button>
+      <>
+        <style>{`
+          @keyframes nova-wiggle {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            15% { transform: rotate(-12deg) scale(1.1); }
+            30% { transform: rotate(10deg) scale(1.15); }
+            45% { transform: rotate(-8deg) scale(1.1); }
+            60% { transform: rotate(6deg) scale(1.05); }
+            75% { transform: rotate(-3deg) scale(1.02); }
+          }
+          @keyframes nova-glow {
+            0%, 100% { box-shadow: 0 0 8px rgba(139,92,246,0.3), 0 4px 12px rgba(88,28,135,0.2); }
+            50% { box-shadow: 0 0 20px rgba(139,92,246,0.6), 0 4px 20px rgba(168,85,247,0.4); }
+          }
+          @keyframes nova-wave {
+            0%, 100% { opacity: 0; transform: scale(0.8); }
+            50% { opacity: 0.4; transform: scale(1.4); }
+          }
+          .nova-fab { animation: nova-glow 4s ease-in-out infinite; }
+          .nova-wiggle { animation: nova-wiggle 1.2s ease-in-out; }
+          .nova-ring { animation: nova-wave 1.2s ease-out; }
+        `}</style>
+        <button
+          onClick={() => setOpen(true)}
+          className="nova-fab fixed bottom-24 right-4 z-50 flex items-center gap-2 bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-400 hover:to-purple-600 text-white rounded-full pl-1.5 pr-4 py-1.5 transition-all hover:scale-110 group"
+          aria-label="Abrir asistente Nova"
+        >
+          {/* Pulse ring behind avatar */}
+          {wiggle && <span className="nova-ring absolute left-1 w-10 h-10 rounded-full border-2 border-purple-400 pointer-events-none" />}
+          <Image
+            src="/nova-avatar.svg"
+            alt="Nova"
+            width={36}
+            height={36}
+            className={`rounded-full ${wiggle ? "nova-wiggle" : ""}`}
+          />
+          <span className="text-sm font-semibold hidden sm:inline">Nova</span>
+          {cartCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{cartCount}</span>
+          )}
+        </button>
+      </>
     )
   }
 

@@ -1,61 +1,60 @@
 <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background circle with gradient -->
+  <!-- Background -->
   <circle cx="40" cy="40" r="40" fill="url(#bg)"/>
+  <circle cx="40" cy="40" r="38" fill="none" stroke="white" stroke-width="0.5" opacity="0.15"/>
 
-  <!-- Simplified brain shape (top) -->
-  <g transform="translate(18, 10) scale(0.55)">
-    <!-- Left hemisphere -->
-    <path d="M38 8C28 8 20 14 18 22C14 22 8 26 8 34C8 38 10 42 14 44C12 48 12 54 16 58C20 62 26 62 30 60C32 64 36 66 40 66"
-          fill="url(#leftBrain)" stroke="#1a1a3e" stroke-width="2"/>
-    <!-- Right hemisphere -->
-    <path d="M42 8C52 8 60 14 62 22C66 22 72 26 72 34C72 38 70 42 66 44C68 48 68 54 64 58C60 62 54 62 50 60C48 64 44 66 40 66"
-          fill="url(#rightBrain)" stroke="#1a1a3e" stroke-width="2"/>
-    <!-- Center line -->
-    <line x1="40" y1="8" x2="40" y2="66" stroke="#1a1a3e" stroke-width="2"/>
+  <!-- Mini brain on forehead -->
+  <g transform="translate(26, 6) scale(0.35)">
+    <path d="M40 8C28 8 18 16 16 26C12 26 6 30 6 38C6 44 10 48 16 48C14 52 16 58 22 60C26 62 32 60 34 56C36 60 38 62 40 62"
+          fill="url(#leftB)"/>
+    <path d="M40 8C52 8 62 16 64 26C68 26 74 30 74 38C74 44 70 48 64 48C66 52 64 58 58 60C54 62 48 60 46 56C44 60 42 62 40 62"
+          fill="url(#rightB)"/>
   </g>
 
-  <!-- Friendly face -->
+  <!-- Face -->
   <!-- Left eye -->
-  <ellipse cx="30" cy="50" rx="4" ry="4.5" fill="white"/>
-  <circle cx="31" cy="49.5" r="2.2" fill="#1a1a3e"/>
-  <circle cx="32" cy="48.5" r="0.8" fill="white"/>
+  <ellipse cx="29" cy="40" rx="7" ry="8" fill="white"/>
+  <circle cx="31" cy="39" r="4" fill="#1e1b4b"/>
+  <circle cx="32.5" cy="37" r="1.8" fill="white"/>
+  <circle cx="29" cy="41" r="0.8" fill="white" opacity="0.5"/>
 
   <!-- Right eye -->
-  <ellipse cx="50" cy="50" rx="4" ry="4.5" fill="white"/>
-  <circle cx="51" cy="49.5" r="2.2" fill="#1a1a3e"/>
-  <circle cx="52" cy="48.5" r="0.8" fill="white"/>
+  <ellipse cx="51" cy="40" rx="7" ry="8" fill="white"/>
+  <circle cx="53" cy="39" r="4" fill="#1e1b4b"/>
+  <circle cx="54.5" cy="37" r="1.8" fill="white"/>
+  <circle cx="51" cy="41" r="0.8" fill="white" opacity="0.5"/>
 
-  <!-- Happy smile -->
-  <path d="M30 58 Q34 66 40 66 Q46 66 50 58" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <!-- Eyebrows (friendly arched) -->
+  <path d="M22 31 Q29 26 36 31" stroke="white" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.7"/>
+  <path d="M44 31 Q51 26 58 31" stroke="white" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.7"/>
+
+  <!-- Big happy smile -->
+  <path d="M25 54 Q32 66 40 66 Q48 66 55 54" stroke="white" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Tongue -->
+  <ellipse cx="40" cy="63" rx="5" ry="3.5" fill="#f472b6" opacity="0.6"/>
 
   <!-- Rosy cheeks -->
-  <circle cx="25" cy="57" r="3" fill="#ff6b9d" opacity="0.4"/>
-  <circle cx="55" cy="57" r="3" fill="#ff6b9d" opacity="0.4"/>
+  <circle cx="19" cy="48" r="5" fill="#f472b6" opacity="0.25"/>
+  <circle cx="61" cy="48" r="5" fill="#f472b6" opacity="0.25"/>
 
-  <!-- Sparkle accents -->
-  <g fill="white" opacity="0.8">
-    <path d="M64 16 L65.5 20 L64 24 L62.5 20Z"/>
-    <path d="M64 16 L68 17.5 L64 19 L60 17.5Z" transform="translate(0,2.5)"/>
-  </g>
-  <g fill="white" opacity="0.6">
-    <circle cx="14" cy="28" r="1.5"/>
-    <circle cx="12" cy="24" r="1"/>
+  <!-- Sparkle top-right -->
+  <g fill="white" opacity="0.85">
+    <path d="M65 10 L66.5 15 L65 20 L63.5 15Z"/>
+    <path d="M61 15 L69 15" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
   </g>
 
   <defs>
-    <radialGradient id="bg" cx="0.3" cy="0.3" r="0.7">
-      <stop offset="0%" stop-color="#7c3aed"/>
-      <stop offset="100%" stop-color="#4c1d95"/>
+    <radialGradient id="bg" cx="0.4" cy="0.35" r="0.65">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#3b0764"/>
     </radialGradient>
-    <linearGradient id="leftBrain" x1="8" y1="8" x2="40" y2="66" gradientUnits="userSpaceOnUse">
+    <linearGradient id="leftB" x1="6" y1="8" x2="40" y2="62" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#60a5fa"/>
-      <stop offset="50%" stop-color="#3b82f6"/>
       <stop offset="100%" stop-color="#6366f1"/>
     </linearGradient>
-    <linearGradient id="rightBrain" x1="40" y1="8" x2="72" y2="66" gradientUnits="userSpaceOnUse">
+    <linearGradient id="rightB" x1="40" y1="8" x2="74" y2="62" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#a78bfa"/>
-      <stop offset="50%" stop-color="#c084fc"/>
-      <stop offset="100%" stop-color="#f472b6"/>
+      <stop offset="100%" stop-color="#ec4899"/>
     </linearGradient>
   </defs>
 </svg>
