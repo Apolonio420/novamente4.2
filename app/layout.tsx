@@ -11,6 +11,7 @@ import { ImageHistoryProvider } from "@/contexts/ImageHistoryContext"
 import { Background } from "@/components/ui/Background"
 import FacebookPixel from "@/components/FacebookPixel"
 import { WebVitals } from "@/components/web-vitals"
+import { EmailCaptureLoader } from "@/components/EmailCaptureLoader"
 
 const inter = Inter({ subsets: ["latin"], display: "swap" })
 
@@ -186,6 +187,7 @@ export default function RootLayout({
           <Toaster />
           <WhatsAppButton />
           <PublicAssistantLoader />
+          <EmailCaptureLoader />
         </ImageHistoryProvider>
       </body>
     </html>
