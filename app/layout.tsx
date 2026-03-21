@@ -6,9 +6,7 @@ import { Navbar } from "@/components/Navbar"
 import { Footer } from "@/components/Footer"
 import { Toaster } from "@/components/Toaster"
 import { WhatsAppButton } from "@/components/WhatsAppButton"
-import dynamic from "next/dynamic"
-
-const PublicAssistant = dynamic(() => import("@/components/PublicAssistant").then(m => m.PublicAssistant), { ssr: false })
+import { PublicAssistantLoader } from "@/components/PublicAssistantLoader"
 import { ImageHistoryProvider } from "@/contexts/ImageHistoryContext"
 import { Background } from "@/components/ui/Background"
 import FacebookPixel from "@/components/FacebookPixel"
@@ -173,7 +171,7 @@ export default function RootLayout({
           </div>
           <Toaster />
           <WhatsAppButton />
-          <PublicAssistant />
+          <PublicAssistantLoader />
         </ImageHistoryProvider>
       </body>
     </html>
