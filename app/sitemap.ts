@@ -189,6 +189,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.9,
     },
+    {
+      url: `${baseUrl}/remeras-personalizadas`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 1.0,
+    },
     // Individual product pages
     ...CATALOG_PRODUCTS.filter(p => p.available).map(p => ({
       url: `${baseUrl}/products/${p.id}`,
