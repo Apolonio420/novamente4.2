@@ -85,6 +85,16 @@ Novamente ofrece storefronts a marcas y creadores para vender merch premium sin 
 - **Growth** ($25 USD/mes): SEO, dominio personalizado, analytics
 - **Pro** ($100 USD/mes): Google Shopping feed, prioridad de producción, soporte dedicado
 ${partnersSection}
+## Venta Mayorista
+Novamente ofrece venta por mayor de remeras, buzos y hoodies YA ESTAMPADOS con diseño personalizado:
+- Desde 10 unidades con 5% de descuento
+- 25+ unidades: 10% OFF
+- 100+ unidades: 15% OFF
+- Sin mínimo por diseño: cada prenda puede tener un estampado diferente
+- Factura A disponible para revendedores
+- Ideal para showrooms, ferias, marcas propias, vendedores online
+- URL: https://www.novamente.ar/remeras-por-mayor
+
 ## Contacto
 - WhatsApp: +54 9 11 6274-7588
 - Email: contact@novamente.ar
