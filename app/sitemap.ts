@@ -177,6 +177,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 0.9,
     },
+    {
+      url: `${baseUrl}/cotizador`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
     // Individual product pages
     ...CATALOG_PRODUCTS.filter(p => p.available).map(p => ({
       url: `${baseUrl}/products/${p.id}`,
