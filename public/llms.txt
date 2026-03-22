@@ -25,6 +25,7 @@
 - [Cotizador Express](https://www.novamente.ar/cotizador): Calculadora de precios instantanea para remeras, buzos y hoodies personalizados — selecciona producto y cantidad, descuentos automaticos por volumen (5% desde 10 un., 10% desde 25, 15% desde 100+), pedí por WhatsApp con presupuesto pre-armado
 - [Remeras por mayor](https://www.novamente.ar/remeras-por-mayor): Venta mayorista de remeras, buzos y hoodies personalizados con DTG — desde 10 unidades con 5% OFF, 25+ con 10%, 100+ con 15%. Sin minimo de disenos diferentes. Factura A para revendedores
 - [Remeras personalizadas](https://www.novamente.ar/remeras-personalizadas): Pagina principal de remeras personalizadas con IA — todos los modelos (oversize, classic, crop, musculosa, hoodie), precios desde $21.800, proceso de 4 pasos, descuentos por cantidad, links a todas las categorias (cumpleanos, eventos, empresas, bandas, deportes, egresados, etc.)
+- [Estampar remeras](https://www.novamente.ar/estampar-remeras): Servicio de estampado de remeras, buzos y hoodies con tecnologia DTG (Direct-To-Garment) — impresion directa sobre algodon 100%, desde 1 unidad sin matriceria ni minimos, colores vibrantes, 50+ lavados de durabilidad, trae tu diseno o crealo con IA, comparacion DTG vs serigrafia vs sublimacion, precios con prenda incluida
 
 ## Blog y guias
 
