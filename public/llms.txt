@@ -27,6 +27,7 @@
 - [Remeras personalizadas](https://www.novamente.ar/remeras-personalizadas): Pagina principal de remeras personalizadas con IA — todos los modelos (oversize, classic, crop, musculosa, hoodie), precios desde $21.800, proceso de 4 pasos, descuentos por cantidad, links a todas las categorias (cumpleanos, eventos, empresas, bandas, deportes, egresados, etc.)
 - [Estampar remeras](https://www.novamente.ar/estampar-remeras): Servicio de estampado de remeras, buzos y hoodies con tecnologia DTG (Direct-To-Garment) — impresion directa sobre algodon 100%, desde 1 unidad sin matriceria ni minimos, colores vibrantes, 50+ lavados de durabilidad, trae tu diseno o crealo con IA, comparacion DTG vs serigrafia vs sublimacion, precios con prenda incluida
 - [Buzos personalizados](https://www.novamente.ar/buzos-personalizados): Buzos personalizados con IA y estampado DTG — hoodies oversize desde $55.000, crewnecks desde $43.000, algodon 100% frizado, 8 modelos en 4 colores, comparacion hoodie vs crewneck, desde 1 unidad, descuentos por cantidad, ideal para egresados, empresas, eventos, bandas, marcas propias
+- [Regalos Dia del Padre](https://www.novamente.ar/regalos-dia-del-padre): Regalos personalizados para el Dia del Padre 2026 (21 de junio) — remeras y buzos con disenos unicos generados por IA, desde $21.800, ideas por tipo de papa (asador, deportista, musico, gamer), combos familiares, envio a toda Argentina
 
 ## Blog y guias
 
