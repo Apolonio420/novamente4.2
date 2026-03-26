@@ -125,7 +125,8 @@ export default function SettingsPage() {
     try {
       const res = await authFetch('/api/partners/settings')
       if (!res.ok) throw new Error('Error cargando configuracion')
-      const data: SettingsData = await res.json()
+      const json = await res.json()
+      const data: SettingsData = json.settings || json
       setSettings(data)
       initialRef.current = { ...data }
     } catch {
@@ -180,7 +181,8 @@ export default function SettingsPage() {
         }),
       })
       if (!res.ok) throw new Error('Error guardando')
-      const updated: SettingsData = await res.json()
+      const json = await res.json()
+      const updated: SettingsData = json.settings || json
       setSettings(updated)
       initialRef.current = { ...updated }
       showToast('Configuracion guardada', 'success')
@@ -202,7 +204,8 @@ export default function SettingsPage() {
         body: JSON.stringify({ status: newStatus }),
       })
       if (!res.ok) throw new Error('Error cambiando estado')
-      const updated: SettingsData = await res.json()
+      const json = await res.json()
+      const updated: SettingsData = json.settings || json
       setSettings(updated)
       initialRef.current = { ...updated }
       setConfirmingStatusChange(false)
