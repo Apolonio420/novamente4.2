@@ -296,6 +296,28 @@ export default function TerminosPage() {
               </a>
             </p>
           </section>
+          {/* Automatizacion TikTok */}
+          <section>
+            <h2 className="text-xl font-semibold text-white mb-3">
+              15. Uso de la API de TikTok
+            </h2>
+            <p>
+              La aplicacion <strong className="text-white/90">novamente.ar</strong> utiliza
+              la API de TikTok for Developers para publicar contenido de forma automatizada
+              en la cuenta oficial{' '}
+              <strong className="text-white/90">@novamente.ar</strong> de TikTok. El uso de
+              esta integracion se rige por los{' '}
+              <a
+                href="https://www.tiktok.com/legal/terms-of-service"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-purple-400 hover:text-purple-300 underline"
+              >
+                Terminos de Servicio de TikTok
+              </a>{' '}
+              y las politicas de la plataforma para desarrolladores.
+            </p>
+          </section>
         </div>
 
         {/* Footer links */}

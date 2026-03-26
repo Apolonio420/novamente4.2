@@ -134,6 +134,10 @@ export default function PrivacidadPage() {
                 <span className="text-white/90">Meta</span>
                 <span className="text-white/50">WhatsApp Business API</span>
               </div>
+              <div className="flex justify-between">
+                <span className="text-white/90">TikTok</span>
+                <span className="text-white/50">Content Posting API (publicacion automatizada)</span>
+              </div>
             </div>
           </section>
 
@@ -230,10 +234,28 @@ export default function PrivacidadPage() {
             </p>
           </section>
 
+          {/* TikTok API */}
+          <section>
+            <h2 className="text-xl font-semibold text-white mb-3">
+              10. Uso de la API de TikTok
+            </h2>
+            <p>
+              La aplicacion <strong className="text-white/90">novamente.ar</strong> accede
+              a la API de TikTok mediante Login Kit y Content Posting API para publicar
+              contenido en nuestra cuenta oficial{' '}
+              <strong className="text-white/90">@novamente.ar</strong>.{' '}
+              <strong className="text-white/90">
+                No almacenamos datos de usuarios de TikTok.
+              </strong>{' '}
+              La integracion se utiliza exclusivamente para la publicacion automatizada
+              de contenido en nuestra propia cuenta.
+            </p>
+          </section>
+
           {/* Cambios */}
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">
-              10. Modificaciones
+              11. Modificaciones
             </h2>
             <p>
               Nos reservamos el derecho de modificar esta politica de
@@ -246,7 +268,7 @@ export default function PrivacidadPage() {
           {/* Contacto */}
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">
-              11. Contacto
+              12. Contacto
             </h2>
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2 text-sm">
               <p>
@@ -275,7 +297,7 @@ export default function PrivacidadPage() {
           {/* Organismo de control */}
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">
-              12. Organismo de control
+              13. Organismo de control
             </h2>
             <p>
               La Agencia de Acceso a la Informacion Publica (AAIP) es el
