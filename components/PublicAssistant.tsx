@@ -146,23 +146,29 @@ function AssistantInner({
   const lastDesignUrlRef = useRef<string | null>(null)
   const lastMockupUrlRef = useRef<string | null>(null)
 
-  // Load from localStorage
+  // Per-account storage key (different history per user)
+  const storageKey = auth.email ? `${STORAGE_KEY}-${auth.email}` : STORAGE_KEY
+
+  // Load from localStorage (re-load when auth resolves to switch accounts)
   useEffect(() => {
+    if (auth.loading) return
     try {
-      const saved = localStorage.getItem(STORAGE_KEY)
+      const saved = localStorage.getItem(storageKey)
       if (saved) {
         const parsed = JSON.parse(saved) as Message[]
         setMessages(parsed.slice(-MAX_STORED))
+      } else {
+        setMessages([])
       }
     } catch { /* ignore */ }
-  }, [])
+  }, [storageKey, auth.loading])
 
   // Save to localStorage
   useEffect(() => {
     if (messages.length > 0) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-MAX_STORED)))
+      localStorage.setItem(storageKey, JSON.stringify(messages.slice(-MAX_STORED)))
     }
-  }, [messages])
+  }, [messages, storageKey])
 
   // Auto-scroll
   useEffect(() => {
@@ -496,7 +502,7 @@ function AssistantInner({
     setMessages([])
     lastDesignUrlRef.current = null
     lastMockupUrlRef.current = null
-    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(storageKey)
   }
 
   const submitTicket = async () => {
