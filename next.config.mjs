@@ -131,7 +131,13 @@ const nextConfig = {
       {
         source: '/meta/catalog.tsv',
         destination: '/meta/catalog',
-        permanent: true, // 308 redirect
+        permanent: true,
+      },
+      // Renamed brand slugs
+      {
+        source: '/merch/hard-demonio',
+        destination: '/merch/maldito-demonio',
+        permanent: true,
       },
     ];
   },
