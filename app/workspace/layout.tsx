@@ -28,7 +28,6 @@ import {
   CreditCard,
   Lock,
 } from 'lucide-react'
-import { AssistantWidget } from '@/components/workspace/assistant-widget'
 import { AssistantProvider } from '@/lib/assistant/assistant-context'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -443,8 +442,6 @@ export default function WorkspaceLayout({
         </main>
       </div>
 
-      {/* AI Assistant */}
-      <AssistantWidget />
     </div>
     </AssistantProvider>
   )

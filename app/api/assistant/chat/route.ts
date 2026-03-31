@@ -17,6 +17,15 @@ const bodySchema = z.object({
     query: z.string().min(1).max(2000),
     history: z.array(messageSchema).max(20).optional().default([]),
     imageUrls: z.array(z.string().url()).max(3).optional(),
+    role: z.enum(['visitor', 'partner', 'admin']).optional(),
+    pageContext: z.object({
+        pathname: z.string(),
+        pageType: z.string(),
+        storefrontSlug: z.string().optional(),
+        productSlug: z.string().optional(),
+        workspaceSection: z.string().optional(),
+    }).optional(),
+    tenantSlug: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -32,12 +41,22 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: msg }, { status: 400 })
     }
 
-    const { query, history, imageUrls } = body
+    const { query, history, imageUrls, role, pageContext, tenantSlug } = body
     const accept = req.headers.get('accept') || ''
     const wantsJSON = accept.includes('application/json') && !accept.includes('text/event-stream')
 
+    // Enrich query with context for logged-in users
+    let enrichedQuery = query
+    if (role && role !== 'visitor') {
+        const contextParts = [`[Rol: ${role}]`]
+        if (tenantSlug) contextParts.push(`[Tenant: ${tenantSlug}]`)
+        if (pageContext?.pathname) contextParts.push(`[Página: ${pageContext.pathname}]`)
+        if (pageContext?.storefrontSlug) contextParts.push(`[Storefront: ${pageContext.storefrontSlug}]`)
+        enrichedQuery = `${contextParts.join(' ')} ${query}`
+    }
+
     try {
-        const stream = publicChatStream(query, history as ChatMessage[], imageUrls)
+        const stream = publicChatStream(enrichedQuery, history as ChatMessage[], imageUrls)
 
         if (wantsJSON) {
             let fullText = ''

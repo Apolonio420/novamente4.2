@@ -9,6 +9,8 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { PRODUCTS, formatPrice } from "@/lib/catalog"
+import { useAssistantAuth } from "@/lib/hooks/useAssistantAuth"
+import { usePageContext } from "@/lib/hooks/usePageContext"
 
 interface SourceRef {
   title: string
@@ -107,7 +109,7 @@ export function PublicAssistant() {
   const router = useRouter()
   const { addItem, getTotalItems } = useCart()
 
-  if (pathname?.startsWith("/workspace") || pathname?.startsWith("/admin")) return null
+  if (pathname?.startsWith("/admin")) return null
 
   return <AssistantInner addItem={addItem} getTotalItems={getTotalItems} router={router} pathname={pathname || "/"} />
 }
@@ -123,6 +125,9 @@ function AssistantInner({
   router: ReturnType<typeof useRouter>
   pathname: string
 }) {
+  const auth = useAssistantAuth()
+  const pageContext = usePageContext()
+
   const [open, setOpen] = useState(false)
   const [fullScreen, setFullScreen] = useState(false)
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640
@@ -131,6 +136,9 @@ function AssistantInner({
   const [streaming, setStreaming] = useState(false)
   const [typingPhrase, setTypingPhrase] = useState(0)
   const [pendingImages, setPendingImages] = useState<string[]>([])
+  const [showTicketForm, setShowTicketForm] = useState(false)
+  const [ticketSubject, setTicketSubject] = useState("")
+  const [ticketSubmitting, setTicketSubmitting] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -311,6 +319,21 @@ function AssistantInner({
     const text = (overrideText || input).trim()
     if (!text || streaming) return
 
+    // Ticket trigger for logged-in users
+    if (auth.mode !== 'visitor' && (
+      text.toLowerCase().includes('crear ticket') ||
+      text.toLowerCase().includes('reportar problema') ||
+      text.toLowerCase().includes('ticket de soporte')
+    )) {
+      setShowTicketForm(true)
+      if (!overrideText) setInput("")
+      setMessages(prev => [...prev,
+        { id: `u-${Date.now()}`, role: "user" as const, text, timestamp: Date.now() },
+        { id: `m-${Date.now()}`, role: "model" as const, text: '¡Dale! Completá el asunto de tu ticket y lo creamos. El contexto de esta conversación y la página actual se incluyen automáticamente.', timestamp: Date.now() },
+      ])
+      return
+    }
+
     if (!overrideText) setInput("")
     const imageUrls = [...pendingImages]
     setPendingImages([])
@@ -359,6 +382,9 @@ function AssistantInner({
           query: contextQuery,
           history,
           ...(imageUrls.length > 0 ? { imageUrls } : {}),
+          role: auth.mode,
+          pageContext,
+          tenantSlug: auth.tenantSlug,
         }),
       })
 
@@ -432,7 +458,7 @@ function AssistantInner({
     } finally {
       setStreaming(false)
     }
-  }, [input, streaming, messages, pendingImages, addMessage, updateLastModel, executeAction])
+  }, [input, streaming, messages, pendingImages, addMessage, updateLastModel, executeAction, auth, pageContext])
 
   // Keep sendRef updated for suggestion chips
   sendRef.current = sendMessage
@@ -471,6 +497,57 @@ function AssistantInner({
     lastDesignUrlRef.current = null
     lastMockupUrlRef.current = null
     localStorage.removeItem(STORAGE_KEY)
+  }
+
+  const submitTicket = async () => {
+    if (!ticketSubject.trim()) return
+    setTicketSubmitting(true)
+
+    // Build description from recent chat messages
+    const recentMessages = messages.slice(-5).map(m =>
+      `${m.role === "user" ? "Usuario" : "Nova"}: ${m.text.slice(0, 200)}`
+    ).join('\n')
+
+    const description = `${recentMessages}\n\n[Página: ${pageContext.pathname}]${pageContext.storefrontSlug ? `\n[Storefront: ${pageContext.storefrontSlug}]` : ''}`
+
+    try {
+      const res = await fetch('/api/assistant/ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: ticketSubject,
+          description,
+          category: 'general',
+          pageUrl: window.location.href,
+          pageContext,
+        }),
+      })
+      if (res.ok) {
+        setMessages(prev => [...prev, {
+          id: `m-${Date.now()}`,
+          role: "model" as const,
+          text: `✅ Ticket creado: "${ticketSubject}". Nuestro equipo lo va a resolver a la brevedad. Te notificamos por acá cuando esté listo.`,
+          timestamp: Date.now(),
+        }])
+        setShowTicketForm(false)
+        setTicketSubject("")
+      } else {
+        setMessages(prev => [...prev, {
+          id: `m-${Date.now()}`,
+          role: "model" as const,
+          text: '❌ No se pudo crear el ticket. Intentá de nuevo.',
+          timestamp: Date.now(),
+        }])
+      }
+    } catch {
+      setMessages(prev => [...prev, {
+        id: `m-${Date.now()}`,
+        role: "model" as const,
+        text: '❌ Error de conexión. Intentá de nuevo.',
+        timestamp: Date.now(),
+      }])
+    }
+    setTicketSubmitting(false)
   }
 
   const cartCount = getTotalItems()
@@ -516,7 +593,17 @@ function AssistantInner({
   }, [open])
 
   // Page-aware suggestions
-  const quickReplies = PAGE_SUGGESTIONS[pathname] || DEFAULT_SUGGESTIONS
+  const baseReplies = PAGE_SUGGESTIONS[pathname] || DEFAULT_SUGGESTIONS
+  const quickReplies = (() => {
+    const suggestions = [...baseReplies]
+    if (auth.mode !== 'visitor') {
+      suggestions.push('Crear ticket de soporte')
+    }
+    if (auth.mode !== 'visitor' && pageContext.pageType === 'storefront' && pageContext.storefrontSlug === auth.tenantSlug) {
+      suggestions.unshift('Modificar mi storefront')
+    }
+    return suggestions
+  })()
 
   // --- RENDER ---
 
@@ -589,6 +676,9 @@ function AssistantInner({
             height={36}
             className={`rounded-full ${wiggle ? "nova-wiggle" : ""}`}
           />
+          {auth.mode !== 'visitor' && !auth.loading && (
+            <div className={`absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-zinc-900 ${auth.mode === 'admin' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+          )}
           <span className="text-sm font-semibold hidden sm:inline">Nova</span>
           {cartCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{cartCount}</span>
@@ -610,7 +700,9 @@ function AssistantInner({
         <div className="flex items-center gap-2">
           <Image src="/nova-avatar.svg" alt="Nova" width={28} height={28} className="rounded-full" />
           <div>
-            <span className="font-semibold text-white text-sm">Nova</span>
+            <span className="font-semibold text-white text-sm">
+              {auth.mode === 'admin' ? 'Nova (Admin)' : auth.mode === 'partner' ? `Nova (${auth.tenantName || 'Partner'})` : 'Nova'}
+            </span>
             <span className="text-purple-200 text-[10px] ml-1.5">Asistente IA</span>
           </div>
         </div>
@@ -729,6 +821,39 @@ function AssistantInner({
         ))}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Ticket form */}
+      {showTicketForm && auth.mode !== 'visitor' && (
+        <div className="mx-3 mb-2 p-3 rounded-xl border border-purple-500/20 bg-purple-500/5 shrink-0">
+          <p className="text-sm text-purple-300 font-medium mb-2">Crear ticket de soporte</p>
+          <input
+            type="text"
+            value={ticketSubject}
+            onChange={e => setTicketSubject(e.target.value)}
+            placeholder="¿Qué necesitás? (ej: Cambiar el banner)"
+            className="w-full px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-sm placeholder:text-zinc-500 focus:outline-none focus:border-purple-500 mb-2"
+            onKeyDown={e => e.key === 'Enter' && submitTicket()}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={submitTicket}
+              disabled={ticketSubmitting || !ticketSubject.trim()}
+              className="px-3 py-1.5 rounded-lg bg-purple-600 text-white text-xs font-medium hover:bg-purple-500 disabled:opacity-50"
+            >
+              {ticketSubmitting ? 'Enviando...' : 'Enviar ticket'}
+            </button>
+            <button
+              onClick={() => { setShowTicketForm(false); setTicketSubject('') }}
+              className="px-3 py-1.5 rounded-lg bg-zinc-700 text-zinc-300 text-xs hover:bg-zinc-600"
+            >
+              Cancelar
+            </button>
+          </div>
+          <p className="text-xs text-zinc-500 mt-1.5">
+            📍 Página: {pageContext.pathname}
+          </p>
+        </div>
+      )}
 
       {/* Input */}
       <div className="border-t border-zinc-800 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shrink-0 bg-zinc-900/80">
