@@ -6,9 +6,9 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, ExternalLink } from "lucide-react"
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { getPartnerById } from "@/src/data/partners"
-import { getStorefrontBySlug } from "@/lib/partners/unified-directory"
+import { getStorefrontBySlug, SLUG_REDIRECTS } from "@/lib/partners/unified-directory"
 import { generateOrganizationSchema, generateBreadcrumbSchema, generateFAQSchema, getDefaultPartnerFAQs } from "@/lib/partners/seo"
 import { JsonLd } from "@/components/partners/json-ld"
 import { FaqSection } from "@/components/partners/faq-section"
@@ -59,6 +59,13 @@ export async function generateMetadata({ params }: BrandPageProps): Promise<Meta
 
 export default async function BrandPage(props: BrandPageProps) {
   const params = await props.params
+
+  // Handle slug redirects (renamed brands)
+  const redirectTo = SLUG_REDIRECTS[params.brand]
+  if (redirectTo) {
+    redirect(`/merch/${redirectTo}`)
+  }
+
   const storefront = await getStorefrontBySlug(params.brand)
 
   if (!storefront) {
