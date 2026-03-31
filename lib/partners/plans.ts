@@ -36,7 +36,7 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     supportLevel: 'none',
     feedExport: false,
     onboardingCall: false,
-    brandingFull: false,
+    brandingFull: true,
   },
   growth: {
     maxProducts: 999999,
@@ -123,7 +123,7 @@ export const PLAN_NAMES: Record<Plan, string> = {
 }
 
 export const PLAN_DESCRIPTIONS: Record<Plan, string> = {
-  starter: 'Ideal para empezar. Storefront básica y acceso a precios mayoristas.',
-  growth: 'Para marcas que quieren crecer. SEO, branding completo y Design Engine.',
+  starter: 'Ideal para empezar. Storefront con branding completo y acceso a precios mayoristas.',
+  growth: 'Para marcas que quieren crecer. SEO, Design Engine y storefront personalizable.',
   pro: 'La experiencia completa. Chatbot, Meta Ads, soporte premium y más.',
 }

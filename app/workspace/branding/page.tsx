@@ -247,7 +247,6 @@ export default function BrandingPage() {
   const [plan, setPlan] = useState<string>('starter')
   const [tenantSlug, setTenantSlug] = useState<string | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const isStarter = plan === 'starter'
 
   const isDirty = JSON.stringify(branding) !== JSON.stringify(original)
 
@@ -469,19 +468,7 @@ export default function BrandingPage() {
             <TabsContent value="visual">
               <Card className="bg-zinc-900/60 border-zinc-800 rounded-xl">
                 <CardContent className="p-6 space-y-6">
-                  {isStarter && (
-                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 flex items-start gap-3">
-                      <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-amber-300">Branding limitado en plan Starter</p>
-                        <p className="text-xs text-zinc-400 mt-1">Actualiza a Growth para editar logo, banner, colores, tipografia y estilo visual.</p>
-                        <Button size="sm" className="mt-2 bg-purple-600 hover:bg-purple-500 text-white text-xs h-7" onClick={() => window.location.href = '/workspace/billing'}>
-                          Actualizar plan
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                  <div className={isStarter ? 'opacity-40 pointer-events-none' : ''}>
+                  <div>
                   <div>
                     <h3 className="text-sm font-semibold text-zinc-200 mb-1">Imagenes de tu marca</h3>
                     <p className="text-xs text-zinc-500">
@@ -530,7 +517,7 @@ export default function BrandingPage() {
             {/* Tab 2: Colores y tipografia                                   */}
             {/* ============================================================ */}
             <TabsContent value="colors">
-              <div className={`space-y-6 ${isStarter ? 'opacity-40 pointer-events-none' : ''}`}>
+              <div className="space-y-6">
                 {/* Color palettes */}
                 <Card className="bg-zinc-900/60 border-zinc-800 rounded-xl">
                   <CardContent className="p-6 space-y-4">
