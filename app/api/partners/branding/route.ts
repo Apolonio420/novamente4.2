@@ -70,9 +70,8 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const features = getPlanFeatures(tenant.plan as Plan)
 
-    // Starter can only edit basic text fields; Growth+ gets full branding
-    const STARTER_FIELDS = ['tagline', 'about_text', 'cta_text', 'cta_url'] as const
-    const allowedFields = features.brandingFull ? BRANDING_FIELDS : STARTER_FIELDS
+    // All plans get full branding access (branding is free for all tiers)
+    const allowedFields = BRANDING_FIELDS
 
     // Whitelist: only allow branding fields
     const updates: Record<string, unknown> = {}
