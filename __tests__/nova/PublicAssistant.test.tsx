@@ -26,6 +26,22 @@ vi.mock("@/lib/cartStore", () => ({
   }),
 }))
 
+// Assistant auth hook
+vi.mock("@/lib/hooks/useAssistantAuth", () => ({
+  useAssistantAuth: () => ({
+    mode: "visitor" as const,
+    loading: false,
+  }),
+}))
+
+// Page context hook
+vi.mock("@/lib/hooks/usePageContext", () => ({
+  usePageContext: () => ({
+    pathname: "/",
+    pageType: "home" as const,
+  }),
+}))
+
 // Catalog
 vi.mock("@/lib/catalog", () => ({
   PRODUCTS: [
@@ -67,7 +83,6 @@ beforeEach(() => {
   localStorage.clear()
   sessionStorage.clear()
   vi.stubGlobal("fetch", vi.fn())
-  // Suppress URL.createObjectURL
   vi.stubGlobal("URL", { ...globalThis.URL, createObjectURL: vi.fn(() => "blob:test"), revokeObjectURL: vi.fn() })
 })
 
@@ -96,10 +111,9 @@ describe("A) Rendering", () => {
     renderAssistant()
     await openChat()
     expect(screen.getByPlaceholderText("Escribí tu mensaje...")).toBeInTheDocument()
-    // Send button is present (disabled when empty)
-    const buttons = screen.getAllByRole("button")
-    const sendBtn = buttons.find(b => b.title === "" && b.querySelector("svg"))
-    expect(sendBtn || screen.getByText((_, el) => el?.closest("button") !== null && el?.closest("button")?.disabled === true)).toBeTruthy()
+    // Send button exists (disabled when input empty)
+    const sendBtn = screen.getAllByRole("button").find(b => b.classList.contains("bg-purple-600") || b.classList.contains("disabled:bg-zinc-700"))
+    expect(sendBtn).toBeTruthy()
   })
 
   it("welcome message shows on first open", async () => {
@@ -112,7 +126,6 @@ describe("A) Rendering", () => {
   it("quick reply suggestions appear on first open", async () => {
     renderAssistant()
     await openChat()
-    // Default "/" suggestions
     expect(screen.getByText("Quiero diseñar algo")).toBeInTheDocument()
     expect(screen.getByText("¿Cómo funciona?")).toBeInTheDocument()
     expect(screen.getByText("Ver productos")).toBeInTheDocument()
@@ -158,7 +171,6 @@ describe("B) Message flow", () => {
   })
 
   it("loading indicator shows while waiting for response", async () => {
-    // Use a never-resolving fetch to keep streaming state
     let resolveStream: () => void
     const streamPromise = new Promise<void>(r => { resolveStream = r })
     const encoder = new TextEncoder()
@@ -180,7 +192,6 @@ describe("B) Message flow", () => {
     await userEvent.type(input, "Hola")
     fireEvent.keyDown(input, { key: "Enter" })
 
-    // Typing indicator should appear
     await waitFor(() => {
       expect(screen.getByText("Pensando...")).toBeInTheDocument()
     })
@@ -207,7 +218,7 @@ describe("B) Message flow", () => {
     const stored = localStorage.getItem("novamente-public-assistant")
     expect(stored).not.toBeNull()
     const parsed = JSON.parse(stored!)
-    expect(parsed.length).toBeGreaterThanOrEqual(2) // user + model
+    expect(parsed.length).toBeGreaterThanOrEqual(2)
     expect(parsed[0].text).toBe("Persistencia")
   })
 })
@@ -232,11 +243,10 @@ describe("C) Action execution", () => {
   })
 
   it("GENERATE_DESIGN shows loading state", async () => {
-    // First call: chat endpoint returns action
     vi.mocked(fetch).mockResolvedValueOnce(
       createSSEResponse([{ type: "chunk", text: "[ACTION:GENERATE_DESIGN] a cool dragon" }])
     )
-    // Second call: generate-image endpoint (delayed)
+    // generate-image endpoint (delayed)
     let resolveGenerate: (value: globalThis.Response) => void
     vi.mocked(fetch).mockImplementationOnce(() => new Promise(r => { resolveGenerate = r }))
 
@@ -251,18 +261,15 @@ describe("C) Action execution", () => {
       expect(screen.getByText("Generando diseño...")).toBeInTheDocument()
     })
 
-    // Resolve to clean up
     act(() => {
       resolveGenerate!(new Response(JSON.stringify({ success: true, images: [{ url: "https://example.com/design.png" }] })))
     })
   })
 
   it("SHOW_MOCKUP auto-executes and shows loading state", async () => {
-    // Chat returns SHOW_MOCKUP action
     vi.mocked(fetch).mockResolvedValueOnce(
       createSSEResponse([{ type: "chunk", text: "[ACTION:SHOW_MOCKUP] https://design.png|tshirt|black|front|R3" }])
     )
-    // generate-stamp call (never resolves — we just want loading state)
     vi.mocked(fetch).mockImplementationOnce(() => new Promise(() => {}))
 
     renderAssistant()
@@ -290,12 +297,11 @@ describe("C) Action execution", () => {
     await userEvent.type(input, "Agregalo al carrito")
     fireEvent.keyDown(input, { key: "Enter" })
 
-    // ADD_TO_CART is NOT auto-executed — it shows a button
+    // ADD_TO_CART is NOT auto-executed — shows a button
     await waitFor(() => {
       expect(screen.getByText("Agregar al carrito")).toBeInTheDocument()
     })
 
-    // Click the add to cart button
     await userEvent.click(screen.getByText("Agregar al carrito"))
 
     await waitFor(() => {
@@ -351,10 +357,8 @@ describe("D) Error handling", () => {
     await openChat()
 
     const input = screen.getByPlaceholderText("Escribí tu mensaje...")
-    // Input is empty, press Enter
     fireEvent.keyDown(input, { key: "Enter" })
 
-    // fetch should NOT have been called
     expect(fetch).not.toHaveBeenCalled()
   })
 
@@ -365,7 +369,6 @@ describe("D) Error handling", () => {
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
     expect(fileInput).not.toBeNull()
 
-    // Upload 4 files — only 3 should be accepted
     const files = [
       new File(["a"], "img1.png", { type: "image/png" }),
       new File(["b"], "img2.png", { type: "image/png" }),
@@ -377,7 +380,6 @@ describe("D) Error handling", () => {
       fireEvent.change(fileInput, { target: { files } })
     })
 
-    // URL.createObjectURL should have been called at most 3 times
     expect(URL.createObjectURL).toHaveBeenCalledTimes(3)
   })
 
