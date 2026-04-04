@@ -33,6 +33,8 @@ export async function getTenantByUserId(userId: string): Promise<Tenant | null> 
     .from('tenant_users')
     .select('tenant_id')
     .eq('user_id', userId)
+    .not('accepted_at', 'is', null)
+    .order('accepted_at', { ascending: false })
     .limit(1)
     .single()
 
