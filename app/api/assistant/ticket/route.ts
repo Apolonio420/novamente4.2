@@ -54,7 +54,7 @@ async function getOrCreateInternalTenant(): Promise<{ id: string; plan: string }
     .insert({
       slug: 'novamente-internal',
       name: 'Novamente (Internal)',
-      owner_email: 'apolonio@novamente.ar',
+      email: 'apolonio@novamente.ar',
       plan: 'pro',
       status: 'active',
     })
