@@ -1,11 +1,19 @@
 import { NextRequest } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getTenantByUserId } from './tenant'
+import { getTenantByUserId, getTenantById } from './tenant'
 import type { Tenant } from './types'
+
+const ADMIN_EMAILS = [
+  'apolonio@novamente.ar',
+  'sambu@novamente.ar',
+  'moishe@novamente.ar',
+  'izzaga@novamente.ar',
+]
 
 /**
  * Extract the authenticated user + their tenant from a request.
  * Checks Authorization header first, then Supabase session cookie.
+ * Admins can override tenant via x-tenant-id header.
  */
 export async function getRequestTenant(
   request: NextRequest,
@@ -14,12 +22,9 @@ export async function getRequestTenant(
   const authHeader = request.headers.get('authorization')
   let token: string | null = authHeader?.replace('Bearer ', '') ?? null
 
-  console.log('[auth] Authorization header present:', !!authHeader)
-
   // 2. Fallback: Supabase session cookie (sb-<ref>-auth-token)
   if (!token) {
     const allCookies = request.cookies.getAll()
-    console.log('[auth] Cookies:', allCookies.map(c => c.name).join(', '))
     for (const cookie of allCookies) {
       if (cookie.name.startsWith('sb-') && cookie.name.endsWith('-auth-token')) {
         try {
@@ -33,18 +38,22 @@ export async function getRequestTenant(
     }
   }
 
-  if (!token) {
-    console.log('[auth] No token found')
-    return null
-  }
+  if (!token) return null
 
-  console.log('[auth] Token found, length:', token.length)
   const { data: userData, error } = await supabaseAdmin.auth.getUser(token)
-  if (error || !userData?.user) {
-    console.log('[auth] getUser failed:', error?.message)
-    return null
+  if (error || !userData?.user) return null
+
+  const email = userData.user.email?.toLowerCase() || ''
+  const isAdmin = ADMIN_EMAILS.includes(email)
+
+  // Admin tenant override via header
+  const overrideTenantId = request.headers.get('x-tenant-id')
+  if (isAdmin && overrideTenantId) {
+    const overrideTenant = await getTenantById(overrideTenantId)
+    if (overrideTenant) {
+      return { userId: userData.user.id, tenant: overrideTenant }
+    }
   }
-  console.log('[auth] User:', userData.user.email)
 
   const tenant = await getTenantByUserId(userData.user.id)
   if (!tenant) return null

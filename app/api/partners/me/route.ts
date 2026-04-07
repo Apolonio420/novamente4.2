@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
         status: tenant.status,
         email: tenant.email,
       },
+      isAdmin: ['apolonio@novamente.ar', 'sambu@novamente.ar', 'moishe@novamente.ar', 'izzaga@novamente.ar'].includes(tenant.email?.toLowerCase?.() || ''),
     })
   } catch (error) {
     console.error('GET /api/partners/me error:', error)

@@ -27,6 +27,9 @@ import {
   Phone,
   CreditCard,
   Lock,
+  ChevronsUpDown,
+  Check,
+  Shield,
 } from 'lucide-react'
 import { AssistantProvider } from '@/lib/assistant/assistant-context'
 import type { LucideIcon } from 'lucide-react'
@@ -111,11 +114,23 @@ const pageTitles: Record<string, string> = {
 }
 
 interface TenantInfo {
+  id?: string
   name: string
   slug: string
   logo_url: string | null
   email: string
   plan: string
+  status?: string
+}
+
+interface TenantOption {
+  id: string
+  name: string
+  slug: string
+  logo_url: string | null
+  plan: string
+  status: string
+  email: string
 }
 
 const planColors: Record<string, string> = {
@@ -133,6 +148,10 @@ export default function WorkspaceLayout({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [tenant, setTenant] = useState<TenantInfo | null>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [allTenants, setAllTenants] = useState<TenantOption[]>([])
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [showTenantPicker, setShowTenantPicker] = useState(false)
+  const [tenantSearch, setTenantSearch] = useState('')
   const pathname = usePathname()
   const router = useRouter()
 
@@ -151,13 +170,66 @@ export default function WorkspaceLayout({
     fetchTenant()
   }, [])
 
-  // Close user menu on outside click
+  // Fetch all tenants for admin switcher
   useEffect(() => {
-    if (!showUserMenu) return
-    const close = () => setShowUserMenu(false)
+    async function fetchAdminTenants() {
+      try {
+        const res = await authFetch('/api/partners/tenants')
+        if (res.ok) {
+          const json = await res.json()
+          if (json.tenants?.length > 0) {
+            setAllTenants(json.tenants)
+            setIsAdmin(true)
+          }
+        }
+      } catch {}
+    }
+    fetchAdminTenants()
+  }, [])
+
+  const switchTenant = (tenantOption: TenantOption) => {
+    localStorage.setItem('admin_tenant_id', tenantOption.id)
+    setTenant({
+      id: tenantOption.id,
+      name: tenantOption.name,
+      slug: tenantOption.slug,
+      logo_url: tenantOption.logo_url,
+      email: tenantOption.email,
+      plan: tenantOption.plan,
+      status: tenantOption.status,
+    })
+    setShowTenantPicker(false)
+    setTenantSearch('')
+    // Reload current page to refetch data with new tenant
+    window.location.reload()
+  }
+
+  const clearTenantOverride = () => {
+    localStorage.removeItem('admin_tenant_id')
+    setShowTenantPicker(false)
+    setTenantSearch('')
+    window.location.reload()
+  }
+
+  const filteredTenants = tenantSearch
+    ? allTenants.filter(t =>
+        t.name.toLowerCase().includes(tenantSearch.toLowerCase()) ||
+        t.slug.toLowerCase().includes(tenantSearch.toLowerCase()) ||
+        t.email.toLowerCase().includes(tenantSearch.toLowerCase())
+      )
+    : allTenants
+
+  // Close menus on outside click
+  useEffect(() => {
+    if (!showUserMenu && !showTenantPicker) return
+    const close = () => {
+      setShowUserMenu(false)
+      setShowTenantPicker(false)
+      setTenantSearch('')
+    }
     document.addEventListener('click', close)
     return () => document.removeEventListener('click', close)
-  }, [showUserMenu])
+  }, [showUserMenu, showTenantPicker])
 
   const isActive = (href: string) => {
     if (href === '/workspace') return pathname === '/workspace'
@@ -177,34 +249,123 @@ export default function WorkspaceLayout({
   const sidebar = (
     <nav className="flex flex-col h-full">
       {/* Tenant header */}
-      <div className={cn(
-        'flex items-center gap-3 border-b border-zinc-800 transition-all',
-        sidebarCollapsed ? 'px-3 py-4 justify-center' : 'px-5 py-5'
-      )}>
-        {tenant?.logo_url ? (
-          <img
-            src={tenant.logo_url}
-            alt={displayName}
-            className="w-8 h-8 rounded-lg object-cover shrink-0"
-          />
-        ) : (
-          <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
-            {displayInitial}
-          </div>
-        )}
-        {!sidebarCollapsed && (
-          <div className="min-w-0 flex-1">
-            <span className="text-sm font-semibold text-zinc-100 truncate block">
-              {displayName}
-            </span>
-            {tenant?.plan && (
-              <span className={cn(
-                'inline-block mt-0.5 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider',
-                planColors[tenant.plan] || planColors.starter
-              )}>
-                {tenant.plan}
-              </span>
-            )}
+      <div className="relative border-b border-zinc-800">
+        <button
+          onClick={isAdmin ? (e) => { e.stopPropagation(); setShowTenantPicker(!showTenantPicker) } : undefined}
+          className={cn(
+            'flex items-center gap-3 w-full transition-all',
+            sidebarCollapsed ? 'px-3 py-4 justify-center' : 'px-5 py-5',
+            isAdmin && 'hover:bg-zinc-800/60 cursor-pointer'
+          )}
+        >
+          {tenant?.logo_url ? (
+            <img
+              src={tenant.logo_url}
+              alt={displayName}
+              className="w-8 h-8 rounded-lg object-cover shrink-0"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+              {displayInitial}
+            </div>
+          )}
+          {!sidebarCollapsed && (
+            <>
+              <div className="min-w-0 flex-1 text-left">
+                <span className="text-sm font-semibold text-zinc-100 truncate block">
+                  {displayName}
+                </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {tenant?.plan && (
+                    <span className={cn(
+                      'inline-block rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider',
+                      planColors[tenant.plan] || planColors.starter
+                    )}>
+                      {tenant.plan}
+                    </span>
+                  )}
+                  {isAdmin && (
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+                      <Shield className="w-2.5 h-2.5" />
+                      Admin
+                    </span>
+                  )}
+                </div>
+              </div>
+              {isAdmin && <ChevronsUpDown className="w-4 h-4 text-zinc-500 shrink-0" />}
+            </>
+          )}
+        </button>
+
+        {/* Tenant picker dropdown */}
+        {showTenantPicker && isAdmin && (
+          <div className="absolute left-0 top-full z-50 w-72 max-h-96 rounded-lg border border-zinc-700 bg-zinc-900 shadow-2xl overflow-hidden">
+            <div className="p-2 border-b border-zinc-800">
+              <input
+                type="text"
+                value={tenantSearch}
+                onChange={(e) => setTenantSearch(e.target.value)}
+                placeholder="Buscar partner..."
+                autoFocus
+                className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              />
+            </div>
+            <div className="overflow-y-auto max-h-72">
+              {/* Clear override option */}
+              {localStorage.getItem('admin_tenant_id') && (
+                <button
+                  onClick={clearTenantOverride}
+                  className="flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-zinc-800 transition-colors border-b border-zinc-800"
+                >
+                  <div className="w-7 h-7 rounded-md bg-zinc-700 flex items-center justify-center shrink-0">
+                    <X className="w-3.5 h-3.5 text-zinc-400" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-zinc-300">Volver a mi cuenta</p>
+                    <p className="text-[11px] text-zinc-500">Quitar override</p>
+                  </div>
+                </button>
+              )}
+              {filteredTenants.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => switchTenant(t)}
+                  className={cn(
+                    'flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-zinc-800 transition-colors',
+                    tenant?.id === t.id && 'bg-violet-600/10'
+                  )}
+                >
+                  {t.logo_url ? (
+                    <img src={t.logo_url} alt={t.name} className="w-7 h-7 rounded-md object-cover shrink-0" />
+                  ) : (
+                    <div className="w-7 h-7 rounded-md bg-zinc-700 flex items-center justify-center text-white font-bold text-xs shrink-0">
+                      {t.name.charAt(0)}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-zinc-200 truncate">{t.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <span className={cn(
+                        'rounded-full px-1.5 py-0 text-[10px] font-medium uppercase',
+                        planColors[t.plan] || planColors.starter
+                      )}>
+                        {t.plan}
+                      </span>
+                      <span className={cn(
+                        'text-[10px]',
+                        t.status === 'active' ? 'text-emerald-400' : 'text-zinc-500'
+                      )}>
+                        {t.status}
+                      </span>
+                    </div>
+                  </div>
+                  {tenant?.id === t.id && <Check className="w-4 h-4 text-violet-400 shrink-0" />}
+                </button>
+              ))}
+              {filteredTenants.length === 0 && (
+                <p className="px-3 py-4 text-sm text-zinc-500 text-center">Sin resultados</p>
+              )}
+            </div>
           </div>
         )}
       </div>

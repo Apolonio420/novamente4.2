@@ -64,7 +64,20 @@ async function getAccessToken(): Promise<string | null> {
 }
 
 /**
+ * Get the admin tenant override ID from localStorage (if any).
+ */
+function getAdminTenantOverride(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    return localStorage.getItem('admin_tenant_id')
+  } catch {
+    return null
+  }
+}
+
+/**
  * Wrapper around fetch that automatically injects the Supabase access token.
+ * If an admin tenant override is set, includes x-tenant-id header.
  */
 export async function authFetch(
   url: string,
@@ -77,6 +90,11 @@ export async function authFetch(
     headers.set('Authorization', `Bearer ${token}`)
   } else {
     console.warn('[authFetch] No session found for', url)
+  }
+
+  const override = getAdminTenantOverride()
+  if (override) {
+    headers.set('x-tenant-id', override)
   }
 
   return fetch(url, { ...options, headers })
