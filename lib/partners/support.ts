@@ -180,7 +180,7 @@ export async function getAdminTickets(
 ): Promise<(SupportTicket & { tenant_name?: string })[]> {
   let query = db()
     .from('partner_support_tickets')
-    .select('*, partner_tenants(name)')
+    .select('*, tenants(name)')
     .order('created_at', { ascending: false })
 
   if (status) {
@@ -198,7 +198,7 @@ export async function getAdminTickets(
 
   return (data || []).map((t: any) => ({
     ...t,
-    tenant_name: t.partner_tenants?.name || null,
-    partner_tenants: undefined,
+    tenant_name: t.tenants?.name || null,
+    tenants: undefined,
   }))
 }

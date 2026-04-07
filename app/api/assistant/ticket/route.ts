@@ -7,6 +7,13 @@ import type { Plan } from '@/lib/partners/types'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+const ADMIN_EMAILS = [
+  'apolonio@novamente.ar',
+  'sambu@novamente.ar',
+  'moishe@novamente.ar',
+  'izzaga@novamente.ar',
+]
+
 function extractToken(request: NextRequest): string | null {
   const authHeader = request.headers.get('authorization')
   if (authHeader?.startsWith('Bearer ')) {
@@ -28,6 +35,39 @@ function extractToken(request: NextRequest): string | null {
   return null
 }
 
+/** Get or create the internal "Novamente" tenant for admin tickets */
+async function getOrCreateInternalTenant(): Promise<{ id: string; plan: string } | null> {
+  const db = supabaseAdmin as any
+
+  // Try to find existing internal tenant
+  const { data: existing } = await db
+    .from('tenants')
+    .select('id, plan')
+    .eq('slug', 'novamente-internal')
+    .single()
+
+  if (existing) return existing
+
+  // Create it
+  const { data: created, error } = await db
+    .from('tenants')
+    .insert({
+      slug: 'novamente-internal',
+      name: 'Novamente (Internal)',
+      owner_email: 'apolonio@novamente.ar',
+      plan: 'pro',
+      status: 'active',
+    })
+    .select('id, plan')
+    .single()
+
+  if (error) {
+    console.error('Failed to create internal tenant:', error)
+    return null
+  }
+  return created
+}
+
 export async function POST(request: NextRequest) {
   try {
     const token = extractToken(request)
@@ -47,12 +87,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Asunto requerido' }, { status: 400 })
     }
 
-    const tenant = await getTenantByUserId(userData.user.id)
+    const email = userData.user.email?.toLowerCase() || ''
+    const isAdmin = ADMIN_EMAILS.includes(email)
+
+    // For admins without a tenant, use the internal Novamente tenant
+    let tenant = await getTenantByUserId(userData.user.id)
+    if (!tenant && isAdmin) {
+      tenant = await getOrCreateInternalTenant() as any
+    }
     if (!tenant) {
       return NextResponse.json({ error: 'No se encontró tenant' }, { status: 403 })
     }
 
-    const enrichedDesc = `${description || ''}\n\n---\nPágina: ${pageUrl || 'N/A'}\nContexto: ${JSON.stringify(pageContext || {})}`
+    const enrichedDesc = `${description || ''}\n\n---\n${isAdmin ? `Admin: ${email}\n` : ''}Página: ${pageUrl || 'N/A'}\nContexto: ${JSON.stringify(pageContext || {})}`
 
     const validCategories = ['general', 'billing', 'technical', 'feature_request']
     const ticketCategory = validCategories.includes(category) ? category : 'general'
@@ -62,7 +109,7 @@ export async function POST(request: NextRequest) {
       subject,
       enrichedDesc,
       ticketCategory as 'general' | 'billing' | 'technical' | 'feature_request',
-      tenant.plan as Plan,
+      (tenant as any).plan as Plan,
     )
 
     if (!ticket) {
