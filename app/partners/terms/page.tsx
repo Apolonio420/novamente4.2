@@ -93,13 +93,13 @@ export default function TermsPage() {
             <ul className="list-disc list-inside mt-3 space-y-1.5 text-zinc-400">
               <li>
                 <span className="text-zinc-200 font-medium">Starter</span> —
-                Gratuito. Incluye storefront basica, hasta 10 productos y 20
-                leads por mes.
+                Gratuito. Incluye storefront con logo, colores y banner, hasta
+                10 productos y 20 leads por mes.
               </li>
               <li>
                 <span className="text-zinc-200 font-medium">Growth</span> — $25
                 USD/mes. Productos ilimitados, leads ilimitados, SEO completo,
-                Design Engine, branding y analytics basicos.
+                Design Engine, branding avanzado y analytics basicos.
               </li>
               <li>
                 <span className="text-zinc-200 font-medium">Pro</span> — $100

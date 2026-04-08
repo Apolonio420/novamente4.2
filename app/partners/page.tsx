@@ -68,7 +68,8 @@ const TIERS: { plan: Plan; popular?: boolean; features: string[] }[] = [
   {
     plan: 'starter',
     features: [
-      'Storefront básica con tu marca',
+      'Storefront con tu marca',
+      'Logo, colores y banner',
       'Hasta 10 productos',
       '20 leads por mes',
       'Precios mayoristas en prendas',
@@ -80,7 +81,7 @@ const TIERS: { plan: Plan; popular?: boolean; features: string[] }[] = [
     popular: true,
     features: [
       'Todo lo de Starter +',
-      'Branding completo (colores, hero, CTA)',
+      'Branding avanzado (fuentes, estilos, CTA)',
       'Productos ilimitados',
       'Leads ilimitados',
       'SEO completo + indexación',
@@ -139,7 +140,7 @@ const partnersFaqJsonLd = {
       name: "¿Qué incluye la storefront de Studio?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Cada marca recibe una página profesional en novamente.ar con su logo, colores, productos y formulario de contacto. Los planes Growth y Pro incluyen branding completo, SEO, indexación en Google y Design Engine con IA.",
+        text: "Cada marca recibe una página profesional en novamente.ar con su logo, colores y productos. Todos los planes incluyen branding básico (logo, banner, colores). Los planes Growth y Pro suman SEO, branding avanzado e indexación en Google con Design Engine con IA.",
       },
     },
   ],

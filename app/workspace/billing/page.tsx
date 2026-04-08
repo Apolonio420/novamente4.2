@@ -57,8 +57,8 @@ const PLAN_LABELS: Record<string, string> = {
 }
 
 const PLAN_DESCRIPTIONS: Record<string, string> = {
-  starter: 'Ideal para empezar. Storefront basica y acceso a precios mayoristas.',
-  growth: 'Para marcas que quieren crecer. SEO, branding completo y Design Engine.',
+  starter: 'Ideal para empezar. Storefront con logo, colores y acceso a precios mayoristas.',
+  growth: 'Para marcas que quieren crecer. SEO, branding avanzado y Design Engine.',
   pro: 'La experiencia completa. Chatbot, Meta Ads, soporte premium y mas.',
 }
 
@@ -79,14 +79,14 @@ const PLAN_FEATURES: Record<string, string[]> = {
   starter: [
     'Hasta 10 productos',
     '20 leads/mes',
-    'Storefront basica',
-    'Branding limitado',
+    'Storefront con logo y colores',
+    'Branding basico',
   ],
   growth: [
     'Productos ilimitados',
     'Leads ilimitados',
     'SEO + GEO optimizado',
-    'Branding completo',
+    'Branding avanzado',
     'Design Engine (presets)',
     'Analytics basico',
     'Soporte por email',
@@ -366,7 +366,7 @@ export default function BillingPage() {
                   { feature: 'Productos', starter: '10', growth: 'Ilimitados', pro: 'Ilimitados' },
                   { feature: 'Leads / mes', starter: '20', growth: 'Ilimitados', pro: 'Ilimitados' },
                   { feature: 'Design Engine', starter: 'Presets', growth: 'Presets', pro: 'Completo' },
-                  { feature: 'Branding completo', starter: false, growth: true, pro: true },
+                  { feature: 'Branding', starter: 'Basico', growth: 'Completo', pro: 'Completo' },
                   { feature: 'SEO + GEO', starter: false, growth: true, pro: true },
                   { feature: 'Analytics', starter: false, growth: 'Basico', pro: 'Avanzado' },
                   { feature: 'Chatbot IA', starter: false, growth: false, pro: true },
