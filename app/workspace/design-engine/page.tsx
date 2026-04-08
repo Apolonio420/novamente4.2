@@ -692,6 +692,18 @@ export default function DesignStudioPage() {
                 </option>
               ))}
             </select>
+            {/* Garment thumbnail preview */}
+            {(() => {
+              const thumbUrl = GARMENT_THUMBNAILS[selectedGarment]?.[selectedColor]
+                ?? Object.values(GARMENT_THUMBNAILS[selectedGarment] ?? {})[0]
+              return thumbUrl ? (
+                <img
+                  src={thumbUrl}
+                  alt={selectedGarment}
+                  className="h-10 w-10 rounded-lg object-cover border border-zinc-700 flex-shrink-0"
+                />
+              ) : null
+            })()}
           </div>
           <div className="flex items-end gap-2">
             <textarea
