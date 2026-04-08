@@ -12,7 +12,7 @@ const HomeGeneratorWrapper = dynamic(() => import("@/components/HomeGeneratorWra
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowRight, Zap, Shirt, Star, Sparkles, Palette, Wand2, Quote, Users, TrendingUp, ShieldCheck } from "lucide-react"
+import { ArrowRight, Zap, Shirt, Star, Sparkles, Palette, Wand2, Quote, Users, TrendingUp, ShieldCheck, Globe, Store, Eye } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 // Image history now fetches via /api/images/history (session-based)
@@ -537,6 +537,76 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="py-16 md:py-24 border-t border-white/10 bg-secondary/10">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <Badge className="mb-4 bg-purple-500/10 text-purple-300 border-purple-500/30 hover:bg-purple-500/20">
+                NOVAMENTE STUDIO
+              </Badge>
+              <h2 className="novamente-heading text-3xl md:text-4xl mb-4">Si tenés una marca o negocio, esta parte es para vos</h2>
+              <p className="text-muted-foreground max-w-3xl mx-auto text-lg">
+                Además de la experiencia de merch para consumidores, en Novamente Studio armamos storefronts,
+                catálogos, identidad visual, diseño con IA y una presencia digital más seria para marcas,
+                creadores y negocios que quieren vender mejor.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6 mb-10">
+              <Card className="border-white/10 bg-secondary/20">
+                <CardContent className="p-8">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-5">
+                    <Globe className="w-6 h-6 text-purple-300" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">Storefront y presencia digital</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Una base profesional para mostrar productos, captar consultas y ordenar mejor tu canal comercial.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-white/10 bg-secondary/20">
+                <CardContent className="p-8">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-5">
+                    <Store className="w-6 h-6 text-purple-300" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">Catálogo, merch y activación</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Desde una línea de merch hasta una propuesta comercial más completa, todo con una estética consistente.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-white/10 bg-secondary/20">
+                <CardContent className="p-8">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-5">
+                    <Eye className="w-6 h-6 text-purple-300" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">Demos y previews antes de publicar</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Mostramos una versión clara de cómo se va a ver tu marca para acelerar decisiones y bajar fricción.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/partners">
+                <Button size="lg" className="w-full sm:w-auto">
+                  Conocer Novamente Studio
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                  Hablar sobre mi marca
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Social Proof Section */}
       <section className="py-16 md:py-24 cv-auto">
         <div className="container mx-auto px-4">
@@ -609,7 +679,7 @@ export default function Home() {
                   <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold">S</div>
                   <div>
                     <div className="font-semibold text-white text-sm">Sofía R.</div>
-                    <div className="text-xs text-muted-foreground">Córdoba — Partner B2B</div>
+                    <div className="text-xs text-muted-foreground">Córdoba — Studio B2B</div>
                   </div>
                 </div>
               </CardContent>
@@ -726,7 +796,7 @@ export default function Home() {
                 <span className="text-primary group-open:rotate-45 transition-transform text-2xl">+</span>
               </summary>
               <p className="mt-4 text-muted-foreground leading-relaxed">
-                Sí, ofrecemos precios mayoristas y un programa Partners para empresas que quieren crear su propia línea de merchandising. Incluye storefront personalizada, diseño con IA, producción y envío. Contactanos por WhatsApp o visitá nuestra sección de Partners para más información.
+                Sí, ofrecemos precios mayoristas y Novamente Studio para empresas, marcas y negocios que quieren lanzar su propia línea de merchandising o mejorar su presencia comercial. Incluye storefront personalizada, diseño con IA, producción y envío. Contactanos por WhatsApp o visitá la sección Studio para más información.
               </p>
             </details>
           </div>

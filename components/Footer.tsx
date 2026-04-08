@@ -41,7 +41,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/partners" className="text-white/60 hover:text-white">
-                  QUIERO SER PARTNER
+                  NOVAMENTE STUDIO
                 </Link>
               </li>
               <li>

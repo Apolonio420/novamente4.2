@@ -67,11 +67,11 @@ export function Navbar() {
     { label: "ESTILOS", href: "/styles" },
     { label: "FAQ", href: "/faq" },
     {
-      label: "PARTNERS",
+      label: "STUDIO",
       href: "/partners",
       isDropdown: true,
       subItems: [
-        { label: "PROGRAMA PARTNERS", href: "/partners" },
+        { label: "NOVAMENTE STUDIO", href: "/partners" },
         { label: "DIRECTORIO", href: "/partners/directory" },
         { label: "MARCAS", href: "/merch" },
         { label: "MI WORKSPACE", href: "/partners/login" }

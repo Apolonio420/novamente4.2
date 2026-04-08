@@ -292,6 +292,83 @@ Estado: $(if ($ERROR_COUNT -eq 0) { 'Todo limpio' } elseif ($FIX_COUNT -ge $ERRO
     $script:SKIP_COUNT = 0
 }
 
+# --- Pause detection: skip work if Claude Code is active or user is gaming ---
+
+# Known game process names (add more as needed)
+$GAME_PROCESSES = @(
+    "RocketLeague",
+    "FortniteClient-Win64-Shipping",
+    "csgo", "cs2",
+    "VALORANT-Win64-Shipping",
+    "GTA5", "FiveM",
+    "javaw",           # Minecraft
+    "League of Legends",
+    "overwatch", "ow2",
+    "steam_overkill"
+)
+
+function Test-ShouldPause {
+    # Check if Claude Code is running interactively (not --print mode, which is us)
+    $claudeProcs = Get-Process -Name "claude" -ErrorAction SilentlyContinue
+    if ($claudeProcs) {
+        # claude CLI processes: if there are interactive ones besides our --print calls
+        $interactive = $claudeProcs | Where-Object {
+            $_.MainWindowTitle -ne "" -or $_.MainWindowHandle -ne 0
+        }
+        if ($interactive) {
+            return @{ paused = $true; reason = "Claude Code interactivo activo" }
+        }
+    }
+
+    # Check for node processes with claude in command line (VS Code terminal sessions)
+    $claudeNode = Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -match "claude" -and $_.CommandLine -notmatch "--print" }
+    if ($claudeNode) {
+        return @{ paused = $true; reason = "Claude Code sesion activa" }
+    }
+
+    # Check if any known game is running
+    foreach ($game in $GAME_PROCESSES) {
+        $proc = Get-Process -Name $game -ErrorAction SilentlyContinue
+        if ($proc) {
+            return @{ paused = $true; reason = "Juego detectado: $game" }
+        }
+    }
+
+    # Check if a fullscreen app has focus (games often run fullscreen)
+    try {
+        Add-Type -ErrorAction SilentlyContinue @"
+using System;
+using System.Runtime.InteropServices;
+public class FGCheck {
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+    [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
+}
+"@
+        $fg = [FGCheck]::GetForegroundWindow()
+        $rect = New-Object FGCheck+RECT
+        [FGCheck]::GetWindowRect($fg, [ref]$rect) | Out-Null
+        $screenW = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width
+        $screenH = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height
+        $winW = $rect.Right - $rect.Left
+        $winH = $rect.Bottom - $rect.Top
+        # If foreground window covers 95%+ of screen, likely fullscreen game
+        if ($winW -ge ($screenW * 0.95) -and $winH -ge ($screenH * 0.95)) {
+            # Exclude explorer (desktop) and known non-game fullscreen apps
+            $fgPid = (Get-Process | Where-Object { $_.MainWindowHandle -eq $fg }).Id
+            $fgName = (Get-Process -Id $fgPid -ErrorAction SilentlyContinue).ProcessName
+            if ($fgName -and $fgName -notin @("explorer", "chrome", "msedge", "firefox", "Code", "WindowsTerminal", "powershell")) {
+                return @{ paused = $true; reason = "App fullscreen activa: $fgName" }
+            }
+        }
+    } catch {
+        # Fullscreen detection failed, continue normally
+    }
+
+    return @{ paused = $false; reason = "" }
+}
+
 # === MAIN LOOP ===
 
 Log "Watchdog starting for: $ProjectDir" "Cyan"
@@ -303,8 +380,25 @@ if (-not $TOKEN -or -not $CHAT_ID) {
 
 Send-Telegram "Novamente Watchdog iniciado para novamente4.2"
 
+$LAST_PAUSE_LOG = ""
+
 while ($true) {
     $now = Get-Date
+
+    # --- Pause check ---
+    $pauseState = Test-ShouldPause
+    if ($pauseState.paused) {
+        if ($LAST_PAUSE_LOG -ne $pauseState.reason) {
+            Log "PAUSED: $($pauseState.reason)" "Yellow"
+            $LAST_PAUSE_LOG = $pauseState.reason
+        }
+        Start-Sleep -Seconds 30
+        continue
+    }
+    if ($LAST_PAUSE_LOG) {
+        Log "RESUMED: pause condition cleared" "Green"
+        $LAST_PAUSE_LOG = ""
+    }
 
     # --- Daily summary at configured hour ---
     if ($now.Hour -eq $DailySummaryHour -and -not $DAILY_SENT) {

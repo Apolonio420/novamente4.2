@@ -28,6 +28,7 @@ interface MerchFilterProps {
 export default function MerchFilter({ entries, categories }: MerchFilterProps) {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
 
   const filtered = useMemo(() => {
     let result = entries
@@ -121,13 +122,14 @@ export default function MerchFilter({ entries, categories }: MerchFilterProps) {
               <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60 transition-all duration-300 hover:border-zinc-600 hover:shadow-xl hover:shadow-purple-900/10 hover:-translate-y-1">
                 {/* Card Image */}
                 <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-800">
-                  {brand.cardImage || brand.logo ? (
+                  {(brand.cardImage || brand.logo) && !failedImages.has(brand.slug) ? (
                     <Image
                       src={brand.cardImage || brand.logo || ''}
                       alt={`${brand.name}`}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       className="object-contain p-6 transition-transform duration-500 group-hover:scale-110"
+                      onError={() => setFailedImages((prev) => new Set(prev).add(brand.slug))}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900/40 to-pink-900/40">

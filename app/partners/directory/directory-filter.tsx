@@ -23,6 +23,7 @@ interface DirectoryFilterProps {
 export default function DirectoryFilter({ tenants, industries }: DirectoryFilterProps) {
   const [search, setSearch] = useState('')
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null)
+  const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set())
 
   const filtered = useMemo(() => {
     let result = tenants
@@ -98,13 +99,14 @@ export default function DirectoryFilter({ tenants, industries }: DirectoryFilter
             >
               {/* Logo */}
               <div className="relative h-20 w-20 overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-800">
-                {tenant.logo_url ? (
+                {tenant.logo_url && !failedLogos.has(tenant.slug) ? (
                   <Image
                     src={tenant.logo_url}
                     alt={`${tenant.name} logo`}
                     fill
                     sizes="80px"
                     className="object-contain p-2"
+                    onError={() => setFailedLogos((prev) => new Set(prev).add(tenant.slug))}
                   />
                 ) : (
                   <div

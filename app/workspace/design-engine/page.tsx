@@ -60,6 +60,16 @@ const COLOR_LABELS: Record<string, string> = {
 
 const STAMP_INTENT_RE = /estampa|stampe|ponel[oae]?|aplica|aplicalo|mockup|pone[mr]?lo|ubicalo|coloca/i
 
+const GARMENT_OPTIONS: { key: string; label: string }[] = [
+  { key: 'aldea-classic-tshirt', label: 'Remera Clasica' },
+  { key: 'aura-oversize-tshirt', label: 'Remera Oversize' },
+  { key: 'astra-oversize-hoodie', label: 'Hoodie' },
+  { key: 'buzo-hoodie', label: 'Buzo' },
+  { key: 'musculosa-bali', label: 'Musculosa' },
+  { key: 'crop-top', label: 'Crop Top' },
+  { key: 'lienzo', label: 'Lienzo' },
+]
+
 // Garment thumbnail mapping (key → front image path)
 const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = {
   'aura-oversize-tshirt': {
@@ -103,7 +113,7 @@ export default function DesignStudioPage() {
   const [prompt, setPrompt] = useState('')
   const [generating, setGenerating] = useState(false)
   const [selectedStyle, setSelectedStyle] = useState('')
-  const [selectedGarment, setSelectedGarment] = useState('')
+  const [selectedGarment, setSelectedGarment] = useState(GARMENT_OPTIONS[0].key)
   const [selectedColor, setSelectedColor] = useState('black')
   const [selectedSide, setSelectedSide] = useState<'front' | 'back'>('front')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -147,6 +157,7 @@ export default function DesignStudioPage() {
         setGarments(data.garments || [])
         if (data.styles?.length > 0) setSelectedStyle(data.styles[0].key)
         if (data.garments?.length > 0) setSelectedGarment(data.garments[0].key)
+        else setSelectedGarment(GARMENT_OPTIONS[0].key)
       } catch (e: any) {
         setError(e.message)
       } finally {
@@ -667,6 +678,21 @@ export default function DesignStudioPage() {
               <button onClick={() => setError(null)} className="ml-2 text-red-500 hover:text-red-300">✕</button>
             </div>
           )}
+          {/* Garment selector */}
+          <div className="mb-2 flex items-center gap-2">
+            <Shirt className="h-4 w-4 text-zinc-500 flex-shrink-0" />
+            <select
+              value={selectedGarment}
+              onChange={e => setSelectedGarment(e.target.value)}
+              className="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-violet-500/50 cursor-pointer"
+            >
+              {GARMENT_OPTIONS.map(opt => (
+                <option key={opt.key} value={opt.key} className="bg-zinc-950 text-zinc-100">
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="flex items-end gap-2">
             <textarea
               ref={inputRef}

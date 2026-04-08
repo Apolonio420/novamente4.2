@@ -166,6 +166,35 @@ export async function POST(request: Request) {
       return NextResponse.json({ tenant: { id: tenantId } })
     }
 
+    // --- Step 9: Brief (onboarding questionnaire) ---
+    if (step === 9) {
+      if (!tenantId) {
+        return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
+      }
+
+      const { brief } = data || {}
+
+      // Merge brief into existing metadata (read-then-write to avoid overwriting other keys)
+      const { data: current } = await db()
+        .from('tenants')
+        .select('metadata')
+        .eq('id', tenantId)
+        .single()
+
+      const existingMeta = (current?.metadata as Record<string, unknown>) || {}
+
+      const updated = await updateTenant(tenantId, {
+        metadata: { ...existingMeta, brief },
+        onboarding_step: 9,
+      } as any)
+
+      if (!updated) {
+        return NextResponse.json({ error: 'Failed to save brief' }, { status: 500 })
+      }
+
+      return NextResponse.json({ tenant: { id: tenantId } })
+    }
+
     // --- Step 8: Activate ---
     if (step === 8) {
       if (!tenantId) {

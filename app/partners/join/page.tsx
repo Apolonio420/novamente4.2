@@ -93,6 +93,11 @@ interface WizardData {
   // Step 7 (Plan)
   selectedPlan: 'starter' | 'growth' | 'pro'
   billingCycle: 'monthly' | 'annual'
+  // Step Brief
+  briefBusinessType: string
+  briefHasLogo: 'si' | 'no' | ''
+  briefDesignStyle: string
+  briefProductCount: string
   // Onboarding state
   tenantId: string | null
 }
@@ -105,10 +110,11 @@ const STEP_TITLES = [
   'Datos basicos',
   'Identidad visual',
   'Plan',
+  'Brief de tu negocio',
   'Preview y publicar',
 ]
 
-const STEP_ICONS = [Store, Palette, CreditCard, Eye]
+const STEP_ICONS = [Store, Palette, CreditCard, Layers, Eye]
 
 const PARTNER_TYPES = [
   {
@@ -181,6 +187,10 @@ const DEFAULT_DATA: WizardData = {
   salesWhatsapp: '',
   selectedPlan: 'starter',
   billingCycle: 'monthly',
+  briefBusinessType: '',
+  briefHasLogo: '',
+  briefDesignStyle: '',
+  briefProductCount: '',
   tenantId: null,
 }
 
@@ -1155,6 +1165,170 @@ function StepComercializacion({
   )
 }
 
+// ---------------------------------------------------------------------------
+// Brief step constants
+// ---------------------------------------------------------------------------
+
+const BUSINESS_TYPES = [
+  { value: 'cerveceria', label: 'Cerveceria artesanal' },
+  { value: 'gym', label: 'Gym / Fitness' },
+  { value: 'banda', label: 'Banda / Musica' },
+  { value: 'restaurante', label: 'Restaurante / Bar' },
+  { value: 'agencia', label: 'Agencia / Estudio creativo' },
+  { value: 'otro', label: 'Otro' },
+]
+
+const PRODUCT_COUNT_OPTIONS = [
+  { value: '1-5', label: '1 a 5', sub: 'Catalogo chico' },
+  { value: '5-20', label: '5 a 20', sub: 'Catalogo mediano' },
+  { value: '20+', label: '20+', sub: 'Catalogo grande' },
+]
+
+function StepBrief({
+  data,
+  update,
+}: {
+  data: WizardData
+  update: (patch: Partial<WizardData>) => void
+}) {
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+
+  const effectiveHasLogo = data.briefHasLogo || (data.logoPreview ? 'si' : '')
+
+  const handleLogoSelect = async (file: File, preview: string) => {
+    update({ logoFile: file, logoPreview: preview, briefHasLogo: 'si' })
+    setUploadingLogo(true)
+    const url = await uploadOnboardingFile(file, 'logo')
+    setUploadingLogo(false)
+    if (url) update({ logoPreview: url })
+  }
+
+  return (
+    <div className="space-y-7">
+      {/* Tipo de negocio */}
+      <div>
+        <Label className="text-zinc-300 block mb-2">¿Qué tipo de negocio tenés?</Label>
+        <select
+          value={data.briefBusinessType}
+          onChange={(e) => update({ briefBusinessType: e.target.value })}
+          className="w-full rounded-lg border border-zinc-800 bg-zinc-900 text-zinc-100 px-3 py-2.5 text-sm focus:outline-none focus:border-purple-500"
+        >
+          <option value="">Seleccionar...</option>
+          {BUSINESS_TYPES.map((bt) => (
+            <option key={bt.value} value={bt.value}>{bt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Tiene logo */}
+      <div>
+        <Label className="text-zinc-300 block mb-2">¿Tenés logo?</Label>
+        <div className="flex gap-3 mb-3">
+          {(['si', 'no'] as const).map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => update({ briefHasLogo: opt })}
+              className={`px-6 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+                effectiveHasLogo === opt
+                  ? 'border-purple-500 bg-purple-500/10 text-purple-300'
+                  : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+              }`}
+            >
+              {opt === 'si' ? 'Sí' : 'No'}
+            </button>
+          ))}
+        </div>
+
+        {effectiveHasLogo === 'si' && (
+          data.logoPreview ? (
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+              <img
+                src={data.logoPreview}
+                alt="Logo"
+                className="w-14 h-14 rounded-lg border border-zinc-700 object-contain bg-zinc-900 p-1"
+              />
+              <div>
+                <p className="text-sm text-emerald-300 font-medium">Logo cargado</p>
+                <p className="text-xs text-zinc-500">Subido en el paso anterior</p>
+              </div>
+            </div>
+          ) : (
+            <FileUploadBox
+              label="Subir logo"
+              preview={data.logoPreview}
+              onSelect={handleLogoSelect}
+              uploading={uploadingLogo}
+            />
+          )
+        )}
+      </div>
+
+      {/* Estilo de diseño — top 6 de VISUAL_STYLES */}
+      <div>
+        <Label className="text-zinc-300 block mb-2">¿Qué estilo de diseño preferís?</Label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {VISUAL_STYLES.slice(0, 6).map((style) => {
+            const selected = (data.briefDesignStyle || data.visualStyle) === style.id
+            return (
+              <button
+                key={style.id}
+                type="button"
+                onClick={() => update({ briefDesignStyle: style.id, visualStyle: style.id })}
+                className={`p-4 rounded-xl border text-left transition-all ${
+                  selected
+                    ? 'border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/5'
+                    : 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900'
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-lg mb-2 flex items-center justify-center ${
+                    selected ? 'bg-purple-500/20' : 'bg-zinc-800'
+                  }`}
+                >
+                  <Palette className={`w-4 h-4 ${selected ? 'text-purple-400' : 'text-zinc-500'}`} />
+                </div>
+                <h4 className={`font-semibold text-sm ${selected ? 'text-purple-300' : 'text-zinc-200'}`}>
+                  {style.name}
+                </h4>
+                <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">{style.description}</p>
+                {selected && <Check className="w-3.5 h-3.5 text-purple-400 mt-1.5" />}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Cantidad de productos */}
+      <div>
+        <Label className="text-zinc-300 block mb-2">¿Cuántos productos pensás vender?</Label>
+        <div className="grid grid-cols-3 gap-3">
+          {PRODUCT_COUNT_OPTIONS.map((opt) => {
+            const selected = data.briefProductCount === opt.value
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => update({ briefProductCount: opt.value })}
+                className={`p-4 rounded-xl border text-center transition-all ${
+                  selected
+                    ? 'border-purple-500 bg-purple-500/10'
+                    : 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900'
+                }`}
+              >
+                <span className={`text-lg font-bold block ${selected ? 'text-purple-300' : 'text-zinc-100'}`}>
+                  {opt.label}
+                </span>
+                <span className="text-xs text-zinc-500 mt-0.5 block">{opt.sub}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const PLAN_CARDS = [
   {
     id: 'starter' as const,
@@ -1700,6 +1874,20 @@ function buildStepPayload(
         tenantId: data.tenantId!,
         data: { plan: data.selectedPlan },
       }
+    case 3:
+      // Brief step — save to tenant metadata
+      return {
+        step: 9,
+        tenantId: data.tenantId!,
+        data: {
+          brief: {
+            businessType: data.briefBusinessType || null,
+            hasLogo: data.briefHasLogo || null,
+            designStyle: data.briefDesignStyle || data.visualStyle || null,
+            productCount: data.briefProductCount || null,
+          },
+        },
+      }
     default:
       return null
   }
@@ -1914,7 +2102,8 @@ export default function PartnersJoinPage() {
     <StepDatosBasicos key={0} data={data} update={update} />,
     <StepIdentidadVisual key={1} data={data} update={update} />,
     <StepPlan key={2} data={data} update={update} />,
-    <StepPreview key={3} data={data} />,
+    <StepBrief key={3} data={data} update={update} />,
+    <StepPreview key={4} data={data} />,
   ]
 
   return (
@@ -1924,7 +2113,7 @@ export default function PartnersJoinPage() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/partners" className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm hidden sm:inline">Volver a Partners</span>
+            <span className="text-sm hidden sm:inline">Volver a Studio</span>
           </Link>
           <h1 className="text-sm font-semibold tracking-wider uppercase text-zinc-400">
             Onboarding

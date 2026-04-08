@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params
   const tenant = await getTenantBySlug(slug)
 
-  if (!tenant || !tenant.storefront_published) {
+  if (!tenant || tenant.status !== 'active' || !tenant.storefront_published) {
     return { title: 'Not Found' }
   }
 
@@ -93,7 +93,7 @@ export default async function PartnerStorefrontPage({ params, searchParams }: Pa
   const sp = await searchParams
   const tenant = await getTenantBySlug(slug)
 
-  if (!tenant || !tenant.storefront_published) {
+  if (!tenant || tenant.status !== 'active' || !tenant.storefront_published) {
     notFound()
   }
 

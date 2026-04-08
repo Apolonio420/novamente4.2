@@ -114,6 +114,25 @@ export async function updateTenant(id: string, updates: Partial<Tenant>): Promis
   return data as Tenant
 }
 
+// --- Public visibility ---
+
+/**
+ * Returns a tenant by slug only if it's active and storefront is published.
+ * Use this for public storefront pages — returns null for inactive/unpublished tenants.
+ */
+export async function getPublicTenant(slug: string): Promise<Tenant | null> {
+  const { data, error } = await db()
+    .from('tenants')
+    .select('*')
+    .eq('slug', slug)
+    .eq('status', 'active')
+    .eq('storefront_published', true)
+    .single()
+
+  if (error || !data) return null
+  return data as Tenant
+}
+
 // --- Tenant Users ---
 
 export async function addTenantUser(tenantId: string, userId: string, role: 'owner' | 'operator' | 'viewer'): Promise<TenantUser | null> {

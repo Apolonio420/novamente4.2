@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug, product: productSlug } = await params
   const tenant = await getTenantBySlug(slug)
 
-  if (!tenant || !tenant.storefront_published) {
+  if (!tenant || tenant.status !== 'active' || !tenant.storefront_published) {
     return { title: 'Not Found' }
   }
 
@@ -94,7 +94,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const { slug, product: productSlug } = await params
   const tenant = await getTenantBySlug(slug)
 
-  if (!tenant || !tenant.storefront_published) {
+  if (!tenant || tenant.status !== 'active' || !tenant.storefront_published) {
     notFound()
   }
 

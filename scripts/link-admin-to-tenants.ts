@@ -37,7 +37,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
 
 // ─── Config ─────────────────────────────────────────────
 const ADMIN_EMAIL = 'apolonio@novamente.ar'
-const EXCLUDED_SLUGS = ['hard-demonio', 'ventolito', 'ventolito-wind-surf']
+const EXCLUDED_SLUGS = ['maldito-demonio', 'ventolito', 'ventolito-wind-surf']
 
 async function main() {
   console.log(`\nLinking ${ADMIN_EMAIL} to all tenants (except: ${EXCLUDED_SLUGS.join(', ')})...\n`)

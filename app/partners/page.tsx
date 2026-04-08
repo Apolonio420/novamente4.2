@@ -10,24 +10,24 @@ import { PLAN_NAMES, PLAN_DESCRIPTIONS, PLAN_PRICING_USD } from "@/lib/partners/
 import type { Plan } from "@/lib/partners/types"
 
 export const metadata: Metadata = {
-  title: "Partners — Lanzá tu marca con Novamente",
-  description: "Storefront, catálogo, diseño con IA y precios mayoristas. Todo lo que necesitás para vender tu merch, sin stock ni logística.",
+  title: "Novamente Studio — Lanzá tu marca con storefront, IA y growth",
+  description: "La unidad de Novamente para marcas y negocios: storefront, catalogo, diseño con IA, leads y operaciones sin stock ni logistica.",
   alternates: {
     canonical: "https://www.novamente.ar/partners",
   },
   openGraph: {
     type: "website",
     url: "https://www.novamente.ar/partners",
-    title: "Novamente Partners — Lanzá tu marca",
-    description: "Storefront, catálogo, diseño con IA y precios mayoristas. Todo lo que necesitás para vender tu merch.",
-    images: [{ url: "https://www.novamente.ar/novamente-logo.png", width: 1200, height: 630, alt: "Novamente Partners" }],
+    title: "Novamente Studio — Lanzá tu marca",
+    description: "Storefront, catalogo, diseño con IA y growth comercial para marcas, creadores y negocios.",
+    images: [{ url: "https://www.novamente.ar/novamente-logo.png", width: 1200, height: 630, alt: "Novamente Studio" }],
     siteName: "Novamente",
     locale: "es_AR",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Novamente Partners — Lanzá tu marca",
-    description: "Storefront, catálogo, diseño con IA y precios mayoristas. Todo lo que necesitás para vender tu merch.",
+    title: "Novamente Studio — Lanzá tu marca",
+    description: "Storefront, catalogo, diseño con IA y growth comercial para marcas, creadores y negocios.",
   },
 }
 
@@ -112,15 +112,15 @@ const partnersFaqJsonLd = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "¿Qué es Novamente Partners?",
+      name: "¿Qué es Novamente Studio?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Novamente Partners es una plataforma para empresas, marcas y emprendedores que quieren crear su propia línea de merchandising sin inversión inicial. Incluye storefront personalizada, diseño con IA, producción on-demand, precios mayoristas y envío a todo Argentina.",
+        text: "Novamente Studio es la unidad de Novamente para empresas, marcas y emprendedores que quieren vender con una presencia digital más profesional. Incluye storefront personalizada, diseño con IA, producción on-demand, precios mayoristas, leads y envío a todo Argentina.",
       },
     },
     {
       "@type": "Question",
-      name: "¿Cuánto cuesta ser Partner de Novamente?",
+      name: "¿Cuánto cuesta Novamente Studio?",
       acceptedAnswer: {
         "@type": "Answer",
         text: "Hay 3 planes: Starter es gratis (hasta 10 productos, 20 leads/mes), Growth cuesta $25 USD/mes (productos ilimitados, SEO, Design Engine) y Pro cuesta $100 USD/mes (chatbot WhatsApp, Meta Ads, analytics avanzado). Todos incluyen precios mayoristas.",
@@ -131,15 +131,15 @@ const partnersFaqJsonLd = {
       name: "¿Necesito tener stock o logística?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "No. Novamente se encarga de toda la producción, almacenamiento y envío. El partner solo se dedica a vender y cobrar. Producción on-demand significa cero riesgo de inventario.",
+        text: "No. Novamente se encarga de toda la producción, almacenamiento y envío. La marca solo se dedica a vender y cobrar. Producción on-demand significa cero riesgo de inventario.",
       },
     },
     {
       "@type": "Question",
-      name: "¿Qué incluye la storefront de Partners?",
+      name: "¿Qué incluye la storefront de Studio?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Cada partner recibe una página profesional en novamente.ar con su logo, colores, productos y formulario de contacto. Los planes Growth y Pro incluyen branding completo, SEO, indexación en Google y Design Engine con IA.",
+        text: "Cada marca recibe una página profesional en novamente.ar con su logo, colores, productos y formulario de contacto. Los planes Growth y Pro incluyen branding completo, SEO, indexación en Google y Design Engine con IA.",
       },
     },
   ],
@@ -150,7 +150,7 @@ const breadcrumbJsonLd = {
   "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Inicio", item: "https://www.novamente.ar/" },
-    { "@type": "ListItem", position: 2, name: "Partners", item: "https://www.novamente.ar/partners" },
+    { "@type": "ListItem", position: 2, name: "Studio", item: "https://www.novamente.ar/partners" },
   ],
 }
 
@@ -172,15 +172,15 @@ export default function PartnersPage() {
         <div className="container mx-auto px-4 relative">
           <div className="text-center max-w-4xl mx-auto">
             <Badge className="mb-6 bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500/20">
-              NOVAMENTE PARTNERS
+              NOVAMENTE STUDIO
             </Badge>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
-              Lanzá tu marca de
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-purple-400"> merch premium</span>
+              Lanzá tu marca con
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-purple-400"> storefront, IA y growth</span>
             </h1>
             <p className="text-lg md:text-xl text-zinc-400 mb-10 max-w-2xl mx-auto">
-              Storefront profesional, catálogo, diseño con IA y precios mayoristas.
-              Sin stock, sin logística, sin riesgo. Nosotros producimos y enviamos.
+              La unidad de Novamente para marcas, creadores y negocios que quieren verse más pro,
+              vender mejor y operar sin stock ni logística propia.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/partners/join">
@@ -196,7 +196,7 @@ export default function PartnersPage() {
               </Link>
             </div>
             <p className="mt-4 text-sm text-zinc-500">
-              ¿Ya sos partner?{" "}
+              ¿Ya tenés tu workspace?{" "}
               <Link href="/partners/login" className="text-purple-400 hover:text-purple-300 underline">
                 Iniciá sesión
               </Link>
@@ -334,7 +334,7 @@ export default function PartnersPage() {
             ¿Listo para lanzar tu marca?
           </h2>
           <p className="text-zinc-400 mb-8 max-w-xl mx-auto">
-            Sumate a novamente Partners y empezá a vender merch premium con tu identidad.
+            Sumate a Novamente Studio y empezá a vender con una presencia digital más fuerte y tu identidad bien cuidada.
             Sin inversión inicial, sin riesgo.
           </p>
           <Link href="/partners/join">

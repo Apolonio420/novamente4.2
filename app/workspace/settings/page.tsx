@@ -14,6 +14,12 @@ import {
   Pause,
   Play,
   Search,
+  User,
+  Bell,
+  Palette,
+  ArrowRight,
+  Download,
+  Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -257,7 +263,7 @@ export default function SettingsPage() {
   const dirty = isDirty()
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 p-4 sm:p-6">
+    <div className="max-w-2xl mx-auto space-y-0 p-4 sm:p-6">
       {/* Toast */}
       {toast && (
         <div
@@ -277,7 +283,7 @@ export default function SettingsPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <Settings className="h-6 w-6 text-zinc-400" />
           <h1 className="text-xl sm:text-2xl font-semibold text-zinc-100">
@@ -298,524 +304,558 @@ export default function SettingsPage() {
         </Button>
       </div>
 
-      {/* 1. Informacion basica */}
-      <Card className="bg-zinc-900/60 border-zinc-800">
-        <CardHeader>
-          <CardTitle className="text-base font-medium text-zinc-100 flex items-center gap-2">
-            <Globe className="h-5 w-5 text-zinc-400" />
-            Informacion basica
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-zinc-300">Nombre</Label>
-              <Input
-                id="name"
-                value={settings.name}
-                onChange={(e) => updateField('name', e.target.value)}
-                placeholder="Mi marca"
-                className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-zinc-300">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={settings.email}
-                onChange={(e) => updateField('email', e.target.value)}
-                placeholder="contacto@marca.com"
-                className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-zinc-300">Telefono</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={settings.phone}
-                onChange={(e) => updateField('phone', e.target.value)}
-                placeholder="+54 11 1234 5678"
-                className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="website" className="text-zinc-300">Sitio web</Label>
-              <Input
-                id="website"
-                value={settings.website}
-                onChange={(e) => updateField('website', e.target.value)}
-                placeholder="https://mimarca.com"
-                className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="instagram" className="text-zinc-300">Instagram</Label>
-              <Input
-                id="instagram"
-                value={settings.instagram}
-                onChange={(e) => updateField('instagram', e.target.value)}
-                placeholder="@mimarca"
-                className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="industry" className="text-zinc-300">Industria</Label>
-              <select
-                id="industry"
-                value={settings.industry}
-                onChange={(e) => updateField('industry', e.target.value)}
-                className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="">Seleccionar</option>
-                {INDUSTRY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="country" className="text-zinc-300">Pais</Label>
-              <select
-                id="country"
-                value={settings.country}
-                onChange={(e) => updateField('country', e.target.value)}
-                className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="">Seleccionar</option>
-                {COUNTRY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="currency" className="text-zinc-300">Moneda</Label>
-              <select
-                id="currency"
-                value={settings.currency}
-                onChange={(e) => updateField('currency', e.target.value)}
-                className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <option value="">Seleccionar</option>
-                {CURRENCY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 2. Configuracion de comercio */}
-      <Card className="bg-zinc-900/60 border-zinc-800">
-        <CardHeader>
-          <CardTitle className="text-base font-medium text-zinc-100 flex items-center gap-2">
-            <Store className="h-5 w-5 text-zinc-400" />
-            Configuracion de comercio
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="commerce_mode" className="text-zinc-300">
-              Modo de comercio
-            </Label>
-            <select
-              id="commerce_mode"
-              value={settings.commerce_mode}
-              onChange={(e) => updateField('commerce_mode', e.target.value)}
-              className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              {COMMERCE_MODE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-zinc-500 mt-1">
-              Define como los clientes interactuan con tus productos en el storefront.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 3. Storefront */}
-      <Card className="bg-zinc-900/60 border-zinc-800">
-        <CardHeader>
-          <CardTitle className="text-base font-medium text-zinc-100 flex items-center gap-2">
-            <Globe className="h-5 w-5 text-zinc-400" />
-            Storefront
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label className="text-zinc-300">Publicar storefront</Label>
-              <p className="text-xs text-zinc-500 max-w-md">
-                Al publicar, tu storefront sera visible publicamente. Los visitantes
-                podran ver tus productos y contactarte segun el modo de comercio
-                configurado.
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={settings.storefront_published}
-              onClick={() =>
-                updateField('storefront_published', !settings.storefront_published)
-              }
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                settings.storefront_published ? 'bg-emerald-600' : 'bg-zinc-700'
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ${
-                  settings.storefront_published ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-          {settings.storefront_published && (
-            <div className="flex items-center gap-2 text-xs text-emerald-400">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Tu storefront esta publicado y visible al publico.
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 4. SEO / Posicionamiento */}
-      <Card className="bg-zinc-900/60 border-zinc-800 relative">
-        <CardHeader>
-          <CardTitle className="text-base font-medium text-zinc-100 flex items-center gap-2">
-            <Search className="h-5 w-5 text-zinc-400" />
-            SEO / Posicionamiento
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {settings.plan === 'starter' && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-zinc-900/80 backdrop-blur-sm">
-              <div className="text-center px-6">
-                <Search className="h-8 w-8 text-zinc-500 mx-auto mb-3" />
-                <p className="text-sm text-zinc-400 max-w-sm">
-                  Tu storefront no aparece en buscadores. Actualiza a Growth para activar SEO y aparecer en Google.
-                </p>
-              </div>
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="seo_title" className="text-zinc-300">
-              Titulo SEO
-            </Label>
-            <Input
-              id="seo_title"
-              value={settings.seo_title || ''}
-              onChange={(e) => updateField('seo_title', e.target.value.slice(0, 60))}
-              placeholder={`${settings.name} — Merch en Novamente`}
-              maxLength={60}
-              disabled={settings.plan === 'starter'}
-              className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
-            />
-            <div className="flex justify-end">
-              <span
-                className={`text-xs ${
-                  (settings.seo_title || '').length > 60
-                    ? 'text-red-400'
-                    : (settings.seo_title || '').length > 50
-                      ? 'text-amber-400'
-                      : 'text-zinc-500'
-                }`}
-              >
-                {(settings.seo_title || '').length}/60
-              </span>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="seo_description" className="text-zinc-300">
-              Descripcion SEO
-            </Label>
-            <textarea
-              id="seo_description"
-              value={settings.seo_description || ''}
-              onChange={(e) => updateField('seo_description', e.target.value.slice(0, 160))}
-              placeholder={settings.name ? `Descubri los productos de ${settings.name} en Novamente. Merch premium con diseno unico.` : ''}
-              maxLength={160}
-              rows={3}
-              disabled={settings.plan === 'starter'}
-              className="flex w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
-            />
-            <div className="flex justify-end">
-              <span
-                className={`text-xs ${
-                  (settings.seo_description || '').length > 160
-                    ? 'text-red-400'
-                    : (settings.seo_description || '').length > 140
-                      ? 'text-amber-400'
-                      : 'text-zinc-500'
-                }`}
-              >
-                {(settings.seo_description || '').length}/160
-              </span>
-            </div>
-          </div>
-          {/* SERP Preview */}
-          <div className="rounded-lg border border-zinc-700/50 bg-zinc-950 p-4 space-y-1">
-            <p className="text-xs text-zinc-500 mb-2">Vista previa en Google</p>
-            <p className="text-[#8ab4f8] text-base leading-tight truncate">
-              {settings.seo_title || settings.name || 'Titulo'} · Novamente
-            </p>
-            <p className="text-[#bdc1c6] text-xs">
-              novamente.ar/p/{settings.slug || '...'}
-            </p>
-            <p className="text-[#9aa0a6] text-sm leading-snug line-clamp-2">
-              {settings.seo_description || settings.name ? `Descubri los productos de ${settings.name} en Novamente.` : 'Descripcion...'}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 4b. Preguntas Frecuentes (Pro only) */}
-      {settings.plan === 'pro' && (
+      {/* ── Perfil ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <User className="h-4 w-4 text-zinc-500" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Perfil</h2>
+        </div>
         <Card className="bg-zinc-900/60 border-zinc-800">
-          <CardHeader>
-            <CardTitle className="text-base font-medium text-zinc-100 flex items-center gap-2">
-              <Globe className="h-5 w-5 text-zinc-400" />
-              Preguntas Frecuentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-xs text-zinc-500">
-              Personalizá las preguntas frecuentes que aparecen en tu storefront. Máximo 10.
-            </p>
-            {(settings.custom_faqs || []).map((faq, i) => (
-              <div key={i} className="space-y-2 rounded-lg border border-zinc-800 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 space-y-2">
-                    <Input
-                      value={faq.question}
-                      onChange={(e) => {
-                        const updated = [...(settings.custom_faqs || [])]
-                        updated[i] = { ...updated[i], question: e.target.value }
-                        updateField('custom_faqs', updated)
-                      }}
-                      placeholder="Pregunta"
-                      className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
-                    />
-                    <textarea
-                      value={faq.answer}
-                      onChange={(e) => {
-                        const updated = [...(settings.custom_faqs || [])]
-                        updated[i] = { ...updated[i], answer: e.target.value }
-                        updateField('custom_faqs', updated)
-                      }}
-                      placeholder="Respuesta"
-                      rows={2}
-                      className="flex w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const updated = (settings.custom_faqs || []).filter((_, idx) => idx !== i)
-                      updateField('custom_faqs', updated.length > 0 ? updated : null)
-                    }}
-                    className="mt-1 text-zinc-500 hover:text-red-400 transition-colors text-lg"
-                    title="Eliminar"
-                  >
-                    &times;
-                  </button>
-                </div>
+          <CardContent className="pt-6 space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-zinc-300">Nombre</Label>
+                <Input
+                  id="name"
+                  value={settings.name}
+                  onChange={(e) => updateField('name', e.target.value)}
+                  placeholder="Mi marca"
+                  className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                />
               </div>
-            ))}
-            {(settings.custom_faqs || []).length < 10 && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const updated = [...(settings.custom_faqs || []), { question: '', answer: '' }]
-                  updateField('custom_faqs', updated)
-                }}
-                className="border-zinc-700 text-zinc-400 hover:text-zinc-200 gap-1"
-              >
-                + Agregar pregunta
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-zinc-300">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={settings.email}
+                  onChange={(e) => updateField('email', e.target.value)}
+                  placeholder="contacto@marca.com"
+                  className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-zinc-300">Telefono</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={settings.phone}
+                  onChange={(e) => updateField('phone', e.target.value)}
+                  placeholder="+54 11 1234 5678"
+                  className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="industry" className="text-zinc-300">Industria</Label>
+                <select
+                  id="industry"
+                  value={settings.industry}
+                  onChange={(e) => updateField('industry', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">Seleccionar</option>
+                  {INDUSTRY_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="website" className="text-zinc-300">Sitio web</Label>
+                <Input
+                  id="website"
+                  value={settings.website}
+                  onChange={(e) => updateField('website', e.target.value)}
+                  placeholder="https://mimarca.com"
+                  className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="instagram" className="text-zinc-300">Instagram</Label>
+                <Input
+                  id="instagram"
+                  value={settings.instagram}
+                  onChange={(e) => updateField('instagram', e.target.value)}
+                  placeholder="@mimarca"
+                  className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="country" className="text-zinc-300">Pais</Label>
+                <select
+                  id="country"
+                  value={settings.country}
+                  onChange={(e) => updateField('country', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">Seleccionar</option>
+                  {COUNTRY_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="currency" className="text-zinc-300">Moneda</Label>
+                <select
+                  id="currency"
+                  value={settings.currency}
+                  onChange={(e) => updateField('currency', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">Seleccionar</option>
+                  {CURRENCY_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-      {/* 5. Plan actual */}
-      <Card className="bg-zinc-900/60 border-zinc-800">
-        <CardHeader>
-          <CardTitle className="text-base font-medium text-zinc-100 flex items-center gap-2">
-            <CreditCard className="h-5 w-5 text-zinc-400" />
-            Plan actual
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <span className="text-xs text-zinc-500">Plan</span>
-              <div className="flex items-center gap-2">
-                <Badge
-                  className={
-                    PLAN_BADGE_COLORS[settings.plan] || PLAN_BADGE_COLORS.free
-                  }
+            {/* Commerce mode + storefront published inside Perfil card */}
+            <div className="border-t border-zinc-800 pt-5 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="commerce_mode" className="text-zinc-300">Modo de comercio</Label>
+                <select
+                  id="commerce_mode"
+                  value={settings.commerce_mode}
+                  onChange={(e) => updateField('commerce_mode', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                  {settings.plan.charAt(0).toUpperCase() + settings.plan.slice(1)}
-                </Badge>
+                  {COMMERCE_MODE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-zinc-500">
+                  Define como los clientes interactuan con tus productos en el storefront.
+                </p>
               </div>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-zinc-500">Estado</span>
-              <div>
-                <Badge
-                  className={
-                    STATUS_BADGE[settings.status]?.className ||
-                    'bg-zinc-700 text-zinc-300'
-                  }
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label className="text-zinc-300">Publicar storefront</Label>
+                  <p className="text-xs text-zinc-500">
+                    Hace tu storefront visible publicamente.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={settings.storefront_published}
+                  onClick={() => updateField('storefront_published', !settings.storefront_published)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                    settings.storefront_published ? 'bg-emerald-600' : 'bg-zinc-700'
+                  }`}
                 >
-                  {STATUS_BADGE[settings.status]?.label || settings.status}
-                </Badge>
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ${
+                      settings.storefront_published ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
               </div>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-zinc-500">Productos maximos</span>
-              <p className="text-sm text-zinc-200 font-medium">
-                {settings.max_products}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs text-zinc-500">Leads por mes</span>
-              <p className="text-sm text-zinc-200 font-medium">
-                {settings.max_leads_per_month}
-              </p>
-            </div>
-            {/* Badge status */}
-            <div className="space-y-1 sm:col-span-2">
-              <span className="text-xs text-zinc-500">Badge &quot;Powered by Novamente&quot;</span>
-              {settings.plan === 'starter' ? (
-                <p className="text-sm text-amber-400">
-                  Visible en tu storefront. Actualiza a Growth para removerlo.
-                </p>
-              ) : (
-                <p className="text-sm text-emerald-400">
-                  Oculto en tu storefront.
-                </p>
+              {settings.storefront_published && (
+                <div className="flex items-center gap-2 text-xs text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Tu storefront esta publicado y visible al publico.
+                </div>
               )}
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 5. Zona de peligro */}
-      {(settings.status === 'active' || settings.status === 'paused') && (
-        <Card className="bg-zinc-900/60 border-red-900/40">
-          <CardHeader>
-            <CardTitle className="text-base font-medium text-red-400 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Zona de peligro
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {settings.status === 'active' ? (
-              <>
-                <p className="text-sm text-zinc-400">
-                  Pausar tu cuenta desactivara el storefront y dejara de recibir
-                  leads. Podes reactivarla en cualquier momento.
-                </p>
-                {!confirmingStatusChange ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => setConfirmingStatusChange(true)}
-                    className="border-amber-600/50 text-amber-400 hover:bg-amber-950/40 hover:text-amber-300 gap-2"
-                  >
-                    <Pause className="h-4 w-4" />
-                    Pausar cuenta
-                  </Button>
-                ) : (
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-amber-600/30 bg-amber-950/20">
-                    <span className="text-sm text-amber-300">
-                      Estas seguro de pausar tu cuenta?
-                    </span>
-                    <Button
-                      size="sm"
-                      onClick={handleStatusChange}
-                      disabled={statusChanging}
-                      className="bg-amber-600 hover:bg-amber-700 text-white gap-1"
-                    >
-                      {statusChanging ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Pause className="h-3.5 w-3.5" />
-                      )}
-                      Confirmar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setConfirmingStatusChange(false)}
-                      className="text-zinc-400 hover:text-zinc-200"
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-zinc-400">
-                  Tu cuenta esta pausada. El storefront no esta visible y no se
-                  reciben leads. Podes reactivarla ahora.
-                </p>
-                {!confirmingStatusChange ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => setConfirmingStatusChange(true)}
-                    className="border-emerald-600/50 text-emerald-400 hover:bg-emerald-950/40 hover:text-emerald-300 gap-2"
-                  >
-                    <Play className="h-4 w-4" />
-                    Reactivar cuenta
-                  </Button>
-                ) : (
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-emerald-600/30 bg-emerald-950/20">
-                    <span className="text-sm text-emerald-300">
-                      Reactivar tu cuenta?
-                    </span>
-                    <Button
-                      size="sm"
-                      onClick={handleStatusChange}
-                      disabled={statusChanging}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
-                    >
-                      {statusChanging ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Play className="h-3.5 w-3.5" />
-                      )}
-                      Confirmar
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setConfirmingStatusChange(false)}
-                      className="text-zinc-400 hover:text-zinc-200"
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
           </CardContent>
         </Card>
-      )}
+      </div>
+
+      <div className="border-b border-zinc-800 my-8" />
+
+      {/* ── Branding ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Palette className="h-4 w-4 text-zinc-500" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Branding</h2>
+        </div>
+        <a
+          href="/workspace/branding"
+          className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-5 py-4 hover:bg-zinc-800/60 transition-colors group"
+        >
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium text-zinc-100">Logo, colores y apariencia</p>
+            <p className="text-xs text-zinc-500">Personaliza la identidad visual de tu storefront.</p>
+          </div>
+          <ArrowRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300 transition-colors shrink-0" />
+        </a>
+      </div>
+
+      <div className="border-b border-zinc-800 my-8" />
+
+      {/* ── SEO ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Search className="h-4 w-4 text-zinc-500" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">SEO</h2>
+        </div>
+        <Card className="bg-zinc-900/60 border-zinc-800 relative">
+          <CardContent className="pt-6 space-y-5">
+            {settings.plan === 'starter' && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-zinc-900/80 backdrop-blur-sm">
+                <div className="text-center px-6">
+                  <Search className="h-8 w-8 text-zinc-500 mx-auto mb-3" />
+                  <p className="text-sm text-zinc-400 max-w-sm">
+                    Tu storefront no aparece en buscadores. Actualiza a Growth para activar SEO y aparecer en Google.
+                  </p>
+                </div>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="seo_title" className="text-zinc-300">Titulo SEO</Label>
+              <Input
+                id="seo_title"
+                value={settings.seo_title || ''}
+                onChange={(e) => updateField('seo_title', e.target.value.slice(0, 60))}
+                placeholder={`${settings.name} — Merch en Novamente`}
+                maxLength={60}
+                disabled={settings.plan === 'starter'}
+                className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+              />
+              <div className="flex justify-end">
+                <span
+                  className={`text-xs ${
+                    (settings.seo_title || '').length > 60
+                      ? 'text-red-400'
+                      : (settings.seo_title || '').length > 50
+                        ? 'text-amber-400'
+                        : 'text-zinc-500'
+                  }`}
+                >
+                  {(settings.seo_title || '').length}/60
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="seo_description" className="text-zinc-300">Descripcion SEO</Label>
+              <textarea
+                id="seo_description"
+                value={settings.seo_description || ''}
+                onChange={(e) => updateField('seo_description', e.target.value.slice(0, 160))}
+                placeholder={settings.name ? `Descubri los productos de ${settings.name} en Novamente. Merch premium con diseno unico.` : ''}
+                maxLength={160}
+                rows={3}
+                disabled={settings.plan === 'starter'}
+                className="flex w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+              />
+              <div className="flex justify-end">
+                <span
+                  className={`text-xs ${
+                    (settings.seo_description || '').length > 160
+                      ? 'text-red-400'
+                      : (settings.seo_description || '').length > 140
+                        ? 'text-amber-400'
+                        : 'text-zinc-500'
+                  }`}
+                >
+                  {(settings.seo_description || '').length}/160
+                </span>
+              </div>
+            </div>
+            {/* SERP Preview */}
+            <div className="rounded-lg border border-zinc-700/50 bg-zinc-950 p-4 space-y-1">
+              <p className="text-xs text-zinc-500 mb-2">Vista previa en Google</p>
+              <p className="text-[#8ab4f8] text-base leading-tight truncate">
+                {settings.seo_title || settings.name || 'Titulo'} · Novamente
+              </p>
+              <p className="text-[#bdc1c6] text-xs">
+                novamente.ar/p/{settings.slug || '...'}
+              </p>
+              <p className="text-[#9aa0a6] text-sm leading-snug line-clamp-2">
+                {settings.seo_description || settings.name ? `Descubri los productos de ${settings.name} en Novamente.` : 'Descripcion...'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* FAQs (Pro only) */}
+        {settings.plan === 'pro' && (
+          <Card className="bg-zinc-900/60 border-zinc-800 mt-4">
+            <CardHeader>
+              <CardTitle className="text-base font-medium text-zinc-100 flex items-center gap-2">
+                <Globe className="h-5 w-5 text-zinc-400" />
+                Preguntas Frecuentes
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-zinc-500">
+                Personalizá las preguntas frecuentes que aparecen en tu storefront. Máximo 10.
+              </p>
+              {(settings.custom_faqs || []).map((faq, i) => (
+                <div key={i} className="space-y-2 rounded-lg border border-zinc-800 p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        value={faq.question}
+                        onChange={(e) => {
+                          const updated = [...(settings.custom_faqs || [])]
+                          updated[i] = { ...updated[i], question: e.target.value }
+                          updateField('custom_faqs', updated)
+                        }}
+                        placeholder="Pregunta"
+                        className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                      />
+                      <textarea
+                        value={faq.answer}
+                        onChange={(e) => {
+                          const updated = [...(settings.custom_faqs || [])]
+                          updated[i] = { ...updated[i], answer: e.target.value }
+                          updateField('custom_faqs', updated)
+                        }}
+                        placeholder="Respuesta"
+                        rows={2}
+                        className="flex w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = (settings.custom_faqs || []).filter((_, idx) => idx !== i)
+                        updateField('custom_faqs', updated.length > 0 ? updated : null)
+                      }}
+                      className="mt-1 text-zinc-500 hover:text-red-400 transition-colors text-lg"
+                      title="Eliminar"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {(settings.custom_faqs || []).length < 10 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const updated = [...(settings.custom_faqs || []), { question: '', answer: '' }]
+                    updateField('custom_faqs', updated)
+                  }}
+                  className="border-zinc-700 text-zinc-400 hover:text-zinc-200 gap-1"
+                >
+                  + Agregar pregunta
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <div className="border-b border-zinc-800 my-8" />
+
+      {/* ── Notificaciones ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Bell className="h-4 w-4 text-zinc-500" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Notificaciones</h2>
+        </div>
+        <Card className="bg-zinc-900/60 border-zinc-800">
+          <CardContent className="pt-6 space-y-5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Label className="text-zinc-300">Notificaciones por email</Label>
+                <p className="text-xs text-zinc-500">
+                  Recibir alertas de nuevos leads y pedidos en tu email.
+                </p>
+              </div>
+              <Badge className="bg-zinc-800 text-zinc-500 border-zinc-700 text-xs">Proximamente</Badge>
+            </div>
+            <div className="border-t border-zinc-800 pt-5 space-y-2">
+              <Label className="text-zinc-300">Telegram</Label>
+              <p className="text-xs text-zinc-500">
+                Conecta tu Telegram para recibir notificaciones instantaneas de leads y pedidos.
+              </p>
+              <div className="flex items-center gap-2 rounded-lg border border-zinc-700/50 bg-zinc-950/60 px-4 py-3 text-xs text-zinc-400">
+                <Store className="h-4 w-4 shrink-0 text-zinc-600" />
+                Integracion via @NovamenteBotOficial — proximamente disponible.
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="border-b border-zinc-800 my-8" />
+
+      {/* ── Facturacion ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <CreditCard className="h-4 w-4 text-zinc-500" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Facturacion</h2>
+        </div>
+        <Card className="bg-zinc-900/60 border-zinc-800">
+          <CardContent className="pt-6 space-y-5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="space-y-1">
+                <span className="text-xs text-zinc-500">Plan</span>
+                <div>
+                  <Badge className={PLAN_BADGE_COLORS[settings.plan] || PLAN_BADGE_COLORS.free}>
+                    {settings.plan.charAt(0).toUpperCase() + settings.plan.slice(1)}
+                  </Badge>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs text-zinc-500">Estado</span>
+                <div>
+                  <Badge className={STATUS_BADGE[settings.status]?.className || 'bg-zinc-700 text-zinc-300'}>
+                    {STATUS_BADGE[settings.status]?.label || settings.status}
+                  </Badge>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs text-zinc-500">Productos</span>
+                <p className="text-sm text-zinc-200 font-medium">{settings.max_products}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs text-zinc-500">Leads / mes</span>
+                <p className="text-sm text-zinc-200 font-medium">{settings.max_leads_per_month}</p>
+              </div>
+            </div>
+            {settings.plan === 'starter' && (
+              <p className="text-xs text-amber-400">
+                Badge &quot;Powered by Novamente&quot; visible en tu storefront. Actualiza a Growth para removerlo.
+              </p>
+            )}
+            <div className="border-t border-zinc-800 pt-4">
+              <a
+                href="/workspace/billing"
+                className="flex items-center justify-between rounded-lg border border-zinc-700 px-4 py-3 hover:bg-zinc-800/60 transition-colors group"
+              >
+                <span className="text-sm text-zinc-300">Ver planes y facturacion</span>
+                <ArrowRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="border-b border-zinc-800 my-8" />
+
+      {/* ── Zona de peligro ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <AlertTriangle className="h-4 w-4 text-red-500" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-red-500">Zona de peligro</h2>
+        </div>
+        <Card className="bg-zinc-900/60 border-red-900/40">
+          <CardContent className="pt-6 space-y-6">
+            {/* Pause / reactivate */}
+            {(settings.status === 'active' || settings.status === 'paused') && (
+              <div className="space-y-3">
+                {settings.status === 'active' ? (
+                  <>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-zinc-200">Pausar cuenta</p>
+                      <p className="text-xs text-zinc-500">
+                        Desactiva el storefront y deja de recibir leads. Podes reactivarla en cualquier momento.
+                      </p>
+                    </div>
+                    {!confirmingStatusChange ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => setConfirmingStatusChange(true)}
+                        className="border-amber-600/50 text-amber-400 hover:bg-amber-950/40 hover:text-amber-300 gap-2"
+                      >
+                        <Pause className="h-4 w-4" />
+                        Pausar cuenta
+                      </Button>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-amber-600/30 bg-amber-950/20">
+                        <span className="text-sm text-amber-300">Estas seguro de pausar tu cuenta?</span>
+                        <Button
+                          size="sm"
+                          onClick={handleStatusChange}
+                          disabled={statusChanging}
+                          className="bg-amber-600 hover:bg-amber-700 text-white gap-1"
+                        >
+                          {statusChanging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Pause className="h-3.5 w-3.5" />}
+                          Confirmar
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setConfirmingStatusChange(false)} className="text-zinc-400 hover:text-zinc-200">
+                          Cancelar
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-zinc-200">Reactivar cuenta</p>
+                      <p className="text-xs text-zinc-500">
+                        Tu cuenta esta pausada. El storefront no es visible y no se reciben leads.
+                      </p>
+                    </div>
+                    {!confirmingStatusChange ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => setConfirmingStatusChange(true)}
+                        className="border-emerald-600/50 text-emerald-400 hover:bg-emerald-950/40 hover:text-emerald-300 gap-2"
+                      >
+                        <Play className="h-4 w-4" />
+                        Reactivar cuenta
+                      </Button>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-emerald-600/30 bg-emerald-950/20">
+                        <span className="text-sm text-emerald-300">Reactivar tu cuenta?</span>
+                        <Button
+                          size="sm"
+                          onClick={handleStatusChange}
+                          disabled={statusChanging}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                        >
+                          {statusChanging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                          Confirmar
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setConfirmingStatusChange(false)} className="text-zinc-400 hover:text-zinc-200">
+                          Cancelar
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Export data */}
+            <div className="border-t border-zinc-800/60 pt-5 space-y-3">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-zinc-200">Exportar datos</p>
+                <p className="text-xs text-zinc-500">
+                  Descarga todos tus datos: productos, leads y configuracion.
+                </p>
+              </div>
+              <Button variant="outline" disabled className="border-zinc-700 text-zinc-500 gap-2 cursor-not-allowed">
+                <Download className="h-4 w-4" />
+                Exportar datos
+                <Badge className="ml-1 bg-zinc-800 text-zinc-500 border-zinc-700 text-xs">Proximamente</Badge>
+              </Button>
+            </div>
+
+            {/* Delete account */}
+            <div className="border-t border-red-900/30 pt-5 space-y-3">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-red-400">Eliminar cuenta</p>
+                <p className="text-xs text-zinc-500">
+                  Elimina permanentemente tu cuenta y todos tus datos. Esta accion no se puede deshacer.
+                </p>
+              </div>
+              <Button variant="outline" disabled className="border-red-900/40 text-red-500/60 gap-2 cursor-not-allowed">
+                <Trash2 className="h-4 w-4" />
+                Eliminar cuenta
+                <Badge className="ml-1 bg-zinc-800 text-zinc-500 border-zinc-700 text-xs">Proximamente</Badge>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="h-8" />
     </div>
   )
 }
