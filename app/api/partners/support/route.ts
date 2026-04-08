@@ -66,6 +66,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Auto-triage DISABLED — was hallucinating implementations and falsely resolving tickets
+    // const triageUrl = process.env.PLATFORM_TRIAGE_URL
+    // if (triageUrl) {
+    //   fetch(triageUrl, { headers: { 'x-cron-secret': process.env.CRON_SECRET || '' } }).catch(() => {})
+    // }
+
     return NextResponse.json({ ticket }, { status: 201 })
   } catch (error) {
     console.error('POST /api/partners/support error:', error)

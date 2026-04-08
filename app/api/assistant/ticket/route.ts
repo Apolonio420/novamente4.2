@@ -116,11 +116,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Error creando ticket' }, { status: 500 })
     }
 
-    // Fire-and-forget triage trigger
-    const triageUrl = process.env.PLATFORM_TRIAGE_URL
-    if (triageUrl) {
-      fetch(triageUrl, { headers: { 'x-cron-secret': process.env.CRON_SECRET || '' } }).catch(() => {})
-    }
+    // Auto-triage DISABLED — was hallucinating implementations
+    // const triageUrl = process.env.PLATFORM_TRIAGE_URL
+    // if (triageUrl) {
+    //   fetch(triageUrl, { headers: { 'x-cron-secret': process.env.CRON_SECRET || '' } }).catch(() => {})
+    // }
 
     return NextResponse.json({ ticket }, { status: 201 })
   } catch (error) {
