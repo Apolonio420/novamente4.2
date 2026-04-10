@@ -402,8 +402,129 @@ function StepDatosBasicos({
   data: WizardData
   update: (patch: Partial<WizardData>) => void
 }) {
+  const [extracting, setExtracting] = useState(false)
+  const [extractError, setExtractError] = useState<string | null>(null)
+  const [extracted, setExtracted] = useState(false)
+
+  const handleExtractFromWebsite = async () => {
+    const targetUrl = data.website.trim()
+    if (!targetUrl) return
+    setExtracting(true)
+    setExtractError(null)
+    try {
+      const res = await fetch('/api/partners/onboarding/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: targetUrl, mode: 'brand' }),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        setExtractError(json.error || 'No se pudo analizar el sitio')
+        return
+      }
+      const kit: BrandKit = json.extracted
+      update({ brandKit: kit })
+
+      // Auto-fill ALL fields from extraction
+      const patch: Partial<WizardData> = {}
+      if (kit.name && !data.businessName) patch.businessName = kit.name
+      if (kit.description && !data.shortDescription) patch.shortDescription = kit.description.slice(0, 280)
+      if (kit.instagram && !data.instagram) patch.instagram = `@${kit.instagram}`
+      if (kit.colors.primary) patch.colorPrimary = kit.colors.primary
+      if (kit.colors.secondary) patch.colorSecondary = kit.colors.secondary
+      if (kit.colors.accent) patch.colorAccent = kit.colors.accent
+      if (kit.colors.background) patch.colorBackground = kit.colors.background
+      if (kit.logo) patch.logoPreview = kit.logo
+      if (kit.font) patch.fontPreference = kit.font
+      if (kit.tagline) patch.tagline = kit.tagline
+      if (kit.businessOverview) patch.aboutText = kit.businessOverview
+      if (kit.suggestedStyle) patch.visualStyle = kit.suggestedStyle
+      if (kit.businessOverview && !data.seoDescription) patch.seoDescription = kit.businessOverview.slice(0, 160)
+
+      update(patch)
+      setExtracted(true)
+    } catch {
+      setExtractError('Error de conexion')
+    } finally {
+      setExtracting(false)
+    }
+  }
+
   return (
     <div className="space-y-5">
+      {/* Brand DNA extraction — prominent at the top */}
+      <div className={`p-5 rounded-2xl border-2 border-dashed transition-all ${
+        extracted
+          ? 'border-emerald-500/40 bg-emerald-500/5'
+          : 'border-purple-500/30 bg-gradient-to-br from-purple-500/5 to-pink-500/5'
+      }`}>
+        <h3 className="text-base font-semibold text-zinc-100 mb-1 flex items-center gap-2">
+          <Wand2 className="w-5 h-5 text-purple-400" />
+          {extracted ? 'Identidad extraida' : '¿Ya tenes web? Extraemos todo automaticamente'}
+        </h3>
+        <p className="text-xs text-zinc-500 mb-3">
+          {extracted
+            ? 'Revisá los datos y ajustá lo que necesites. Todos los campos se llenaron con la info de tu sitio.'
+            : 'Pegá la URL de tu sitio y extraemos nombre, logo, colores, tipografia, tagline, redes y mas con IA.'
+          }
+        </p>
+        <div className="flex gap-2">
+          <Input
+            type="url"
+            placeholder="https://mimarca.com"
+            value={data.website}
+            onChange={(e) => { update({ website: e.target.value }); if (extracted) setExtracted(false) }}
+            className="bg-zinc-900 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-purple-500"
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleExtractFromWebsite() } }}
+          />
+          <Button
+            variant="outline"
+            className={`shrink-0 ${
+              extracted
+                ? 'border-emerald-500/40 text-emerald-300 hover:text-white hover:bg-emerald-500/20'
+                : 'border-purple-500/40 text-purple-300 hover:text-white hover:bg-purple-500/20'
+            }`}
+            onClick={handleExtractFromWebsite}
+            disabled={extracting || !data.website.trim()}
+          >
+            {extracting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                Analizando...
+              </>
+            ) : extracted ? (
+              <>
+                <Check className="w-4 h-4 mr-1.5" />
+                Extraido
+              </>
+            ) : (
+              <>
+                <Wand2 className="w-4 h-4 mr-1.5" />
+                Extraer ADN
+              </>
+            )}
+          </Button>
+        </div>
+        {extractError && (
+          <p className="text-xs text-amber-400 mt-2">{extractError}</p>
+        )}
+        {extracting && (
+          <div className="mt-3 flex items-center gap-2 text-xs text-purple-300">
+            <div className="flex gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse [animation-delay:200ms]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse [animation-delay:400ms]" />
+            </div>
+            Sacando screenshot, leyendo contenido y analizando con IA...
+          </div>
+        )}
+      </div>
+
+      {/* Brand Kit Preview if extracted */}
+      {data.brandKit && <BrandKitPreview kit={data.brandKit} onApply={(field, value) => update({ [field]: value } as Partial<WizardData>)} />}
+
+      <Separator className="bg-zinc-800" />
+
       <div>
         <Label className="text-zinc-300">Nombre comercial *</Label>
         <Input
@@ -472,32 +593,17 @@ function StepDatosBasicos({
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <Label className="text-zinc-300">
-            <Globe className="inline w-3.5 h-3.5 mr-1" />
-            Sitio web
-          </Label>
-          <Input
-            type="url"
-            placeholder="https://mimarca.com"
-            value={data.website}
-            onChange={(e) => update({ website: e.target.value })}
-            className="mt-1.5 bg-zinc-900 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-purple-500"
-          />
-        </div>
-        <div>
-          <Label className="text-zinc-300">
-            <Instagram className="inline w-3.5 h-3.5 mr-1" />
-            Instagram
-          </Label>
-          <Input
-            placeholder="@mimarca"
-            value={data.instagram}
-            onChange={(e) => update({ instagram: e.target.value })}
-            className="mt-1.5 bg-zinc-900 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-purple-500"
-          />
-        </div>
+      <div>
+        <Label className="text-zinc-300">
+          <Instagram className="inline w-3.5 h-3.5 mr-1" />
+          Instagram
+        </Label>
+        <Input
+          placeholder="@mimarca"
+          value={data.instagram}
+          onChange={(e) => update({ instagram: e.target.value })}
+          className="mt-1.5 bg-zinc-900 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-purple-500"
+        />
       </div>
 
       <div>
@@ -755,37 +861,10 @@ function StepIdentidadVisual({
 
   return (
     <div className="space-y-6">
-      {/* Extract from URL */}
-      <div className="p-4 rounded-xl border border-dashed border-purple-500/30 bg-purple-500/5">
-        <h3 className="text-sm font-semibold text-zinc-200 mb-1">
-          <Wand2 className="w-4 h-4 inline mr-1.5 text-purple-400" />
-          Extraer identidad de tu web
-        </h3>
-        <p className="text-xs text-zinc-500 mb-3">
-          Pegá la URL de tu sitio y extraemos logo, colores, tipografia, tagline y mas.
-        </p>
-        <div className="flex gap-2">
-          <Input
-            type="url"
-            placeholder="mimarca.com"
-            value={data.extractUrl}
-            onChange={(e) => update({ extractUrl: e.target.value })}
-            className="bg-zinc-900 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-purple-500"
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleExtract('extractUrl') } }}
-          />
-          <Button
-            variant="outline"
-            className="border-purple-500/40 text-purple-300 hover:text-white hover:bg-purple-500/20 shrink-0"
-            onClick={() => handleExtract('extractUrl')}
-            disabled={extracting || !data.extractUrl.trim()}
-          >
-            {extracting ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Wand2 className="w-4 h-4 mr-1.5" />}
-            {extracting ? 'Analizando...' : 'Extraer'}
-          </Button>
-        </div>
-      </div>
+      {/* Brand Kit Preview if already extracted in Step 1 */}
+      {data.brandKit && <BrandKitPreview kit={data.brandKit} onApply={handleKitApply} />}
 
-      {/* OR — Inspiration URL */}
+      {/* Inspiration URL — copy style from another page */}
       <div className="p-4 rounded-xl border border-dashed border-pink-500/20 bg-pink-500/5">
         <h3 className="text-sm font-semibold text-zinc-200 mb-1">
           <Sparkles className="w-4 h-4 inline mr-1.5 text-pink-400" />
@@ -818,9 +897,6 @@ function StepIdentidadVisual({
       {extractError && (
         <p className="text-xs text-amber-400 px-1">{extractError}</p>
       )}
-
-      {/* Brand Kit Preview (from extraction) */}
-      {data.brandKit && <BrandKitPreview kit={data.brandKit} onApply={handleKitApply} />}
 
       <Separator className="bg-zinc-800" />
 

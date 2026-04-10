@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import * as cheerio from 'cheerio'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-export const maxDuration = 30
+export const maxDuration = 45
 
+/**
+ * Modern brand identity extraction using:
+ * 1. Jina Reader (r.jina.ai) — renders JS, returns clean markdown + metadata (free)
+ * 2. thum.io — takes a full-page screenshot (free, no API key)
+ * 3. Gemini Vision — analyzes screenshot visually for colors, style, fonts
+ * 4. Gemini Text — analyzes Jina content for brand info, social links, tagline
+ *
+ * Both results are merged into a complete BrandKit.
+ */
 export async function POST(req: NextRequest) {
   try {
     const { url, mode } = await req.json()
@@ -11,44 +19,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'URL requerida' }, { status: 400 })
     }
 
-    // Normalize URL
     let targetUrl = url.trim()
     if (!targetUrl.startsWith('http')) targetUrl = `https://${targetUrl}`
 
-    // Fetch the page
-    let html: string
-    try {
-      const res = await fetch(targetUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; NovamenteBot/1.0)',
-          'Accept': 'text/html,application/xhtml+xml',
-        },
-        signal: AbortSignal.timeout(10000),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      html = await res.text()
-    } catch {
+    // Run Jina Reader + Screenshot fetch in parallel
+    const [jinaContent, screenshotBase64] = await Promise.all([
+      fetchJinaReader(targetUrl),
+      fetchScreenshotAsBase64(targetUrl),
+    ])
+
+    if (!jinaContent && !screenshotBase64) {
       return NextResponse.json({ success: false, error: 'No se pudo acceder al sitio' }, { status: 422 })
     }
 
-    const $ = cheerio.load(html)
-
-    // Extract raw data from HTML
-    const extracted = {
-      title: $('title').text().trim() || $('meta[property="og:title"]').attr('content') || null,
-      description: $('meta[name="description"]').attr('content') || $('meta[property="og:description"]').attr('content') || null,
-      ogImage: $('meta[property="og:image"]').attr('content') || null,
-      logo: extractLogo($, targetUrl),
-      colors: extractColors($, html),
-      fonts: extractFonts($, html),
-      socialLinks: extractSocialLinks($),
-      instagram: extractInstagram($),
-      tagline: $('h1').first().text().trim() || $('meta[property="og:title"]').attr('content') || null,
-      images: extractImages($, targetUrl),
-    }
-
-    // Use Gemini to analyze and structure the brand identity
-    const brandKit = await analyzeBrandWithGemini(extracted, targetUrl, mode || 'brand')
+    // Analyze with Gemini — vision (screenshot) + text (Jina content) combined
+    const brandKit = await analyzeWithGemini(targetUrl, jinaContent, screenshotBase64, mode || 'brand')
 
     return NextResponse.json({ success: true, extracted: brandKit })
   } catch (err) {
@@ -57,162 +42,49 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function resolveUrl(href: string | undefined, base: string): string | null {
-  if (!href) return null
+// ── Jina Reader ──────────────────────────────────────────────────────────────
+
+async function fetchJinaReader(url: string): Promise<string | null> {
   try {
-    return new URL(href, base).href
+    const res = await fetch(`https://r.jina.ai/${url}`, {
+      headers: {
+        'Accept': 'text/markdown',
+        'X-Return-Format': 'markdown',
+      },
+      signal: AbortSignal.timeout(15000),
+    })
+    if (!res.ok) return null
+    const text = await res.text()
+    // Limit to first 8000 chars to keep Gemini prompt reasonable
+    return text.slice(0, 8000)
   } catch {
     return null
   }
 }
 
-function extractLogo($: cheerio.CheerioAPI, base: string): string | null {
-  // Try common logo selectors
-  const selectors = [
-    'link[rel="icon"][type="image/svg+xml"]',
-    'link[rel="apple-touch-icon"]',
-    'link[rel="icon"][sizes="192x192"]',
-    'link[rel="icon"][sizes="180x180"]',
-    'link[rel="shortcut icon"]',
-    'link[rel="icon"]',
-    'img[class*="logo"]',
-    'img[alt*="logo" i]',
-    'img[src*="logo" i]',
-    'header img:first-of-type',
-    'nav img:first-of-type',
-  ]
+// ── Screenshot via thum.io ───────────────────────────────────────────────────
 
-  for (const sel of selectors) {
-    const el = $(sel).first()
-    const src = el.attr('href') || el.attr('src')
-    const resolved = resolveUrl(src, base)
-    if (resolved) return resolved
+async function fetchScreenshotAsBase64(url: string): Promise<string | null> {
+  try {
+    const screenshotUrl = `https://image.thum.io/get/width/1280/crop/900/noanimate/${url}`
+    const res = await fetch(screenshotUrl, {
+      signal: AbortSignal.timeout(20000),
+    })
+    if (!res.ok) return null
+    const buffer = await res.arrayBuffer()
+    return Buffer.from(buffer).toString('base64')
+  } catch {
+    return null
   }
-
-  return null
 }
 
-function extractColors($: cheerio.CheerioAPI, html: string): string[] {
-  const colors = new Set<string>()
+// ── Gemini Vision + Text Analysis ────────────────────────────────────────────
 
-  // From inline styles and CSS
-  const hexPattern = /#[0-9a-fA-F]{3,8}/g
-  const rgbPattern = /rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)/g
-
-  // Check style tags
-  $('style').each((_, el) => {
-    const css = $(el).text()
-    const hexMatches = css.match(hexPattern)
-    if (hexMatches) hexMatches.forEach(c => colors.add(c.toLowerCase()))
-    const rgbMatches = css.match(rgbPattern)
-    if (rgbMatches) rgbMatches.forEach(c => colors.add(c))
-  })
-
-  // Check inline styles on key elements
-  $('[style]').each((_, el) => {
-    const style = $(el).attr('style') || ''
-    const hexMatches = style.match(hexPattern)
-    if (hexMatches) hexMatches.forEach(c => colors.add(c.toLowerCase()))
-  })
-
-  // Check CSS custom properties (--brand-color etc)
-  const cssVarPattern = /--[\w-]*(color|bg|brand|primary|secondary|accent)[\w-]*:\s*([^;]+)/gi
-  const allStyles = $('style').map((_, el) => $(el).text()).get().join('\n')
-  let match
-  while ((match = cssVarPattern.exec(allStyles)) !== null) {
-    const val = match[2].trim()
-    if (val.startsWith('#') || val.startsWith('rgb')) colors.add(val)
-  }
-
-  // Filter out common non-brand colors
-  const filtered = [...colors].filter(c => {
-    const lower = c.toLowerCase()
-    return !['#fff', '#ffffff', '#000', '#000000', '#333', '#666', '#999', '#ccc', '#eee', '#f5f5f5', '#e5e7eb', 'rgb(0, 0, 0)', 'rgb(255, 255, 255)'].includes(lower)
-  })
-
-  return filtered.slice(0, 20)
-}
-
-function extractFonts($: cheerio.CheerioAPI, html: string): string[] {
-  const fonts = new Set<string>()
-
-  // Google Fonts links
-  $('link[href*="fonts.googleapis.com"]').each((_, el) => {
-    const href = $(el).attr('href') || ''
-    const familyMatch = href.match(/family=([^&:]+)/g)
-    if (familyMatch) {
-      familyMatch.forEach(f => {
-        const name = f.replace('family=', '').replace(/\+/g, ' ').split(':')[0]
-        fonts.add(name)
-      })
-    }
-  })
-
-  // font-family in CSS
-  const fontFamilyPattern = /font-family:\s*['"]?([^'",;}\n]+)/gi
-  const allCSS = $('style').map((_, el) => $(el).text()).get().join('\n')
-  let match
-  while ((match = fontFamilyPattern.exec(allCSS)) !== null) {
-    const name = match[1].trim()
-    if (!['inherit', 'initial', 'sans-serif', 'serif', 'monospace', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Arial', 'Helvetica'].includes(name)) {
-      fonts.add(name)
-    }
-  }
-
-  return [...fonts].slice(0, 5)
-}
-
-function extractSocialLinks($: cheerio.CheerioAPI): Record<string, string> {
-  const socials: Record<string, string> = {}
-  const patterns: Record<string, RegExp> = {
-    instagram: /instagram\.com\/([^/?#"]+)/,
-    facebook: /facebook\.com\/([^/?#"]+)/,
-    twitter: /(twitter|x)\.com\/([^/?#"]+)/,
-    tiktok: /tiktok\.com\/@?([^/?#"]+)/,
-    youtube: /youtube\.com\/(c\/|channel\/|@)?([^/?#"]+)/,
-    linkedin: /linkedin\.com\/(company|in)\/([^/?#"]+)/,
-  }
-
-  $('a[href]').each((_, el) => {
-    const href = $(el).attr('href') || ''
-    for (const [platform, re] of Object.entries(patterns)) {
-      if (!socials[platform] && re.test(href)) {
-        socials[platform] = href
-      }
-    }
-  })
-
-  return socials
-}
-
-function extractInstagram($: cheerio.CheerioAPI): string | null {
-  let ig: string | null = null
-  $('a[href*="instagram.com"]').each((_, el) => {
-    if (ig) return
-    const href = $(el).attr('href') || ''
-    const match = href.match(/instagram\.com\/([^/?#"]+)/)
-    if (match && match[1] !== 'p' && match[1] !== 'reel') {
-      ig = match[1]
-    }
-  })
-  return ig
-}
-
-function extractImages($: cheerio.CheerioAPI, base: string): string[] {
-  const imgs: string[] = []
-  $('img[src]').each((_, el) => {
-    const src = resolveUrl($(el).attr('src'), base)
-    if (src && !src.includes('data:') && !src.includes('pixel') && !src.includes('1x1')) {
-      imgs.push(src)
-    }
-  })
-  return imgs.slice(0, 10)
-}
-
-async function analyzeBrandWithGemini(
-  extracted: Record<string, unknown>,
+async function analyzeWithGemini(
   url: string,
-  mode: string
+  jinaContent: string | null,
+  screenshotBase64: string | null,
+  mode: string,
 ) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
   const model = genAI.getGenerativeModel({
@@ -220,61 +92,30 @@ async function analyzeBrandWithGemini(
     generationConfig: { responseMimeType: 'application/json' },
   })
 
-  const prompt = mode === 'inspiration'
-    ? `Analiza la estetica visual de este sitio web y sugiere un estilo visual para una tienda de indumentaria/merchandising.
+  const modeContext = mode === 'inspiration'
+    ? `Analiza la ESTETICA VISUAL de este sitio para copiar su estilo en una tienda de indumentaria/merchandising.
+Enfocate en: paleta de colores, tipografia, estilo visual, tono de marca, layout.
+NO extraigas nombre ni datos de la marca — solo el estilo visual.`
+    : `Analiza la IDENTIDAD DE MARCA completa de este sitio web.
+Extraé: nombre de la marca, descripcion, colores, tipografia, logo, tagline, redes sociales, tono, estilo visual.
+Es para crear un storefront de indumentaria/merchandising personalizado.`
 
-URL: ${url}
-Datos extraidos: ${JSON.stringify(extracted, null, 2)}
-
-Responde en JSON con esta estructura exacta:
-{
-  "name": null,
-  "description": null,
-  "logo": null,
-  "images": [],
-  "colors": {
-    "primary": "#hex o null",
-    "secondary": "#hex o null",
-    "accent": "#hex o null",
-    "background": "#hex o null",
-    "text": "#hex o null",
-    "all": ["array de todos los colores relevantes"]
-  },
-  "font": "nombre de la fuente principal o null",
-  "fonts": ["array de fuentes detectadas"],
-  "socialLinks": {},
-  "instagram": null,
-  "tagline": null,
-  "businessOverview": null,
-  "brandTone": "descripcion del tono de la marca en 1 linea",
-  "suggestedStyle": "minimal|bold|editorial|sport|corporate|urbano|creativo",
-  "colorScheme": "dark|light|vibrant|pastel|monochrome"
-}`
-    : `Analiza la identidad de marca de este sitio web para crear un storefront de indumentaria/merchandising.
-
-URL: ${url}
-Datos extraidos: ${JSON.stringify(extracted, null, 2)}
-
-Extrae la identidad de la marca: nombre, colores principales, tipografia, tono, estilo visual.
-Si el logo es una URL valida, incluyelo. Si no, pon null.
-
-Responde en JSON con esta estructura exacta:
-{
+  const jsonSchema = `{
   "name": "nombre de la marca o null",
-  "description": "descripcion corta de la marca (max 280 chars) o null",
-  "logo": "URL del logo o null",
-  "images": ["URLs de imagenes relevantes"],
+  "description": "descripcion corta (max 280 chars) o null",
+  "logo": "URL del logo si la encontras en el contenido, o null",
+  "images": ["URLs de imagenes relevantes del sitio"],
   "colors": {
-    "primary": "#hex del color principal o null",
-    "secondary": "#hex del color secundario o null",
-    "accent": "#hex del color de acento o null",
-    "background": "#hex del fondo o null",
-    "text": "#hex del texto o null",
-    "all": ["array de todos los colores relevantes encontrados"]
+    "primary": "#hex del color principal",
+    "secondary": "#hex del color secundario",
+    "accent": "#hex del color de acento",
+    "background": "#hex del fondo",
+    "text": "#hex del texto",
+    "all": ["todos los colores relevantes en #hex"]
   },
   "font": "nombre de la fuente principal o null",
   "fonts": ["array de fuentes detectadas"],
-  "socialLinks": {"instagram": "url", "facebook": "url"},
+  "socialLinks": {"instagram": "url", "facebook": "url", "tiktok": "url"},
   "instagram": "handle sin @ o null",
   "tagline": "slogan o tagline o null",
   "businessOverview": "resumen del negocio en 2-3 oraciones o null",
@@ -283,35 +124,59 @@ Responde en JSON con esta estructura exacta:
   "colorScheme": "dark|light|vibrant|pastel|monochrome"
 }`
 
+  // Build multimodal prompt parts
+  const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = []
+
+  // Add screenshot if available (visual analysis)
+  if (screenshotBase64) {
+    parts.push({
+      inlineData: {
+        mimeType: 'image/png',
+        data: screenshotBase64,
+      },
+    })
+    parts.push({
+      text: `Este es un screenshot del sitio ${url}. Analiza visualmente los colores exactos (usa eyedropper mental), tipografia, estilo, layout y tono de la marca.`,
+    })
+  }
+
+  // Add Jina Reader content if available (text/metadata analysis)
+  if (jinaContent) {
+    parts.push({
+      text: `\n\nContenido del sitio extraido con rendering JS:\n\n${jinaContent}`,
+    })
+  }
+
+  // Final instruction
+  parts.push({
+    text: `\n\n${modeContext}\n\nURL: ${url}\n\nIMPORTANTE:\n- Los colores deben ser los REALES del sitio (extraidos del screenshot), no inventados\n- Si ves un logo en el screenshot, busca su URL en el contenido\n- Detecta las fuentes reales usadas en la pagina\n- suggestedStyle debe ser uno de: minimal, bold, editorial, sport, corporate, urbano, creativo\n\nResponde SOLO con JSON valido en esta estructura:\n${jsonSchema}`,
+  })
+
   try {
-    const result = await model.generateContent(prompt)
+    const result = await model.generateContent(parts)
     const text = result.response.text()
     return JSON.parse(text)
   } catch (err) {
-    console.error('Gemini brand analysis error:', err)
-    // Return raw extracted data as fallback
-    return {
-      name: extracted.title || null,
-      description: extracted.description || null,
-      logo: extracted.logo || null,
-      images: extracted.images || [],
-      colors: {
-        primary: (extracted.colors as string[])?.[0] || null,
-        secondary: (extracted.colors as string[])?.[1] || null,
-        accent: (extracted.colors as string[])?.[2] || null,
-        background: null,
-        text: null,
-        all: extracted.colors || [],
-      },
-      font: (extracted.fonts as string[])?.[0] || null,
-      fonts: extracted.fonts || [],
-      socialLinks: extracted.socialLinks || {},
-      instagram: extracted.instagram || null,
-      tagline: extracted.tagline || null,
-      businessOverview: extracted.description || null,
-      brandTone: null,
-      suggestedStyle: null,
-      colorScheme: null,
-    }
+    console.error('Gemini analysis error:', err)
+    return buildFallbackKit()
+  }
+}
+
+function buildFallbackKit() {
+  return {
+    name: null,
+    description: null,
+    logo: null,
+    images: [],
+    colors: { primary: null, secondary: null, accent: null, background: null, text: null, all: [] },
+    font: null,
+    fonts: [],
+    socialLinks: {},
+    instagram: null,
+    tagline: null,
+    businessOverview: null,
+    brandTone: null,
+    suggestedStyle: null,
+    colorScheme: null,
   }
 }
