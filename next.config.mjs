@@ -73,6 +73,12 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'novamente.ar',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'fvsjvvyohaarivametxq.supabase.co',
         port: '',
         pathname: '/**',

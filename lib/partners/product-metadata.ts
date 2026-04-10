@@ -43,7 +43,16 @@ export function dbProductToProduct(dbProduct: PartnerProduct, tenant: Tenant): P
   // Colors: from metadata, or synthesize from flat images array
   let colors: ProductColor[]
   if (m.colors && m.colors.length > 0) {
-    colors = m.colors
+    // Ensure each color has required fields (images, value) — they may be missing if migrated from simplified data
+    colors = m.colors.map((c, i) => ({
+      name: c.name || 'Default',
+      value: c.value || (c.name || 'default').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      hex: c.hex || tenant.primary_color || '#000000',
+      images: c.images || {
+        front: dbProduct.images?.[i * 2] || dbProduct.images?.[0] || '',
+        back: dbProduct.images?.[i * 2 + 1] || dbProduct.images?.[1] || dbProduct.images?.[0] || '',
+      },
+    }))
   } else {
     // Fallback: treat images[0] as front, images[1] as back
     colors = [{
