@@ -1940,15 +1940,15 @@ function buildStepPayload(
           font_preference: data.fontPreference || undefined,
           tagline: data.tagline || undefined,
           about_text: data.aboutText || undefined,
-          visual_style: data.brandKit?.suggestedStyle || 'minimal',
+          visual_style: data.visualStyle || data.brandKit?.suggestedStyle || 'minimal',
         },
       }
     case 2:
-      // Plan step — save plan to tenant
+      // Plan step — save plan + billing cycle to tenant
       return {
         step: 7,
         tenantId: data.tenantId!,
-        data: { plan: data.selectedPlan },
+        data: { plan: data.selectedPlan, billing_cycle: data.billingCycle },
       }
     case 3:
       // Brief step — save to tenant metadata

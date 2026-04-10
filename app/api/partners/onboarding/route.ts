@@ -121,7 +121,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
       }
 
-      const { logo_url, banner_url, primary_color, secondary_color, accent_color, font_preference, tagline, about_text } = data || {}
+      const { logo_url, banner_url, primary_color, secondary_color, accent_color, font_preference, tagline, about_text, visual_style } = data || {}
 
       const updated = await updateTenant(tenantId, {
         logo_url,
@@ -132,6 +132,7 @@ export async function POST(request: Request) {
         font_preference,
         tagline,
         about_text,
+        visual_style,
         onboarding_step: 2,
       })
 
@@ -148,7 +149,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
       }
 
-      const { plan } = data || {}
+      const { plan, billing_cycle } = data || {}
 
       if (!plan) {
         return NextResponse.json({ error: 'plan is required' }, { status: 400 })
@@ -156,6 +157,7 @@ export async function POST(request: Request) {
 
       const updated = await updateTenant(tenantId, {
         plan,
+        ...(billing_cycle ? { billing_cycle } : {}),
         onboarding_step: 7,
       })
 
@@ -174,12 +176,18 @@ export async function POST(request: Request) {
 
       const { brief } = data || {}
 
-      // Save brief fields into existing tenant columns
+      // Save brief fields — only set industry if not already populated (avoid overwriting detailed value from step 1)
+      const { data: currentTenant } = await db()
+        .from('tenants')
+        .select('industry')
+        .eq('id', tenantId)
+        .single()
+
       const updates: Record<string, unknown> = {
         onboarding_step: 9,
         updated_at: new Date().toISOString(),
       }
-      if (brief?.businessType) updates.industry = brief.businessType
+      if (brief?.businessType && !currentTenant?.industry) updates.industry = brief.businessType
       if (brief?.designStyle) updates.visual_style = brief.designStyle
 
       const { data: updated, error: updateError } = await db()
