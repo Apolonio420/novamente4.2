@@ -121,19 +121,19 @@ export default function MerchFilter({ entries, categories }: MerchFilterProps) {
             >
               <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60 transition-all duration-300 hover:border-zinc-600 hover:shadow-xl hover:shadow-purple-900/10 hover:-translate-y-1">
                 {/* Card Image */}
-                <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-zinc-800/80 to-zinc-700/60">
+                <div className="aspect-[4/3] relative overflow-hidden bg-gradient-to-br from-zinc-900 to-zinc-800">
                   {(brand.cardImage || brand.logo) && !failedImages.has(brand.slug) ? (
                     <>
-                      {/* Light backdrop behind logo so dark logos are visible */}
+                      {/* Radial glow behind logo — works for both dark and light logos */}
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-[60%] h-[60%] rounded-2xl bg-white/[0.07] backdrop-blur-sm" />
+                        <div className="w-[70%] h-[70%] rounded-full bg-gradient-to-br from-purple-500/10 via-white/5 to-pink-500/10 blur-2xl" />
                       </div>
                       <Image
                         src={brand.cardImage || brand.logo || ''}
                         alt={`${brand.name}`}
                         fill
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        className="object-contain p-8 transition-transform duration-500 group-hover:scale-110 drop-shadow-[0_2px_8px_rgba(255,255,255,0.1)]"
+                        className="object-contain p-8 transition-transform duration-500 group-hover:scale-110 [filter:drop-shadow(0_0_12px_rgba(168,85,247,0.15))_drop-shadow(0_0_4px_rgba(255,255,255,0.08))]"
                         onError={() => setFailedImages((prev) => new Set(prev).add(brand.slug))}
                       />
                     </>
