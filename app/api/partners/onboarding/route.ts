@@ -174,22 +174,24 @@ export async function POST(request: Request) {
 
       const { brief } = data || {}
 
-      // Merge brief into existing metadata (read-then-write to avoid overwriting other keys)
-      const { data: current } = await db()
+      // Save brief fields into existing tenant columns
+      const updates: Record<string, unknown> = {
+        onboarding_step: 9,
+        updated_at: new Date().toISOString(),
+      }
+      if (brief?.businessType) updates.industry = brief.businessType
+      if (brief?.designStyle) updates.visual_style = brief.designStyle
+
+      const { data: updated, error: updateError } = await db()
         .from('tenants')
-        .select('metadata')
+        .update(updates)
         .eq('id', tenantId)
+        .select()
         .single()
 
-      const existingMeta = (current?.metadata as Record<string, unknown>) || {}
-
-      const updated = await updateTenant(tenantId, {
-        metadata: { ...existingMeta, brief },
-        onboarding_step: 9,
-      } as any)
-
-      if (!updated) {
-        return NextResponse.json({ error: 'Failed to save brief' }, { status: 500 })
+      if (updateError || !updated) {
+        console.error('Brief save error:', updateError)
+        return NextResponse.json({ error: `Failed to save brief: ${updateError?.message || 'unknown'}` }, { status: 500 })
       }
 
       return NextResponse.json({ tenant: { id: tenantId } })
