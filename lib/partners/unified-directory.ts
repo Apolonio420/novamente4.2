@@ -5,13 +5,12 @@ import type { Tenant, PartnerProduct } from './types'
 
 // Override logos (fix bad exports or missing logos in DB)
 const LOGO_OVERRIDES: Record<string, string> = {
-  'maldito-demonio': '/brands/maldito-demonio-logo.jpeg',
+  'maldito-demonio': '/partners/maldito-demonio/logo.jpeg',
   'ventolito': '/partners/ventolito-wind-surf/logo.png',
 }
 
 // Card-only image overrides for entries whose logo export does not work well in the square grid.
 const CARD_IMAGE_OVERRIDES: Record<string, string> = {
-  'maldito-demonio': '/partners/maldito-demonio/banner.png',
 }
 
 // DB slugs to hide (duplicates or test tenants)
