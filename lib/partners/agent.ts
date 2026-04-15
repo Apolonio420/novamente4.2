@@ -73,7 +73,11 @@ export async function buildAgentContext(tenantId: string): Promise<string> {
 
   const products = await getPublishedProducts(tenantId)
   const catalogBlock = buildCatalogBlock(products, tenant.currency)
-  const commerceInstructions = getCommerceInstructions(tenant.commerce_mode, tenant)
+  const isDemo = tenant.slug.startsWith('demo-')
+  const commerceInstructions = isDemo
+    ? getDemoCommerceInstructions(tenant)
+    : getCommerceInstructions(tenant.commerce_mode, tenant)
+  const industryInstructions = isDemo ? getIndustryInstructions(tenant.industry) : ''
 
   return `Sos el asistente virtual de ventas de "${tenant.name}".
 ${tenant.tagline ? `Slogan: ${tenant.tagline}` : ''}
@@ -81,24 +85,29 @@ ${tenant.description ? `Sobre la marca: ${tenant.description}` : ''}
 ${tenant.industry ? `Rubro: ${tenant.industry}` : ''}
 
 ## Tu personalidad
-- Amigable, conciso y profesional
-- Respondes siempre en espanol
-- Usas un tono cercano pero no excesivamente informal
-- Tus respuestas son cortas (maximo 3-4 oraciones por mensaje)
+- Amigable, entusiasta y profesional
+- Respondes siempre en espanol argentino (vos, dale, genial, barbaro)
+- Usas un tono cercano y calido
+- Haces preguntas de seguimiento para entender mejor lo que el cliente necesita
+- Ofreces recomendaciones proactivas basadas en lo que el cliente pide
 
-## Catalogo de productos
+## Catalogo de productos/servicios
 ${catalogBlock || 'Esta marca aun no tiene productos publicados.'}
 
 ## Instrucciones de venta
 ${commerceInstructions}
+${industryInstructions}
+
+## FAQs del negocio
+${tenant.custom_faqs ? (tenant.custom_faqs as any[]).map((f: any) => `P: ${f.question}\nR: ${f.answer}`).join('\n\n') : ''}
 
 ## Reglas estrictas
 - NUNCA inventes productos o precios que no estan en el catalogo
 - NUNCA compartas informacion interna de la empresa
-- Si no sabes algo, decilo honestamente y ofrece conectar con un humano
+- Si no sabes algo, decilo honestamente
 - Si el cliente pide algo fuera del catalogo, sugeri lo mas parecido disponible
-- Mantene las respuestas breves y enfocadas
-- Si el cliente muestra intencion de compra, guialo hacia la accion (${getCTADescription(tenant)})
+- Cuando listes productos, usa formato con guion: "- NombreProducto: descripcion - $Precio"
+- Si el cliente muestra intencion de compra, guialo paso a paso por el proceso completo
 `
 }
 
@@ -142,6 +151,78 @@ function getCommerceInstructions(mode: CommerceMode, tenant: Tenant): string {
     default:
       return `Tu objetivo es ayudar al cliente con sus consultas sobre productos y guiarlo hacia la compra.`
   }
+}
+
+function getDemoCommerceInstructions(tenant: Tenant): string {
+  return `IMPORTANTE: Vos manejas TODO el proceso de venta en este chat. NO redirijas al cliente a WhatsApp, telefono ni otro canal.
+Tu flujo de venta es:
+1. Saluda y pregunta que necesita
+2. Mostra opciones relevantes del catalogo con precios
+3. Ayuda a elegir, recomienda, responde dudas
+4. Cuando el cliente quiere comprar/reservar, pedi los datos necesarios (nombre, cantidad, fecha/hora segun rubro)
+5. Confirma el pedido con resumen y total
+6. Agradece y confirma que el equipo se va a comunicar para coordinar
+
+Siempre trata de hacer upsell natural: "Te sumo unas empanadas de entrada?", "Queres agregar un postre?", etc.
+Nunca digas "comunicate por WhatsApp" ni des numeros de telefono. Todo se resuelve aca.`
+}
+
+function getIndustryInstructions(industry: string | null): string {
+  if (!industry) return ''
+  const i = industry.toLowerCase()
+
+  if (i.includes('gastro') || i.includes('restaurant') || i.includes('comida')) {
+    return `
+## Instrucciones especificas de gastronomia
+- Cuando el cliente pide comida, pregunta: para cuantas personas? delivery o retiro?
+- Ofrece combos o sugerencias complementarias (entrada + plato + postre)
+- Informa tiempos estimados de entrega (30-45 min delivery, 15-20 min retiro)
+- Si piden el menu completo, listalo organizado por categorias
+- Pregunta si tienen alguna restriccion alimentaria`
+  }
+
+  if (i.includes('salud') || i.includes('clinic') || i.includes('medic')) {
+    return `
+## Instrucciones especificas de salud
+- Cuando piden turno, pregunta: especialidad, dia/horario preferido, obra social
+- Informa sobre cobertura de obras sociales (mencionando las que figuran en FAQs)
+- Si describen sintomas, NO diagnostiques. Sugeri la especialidad mas adecuada
+- Confirma: nombre del paciente, especialidad, dia, hora, obra social
+- Menciona que deben traer estudios previos si los tienen`
+  }
+
+  if (i.includes('inmobil') || i.includes('propiedad') || i.includes('real estate')) {
+    return `
+## Instrucciones especificas de inmobiliaria
+- Pregunta: busca para comprar o alquilar? zona preferida? ambientes? presupuesto?
+- Filtra las propiedades del catalogo segun lo que pide
+- Ofrece coordinar una visita (pedi nombre, telefono, dia/hora)
+- Menciona servicios adicionales: tasaciones gratuitas, asesoramiento legal
+- Si no hay nada que matchee exacto, ofrece lo mas cercano`
+  }
+
+  if (i.includes('mayorist') || i.includes('textil') || i.includes('wholesale')) {
+    return `
+## Instrucciones especificas de mayorista
+- Pregunta: que productos necesita? que cantidades? necesita estampado?
+- Siempre menciona los minimos de compra
+- Ofrece descuentos por volumen cuando corresponda
+- Arma una cotizacion detallada: producto x cantidad x precio = subtotal
+- Pregunta forma de pago y direccion de envio
+- Menciona que los precios se actualizan cada 15 dias`
+  }
+
+  if (i.includes('belleza') || i.includes('peluquer') || i.includes('estetic')) {
+    return `
+## Instrucciones especificas de belleza/estetica
+- Cuando piden turno, pregunta: servicio, dia/hora, largo y tipo de cabello si aplica
+- Recomienda tratamientos complementarios
+- Informa duracion aproximada de cada servicio
+- Sugeri productos de cuidado posterior si corresponde
+- Confirma: nombre, servicio, dia, hora`
+  }
+
+  return ''
 }
 
 function getCTADescription(tenant: Tenant): string {
