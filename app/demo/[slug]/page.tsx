@@ -68,6 +68,105 @@ const DEMO_INFO: Record<string, { name: string; icon: string; color: string; sug
   },
 }
 
+// ---------------------------------------------------------------------------
+// Rich message renderer with markdown + product card detection
+// ---------------------------------------------------------------------------
+
+function MessageContent({ content, color }: { content: string; color: string }) {
+  // Split content into segments: text and product lines
+  const lines = content.split('\n')
+  const elements: React.ReactNode[] = []
+  let currentText: string[] = []
+
+  const flushText = (key: string) => {
+    if (currentText.length > 0) {
+      elements.push(
+        <span key={key} dangerouslySetInnerHTML={{
+          __html: currentText.join('<br/>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        }} />
+      )
+      currentText = []
+    }
+  }
+
+  // Detect product lines: "- ProductName: $Price" or "**ProductName** description - $Price"
+  const priceRegex = /[-•]\s*\*{0,2}(.+?)\*{0,2}\s*(?:[:,—–-])\s*(.+?)[-–]\s*\$\s*([\d.,]+)/
+  const simplePriceRegex = /\*{0,2}(.+?)\*{0,2}.*?\$\s*([\d.,]+)/
+
+  lines.forEach((line, i) => {
+    const match = line.match(priceRegex)
+    if (match) {
+      flushText(`t${i}`)
+      const [, name, desc, price] = match
+      elements.push(
+        <div key={`p${i}`} className="my-2 flex items-center gap-3 rounded-xl bg-white/5 border border-white/10 p-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg" style={{ backgroundColor: `${color}25` }}>
+            {getProductEmoji(name)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-white">{name.replace(/\*/g, '').trim()}</p>
+            <p className="text-xs text-zinc-400 truncate">{desc.trim()}</p>
+          </div>
+          <div className="shrink-0 rounded-lg px-2.5 py-1 text-sm font-bold" style={{ backgroundColor: `${color}30`, color }}>
+            ${Number(price.replace(/\./g, '').replace(',', '.')).toLocaleString('es-AR')}
+          </div>
+        </div>
+      )
+    } else {
+      // Check for category headers like **Carnes:** or **Entradas:**
+      const categoryMatch = line.match(/^\s*\*\*(.+?):\*\*\s*$/)
+      if (categoryMatch) {
+        flushText(`t${i}`)
+        elements.push(
+          <div key={`c${i}`} className="mt-3 mb-1 text-xs font-semibold uppercase tracking-wider" style={{ color }}>
+            {categoryMatch[1]}
+          </div>
+        )
+      } else {
+        currentText.push(line)
+      }
+    }
+  })
+
+  flushText('final')
+
+  return <div className="space-y-0.5">{elements}</div>
+}
+
+function getProductEmoji(name: string): string {
+  const n = name.toLowerCase()
+  if (n.includes('asado') || n.includes('carne') || n.includes('parrilla')) return '🥩'
+  if (n.includes('milanesa')) return '🍖'
+  if (n.includes('empanada')) return '🥟'
+  if (n.includes('provoleta') || n.includes('queso')) return '🧀'
+  if (n.includes('flan') || n.includes('postre') || n.includes('dulce')) return '🍮'
+  if (n.includes('picada') || n.includes('tabla')) return '🧆'
+  if (n.includes('ensalada') || n.includes('verdura')) return '🥗'
+  if (n.includes('pizza')) return '🍕'
+  if (n.includes('pasta') || n.includes('ñoqui')) return '🍝'
+  if (n.includes('vino') || n.includes('bebida')) return '🍷'
+  if (n.includes('corte') || n.includes('pelo') || n.includes('cabello')) return '✂️'
+  if (n.includes('mecha') || n.includes('color') || n.includes('tintura')) return '🎨'
+  if (n.includes('manicur')) return '💅'
+  if (n.includes('alisado') || n.includes('keratina')) return '✨'
+  if (n.includes('consulta') || n.includes('medic') || n.includes('clinic')) return '🩺'
+  if (n.includes('pediatr') || n.includes('nino')) return '👶'
+  if (n.includes('psicolog')) return '🧠'
+  if (n.includes('nutrici')) return '🥦'
+  if (n.includes('laboratorio') || n.includes('analisis')) return '🔬'
+  if (n.includes('depto') || n.includes('departamento') || n.includes('amb')) return '🏢'
+  if (n.includes('ph') || n.includes('casa')) return '🏠'
+  if (n.includes('alquiler')) return '🔑'
+  if (n.includes('remera') || n.includes('camiseta')) return '👕'
+  if (n.includes('buzo') || n.includes('hoodie')) return '🧥'
+  if (n.includes('campera')) return '🧥'
+  if (n.includes('pantalon')) return '👖'
+  if (n.includes('conjunto')) return '🏋️'
+  return '📦'
+}
+
 export default function DemoChatPage() {
   const params = useParams()
   const slug = params.slug as string
@@ -203,7 +302,7 @@ export default function DemoChatPage() {
                 }`}
                 style={msg.role === 'user' ? { backgroundColor: info.color } : undefined}
               >
-                {msg.content}
+                <MessageContent content={msg.content} color={info.color} />
               </div>
             </div>
           ))}
