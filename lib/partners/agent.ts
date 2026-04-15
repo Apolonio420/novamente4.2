@@ -99,7 +99,13 @@ ${commerceInstructions}
 ${industryInstructions}
 
 ## FAQs del negocio
-${tenant.custom_faqs ? (tenant.custom_faqs as any[]).map((f: any) => `P: ${f.question}\nR: ${f.answer}`).join('\n\n') : ''}
+${(() => {
+  try {
+    const faqs = typeof tenant.custom_faqs === 'string' ? JSON.parse(tenant.custom_faqs) : tenant.custom_faqs
+    if (Array.isArray(faqs)) return faqs.map((f: any) => `P: ${f.question}\nR: ${f.answer}`).join('\n\n')
+    return ''
+  } catch { return '' }
+})()}
 
 ## Reglas estrictas
 - NUNCA inventes productos o precios que no estan en el catalogo
@@ -249,7 +255,7 @@ export async function createAgentSession(
     .from('agent_sessions')
     .insert({
       tenant_id: tenantId,
-      visitor_id: visitorId || null,
+      visitor_id: visitorId || `anon_${Date.now()}`,
     })
     .select()
     .single()
