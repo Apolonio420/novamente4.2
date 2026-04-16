@@ -9,7 +9,7 @@ export const runtime = "nodejs"
 const limiter = rateLimit({ limit: 10, windowSeconds: 60, prefix: 'gen-img' })
 
 // ==== Config ====
-const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3-pro-image-preview"
+const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image-preview"
 const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-1.5-pro"
 const DEBUG = (process.env.DEBUG_GEMINI || "").toLowerCase() === "true"
 
@@ -89,13 +89,14 @@ export async function POST(req: NextRequest) {
       console.log("GEN-IMG aspect ratio:", { width: size.width, height: size.height, hint: aspectRatioHint })
     }
 
-    // 3) Forzar intención de imagen
+    // 3) Forzar intención de imagen — ilustración aislada, NUNCA mockup de prenda
     const forcePrefix =
-      "Crea UNA imagen para estampa, estilo limpio, SIN texto superpuesto," +
-      " PNG con fondo transparente si corresponde. Evita marcos o mockups." +
-      " Composición clara, altos contrastes, ideal para impresión en prenda." +
+      "Generate ONE isolated vectorial illustration on a pure transparent or plain white background." +
+      " ONLY the main subject — no garments, no t-shirts, no hoodies, no sweaters, no clothing, no people wearing anything." +
+      " No mockups, no product photography, no frames, no borders, no backgrounds, no scenes, no text overlays." +
+      " Clean high-contrast artwork suitable for print, centered composition, as if it were a sticker or decal." +
       aspectRatioHint
-    const finalPrompt = `${forcePrefix}\n${basePrompt}`.trim()
+    const finalPrompt = `${forcePrefix}\nSubject: ${basePrompt}`.trim()
 
     const n = Math.max(1, Math.min(4, (body as any).n ?? 1))
     const model = genAI.getGenerativeModel({ model: IMAGE_MODEL })
