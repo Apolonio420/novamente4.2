@@ -3,6 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 import { uploadFile } from "@/lib/cloudflare-r2"
 import { toPublicR2Url } from "@/lib/r2"
 import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
+import { optimizeDesignPrompt } from "@/lib/designer/prompt-optimizer"
+import type { GarmentColorway, PrintArea } from "@/lib/designer/types"
 
 export const runtime = "nodejs"
 
@@ -19,7 +21,10 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
 
-type Body = { prompt: string; n?: number; size?: { width: number; height: number } } | { instruction: string; lastPrompt: string; n?: number; size?: { width: number; height: number } }
+type OptimizerOptions = { styleId?: string; colorway?: GarmentColorway; printArea?: PrintArea }
+type Body =
+  | ({ prompt: string; n?: number; size?: { width: number; height: number } } & OptimizerOptions)
+  | ({ instruction: string; lastPrompt: string; n?: number; size?: { width: number; height: number } } & OptimizerOptions)
 
 function ok(data: unknown, status = 200) {
   return new NextResponse(JSON.stringify(data), {
@@ -89,14 +94,24 @@ export async function POST(req: NextRequest) {
       console.log("GEN-IMG aspect ratio:", { width: size.width, height: size.height, hint: aspectRatioHint })
     }
 
-    // 3) Forzar intención de imagen — ilustración aislada, NUNCA mockup de prenda
-    const forcePrefix =
-      "Generate ONE isolated vectorial illustration on a pure transparent or plain white background." +
-      " ONLY the main subject — no garments, no t-shirts, no hoodies, no sweaters, no clothing, no people wearing anything." +
-      " No mockups, no product photography, no frames, no borders, no backgrounds, no scenes, no text overlays." +
-      " Clean high-contrast artwork suitable for print, centered composition, as if it were a sticker or decal." +
-      aspectRatioHint
-    const finalPrompt = `${forcePrefix}\nSubject: ${basePrompt}`.trim()
+    // 3) Optimizar prompt con el Novamente Designer Optimizer
+    //    - Auto-detecta estilo, aplica keywords textiles, fuerza vectorial,
+    //      prohíbe prendas/mockups, limita a 400 chars.
+    const { styleId, colorway, printArea } = body as OptimizerOptions
+    const optimized = optimizeDesignPrompt(basePrompt, styleId, {
+      colorway,
+      printArea,
+    })
+    const hardGuard =
+      "SOLO una ilustración aislada. PROHIBIDO: prendas, remeras, buzos, hoodies, sweaters, ropa, personas, mockups, fotografía de producto, escenas, marcos, texto superpuesto."
+    const finalPrompt = `${optimized.optimizedPrompt}. ${hardGuard}${aspectRatioHint}`.trim()
+
+    console.log("GEN-IMG optimizer", {
+      styleApplied: optimized.styleApplied,
+      optimizedLen: optimized.optimizedPrompt.length,
+      finalLen: finalPrompt.length,
+      preview: DEBUG ? finalPrompt.slice(0, 200) : undefined,
+    })
 
     const n = Math.max(1, Math.min(4, (body as any).n ?? 1))
     const model = genAI.getGenerativeModel({ model: IMAGE_MODEL })
@@ -180,7 +195,13 @@ export async function POST(req: NextRequest) {
     const t1 = Date.now()
     console.log("GEN-IMG done", { totalMs: t1 - t0, count: out.length })
 
-    return ok({ success: true, promptUsed: finalPrompt, images: out })
+    return ok({
+      success: true,
+      promptUsed: finalPrompt,
+      styleApplied: optimized.styleApplied,
+      variants: optimized.variants,
+      images: out,
+    })
   } catch (e: any) {
     const t1 = Date.now()
     // 🔔 Notificar por Telegram
