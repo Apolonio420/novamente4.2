@@ -14,6 +14,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@novamente/catalog": "github:Apolonio420/novamente-catalog#main",
     "@aws-sdk/client-s3": "^3.891.0",
     "@aws-sdk/s3-request-presigner": "^3.891.0",
     "@edge-runtime/vm": "5.0.0",

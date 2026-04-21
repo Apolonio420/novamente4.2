@@ -1,171 +1,98 @@
-// Mapeo de prendas con cuadrados rojos para estampado
+// ---------------------------------------------------------------------------
+// novamente4.2 — legacy adapter over @novamente/catalog.
+//
+// Before: this file contained a hardcoded mapping of 60+ red-square PNGs
+// and its own shape system. Now: resolves everything through the shared
+// @novamente/catalog package. The exported function signatures are kept
+// unchanged so callers (generate-stamp route, StampSizeSelector, tests)
+// don't need to know the catalog exists yet.
+//
+// Migration target: once callers switch to resolveAssets() from
+// @novamente/catalog directly, this file can be deleted.
+// ---------------------------------------------------------------------------
+
+import {
+  resolveAssets,
+  getRenderableProducts,
+  CatalogError,
+  type ColorId,
+  type Side,
+  type StampSize,
+  type StampPosition,
+} from '@novamente/catalog'
+
+// Public types kept for backwards compatibility with current callers.
+export type GarmentType = 'hoodie' | 'tshirt'
+export type GarmentVariant = 'classic' | 'oversize'
+export type GarmentColor = 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model'
+export type GarmentSide = Side
+export { type StampSize, type StampPosition } from '@novamente/catalog'
+
 export interface RedSquareGarment {
   id: string
-  type: 'hoodie' | 'tshirt'
-  variant: 'classic' | 'oversize'
-  color: 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model'
-  side: 'front' | 'back'
-  size: 'R1' | 'R2' | 'R3'
-  position?: 'center' | 'left' // Solo para R1
+  type: GarmentType
+  variant: GarmentVariant
+  color: GarmentColor
+  side: GarmentSide
+  size: StampSize
+  position?: StampPosition
   imagePath: string
 }
 
-// Función para obtener la imagen de referencia con cuadrado rojo
+/**
+ * Translate the legacy (type, variant, color) triple to a productKey.
+ * - hoodie                → astra-oversize-hoodie
+ * - tshirt + classic      → aldea-classic-tshirt
+ * - tshirt + oversize     → aura-oversize-tshirt
+ */
+function legacyToProductKey(type: GarmentType, variant: GarmentVariant): string {
+  if (type === 'hoodie') return 'astra-oversize-hoodie'
+  return variant === 'classic' ? 'aldea-classic-tshirt' : 'aura-oversize-tshirt'
+}
+
+function normalizeColor(color: GarmentColor): ColorId {
+  if (color === 'model') return 'black' // legacy placeholder
+  return color as ColorId
+}
+
 export function getRedSquareGarmentImage(
-  type: 'hoodie' | 'tshirt',
-  variant: 'classic' | 'oversize',
-  color: 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model',
-  side: 'front' | 'back',
-  size: 'R1' | 'R2' | 'R3',
-  position?: 'center' | 'left'
+  type: GarmentType,
+  variant: GarmentVariant,
+  color: GarmentColor,
+  side: GarmentSide,
+  size: StampSize,
+  position?: StampPosition,
 ): string | null {
-  // Mapeo de colores
-  const colorMap = {
-    'black': 'N',
-    'gray': 'G',
-    'caramel': 'M',
-    'white': 'B',
-    'cream': 'C',
-    'model': 'M'
-  }
-
-  // Mapeo de tipos
-  const typeMap = {
-    'hoodie': 'BuzoOver',
-    'tshirt': variant === 'classic' ? 'RemeraClassic' : 'RemeraOver'
-  }
-
-  // Mapeo de lados
-  const sideMap = {
-    'front': 'Frente',
-    'back': 'Dorso'
-  }
-
-  const colorCode = colorMap[color] || 'N'
-  const typeCode = typeMap[type] || 'BuzoOver'
-  const sideCode = sideMap[side] || 'Frente'
-
-  // Mapeo de números para cada combinación
-  const getImageNumber = (tCode: string, cCode: string, sCode: string, sz: string, pos?: string) => {
-    const positionSuffix = sz === 'R1' ? (pos === 'center' ? 'C' : pos === 'left' ? 'I' : '') : ''
-    const key = `${tCode}_${cCode}_${sCode}_${sz}${positionSuffix}`
-
-    const mapping: Record<string, number> = {
-      'BuzoOver_N_Frente_R1C': 17,
-      'BuzoOver_N_Frente_R1I': 16,
-      'BuzoOver_N_Frente_R2': 18,
-      'BuzoOver_N_Frente_R3': 54,
-      'BuzoOver_N_Dorso_R1': 15,
-      'BuzoOver_N_Dorso_R1C': 15,
-      'BuzoOver_N_Dorso_R2': 14,
-      'BuzoOver_N_Dorso_R3': 1,
-      'BuzoOver_G_Frente_R1C': 3,
-      'BuzoOver_G_Frente_R1I': 4,
-      'BuzoOver_G_Frente_R2': 2,
-      'BuzoOver_G_Frente_R3': 2, // Fallback a R2
-      'BuzoOver_G_Dorso_R1': 13,
-      'BuzoOver_G_Dorso_R1C': 13,
-      'BuzoOver_G_Dorso_R2': 12,
-      'BuzoOver_G_Dorso_R3': 11,
-      'BuzoOver_C_Frente_R1C': 6,
-      'BuzoOver_C_Frente_R1I': 7,
-      'BuzoOver_C_Frente_R2': 5,
-      'BuzoOver_C_Frente_R3': 5, // Fallback a R2
-      'BuzoOver_C_Dorso_R1': 10,
-      'BuzoOver_C_Dorso_R1C': 10,
-      'BuzoOver_C_Dorso_R2': 9,
-      'BuzoOver_C_Dorso_R3': 8,
-      'BuzoOver_M_Frente_R1C': 23,
-      'BuzoOver_M_Frente_R1I': 24,
-      'BuzoOver_M_Frente_R2': 22,
-      'BuzoOver_M_Frente_R3': 22, // Fallback a R2
-      'BuzoOver_M_Dorso_R1': 21,
-      'BuzoOver_M_Dorso_R1C': 21,
-      'BuzoOver_M_Dorso_R2': 20,
-      'BuzoOver_M_Dorso_R3': 19,
-      // Fallbacks generalizados
-      'BuzoOver_B_Frente_R1C': 17,
-      'BuzoOver_B_Frente_R1I': 16,
-      'BuzoOver_B_Frente_R2': 18,
-      'BuzoOver_B_Frente_R3': 18,
-      'BuzoOver_B_Dorso_R1': 15,
-      'BuzoOver_B_Dorso_R2': 14,
-      'BuzoOver_B_Dorso_R3': 1,
-      'RemeraOver_M_Frente_R1C': 25,
-      'RemeraOver_M_Frente_R1I': 26,
-      'RemeraOver_M_Frente_R2': 27,
-      'RemeraOver_M_Frente_R3': 28,
-      'RemeraOver_M_Dorso_R1': 31,
-      'RemeraOver_M_Dorso_R2': 30,
-      'RemeraOver_M_Dorso_R3': 29,
-      'RemeraOver_B_Frente_R1C': 45,
-      'RemeraOver_B_Frente_R1I': 44,
-      'RemeraOver_B_Frente_R2': 43,
-      'RemeraOver_B_Frente_R3': 42,
-      'RemeraOver_B_Dorso_R1': 39,
-      'RemeraOver_B_Dorso_R2': 40,
-      'RemeraOver_B_Dorso_R3': 41,
-      'RemeraOver_N_Frente_R1C': 56,
-      'RemeraOver_N_Frente_R1I': 55,
-      'RemeraOver_N_Frente_R2': 53,
-      'RemeraOver_N_Frente_R3': 54,
-      'RemeraOver_N_Dorso_R1': 59,
-      'RemeraOver_N_Dorso_R2': 57,
-      'RemeraOver_N_Dorso_R3': 58,
-      'RemeraClassic_B_Frente_R1C': 37,
-      'RemeraClassic_B_Frente_R1I': 38,
-      'RemeraClassic_B_Frente_R2': 36,
-      'RemeraClassic_B_Frente_R3': 35,
-      'RemeraClassic_B_Dorso_R1': 33,
-      'RemeraClassic_B_Dorso_R2': 32,
-      'RemeraClassic_B_Dorso_R3': 34,
-      'RemeraClassic_N_Frente_R1C': 49,
-      'RemeraClassic_N_Frente_R1I': 50,
-      'RemeraClassic_N_Frente_R2': 52,
-      'RemeraClassic_N_Frente_R3': 51,
-      'RemeraClassic_N_Dorso_R1': 46,
-      'RemeraClassic_N_Dorso_R2': 47,
-      'RemeraClassic_N_Dorso_R3': 48,
+  try {
+    const r = resolveAssets({
+      productKey: legacyToProductKey(type, variant),
+      color: normalizeColor(color),
+      side,
+      stampSize: size,
+      stampPosition: position,
+    })
+    return r.redSquarePath
+  } catch (e) {
+    if (e instanceof CatalogError) {
+      console.warn(`[garment-red-square-mapping] ${e.code}: ${e.message}`)
+      return null
     }
-
-    return mapping[key] || null
+    throw e
   }
-
-  const imageIdx = getImageNumber(typeCode, colorCode, sideCode, size, position)
-
-  if (!imageIdx) {
-    console.warn(`No se encontró imagen para: ${typeCode}_${colorCode}_${sideCode}_${size}${position || ''}`)
-    return null
-  }
-
-  // Lógica de detección de tamaño real para el nombre del archivo
-  let actualSize = size
-  if (size === 'R3') {
-    const r2Idx = getImageNumber(typeCode, colorCode, sideCode, 'R2')
-    if (imageIdx === r2Idx) {
-      actualSize = 'R2'
-    }
-  }
-
-  const posCode = (actualSize === 'R1' && side === 'front') ? (position === 'center' ? 'C' : position === 'left' ? 'I' : '') : ''
-  const fileName = `MRoja-${imageIdx}-${typeCode}_${colorCode}_${sideCode}_${actualSize}${posCode}.png`
-
-  return `/garments/red-square/${fileName}`
 }
 
 export function getAvailableRedSquareOptions(
-  type: 'hoodie' | 'tshirt',
-  variant: 'classic' | 'oversize',
-  color: 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model',
-  side: 'front' | 'back'
-): Array<{ size: 'R1' | 'R2' | 'R3', position?: 'center' | 'left', imagePath: string }> {
-  const options: Array<{ size: 'R1' | 'R2' | 'R3', position?: 'center' | 'left', imagePath: string }> = []
+  type: GarmentType,
+  variant: GarmentVariant,
+  color: GarmentColor,
+  side: GarmentSide,
+): Array<{ size: StampSize; position?: StampPosition; imagePath: string }> {
+  const options: Array<{ size: StampSize; position?: StampPosition; imagePath: string }> = []
 
-  // R1
-  if (type === 'tshirt' || (type === 'hoodie' && side === 'front')) {
+  // R1: front has center/left, back has single default
+  if (side === 'front') {
     const r1C = getRedSquareGarmentImage(type, variant, color, side, 'R1', 'center')
     if (r1C) options.push({ size: 'R1', position: 'center', imagePath: r1C })
-
     const r1L = getRedSquareGarmentImage(type, variant, color, side, 'R1', 'left')
     if (r1L) options.push({ size: 'R1', position: 'left', imagePath: r1L })
   } else {
@@ -177,7 +104,7 @@ export function getAvailableRedSquareOptions(
   const r2 = getRedSquareGarmentImage(type, variant, color, side, 'R2')
   if (r2) options.push({ size: 'R2', imagePath: r2 })
 
-  // R3
+  // R3 — only where mold supports it (tshirt, hoodie back)
   if (type === 'tshirt' || (type === 'hoodie' && side === 'back')) {
     const r3 = getRedSquareGarmentImage(type, variant, color, side, 'R3')
     if (r3) options.push({ size: 'R3', imagePath: r3 })
@@ -187,34 +114,27 @@ export function getAvailableRedSquareOptions(
 }
 
 export function getBaseGarmentImage(
-  type: 'hoodie' | 'tshirt',
-  variant: 'classic' | 'oversize',
-  color: 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model',
-  side: 'front' | 'back'
+  type: GarmentType,
+  variant: GarmentVariant,
+  color: GarmentColor,
+  side: GarmentSide,
 ): string {
-  const { getGarmentMapping } = require("@/lib/garment-mappings")
-  const garmentTypeMap = {
-    'hoodie': 'astra-oversize-hoodie',
-    'tshirt': variant === 'classic' ? 'aldea-classic-tshirt' : 'aura-oversize-tshirt'
-  }
-
-  const garmentType = garmentTypeMap[type]
-  const mapping = getGarmentMapping(garmentType, color, side)
-
-  if (mapping && mapping.garmentPath !== 'fallback') {
-    return mapping.garmentPath
-  }
-
-  const sideCode = side === 'front' ? 'front' : 'back'
-  let ext = 'jpeg'
-  if (color === 'caramel' || color === 'cream' || color === 'gray') {
-    if (type === 'hoodie' && side === 'back') ext = 'png'
-    if (type === 'tshirt' && color === 'caramel' && side === 'front') ext = 'png'
-  }
-
-  if (type === 'hoodie') {
-    return `/garments/hoodie-${color}-${sideCode}.${ext}`
-  } else {
+  try {
+    const r = resolveAssets({
+      productKey: legacyToProductKey(type, variant),
+      color: normalizeColor(color),
+      side,
+      stampSize: 'R2', // any valid size — we only care about baseGarmentPath
+    })
+    return r.baseGarmentPath
+  } catch {
+    // Fallback to the legacy filename convention for callers that hit edge cases.
+    const sideCode = side === 'front' ? 'front' : 'back'
+    const ext = color === 'caramel' || color === 'cream' || color === 'gray' ? 'png' : 'jpeg'
+    if (type === 'hoodie') return `/garments/hoodie-${color}-${sideCode}.${ext}`
     return `/garments/tshirt-${color}-${variant}-${sideCode}.${ext}`
   }
 }
+
+/** Re-export for new callers that want to browse the full catalog directly. */
+export { getRenderableProducts }
