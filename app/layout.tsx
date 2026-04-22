@@ -61,6 +61,7 @@ export const metadata: Metadata = {
   other: {
     "geo.region": "AR-B",
     "geo.placename": "Villa Martelli, Buenos Aires",
+    "facebook-domain-verification": "sfeb3jb2brdts53tea9w908ipny7e0",
   },
 }
 
