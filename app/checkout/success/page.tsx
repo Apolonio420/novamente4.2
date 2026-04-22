@@ -1,15 +1,21 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, Package, Mail, Home } from "lucide-react"
+import * as fpixel from "@/lib/fpixel"
+import { useCart } from "@/lib/cartStore"
 
 export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams()
   const [paymentData, setPaymentData] = useState<any>(null)
+  const items = useCart((s) => s.items)
+  const getTotalPrice = useCart((s) => s.getTotalPrice)
+  const clearCart = useCart((s) => s.clearCart)
+  const purchaseTrackedRef = useRef(false)
 
   useEffect(() => {
     // Get payment data from URL parameters
@@ -34,6 +40,19 @@ export default function CheckoutSuccessPage() {
       timestamp: new Date().toISOString(),
     })
 
+    const paid = status === "approved" || status === "success" || !status
+    if (paid && items.length > 0 && !purchaseTrackedRef.current) {
+      purchaseTrackedRef.current = true
+      const value = getTotalPrice()
+      fpixel.purchase(value, "ARS", {
+        content_ids: items.map((i) => i.id),
+        contents: items.map((i) => ({ id: i.id, quantity: i.quantity, item_price: i.price })),
+        num_items: items.reduce((n, i) => n + i.quantity, 0),
+        order_id: externalReference || merchantOrderId || paymentId || undefined,
+      })
+      clearCart()
+    }
+
     // Fallback de confirmación server-side (no depende de que el webhook llegue primero)
     if (paymentId) {
       fetch("/api/payments/confirm", {
@@ -45,7 +64,7 @@ export default function CheckoutSuccessPage() {
         .then((data) => console.log("✅ Payment confirm fallback:", data))
         .catch((err) => console.warn("⚠️ Payment confirm fallback failed:", err))
     }
-  }, [searchParams])
+  }, [searchParams, items, getTotalPrice, clearCart])
 
   return (
     <div className="container mx-auto px-4 py-8">

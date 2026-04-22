@@ -3,6 +3,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import type { ReactNode } from "react"
+import * as fpixel from "@/lib/fpixel"
 
 export interface CartItem {
   id: string
@@ -49,6 +50,13 @@ export const useCart = create<CartStore>()(
       items: [],
       addItem: (item) =>
         set((state) => {
+          fpixel.event("AddToCart", {
+            content_ids: [item.id],
+            content_name: item.name,
+            content_type: "product",
+            value: item.price * item.quantity,
+            currency: "ARS",
+          })
           const existingItem = state.items.find((i) => i.id === item.id)
           if (existingItem) {
             return {

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCart } from "@/lib/cartStore"
+import * as fpixel from "@/lib/fpixel"
 import { formatCurrency } from "@/lib/utils"
 import { Loader2, ArrowLeft, CreditCard, Smartphone, Building2, Shield, Truck, Clock } from "lucide-react"
 import Link from "next/link"
@@ -92,6 +93,14 @@ export default function CheckoutPage() {
       alert("Por favor completa todos los campos requeridos")
       return
     }
+
+    fpixel.event("InitiateCheckout", {
+      content_ids: items.map((i) => i.id),
+      contents: items.map((i) => ({ id: i.id, quantity: i.quantity, item_price: i.price })),
+      num_items: getTotalItems(),
+      value: total,
+      currency: "ARS",
+    })
 
     setIsProcessing(true)
 
