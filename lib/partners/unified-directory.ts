@@ -13,8 +13,15 @@ const LOGO_OVERRIDES: Record<string, string> = {
 const CARD_IMAGE_OVERRIDES: Record<string, string> = {
 }
 
-// DB slugs to hide (duplicates or test tenants)
-const HIDDEN_DB_SLUGS = new Set(['ventolito'])
+// DB slugs to hide (duplicates, test tenants, or demos not meant to be public)
+const HIDDEN_DB_SLUGS = new Set([
+  'ventolito',
+  'demo-restaurante',
+  'demo-clinica',
+  'demo-inmobiliaria',
+  'demo-peluqueria',
+  'demo-mayorista',
+])
 
 // Slug redirects — old slug → current slug (for renamed brands)
 export const SLUG_REDIRECTS: Record<string, string> = {
@@ -111,6 +118,8 @@ export async function getDirectoryEntries(): Promise<DirectoryEntry[]> {
  * Resolve a storefront by slug — tries DB first, falls back to static.
  */
 export async function getStorefrontBySlug(slug: string): Promise<StorefrontData | null> {
+  if (HIDDEN_DB_SLUGS.has(slug)) return null
+
   // Try DB first
   const tenant = await getTenantBySlug(slug)
   if (tenant && tenant.status === 'active' && tenant.storefront_published) {
