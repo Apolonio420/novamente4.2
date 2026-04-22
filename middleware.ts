@@ -89,12 +89,12 @@ export async function middleware(request: NextRequest) {
   // Content Security Policy — balanced for functionality
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob: https: http:",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://api.mercadopago.com https://*.r2.cloudflarestorage.com https://*.r2.dev https://cdn.novamente.ar https://www.facebook.com https://graph.facebook.com",
-    "frame-src 'self' https://www.mercadopago.com.ar https://www.facebook.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://api.mercadopago.com https://*.r2.cloudflarestorage.com https://*.r2.dev https://cdn.novamente.ar https://www.facebook.com https://graph.facebook.com https://*.facebook.com https://*.conversionsapigateway.com https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.g.doubleclick.net https://www.google.com",
+    "frame-src 'self' https://www.mercadopago.com.ar https://www.facebook.com https://td.doubleclick.net https://bid.g.doubleclick.net",
     "media-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
