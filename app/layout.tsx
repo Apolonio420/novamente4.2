@@ -154,6 +154,7 @@ export default function RootLayout({
   return (
     <html lang="es-AR" className="h-full" suppressHydrationWarning>
       <head>
+        <meta name="facebook-domain-verification" content="sfeb3jb2brdts53tea9w908ipny7e0" />
         {/* LLMs.txt for AI discoverability */}
         <link rel="alternate" type="text/plain" href="/llms.txt" title="LLMs.txt — AI-readable site summary" />
         {/* Preconnect to critical third-party origins */}
