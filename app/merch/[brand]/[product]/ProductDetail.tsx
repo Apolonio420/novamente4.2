@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { ArrowLeft, ShoppingCart, Star, Zap } from "lucide-react"
 import { useCart } from "@/lib/cartStore"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import * as fpixel from "@/lib/fpixel"
 import type { Product } from "@/src/data/partners"
 
 interface PartnerInfo {
@@ -36,6 +37,20 @@ export function ProductDetail({ product, partner, brandSlug }: ProductDetailProp
   const { addItem } = useCart()
   const { toast } = useToast()
   const router = useRouter()
+  const viewContentFiredRef = useRef(false)
+
+  useEffect(() => {
+    if (viewContentFiredRef.current) return
+    viewContentFiredRef.current = true
+    fpixel.event("ViewContent", {
+      content_ids: [product.id],
+      content_name: `${product.name} - ${product.brand}`,
+      content_type: "product",
+      content_category: product.category,
+      value: product.price,
+      currency: "ARS",
+    })
+  }, [product.id, product.name, product.brand, product.category, product.price])
 
   const selectedColorData = product.colors.find((c) => c.value === selectedColor) || product.colors[0]
 
