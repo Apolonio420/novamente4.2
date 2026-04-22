@@ -1,20 +1,35 @@
 export const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID
 
-export const pageview = () => {
-    if (typeof window !== "undefined" && (window as any).fbq) {
-        ; (window as any).fbq("track", "PageView")
-    }
+type FbqFn = (...args: unknown[]) => void
+
+const getFbq = (): FbqFn | null => {
+    if (typeof window === "undefined") return null
+    const fbq = (window as unknown as { fbq?: FbqFn }).fbq
+    return fbq ?? null
 }
 
-// https://developers.facebook.com/docs/facebook-pixel/advanced/
-export const event = (name: string, options = {}) => {
-    if (typeof window !== "undefined" && (window as any).fbq) {
-        ; (window as any).fbq("track", name, options)
+export const pageview = () => {
+    const fbq = getFbq()
+    if (!fbq) {
+        if (typeof window !== "undefined") console.warn("[PIXEL] PageView dropped — fbq not ready")
+        return
     }
+    console.log("[PIXEL] PageView fired")
+    fbq("track", "PageView")
+}
+
+export const event = (name: string, options: Record<string, unknown> = {}) => {
+    const fbq = getFbq()
+    if (!fbq) {
+        if (typeof window !== "undefined") console.warn(`[PIXEL] ${name} dropped — fbq not ready`, options)
+        return
+    }
+    console.log(`[PIXEL] ${name} fired`, options)
+    fbq("track", name, options)
 }
 
 // Custom Helpers
-export const viewContent = (options = {}) => event("ViewContent", options)
-export const lead = (options = {}) => event("Lead", options)
-export const purchase = (amount: number, currency = "ARS", options = {}) =>
+export const viewContent = (options: Record<string, unknown> = {}) => event("ViewContent", options)
+export const lead = (options: Record<string, unknown> = {}) => event("Lead", options)
+export const purchase = (amount: number, currency = "ARS", options: Record<string, unknown> = {}) =>
     event("Purchase", { value: amount, currency, ...options })

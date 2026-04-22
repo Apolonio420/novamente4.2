@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, Suspense } from 'react'
+import { useEffect, useRef, Suspense } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import Script from 'next/script'
 import * as fpixel from '@/lib/fpixel'
@@ -8,8 +8,18 @@ import * as fpixel from '@/lib/fpixel'
 const FacebookPixelEvents = () => {
     const pathname = usePathname()
     const searchParams = useSearchParams()
+    const skipFirstRef = useRef(true)
+    const lastKeyRef = useRef<string | null>(null)
 
     useEffect(() => {
+        const key = `${pathname}?${searchParams?.toString() ?? ''}`
+        if (skipFirstRef.current) {
+            skipFirstRef.current = false
+            lastKeyRef.current = key
+            return
+        }
+        if (lastKeyRef.current === key) return
+        lastKeyRef.current = key
         fpixel.pageview()
     }, [pathname, searchParams])
 
@@ -30,18 +40,8 @@ export default function FacebookPixel() {
     return (
         <>
             <Script
-                id="fb-pixel"
-                strategy="lazyOnload"
-                src={`https://connect.facebook.net/en_US/fbevents.js`}
-                onLoad={() => {
-                    ; (window as any).fbq('init', pixelId)
-                        ; (window as any).fbq('track', 'PageView')
-                }}
-            />
-            {/* Fallback script in case onLoad doesn't fire as expected or for faster init */}
-            <Script
                 id="fb-pixel-init"
-                strategy="lazyOnload"
+                strategy="afterInteractive"
                 dangerouslySetInnerHTML={{
                     __html: `
             !function(f,b,e,v,n,t,s)
