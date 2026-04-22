@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, Package, Mail, Home } from "lucide-react"
 import * as fpixel from "@/lib/fpixel"
+import { trackPurchase as gadsPurchase } from "@/lib/gads"
 import { useCart } from "@/lib/cartStore"
 
 export default function CheckoutSuccessPage() {
@@ -44,12 +45,14 @@ export default function CheckoutSuccessPage() {
     if (paid && items.length > 0 && !purchaseTrackedRef.current) {
       purchaseTrackedRef.current = true
       const value = getTotalPrice()
+      const orderId = externalReference || merchantOrderId || paymentId || undefined
       fpixel.purchase(value, "ARS", {
         content_ids: items.map((i) => i.id),
         contents: items.map((i) => ({ id: i.id, quantity: i.quantity, item_price: i.price })),
         num_items: items.reduce((n, i) => n + i.quantity, 0),
-        order_id: externalReference || merchantOrderId || paymentId || undefined,
+        order_id: orderId,
       })
+      gadsPurchase(value, orderId, "ARS")
       clearCart()
     }
 

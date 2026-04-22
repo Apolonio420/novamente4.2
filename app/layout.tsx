@@ -10,6 +10,7 @@ import { PublicAssistantLoader } from "@/components/PublicAssistantLoader"
 import { ImageHistoryProvider } from "@/contexts/ImageHistoryContext"
 import { Background } from "@/components/ui/Background"
 import FacebookPixel from "@/components/FacebookPixel"
+import GoogleAdsPixel from "@/components/GoogleAdsPixel"
 import { WebVitals } from "@/components/web-vitals"
 import { EmailCaptureLoader } from "@/components/EmailCaptureLoader"
 
@@ -176,6 +177,7 @@ export default function RootLayout({
           Saltar al contenido
         </a>
         <FacebookPixel />
+        <GoogleAdsPixel />
         <WebVitals />
         <Background />
         <ImageHistoryProvider>
