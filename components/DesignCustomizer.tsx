@@ -32,19 +32,27 @@ const GARMENT_PRICES = {
   "aura-oversize-tshirt": 31000,
   "aldea-classic-tshirt": 28600,
   "astra-oversize-hoodie": 60000,
-  lienzo: 59900,
+  "buzo-hoodie-unisex": 55000,
+  "buzo-cuello-redondo-unisex": 43000,
+  "musculosa-bali": 21800,
+  "remera-clasica-mujer": 28600,
+  "remera-crop-mujer": 23500,
 }
 
 const GARMENT_NAMES = {
   "aura-oversize-tshirt": "Aura Oversize T-Shirt Personalizada",
   "aldea-classic-tshirt": "Aldea Classic T-Shirt Personalizada",
   "astra-oversize-hoodie": "Astra Oversize Hoodie Personalizada",
-  lienzo: "Lienzo Personalizado",
+  "buzo-hoodie-unisex": "Buzo Hoodie Unisex Personalizado",
+  "buzo-cuello-redondo-unisex": "Buzo Cuello Redondo Personalizado",
+  "musculosa-bali": "Musculosa Bali Personalizada",
+  "remera-clasica-mujer": "Remera Clásica Mujer Personalizada",
+  "remera-crop-mujer": "Remera Crop Mujer Personalizada",
 }
 
 // Función para obtener la imagen de la prenda según el tipo y color
 const getGarmentImage = (garmentType: string, color: string) => {
-  const colorMap = {
+  const legacyColorMap = {
     'black': 'black',
     'white': 'white',
     'caramel': 'caramel',
@@ -52,9 +60,7 @@ const getGarmentImage = (garmentType: string, color: string) => {
     'cream': 'cream'
   }
 
-
-
-  const colorCode = colorMap[color as keyof typeof colorMap] || 'black'
+  const colorCode = legacyColorMap[color as keyof typeof legacyColorMap] || color
 
   switch (garmentType) {
     case 'aura-oversize-tshirt':
@@ -63,6 +69,16 @@ const getGarmentImage = (garmentType: string, color: string) => {
       return `/garments/tshirt-${colorCode}-classic-front.jpeg`
     case 'astra-oversize-hoodie':
       return `/garments/hoodie-${colorCode}-front.jpeg`
+    case 'buzo-hoodie-unisex':
+      return `/garments/buzo-hoodie-unisex-${color}-front.png`
+    case 'buzo-cuello-redondo-unisex':
+      return `/garments/buzo-cuello-redondo-${color}-front.png`
+    case 'musculosa-bali':
+      return `/garments/musculosa-bali-${color}-front.png`
+    case 'remera-clasica-mujer':
+      return `/garments/remera-clasica-mujer-${color}-front.png`
+    case 'remera-crop-mujer':
+      return `/garments/remera-crop-mujer-${color}-front.png`
     case 'lienzo':
       return '/garments/lienzo-main.png'
     default:
@@ -75,14 +91,22 @@ const GARMENT_DEFAULT_IMAGES = {
   "aura-oversize-tshirt": "/garments/tshirt-white-oversize-front.jpeg",
   "aldea-classic-tshirt": "/garments/tshirt-white-classic-front.jpeg",
   "astra-oversize-hoodie": "/garments/hoodie-black-front.jpeg",
-  "lienzo": "/garments/lienzo-main.png",
+  "buzo-hoodie-unisex": "/garments/buzo-hoodie-unisex-black-front.png",
+  "buzo-cuello-redondo-unisex": "/garments/buzo-cuello-redondo-black-front.png",
+  "musculosa-bali": "/garments/musculosa-bali-black-front.png",
+  "remera-clasica-mujer": "/garments/remera-clasica-mujer-black-front.png",
+  "remera-crop-mujer": "/garments/remera-crop-mujer-black-front.png",
 }
 
 const COLORS_BY_GARMENT: Record<string, string[]> = {
   "aura-oversize-tshirt": ["black", "white", "caramel"],
   "aldea-classic-tshirt": ["black", "white"],
   "astra-oversize-hoodie": ["black", "caramel", "gray", "cream"],
-  lienzo: ["white"],
+  "buzo-hoodie-unisex": ["black", "white", "stone-wash"],
+  "buzo-cuello-redondo-unisex": ["black", "white", "stone-wash"],
+  "musculosa-bali": ["black", "white", "gray"],
+  "remera-clasica-mujer": ["black", "white"],
+  "remera-crop-mujer": ["black", "chocolate", "gray", "yellow"],
 }
 
 const DOUBLE_STAMPING_EXTRA = 7000
@@ -1432,6 +1456,11 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         'astra-classic-tshirt': { type: 'tshirt', variant: 'classic' },
         'aura-oversize-tshirt': { type: 'tshirt', variant: 'oversize' },
         'aldea-classic-tshirt': { type: 'tshirt', variant: 'classic' },
+        'buzo-hoodie-unisex': { type: 'hoodie', variant: 'classic' },
+        'buzo-cuello-redondo-unisex': { type: 'hoodie', variant: 'classic' },
+        'musculosa-bali': { type: 'tshirt', variant: 'classic' },
+        'remera-clasica-mujer': { type: 'tshirt', variant: 'classic' },
+        'remera-crop-mujer': { type: 'tshirt', variant: 'classic' },
         'lienzo': { type: 'lienzo', variant: 'classic' }
       }
 
@@ -1972,7 +2001,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                             {selectedGarment === 'lienzo' ? 'Tamaño del Lienzo' : `Tamaño del Estampado ${selectedSide === 'front' ? 'Frontal' : 'Trasero'}`}
                           </h4>
                           <StampSizeSelector
-                            garmentType={selectedGarment === 'astra-oversize-hoodie' ? 'hoodie' : selectedGarment === 'lienzo' ? 'lienzo' : 'tshirt'}
+                            garmentType={(selectedGarment === 'astra-oversize-hoodie' || selectedGarment === 'buzo-hoodie-unisex' || selectedGarment === 'buzo-cuello-redondo-unisex') ? 'hoodie' : selectedGarment === 'lienzo' ? 'lienzo' : 'tshirt'}
                             garmentVariant={selectedGarment === 'lienzo' ? undefined : (selectedGarment.includes('oversize') ? 'oversize' : 'classic')}
                             garmentColor={selectedColor as 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model'}
                             side={selectedGarment === 'lienzo' ? 'front' : (selectedSide || 'front')}
@@ -2217,15 +2246,16 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                               : "border-muted hover:border-muted-foreground"
                               }`}
                           >
-                            {color === "black"
-                              ? "Negro"
-                              : color === "white"
-                                ? "Blanco"
-                                : color === "caramel"
-                                  ? "Caramelo"
-                                  : color === "gray"
-                                    ? "Gris"
-                                    : "Crema"}
+                            {({
+                              "black": "Negro",
+                              "white": "Blanco",
+                              "caramel": "Caramelo",
+                              "gray": "Gris",
+                              "cream": "Crema",
+                              "stone-wash": "Stone Wash",
+                              "chocolate": "Chocolate",
+                              "yellow": "Amarillo",
+                            } as Record<string, string>)[color] || color}
                           </button>
                         ))}
                       </div>

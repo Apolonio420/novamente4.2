@@ -60,6 +60,9 @@ export interface Tenant {
   last_payment_at: string | null
   payment_failures: number
 
+  // Chatbot
+  catalog_pdf_url: string | null
+
   // Metadata
   completeness_score: number
   onboarding_step: number

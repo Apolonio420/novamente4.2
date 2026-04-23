@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getTenantBySlug } from '@/lib/partners/tenant'
 import { PLAN_FEATURES } from '@/lib/partners/plans'
+import { getPublishedProducts } from '@/lib/partners/catalog'
 import {
   createAgentSession,
   getAgentSession,
   processMessage,
 } from '@/lib/partners/agent'
+
+function detectButtons(text: string): { label: string; action: string }[] {
+  const buttons: { label: string; action: string }[] = []
+  if (/catálogo|menú|carta|productos|ver todo/i.test(text))
+    buttons.push({ label: 'Ver catálogo', action: 'show_catalog' })
+  if (/pedido|comprar|ordenar|encargar|quiero/i.test(text))
+    buttons.push({ label: 'Hacer pedido', action: 'start_order' })
+  if (/turno|reserv|cita|agendar/i.test(text))
+    buttons.push({ label: 'Reservar turno', action: 'book_appointment' })
+  if (/precio|cost|presupuesto|cotiza/i.test(text))
+    buttons.push({ label: 'Pedir presupuesto', action: 'request_quote' })
+  return buttons.slice(0, 3)
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,9 +85,22 @@ export async function POST(request: NextRequest) {
     // 4. Process message
     const response = await processMessage(tenant.id, activeSessionId, message.trim())
 
+    // 5. Enrich response with product data for rich rendering
+    const products = await getPublishedProducts(tenant.id)
+    const productSummary = products.map((p) => ({
+      name: p.name,
+      slug: p.slug,
+      price: p.price ?? 0,
+      imageUrl: p.images?.[0] || null,
+      category: p.category || null,
+    }))
+
     return NextResponse.json({
       sessionId: activeSessionId,
       response,
+      products: productSummary,
+      buttons: detectButtons(response),
+      catalogPdfUrl: tenant.catalog_pdf_url || null,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {

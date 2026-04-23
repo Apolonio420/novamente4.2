@@ -4,10 +4,26 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 
+interface ProductSummary {
+  name: string
+  slug: string
+  price: number
+  imageUrl: string | null
+  category: string | null
+}
+
+interface QuickButton {
+  label: string
+  action: string
+}
+
 interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
+  products?: ProductSummary[]
+  buttons?: QuickButton[]
+  catalogPdfUrl?: string | null
 }
 
 const DEMO_INFO: Record<string, { name: string; icon: string; color: string; suggestions: string[] }> = {
@@ -72,65 +88,220 @@ const DEMO_INFO: Record<string, { name: string; icon: string; color: string; sug
 // Rich message renderer with markdown + product card detection
 // ---------------------------------------------------------------------------
 
-function MessageContent({ content, color }: { content: string; color: string }) {
-  // Split content into segments: text and product lines
-  const lines = content.split('\n')
+function findProductImage(name: string, products?: ProductSummary[]): string | null {
+  if (!products?.length) return null
+  const cleanName = name.replace(/\*/g, '').trim().toLowerCase()
+  const match = products.find((p) => {
+    const pName = p.name.toLowerCase()
+    return pName.includes(cleanName) || cleanName.includes(pName)
+  })
+  return match?.imageUrl || null
+}
+
+function ProductImage({ src, name, color }: { src: string | null; name: string; color: string }) {
+  if (src) {
+    return (
+      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={name} className="absolute inset-0 h-full w-full object-cover" />
+      </div>
+    )
+  }
+  return (
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg" style={{ backgroundColor: `${color}25` }}>
+      {getProductEmoji(name)}
+    </div>
+  )
+}
+
+interface ParsedProduct {
+  name: string
+  desc: string
+  price: string
+  imageUrl: string | null
+}
+
+function ProductCarousel({ items, color }: { items: ParsedProduct[]; color: string }) {
+  return (
+    <div className="my-2 -mx-1 overflow-x-auto scrollbar-hide" style={{ scrollSnapType: 'x mandatory' }}>
+      <div className="flex gap-2 px-1 pb-1">
+        {items.map((item, i) => (
+          <div
+            key={i}
+            className="w-36 shrink-0 rounded-xl border border-white/10 bg-white/5 p-2"
+            style={{ scrollSnapAlign: 'start' }}
+          >
+            {item.imageUrl ? (
+              <div className="relative mb-2 h-24 w-full overflow-hidden rounded-lg">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={item.imageUrl} alt={item.name} className="absolute inset-0 h-full w-full object-cover" />
+              </div>
+            ) : (
+              <div className="mb-2 flex h-24 w-full items-center justify-center rounded-lg text-3xl" style={{ backgroundColor: `${color}15` }}>
+                {getProductEmoji(item.name)}
+              </div>
+            )}
+            <p className="truncate text-xs font-semibold text-white">{item.name}</p>
+            {item.desc && <p className="truncate text-[10px] text-zinc-500">{item.desc}</p>}
+            <div className="mt-1 inline-block rounded px-1.5 py-0.5 text-xs font-bold" style={{ backgroundColor: `${color}30`, color }}>
+              ${Number(item.price.replace(/\./g, '').replace(',', '.')).toLocaleString('es-AR')}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function MessageContent({
+  content,
+  color,
+  products,
+  buttons,
+  catalogPdfUrl,
+  onButtonClick,
+}: {
+  content: string
+  color: string
+  products?: ProductSummary[]
+  buttons?: QuickButton[]
+  catalogPdfUrl?: string | null
+  onButtonClick?: (action: string, label: string) => void
+}) {
   const elements: React.ReactNode[] = []
+  const detectedProducts: ParsedProduct[] = []
+
+  // Step 1: Extract products from content
+  // Gemini wraps long descriptions across lines, so join continuation lines first
+  const rawLines = content.split('\n')
+  const joinedLines: string[] = []
+  for (const line of rawLines) {
+    const isNewItem = /^\s*[-•*]/.test(line) || /^\s*\*\*/.test(line) || line.trim() === '' || !joinedLines.length
+    if (isNewItem) {
+      joinedLines.push(line)
+    } else {
+      // Continuation of previous line
+      joinedLines[joinedLines.length - 1] += ' ' + line.trim()
+    }
+  }
+
+  let cleaned = content
+  const seenNames = new Set<string>()
+
+  for (const line of joinedLines) {
+    if (!/\$\s*[\d.,]+/.test(line)) continue
+    const m = line.match(/\*{0,2}([^*:]+?)\*{0,2}\s*:\s*(.+?)[-–]\s*\$\s*([\d.,]+)/)
+    if (!m) continue
+    const cleanName = m[1].replace(/[-•*]/g, '').trim()
+    if (cleanName.length > 2 && cleanName.length < 50 && !seenNames.has(cleanName)) {
+      seenNames.add(cleanName)
+      const imageUrl = findProductImage(cleanName, products)
+      detectedProducts.push({ name: cleanName, desc: m[2].trim(), price: m[3], imageUrl })
+      // Remove all original lines that were part of this product
+      for (const rawLine of rawLines) {
+        if (line.includes(rawLine.trim()) && rawLine.trim()) {
+          cleaned = cleaned.replace(rawLine, '')
+        }
+      }
+    }
+  }
+
+  // Step 2: Render remaining text with markdown formatting
+  const lines = cleaned.split('\n')
   let currentText: string[] = []
 
   const flushText = (key: string) => {
     if (currentText.length > 0) {
-      elements.push(
-        <span key={key} dangerouslySetInnerHTML={{
-          __html: currentText.join('<br/>')
-            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        }} />
-      )
+      const html = currentText.join('<br/>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      if (html.replace(/<br\/>/g, '').trim()) {
+        elements.push(
+          <span key={key} dangerouslySetInnerHTML={{ __html: html }} />
+        )
+      }
       currentText = []
     }
   }
 
-  // Detect product lines: "- ProductName: $Price" or "**ProductName** description - $Price"
-  const priceRegex = /[-•]\s*\*{0,2}(.+?)\*{0,2}\s*(?:[:,—–-])\s*(.+?)[-–]\s*\$\s*([\d.,]+)/
-  const simplePriceRegex = /\*{0,2}(.+?)\*{0,2}.*?\$\s*([\d.,]+)/
-
   lines.forEach((line, i) => {
-    const match = line.match(priceRegex)
-    if (match) {
+    const categoryMatch = line.match(/^\s*(?:\*\*|#{1,3}\s*)(.+?)(?::\*\*|)\s*$/)
+    if (categoryMatch && !line.includes('$')) {
       flushText(`t${i}`)
-      const [, name, desc, price] = match
       elements.push(
-        <div key={`p${i}`} className="my-2 flex items-center gap-3 rounded-xl bg-white/5 border border-white/10 p-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg" style={{ backgroundColor: `${color}25` }}>
-            {getProductEmoji(name)}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white">{name.replace(/\*/g, '').trim()}</p>
-            <p className="text-xs text-zinc-400 truncate">{desc.trim()}</p>
-          </div>
-          <div className="shrink-0 rounded-lg px-2.5 py-1 text-sm font-bold" style={{ backgroundColor: `${color}30`, color }}>
-            ${Number(price.replace(/\./g, '').replace(',', '.')).toLocaleString('es-AR')}
-          </div>
+        <div key={`c${i}`} className="mt-3 mb-1 text-xs font-semibold uppercase tracking-wider" style={{ color }}>
+          {categoryMatch[1].replace(/\*/g, '').replace(/#/g, '').trim()}
         </div>
       )
     } else {
-      // Check for category headers like **Carnes:** or **Entradas:**
-      const categoryMatch = line.match(/^\s*\*\*(.+?):\*\*\s*$/)
-      if (categoryMatch) {
-        flushText(`t${i}`)
-        elements.push(
-          <div key={`c${i}`} className="mt-3 mb-1 text-xs font-semibold uppercase tracking-wider" style={{ color }}>
-            {categoryMatch[1]}
-          </div>
-        )
-      } else {
-        currentText.push(line)
-      }
+      currentText.push(line)
     }
   })
 
   flushText('final')
+
+  // Render products: carousel if 3+, inline cards if fewer
+  if (detectedProducts.length >= 3) {
+    elements.push(<ProductCarousel key="carousel" items={detectedProducts} color={color} />)
+  } else {
+    detectedProducts.forEach((item, i) => {
+      elements.push(
+        <div key={`p${i}`} className="my-2 flex items-center gap-3 rounded-xl bg-white/5 border border-white/10 p-3">
+          <ProductImage src={item.imageUrl} name={item.name} color={color} />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-white">{item.name}</p>
+            <p className="text-xs text-zinc-400 truncate">{item.desc}</p>
+          </div>
+          <div className="shrink-0 rounded-lg px-2.5 py-1 text-sm font-bold" style={{ backgroundColor: `${color}30`, color }}>
+            ${Number(item.price.replace(/\./g, '').replace(',', '.')).toLocaleString('es-AR')}
+          </div>
+        </div>
+      )
+    })
+  }
+
+  // Quick action buttons
+  if (buttons?.length) {
+    elements.push(
+      <div key="buttons" className="mt-3 flex flex-wrap gap-2">
+        {buttons.map((btn, i) => (
+          <button
+            key={i}
+            onClick={() => onButtonClick?.(btn.action, btn.label)}
+            className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-zinc-300 transition hover:bg-white/10 hover:text-white"
+          >
+            {btn.label}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  // PDF catalog card
+  if (catalogPdfUrl) {
+    elements.push(
+      <a
+        key="pdf"
+        href={catalogPdfUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 transition hover:bg-white/10"
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-500/20 text-lg">
+          📄
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-white">Catalogo PDF</p>
+          <p className="text-[10px] text-zinc-500">Toca para descargar</p>
+        </div>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+      </a>
+    )
+  }
 
   return <div className="space-y-0.5">{elements}</div>
 }
@@ -212,6 +383,9 @@ export default function DemoChatPage() {
         id: `a_${Date.now()}`,
         role: 'assistant',
         content: data.response,
+        products: data.products,
+        buttons: data.buttons,
+        catalogPdfUrl: data.catalogPdfUrl,
       }])
     } catch {
       setMessages(prev => [...prev, {
@@ -223,6 +397,11 @@ export default function DemoChatPage() {
       setLoading(false)
     }
   }, [input, loading, sessionId, slug])
+
+  const handleQuickAction = useCallback((action: string, label: string) => {
+    // Send the button label as a user message
+    sendMessage(label)
+  }, [sendMessage])
 
   if (!info) {
     return (
@@ -302,7 +481,14 @@ export default function DemoChatPage() {
                 }`}
                 style={msg.role === 'user' ? { backgroundColor: info.color } : undefined}
               >
-                <MessageContent content={msg.content} color={info.color} />
+                <MessageContent
+                  content={msg.content}
+                  color={info.color}
+                  products={msg.role === 'assistant' ? msg.products : undefined}
+                  buttons={msg.role === 'assistant' ? msg.buttons : undefined}
+                  catalogPdfUrl={msg.role === 'assistant' ? msg.catalogPdfUrl : undefined}
+                  onButtonClick={handleQuickAction}
+                />
               </div>
             </div>
           ))}
