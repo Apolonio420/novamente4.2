@@ -14,6 +14,12 @@ const PATH_BUILDERS: Record<string, (color: string, side: "front" | "back") => s
   "aura-oversize-tshirt": (c, s) => `tshirt-${c}-oversize-${s}`,
   "aldea-classic-tshirt": (c, s) => `tshirt-${c}-classic-${s}`,
   "astra-oversize-hoodie": (c, s) => `hoodie-${c}-${s}`,
+  // Nuevos productos (front-only por ahora; "back" cae a fallback)
+  "buzo-cuello-redondo-unisex": (c, s) => `buzo-cuello-redondo-${c}-${s}`,
+  "buzo-hoodie-unisex": (c, s) => `buzo-hoodie-unisex-${c}-${s}`,
+  "musculosa-bali": (c, s) => `musculosa-bali-${c}-${s}`,
+  "remera-clasica-mujer": (c, s) => `remera-clasica-mujer-${c}-${s}`,
+  "remera-crop-mujer": (c, s) => `remera-crop-mujer-${c}-${s}`,
   // Lienzo no depende de color ni lado para el mapeo base
   lienzo: () => `lienzo`,
 }

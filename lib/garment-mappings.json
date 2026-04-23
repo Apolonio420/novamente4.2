@@ -340,5 +340,125 @@
       "height": 315
     },
     "timestamp": 1755024195151
+  },
+  {
+    "id": "1761100000001",
+    "name": "Buzo Hoodie Unisex Negro Frontal",
+    "garmentPath": "/garments/buzo-hoodie-unisex-black-front.png",
+    "margins": { "top": 35, "right": 27, "bottom": 36, "left": 28 },
+    "coordinates": { "x": 112, "y": 175, "width": 180, "height": 145 },
+    "timestamp": 1761100000001
+  },
+  {
+    "id": "1761100000002",
+    "name": "Buzo Hoodie Unisex Blanco Frontal",
+    "garmentPath": "/garments/buzo-hoodie-unisex-white-front.png",
+    "margins": { "top": 31, "right": 31, "bottom": 42, "left": 29 },
+    "coordinates": { "x": 116, "y": 155, "width": 160, "height": 135 },
+    "timestamp": 1761100000002
+  },
+  {
+    "id": "1761100000003",
+    "name": "Buzo Hoodie Unisex Stone Wash Frontal",
+    "garmentPath": "/garments/buzo-hoodie-unisex-stone-wash-front.png",
+    "margins": { "top": 29, "right": 31, "bottom": 41, "left": 29 },
+    "coordinates": { "x": 116, "y": 145, "width": 160, "height": 150 },
+    "timestamp": 1761100000003
+  },
+  {
+    "id": "1761100000004",
+    "name": "Buzo Cuello Redondo Unisex Negro Frontal",
+    "garmentPath": "/garments/buzo-cuello-redondo-black-front.png",
+    "margins": { "top": 28, "right": 27, "bottom": 32, "left": 28 },
+    "coordinates": { "x": 112, "y": 155, "width": 180, "height": 155 },
+    "timestamp": 1761100000004
+  },
+  {
+    "id": "1761100000005",
+    "name": "Buzo Cuello Redondo Unisex Blanco Frontal",
+    "garmentPath": "/garments/buzo-cuello-redondo-white-front.png",
+    "margins": { "top": 26, "right": 31, "bottom": 38, "left": 29 },
+    "coordinates": { "x": 116, "y": 135, "width": 160, "height": 145 },
+    "timestamp": 1761100000005
+  },
+  {
+    "id": "1761100000006",
+    "name": "Buzo Cuello Redondo Unisex Stone Wash Frontal",
+    "garmentPath": "/garments/buzo-cuello-redondo-stone-wash-front.png",
+    "margins": { "top": 24, "right": 31, "bottom": 37, "left": 29 },
+    "coordinates": { "x": 116, "y": 125, "width": 160, "height": 160 },
+    "timestamp": 1761100000006
+  },
+  {
+    "id": "1761100000007",
+    "name": "Musculosa Bali Negra Frontal",
+    "garmentPath": "/garments/musculosa-bali-black-front.png",
+    "margins": { "top": 22, "right": 30, "bottom": 24, "left": 30 },
+    "coordinates": { "x": 120, "y": 140, "width": 160, "height": 200 },
+    "timestamp": 1761100000007
+  },
+  {
+    "id": "1761100000008",
+    "name": "Musculosa Bali Blanca Frontal",
+    "garmentPath": "/garments/musculosa-bali-white-front.png",
+    "margins": { "top": 22, "right": 30, "bottom": 24, "left": 30 },
+    "coordinates": { "x": 120, "y": 140, "width": 160, "height": 200 },
+    "timestamp": 1761100000008
+  },
+  {
+    "id": "1761100000009",
+    "name": "Musculosa Bali Gris Frontal",
+    "garmentPath": "/garments/musculosa-bali-gray-front.png",
+    "margins": { "top": 22, "right": 30, "bottom": 24, "left": 30 },
+    "coordinates": { "x": 120, "y": 140, "width": 160, "height": 200 },
+    "timestamp": 1761100000009
+  },
+  {
+    "id": "1761100000010",
+    "name": "Remera Clásica Mujer Negra Frontal",
+    "garmentPath": "/garments/remera-clasica-mujer-black-front.png",
+    "margins": { "top": 27, "right": 28, "bottom": 20, "left": 28 },
+    "coordinates": { "x": 112, "y": 140, "width": 176, "height": 240 },
+    "timestamp": 1761100000010
+  },
+  {
+    "id": "1761100000011",
+    "name": "Remera Clásica Mujer Blanca Frontal",
+    "garmentPath": "/garments/remera-clasica-mujer-white-front.png",
+    "margins": { "top": 25, "right": 28, "bottom": 17, "left": 28 },
+    "coordinates": { "x": 112, "y": 130, "width": 176, "height": 245 },
+    "timestamp": 1761100000011
+  },
+  {
+    "id": "1761100000012",
+    "name": "Remera Crop Mujer Negra Frontal",
+    "garmentPath": "/garments/remera-crop-mujer-black-front.png",
+    "margins": { "top": 26, "right": 32, "bottom": 52, "left": 32 },
+    "coordinates": { "x": 130, "y": 130, "width": 140, "height": 160 },
+    "timestamp": 1761100000012
+  },
+  {
+    "id": "1761100000013",
+    "name": "Remera Crop Mujer Chocolate Frontal",
+    "garmentPath": "/garments/remera-crop-mujer-chocolate-front.png",
+    "margins": { "top": 26, "right": 32, "bottom": 52, "left": 32 },
+    "coordinates": { "x": 130, "y": 130, "width": 140, "height": 160 },
+    "timestamp": 1761100000013
+  },
+  {
+    "id": "1761100000014",
+    "name": "Remera Crop Mujer Gris Frontal",
+    "garmentPath": "/garments/remera-crop-mujer-gray-front.png",
+    "margins": { "top": 26, "right": 32, "bottom": 52, "left": 32 },
+    "coordinates": { "x": 130, "y": 130, "width": 140, "height": 160 },
+    "timestamp": 1761100000014
+  },
+  {
+    "id": "1761100000015",
+    "name": "Remera Crop Mujer Amarilla Frontal",
+    "garmentPath": "/garments/remera-crop-mujer-yellow-front.png",
+    "margins": { "top": 26, "right": 32, "bottom": 52, "left": 32 },
+    "coordinates": { "x": 130, "y": 130, "width": 140, "height": 160 },
+    "timestamp": 1761100000015
   }
 ]
