@@ -370,16 +370,16 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>Envio</span>
-                  <span className="text-green-600">{getTotalPrice() >= 50000 ? "Gratis" : formatCurrency(5000)}</span>
+                  <span className="text-green-600">{getTotalPrice() >= 100000 ? "Gratis" : formatCurrency(5000)}</span>
                 </div>
-                {getTotalPrice() >= 50000 && (
+                {getTotalPrice() >= 100000 && (
                   <div className="text-sm text-green-600">
-                    Envio gratis por compras mayores a {formatCurrency(50000)}!
+                    Envio gratis por compras mayores a {formatCurrency(100000)}!
                   </div>
                 )}
-                {getTotalPrice() < 50000 && (
+                {getTotalPrice() < 100000 && (
                   <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                    Agrega {formatCurrency(50000 - getTotalPrice())} mas para envio gratuito
+                    Agrega {formatCurrency(100000 - getTotalPrice())} mas para envio gratuito
                   </div>
                 )}
               </div>
@@ -388,7 +388,7 @@ export default function CartPage() {
 
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>{formatCurrency(getTotalPrice() + (getTotalPrice() >= 50000 ? 0 : 5000))}</span>
+                <span>{formatCurrency(getTotalPrice() + (getTotalPrice() >= 100000 ? 0 : 5000))}</span>
               </div>
 
               <div className="space-y-3 pt-4">

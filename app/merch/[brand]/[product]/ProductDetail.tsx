@@ -342,7 +342,7 @@ export function ProductDetail({ product, partner, brandSlug }: ProductDetailProp
 
           {/* Additional Info */}
           <div className="text-sm text-muted-foreground space-y-1 pt-4 border-t">
-            <p>• Envío gratis en compras superiores a $80.000</p>
+            <p>• Envío gratis en compras superiores a $100.000</p>
             <p>• Producto oficial de {product.brand}</p>
             <p>• Confeccionado en Argentina con materiales premium</p>
           </div>
