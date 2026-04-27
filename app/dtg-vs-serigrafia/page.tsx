@@ -93,7 +93,7 @@ const comparisonData: ComparisonRow[] = [
   },
   {
     feature: "Costo por unidad (1-10)",
-    dtg: { value: "$28.600 - $60.000", icon: "check" },
+    dtg: { value: "$28.600 - $55.000", icon: "check" },
     serigrafia: { value: "Alto (setup + pantallas)", icon: "x" },
     sublimacion: { value: "$15.000 - $25.000", icon: "check" },
   },

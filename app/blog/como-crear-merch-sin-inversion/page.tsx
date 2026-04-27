@@ -378,7 +378,7 @@ export default function BlogComoCrearMerch() {
                         <h4 className="font-semibold text-white">Buzo Hoodie Oversize</h4>
                         <p className="text-zinc-400 text-sm mt-1">Premium, el producto con mas margen</p>
                       </div>
-                      <Badge className="bg-green-500/20 text-green-300 border-green-500/30">$60.000</Badge>
+                      <Badge className="bg-green-500/20 text-green-300 border-green-500/30">$55.000</Badge>
                     </div>
                   </CardContent>
                 </Card>
@@ -414,7 +414,7 @@ export default function BlogComoCrearMerch() {
                     <Badge className="bg-green-500/20 text-green-300 border-green-500/30">+$27.000-$37.000</Badge>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-zinc-300">Buzo Hoodie ($60.000) → Precio sugerido $95.000-$110.000</span>
+                    <span className="text-zinc-300">Buzo Hoodie Oversize ($55.000) → Precio sugerido $95.000-$110.000</span>
                     <Badge className="bg-green-500/20 text-green-300 border-green-500/30">+$35.000-$50.000</Badge>
                   </div>
                 </div>

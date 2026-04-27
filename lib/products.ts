@@ -396,7 +396,7 @@ export function getPublishableProducts(): MetaCommerceProduct[] {
     return PRODUCTS
         .filter(product => product.available)
         .map(product => {
-            // Extract numeric price from string like "$60.000" -> 60000
+            // Extract numeric price from string like "$55.000" -> 55000
             const numericPrice = parseInt(product.price.replace(/[$.]/g, ""), 10)
 
             // Convert relative image URL to absolute

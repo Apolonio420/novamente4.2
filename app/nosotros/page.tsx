@@ -52,7 +52,7 @@ export default function NosotrosPage() {
     geo: { '@type': 'GeoCoordinates', latitude: -34.5534, longitude: -58.504 },
     telephone: '+5491126603080',
     email: 'contact@novamente.ar',
-    priceRange: '$21,800 - $60,000 ARS',
+    priceRange: '$21,800 - $55,000 ARS',
     paymentAccepted: 'MercadoPago, Transferencia Bancaria',
     areaServed: { '@type': 'Country', name: 'Argentina' },
     sameAs: ['https://instagram.com/novamente.ar', 'https://twitter.com/Novamentear'],

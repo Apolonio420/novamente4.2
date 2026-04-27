@@ -93,7 +93,7 @@ const organizationJsonLd = {
     "@type": "Country",
     name: "Argentina",
   },
-  priceRange: "$21.800 - $60.000 ARS",
+  priceRange: "$21.800 - $55.000 ARS",
   currenciesAccepted: "ARS",
   paymentAccepted: "MercadoPago, Transferencia bancaria",
   openingHoursSpecification: {
