@@ -64,7 +64,7 @@ export default function CotizadorPage() {
       "@type": "AggregateOffer",
       priceCurrency: "ARS",
       lowPrice: "21800",
-      highPrice: "60000",
+      highPrice: "55000",
       offerCount: "8",
     },
     provider: {

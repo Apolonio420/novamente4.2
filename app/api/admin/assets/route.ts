@@ -8,7 +8,7 @@
  *   file        — the binary file
  *   partnerId   — partner slug, e.g. "falco"
  *   assetType   — "root" | "products"
- *   filename    — desired filename, e.g. "logo.png" or "hoodie-negro-front.png"
+ *   filename    — desired filename, e.g. "logo.png" or "buzo-hoodie-unisex-negro-front.png"
  *
  * Returns: { success: true, url: "/partners/<partnerId>/<assetType>/<filename>" }
  */

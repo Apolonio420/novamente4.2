@@ -46,7 +46,7 @@ vi.mock("@/lib/hooks/usePageContext", () => ({
 vi.mock("@/lib/catalog", () => ({
   PRODUCTS: [
     { name: "Aura Oversize", garmentType: "aura-oversize-tshirt", price: 31000, colors: ["negro", "blanco"], image: "/products/oversize-negro-front.jpeg", category: "remera" },
-    { name: "Hoodie Unisex", garmentType: "buzo-hoodie-unisex", price: 55000, colors: ["negro"], image: "/products/hoodie-negro-front.jpeg", category: "hoodie" },
+    { name: "Buzo Hoodie Oversize", garmentType: "buzo-hoodie-unisex", price: 55000, colors: ["negro"], image: "/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png", category: "hoodie" },
   ],
   formatPrice: (n: number) => `$${n.toLocaleString("es-AR")}`,
 }))
@@ -329,7 +329,7 @@ describe("C) Action execution", () => {
     await waitFor(() => {
       expect(screen.getByText(/Precios.*incluyen diseño/)).toBeInTheDocument()
       expect(screen.getByText("Aura Oversize")).toBeInTheDocument()
-      expect(screen.getByText("Hoodie Unisex")).toBeInTheDocument()
+      expect(screen.getByText("Buzo Hoodie Oversize")).toBeInTheDocument()
     })
   })
 })

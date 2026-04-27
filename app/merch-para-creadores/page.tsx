@@ -67,7 +67,7 @@ export default function MerchParaCreadores() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 21800,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",
@@ -210,7 +210,7 @@ export default function MerchParaCreadores() {
     { name: "Remera Oversize", price: "$31.000", sellAt: "$50.000", profit: "$19.000", badge: "Mas vendida" },
     { name: "Musculosa Unisex", price: "$21.800", sellAt: "$35.000", profit: "$13.200", badge: "Menor costo" },
     { name: "Remera Crop Mujer", price: "$23.500", sellAt: "$38.000", profit: "$14.500", badge: null },
-    { name: "Hoodie Unisex", price: "$55.000", sellAt: "$85.000", profit: "$30.000", badge: "Premium" },
+    { name: "Buzo Hoodie Oversize", price: "$55.000", sellAt: "$85.000", profit: "$30.000", badge: "Premium" },
     { name: "Buzo Cuello Redondo", price: "$43.000", sellAt: "$70.000", profit: "$27.000", badge: null },
   ]
 

@@ -375,7 +375,7 @@ export default function BlogComoCrearMerch() {
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-semibold text-white">Hoodie Buzo Hoodie Oversize</h4>
+                        <h4 className="font-semibold text-white">Buzo Hoodie Oversize</h4>
                         <p className="text-zinc-400 text-sm mt-1">Premium, el producto con mas margen</p>
                       </div>
                       <Badge className="bg-green-500/20 text-green-300 border-green-500/30">$60.000</Badge>

@@ -67,7 +67,7 @@ export default function RemerasCumpleanos() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 21800,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",
@@ -210,7 +210,7 @@ export default function RemerasCumpleanos() {
     { name: "Remera Oversize", price: "$31.000", ideal: "Look relajado y moderno", badge: null, discounted: "$29.450" },
     { name: "Musculosa Unisex", price: "$21.800", ideal: "Ideal para cumples de verano", badge: "Menor costo", discounted: "$20.710" },
     { name: "Remera Crop Mujer", price: "$23.500", ideal: "Para cumples de amigas", badge: null, discounted: "$22.325" },
-    { name: "Hoodie Unisex", price: "$55.000", ideal: "Para cumples de invierno", badge: "Premium", discounted: "$52.250" },
+    { name: "Buzo Hoodie Oversize", price: "$55.000", ideal: "Para cumples de invierno", badge: "Premium", discounted: "$52.250" },
     { name: "Buzo Cuello Redondo", price: "$43.000", ideal: "Comodo y abrigado", badge: null, discounted: "$40.850" },
   ]
 

@@ -44,8 +44,8 @@ const GARMENT_PRESETS: Record<string, GarmentPreset> = {
 const GARMENTS = [
   { path: "/garments/hoodie-black-front.jpeg", name: "Hoodie Negro Frontal" },
   { path: "/garments/hoodie-black-back.jpeg", name: "Hoodie Negro Trasero" },
-  { path: "/garments/hoodie-caramel-front.jpeg", name: "Hoodie Caramelo Frontal" },
-  { path: "/garments/hoodie-caramel-back.png", name: "Hoodie Caramelo Trasero" },
+  { path: "/garments/buzo-hoodie-unisex-marron-front.jpeg", name: "Buzo Hoodie Oversize Marron Frontal" },
+  { path: "/garments/buzo-hoodie-unisex-marron-back.jpeg", name: "Buzo Hoodie Oversize Marron Trasero" },
   { path: "/garments/hoodie-cream-front.jpeg", name: "Hoodie Crema Frontal" },
   { path: "/garments/hoodie-cream-back.png", name: "Hoodie Crema Trasero" },
   { path: "/garments/hoodie-gray-front.jpeg", name: "Hoodie Gris Frontal" },

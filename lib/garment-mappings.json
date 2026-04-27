@@ -37,8 +37,8 @@
   },
   {
     "id": "1755023468831",
-    "name": "Hoodie Caramelo Frontal",
-    "garmentPath": "/garments/hoodie-caramel-front.jpeg",
+    "name": "Buzo Hoodie Oversize Marron Frontal",
+    "garmentPath": "/garments/buzo-hoodie-unisex-marron-front.jpeg",
     "margins": {
       "top": 32,
       "right": 28,
@@ -55,8 +55,8 @@
   },
   {
     "id": "1755023509358",
-    "name": "Hoodie Caramelo Trasero",
-    "garmentPath": "/garments/hoodie-caramel-back.png",
+    "name": "Buzo Hoodie Oversize Marron Trasero",
+    "garmentPath": "/garments/buzo-hoodie-unisex-marron-back.jpeg",
     "margins": {
       "top": 31,
       "right": 32,

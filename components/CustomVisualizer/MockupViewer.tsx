@@ -19,7 +19,7 @@ interface MockupViewerProps {
 
 const GARMENTS = [
     { id: "aura-oversize-tshirt", name: "Remera Oversize", colors: ["black", "white", "caramel"], type: "tshirt", variant: "oversize" },
-    { id: "buzo-hoodie-unisex", name: "Hoodie Oversize", colors: ["black", "white", "stone-wash", "marron", "cream", "gray"], type: "hoodie", variant: "oversize" },
+    { id: "buzo-hoodie-unisex", name: "Buzo Hoodie Oversize", colors: ["black", "white", "stone-wash", "marron", "cream", "gray"], type: "hoodie", variant: "oversize" },
     { id: "aldea-classic-tshirt", name: "Remera Classic", colors: ["black", "white"], type: "tshirt", variant: "classic" },
 ]
 

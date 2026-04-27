@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.novamente.ar/products/hoodie-negro-front.jpeg",
+        url: "https://www.novamente.ar/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
         width: 800,
         height: 800,
         alt: "Buzos personalizados con estampado DTG — Novamente Argentina",
@@ -73,7 +73,7 @@ export default function BuzosPersonalizados() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 43000,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 7,
       availability: "https://schema.org/InStock",
@@ -95,7 +95,7 @@ export default function BuzosPersonalizados() {
         name: "Cuanto sale un buzo personalizado?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Buzos crewneck (cuello redondo) desde $43.000, hoodie clasico desde $55.000, hoodie oversize premium desde $60.000. El precio incluye el buzo de algodon 100% frizado + estampado DTG. Sin costos de setup ni minimos de cantidad.",
+          text: "Buzos crewneck (cuello redondo) desde $43.000 y Buzo Hoodie Oversize desde $55.000. El precio incluye el buzo de algodon 100% frizado + estampado DTG. Sin costos de setup ni minimos de cantidad.",
         },
       },
       {
@@ -164,11 +164,10 @@ export default function BuzosPersonalizados() {
     { name: "Buzo Cuello Redondo Negro", price: 43000, description: "Crewneck oversize, algodon 100% frizado", category: "Crewneck" },
     { name: "Buzo Cuello Redondo Crema", price: 43000, description: "Crewneck oversize, base neutra", category: "Crewneck" },
     { name: "Buzo Cuello Redondo Gris", price: 43000, description: "Crewneck oversize, gris melange clasico", category: "Crewneck" },
-    { name: "Hoodie Unisex Negro", price: 55000, description: "Hoodie clasico con capucha y bolsillo", category: "Hoodie", popular: true },
-    { name: "Buzo Hoodie Oversize Negro", price: 60000, description: "Hoodie oversize premium, caida amplia", category: "Hoodie Premium" },
-    { name: "Buzo Hoodie Oversize Caramel", price: 60000, description: "Hoodie oversize, tono caramelo", category: "Hoodie Premium" },
-    { name: "Buzo Hoodie Oversize Crema", price: 60000, description: "Hoodie oversize, base neutra versatil", category: "Hoodie Premium" },
-    { name: "Buzo Hoodie Oversize Gris", price: 60000, description: "Hoodie oversize, gris melange", category: "Hoodie Premium" },
+    { name: "Buzo Hoodie Oversize Negro", price: 55000, description: "Hoodie oversize con capucha y bolsillo", category: "Hoodie", popular: true },
+    { name: "Buzo Hoodie Oversize Marron", price: 55000, description: "Hoodie oversize, tono marron", category: "Hoodie" },
+    { name: "Buzo Hoodie Oversize Crema", price: 55000, description: "Hoodie oversize, base neutra versatil", category: "Hoodie" },
+    { name: "Buzo Hoodie Oversize Gris", price: 55000, description: "Hoodie oversize, gris melange", category: "Hoodie" },
   ]
 
   const advantages = [
@@ -269,7 +268,7 @@ export default function BuzosPersonalizados() {
             </div>
             <div>
               <p className="text-3xl font-bold text-violet-400">4 colores</p>
-              <p className="text-sm text-zinc-400">Negro, Crema, Gris, Caramel</p>
+              <p className="text-sm text-zinc-400">Negro, Crema, Gris, Marron</p>
             </div>
             <div>
               <p className="text-3xl font-bold text-emerald-400">4.9/5</p>
@@ -341,7 +340,7 @@ export default function BuzosPersonalizados() {
             <div className="grid md:grid-cols-4 gap-6">
               {[
                 { number: "01", icon: Sparkles, title: "Disena con IA o subi tu arte", description: "Describe tu idea y la IA genera el diseno. O subi tu PNG, JPG o SVG. 37 estilos artisticos disponibles." },
-                { number: "02", icon: Shirt, title: "Elegi tu buzo", description: "Hoodie oversize, hoodie clasico o crewneck. 4 colores, talles S a XXL. Algodon 100% frizado." },
+                { number: "02", icon: Shirt, title: "Elegi tu buzo", description: "Buzo Hoodie Oversize o crewneck. 6 colores, talles S a XXL. Algodon 100% frizado." },
                 { number: "03", icon: Layers, title: "Estampado DTG", description: "Impresion directa sobre la tela con tintas de agua. Colores vibrantes, tacto suave, 50+ lavados." },
                 { number: "04", icon: Truck, title: "Envio a tu puerta", description: "Produccion en 2-5 dias. Envio a todo el pais: AMBA $5.500, Interior BA $7.000, Resto $9.000." },
               ].map((step) => (
@@ -401,7 +400,7 @@ export default function BuzosPersonalizados() {
                     <p className="text-sm text-emerald-400 flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Look casual / urbano / streetwear</p>
                     <p className="text-sm text-emerald-400 flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> Ideal para uso diario y merch</p>
                   </div>
-                  <p className="text-lg font-bold">Desde $55.000 <span className="text-sm font-normal text-zinc-500">(clasico) / $60.000 (oversize)</span></p>
+                  <p className="text-lg font-bold">Desde $55.000 <span className="text-sm font-normal text-zinc-500">(Buzo Hoodie Oversize)</span></p>
                 </CardContent>
               </Card>
               <Card className="bg-zinc-900 border-violet-500/50 ring-1 ring-violet-500/20">
@@ -435,7 +434,7 @@ export default function BuzosPersonalizados() {
                 <p className="text-4xl font-bold text-indigo-400 mb-2">5%</p>
                 <p className="text-lg font-semibold mb-1">10 - 24 unidades</p>
                 <p className="text-sm text-zinc-400">Ej: Crewneck a $40.850</p>
-                <p className="text-xs text-zinc-500">Hoodie oversize a $57.000</p>
+                <p className="text-xs text-zinc-500">Buzo Hoodie Oversize a $52.250</p>
               </CardContent>
             </Card>
             <Card className="bg-zinc-900 border-indigo-500/50 text-center ring-1 ring-indigo-500/20">
@@ -444,7 +443,7 @@ export default function BuzosPersonalizados() {
                 <p className="text-4xl font-bold text-violet-400 mb-2">10%</p>
                 <p className="text-lg font-semibold mb-1">25 - 99 unidades</p>
                 <p className="text-sm text-zinc-400">Ej: Crewneck a $38.700</p>
-                <p className="text-xs text-zinc-500">Hoodie oversize a $54.000</p>
+                <p className="text-xs text-zinc-500">Buzo Hoodie Oversize a $49.500</p>
               </CardContent>
             </Card>
             <Card className="bg-zinc-900 border-zinc-800 text-center">
@@ -452,7 +451,7 @@ export default function BuzosPersonalizados() {
                 <p className="text-4xl font-bold text-emerald-400 mb-2">15%</p>
                 <p className="text-lg font-semibold mb-1">100+ unidades</p>
                 <p className="text-sm text-zinc-400">Ej: Crewneck a $36.550</p>
-                <p className="text-xs text-zinc-500">Hoodie oversize a $51.000</p>
+                <p className="text-xs text-zinc-500">Buzo Hoodie Oversize a $46.750</p>
               </CardContent>
             </Card>
           </div>
@@ -549,7 +548,7 @@ export default function BuzosPersonalizados() {
               {[
                 {
                   q: "Cuanto sale un buzo personalizado?",
-                  a: "Crewneck (cuello redondo) desde $43.000, hoodie clasico desde $55.000, hoodie oversize premium desde $60.000. Precio incluye buzo + estampado DTG. Sin costos de setup ni minimos.",
+                  a: "Crewneck (cuello redondo) desde $43.000 y Buzo Hoodie Oversize desde $55.000. Precio incluye buzo + estampado DTG. Sin costos de setup ni minimos.",
                 },
                 {
                   q: "Que diferencia hay entre hoodie y crewneck?",

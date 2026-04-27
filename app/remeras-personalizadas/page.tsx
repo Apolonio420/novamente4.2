@@ -72,7 +72,7 @@ export default function RemerasPersonalizadas() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 21800,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 9,
       availability: "https://schema.org/InStock",
@@ -94,7 +94,7 @@ export default function RemerasPersonalizadas() {
         name: "Cuanto cuesta una remera personalizada en Novamente?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Desde $21.800 (musculosa) hasta $60.000 (hoodie oversize). La remera oversize mas popular cuesta $31.000. El precio incluye la prenda + el estampado DTG. No hay costos de setup, matriceria ni minimos de cantidad.",
+          text: "Desde $21.800 (musculosa) hasta $55.000 (Buzo Hoodie Oversize). La remera oversize mas popular cuesta $31.000. El precio incluye la prenda + el estampado DTG. No hay costos de setup, matriceria ni minimos de cantidad.",
         },
       },
       {
@@ -165,7 +165,7 @@ export default function RemerasPersonalizadas() {
       price: 31000,
       badge: "Mas vendida",
       description: "Corte oversize, algodon 100%, 4 colores. La favorita de nuestros clientes.",
-      colors: "Blanco, Negro, Caramel, Stone Wash",
+      colors: "Blanco, Negro, Marron, Stone Wash",
       link: "/products",
     },
     {
@@ -202,10 +202,10 @@ export default function RemerasPersonalizadas() {
     },
     {
       name: "Buzo Hoodie Oversize",
-      price: 60000,
+      price: 55000,
       badge: "Premium",
       description: "Hoodie oversize con capucha, algodon pesado, maximo impacto visual.",
-      colors: "Negro, Caramel, Crema, Gris Melange",
+      colors: "Negro, Marron, Crema, Gris Melange",
       link: "/products",
     },
   ]
@@ -635,7 +635,7 @@ export default function RemerasPersonalizadas() {
             {[
               {
                 q: "Cuanto cuesta una remera personalizada?",
-                a: "Desde $21.800 (musculosa) hasta $60.000 (hoodie oversize). La remera oversize mas popular cuesta $31.000. El precio incluye la prenda + el estampado DTG. No hay costos de setup ni minimos.",
+                a: "Desde $21.800 (musculosa) hasta $55.000 (Buzo Hoodie Oversize). La remera oversize mas popular cuesta $31.000. El precio incluye la prenda + el estampado DTG. No hay costos de setup ni minimos.",
               },
               {
                 q: "Puedo pedir 1 sola unidad?",

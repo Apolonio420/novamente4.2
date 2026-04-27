@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.novamente.ar/products/hoodie-negro-front.jpeg",
+        url: "https://www.novamente.ar/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
         width: 800,
         height: 800,
         alt: "Buzos de egresados personalizados con IA — Novamente",
@@ -67,7 +67,7 @@ export default function BuzosEgresados() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 28600,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",
@@ -89,7 +89,7 @@ export default function BuzosEgresados() {
         name: "Cuanto cuestan los buzos de egresados?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Los buzos de egresados arrancan desde $43.000 (buzo cuello redondo) y $55.000 (hoodie con capucha). El modelo premium oversize sale $60.000. Ofrecemos descuentos por cantidad: 5% en 10-24 unidades, 10% en 25-49 unidades, y 15% en 50+ unidades. Un curso de 30 alumnos con hoodie sale $49.500/un. (10% OFF).",
+          text: "Los buzos de egresados arrancan desde $43.000 (buzo cuello redondo) y $55.000 (hoodie con capucha). El modelo premium oversize sale $55.000. Ofrecemos descuentos por cantidad: 5% en 10-24 unidades, 10% en 25-49 unidades, y 15% en 50+ unidades. Un curso de 30 alumnos con hoodie sale $49.500/un. (10% OFF).",
         },
       },
       {
@@ -175,7 +175,7 @@ export default function BuzosEgresados() {
       icon: Camera,
       title: "Fotos de promo",
       description: "Buzos para la sesion de fotos grupal. Quedan increibles con disenos IA unicos.",
-      example: "Hoodie oversize con diseno artistico generado por IA",
+      example: "Buzo Hoodie Oversize con diseno artistico generado por IA",
       color: "text-violet-400",
       bg: "bg-violet-500/10",
     },
@@ -206,8 +206,8 @@ export default function BuzosEgresados() {
   ]
 
   const products = [
-    { name: "Hoodie Unisex", price: "$55.000", ideal: "El clasico buzo de egresados", badge: "Mas elegido", discounted: "$49.500" },
-    { name: "Hoodie Oversize", price: "$60.000", ideal: "Premium, look moderno", badge: "Premium", discounted: "$54.000" },
+    { name: "Buzo Hoodie Oversize", price: "$55.000", ideal: "El clasico buzo de egresados", badge: "Mas elegido", discounted: "$49.500" },
+    { name: "Buzo Hoodie Oversize", price: "$55.000", ideal: "Premium, look moderno", badge: "Premium", discounted: "$54.000" },
     { name: "Buzo Cuello Redondo", price: "$43.000", ideal: "Opcion economica, mismo estampado", badge: "Mejor precio", discounted: "$38.700" },
     { name: "Remera Classic Fit", price: "$28.600", ideal: "Para el viaje, fotos, fiesta", badge: null, discounted: "$25.740" },
     { name: "Remera Oversize", price: "$31.000", ideal: "Look relajado, unisex", badge: null, discounted: "$27.900" },
@@ -495,7 +495,7 @@ export default function BuzosEgresados() {
 
             <div className="text-center mt-8 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl max-w-2xl mx-auto">
               <p className="text-cyan-300 font-medium">
-                Ejemplo: Curso de 30 alumnos con Hoodie Unisex
+                Ejemplo: Curso de 30 alumnos con Buzo Hoodie Oversize
               </p>
               <p className="text-zinc-400 text-sm mt-1">
                 30 x $49.500 = <span className="text-white font-semibold">$1.485.000</span> total

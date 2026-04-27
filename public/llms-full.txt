@@ -22,8 +22,7 @@
 ## Catalogo completo de productos (precios en ARS)
 
 ### Hoodies y buzos
-- Hoodie Buzo Hoodie Oversize: desde $60.000 — Hoodie premium oversize, algodon 100%, capucha con cordones, bolsillo canguro. Colores: negro, blanco, caramel, crema, gris melange, stone wash.
-- Buzo Hoodie Oversize: desde $55.000 — Hoodie clasico unisex, algodon 100%, capucha con cordones. Colores: negro, blanco, gris melange.
+- Buzo Hoodie Oversize: desde $55.000 — Hoodie oversize, algodon 100%, capucha con cordones, bolsillo canguro. Colores: negro, blanco, marron, crema, gris melange, stone wash.
 - Buzo Cuello Redondo / Crewneck: desde $43.000 — Buzo sin capucha, algodon 100%, corte recto. Colores: negro, blanco, gris melange.
 
 ### Remeras
@@ -83,7 +82,7 @@ Plataforma para empresas, marcas y emprendedores que quieren crear su linea de m
 
 ### Margenes para partners
 - Remera Aldea Classic Fit: costo partner ~$17.000, precio sugerido $28.600, margen ~68%
-- Hoodie Buzo Hoodie Oversize: costo partner ~$36.000, precio sugerido $60.000, margen ~67%
+- Buzo Hoodie Oversize: costo partner ~$34.000, precio sugerido $55.000, margen estimado
 - Buzo Crewneck: costo partner ~$26.000, precio sugerido $43.000, margen ~65%
 
 ## Preguntas frecuentes
@@ -95,7 +94,7 @@ Novamente es la primera marca argentina de indumentaria personalizada con inteli
 Las remeras personalizadas arrancan desde $28.600 ARS para el modelo Aldea Classic Fit y $31.000 ARS para la Aura Oversize. Los precios incluyen el diseño personalizado con IA y estampado DTG. Sin cargos adicionales.
 
 ### Cuanto cuesta un hoodie personalizado?
-Los hoodies comienzan en $55.000 ARS para el Buzo Hoodie Oversize y $60.000 ARS para el Buzo Hoodie Oversize premium. Disponibles en negro, blanco, caramel, crema, gris melange y stone wash. Incluyen diseño con IA y estampado DTG.
+Los hoodies comienzan en $55.000 ARS para el Buzo Hoodie Oversize. Disponibles en negro, blanco, marron, crema, gris melange y stone wash. Incluyen diseño con IA y estampado DTG.
 
 ### Como funciona el diseño con IA?
 Tres pasos: 1) Describis tu idea en texto. 2) Elegis un estilo artistico de los 37 disponibles. 3) La IA genera un diseño unico en menos de 30 segundos. No necesitas saber diseñar.

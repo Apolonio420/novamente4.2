@@ -1,4 +1,4 @@
-﻿# Preguntas Frecuentes
+# Preguntas Frecuentes
 
 ## Sobre Novamente
 

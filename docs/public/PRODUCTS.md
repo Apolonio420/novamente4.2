@@ -1,4 +1,4 @@
-﻿# Catálogo de Productos Novamente
+# Catálogo de Productos Novamente
 
 Todos los productos son 100% algodón premium, optimizados para impresión DTG de alta definición. Incluyen diseño con IA + estampado DTG premium. Sin cargos adicionales.
 

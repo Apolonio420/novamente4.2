@@ -20,7 +20,7 @@ export const PRODUCTS: Product[] = [
     garmentType: 'buzo-hoodie-unisex',
     price: 55000,
     colors: ['negro', 'blanco', 'stone-wash', 'marron', 'gris melange', 'crema'],
-    image: '/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png',
+    image: '/products/buzo-cuello-redondo-unisex-negro-estilo-oversize/mockups nuevos productos-8.png',
     category: 'buzo',
   },
   {
@@ -28,7 +28,7 @@ export const PRODUCTS: Product[] = [
     garmentType: 'buzo-cuello-redondo',
     price: 43000,
     colors: ['negro', 'blanco', 'stone-wash'],
-    image: '/products/hoodie-negro-front.jpeg',
+    image: '/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png',
     category: 'buzo',
   },
   {

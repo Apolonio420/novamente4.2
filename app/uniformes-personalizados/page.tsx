@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.novamente.ar/products/hoodie-negro-front.jpeg",
+        url: "https://www.novamente.ar/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
         width: 800,
         height: 800,
         alt: "Uniformes personalizados con IA — Novamente",
@@ -69,7 +69,7 @@ export default function UniformesPersonalizados() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 28600,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",
@@ -211,8 +211,8 @@ export default function UniformesPersonalizados() {
     { name: "Remera Classic Fit", price: "$28.600", ideal: "Gastro, retail, salud", badge: "Mas vendida" },
     { name: "Remera Oversize", price: "$31.000", ideal: "Tech, startups, creativas", badge: null },
     { name: "Musculosa Unisex", price: "$21.800", ideal: "Fitness, deporte, verano", badge: "Menor costo" },
-    { name: "Hoodie Unisex", price: "$43.000", ideal: "Tech, educacion, outdoor", badge: null },
-    { name: "Hoodie Oversize", price: "$60.000", ideal: "Premium, welcome packs", badge: "Premium" },
+    { name: "Buzo Hoodie Oversize", price: "$43.000", ideal: "Tech, educacion, outdoor", badge: null },
+    { name: "Buzo Hoodie Oversize", price: "$55.000", ideal: "Premium, welcome packs", badge: "Premium" },
     { name: "Buzo Cuello Redondo", price: "$43.000", ideal: "Invierno, uniformes abrigados", badge: null },
   ]
 

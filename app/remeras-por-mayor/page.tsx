@@ -67,7 +67,7 @@ export default function RemerasPorMayor() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 24310,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 6,
       availability: "https://schema.org/InStock",
@@ -232,7 +232,7 @@ export default function RemerasPorMayor() {
     },
     {
       name: "Buzo Hoodie Oversize",
-      regularPrice: "$60.000",
+      regularPrice: "$55.000",
       wholesalePrice: "$51.000",
       discount: "15% OFF (100+ un.)",
       material: "Algodon 100% frisa 350g",

@@ -78,7 +78,7 @@ export default function RegalosPersonalizados() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 21800,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 9,
       availability: "https://schema.org/InStock",
@@ -108,7 +108,7 @@ export default function RegalosPersonalizados() {
         name: "Cuanto cuesta un regalo personalizado?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Desde $21.800 (musculosa) hasta $60.000 (hoodie oversize premium). El precio incluye la prenda de algodon 100% + estampado DTG. Descuentos por cantidad: 5% desde 10 un., 10% desde 25, 15% desde 100+.",
+          text: "Desde $21.800 (musculosa) hasta $55.000 (Buzo Hoodie Oversize). El precio incluye la prenda de algodon 100% + estampado DTG. Descuentos por cantidad: 5% desde 10 un., 10% desde 25, 15% desde 100+.",
         },
       },
       {
@@ -172,8 +172,8 @@ export default function RegalosPersonalizados() {
     { name: "Remera Clasica Mujer", price: 28600, description: "Fit femenino, tela premium", category: "Remera" },
     { name: "Aura Oversize T-Shirt", price: 31000, description: "Oversize premium, caida amplia", category: "Remera" },
     { name: "Buzo Cuello Redondo", price: 43000, description: "Crewneck frizado, ideal otono-invierno", category: "Buzo" },
-    { name: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie clasico con capucha", category: "Hoodie", popular: true },
-    { name: "Buzo Hoodie Oversize", price: 60000, description: "Hoodie premium oversize", category: "Hoodie Premium" },
+    { name: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize con capucha", category: "Hoodie", popular: true },
+    { name: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize", category: "Buzo Hoodie Oversize" },
   ]
 
   const occasions = [
@@ -370,7 +370,7 @@ export default function RegalosPersonalizados() {
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-2">
                     <Badge className={
-                      product.category === "Hoodie Premium"
+                      product.category === "Buzo Hoodie Oversize"
                         ? "bg-orange-500/20 text-orange-300 border-orange-500/30 text-xs"
                         : product.category === "Hoodie"
                         ? "bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs"
@@ -516,7 +516,7 @@ export default function RegalosPersonalizados() {
               },
               {
                 q: "Cuanto cuesta un regalo personalizado?",
-                a: "Desde $21.800 (musculosa) hasta $60.000 (hoodie oversize). El precio incluye prenda + estampado DTG. Descuentos por cantidad: 5% desde 10 un., 10% desde 25, 15% desde 100+.",
+                a: "Desde $21.800 (musculosa) hasta $55.000 (Buzo Hoodie Oversize). El precio incluye prenda + estampado DTG. Descuentos por cantidad: 5% desde 10 un., 10% desde 25, 15% desde 100+.",
               },
               {
                 q: "Puedo usar una foto para el diseno?",

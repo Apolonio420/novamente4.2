@@ -168,7 +168,7 @@ export const PRODUCTS: Product[] = [
         id: "buzo-hoodie-negro",
         name: "Buzo Hoodie Oversize - Negro",
         price: "$55.000",
-        description: "Buzo hoodie clásico en color negro. El básico definitivo con fit oversize y algodón frizado premium. Ideal para estampar.",
+        description: "Buzo hoodie oversize en color negro. El básico definitivo con fit amplio y algodón frizado premium. Ideal para estampar.",
         images: {
             main: "/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
             lifestyle: ["/products/buzo-hoddie-unisex-negro/Buzo_Unisex_Studio.png", "/products/buzo-hoddie-unisex-negro/Buzo_Hoodie_Negro_Hombre_Lifestyle.png"],
@@ -196,7 +196,7 @@ export const PRODUCTS: Product[] = [
         id: "buzo-hoodie-blanco",
         name: "Buzo Hoodie Oversize - Blanco",
         price: "$55.000",
-        description: "Buzo hoodie clásico en color blanco. Lienzo perfecto para tus diseños más creativos. Algodón frizado de alta calidad.",
+        description: "Buzo hoodie oversize en color blanco. Lienzo perfecto para tus diseños más creativos. Algodón frizado de alta calidad.",
         images: {
             main: "/products/buzo-hoddie-unisex-blanco/mockups nuevos productos-11.png",
             lifestyle: ["/products/buzo-hoddie-unisex-blanco/Buzo_Unisex_Studio.png"],

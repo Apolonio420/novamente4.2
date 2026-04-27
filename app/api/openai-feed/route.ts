@@ -45,12 +45,12 @@ export async function GET() {
       language: 'es',
     },
     {
-      title: 'Hoodie Esencial — Personalizado con IA',
+      title: 'Buzo Hoodie Oversize — Personalizado con IA',
       description:
         'Hoodie de frisa algodón 350g con capucha y bolsillo canguro. Estampado DTG premium con diseño generado por inteligencia artificial. 37 estilos artísticos. Envíos a todo Argentina.',
       url: `${baseUrl}/products`,
-      image_url: `${baseUrl}/products/hoodie-frente.png`,
-      price: '52500',
+      image_url: `${baseUrl}/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png`,
+      price: '55000',
       currency: 'ARS',
       brand: 'Novamente',
       category: 'Ropa > Buzos y Hoodies > Hoodies Personalizados',

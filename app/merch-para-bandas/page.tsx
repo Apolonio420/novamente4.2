@@ -67,7 +67,7 @@ export default function MerchParaBandas() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 21800,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",
@@ -210,7 +210,7 @@ export default function MerchParaBandas() {
     { name: "Remera Oversize", price: "$31.000", ideal: "Look urbano, ideal para trap/rap y estetica streetwear", badge: "Tendencia", discounted: "$27.900" },
     { name: "Musculosa Unisex", price: "$21.800", ideal: "Shows de verano, festivales, recitales al aire libre", badge: null, discounted: "$19.620" },
     { name: "Remera Crop Mujer", price: "$23.500", ideal: "Fan merch femenino. Se vende rapido en shows", badge: null, discounted: "$21.150" },
-    { name: "Hoodie Unisex", price: "$55.000", ideal: "Premium. Ideal para giras de invierno y ediciones limitadas", badge: "Premium", discounted: "$49.500" },
+    { name: "Buzo Hoodie Oversize", price: "$55.000", ideal: "Premium. Ideal para giras de invierno y ediciones limitadas", badge: "Premium", discounted: "$49.500" },
     { name: "Buzo Cuello Redondo", price: "$43.000", ideal: "Mas accesible que el hoodie. Gran margen de reventa", badge: null, discounted: "$38.700" },
   ]
 

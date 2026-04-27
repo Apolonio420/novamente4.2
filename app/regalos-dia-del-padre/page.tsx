@@ -72,7 +72,7 @@ export default function RegalosDiaDelPadre() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 21800,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 9,
       availability: "https://schema.org/InStock",
@@ -118,7 +118,7 @@ export default function RegalosDiaDelPadre() {
         name: "Cuanto cuesta un regalo personalizado para el Dia del Padre?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Remeras desde $21.800 (musculosa) hasta $31.000 (oversize). Buzos desde $43.000 (crewneck) hasta $60.000 (hoodie oversize premium). El precio incluye la prenda de algodon 100% + estampado DTG. Descuentos por cantidad si compras para varios papas.",
+          text: "Remeras desde $21.800 (musculosa) hasta $31.000 (oversize). Buzos desde $43.000 (crewneck) hasta $55.000 (Buzo Hoodie Oversize). El precio incluye la prenda de algodon 100% + estampado DTG. Descuentos por cantidad si compras para varios papas.",
         },
       },
       {
@@ -166,8 +166,8 @@ export default function RegalosDiaDelPadre() {
     { name: "Aldea Classic Fit", price: 28600, description: "Fit regular, algodon 100%", category: "Remera", popular: true },
     { name: "Aura Oversize T-Shirt", price: 31000, description: "Oversize premium, caida amplia", category: "Remera" },
     { name: "Buzo Cuello Redondo", price: 43000, description: "Crewneck frizado, ideal invierno", category: "Buzo" },
-    { name: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie clasico con capucha", category: "Hoodie", popular: true },
-    { name: "Buzo Hoodie Oversize", price: 60000, description: "Hoodie premium oversize", category: "Hoodie Premium" },
+    { name: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize con capucha", category: "Hoodie", popular: true },
+    { name: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize", category: "Buzo Hoodie Oversize" },
   ]
 
   const giftIdeas = [
@@ -367,7 +367,7 @@ export default function RegalosDiaDelPadre() {
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-2">
                     <Badge className={
-                      product.category === "Hoodie Premium"
+                      product.category === "Buzo Hoodie Oversize"
                         ? "bg-orange-500/20 text-orange-300 border-orange-500/30 text-xs"
                         : product.category === "Hoodie"
                         ? "bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs"
@@ -476,7 +476,7 @@ export default function RegalosDiaDelPadre() {
                 {
                   name: "Carolina M.",
                   role: "Esposa — regalo sorpresa",
-                  text: "Le regale un hoodie oversize con un diseno de su banda favorita generado por IA. Lo usa todos los dias. Ya estoy pensando que le hago para este Dia del Padre.",
+                  text: "Le regale un Buzo Hoodie Oversize con un diseno de su banda favorita generado por IA. Lo usa todos los dias. Ya estoy pensando que le hago para este Dia del Padre.",
                   rating: 5,
                 },
               ].map((testimonial) => (
@@ -534,7 +534,7 @@ export default function RegalosDiaDelPadre() {
               },
               {
                 q: "Cuanto cuesta?",
-                a: "Desde $21.800 (musculosa) hasta $60.000 (hoodie oversize premium). El precio incluye prenda de algodon 100% + estampado DTG. Recomendamos buzos para junio (invierno).",
+                a: "Desde $21.800 (musculosa) hasta $55.000 (Buzo Hoodie Oversize). El precio incluye prenda de algodon 100% + estampado DTG. Recomendamos buzos para junio (invierno).",
               },
               {
                 q: "Puedo pedir varios regalos con disenos diferentes?",

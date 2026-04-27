@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.novamente.ar/products/hoodie-negro-front.jpeg",
+        url: "https://www.novamente.ar/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
         width: 800,
         height: 800,
         alt: "Regalos empresariales personalizados con IA — Novamente",
@@ -68,7 +68,7 @@ export default function RegalosEmpresariales() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 28600,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",
@@ -122,7 +122,7 @@ export default function RegalosEmpresariales() {
         name: "Que productos estan disponibles para regalos empresariales?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Ofrecemos remeras (Classic Fit desde $28.600, Oversize desde $31.000), hoodies (desde $43.000 hasta $60.000), buzos cuello redondo ($43.000), musculosas ($21.800), remeras crop ($23.500) y lienzos decorativos ($59.900). Todos en algodon 100% con estampado DTG premium.",
+          text: "Ofrecemos remeras (Classic Fit desde $28.600, Oversize desde $31.000), hoodies (desde $43.000 hasta $55.000), buzos cuello redondo ($43.000), musculosas ($21.800), remeras crop ($23.500) y lienzos decorativos ($59.900). Todos en algodon 100% con estampado DTG premium.",
         },
       },
       {
@@ -323,7 +323,7 @@ export default function RegalosEmpresariales() {
                 <div className="space-y-4">
                   <div className="aspect-[3/4] relative rounded-2xl overflow-hidden shadow-2xl">
                     <Image
-                      src="/products/hoodie-negro-front.jpeg"
+                      src="/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png"
                       alt="Hoodie corporativo negro personalizado con logo — algodon 100% DTG"
                       fill
                       className="object-cover"
@@ -544,18 +544,18 @@ export default function RegalosEmpresariales() {
                 badge: null,
               },
               {
-                name: "Hoodie Oversize",
-                price: "Desde $60.000",
+                name: "Buzo Hoodie Oversize",
+                price: "Desde $55.000",
                 desc: "Premium con frisa interior. Regalo corporativo de alto impacto.",
-                img: "/products/hoodie-negro-front.jpeg",
-                colors: "Negro, Crema, Caramel, Gris",
+                img: "/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
+                colors: "Negro, Crema, Marron, Gris",
                 badge: "Premium",
               },
               {
-                name: "Hoodie Clasico",
+                name: "Buzo Hoodie Oversize",
                 price: "Desde $55.000",
-                desc: "Hoodie unisex con capucha y bolsillo canguro. Clasico y versatil.",
-                img: "/products/buzo-hoodie-negro-front.jpeg",
+                desc: "Hoodie oversize con capucha y bolsillo canguro. Clasico y versatil.",
+                img: "/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
                 colors: "Negro, Gris, Crema",
                 badge: null,
               },

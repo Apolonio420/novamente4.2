@@ -25,7 +25,7 @@ async function simulate() {
     try {
         // 1. GENERAR IMAGEN REAL
         // (Opcional: Si el server no está arriba, usamos una imagen placeholder real de Novamente)
-        let imageUrl = "https://novamente.ar/products/hoodie-negro-front.jpeg";
+        let imageUrl = "https://novamente.ar/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png";
 
         try {
             const API_URL = 'http://localhost:3000';

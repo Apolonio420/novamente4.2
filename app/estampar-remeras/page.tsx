@@ -71,7 +71,7 @@ export default function EstamparRemeras() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 21800,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 9,
       availability: "https://schema.org/InStock",
@@ -191,8 +191,8 @@ export default function EstamparRemeras() {
     { garment: "Remera Clasica", price: 28600, description: "Fit regular, unisex/mujer" },
     { garment: "Aura Oversize T-Shirt", price: 31000, description: "La mas vendida", popular: true },
     { garment: "Buzo Cuello Redondo", price: 43000, description: "Crewneck oversize" },
-    { garment: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie clasico" },
-    { garment: "Buzo Hoodie Oversize", price: 60000, description: "Hoodie premium oversize" },
+    { garment: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize" },
+    { garment: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize" },
   ]
 
   const steps = [

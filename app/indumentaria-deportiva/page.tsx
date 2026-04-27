@@ -67,7 +67,7 @@ export default function IndumentariaDeportiva() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 21800,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",
@@ -210,7 +210,7 @@ export default function IndumentariaDeportiva() {
     { name: "Remera Oversize", price: "$31.000", ideal: "Look relajado para fuera de cancha", badge: null, discounted: "$29.450" },
     { name: "Musculosa Unisex", price: "$21.800", ideal: "Ideal para deportes indoor y verano", badge: "Deportes", discounted: "$20.710" },
     { name: "Remera Crop Mujer", price: "$23.500", ideal: "Para equipos femeninos", badge: null, discounted: "$22.325" },
-    { name: "Hoodie Unisex", price: "$55.000", ideal: "Para concentracion y salidas del club", badge: "Premium", discounted: "$52.250" },
+    { name: "Buzo Hoodie Oversize", price: "$55.000", ideal: "Para concentracion y salidas del club", badge: "Premium", discounted: "$52.250" },
     { name: "Buzo Cuello Redondo", price: "$43.000", ideal: "Abrigo para entrenamiento de invierno", badge: null, discounted: "$40.850" },
   ]
 

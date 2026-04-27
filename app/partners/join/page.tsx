@@ -1571,7 +1571,7 @@ function StepPlan({
 // Fallback products (plain garments) — used while mockups generate
 const PREVIEW_PRODUCTS = [
   { name: 'Remera Oversize', price: '$18.500', fallback: '/garments/tshirt-black-oversize-front.jpeg', category: 'Remeras' },
-  { name: 'Hoodie Premium', price: '$32.900', fallback: '/garments/hoodie-caramel-front.jpeg', category: 'Buzos' },
+  { name: 'Buzo Hoodie Oversize', price: '$32.900', fallback: '/garments/buzo-hoodie-unisex-marron-front.jpeg', category: 'Buzos' },
   { name: 'Remera Classic', price: '$15.200', fallback: '/garments/tshirt-white-classic-front.jpeg', category: 'Remeras' },
 ]
 

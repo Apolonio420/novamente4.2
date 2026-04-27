@@ -67,7 +67,7 @@ export default function DespedidasPersonalizadas() {
     offers: {
       "@type": "AggregateOffer",
       lowPrice: 21800,
-      highPrice: 60000,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",
@@ -210,7 +210,7 @@ export default function DespedidasPersonalizadas() {
     { name: "Remera Oversize", price: "$31.000", ideal: "Look relajado, unisex, comoda", badge: null, discounted: "$29.450" },
     { name: "Musculosa Unisex", price: "$21.800", ideal: "Ideal para verano y boliche", badge: "Menor costo", discounted: "$20.710" },
     { name: "Remera Crop Mujer", price: "$23.500", ideal: "Para despedidas de soltera", badge: null, discounted: "$22.325" },
-    { name: "Hoodie Unisex", price: "$55.000", ideal: "Para viajes y noches frias", badge: "Premium", discounted: "$52.250" },
+    { name: "Buzo Hoodie Oversize", price: "$55.000", ideal: "Para viajes y noches frias", badge: "Premium", discounted: "$52.250" },
     { name: "Buzo Cuello Redondo", price: "$43.000", ideal: "Comodo para todo el fin de semana", badge: null, discounted: "$40.850" },
   ]
 

@@ -1,4 +1,4 @@
-﻿# Programa Novamente Partners
+# Programa Novamente Partners
 
 ## ¿Qué es?
 Plataforma para que empresas, marcas personales y emprendedores creen y vendan su propia línea de merchandising personalizado sin inversión inicial. Nosotros producimos y enviamos.

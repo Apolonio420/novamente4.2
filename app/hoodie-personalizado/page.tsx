@@ -12,7 +12,7 @@ import {
 export const metadata: Metadata = {
   title: "Hoodie Personalizado Argentina — Buzo custom con IA | Novamente",
   description:
-    "Disena tu hoodie personalizado con inteligencia artificial. Buzos oversize desde $43.000, algodon premium, estampado DTG. 37 estilos artisticos, 4 colores. Envios a todo el pais.",
+    "Disena tu hoodie personalizado con inteligencia artificial. Buzo Hoodie Oversize desde $55.000, algodon premium, estampado DTG. 37 estilos artisticos, 6 colores. Envios a todo el pais.",
   keywords: [
     "hoodie personalizado argentina",
     "buzo personalizado",
@@ -28,12 +28,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Hoodie Personalizado con IA — Novamente",
     description:
-      "Crea tu hoodie unico con inteligencia artificial. 3 modelos, 37 estilos, algodon premium, estampado DTG. Desde $43.000. Envios a toda Argentina.",
+      "Crea tu hoodie unico con inteligencia artificial. Buzo Hoodie Oversize, 37 estilos, algodon premium, estampado DTG. Desde $55.000. Envios a toda Argentina.",
     url: "https://www.novamente.ar/hoodie-personalizado",
     type: "website",
     images: [
       {
-        url: "https://www.novamente.ar/products/hoodie-negro-front.jpeg",
+        url: "https://www.novamente.ar/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
         width: 800,
         height: 800,
         alt: "Hoodie personalizado con estampado DTG — Novamente",
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Hoodie Personalizado con IA — Novamente",
     description:
-      "Crea tu hoodie unico en minutos. 37 estilos artisticos, algodon premium, DTG. Desde $43.000.",
+      "Crea tu hoodie unico en minutos. 37 estilos artisticos, algodon premium, DTG. Desde $55.000.",
   },
   alternates: { canonical: "https://www.novamente.ar/hoodie-personalizado" },
 }
@@ -55,22 +55,22 @@ export default function HoodiePersonalizado() {
     "@type": "Product",
     name: "Hoodie Personalizado con IA — Novamente",
     description:
-      "Hoodie de algodon premium con diseno personalizado generado por inteligencia artificial y estampado DTG. Disponible en Buzo Hoodie Oversize, Hoodie Unisex y Cuello Redondo.",
+      "Hoodie de algodon premium con diseno personalizado generado por inteligencia artificial y estampado DTG. Disponible como Buzo Hoodie Oversize.",
     image: [
-      "https://www.novamente.ar/products/hoodie-negro-front.jpeg",
-      "https://www.novamente.ar/products/hoodie-caramel-front.jpeg",
-      "https://www.novamente.ar/products/hoodie-crema-front.png",
-      "https://www.novamente.ar/products/hoodie-gris-front.png",
+      "https://www.novamente.ar/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
+      "https://www.novamente.ar/products/buzo-hoddie-unisex-marron/front.jpeg",
+      "https://www.novamente.ar/products/buzo-hoddie-unisex-crema/front.jpeg",
+      "https://www.novamente.ar/products/buzo-hoddie-unisex-gris/front.jpeg",
     ],
     brand: { "@type": "Brand", name: "Novamente" },
     category: "Buzos y Hoodies Personalizados",
     material: "Algodon premium",
     offers: {
       "@type": "AggregateOffer",
-      lowPrice: 43000,
-      highPrice: 60000,
+      lowPrice: 55000,
+      highPrice: 55000,
       priceCurrency: "ARS",
-      offerCount: 3,
+      offerCount: 1,
       availability: "https://schema.org/InStock",
       seller: { "@id": "https://www.novamente.ar/#organization" },
       shippingDetails: {
@@ -103,7 +103,7 @@ export default function HoodiePersonalizado() {
         name: "Cuanto cuesta un hoodie personalizado en Novamente?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Los hoodies personalizados en Novamente arrancan desde $43.000 ARS (Buzo Cuello Redondo), $55.000 ARS (Buzo Hoodie Oversize) y $60.000 ARS (Buzo Hoodie Oversize). Todos incluyen el diseno personalizado con IA y estampado DTG premium.",
+          text: "Los hoodies personalizados en Novamente arrancan desde $55.000 ARS para el Buzo Hoodie Oversize. Incluyen el diseno personalizado con IA y estampado DTG premium.",
         },
       },
       {
@@ -111,7 +111,7 @@ export default function HoodiePersonalizado() {
         name: "Que modelos de hoodie tienen disponibles?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Ofrecemos 3 modelos: Buzo Hoodie Oversize (oversize con capucha, 4 colores), Buzo Hoodie Oversize (clasico con capucha, 3 colores) y Buzo Cuello Redondo (sin capucha, 3 colores). Todos de algodon premium con estampado DTG.",
+          text: "Ofrecemos Buzo Hoodie Oversize con capucha, calce oversize y 6 colores disponibles. Todos de algodon premium con estampado DTG.",
         },
       },
       {
@@ -119,7 +119,7 @@ export default function HoodiePersonalizado() {
         name: "En que colores vienen los hoodies?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Los colores varian segun el modelo: Buzo Hoodie Oversize viene en negro, caramel, crema y gris melange. El Hoodie Unisex en negro, stone-wash y blanco. El Cuello Redondo en negro, blanco y stone-wash.",
+          text: "El Buzo Hoodie Oversize viene en negro, blanco, stone-wash, marron, crema y gris melange.",
         },
       },
       {
@@ -127,7 +127,7 @@ export default function HoodiePersonalizado() {
         name: "Cuanto margen puedo sacar vendiendo hoodies?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Los hoodies son el producto con mayor margen. Un Buzo Cuello Redondo cuesta $43.000 y se vende facilmente a $70.000-80.000. Un Buzo Hoodie Oversize cuesta $60.000 y se vende a $95.000-110.000. Eso es un margen del 60-80% por unidad.",
+          text: "Los hoodies son el producto con mayor margen. Un Buzo Hoodie Oversize cuesta $55.000 y se vende a $95.000-110.000. Eso es un margen del 60-80% por unidad.",
         },
       },
       {
@@ -209,14 +209,14 @@ export default function HoodiePersonalizado() {
               </h1>
 
               <p className="text-lg md:text-xl text-white/70 mb-8 max-w-lg leading-relaxed">
-                Disena tu hoodie unico con inteligencia artificial. 3 modelos, 4 colores,
+                Disena tu hoodie unico con inteligencia artificial. Buzo Hoodie Oversize, 6 colores,
                 algodon premium y estampado DTG que dura. Ideal para venta o uso personal.
               </p>
 
               {/* Price anchor + margin hook */}
               <div className="flex flex-col gap-2 mb-8">
                 <div className="flex items-baseline gap-3">
-                  <span className="text-3xl md:text-4xl font-bold text-white">Desde $43.000</span>
+                  <span className="text-3xl md:text-4xl font-bold text-white">Desde $55.000</span>
                   <span className="text-white/50 text-lg">ARS</span>
                 </div>
                 <p className="text-green-400 text-sm font-medium flex items-center gap-1.5">
@@ -271,7 +271,7 @@ export default function HoodiePersonalizado() {
                 <div className="space-y-4">
                   <div className="aspect-[3/4] relative rounded-2xl overflow-hidden shadow-2xl">
                     <Image
-                      src="/products/hoodie-negro-front.jpeg"
+                      src="/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png"
                       alt="Hoodie personalizado negro oversize — algodon premium DTG"
                       fill
                       className="object-cover"
@@ -281,7 +281,7 @@ export default function HoodiePersonalizado() {
                   </div>
                   <div className="aspect-square relative rounded-2xl overflow-hidden shadow-2xl">
                     <Image
-                      src="/products/hoodie-crema-front.png"
+                      src="/products/buzo-hoddie-unisex-crema/front.jpeg"
                       alt="Hoodie personalizado crema — estampado DTG premium"
                       fill
                       className="object-cover"
@@ -292,8 +292,8 @@ export default function HoodiePersonalizado() {
                 <div className="space-y-4 pt-8">
                   <div className="aspect-square relative rounded-2xl overflow-hidden shadow-2xl">
                     <Image
-                      src="/products/hoodie-caramel-front.jpeg"
-                      alt="Hoodie personalizado caramel oversize con estampado DTG"
+                      src="/products/buzo-hoddie-unisex-marron/front.jpeg"
+                      alt="Hoodie personalizado marron oversize con estampado DTG"
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 50vw, 25vw"
@@ -301,7 +301,7 @@ export default function HoodiePersonalizado() {
                   </div>
                   <div className="aspect-[3/4] relative rounded-2xl overflow-hidden shadow-2xl">
                     <Image
-                      src="/products/hoodie-gris-front.png"
+                      src="/products/buzo-hoddie-unisex-gris/front.jpeg"
                       alt="Hoodie personalizado gris melange — diseno con IA"
                       fill
                       className="object-cover"
@@ -350,7 +350,7 @@ export default function HoodiePersonalizado() {
                 <div className="text-sm font-bold text-orange-500 mb-2">PASO 2</div>
                 <h3 className="text-xl font-semibold mb-3">Elegi estilo y modelo</h3>
                 <p className="text-muted-foreground">
-                  37 estilos artisticos. 3 modelos de hoodie. 4 colores.
+                  37 estilos artisticos. Buzo Hoodie Oversize. 6 colores.
                   La IA genera tu diseno en menos de 30 segundos.
                 </p>
               </CardContent>
@@ -385,13 +385,13 @@ export default function HoodiePersonalizado() {
         </div>
       </section>
 
-      {/* Models comparison — 3 models */}
+      {/* Hoodie colors comparison */}
       <section className="py-16 md:py-24 bg-secondary/10">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="novamente-heading text-3xl md:text-4xl mb-4">NUESTROS MODELOS DE HOODIE</h2>
+            <h2 className="novamente-heading text-3xl md:text-4xl mb-4">BUZO HOODIE OVERSIZE</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              3 modelos, algodon premium, estampado DTG. El producto con mayor margen de nuestro catalogo.
+              Algodon premium, estampado DTG y 6 colores. El producto con mayor margen de nuestro catalogo.
             </p>
           </div>
 
@@ -400,7 +400,7 @@ export default function HoodiePersonalizado() {
             <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-2 hover:border-orange-500/20">
               <div className="aspect-square relative overflow-hidden">
                 <Image
-                  src="/products/hoodie-negro-front.jpeg"
+                  src="/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png"
                   alt="Buzo Hoodie Oversize personalizado — algodon premium DTG"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -411,7 +411,7 @@ export default function HoodiePersonalizado() {
                 </div>
                 <div className="absolute top-4 right-4">
                   <Badge variant="outline" className="bg-white/90 backdrop-blur-sm text-foreground font-bold text-lg px-3 py-1">
-                    $60.000
+                    $55.000
                   </Badge>
                 </div>
               </div>
@@ -421,7 +421,7 @@ export default function HoodiePersonalizado() {
                   Oversize con capucha. Corte amplio y moderno. El mas vendido para marcas.
                 </p>
                 <ul className="space-y-2 text-sm text-white/70 mb-4">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> 4 colores: negro, caramel, crema, gris</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> 6 colores: negro, blanco, stone-wash, marron, crema, gris</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Algodon premium, calce oversize</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Talles S a XXL</li>
                 </ul>
@@ -441,8 +441,8 @@ export default function HoodiePersonalizado() {
             <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-2 hover:border-orange-500/20">
               <div className="aspect-square relative overflow-hidden">
                 <Image
-                  src="/products/hoodie-caramel-front.jpeg"
-                  alt="Buzo Hoodie Oversize personalizado — clasico con capucha DTG"
+                  src="/products/buzo-hoddie-unisex-marron/front.jpeg"
+                  alt="Buzo Hoodie Oversize marron personalizado con capucha DTG"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                   sizes="(max-width: 768px) 100vw, 33vw"
@@ -459,17 +459,17 @@ export default function HoodiePersonalizado() {
               <CardContent className="p-6">
                 <h3 className="text-xl font-semibold mb-2">Buzo Hoodie Oversize</h3>
                 <p className="text-muted-foreground mb-4 text-sm">
-                  Clasico con capucha. Calce regular, ideal para el dia a dia.
+                  Oversize con capucha en marron. Calce amplio, ideal para marcas y drops.
                 </p>
                 <ul className="space-y-2 text-sm text-white/70 mb-4">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> 3 colores: negro, stone-wash, blanco</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Algodon premium, calce regular</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> 6 colores: negro, blanco, stone-wash, marron, crema, gris</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Algodon premium, calce oversize</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Talles S a XXL</li>
                 </ul>
                 <p className="text-xs text-green-400 mb-4 font-medium">
                   Venta sugerida: $85.000-95.000 (+60% margen)
                 </p>
-                <Link href="/design" data-cta="hoodie-unisex">
+                <Link href="/design" data-cta="buzo-hoodie-marron">
                   <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-500/90 hover:to-red-600/90 text-white font-medium rounded-xl py-3">
                     <Sparkles className="w-4 h-4 mr-2" />
                     Personalizar Hoodie
@@ -478,12 +478,12 @@ export default function HoodiePersonalizado() {
               </CardContent>
             </Card>
 
-            {/* Buzo Cuello Redondo */}
+            {/* Buzo Hoodie Oversize */}
             <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-2 hover:border-orange-500/20">
               <div className="aspect-square relative overflow-hidden">
                 <Image
-                  src="/products/hoodie-gris-front.png"
-                  alt="Buzo Cuello Redondo personalizado — sin capucha DTG"
+                  src="/products/buzo-hoddie-unisex-gris/front.jpeg"
+                  alt="Buzo Hoodie Oversize gris personalizado con capucha DTG"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                   sizes="(max-width: 768px) 100vw, 33vw"
@@ -493,27 +493,27 @@ export default function HoodiePersonalizado() {
                 </div>
                 <div className="absolute top-4 right-4">
                   <Badge variant="outline" className="bg-white/90 backdrop-blur-sm text-foreground font-bold text-lg px-3 py-1">
-                    $43.000
+                    $55.000
                   </Badge>
                 </div>
               </div>
               <CardContent className="p-6">
-                <h3 className="text-xl font-semibold mb-2">Buzo Cuello Redondo</h3>
+                <h3 className="text-xl font-semibold mb-2">Buzo Hoodie Oversize</h3>
                 <p className="text-muted-foreground mb-4 text-sm">
-                  Sin capucha, cuello redondo. Limpio, versatil, mas accesible.
+                  Oversize con capucha en gris melange. Comodo, premium y listo para estampar.
                 </p>
                 <ul className="space-y-2 text-sm text-white/70 mb-4">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> 3 colores: negro, blanco, stone-wash</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Algodon premium, calce regular</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> 6 colores: negro, blanco, stone-wash, marron, crema, gris</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Algodon premium, calce oversize</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Talles S a XXL</li>
                 </ul>
                 <p className="text-xs text-green-400 mb-4 font-medium">
-                  Venta sugerida: $70.000-80.000 (+70% margen)
+                  Venta sugerida: $95.000-110.000 (+60% margen)
                 </p>
-                <Link href="/design" data-cta="cuello-redondo">
+                <Link href="/design" data-cta="buzo-hoodie-gris">
                   <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-500/90 hover:to-red-600/90 text-white font-medium rounded-xl py-3">
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Personalizar Buzo
+                    Personalizar Hoodie
                   </Button>
                 </Link>
               </CardContent>
@@ -548,7 +548,7 @@ export default function HoodiePersonalizado() {
             <Card className="border-2 border-orange-500/20 bg-orange-500/5">
               <CardContent className="p-6 text-center">
                 <div className="text-3xl font-bold text-orange-400 mb-2">$55.000</div>
-                <div className="text-sm text-muted-foreground mb-4">Costo Hoodie Unisex</div>
+                <div className="text-sm text-muted-foreground mb-4">Costo Buzo Hoodie Oversize</div>
                 <div className="text-xl font-bold text-white mb-1">→ Vende a $90.000</div>
                 <div className="text-green-400 font-semibold text-lg">$35.000 ganancia</div>
                 <div className="text-xs text-muted-foreground mt-2">64% de margen por unidad</div>
@@ -557,7 +557,7 @@ export default function HoodiePersonalizado() {
 
             <Card className="border-2 border-orange-500/20 bg-orange-500/5">
               <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-orange-400 mb-2">$60.000</div>
+                <div className="text-3xl font-bold text-orange-400 mb-2">$55.000</div>
                 <div className="text-sm text-muted-foreground mb-4">Costo Buzo Hoodie Oversize</div>
                 <div className="text-xl font-bold text-white mb-1">→ Vende a $100.000</div>
                 <div className="text-green-400 font-semibold text-lg">$40.000 ganancia</div>
@@ -658,7 +658,7 @@ export default function HoodiePersonalizado() {
                   ))}
                 </div>
                 <p className="text-sm text-white/80 mb-4">
-                  &ldquo;Compre el Buzo Hoodie Oversize en caramel y la calidad es brutal. El estampado quedo perfecto, los colores son exactos a lo que vi en la preview. Ya encargue 3 mas para mi marca.&rdquo;
+                  &ldquo;Compre el Buzo Hoodie Oversize en marron y la calidad es brutal. El estampado quedo perfecto, los colores son exactos a lo que vi en la preview. Ya encargue 3 mas para mi marca.&rdquo;
                 </p>
                 <p className="text-sm font-semibold">Lucas M. — La Plata</p>
               </CardContent>
@@ -708,15 +708,15 @@ export default function HoodiePersonalizado() {
             {[
               {
                 q: "Cuanto cuesta un hoodie personalizado?",
-                a: "Los hoodies arrancan desde $43.000 ARS (Buzo Cuello Redondo), $55.000 ARS (Hoodie Unisex) y $60.000 ARS (Buzo Hoodie Oversize). El precio incluye el diseno con IA y estampado DTG premium.",
+                a: "Los hoodies arrancan desde $55.000 ARS para el Buzo Hoodie Oversize. El precio incluye el diseno con IA y estampado DTG premium.",
               },
               {
                 q: "Que modelos de hoodie tienen?",
-                a: "Ofrecemos 3 modelos: Buzo Hoodie Oversize (oversize con capucha, 4 colores), Buzo Hoodie Oversize (clasico con capucha, 3 colores) y Buzo Cuello Redondo (sin capucha, 3 colores). Todos de algodon premium.",
+                a: "Ofrecemos Buzo Hoodie Oversize con capucha, calce oversize y 6 colores disponibles. Todos de algodon premium.",
               },
               {
                 q: "En que colores vienen?",
-                a: "Buzo Hoodie Oversize: negro, caramel, crema y gris melange. Hoodie Unisex: negro, stone-wash y blanco. Cuello Redondo: negro, blanco y stone-wash.",
+                a: "Buzo Hoodie Oversize: negro, blanco, stone-wash, marron, crema y gris melange.",
               },
               {
                 q: "Cuanto tarda en llegar?",
@@ -756,7 +756,7 @@ export default function HoodiePersonalizado() {
             Disena con IA, elegi tu modelo y color, y recibilo en tu casa.
           </p>
           <p className="text-lg mb-8 opacity-70">
-            Hoodies desde $43.000 · Algodon premium · Estampado DTG · Envios a todo el pais
+            Hoodies desde $55.000 · Algodon premium · Estampado DTG · Envios a todo el pais
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/design" data-cta="final-cta-hoodie">
