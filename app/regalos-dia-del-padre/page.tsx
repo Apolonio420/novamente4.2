@@ -166,8 +166,8 @@ export default function RegalosDiaDelPadre() {
     { name: "Aldea Classic Fit", price: 28600, description: "Fit regular, algodon 100%", category: "Remera", popular: true },
     { name: "Aura Oversize T-Shirt", price: 31000, description: "Oversize premium, caida amplia", category: "Remera" },
     { name: "Buzo Cuello Redondo", price: 43000, description: "Crewneck frizado, ideal invierno", category: "Buzo" },
-    { name: "Buzo Hoodie Unisex", price: 55000, description: "Hoodie clasico con capucha", category: "Hoodie", popular: true },
-    { name: "Astra Oversize Hoodie", price: 60000, description: "Hoodie premium oversize", category: "Hoodie Premium" },
+    { name: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie clasico con capucha", category: "Hoodie", popular: true },
+    { name: "Buzo Hoodie Oversize", price: 60000, description: "Hoodie premium oversize", category: "Hoodie Premium" },
   ]
 
   const giftIdeas = [

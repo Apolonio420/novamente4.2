@@ -1,4 +1,4 @@
-# Catálogo de Productos Novamente
+﻿# Catálogo de Productos Novamente
 
 Todos los productos son 100% algodón premium, optimizados para impresión DTG de alta definición. Incluyen diseño con IA + estampado DTG premium. Sin cargos adicionales.
 
@@ -50,19 +50,12 @@ Todos los productos son 100% algodón premium, optimizados para impresión DTG d
 - **Talles:** S, M, L, XL, XXL
 - **Descripción:** Buzo sin capucha con cuello redondo. Clásico y versátil para cualquier diseño.
 
-### Buzo Hoodie Unisex
+### Buzo Hoodie Oversize
 - **Precio:** $55,000 ARS
 - **Material:** Algodón y frisa con capucha
-- **Colores:** Negro, Blanco, Stone Wash
+- **Colores:** Negro, Blanco, Stone Wash, Marrón, Gris Melange, Crema
 - **Talles:** XS, S, M, L, XL, XXL
-- **Descripción:** Hoodie clásico con capucha y bolsillo canguro. El más vendido en invierno.
-
-### Astra Oversize Hoodie
-- **Precio:** $60,000 ARS
-- **Material:** Algodón con frisa pesada
-- **Colores:** Negro, Caramel, Crema, Gris Melange
-- **Talles:** S, M, L, XL
-- **Descripción:** Hoodie oversize premium. El producto más exclusivo, con caída amplia y frisa gruesa.
+- **Descripción:** Hoodie oversize con capucha y bolsillo canguro. Ideal para diseños grandes y de invierno.
 
 ## Arte
 
@@ -77,3 +70,4 @@ Todos los productos son 100% algodón premium, optimizados para impresión DTG d
 - **Sin cargos adicionales** por diseño, colores o complejidad
 - **Producción:** 24-48 horas hábiles desde confirmación
 - **Impresión DTG:** Tintas a base de agua que penetran la fibra del algodón. Colores vibrantes que resisten 50+ lavados.
+

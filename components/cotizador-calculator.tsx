@@ -11,8 +11,8 @@ import {
 } from "lucide-react"
 
 const COTIZADOR_PRODUCTS = [
-  { id: "astra-hoodie", name: "Astra Oversize Hoodie", price: 60000, category: "Hoodies" },
-  { id: "buzo-hoodie", name: "Buzo Hoodie Unisex", price: 55000, category: "Buzos" },
+  { id: "buzo-hoodie", name: "Buzo Hoodie Oversize", price: 60000, category: "Hoodies" },
+  { id: "buzo-hoodie", name: "Buzo Hoodie Oversize", price: 55000, category: "Buzos" },
   { id: "buzo-cuello", name: "Buzo Cuello Redondo", price: 43000, category: "Buzos" },
   { id: "aura-oversize", name: "Aura Oversize T-Shirt", price: 31000, category: "Remeras" },
   { id: "aldea-classic", name: "Aldea Classic Fit T-Shirt", price: 28600, category: "Remeras" },

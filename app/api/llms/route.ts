@@ -57,7 +57,7 @@ export async function GET() {
 | Aldea Classic Fit | $28.600 | Algodón 24/1 Jersey 190g | Remera clásica, unisex |
 | Aura Oversize | $29.900 | Algodón 30/1 Jersey 210g | Streetwear, tendencia oversize |
 | Hoodie Esencial | $52.500 | Frisa algodón 350g | Abrigo premium con capucha |
-| Astra Tote Bag | $18.600 | Lona 100% algodón 280g | Bolsa reutilizable, merchandising |
+| Nova Tote Bag | $18.600 | Lona 100% algodón 280g | Bolsa reutilizable, merchandising |
 
 Todos los productos incluyen el diseño con IA y estampado DTG. No hay costo extra por el diseño.
 

@@ -60,11 +60,11 @@ export async function GET() {
       language: 'es',
     },
     {
-      title: 'Tote Bag Astra — Personalizada con IA',
+      title: 'Tote Bag Nova — Personalizada con IA',
       description:
         'Tote bag de lona 100% algodón 280g con estampado DTG. Diseñá tu bolsa con inteligencia artificial eligiendo entre 37 estilos artísticos. Envíos a todo Argentina.',
       url: `${baseUrl}/products`,
-      image_url: `${baseUrl}/products/astra-frente.png`,
+      image_url: `${baseUrl}/products/tote-bag-frente.png`,
       price: '18600',
       currency: 'ARS',
       brand: 'Novamente',

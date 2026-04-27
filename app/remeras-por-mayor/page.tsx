@@ -231,7 +231,7 @@ export default function RemerasPorMayor() {
       ideal: "Acabado vintage premium, diferenciacion",
     },
     {
-      name: "Astra Oversize Hoodie",
+      name: "Buzo Hoodie Oversize",
       regularPrice: "$60.000",
       wholesalePrice: "$51.000",
       discount: "15% OFF (100+ un.)",

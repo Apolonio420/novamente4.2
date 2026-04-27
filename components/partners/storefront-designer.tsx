@@ -35,10 +35,11 @@ const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = {
     black: '/garments/tshirt-black-classic-front.jpeg',
     white: '/garments/tshirt-white-classic-front.jpeg',
   },
-  'astra-oversize-hoodie': {
-    black: '/garments/hoodie-black-front.jpeg',
-    cream: '/garments/hoodie-cream-front.jpeg',
-    gray: '/garments/hoodie-gray-front.jpeg',
+  'buzo-hoodie-unisex': {
+    black: '/garments/buzo-hoodie-unisex-black-front.png',
+    cream: '/garments/buzo-hoodie-unisex-crema-front.jpeg',
+    gray: '/garments/buzo-hoodie-unisex-gris-front.jpeg',
+    marron: '/garments/buzo-hoodie-unisex-marron-front.jpeg',
   },
   lienzo: {
     white: '/garments/lienzo-main.png',
@@ -46,11 +47,11 @@ const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = {
 }
 
 const COLOR_LABELS: Record<string, string> = {
-  black: 'Negro', white: 'Blanco', cream: 'Crema', gray: 'Gris',
+  black: 'Negro', white: 'Blanco', cream: 'Crema', gray: 'Gris', marron: 'Marron',
 }
 
 const COLOR_MAP: Record<string, string> = {
-  black: '#1a1a1a', white: '#f5f5f5', cream: '#f5f0e1', gray: '#6b7280',
+  black: '#1a1a1a', white: '#f5f5f5', cream: '#f5f0e1', gray: '#6b7280', marron: '#8B5E34',
 }
 
 // ---------------------------------------------------------------------------

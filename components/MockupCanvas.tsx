@@ -68,18 +68,22 @@ export function MockupCanvas({
           white: "/garments/tshirt-white-classic-back.jpeg",
         },
       },
-      "astra-oversize-hoodie": {
+      "buzo-hoodie-unisex": {
         front: {
-          black: "/garments/hoodie-black-front.jpeg",
-          caramel: "/garments/hoodie-caramel-front.jpeg",
-          cream: "/garments/hoodie-cream-front.jpeg",
-          gray: "/garments/hoodie-gray-front.jpeg",
+          black: "/garments/buzo-hoodie-unisex-black-front.png",
+          white: "/garments/buzo-hoodie-unisex-white-front.png",
+          "stone-wash": "/garments/buzo-hoodie-unisex-stone-wash-front.png",
+          marron: "/garments/buzo-hoodie-unisex-marron-front.jpeg",
+          cream: "/garments/buzo-hoodie-unisex-crema-front.jpeg",
+          gray: "/garments/buzo-hoodie-unisex-gris-front.jpeg",
         },
         back: {
-          black: "/garments/hoodie-black-back.jpeg",
-          caramel: "/garments/hoodie-caramel-back.png",
-          cream: "/garments/hoodie-cream-back.png",
-          gray: "/garments/hoodie-gray-back.png",
+          black: "/garments/buzo-hoodie-unisex-black-front.png",
+          white: "/garments/buzo-hoodie-unisex-white-front.png",
+          "stone-wash": "/garments/buzo-hoodie-unisex-stone-wash-front.png",
+          marron: "/garments/buzo-hoodie-unisex-marron-back.jpeg",
+          cream: "/garments/buzo-hoodie-unisex-crema-back.jpeg",
+          gray: "/garments/buzo-hoodie-unisex-gris-back.jpeg",
         },
       },
       lienzo: {
@@ -101,8 +105,8 @@ export function MockupCanvas({
       return side === "front" ? "/garments/tshirt-black-oversize-front.jpeg" : "/garments/tshirt-black-oversize-back.jpeg"
     } else if (garmentType === "aldea-classic-tshirt") {
       return side === "front" ? "/garments/tshirt-black-classic-front.jpeg" : "/garments/tshirt-black-classic-back.jpeg"
-    } else if (garmentType === "astra-oversize-hoodie") {
-      return side === "front" ? "/garments/hoodie-black-front.jpeg" : "/garments/hoodie-black-back.jpeg"
+    } else if (garmentType === "buzo-hoodie-unisex") {
+      return side === "front" ? "/garments/buzo-hoodie-unisex-black-front.png" : "/garments/buzo-hoodie-unisex-black-front.png"
     }
 
     return side === "front" ? "/garments/hoodie-black-front.jpeg" : "/garments/hoodie-black-back.jpeg"
@@ -170,7 +174,7 @@ export function MockupCanvas({
         front: { x: 90, y: 120, width: 220, height: 270 },
         back: { x: 90, y: 90, width: 220, height: 310 },
       },
-      "astra-oversize-hoodie": {
+      "buzo-hoodie-unisex": {
         front: showModel ? { x: 220, y: 280, width: 260, height: 300 } : { x: 80, y: 140, width: 240, height: 240 },
         back: showModel ? { x: 220, y: 250, width: 260, height: 300 } : { x: 80, y: 140, width: 240, height: 260 },
       },

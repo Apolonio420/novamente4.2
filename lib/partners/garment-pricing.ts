@@ -41,15 +41,6 @@ export const GARMENT_PRICING: Record<string, GarmentPricing> = {
     b2b_drop: 22496,
     b2c_suggested: 31000,
   },
-  'astra-oversize-hoodie': {
-    key: 'astra-oversize-hoodie',
-    name: 'Astra Oversize Hoodie',
-    on_demand: 45000,
-    b2b_starter: 44000,
-    b2b_pro: 43000,
-    b2b_drop: 42000,
-    b2c_suggested: 60000,
-  },
   lienzo: {
     key: 'lienzo',
     name: 'Lienzo (Canvas)',
@@ -92,7 +83,7 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
   },
   'buzo-hoodie-unisex': {
     key: 'buzo-hoodie-unisex',
-    name: 'Buzo Hoodie Unisex',
+    name: 'Buzo Hoodie Oversize',
     on_demand: 30120,
     b2b_starter: 29120,
     b2b_pro: 28120,

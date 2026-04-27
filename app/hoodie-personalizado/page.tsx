@@ -55,7 +55,7 @@ export default function HoodiePersonalizado() {
     "@type": "Product",
     name: "Hoodie Personalizado con IA — Novamente",
     description:
-      "Hoodie de algodon premium con diseno personalizado generado por inteligencia artificial y estampado DTG. Disponible en Astra Oversize, Hoodie Unisex y Cuello Redondo.",
+      "Hoodie de algodon premium con diseno personalizado generado por inteligencia artificial y estampado DTG. Disponible en Buzo Hoodie Oversize, Hoodie Unisex y Cuello Redondo.",
     image: [
       "https://www.novamente.ar/products/hoodie-negro-front.jpeg",
       "https://www.novamente.ar/products/hoodie-caramel-front.jpeg",
@@ -103,7 +103,7 @@ export default function HoodiePersonalizado() {
         name: "Cuanto cuesta un hoodie personalizado en Novamente?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Los hoodies personalizados en Novamente arrancan desde $43.000 ARS (Buzo Cuello Redondo), $55.000 ARS (Buzo Hoodie Unisex) y $60.000 ARS (Astra Oversize Hoodie). Todos incluyen el diseno personalizado con IA y estampado DTG premium.",
+          text: "Los hoodies personalizados en Novamente arrancan desde $43.000 ARS (Buzo Cuello Redondo), $55.000 ARS (Buzo Hoodie Oversize) y $60.000 ARS (Buzo Hoodie Oversize). Todos incluyen el diseno personalizado con IA y estampado DTG premium.",
         },
       },
       {
@@ -111,7 +111,7 @@ export default function HoodiePersonalizado() {
         name: "Que modelos de hoodie tienen disponibles?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Ofrecemos 3 modelos: Astra Oversize Hoodie (oversize con capucha, 4 colores), Buzo Hoodie Unisex (clasico con capucha, 3 colores) y Buzo Cuello Redondo (sin capucha, 3 colores). Todos de algodon premium con estampado DTG.",
+          text: "Ofrecemos 3 modelos: Buzo Hoodie Oversize (oversize con capucha, 4 colores), Buzo Hoodie Oversize (clasico con capucha, 3 colores) y Buzo Cuello Redondo (sin capucha, 3 colores). Todos de algodon premium con estampado DTG.",
         },
       },
       {
@@ -119,7 +119,7 @@ export default function HoodiePersonalizado() {
         name: "En que colores vienen los hoodies?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Los colores varian segun el modelo: Astra Oversize viene en negro, caramel, crema y gris melange. El Hoodie Unisex en negro, stone-wash y blanco. El Cuello Redondo en negro, blanco y stone-wash.",
+          text: "Los colores varian segun el modelo: Buzo Hoodie Oversize viene en negro, caramel, crema y gris melange. El Hoodie Unisex en negro, stone-wash y blanco. El Cuello Redondo en negro, blanco y stone-wash.",
         },
       },
       {
@@ -127,7 +127,7 @@ export default function HoodiePersonalizado() {
         name: "Cuanto margen puedo sacar vendiendo hoodies?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Los hoodies son el producto con mayor margen. Un Buzo Cuello Redondo cuesta $43.000 y se vende facilmente a $70.000-80.000. Un Astra Oversize cuesta $60.000 y se vende a $95.000-110.000. Eso es un margen del 60-80% por unidad.",
+          text: "Los hoodies son el producto con mayor margen. Un Buzo Cuello Redondo cuesta $43.000 y se vende facilmente a $70.000-80.000. Un Buzo Hoodie Oversize cuesta $60.000 y se vende a $95.000-110.000. Eso es un margen del 60-80% por unidad.",
         },
       },
       {
@@ -143,7 +143,7 @@ export default function HoodiePersonalizado() {
         name: "Los hoodies son unisex?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Si, todos nuestros modelos de hoodie son unisex. Disponibles en talles S a XXL. El Astra tiene un calce oversize mas amplio, mientras que el Hoodie Unisex y el Cuello Redondo tienen un calce mas regular.",
+          text: "Si, todos nuestros modelos de hoodie son unisex. Disponibles en talles S a XXL. El Buzo Hoodie Oversize tiene calce amplio con capucha, mientras que el Cuello Redondo tiene un calce relajado sin capucha.",
         },
       },
     ],
@@ -396,12 +396,12 @@ export default function HoodiePersonalizado() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Astra Oversize Hoodie */}
+            {/* Buzo Hoodie Oversize */}
             <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-2 hover:border-orange-500/20">
               <div className="aspect-square relative overflow-hidden">
                 <Image
                   src="/products/hoodie-negro-front.jpeg"
-                  alt="Astra Oversize Hoodie personalizado — algodon premium DTG"
+                  alt="Buzo Hoodie Oversize personalizado — algodon premium DTG"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                   sizes="(max-width: 768px) 100vw, 33vw"
@@ -416,7 +416,7 @@ export default function HoodiePersonalizado() {
                 </div>
               </div>
               <CardContent className="p-6">
-                <h3 className="text-xl font-semibold mb-2">Astra Oversize Hoodie</h3>
+                <h3 className="text-xl font-semibold mb-2">Buzo Hoodie Oversize</h3>
                 <p className="text-muted-foreground mb-4 text-sm">
                   Oversize con capucha. Corte amplio y moderno. El mas vendido para marcas.
                 </p>
@@ -428,21 +428,21 @@ export default function HoodiePersonalizado() {
                 <p className="text-xs text-green-400 mb-4 font-medium">
                   Venta sugerida: $95.000-110.000 (+60% margen)
                 </p>
-                <Link href="/design" data-cta="astra-hoodie">
+                <Link href="/design" data-cta="buzo-hoodie">
                   <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-500/90 hover:to-red-600/90 text-white font-medium rounded-xl py-3">
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Personalizar Astra
+                    Personalizar Hoodie
                   </Button>
                 </Link>
               </CardContent>
             </Card>
 
-            {/* Buzo Hoodie Unisex */}
+            {/* Buzo Hoodie Oversize */}
             <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-2 hover:border-orange-500/20">
               <div className="aspect-square relative overflow-hidden">
                 <Image
                   src="/products/hoodie-caramel-front.jpeg"
-                  alt="Buzo Hoodie Unisex personalizado — clasico con capucha DTG"
+                  alt="Buzo Hoodie Oversize personalizado — clasico con capucha DTG"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                   sizes="(max-width: 768px) 100vw, 33vw"
@@ -457,7 +457,7 @@ export default function HoodiePersonalizado() {
                 </div>
               </div>
               <CardContent className="p-6">
-                <h3 className="text-xl font-semibold mb-2">Buzo Hoodie Unisex</h3>
+                <h3 className="text-xl font-semibold mb-2">Buzo Hoodie Oversize</h3>
                 <p className="text-muted-foreground mb-4 text-sm">
                   Clasico con capucha. Calce regular, ideal para el dia a dia.
                 </p>
@@ -558,7 +558,7 @@ export default function HoodiePersonalizado() {
             <Card className="border-2 border-orange-500/20 bg-orange-500/5">
               <CardContent className="p-6 text-center">
                 <div className="text-3xl font-bold text-orange-400 mb-2">$60.000</div>
-                <div className="text-sm text-muted-foreground mb-4">Costo Astra Oversize</div>
+                <div className="text-sm text-muted-foreground mb-4">Costo Buzo Hoodie Oversize</div>
                 <div className="text-xl font-bold text-white mb-1">→ Vende a $100.000</div>
                 <div className="text-green-400 font-semibold text-lg">$40.000 ganancia</div>
                 <div className="text-xs text-muted-foreground mt-2">67% de margen por unidad</div>
@@ -658,7 +658,7 @@ export default function HoodiePersonalizado() {
                   ))}
                 </div>
                 <p className="text-sm text-white/80 mb-4">
-                  &ldquo;Compre el Astra Oversize en caramel y la calidad es brutal. El estampado quedo perfecto, los colores son exactos a lo que vi en la preview. Ya encargue 3 mas para mi marca.&rdquo;
+                  &ldquo;Compre el Buzo Hoodie Oversize en caramel y la calidad es brutal. El estampado quedo perfecto, los colores son exactos a lo que vi en la preview. Ya encargue 3 mas para mi marca.&rdquo;
                 </p>
                 <p className="text-sm font-semibold">Lucas M. — La Plata</p>
               </CardContent>
@@ -708,15 +708,15 @@ export default function HoodiePersonalizado() {
             {[
               {
                 q: "Cuanto cuesta un hoodie personalizado?",
-                a: "Los hoodies arrancan desde $43.000 ARS (Buzo Cuello Redondo), $55.000 ARS (Hoodie Unisex) y $60.000 ARS (Astra Oversize). El precio incluye el diseno con IA y estampado DTG premium.",
+                a: "Los hoodies arrancan desde $43.000 ARS (Buzo Cuello Redondo), $55.000 ARS (Hoodie Unisex) y $60.000 ARS (Buzo Hoodie Oversize). El precio incluye el diseno con IA y estampado DTG premium.",
               },
               {
                 q: "Que modelos de hoodie tienen?",
-                a: "Ofrecemos 3 modelos: Astra Oversize Hoodie (oversize con capucha, 4 colores), Buzo Hoodie Unisex (clasico con capucha, 3 colores) y Buzo Cuello Redondo (sin capucha, 3 colores). Todos de algodon premium.",
+                a: "Ofrecemos 3 modelos: Buzo Hoodie Oversize (oversize con capucha, 4 colores), Buzo Hoodie Oversize (clasico con capucha, 3 colores) y Buzo Cuello Redondo (sin capucha, 3 colores). Todos de algodon premium.",
               },
               {
                 q: "En que colores vienen?",
-                a: "Astra Oversize: negro, caramel, crema y gris melange. Hoodie Unisex: negro, stone-wash y blanco. Cuello Redondo: negro, blanco y stone-wash.",
+                a: "Buzo Hoodie Oversize: negro, caramel, crema y gris melange. Hoodie Unisex: negro, stone-wash y blanco. Cuello Redondo: negro, blanco y stone-wash.",
               },
               {
                 q: "Cuanto tarda en llegar?",

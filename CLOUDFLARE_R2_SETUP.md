@@ -57,7 +57,7 @@ El sistema genera nombres de archivo descriptivos basados en el prompt:
 
 - **Imagen original**: `oso_bravo.png`
 - **Sin fondo**: `oso_bravo_sinfondo.png`
-- **Estampado**: `oso_bravo_estampado_astra_oversize_hoodie_black_R3.png`
+- **Estampado**: `oso_bravo_estampado_buzo_hoodie_unisex_black_R3.png`
 
 ### Estructura de carpetas en R2:
 

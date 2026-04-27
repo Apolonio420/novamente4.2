@@ -72,7 +72,7 @@ try {
 Write-Host "`n4. Generando mockup estampado..." -ForegroundColor Yellow
 $mockupResponse = Invoke-RestMethod -Uri "http://localhost:3000/api/generate-mockup" -Method POST -ContentType "application/json" -Body (@{
     designImageUrl = $processResponse.publicUrl
-    garmentType = "astra-oversize-hoodie"
+    garmentType = "buzo-hoodie-unisex"
     garmentColor = "black"
     side = "front"
     size = "R3"

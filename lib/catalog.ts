@@ -16,19 +16,11 @@ export interface Product {
 
 export const PRODUCTS: Product[] = [
   {
-    name: 'Astra Oversize Hoodie',
-    garmentType: 'astra-oversize-hoodie',
-    price: 60000,
-    colors: ['negro', 'caramel', 'crema', 'gris melange'],
-    image: '/products/hoodie-negro-front.jpeg',
-    category: 'hoodie',
-  },
-  {
-    name: 'Buzo Hoodie Unisex',
+    name: 'Buzo Hoodie Oversize',
     garmentType: 'buzo-hoodie-unisex',
     price: 55000,
-    colors: ['negro', 'stone-wash', 'blanco'],
-    image: '/products/hoodie-negro-front.jpeg',
+    colors: ['negro', 'blanco', 'stone-wash', 'marron', 'gris melange', 'crema'],
+    image: '/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png',
     category: 'buzo',
   },
   {

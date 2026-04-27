@@ -415,7 +415,7 @@
 - Created `app/hoodie-personalizado/page.tsx` — full landing page with:
   - Hero section with price anchor ($43.000), margin hook ($32k ganancia), trust signals
   - "How it works" 3-step section (describe > AI generates > order)
-  - 3-model comparison: Astra Oversize ($60k) vs Hoodie Unisex ($55k) vs Cuello Redondo ($43k)
+  - 2-model comparison: Buzo Hoodie Oversize ($55k) vs Cuello Redondo ($43k)
   - Margin calculator section: cost vs resale price for each model (60-80% margin)
   - "Why Novamente" feature grid (IA, 37 styles, DTG, shipping)
   - Social proof: 3 testimonials, 4.9/5 rating, 350+ hoodies delivered

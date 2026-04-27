@@ -104,7 +104,7 @@ export default function Home() {
         name: "¿Cuánto cuesta una remera personalizada?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Las remeras personalizadas arrancan desde $28.600 ARS para el modelo Aldea Classic Fit y $31.000 ARS para la Aura Oversize. Los hoodies comienzan en $55.000 ARS y el Astra Oversize Hoodie está en $60.000 ARS. Todos incluyen el diseño personalizado con IA y estampado DTG.",
+          text: "Las remeras personalizadas arrancan desde $28.600 ARS para el modelo Aldea Classic Fit y $31.000 ARS para la Aura Oversize. Los hoodies comienzan en $55.000 ARS y el Buzo Hoodie Oversize está en $60.000 ARS. Todos incluyen el diseño personalizado con IA y estampado DTG.",
         },
       },
       {
@@ -350,7 +350,7 @@ export default function Home() {
                 <div className="aspect-square relative overflow-hidden cursor-pointer">
                   <Image
                     src="/products/hoodie-negro-front.jpeg"
-                    alt="Astra Oversize Hoodie"
+                    alt="Buzo Hoodie Oversize"
                     fill
                     priority
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -385,7 +385,7 @@ export default function Home() {
 
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-3">
-                  <h2 className="text-xl font-semibold leading-tight">Astra Oversize Hoodie</h2>
+                  <h2 className="text-xl font-semibold leading-tight">Buzo Hoodie Oversize</h2>
                   <span className="text-2xl font-bold text-primary ml-4">$55.500</span>
                 </div>
 

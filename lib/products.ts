@@ -15,66 +15,6 @@ export interface Product {
 
 export const PRODUCTS: Product[] = [
     {
-        id: "astra-hoodie-negro",
-        name: "Astra Oversize Hoodie - Negro",
-        price: "$60.000",
-        description:
-            "Buzo oversize unisex en color negro, confeccionado en algodón 100% premium con interior frisa suave. Nuestra composición de fibras está especialmente optimizada para estampado DTG (Direct to Garment), garantizando colores vibrantes y durabilidad excepcional en cada lavado. Fit relajado y cómodo, ideal para todos los días con tu diseño personalizado que perdurará en el tiempo.",
-        images: {
-            main: "/products/hoodie-negro-front.jpeg",
-            lifestyle: ["/products/hoodie-negro-lifestyle-1.jpeg", "/products/hoodie-negro-lifestyle-2.jpeg"],
-            measurements: "/products/hoodie-negro-medidas.png",
-        },
-        category: "Hoodies",
-        color: "Negro",
-        available: true,
-    },
-    {
-        id: "astra-hoodie-caramel",
-        name: "Astra Oversize Hoodie - Caramel",
-        price: "$60.000",
-        description:
-            "Buzo oversize color caramelo en algodón 100% de primera calidad, con caída fluida y textura suave al tacto. La composición optimizada para DTG asegura que tu diseño se adhiera perfectamente a la fibra, creando estampados resistentes y de alta definición. Tela resistente y abrigada, perfecta para combinar con estampas contrastantes que mantendrán su intensidad.",
-        images: {
-            main: "/products/hoodie-caramel-front.jpeg",
-            lifestyle: ["/products/hoodie-caramel-lifestyle-1.jpeg", "/products/hoodie-caramel-lifestyle-2.jpeg"],
-            measurements: "/products/hoodie-caramel-medidas.png",
-        },
-        category: "Hoodies",
-        color: "Caramel",
-        available: true,
-    },
-    {
-        id: "astra-hoodie-crema",
-        name: "Astra Oversize Hoodie - Crema",
-        price: "$60.000",
-        description:
-            "Nuestra prenda más versátil en tono crema, confeccionada en algodón 100% grueso y frizado. La estructura de fibra natural permite una absorción óptima de tintas DTG, resultando en estampados nítidos y duraderos. Base neutra que realza cualquier diseño con colores que se mantienen vibrantes lavado tras lavado.",
-        images: {
-            main: "/products/hoodie-crema-front.png",
-            lifestyle: ["/products/hoodie-crema-lifestyle.png"],
-            measurements: "/products/hoodie-crema-medidas.png",
-        },
-        category: "Hoodies",
-        color: "Crema",
-        available: true,
-    },
-    {
-        id: "astra-hoodie-gris",
-        name: "Astra Oversize Hoodie - Gris Melange",
-        price: "$60.000",
-        description:
-            "Buzo gris melange en algodón 100% con fit holgado y textura clásica. Nuestra selección de fibras garantiza la máxima compatibilidad con tecnología DTG, logrando estampados de calidad profesional que resisten el uso diario. Confección duradera con costuras reforzadas y base perfecta para destacar tu creatividad.",
-        images: {
-            main: "/products/hoodie-gris-front.png",
-            lifestyle: ["/products/hoodie-gris-lifestyle.png"],
-            measurements: "/products/hoodie-gris-medidas.png",
-        },
-        category: "Hoodies",
-        color: "Gris Melange",
-        available: true,
-    },
-    {
         id: "aura-tshirt-blanco",
         name: "Aura Oversize T-Shirt - Blanco",
         price: "$31.000",
@@ -226,7 +166,7 @@ export const PRODUCTS: Product[] = [
     },
     {
         id: "buzo-hoodie-negro",
-        name: "Buzo Hoodie Unisex - Negro",
+        name: "Buzo Hoodie Oversize - Negro",
         price: "$55.000",
         description: "Buzo hoodie clásico en color negro. El básico definitivo con fit oversize y algodón frizado premium. Ideal para estampar.",
         images: {
@@ -240,7 +180,7 @@ export const PRODUCTS: Product[] = [
     },
     {
         id: "buzo-hoodie-stone-wash",
-        name: "Buzo Hoodie Unisex - Stone Wash",
+        name: "Buzo Hoodie Oversize - Stone Wash",
         price: "$55.000",
         description: "Buzo hoodie con efecto lavado Stone Wash. Un estilo vintage y urbano único. Algodón premium frizado para máxima comodidad y abrigo.",
         images: {
@@ -254,7 +194,7 @@ export const PRODUCTS: Product[] = [
     },
     {
         id: "buzo-hoodie-blanco",
-        name: "Buzo Hoodie Unisex - Blanco",
+        name: "Buzo Hoodie Oversize - Blanco",
         price: "$55.000",
         description: "Buzo hoodie clásico en color blanco. Lienzo perfecto para tus diseños más creativos. Algodón frizado de alta calidad.",
         images: {
@@ -264,6 +204,48 @@ export const PRODUCTS: Product[] = [
         },
         category: "Hoodies",
         color: "Blanco",
+        available: true
+    },
+    {
+        id: "buzo-hoodie-marron",
+        name: "Buzo Hoodie Oversize - Marron",
+        price: "$55.000",
+        description: "Buzo hoodie oversize en marron, con capucha y bolsillo canguro. Algodon frizado premium, base calida para estampas DTG.",
+        images: {
+            main: "/products/buzo-hoddie-unisex-marron/front.jpeg",
+            lifestyle: ["/products/buzo-hoddie-unisex-marron/back.jpeg"],
+            measurements: "/products/buzo-hoddie-unisex-negro/Medidas4.png"
+        },
+        category: "Hoodies",
+        color: "Marron",
+        available: true
+    },
+    {
+        id: "buzo-hoodie-crema",
+        name: "Buzo Hoodie Oversize - Crema",
+        price: "$55.000",
+        description: "Buzo hoodie oversize en crema, suave y neutro. Ideal para disenos coloridos o minimalistas con estampado DTG premium.",
+        images: {
+            main: "/products/buzo-hoddie-unisex-crema/front.jpeg",
+            lifestyle: ["/products/buzo-hoddie-unisex-crema/back.jpeg"],
+            measurements: "/products/buzo-hoddie-unisex-negro/Medidas4.png"
+        },
+        category: "Hoodies",
+        color: "Crema",
+        available: true
+    },
+    {
+        id: "buzo-hoodie-gris",
+        name: "Buzo Hoodie Oversize - Gris Melange",
+        price: "$55.000",
+        description: "Buzo hoodie oversize gris melange, comodo y versatil. Algodon frizado premium listo para personalizar.",
+        images: {
+            main: "/products/buzo-hoddie-unisex-gris/front.jpeg",
+            lifestyle: ["/products/buzo-hoddie-unisex-gris/back.jpeg"],
+            measurements: "/products/buzo-hoddie-unisex-negro/Medidas4.png"
+        },
+        category: "Hoodies",
+        color: "Gris Melange",
         available: true
     },
     {

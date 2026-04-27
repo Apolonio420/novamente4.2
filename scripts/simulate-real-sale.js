@@ -51,19 +51,19 @@ async function simulate() {
             console.log('⚠️ Usando imagen de catálogo (Server unreachable)');
         }
 
-        // 2. DATA DINÁMICA DE PRODUCTOS REALES (Astra Hoodie @ $60.000)
+        // 2. DATA DINÁMICA DE PRODUCTOS REALES (Buzo Hoodie Oversize @ $55.000)
         console.log('\n📦 Preparando datos de la orden con productos reales...');
         const mockOrder = {
             orderNumber: `ORDER-${Math.floor(Math.random() * 900000) + 100000}`,
-            total: 60000,
+            total: 55000,
             email: "cliente_pro@gmail.com",
             items: [
                 {
-                    name: "Astra Oversize Hoodie - Negro",
+                    name: "Buzo Hoodie Oversize - Negro",
                     quantity: 1,
                     size: "XL",
                     color: "Negro",
-                    price: 60000,
+                    price: 55000,
                     imageUrl: imageUrl
                 }
             ]

@@ -33,7 +33,7 @@ Cada estilo tiene una miniatura visual para ayudarte a elegir.
 |--------|-------------|
 | **Aura Oversize T-shirt** | Remera de corte oversize, cuello redondo |
 | **Aldea Classic T-shirt** | Remera clasica, fit ajustado |
-| **Astra Oversize Hoodie** | Hoodie/buzo amplio con capucha |
+| **Buzo Hoodie Oversize** | Hoodie/buzo amplio con capucha |
 | **Lienzo** | Canvas para arte o decoracion (sin prenda) |
 
 ### Colores de Prenda

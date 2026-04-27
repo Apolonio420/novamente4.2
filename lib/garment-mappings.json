@@ -343,7 +343,7 @@
   },
   {
     "id": "1761100000001",
-    "name": "Buzo Hoodie Unisex Negro Frontal",
+    "name": "Buzo Hoodie Oversize Negro Frontal",
     "garmentPath": "/garments/buzo-hoodie-unisex-black-front.png",
     "margins": { "top": 35, "right": 27, "bottom": 36, "left": 28 },
     "coordinates": { "x": 112, "y": 175, "width": 180, "height": 145 },
@@ -351,7 +351,7 @@
   },
   {
     "id": "1761100000002",
-    "name": "Buzo Hoodie Unisex Blanco Frontal",
+    "name": "Buzo Hoodie Oversize Blanco Frontal",
     "garmentPath": "/garments/buzo-hoodie-unisex-white-front.png",
     "margins": { "top": 31, "right": 31, "bottom": 42, "left": 29 },
     "coordinates": { "x": 116, "y": 155, "width": 160, "height": 135 },
@@ -359,11 +359,59 @@
   },
   {
     "id": "1761100000003",
-    "name": "Buzo Hoodie Unisex Stone Wash Frontal",
+    "name": "Buzo Hoodie Oversize Stone Wash Frontal",
     "garmentPath": "/garments/buzo-hoodie-unisex-stone-wash-front.png",
     "margins": { "top": 29, "right": 31, "bottom": 41, "left": 29 },
     "coordinates": { "x": 116, "y": 145, "width": 160, "height": 150 },
     "timestamp": 1761100000003
+  },
+  {
+    "id": "1761100000101",
+    "name": "Buzo Hoodie Oversize Marron Frontal",
+    "garmentPath": "/garments/buzo-hoodie-unisex-marron-front.jpeg",
+    "margins": { "top": 31, "right": 27, "bottom": 36, "left": 28 },
+    "coordinates": { "x": 112, "y": 150, "width": 180, "height": 160 },
+    "timestamp": 1761100000101
+  },
+  {
+    "id": "1761100000102",
+    "name": "Buzo Hoodie Oversize Marron Trasero",
+    "garmentPath": "/garments/buzo-hoodie-unisex-marron-back.jpeg",
+    "margins": { "top": 28, "right": 27, "bottom": 32, "left": 28 },
+    "coordinates": { "x": 112, "y": 150, "width": 180, "height": 180 },
+    "timestamp": 1761100000102
+  },
+  {
+    "id": "1761100000103",
+    "name": "Buzo Hoodie Oversize Crema Frontal",
+    "garmentPath": "/garments/buzo-hoodie-unisex-crema-front.jpeg",
+    "margins": { "top": 31, "right": 27, "bottom": 36, "left": 28 },
+    "coordinates": { "x": 112, "y": 150, "width": 180, "height": 160 },
+    "timestamp": 1761100000103
+  },
+  {
+    "id": "1761100000104",
+    "name": "Buzo Hoodie Oversize Crema Trasero",
+    "garmentPath": "/garments/buzo-hoodie-unisex-crema-back.jpeg",
+    "margins": { "top": 28, "right": 27, "bottom": 32, "left": 28 },
+    "coordinates": { "x": 112, "y": 150, "width": 180, "height": 180 },
+    "timestamp": 1761100000104
+  },
+  {
+    "id": "1761100000105",
+    "name": "Buzo Hoodie Oversize Gris Frontal",
+    "garmentPath": "/garments/buzo-hoodie-unisex-gris-front.jpeg",
+    "margins": { "top": 31, "right": 27, "bottom": 36, "left": 28 },
+    "coordinates": { "x": 112, "y": 150, "width": 180, "height": 160 },
+    "timestamp": 1761100000105
+  },
+  {
+    "id": "1761100000106",
+    "name": "Buzo Hoodie Oversize Gris Trasero",
+    "garmentPath": "/garments/buzo-hoodie-unisex-gris-back.jpeg",
+    "margins": { "top": 28, "right": 27, "bottom": 32, "left": 28 },
+    "coordinates": { "x": 112, "y": 150, "width": 180, "height": 180 },
+    "timestamp": 1761100000106
   },
   {
     "id": "1761100000004",

@@ -5,12 +5,6 @@
  * Frontend prices remain unchanged in lib/products.ts
  */
 export const PARTNER_PRICE_BY_ID_ARS: Record<string, number> = {
-    // Astra Oversize Hoodie - 48000 ARS
-    "astra-hoodie-negro": 48000,
-    "astra-hoodie-caramel": 48000,
-    "astra-hoodie-crema": 48000,
-    "astra-hoodie-gris": 48000,
-
     // Aura Oversize T-Shirt - 25000 ARS
     "aura-tshirt-blanco": 25000,
     "aura-tshirt-negro": 25000,
@@ -26,10 +20,13 @@ export const PARTNER_PRICE_BY_ID_ARS: Record<string, number> = {
     "musculosa-bali-negra": 18000,
     "musculosa-bali-gris": 18000,
 
-    // Buzo Hoodie Unisex - 34000 ARS
+    // Buzo Hoodie Oversize - 34000 ARS
     "buzo-hoodie-negro": 34000,
     "buzo-hoodie-stone-wash": 34000,
     "buzo-hoodie-blanco": 34000,
+    "buzo-hoodie-marron": 34000,
+    "buzo-hoodie-crema": 34000,
+    "buzo-hoodie-gris": 34000,
 
     // Remera Crop Mujer - 21000 ARS
     "remera-crop-negra": 21000,

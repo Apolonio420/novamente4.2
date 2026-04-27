@@ -42,7 +42,7 @@ export interface PartnerAsset {
 export const GARMENT_TYPES = {
   'aura-oversize-tshirt': { name: 'Aura Oversize T-Shirt', colors: ['black', 'white', 'cream', 'gray'] },
   'aldea-classic-tshirt': { name: 'Aldea Classic T-Shirt', colors: ['black', 'white', 'cream', 'gray'] },
-  'astra-oversize-hoodie': { name: 'Astra Oversize Hoodie', colors: ['black', 'white', 'cream', 'gray'] },
+  'buzo-hoodie-unisex': { name: 'Buzo Hoodie Oversize', colors: ['black', 'white', 'stone-wash', 'marron', 'cream', 'gray'] },
   'lienzo': { name: 'Lienzo (Canvas)', colors: ['white'] },
 }
 

@@ -41,12 +41,12 @@ export interface RedSquareGarment {
 
 /**
  * Translate the legacy (type, variant, color) triple to a productKey.
- * - hoodie                → astra-oversize-hoodie
+ * - hoodie                → buzo-hoodie-unisex
  * - tshirt + classic      → aldea-classic-tshirt
  * - tshirt + oversize     → aura-oversize-tshirt
  */
 function legacyToProductKey(type: GarmentType, variant: GarmentVariant): string {
-  if (type === 'hoodie') return 'astra-oversize-hoodie'
+  if (type === 'hoodie') return 'buzo-hoodie-unisex'
   return variant === 'classic' ? 'aldea-classic-tshirt' : 'aura-oversize-tshirt'
 }
 

@@ -1010,7 +1010,7 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
       { name: "Aura Oversize", price: 31000 },
       { name: "Buzo Cuello Redondo", price: 43000 },
       { name: "Hoodie Unisex", price: 55000 },
-      { name: "Astra Oversize", price: 60000 },
+      { name: "Buzo Hoodie Oversize", price: 60000 },
     ]
     return (
       <div className="mt-3">

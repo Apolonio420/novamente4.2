@@ -201,7 +201,7 @@ export default function RemerasPersonalizadas() {
       link: "/products",
     },
     {
-      name: "Astra Oversize Hoodie",
+      name: "Buzo Hoodie Oversize",
       price: 60000,
       badge: "Premium",
       description: "Hoodie oversize con capucha, algodon pesado, maximo impacto visual.",

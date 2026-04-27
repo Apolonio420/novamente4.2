@@ -165,10 +165,10 @@ export default function BuzosPersonalizados() {
     { name: "Buzo Cuello Redondo Crema", price: 43000, description: "Crewneck oversize, base neutra", category: "Crewneck" },
     { name: "Buzo Cuello Redondo Gris", price: 43000, description: "Crewneck oversize, gris melange clasico", category: "Crewneck" },
     { name: "Hoodie Unisex Negro", price: 55000, description: "Hoodie clasico con capucha y bolsillo", category: "Hoodie", popular: true },
-    { name: "Astra Oversize Hoodie Negro", price: 60000, description: "Hoodie oversize premium, caida amplia", category: "Hoodie Premium" },
-    { name: "Astra Oversize Hoodie Caramel", price: 60000, description: "Hoodie oversize, tono caramelo", category: "Hoodie Premium" },
-    { name: "Astra Oversize Hoodie Crema", price: 60000, description: "Hoodie oversize, base neutra versatil", category: "Hoodie Premium" },
-    { name: "Astra Oversize Hoodie Gris", price: 60000, description: "Hoodie oversize, gris melange", category: "Hoodie Premium" },
+    { name: "Buzo Hoodie Oversize Negro", price: 60000, description: "Hoodie oversize premium, caida amplia", category: "Hoodie Premium" },
+    { name: "Buzo Hoodie Oversize Caramel", price: 60000, description: "Hoodie oversize, tono caramelo", category: "Hoodie Premium" },
+    { name: "Buzo Hoodie Oversize Crema", price: 60000, description: "Hoodie oversize, base neutra versatil", category: "Hoodie Premium" },
+    { name: "Buzo Hoodie Oversize Gris", price: 60000, description: "Hoodie oversize, gris melange", category: "Hoodie Premium" },
   ]
 
   const advantages = [

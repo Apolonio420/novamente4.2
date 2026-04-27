@@ -52,10 +52,10 @@ interface GarmentOption {
 // ---------------------------------------------------------------------------
 
 const COLOR_MAP: Record<string, string> = {
-  black: '#1a1a1a', white: '#f5f5f5', cream: '#f5f0e1', gray: '#6b7280',
+  black: '#1a1a1a', white: '#f5f5f5', cream: '#f5f0e1', gray: '#6b7280', marron: '#8B5E34',
 }
 const COLOR_LABELS: Record<string, string> = {
-  black: 'Negro', white: 'Blanco', cream: 'Crema', gray: 'Gris',
+  black: 'Negro', white: 'Blanco', cream: 'Crema', gray: 'Gris', marron: 'Marron',
 }
 
 const STAMP_INTENT_RE = /estampa|stampe|ponel[oae]?|aplica|aplicalo|mockup|pone[mr]?lo|ubicalo|coloca/i
@@ -63,7 +63,7 @@ const STAMP_INTENT_RE = /estampa|stampe|ponel[oae]?|aplica|aplicalo|mockup|pone[
 const GARMENT_OPTIONS: { key: string; label: string }[] = [
   { key: 'aldea-classic-tshirt', label: 'Remera Clasica' },
   { key: 'aura-oversize-tshirt', label: 'Remera Oversize' },
-  { key: 'astra-oversize-hoodie', label: 'Hoodie' },
+  { key: 'buzo-hoodie-unisex', label: 'Hoodie' },
   { key: 'buzo-hoodie', label: 'Buzo' },
   { key: 'musculosa-bali', label: 'Musculosa' },
   { key: 'crop-top', label: 'Crop Top' },
@@ -80,10 +80,11 @@ const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = {
     black: '/garments/tshirt-black-classic-front.jpeg',
     white: '/garments/tshirt-white-classic-front.jpeg',
   },
-  'astra-oversize-hoodie': {
-    black: '/garments/hoodie-black-front.jpeg',
-    cream: '/garments/hoodie-cream-front.jpeg',
-    gray: '/garments/hoodie-gray-front.jpeg',
+  'buzo-hoodie-unisex': {
+    black: '/garments/buzo-hoodie-unisex-black-front.png',
+    cream: '/garments/buzo-hoodie-unisex-crema-front.jpeg',
+    gray: '/garments/buzo-hoodie-unisex-gris-front.jpeg',
+    marron: '/garments/buzo-hoodie-unisex-marron-front.jpeg',
   },
   lienzo: {
     white: '/garments/lienzo-main.png',

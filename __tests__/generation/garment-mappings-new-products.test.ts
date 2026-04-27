@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { getGarmentMapping } from "@/lib/garment-mappings"
 
 const NEW_PRODUCTS: Array<{ type: string; colors: string[] }> = [
-  { type: "buzo-hoodie-unisex", colors: ["black", "white", "stone-wash"] },
+  { type: "buzo-hoodie-unisex", colors: ["black", "white", "stone-wash", "marron", "cream", "gray"] },
   { type: "buzo-cuello-redondo-unisex", colors: ["black", "white", "stone-wash"] },
   { type: "musculosa-bali", colors: ["black", "white", "gray"] },
   { type: "remera-clasica-mujer", colors: ["black", "white"] },
@@ -14,9 +14,11 @@ describe("garment-mappings: new products (front)", () => {
     for (const color of colors) {
       it(`${type} / ${color} / front → real mapping (not fallback)`, () => {
         const m = getGarmentMapping(type, color, "front")
+        const expectedColor =
+          { cream: "crema", gray: type === "buzo-hoodie-unisex" ? "gris" : "gray" }[color] || color
         expect(m).not.toBeNull()
         expect(m!.id).not.toBe("fallback")
-        expect(m!.garmentPath).toMatch(new RegExp(`${type.replace("unisex", "")}.*${color}.*front`))
+        expect(m!.garmentPath).toMatch(new RegExp(`${type.replace("unisex", "")}.*${expectedColor}.*front`))
         expect(m!.coordinates.width).toBeGreaterThan(0)
         expect(m!.coordinates.height).toBeGreaterThan(0)
       })
@@ -24,9 +26,36 @@ describe("garment-mappings: new products (front)", () => {
   }
 
   it("legacy products still work (regression)", () => {
-    expect(getGarmentMapping("astra-oversize-hoodie", "black", "front")?.name).toBe("Hoodie Negro Frontal")
+    expect(getGarmentMapping("buzo-hoodie-unisex", "black", "front")?.name).toBe("Buzo Hoodie Oversize Negro Frontal")
     expect(getGarmentMapping("aura-oversize-tshirt", "white", "back")?.name).toBe("T-shirt Blanco Oversize Trasero")
     expect(getGarmentMapping("aldea-classic-tshirt", "black", "front")?.name).toBe("T-shirt Negro Clásico Frontal")
     expect(getGarmentMapping("lienzo", "any", "front")?.name).toBe("Lienzo Base")
+  })
+
+  it("buzo hoodie oversize has front and back mappings for new colors", () => {
+    const expectedPaths: Record<string, { front: string; back: string }> = {
+      marron: {
+        front: "/garments/buzo-hoodie-unisex-marron-front.jpeg",
+        back: "/garments/buzo-hoodie-unisex-marron-back.jpeg",
+      },
+      cream: {
+        front: "/garments/buzo-hoodie-unisex-crema-front.jpeg",
+        back: "/garments/buzo-hoodie-unisex-crema-back.jpeg",
+      },
+      gray: {
+        front: "/garments/buzo-hoodie-unisex-gris-front.jpeg",
+        back: "/garments/buzo-hoodie-unisex-gris-back.jpeg",
+      },
+    }
+
+    for (const [color, paths] of Object.entries(expectedPaths)) {
+      const front = getGarmentMapping("buzo-hoodie-unisex", color, "front")
+      const back = getGarmentMapping("buzo-hoodie-unisex", color, "back")
+
+      expect(front?.id).not.toBe("fallback")
+      expect(back?.id).not.toBe("fallback")
+      expect(front?.garmentPath).toBe(paths.front)
+      expect(back?.garmentPath).toBe(paths.back)
+    }
   })
 })

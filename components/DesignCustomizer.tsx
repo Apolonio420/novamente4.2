@@ -31,7 +31,6 @@ interface DesignCustomizerProps {
 const GARMENT_PRICES = {
   "aura-oversize-tshirt": 31000,
   "aldea-classic-tshirt": 28600,
-  "astra-oversize-hoodie": 60000,
   "buzo-hoodie-unisex": 55000,
   "buzo-cuello-redondo-unisex": 43000,
   "musculosa-bali": 21800,
@@ -42,8 +41,7 @@ const GARMENT_PRICES = {
 const GARMENT_NAMES = {
   "aura-oversize-tshirt": "Aura Oversize T-Shirt Personalizada",
   "aldea-classic-tshirt": "Aldea Classic T-Shirt Personalizada",
-  "astra-oversize-hoodie": "Astra Oversize Hoodie Personalizada",
-  "buzo-hoodie-unisex": "Buzo Hoodie Unisex Personalizado",
+  "buzo-hoodie-unisex": "Buzo Hoodie Oversize Personalizado",
   "buzo-cuello-redondo-unisex": "Buzo Cuello Redondo Personalizado",
   "musculosa-bali": "Musculosa Bali Personalizada",
   "remera-clasica-mujer": "Remera Clásica Mujer Personalizada",
@@ -67,9 +65,10 @@ const getGarmentImage = (garmentType: string, color: string) => {
       return `/garments/tshirt-${colorCode}-oversize-front.jpeg`
     case 'aldea-classic-tshirt':
       return `/garments/tshirt-${colorCode}-classic-front.jpeg`
-    case 'astra-oversize-hoodie':
-      return `/garments/hoodie-${colorCode}-front.jpeg`
     case 'buzo-hoodie-unisex':
+      if (color === 'marron') return '/garments/buzo-hoodie-unisex-marron-front.jpeg'
+      if (color === 'cream') return '/garments/buzo-hoodie-unisex-crema-front.jpeg'
+      if (color === 'gray') return '/garments/buzo-hoodie-unisex-gris-front.jpeg'
       return `/garments/buzo-hoodie-unisex-${color}-front.png`
     case 'buzo-cuello-redondo-unisex':
       return `/garments/buzo-cuello-redondo-${color}-front.png`
@@ -90,7 +89,6 @@ const getGarmentImage = (garmentType: string, color: string) => {
 const GARMENT_DEFAULT_IMAGES = {
   "aura-oversize-tshirt": "/garments/tshirt-white-oversize-front.jpeg",
   "aldea-classic-tshirt": "/garments/tshirt-white-classic-front.jpeg",
-  "astra-oversize-hoodie": "/garments/hoodie-black-front.jpeg",
   "buzo-hoodie-unisex": "/garments/buzo-hoodie-unisex-black-front.png",
   "buzo-cuello-redondo-unisex": "/garments/buzo-cuello-redondo-black-front.png",
   "musculosa-bali": "/garments/musculosa-bali-black-front.png",
@@ -101,8 +99,7 @@ const GARMENT_DEFAULT_IMAGES = {
 const COLORS_BY_GARMENT: Record<string, string[]> = {
   "aura-oversize-tshirt": ["black", "white", "caramel"],
   "aldea-classic-tshirt": ["black", "white"],
-  "astra-oversize-hoodie": ["black", "caramel", "gray", "cream"],
-  "buzo-hoodie-unisex": ["black", "white", "stone-wash"],
+  "buzo-hoodie-unisex": ["black", "white", "stone-wash", "marron", "gray", "cream"],
   "buzo-cuello-redondo-unisex": ["black", "white", "stone-wash"],
   "musculosa-bali": ["black", "white", "gray"],
   "remera-clasica-mujer": ["black", "white"],
@@ -691,7 +688,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
           },
           body: JSON.stringify({
             designImageUrl: frontDesign,
-            garmentType: selectedGarment && selectedGarment === 'astra-oversize-hoodie' ? 'hoodie' : 'tshirt',
+            garmentType: selectedGarment && selectedGarment === 'buzo-hoodie-unisex' ? 'hoodie' : 'tshirt',
             garmentVariant: selectedGarment && selectedGarment.includes('oversize') ? 'oversize' : 'classic',
             garmentColor: selectedColor,
             side: "front",
@@ -719,7 +716,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
           },
           body: JSON.stringify({
             designImageUrl: frontDesign, // Usar el mismo diseño por ahora
-            garmentType: selectedGarment && selectedGarment === 'astra-oversize-hoodie' ? 'hoodie' : 'tshirt',
+            garmentType: selectedGarment && selectedGarment === 'buzo-hoodie-unisex' ? 'hoodie' : 'tshirt',
             garmentVariant: selectedGarment && selectedGarment.includes('oversize') ? 'oversize' : 'classic',
             garmentColor: selectedColor,
             side: "back",
@@ -1451,12 +1448,9 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
     try {
       // Mapear garmentType a los valores esperados por la API
       const garmentTypeMap: { [key: string]: { type: string, variant: string } } = {
-        'astra-oversize-hoodie': { type: 'hoodie', variant: 'oversize' },
-        'astra-oversize-tshirt': { type: 'tshirt', variant: 'oversize' },
-        'astra-classic-tshirt': { type: 'tshirt', variant: 'classic' },
         'aura-oversize-tshirt': { type: 'tshirt', variant: 'oversize' },
         'aldea-classic-tshirt': { type: 'tshirt', variant: 'classic' },
-        'buzo-hoodie-unisex': { type: 'hoodie', variant: 'classic' },
+        'buzo-hoodie-unisex': { type: 'hoodie', variant: 'oversize' },
         'buzo-cuello-redondo-unisex': { type: 'hoodie', variant: 'classic' },
         'musculosa-bali': { type: 'tshirt', variant: 'classic' },
         'remera-clasica-mujer': { type: 'tshirt', variant: 'classic' },
@@ -2001,7 +1995,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                             {selectedGarment === 'lienzo' ? 'Tamaño del Lienzo' : `Tamaño del Estampado ${selectedSide === 'front' ? 'Frontal' : 'Trasero'}`}
                           </h4>
                           <StampSizeSelector
-                            garmentType={(selectedGarment === 'astra-oversize-hoodie' || selectedGarment === 'buzo-hoodie-unisex' || selectedGarment === 'buzo-cuello-redondo-unisex') ? 'hoodie' : selectedGarment === 'lienzo' ? 'lienzo' : 'tshirt'}
+                            garmentType={(selectedGarment === 'buzo-hoodie-unisex' || selectedGarment === 'buzo-cuello-redondo-unisex') ? 'hoodie' : selectedGarment === 'lienzo' ? 'lienzo' : 'tshirt'}
                             garmentVariant={selectedGarment === 'lienzo' ? undefined : (selectedGarment.includes('oversize') ? 'oversize' : 'classic')}
                             garmentColor={selectedColor as 'black' | 'gray' | 'caramel' | 'white' | 'cream' | 'model'}
                             side={selectedGarment === 'lienzo' ? 'front' : (selectedSide || 'front')}

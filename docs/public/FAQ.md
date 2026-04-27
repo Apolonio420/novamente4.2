@@ -1,4 +1,4 @@
-# Preguntas Frecuentes
+﻿# Preguntas Frecuentes
 
 ## Sobre Novamente
 
@@ -28,7 +28,7 @@ Sí, cada diseño generado es completamente único y te pertenece.
 ## Productos y Precios
 
 ### ¿Qué productos tienen?
-Remeras: Aldea Classic ($28,600), Aura Oversize ($31,000), Clásica Mujer ($28,600), Crop Mujer ($23,500). Musculosa Bali ($21,800). Buzos: Cuello Redondo ($43,000), Hoodie Unisex ($55,000), Astra Oversize ($60,000). Lienzo Premium ($59,900).
+Remeras: Aldea Classic ($28,600), Aura Oversize ($31,000), Clásica Mujer ($28,600), Crop Mujer ($23,500). Musculosa Bali ($21,800). Buzos: Cuello Redondo ($43,000), Buzo Hoodie Oversize ($55,000). Lienzo Premium ($59,900).
 
 ### ¿Los precios incluyen el diseño?
 Sí. Incluyen diseño con IA + impresión DTG premium (frente y espalda). Sin cargos adicionales.
@@ -71,3 +71,4 @@ Starter (gratis, hasta 20 productos), Growth ($25 USD/mes, ilimitado + SEO), Pro
 
 ## Contacto
 WhatsApp: +54 9 11 3137-0561 | B2B: +54 9 11 6274-7588 | Email: contact@novamente.ar | IG: @novamente.ar
+

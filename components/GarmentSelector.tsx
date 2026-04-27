@@ -40,11 +40,11 @@ export function GarmentSelector({
       sizes: ["S", "M", "L", "XL"], // Solo estos talles
     },
     {
-      id: "astra-oversize-hoodie",
-      name: "Astra Oversize Hoodie",
-      price: 60000, // Precio actualizado
-      image: "/products/hoodie-negro-front.jpeg",
-      colors: ["black", "caramel", "cream", "gray"],
+      id: "buzo-hoodie-unisex",
+      name: "Buzo Hoodie Oversize",
+      price: 55000,
+      image: "/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
+      colors: ["black", "white", "stone-wash", "marron", "cream", "gray"],
       sizes: ["S", "M", "L", "XL"], // Solo estos talles
     },
     {
@@ -61,8 +61,10 @@ export function GarmentSelector({
     black: "Negro",
     white: "Blanco",
     caramel: "Caramelo",
+    marron: "Marron",
     cream: "Crema",
     gray: "Gris",
+    "stone-wash": "Stone Wash",
   }
 
   const selectedGarmentData = garments.find((g) => g.id === selectedGarment)
@@ -148,6 +150,10 @@ export function GarmentSelector({
                         ? "#000000"
                         : color === "white"
                           ? "#ffffff"
+                          : color === "marron"
+                            ? "#8B5E34"
+                            : color === "stone-wash"
+                              ? "#8A8A8A"
                           : color === "caramel"
                             ? "#D2B48C"
                             : color === "cream"
