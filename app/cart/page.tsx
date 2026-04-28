@@ -411,7 +411,7 @@ export default function CartPage() {
                 <Link href="/#generator-section" className="block" data-cta="cart-with-items-continue-designing">
                   <Button variant="outline" className="w-full bg-transparent">
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Continuar Disenando
+                    Continuar Diseñando
                   </Button>
                 </Link>
 

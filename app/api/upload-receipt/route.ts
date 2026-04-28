@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { uploadToR2 } from '@/lib/cloudflare-r2'
+import { uploadFile } from '@/lib/cloudflare-r2'
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,22 +54,23 @@ export async function POST(request: NextRequest) {
     const fileExtension = file.name.split('.').pop()
     const uniqueFileName = `receipts/${orderId}/${timestamp}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`
     
-    // Subir archivo a R2
+    // Subir archivo a R2 (con fallback automático a Supabase Storage)
     const fileBuffer = await file.arrayBuffer()
-    const uploadResult = await uploadToR2(
-      uniqueFileName,
-      Buffer.from(fileBuffer),
-      file.type
-    )
-
-    if (!uploadResult.success) {
-      console.error('❌ Error subiendo archivo a R2:', uploadResult.error)
-      return NextResponse.json({ 
-        error: 'Error subiendo archivo' 
+    let uploadResult: { url: string; provider: 'r2' | 'supabase' }
+    try {
+      uploadResult = await uploadFile(
+        Buffer.from(fileBuffer),
+        uniqueFileName,
+        file.type
+      )
+    } catch (uploadError: any) {
+      console.error('❌ Error subiendo archivo:', uploadError?.message || uploadError)
+      return NextResponse.json({
+        error: 'Error subiendo archivo'
       }, { status: 500 })
     }
 
-    console.log('✅ Archivo subido a R2:', uploadResult.url)
+    console.log(`✅ Archivo subido (${uploadResult.provider}):`, uploadResult.url)
 
     // Guardar información en la base de datos (cliente admin server-side)
     const supabase = supabaseAdmin

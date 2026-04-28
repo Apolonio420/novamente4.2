@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { X, Gift, Loader2, Check, Mail } from "lucide-react"
+import { X, Sparkles, Loader2, Check, Mail } from "lucide-react"
 
 const STORAGE_KEY = "nvm_email_popup"
 const DISMISS_DAYS = 7
@@ -58,7 +58,7 @@ export function EmailCapturePopup() {
       const res = await fetch("/api/email-capture", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), source: "popup_10off" }),
+        body: JSON.stringify({ email: email.trim(), source: "popup_newsletter" }),
       })
 
       if (!res.ok) {
@@ -81,7 +81,7 @@ export function EmailCapturePopup() {
       className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Obtene 10% de descuento"
+      aria-label="Suscribite a novedades de Novamente"
     >
       {/* Backdrop */}
       <div
@@ -112,11 +112,10 @@ export function EmailCapturePopup() {
                   <Check className="h-7 w-7 text-green-400" />
                 </div>
                 <h3 className="text-xl font-bold text-white">
-                  Listo, tu descuento esta en camino
+                  Quedaste adentro
                 </h3>
                 <p className="text-sm text-zinc-400">
-                  Revisa tu email para tu codigo de <span className="text-green-400 font-semibold">10% OFF</span>.
-                  Usalo en tu proxima compra.
+                  Vas a recibir nuestras <span className="text-violet-300 font-semibold">novedades, lanzamientos y descuentos</span> antes que nadie.
                 </p>
                 <button
                   onClick={() => close(SUBMITTED_DAYS)}
@@ -129,15 +128,15 @@ export function EmailCapturePopup() {
               /* Form state */
               <>
                 <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-violet-500/20">
-                  <Gift className="h-7 w-7 text-violet-400" />
+                  <Sparkles className="h-7 w-7 text-violet-400" />
                 </div>
 
                 <h3 className="text-xl font-bold text-white mb-1">
-                  10% OFF en tu primera compra
+                  Enterate primero de todo
                 </h3>
                 <p className="text-sm text-zinc-400 mb-5">
-                  Dejanos tu email y te enviamos el codigo de descuento.
-                  Valido para cualquier prenda personalizada.
+                  Suscribite y recibi novedades, lanzamientos y descuentos
+                  exclusivos directo en tu mail.
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-3">
@@ -166,10 +165,10 @@ export function EmailCapturePopup() {
                     {status === "loading" ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Registrando...
+                        Suscribiendo...
                       </>
                     ) : (
-                      "Quiero mi 10% OFF"
+                      "Quiero recibir novedades"
                     )}
                   </button>
                 </form>

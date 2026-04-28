@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     // Insert new capture
     const { error } = await (supabaseAdmin as any).from("email_captures").insert({
       email: normalizedEmail,
-      source: source || "popup_10off",
+      source: source || "popup_newsletter",
       created_at: new Date().toISOString(),
     })
 
