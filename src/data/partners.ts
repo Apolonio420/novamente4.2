@@ -115,7 +115,6 @@ const novamenteMundial: Partner = {
             ],
             category: "Hoodies",
             lifestyleImages: [
-                "/partners/novamente-mundial/products/buzo-copa-novamente-mundial1-lifestyle.png",
                 "/partners/novamente-mundial/products/buzo-copa-novamente-mundial1-talles.png",
             ],
             description: "Buzo oversize premium inspirado en la Copa y la previa mundialista.",
