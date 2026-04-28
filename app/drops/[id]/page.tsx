@@ -29,13 +29,16 @@ export interface Drop {
 }
 
 async function fetchDrop(id: string): Promise<Drop | null> {
+  const url = `${PLATFORM_API}/api/public/drop/${id}`;
   try {
-    const r = await fetch(`${PLATFORM_API}/api/public/drop/${id}`, {
-      next: { revalidate: 300 },
-    });
-    if (!r.ok) return null;
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) {
+      console.error(`[drops] fetch ${url} → HTTP ${r.status}`);
+      return null;
+    }
     return (await r.json()) as Drop;
-  } catch {
+  } catch (err) {
+    console.error(`[drops] fetch ${url} threw:`, err);
     return null;
   }
 }
