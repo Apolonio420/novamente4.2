@@ -138,6 +138,12 @@ const nextConfig = {
         source: '/openai-products.jsonl',
         destination: '/api/openai-feed',
       },
+      // Drops del robot de tweets — sirve desde novamente-platform.
+      // novamente.ar/drops/[id] → novamente-platform.vercel.app/drops/[id]
+      {
+        source: '/drops/:id',
+        destination: 'https://novamente-platform.vercel.app/drops/:id',
+      },
     ];
   },
   async redirects() {
