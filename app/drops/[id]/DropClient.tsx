@@ -13,8 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingBag, Sparkles, ExternalLink, Check } from "lucide-react";
-import type { Drop } from "./page";
-import { garmentLabel } from "./page";
+import { type Drop, garmentLabel } from "./drop-types";
 
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
 

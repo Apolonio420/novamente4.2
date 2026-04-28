@@ -8,25 +8,11 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import DropClient from "./DropClient";
+import { type Drop, garmentLabel } from "./drop-types";
 
 const PLATFORM_API =
   process.env.NEXT_PUBLIC_PLATFORM_API ?? "https://novamente-platform.vercel.app";
 const BASE_URL = "https://www.novamente.ar";
-
-export interface Drop {
-  id: string;
-  copy: string;
-  caption: string;
-  hashtags: string[];
-  lifestyleUrl: string | null;
-  mockupUrl: string | null;
-  topic: string | null;
-  garmentKey: string | null;
-  styleId: string | null;
-  format: string | null;
-  tweetUrl: string | null;
-  postedAt: string | null;
-}
 
 async function fetchDrop(id: string): Promise<Drop | null> {
   const url = `${PLATFORM_API}/api/public/drop/${id}`;
@@ -86,20 +72,4 @@ export default async function DropPage(
   const drop = await fetchDrop(id);
   if (!drop) notFound();
   return <DropClient drop={drop} />;
-}
-
-export function garmentLabel(key: string | null): string {
-  if (!key) return "Prenda Novamente";
-  const map: Record<string, string> = {
-    "tshirt-black": "Remera Clásica Negra",
-    "tshirt-white": "Remera Clásica Blanca",
-    "tshirt-caramel": "Remera Clásica Caramel",
-    "tshirt-black-oversize": "Aura Oversize T-Shirt Negra",
-    "tshirt-white-oversize": "Aura Oversize T-Shirt Blanca",
-    "hoodie-black": "Buzo Hoodie Oversize Negro",
-    "hoodie-cream": "Buzo Hoodie Oversize Crema",
-    "hoodie-gray": "Buzo Hoodie Oversize Gris",
-    "hoodie-caramel": "Buzo Hoodie Oversize Caramel",
-  };
-  return map[key] ?? "Prenda Novamente";
 }
