@@ -172,7 +172,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
             lifestyle: ["/products/buzo-hoddie-unisex-negro/Buzo_Unisex_Studio.png", "/products/buzo-hoddie-unisex-negro/Buzo_Hoodie_Negro_Hombre_Lifestyle.png"],
-            measurements: "/products/buzo-hoddie-unisex-negro/Medidas4.png"
+            measurements: "/products/size-charts/hoodie.png"
         },
         category: "Hoodies",
         color: "Negro",
@@ -186,7 +186,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/buzo-hoddie-unisex-stone-wash/mockups nuevos productos-13.png",
             lifestyle: ["/products/buzo-hoddie-unisex-stone-wash/Buzo_Unisex_Studio.png", "/products/buzo-hoddie-unisex-stone-wash/Buzo_Hoodie_Negro_Hombre_Lifestyle.png"],
-            measurements: "/products/buzo-hoddie-unisex-stone-wash/Medidas4.png"
+            measurements: "/products/size-charts/hoodie.png"
         },
         category: "Hoodies",
         color: "Stone Wash",
@@ -200,7 +200,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/buzo-hoddie-unisex-blanco/mockups nuevos productos-11.png",
             lifestyle: ["/products/buzo-hoddie-unisex-blanco/Buzo_Unisex_Studio.png"],
-            measurements: "/products/buzo-hoddie-unisex-blanco/Medidas4.png"
+            measurements: "/products/size-charts/hoodie.png"
         },
         category: "Hoodies",
         color: "Blanco",
@@ -214,7 +214,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/buzo-hoddie-unisex-marron/front.jpeg",
             lifestyle: ["/products/buzo-hoddie-unisex-marron/back.jpeg"],
-            measurements: "/products/buzo-hoddie-unisex-negro/Medidas4.png"
+            measurements: "/products/size-charts/hoodie.png"
         },
         category: "Hoodies",
         color: "Marron",
@@ -228,7 +228,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/buzo-hoddie-unisex-crema/front.jpeg",
             lifestyle: ["/products/buzo-hoddie-unisex-crema/back.jpeg"],
-            measurements: "/products/buzo-hoddie-unisex-negro/Medidas4.png"
+            measurements: "/products/size-charts/hoodie.png"
         },
         category: "Hoodies",
         color: "Crema",
@@ -242,7 +242,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/buzo-hoddie-unisex-gris/front.jpeg",
             lifestyle: ["/products/buzo-hoddie-unisex-gris/back.jpeg"],
-            measurements: "/products/buzo-hoddie-unisex-negro/Medidas4.png"
+            measurements: "/products/size-charts/hoodie.png"
         },
         category: "Hoodies",
         color: "Gris Melange",
@@ -312,7 +312,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/buzo-cuello-redondo-unisex-negro-estilo-oversize/mockups nuevos productos-8.png",
             lifestyle: ["/products/buzo-cuello-redondo-unisex-negro-estilo-oversize/Buzo_Cuello_Redondo_Negro_Mujer_Lifestyle.png"],
-            measurements: "/products/buzo-cuello-redondo-unisex-negro-estilo-oversize/Medidas5.png"
+            measurements: "/products/size-charts/crewneck.png"
         },
         category: "Buzos (Crewneck)",
         color: "Negro",
@@ -340,7 +340,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/buzo-cuello-redondo-unisex-blanco-estilo-oversize/mockups nuevos productos-9.png",
             lifestyle: ["/products/buzo-cuello-redondo-unisex-blanco-estilo-oversize/Buzo_Cuello_Redondo_Blanco_Mujer_Lifestyle.png"],
-            measurements: "/products/buzo-cuello-redondo-unisex-blanco-estilo-oversize/Medidas5.png"
+            measurements: "/products/size-charts/crewneck.png"
         },
         category: "Buzos (Crewneck)",
         color: "Blanco",
@@ -354,7 +354,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/buzo-cuello-redondo-unisex-stone-wash-friza-premium-estilo-oversize/mockups nuevos productos-10.png",
             lifestyle: ["/products/buzo-cuello-redondo-unisex-stone-wash-friza-premium-estilo-oversize/Buzo_Cuello_Redondo_Blanco_Mujer_Lifestyle.png"],
-            measurements: "/products/buzo-cuello-redondo-unisex-stone-wash-friza-premium-estilo-oversize/Medidas5.png"
+            measurements: "/products/size-charts/crewneck.png"
         },
         category: "Buzos (Crewneck)",
         color: "Stone Wash",

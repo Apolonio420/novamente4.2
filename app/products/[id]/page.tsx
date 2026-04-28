@@ -13,44 +13,50 @@ import {
 } from "lucide-react"
 import { PRODUCTS } from "@/lib/products"
 
-// Size data per category
-const SIZE_CHARTS: Record<string, { sizes: string[]; chest: string[]; length: string[]; shoulder: string[] }> = {
+// Size data — keyed by chart key. T-Shirts split into Aura/Aldea (different charts despite same category)
+type SizeChart = { sizes: string[]; width: string[]; length: string[] }
+const SIZE_CHARTS: Record<string, SizeChart> = {
   "Hoodies": {
-    sizes: ["S", "M", "L", "XL", "XXL"],
-    chest: ["58", "61", "64", "67", "70"],
-    length: ["72", "74", "76", "78", "80"],
-    shoulder: ["54", "57", "60", "63", "66"],
+    sizes: ["XS", "S", "M", "L", "XL", "2XL"],
+    width: ["64", "66", "68", "70", "72", "74"],
+    length: ["67", "69", "71", "73", "75", "77"],
   },
   "Buzos (Crewneck)": {
-    sizes: ["S", "M", "L", "XL", "XXL"],
-    chest: ["57", "60", "63", "66", "69"],
-    length: ["70", "72", "74", "76", "78"],
-    shoulder: ["53", "56", "59", "62", "65"],
+    sizes: ["XS", "S", "M", "L", "XL", "2XL"],
+    width: ["65", "67", "69", "71", "73", "75"],
+    length: ["66", "68", "70", "72", "74", "76"],
   },
-  "T-Shirts": {
+  "Aura T-Shirt": {
+    sizes: ["S", "M", "L", "XL"],
+    width: ["53", "55", "58", "60"],
+    length: ["70", "73", "75", "78"],
+  },
+  "Aldea T-Shirt": {
     sizes: ["S", "M", "L", "XL", "XXL"],
-    chest: ["53", "56", "59", "62", "65"],
-    length: ["72", "74", "76", "78", "80"],
-    shoulder: ["50", "53", "56", "59", "62"],
+    width: ["48", "52", "56", "58", "60"],
+    length: ["63", "68", "72", "75", "77"],
   },
   "Remeras Crop": {
-    sizes: ["S", "M", "L", "XL"],
-    chest: ["46", "49", "52", "55"],
-    length: ["48", "50", "52", "54"],
-    shoulder: ["40", "43", "46", "49"],
+    sizes: ["S", "M", "L", "XL", "2XL"],
+    width: ["46", "48", "50", "52", "53"],
+    length: ["40", "42", "44", "46", "48"],
   },
   "Musculosas": {
-    sizes: ["S", "M", "L", "XL"],
-    chest: ["44", "47", "50", "53"],
-    length: ["62", "64", "66", "68"],
-    shoulder: ["30", "32", "34", "36"],
+    sizes: ["S", "M", "L", "XL", "2XL"],
+    width: ["28", "30", "32", "34", "36"],
+    length: ["44", "46", "48", "50", "52"],
   },
   "Remeras Mujer": {
-    sizes: ["S", "M", "L", "XL"],
-    chest: ["46", "49", "52", "55"],
-    length: ["62", "64", "66", "68"],
-    shoulder: ["38", "41", "44", "47"],
+    sizes: ["S", "M", "L", "XL", "2XL"],
+    width: ["47", "49", "51", "53", "55"],
+    length: ["61", "63", "65", "67", "69"],
   },
+}
+
+function getSizeChartKey(productId: string, category: string): string {
+  if (productId.startsWith("aura-tshirt")) return "Aura T-Shirt"
+  if (productId.startsWith("aldea-tshirt")) return "Aldea T-Shirt"
+  return category
 }
 
 const CARE_INSTRUCTIONS = [
@@ -131,7 +137,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const baseUrl = "https://www.novamente.ar"
   const reviews = generateReviews(product.name, product.category)
   const avgRating = (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
-  const sizeChart = SIZE_CHARTS[product.category]
+  const sizeChart = SIZE_CHARTS[getSizeChartKey(product.id, product.category)]
 
   // Related products: same category, different product
   const relatedProducts = PRODUCTS
@@ -389,24 +395,22 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   <thead>
                     <tr className="bg-primary/10">
                       <th className="px-4 py-3 text-left font-semibold rounded-tl-lg">Talle</th>
-                      <th className="px-4 py-3 text-center font-semibold">Pecho (cm)</th>
-                      <th className="px-4 py-3 text-center font-semibold">Largo (cm)</th>
-                      <th className="px-4 py-3 text-center font-semibold rounded-tr-lg">Hombro (cm)</th>
+                      <th className="px-4 py-3 text-center font-semibold">Ancho (cm)</th>
+                      <th className="px-4 py-3 text-center font-semibold rounded-tr-lg">Largo (cm)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sizeChart.sizes.map((size, i) => (
                       <tr key={size} className={i % 2 === 0 ? "bg-background" : "bg-muted/30"}>
                         <td className="px-4 py-3 font-bold text-primary">{size}</td>
-                        <td className="px-4 py-3 text-center">{sizeChart.chest[i]}</td>
+                        <td className="px-4 py-3 text-center">{sizeChart.width[i]}</td>
                         <td className="px-4 py-3 text-center">{sizeChart.length[i]}</td>
-                        <td className="px-4 py-3 text-center">{sizeChart.shoulder[i]}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
                 <p className="text-xs text-muted-foreground mt-3">
-                  * Medidas aproximadas en cm. Pueden variar +/- 2cm. Si estas entre dos talles, te recomendamos elegir el mas grande.
+                  * Las medidas pueden variar +/- 1cm. Si estas entre dos talles, te recomendamos elegir el mas grande.
                 </p>
               </div>
 
