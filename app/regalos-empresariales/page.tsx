@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.novamente.ar/marketing/regalos-empresariales-hero.webp",
+        url: "https://www.novamente.ar/marketing/lifestyle/hero-subte-cinematic.webp",
         width: 1600,
         height: 900,
         alt: "Regalos empresariales personalizados con IA — Novamente",
@@ -322,7 +322,7 @@ export default function RegalosEmpresariales() {
               <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-amber-500/25 via-orange-500/10 to-transparent blur-2xl" />
               <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-zinc-950 shadow-2xl">
                 <Image
-                  src="/marketing/regalos-empresariales-hero.webp"
+                  src="/marketing/lifestyle/hero-subte-cinematic.webp"
                   alt="Kit de merch corporativo con hoodie, remeras, tote bag y packaging para empresas"
                   width={1600}
                   height={900}

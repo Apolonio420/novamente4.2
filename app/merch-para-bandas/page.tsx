@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.novamente.ar/marketing/merch-general-hero.webp",
+        url: "https://www.novamente.ar/marketing/lifestyle/hero-otono-streetwear.webp",
         width: 1600,
         height: 900,
         alt: "Merch para bandas personalizado — Novamente",
@@ -336,7 +336,7 @@ export default function MerchParaBandas() {
               <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-purple-500/25 via-pink-500/10 to-transparent blur-2xl" />
               <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-zinc-950 shadow-2xl">
                 <Image
-                  src="/marketing/merch-general-hero.webp"
+                  src="/marketing/lifestyle/hero-otono-streetwear.webp"
                   alt="Remeras, hoodies y tote bags personalizados para vender merch de marca"
                   width={1600}
                   height={900}

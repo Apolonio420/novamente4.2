@@ -146,7 +146,7 @@ export default function Home() {
     about: { "@id": "https://www.novamente.ar/#organization" },
     primaryImageOfPage: {
       "@type": "ImageObject",
-      url: "https://www.novamente.ar/marketing/merch-general-hero.webp",
+      url: "https://www.novamente.ar/marketing/lifestyle/hero-otono-streetwear.webp",
     },
     speakable: {
       "@type": "SpeakableSpecification",
@@ -236,18 +236,20 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Stats más pequeñas con nueva estadística */}
-          <div className="mb-8 grid gap-3 sm:grid-cols-3">
-            {[
-              ["Tenemos hoy", "Remeras, buzos, hoodies, musculosas y lienzos."],
-              ["Hacemos", "IA, mockups, DTG premium, envíos y venta por mayor."],
-              ["No prometemos", "Stock infinito ni entregas express sin validar fecha."],
-            ].map(([title, text]) => (
-              <div key={title} className="border-l border-white/15 pl-4">
-                <p className="text-sm font-semibold text-white">{title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-zinc-400">{text}</p>
-              </div>
-            ))}
+          {/* Resumen de oferta — 3 chips concretos sin tono defensivo */}
+          <div className="mb-8 flex flex-wrap gap-3 text-xs text-zinc-300">
+            <span className="rounded-full bg-white/5 px-3 py-1.5 ring-1 ring-white/10">
+              Remeras, hoodies, buzos, musculosas
+            </span>
+            <span className="rounded-full bg-white/5 px-3 py-1.5 ring-1 ring-white/10">
+              Estampado DTG premium
+            </span>
+            <span className="rounded-full bg-white/5 px-3 py-1.5 ring-1 ring-white/10">
+              Producción on-demand · sin stock muerto
+            </span>
+            <span className="rounded-full bg-white/5 px-3 py-1.5 ring-1 ring-white/10">
+              Envíos a todo el país
+            </span>
           </div>
 
           <div className="flex flex-wrap justify-start gap-8 pt-4">
@@ -271,11 +273,12 @@ export default function Home() {
           <div className="relative">
             <div className="absolute -inset-4 rounded-[2rem] border border-white/10 bg-white/[0.03]" />
             <div className="relative grid gap-4">
+              {/* Hero principal: lifestyle real argentino, persona usando la prenda con estampa generada por el bot */}
               <div className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900">
-                <div className="relative aspect-[4/3]">
+                <div className="relative aspect-[4/5] sm:aspect-[4/3]">
                   <Image
-                    src="/marketing/merch-general-hero.webp"
-                    alt="Prendas personalizadas Novamente con estampas generadas con IA"
+                    src="/marketing/lifestyle/hero-otono-streetwear.webp"
+                    alt="Hoodie gris Novamente con estampa otoño generada con IA, look streetwear argentino"
                     fill
                     priority
                     className="object-cover"
@@ -284,27 +287,39 @@ export default function Home() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
+                {/* Lifestyle secundario: mismo estilo, otra escena CABA */}
                 <div className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900">
                   <div className="relative aspect-square">
                     <Image
-                      src="/marketing/regalos-personalizados-hero.webp"
-                      alt="Remera, hoodie y tote bag personalizados con diseño impreso"
+                      src="/marketing/lifestyle/hero-merch-personalizado.webp"
+                      alt="Joven con hoodie crema Novamente personalizado en azotea de San Telmo"
                       fill
                       className="object-cover"
                       sizes="(max-width: 1024px) 50vw, 22vw"
                     />
                   </div>
                 </div>
-                <div className="rounded-xl border border-white/10 bg-zinc-950 p-5">
-                  <p className="text-3xl font-semibold text-white">4.8</p>
-                  <div className="mt-1 flex gap-1">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    ))}
+                <div className="flex flex-col justify-between rounded-xl border border-white/10 bg-zinc-950 p-5">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-3xl font-semibold text-white">4.8</p>
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <Star key={i} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+                      95 clientes que ya usan su prenda Novamente.
+                      1.200 diseños generados con IA.
+                    </p>
                   </div>
-                  <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-                    95+ clientes, 1.200+ diseños creados y producción on-demand.
-                  </p>
+                  <Link
+                    href="/merch"
+                    className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-cyan-300 hover:text-cyan-200"
+                  >
+                    Ver marcas que producen con nosotros →
+                  </Link>
                 </div>
               </div>
             </div>

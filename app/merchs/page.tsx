@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Merch para vender sin stock o por mayor | Novamente",
     description: "Crea tu linea de productos con Novamente: para marcas, creadores, empresas, eventos, comunidades y revendedores B2B.",
-    images: ["/marketing/merch-general-hero.webp"],
+    images: ["/marketing/lifestyle/hero-otono-streetwear.webp"],
   },
   twitter: {
     card: "summary_large_image",
@@ -106,7 +106,7 @@ export default function MerchsPage() {
           <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-transparent blur-2xl" />
           <div className="relative overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white shadow-2xl">
             <Image
-              src="/marketing/merch-general-hero.webp"
+              src="/marketing/lifestyle/hero-otono-streetwear.webp"
               alt="Merch personalizado para marcas, creadores, empresas y venta B2B"
               width={1600}
               height={900}

@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.novamente.ar/marketing/regalos-personalizados-hero.webp",
+        url: "https://www.novamente.ar/marketing/lifestyle/hero-merch-personalizado.webp",
         width: 1600,
         height: 900,
         alt: "Regalos personalizados con IA — Novamente Argentina",
@@ -278,7 +278,7 @@ export default function RegalosPersonalizados() {
                 <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-rose-500/25 via-amber-500/10 to-transparent blur-2xl" />
                 <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-zinc-950 shadow-2xl">
                   <Image
-                    src="/marketing/regalos-personalizados-hero.webp"
+                    src="/marketing/lifestyle/hero-merch-personalizado.webp"
                     alt="Caja de regalo con hoodie, remera y tote bag personalizados"
                     width={1600}
                     height={900}
