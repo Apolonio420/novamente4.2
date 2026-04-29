@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { PRODUCTS } from '@/lib/catalog'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600
@@ -12,8 +13,56 @@ export const revalidate = 3600
 export async function GET() {
   const baseUrl = 'https://www.novamente.ar'
 
-  // Novamente's own products (always included)
-  const coreProducts = [
+  // ── Auto-generated from lib/catalog.ts (single source of truth) ─────────
+  // Cualquier producto agregado al catálogo aparece automáticamente en el feed.
+  const CATEGORY_MAP: Record<string, string> = {
+    hoodie:    'Ropa > Buzos y Hoodies > Hoodies Personalizados',
+    buzo:      'Ropa > Buzos y Hoodies > Buzos Personalizados',
+    remera:    'Ropa > Remeras > Remeras Personalizadas',
+    musculosa: 'Ropa > Musculosas > Musculosas Personalizadas',
+    lienzo:    'Hogar > Decoración > Lienzos Personalizados',
+  }
+
+  const catalogProducts = PRODUCTS.map((p) => ({
+    title: `${p.name} — Personalizado con IA`,
+    description:
+      `${p.name} de Novamente con estampado DTG premium y diseño generado con inteligencia artificial. ` +
+      `37 estilos artísticos disponibles. ${p.colors.length ? `Colores: ${p.colors.join(', ')}.` : ''} ` +
+      `Producción bajo demanda en Argentina, sin stock muerto. Envíos AMBA en 3-5 días, resto del país 7-10.`,
+    url: `${baseUrl}/products`,
+    image_url: `${baseUrl}${p.image.startsWith('/') ? '' : '/'}${p.image}`,
+    price: String(p.price),
+    currency: 'ARS',
+    brand: 'Novamente',
+    category: CATEGORY_MAP[p.category] ?? 'Ropa > Indumentaria Personalizada',
+    availability: 'in_stock',
+    condition: 'new',
+    country: 'AR',
+    language: 'es',
+  }))
+
+  // Tote bag legacy (no está en catalog.ts pero tenemos producto activo)
+  const extraProducts = [
+    {
+      title: 'Tote Bag Nova — Personalizada con IA',
+      description:
+        'Tote bag de lona 100% algodón 280g con estampado DTG. Diseñá tu bolsa con inteligencia artificial eligiendo entre 37 estilos artísticos. Envíos a todo Argentina.',
+      url: `${baseUrl}/products`,
+      image_url: `${baseUrl}/products/tote-bag-frente.png`,
+      price: '18600',
+      currency: 'ARS',
+      brand: 'Novamente',
+      category: 'Accesorios > Bolsos > Tote Bags Personalizadas',
+      availability: 'in_stock',
+      condition: 'new',
+      country: 'AR',
+      language: 'es',
+    },
+  ]
+
+  const coreProducts = [...catalogProducts, ...extraProducts]
+  // ── Legacy hardcoded products (kept for reference, no se usan ya) ───────
+  const _legacyHardcoded = [
     {
       title: 'Remera Aldea Classic Fit — Personalizada con IA',
       description:
@@ -75,6 +124,7 @@ export async function GET() {
       language: 'es',
     },
   ]
+  void _legacyHardcoded
 
   // Partner products from DB
   const partnerProducts: typeof coreProducts = []
