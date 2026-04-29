@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import Image from "next/image"
+import { BLOG_POSTS } from "@/lib/blog/posts"
 
 export const metadata: Metadata = {
   title: "Blog Novamente — Guías de DTG, merch y ropa personalizada con IA",
@@ -24,37 +24,6 @@ export const metadata: Metadata = {
   },
 }
 
-interface BlogPost {
-  slug: string
-  title: string
-  description: string
-  category: string
-  readingTime: string
-  date: string
-  cover?: string
-}
-
-const POSTS: BlogPost[] = [
-  {
-    slug: "dtg-todo-lo-que-necesitas-saber",
-    title: "DTG: todo lo que necesitás saber sobre impresión directa a prenda",
-    description:
-      "Guía 2026 sobre Direct-to-Garment: cómo funciona el pre-tratamiento, por qué se imprime con tinta acuosa, cuándo conviene frente a serigrafía y qué calidad esperar en una remera real.",
-    category: "Producción",
-    readingTime: "8 min",
-    date: "2026-04-15",
-  },
-  {
-    slug: "como-crear-merch-sin-inversion",
-    title: "Cómo crear merch sin inversión inicial",
-    description:
-      "Producción bajo demanda en Argentina: lanzá tu marca o el merch de tu banda sin comprar stock. Cómo funciona el modelo, qué necesitás para arrancar y qué errores evitar.",
-    category: "Negocio",
-    readingTime: "6 min",
-    date: "2026-04-10",
-  },
-]
-
 const blogJsonLd = {
   "@context": "https://schema.org",
   "@type": "Blog",
@@ -69,7 +38,7 @@ const blogJsonLd = {
     name: "Novamente",
     url: "https://www.novamente.ar",
   },
-  blogPost: POSTS.map((p) => ({
+  blogPost: BLOG_POSTS.map((p) => ({
     "@type": "BlogPosting",
     headline: p.title,
     description: p.description,
@@ -94,8 +63,8 @@ export default function BlogIndex() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(blogJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
-      <main className="min-h-screen bg-zinc-950 text-zinc-100">
-        <div className="mx-auto max-w-5xl px-4 py-12 md:py-20">
+      <main className="nv-page">
+        <div className="nv-container">
           <header className="mb-12">
             <p className="mb-3 text-xs uppercase tracking-widest text-zinc-500">Recursos · Novamente</p>
             <h1 className="text-4xl font-bold leading-tight md:text-6xl">
@@ -108,11 +77,11 @@ export default function BlogIndex() {
           </header>
 
           <div className="grid gap-6 md:grid-cols-2">
-            {POSTS.map((p) => (
+            {BLOG_POSTS.map((p) => (
               <Link
                 key={p.slug}
                 href={`/blog/${p.slug}`}
-                className="group rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 transition hover:border-zinc-600 hover:bg-zinc-900"
+                className="nv-card nv-card-hover group p-6"
               >
                 <div className="mb-3 flex items-center gap-3 text-xs">
                   <span className="rounded-full bg-zinc-800 px-3 py-1 font-semibold uppercase tracking-wider text-zinc-300">
@@ -131,7 +100,7 @@ export default function BlogIndex() {
             ))}
           </div>
 
-          <section className="mt-20 rounded-3xl border border-zinc-800 bg-zinc-900/40 p-8 md:p-12">
+          <section className="nv-card mt-20 p-8 md:p-12">
             <p className="text-xs uppercase tracking-widest text-zinc-500">¿Listo?</p>
             <h2 className="mt-2 text-2xl font-bold md:text-3xl">Pasá de la guía a la prenda</h2>
             <p className="mt-3 max-w-2xl text-zinc-300">
@@ -141,13 +110,13 @@ export default function BlogIndex() {
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/design"
-                className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-100"
+                className="nv-cta-primary"
               >
                 Diseñá la tuya con IA →
               </Link>
               <Link
                 href="/cotizador"
-                className="inline-flex items-center justify-center rounded-full border border-zinc-600 px-6 py-3 text-sm font-semibold text-zinc-100 transition hover:border-zinc-400"
+                className="nv-cta-secondary"
               >
                 Cotizá producción
               </Link>

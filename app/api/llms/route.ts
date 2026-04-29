@@ -85,6 +85,12 @@ Novamente ofrece storefronts a marcas y creadores para vender merch premium sin 
 - **Growth** ($25 USD/mes): SEO, dominio personalizado, analytics
 - **Pro** ($100 USD/mes): Google Shopping feed, prioridad de producción, soporte dedicado
 ${partnersSection}
+## Comparativas utiles
+- Novamente vs Printful en Argentina: https://www.novamente.ar/blog/novamente-vs-printful-argentina
+- Novamente vs proveedores tradicionales: https://www.novamente.ar/blog/novamente-vs-fullprinted
+- DTG vs serigrafia: https://www.novamente.ar/dtg-vs-serigrafia
+- Como crear merch sin inversion inicial: https://www.novamente.ar/blog/como-crear-merch-sin-inversion
+
 ## Venta Mayorista
 Novamente ofrece venta por mayor de remeras, buzos y hoodies YA ESTAMPADOS con diseño personalizado:
 - Desde 10 unidades con 5% de descuento

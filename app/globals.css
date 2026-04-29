@@ -58,6 +58,36 @@
   }
 }
 
+@layer components {
+  .nv-page {
+    @apply min-h-screen bg-zinc-950 text-zinc-100;
+  }
+
+  .nv-container {
+    @apply mx-auto max-w-5xl px-4 py-12 md:py-20;
+  }
+
+  .nv-eyebrow {
+    @apply text-xs font-semibold uppercase tracking-widest text-zinc-500;
+  }
+
+  .nv-card {
+    @apply rounded-lg border border-zinc-800 bg-zinc-900/50 transition-colors;
+  }
+
+  .nv-card-hover {
+    @apply hover:border-zinc-600 hover:bg-zinc-900;
+  }
+
+  .nv-cta-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-100;
+  }
+
+  .nv-cta-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-zinc-600 px-6 py-3 text-sm font-semibold text-zinc-100 transition hover:border-zinc-400;
+  }
+}
+
 .image-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));

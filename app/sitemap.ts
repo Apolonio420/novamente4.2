@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 import { getPublishedTenants } from '@/lib/partners/tenant'
 import { getPublishedProducts } from '@/lib/partners/catalog'
 import { PRODUCTS as CATALOG_PRODUCTS } from '@/lib/products'
+import { BLOG_POSTS } from '@/lib/blog/posts'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.novamente.ar'
@@ -227,18 +228,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     })),
     // Blog posts
-    {
-      url: `${baseUrl}/blog/como-crear-merch-sin-inversion`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/blog/dtg-todo-lo-que-necesitas-saber`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
+    ...BLOG_POSTS.map((post) => ({
+      url: `${baseUrl}/blog/${post.slug}`,
+      lastModified: new Date(post.date),
+      changeFrequency: 'monthly' as const,
+      priority: post.priority ?? 0.8,
+    })),
   ]
 
   // Dynamic partner storefront pages
