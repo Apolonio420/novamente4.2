@@ -193,21 +193,43 @@ export default function Home() {
             37 estilos artísticos, estampado DTG premium y envíos a todo el país.
           </p>
 
-          {/* Botones actualizados */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <ScrollButton className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-md font-medium flex items-center justify-center gap-2 transition-colors">
+          {/* CTA principal único */}
+          <div className="mb-6 flex justify-center">
+            <ScrollButton className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-base font-semibold text-zinc-950 transition hover:bg-zinc-100">
               <Zap className="h-5 w-5" />
-              Empezar a Diseñar
+              Diseñá la tuya con IA →
             </ScrollButton>
-            <Link href="/products">
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full sm:w-auto border-white text-white hover:bg-white hover:text-black bg-transparent"
-              >
-                <Shirt className="mr-2 h-5 w-5" />
-                Ver Productos
-              </Button>
+          </div>
+
+          {/* CTAs secundarios diferenciados por intención (SEO link equity) */}
+          <div className="mb-10 flex flex-wrap justify-center gap-2 text-xs">
+            <Link
+              href="/products"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 font-medium text-white/80 transition hover:border-white/50 hover:text-white"
+            >
+              <Shirt className="h-4 w-4" />
+              Ver productos
+            </Link>
+            <Link
+              href="/partners"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 font-medium text-white/80 transition hover:border-white/50 hover:text-white"
+            >
+              <Store className="h-4 w-4" />
+              Producción para mi marca
+            </Link>
+            <Link
+              href="/merch-para-bandas"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 font-medium text-white/80 transition hover:border-white/50 hover:text-white"
+            >
+              <Sparkles className="h-4 w-4" />
+              Merch para mi banda
+            </Link>
+            <Link
+              href="/regalos-personalizados"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 font-medium text-white/80 transition hover:border-white/50 hover:text-white"
+            >
+              <Sparkles className="h-4 w-4" />
+              Regalos personalizados
             </Link>
           </div>
 

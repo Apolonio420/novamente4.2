@@ -159,6 +159,10 @@ const nextConfig = {
         destination: '/merch/maldito-demonio',
         permanent: true,
       },
+      // NOTA: NO redirigir /disena-tu-remera, /quote ni /merchs — son
+      // landings SEO con keywords propios distintos a /design, /cotizador
+      // y /merch. Cada una rankea queries específicas. Verificar antes en
+      // Search Console si se las quiere consolidar.
     ];
   },
   // Headers de cache y seguridad para assets estáticos
