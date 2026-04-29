@@ -286,13 +286,48 @@ export default function Home() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                {/* Lifestyle secundario: mismo estilo, otra escena CABA */}
-                <div className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900">
+              {/* Mini-carrusel de 3 escenas argentinas con prenda Novamente */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="overflow-hidden rounded-lg border border-white/10 bg-zinc-900">
                   <div className="relative aspect-square">
                     <Image
                       src="/marketing/lifestyle/hero-merch-personalizado.webp"
-                      alt="Joven con hoodie crema Novamente personalizado en azotea de San Telmo"
+                      alt="Hoodie crema Novamente en azotea San Telmo blue hour"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1024px) 33vw, 15vw"
+                    />
+                  </div>
+                </div>
+                <div className="overflow-hidden rounded-lg border border-white/10 bg-zinc-900">
+                  <div className="relative aspect-square">
+                    <Image
+                      src="/marketing/lifestyle/home-carousel-1.webp"
+                      alt="Remera oversize negra Novamente con estampa streetwear urbano argentino"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1024px) 33vw, 15vw"
+                    />
+                  </div>
+                </div>
+                <div className="overflow-hidden rounded-lg border border-white/10 bg-zinc-900">
+                  <div className="relative aspect-square">
+                    <Image
+                      src="/marketing/lifestyle/home-carousel-2.webp"
+                      alt="Hoodie negro Novamente con diseño impreso DTG premium"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1024px) 33vw, 15vw"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900">
+                  <div className="relative aspect-square">
+                    <Image
+                      src="/marketing/lifestyle/hero-azotea-blue-hour.webp"
+                      alt="Hoodie crema con estampa de fútbol Novamente"
                       fill
                       className="object-cover"
                       sizes="(max-width: 1024px) 50vw, 22vw"
