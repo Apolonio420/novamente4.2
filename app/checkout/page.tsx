@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCart } from "@/lib/cartStore"
 import * as fpixel from "@/lib/fpixel"
+import { trackBeginCheckout } from "@/lib/analytics"
 import { formatCurrency } from "@/lib/utils"
 import { Loader2, ArrowLeft, CreditCard, Smartphone, Building2, Shield, Truck, Clock } from "lucide-react"
 import Link from "next/link"
@@ -163,6 +164,15 @@ export default function CheckoutPage() {
         console.log("✅ API Response:", data)
 
         if (data.success && data.init_point) {
+          trackBeginCheckout(
+            items.map((i) => ({
+              item_id: i.id,
+              item_name: i.name,
+              item_category: i.garmentType,
+              price: i.price,
+              quantity: i.quantity,
+            })),
+          )
           // Redirigir a MercadoPago
           window.location.href = data.init_point
         } else {

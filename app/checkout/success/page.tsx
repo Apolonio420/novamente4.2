@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, Package, Mail, Home } from "lucide-react"
 import * as fpixel from "@/lib/fpixel"
 import { trackPurchase as gadsPurchase } from "@/lib/gads"
+import { trackPurchase as dataLayerPurchase } from "@/lib/analytics"
 import { useCart } from "@/lib/cartStore"
 
 export default function CheckoutSuccessPage() {
@@ -53,6 +54,17 @@ export default function CheckoutSuccessPage() {
         order_id: orderId,
       })
       gadsPurchase(value, orderId, "ARS")
+      dataLayerPurchase({
+        orderId: orderId ?? "",
+        value,
+        items: items.map((i) => ({
+          item_id: i.id,
+          item_name: i.name,
+          item_category: i.garmentType,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+      })
       clearCart()
     }
 

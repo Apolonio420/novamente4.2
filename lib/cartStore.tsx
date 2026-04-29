@@ -4,6 +4,7 @@ import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import type { ReactNode } from "react"
 import * as fpixel from "@/lib/fpixel"
+import { trackAddToCart } from "@/lib/analytics"
 
 export interface CartItem {
   id: string
@@ -56,6 +57,13 @@ export const useCart = create<CartStore>()(
             content_type: "product",
             value: item.price * item.quantity,
             currency: "ARS",
+          })
+          trackAddToCart({
+            item_id: item.id,
+            item_name: item.name,
+            item_category: item.garmentType,
+            price: item.price,
+            quantity: item.quantity,
           })
           const existingItem = state.items.find((i) => i.id === item.id)
           if (existingItem) {

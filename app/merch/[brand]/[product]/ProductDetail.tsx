@@ -13,6 +13,7 @@ import { useCart } from "@/lib/cartStore"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import * as fpixel from "@/lib/fpixel"
+import { trackViewItem } from "@/lib/analytics"
 import type { Product } from "@/src/data/partners"
 
 interface PartnerInfo {
@@ -49,6 +50,13 @@ export function ProductDetail({ product, partner, brandSlug }: ProductDetailProp
       content_category: product.category,
       value: product.price,
       currency: "ARS",
+    })
+    trackViewItem({
+      item_id: product.id,
+      item_name: `${product.name} - ${product.brand}`,
+      item_category: product.category,
+      price: product.price,
+      quantity: 1,
     })
   }, [product.id, product.name, product.brand, product.category, product.price])
 
