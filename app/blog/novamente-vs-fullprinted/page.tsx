@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowRight, Boxes, CheckCircle2, Paintbrush, Shirt, Sparkles, Zap } from "lucide-react"
+import { LandingHeroImage } from '@/components/LandingHeroImage'
 
 export const metadata: Metadata = {
   title: "Novamente vs proveedores tradicionales: IA, DTG y on-demand",
@@ -103,6 +104,10 @@ export default function NovamenteVsFullprinted() {
             Blog
           </Link>
           <header className="mt-6 max-w-3xl">
+            <LandingHeroImage
+              src="/marketing/lifestyle/hero-otono-streetwear.webp"
+              alt="Comparación Novamente vs proveedores tradicionales — IA, DTG y producción on-demand"
+            />
             <p className="mb-3 text-xs uppercase tracking-widest text-emerald-300">Comparativas de produccion</p>
             <h1 className="text-4xl font-bold leading-tight md:text-6xl">
               Novamente vs proveedores tradicionales: IA, DTG y produccion on-demand

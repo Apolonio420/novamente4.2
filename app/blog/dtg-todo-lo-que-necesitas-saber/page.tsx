@@ -8,6 +8,7 @@ import {
   ShieldCheck, Palette, Shirt, Droplets, Zap, BookOpen,
   ThermometerSun, Clock, Layers, Heart, Leaf, AlertTriangle
 } from "lucide-react"
+import { LandingHeroImage } from '@/components/LandingHeroImage'
 
 export const metadata: Metadata = {
   title: "DTG: Todo lo que necesitas saber sobre impresion directa a prenda — Guia 2026",
@@ -94,13 +95,13 @@ export default function BlogDTG() {
       url: "https://www.novamente.ar",
       logo: {
         "@type": "ImageObject",
-        url: "https://www.novamente.ar/novamente-logo.png",
+        url: "https://www.novamente.ar/marketing/lifestyle/blog-cover-dtg.webp",
       },
     },
     datePublished: "2026-03-21",
     dateModified: "2026-03-21",
     mainEntityOfPage: "https://www.novamente.ar/blog/dtg-todo-lo-que-necesitas-saber",
-    image: "https://www.novamente.ar/novamente-logo.png",
+    image: "https://www.novamente.ar/marketing/lifestyle/blog-cover-dtg.webp",
     articleSection: "Tecnologia textil",
     wordCount: 2400,
     inLanguage: "es-AR",
@@ -177,6 +178,10 @@ export default function BlogDTG() {
 
         {/* Hero */}
         <header className="max-w-4xl mx-auto px-4 py-12 md:py-16">
+          <LandingHeroImage
+            src="/marketing/lifestyle/blog-cover-dtg.webp"
+            alt="Detalle de estampado DTG en remera negra oversize Novamente"
+          />
           <div className="flex items-center gap-2 mb-4">
             <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30">
               <BookOpen className="w-3 h-3 mr-1" />

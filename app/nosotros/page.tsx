@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, MessageCircle, Mail, MapPin, Phone, Sparkles, Users, Palette, Award } from 'lucide-react'
+import { LandingHeroImage } from '@/components/LandingHeroImage'
 
 export const metadata: Metadata = {
   title: 'Sobre Novamente — Ropa Personalizada con IA en Argentina',
@@ -124,6 +125,10 @@ export default function NosotrosPage() {
       <main className="max-w-4xl mx-auto px-4 pb-20">
         {/* Hero */}
         <header className="pt-8 pb-12">
+          <LandingHeroImage
+            src="/marketing/lifestyle/hero-nosotros-equipo.webp"
+            alt="Equipo Novamente trabajando en el taller textil de Villa Martelli, Buenos Aires"
+          />
           <div className="flex items-center gap-4 mb-8">
             <Image
               src="/novamente-logo.png"

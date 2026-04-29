@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowRight, CheckCircle2, Clock, Globe2, MapPin, Sparkles, Store, Truck } from "lucide-react"
+import { LandingHeroImage } from '@/components/LandingHeroImage'
 
 export const metadata: Metadata = {
   title: "Novamente vs Printful en Argentina: que conviene para vender merch",
@@ -103,6 +104,10 @@ export default function NovamenteVsPrintfulArgentina() {
             Blog
           </Link>
           <header className="mt-6 max-w-3xl">
+            <LandingHeroImage
+              src="/marketing/lifestyle/hero-merch-personalizado.webp"
+              alt="Comparación Novamente vs Printful — producción local Argentina vs proveedor internacional"
+            />
             <p className="mb-3 text-xs uppercase tracking-widest text-cyan-300">Comparativas para marcas argentinas</p>
             <h1 className="text-4xl font-bold leading-tight md:text-6xl">
               Novamente vs Printful en Argentina: que conviene para vender merch

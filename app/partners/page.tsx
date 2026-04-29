@@ -2,6 +2,7 @@ import { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { LandingHeroImage } from "@/components/LandingHeroImage"
 import {
   ArrowRight, Store, Palette, BarChart3, Bot,
   Zap, Shield, Globe, Check, Sparkles,
@@ -252,6 +253,12 @@ export default function PartnersPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-purple-900/20 via-transparent to-transparent" />
         <div className="container mx-auto px-4 relative">
           <div className="text-center max-w-4xl mx-auto">
+            <div className="mb-10">
+              <LandingHeroImage
+                src="/marketing/lifestyle/hero-partners-storefront.webp"
+                alt="Founder argentina con su prenda de marca propia producida por Novamente Studio"
+              />
+            </div>
             <Badge className="mb-6 bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500/20">
               NOVAMENTE STUDIO
             </Badge>

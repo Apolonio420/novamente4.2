@@ -8,6 +8,7 @@ import {
   ShieldCheck, Palette, Shirt, DollarSign, Rocket, Users,
   Clock, Package, Zap, BookOpen
 } from "lucide-react"
+import { LandingHeroImage } from '@/components/LandingHeroImage'
 
 export const metadata: Metadata = {
   title: "Como crear merch personalizado sin inversion inicial — Guia completa 2026",
@@ -94,13 +95,13 @@ export default function BlogComoCrearMerch() {
       url: "https://www.novamente.ar",
       logo: {
         "@type": "ImageObject",
-        url: "https://www.novamente.ar/novamente-logo.png",
+        url: "https://www.novamente.ar/marketing/lifestyle/blog-cover-merch-sin-inversion.webp",
       },
     },
     datePublished: "2026-03-21",
     dateModified: "2026-03-21",
     mainEntityOfPage: "https://www.novamente.ar/blog/como-crear-merch-sin-inversion",
-    image: "https://www.novamente.ar/novamente-logo.png",
+    image: "https://www.novamente.ar/marketing/lifestyle/blog-cover-merch-sin-inversion.webp",
     articleSection: "Emprendimiento",
     wordCount: 2200,
     inLanguage: "es-AR",
@@ -177,6 +178,10 @@ export default function BlogComoCrearMerch() {
 
         {/* Hero */}
         <header className="max-w-4xl mx-auto px-4 py-12 md:py-16">
+          <LandingHeroImage
+            src="/marketing/lifestyle/blog-cover-merch-sin-inversion.webp"
+            alt="Emprendedor argentino con primer drop de su marca propia producida bajo demanda"
+          />
           <div className="flex items-center gap-2 mb-4">
             <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/30">
               <BookOpen className="w-3 h-3 mr-1" />
