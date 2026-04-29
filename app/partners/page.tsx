@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
   ArrowRight, Store, Palette, BarChart3, Bot,
-  Zap, Shield, Globe, Check, Sparkles
+  Zap, Shield, Globe, Check, Sparkles,
+  Compass, LogIn, ShoppingBag,
 } from "lucide-react"
 import { PLAN_NAMES, PLAN_DESCRIPTIONS, PLAN_PRICING_USD } from "@/lib/partners/plans"
 import type { Plan } from "@/lib/partners/types"
@@ -166,6 +167,85 @@ export default function PartnersPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
+
+      {/* ── Audience Router — clarifica quién es el visitante ───────────── */}
+      <section className="border-b border-zinc-800/60 bg-zinc-950/60 py-10 md:py-14">
+        <div className="container mx-auto px-4">
+          <p className="mb-6 text-center text-xs uppercase tracking-widest text-zinc-500">
+            ¿A qué venís?
+          </p>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Link
+              href="#pricing"
+              className="group flex flex-col gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 transition hover:border-purple-500/60 hover:bg-zinc-900"
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-purple-500/10 p-2 text-purple-400">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-purple-300">
+                  Quiero lanzar mi marca
+                </p>
+              </div>
+              <h3 className="text-lg font-bold text-zinc-100 md:text-xl">
+                Soy emprendedor o creador
+              </h3>
+              <p className="text-sm leading-relaxed text-zinc-400">
+                Storefront propio, catálogo, IA para diseñar y leads. Sin stock ni logística. Empezás gratis.
+              </p>
+              <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-purple-300 group-hover:text-purple-200">
+                Ver planes y precios <ArrowRight className="h-4 w-4" />
+              </span>
+            </Link>
+
+            <Link
+              href="/partners/directory"
+              className="group flex flex-col gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 transition hover:border-pink-500/60 hover:bg-zinc-900"
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-pink-500/10 p-2 text-pink-400">
+                  <ShoppingBag className="h-5 w-5" />
+                </div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-pink-300">
+                  Busco merch de una marca
+                </p>
+              </div>
+              <h3 className="text-lg font-bold text-zinc-100 md:text-xl">
+                Soy fan / cliente final
+              </h3>
+              <p className="text-sm leading-relaxed text-zinc-400">
+                Explorá los storefronts de bandas, creadores y marcas que producen con nosotros. Compra directa.
+              </p>
+              <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-pink-300 group-hover:text-pink-200">
+                Ver directorio de marcas <ArrowRight className="h-4 w-4" />
+              </span>
+            </Link>
+
+            <Link
+              href="/partners/login"
+              className="group flex flex-col gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 transition hover:border-emerald-500/60 hover:bg-zinc-900"
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400">
+                  <LogIn className="h-5 w-5" />
+                </div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
+                  Ya tengo workspace
+                </p>
+              </div>
+              <h3 className="text-lg font-bold text-zinc-100 md:text-xl">
+                Soy partner activo
+              </h3>
+              <p className="text-sm leading-relaxed text-zinc-400">
+                Entrá al workspace para gestionar tu catálogo, ver órdenes, leads y campañas Meta.
+              </p>
+              <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-emerald-300 group-hover:text-emerald-200">
+                Iniciar sesión <ArrowRight className="h-4 w-4" />
+              </span>
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* Hero */}
       <section className="relative overflow-hidden py-20 md:py-32">
