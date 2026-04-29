@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { LandingHeroImage } from "@/components/LandingHeroImage"
 import {
   Sparkles, Building2, Users, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Zap, Package, Palette,
@@ -279,6 +280,10 @@ export default function UniformesPersonalizados() {
           <div className="absolute top-20 right-10 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
 
           <div className="relative max-w-6xl mx-auto px-4">
+            <LandingHeroImage
+              src="/marketing/lifestyle/hero-uniformes-personalizados.webp"
+              alt="Equipo argentino con remeras negras corporativas Novamente personalizadas"
+            />
             <div className="max-w-3xl">
               <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 mb-6">
                 <Shirt className="w-3 h-3 mr-1" />

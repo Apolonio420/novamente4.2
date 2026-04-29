@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { LandingHeroImage } from "@/components/LandingHeroImage"
 import {
   Sparkles, Users, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Palette, Package,
@@ -306,6 +307,10 @@ export default function LanzaTuMarca() {
           <div className="absolute top-20 right-10 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl" />
 
           <div className="relative max-w-6xl mx-auto px-4">
+            <LandingHeroImage
+              src="/marketing/lifestyle/hero-lanza-tu-marca.webp"
+              alt="Founder argentina con prenda de su marca propia producida por Novamente"
+            />
             <div className="max-w-3xl">
               <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 mb-6">
                 <Rocket className="w-3 h-3 mr-1" />

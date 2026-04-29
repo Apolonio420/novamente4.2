@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { LandingHeroImage } from "@/components/LandingHeroImage"
 import {
   Package, Star, Shield, Clock, CheckCircle2,
   Truck, Palette, Sparkles, ArrowRight,
@@ -334,6 +335,10 @@ export default function RemerasPersonalizadas() {
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-violet-900/20 via-black to-black" />
           <div className="relative max-w-6xl mx-auto px-4 py-16 md:py-24 text-center">
+            <LandingHeroImage
+              src="/marketing/lifestyle/hero-remeras-personalizadas.webp"
+              alt="Remera oversize negra personalizada Novamente con estampa generada con IA en CABA"
+            />
             <Badge className="mb-6 bg-violet-500/20 text-violet-300 border-violet-500/30 text-sm px-4 py-1">
               <Sparkles className="w-4 h-4 mr-1" /> Diseno con Inteligencia Artificial
             </Badge>
