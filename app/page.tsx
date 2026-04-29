@@ -180,29 +180,32 @@ export default function Home() {
       />
 
       {/* Hero Section con estética de Novamente */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 py-20 bg-novamente-black">
-        <div className="absolute inset-0 bg-gradient-to-b from-novamente-blue/10 to-novamente-magenta/10 opacity-30"></div>
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <p className="novamente-heading text-lg md:text-xl mb-4 text-white/80">CREÁ TU ESTILO ÚNICO</p>
-          <h1 className="text-3xl sm:text-5xl md:text-7xl font-light tracking-[0.08em] sm:tracking-[0.15em] md:tracking-[0.2em] mb-8">
-            <span className="novamente-gradient-text">Ropa Personalizada con IA</span>
+      <section className="relative overflow-hidden bg-[#08080b] px-4 py-16 md:py-20">
+        <div className="absolute inset-x-0 top-0 h-px bg-white/10"></div>
+        <div className="container relative z-10 mx-auto grid min-h-[calc(100vh-96px)] items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="max-w-3xl text-left">
+            <p className="mb-5 inline-flex rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-cyan-200">
+              IA + DTG + producción local
+            </p>
+            <h1 className="mb-8 text-4xl font-semibold leading-[1.03] tracking-tight text-white sm:text-6xl md:text-7xl">
+              <span>Ropa personalizada con IA, hecha en Argentina.</span>
             <span className="sr-only"> — Novamente, indumentaria personalizada con inteligencia artificial en Argentina</span>
           </h1>
-          <p data-speakable="true" className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto mb-12">
-            La primera marca argentina de indumentaria que te permite crear tu diseño con inteligencia artificial.
-            37 estilos artísticos, estampado DTG premium y envíos a todo el país.
+          <p data-speakable="true" className="text-lg md:text-xl text-white/70 max-w-2xl mb-10">
+            Diseñás una estampa con inteligencia artificial, elegís la prenda y la producimos bajo demanda con
+            estampado DTG premium. Desde 1 unidad o para marcas que quieren vender sin stock.
           </p>
 
           {/* CTA principal único */}
-          <div className="mb-6 flex justify-center">
+          <div className="mb-6 flex justify-start">
             <ScrollButton className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-base font-semibold text-zinc-950 transition hover:bg-zinc-100">
               <Zap className="h-5 w-5" />
-              Diseñá la tuya con IA →
+              Diseñar mi prenda
             </ScrollButton>
           </div>
 
           {/* CTAs secundarios diferenciados por intención (SEO link equity) */}
-          <div className="mb-10 flex flex-wrap justify-center gap-2 text-xs">
+          <div className="mb-8 flex flex-wrap justify-start gap-2 text-xs">
             <Link
               href="/products"
               className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 font-medium text-white/80 transition hover:border-white/50 hover:text-white"
@@ -234,7 +237,20 @@ export default function Home() {
           </div>
 
           {/* Stats más pequeñas con nueva estadística */}
-          <div className="flex justify-center gap-8 pt-4">
+          <div className="mb-8 grid gap-3 sm:grid-cols-3">
+            {[
+              ["Tenemos hoy", "Remeras, buzos, hoodies, musculosas y lienzos."],
+              ["Hacemos", "IA, mockups, DTG premium, envíos y venta por mayor."],
+              ["No prometemos", "Stock infinito ni entregas express sin validar fecha."],
+            ].map(([title, text]) => (
+              <div key={title} className="border-l border-white/15 pl-4">
+                <p className="text-sm font-semibold text-white">{title}</p>
+                <p className="mt-1 text-sm leading-relaxed text-zinc-400">{text}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap justify-start gap-8 pt-4">
             <div>
               <div className="text-lg font-bold text-white">1.2K+</div>
               <div className="text-sm text-white/60">Diseños creados</div>
@@ -248,6 +264,49 @@ export default function Home() {
                 4.8 <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
               </div>
               <div className="text-sm text-white/60">Rating promedio</div>
+            </div>
+          </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute -inset-4 rounded-[2rem] border border-white/10 bg-white/[0.03]" />
+            <div className="relative grid gap-4">
+              <div className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900">
+                <div className="relative aspect-[4/3]">
+                  <Image
+                    src="/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png"
+                    alt="Buzo hoodie oversize personalizado Novamente"
+                    fill
+                    priority
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 45vw"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900">
+                  <div className="relative aspect-square">
+                    <Image
+                      src="/products/aura-tshirt-negro-front.jpeg"
+                      alt="Remera oversize personalizada Novamente"
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1024px) 50vw, 22vw"
+                    />
+                  </div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-zinc-950 p-5">
+                  <p className="text-3xl font-semibold text-white">4.8</p>
+                  <div className="mt-1 flex gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    ))}
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+                    95+ clientes, 1.200+ diseños creados y producción on-demand.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -6,7 +6,7 @@ import { X, Sparkles, Loader2, Check, Mail } from "lucide-react"
 const STORAGE_KEY = "nvm_email_popup"
 const DISMISS_DAYS = 7
 const SUBMITTED_DAYS = 90
-const SHOW_DELAY_MS = 15000 // 15 seconds
+const SHOW_DELAY_MS = 45000 // 45 seconds
 
 function isDismissed(): boolean {
   if (typeof window === "undefined") return true
@@ -35,8 +35,13 @@ export function EmailCapturePopup() {
 
   useEffect(() => {
     if (isDismissed()) return
-    // Don't show on workspace/admin pages
-    if (window.location.pathname.startsWith("/workspace") || window.location.pathname.startsWith("/admin")) return
+    // Don't interrupt the main conversion surfaces.
+    if (
+      window.location.pathname === "/" ||
+      window.location.pathname.startsWith("/design") ||
+      window.location.pathname.startsWith("/workspace") ||
+      window.location.pathname.startsWith("/admin")
+    ) return
 
     const timer = setTimeout(() => setVisible(true), SHOW_DELAY_MS)
     return () => clearTimeout(timer)
