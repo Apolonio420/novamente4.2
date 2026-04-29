@@ -10,9 +10,9 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Merch para Bandas y Musicos — Remeras Personalizadas | Novamente",
+  title: "Merch Personalizado para Vender - Bandas, Creadores y Marcas | Novamente",
   description:
-    "Remeras, buzos y merch personalizado para bandas, musicos y artistas. Disena con IA el logo de tu banda. Desde 1 unidad. Ideal para shows, giras, lanzamientos y venta a fans. Estampado DTG premium. Envios a toda Argentina.",
+    "Remeras, buzos y merch personalizado para bandas, creadores, marcas, eventos y empresas. Disena con IA, vende sin stock o produci por cantidad. Desde 1 unidad. Estampado DTG premium. Envios a toda Argentina.",
   keywords: [
     "merch para bandas",
     "remeras para bandas personalizadas",
@@ -28,9 +28,9 @@ export const metadata: Metadata = {
     "remeras bandas independientes",
   ],
   openGraph: {
-    title: "Merch para Bandas y Musicos — Novamente",
+    title: "Merch Personalizado para Vender - Novamente",
     description:
-      "Remeras y buzos personalizados para tu banda. Disena con IA. Ideal para shows, giras y venta a fans. DTG premium, algodon 100%.",
+      "Remeras y buzos personalizados para bandas, creadores, marcas y empresas. Disena con IA, vende sin stock o produci por cantidad.",
     url: "https://www.novamente.ar/merch-para-bandas",
     type: "website",
     images: [
@@ -44,9 +44,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Merch para Bandas y Musicos — Novamente",
+    title: "Merch Personalizado para Vender - Novamente",
     description:
-      "Merch personalizado para bandas. Disena con IA. Shows, giras, venta a fans. DTG premium. Descuentos por volumen.",
+      "Merch personalizado para vender: bandas, creadores, marcas y empresas. IA, DTG premium, descuentos por volumen.",
   },
   alternates: { canonical: "https://www.novamente.ar/merch-para-bandas" },
 }
@@ -55,11 +55,11 @@ export default function MerchParaBandas() {
   const serviceJsonLd = {
     "@context": "https://schema.org",
     "@type": "Service",
-    name: "Merch para Bandas y Musicos — Novamente",
+    name: "Merch Personalizado para Vender - Novamente",
     description:
-      "Servicio de remeras, buzos y merchandising personalizado con inteligencia artificial para bandas, musicos y artistas. Estampado DTG premium sobre algodon 100%. Ideal para shows, giras, lanzamientos y venta a fans. Desde 1 unidad con descuentos por volumen.",
+      "Servicio de remeras, buzos y merchandising personalizado con inteligencia artificial para bandas, creadores, marcas, eventos y empresas. Estampado DTG premium sobre algodon 100%. Ideal para shows, drops, lanzamientos, venta a fans, regalos corporativos y reventa B2B. Desde 1 unidad con descuentos por volumen.",
     provider: { "@id": "https://www.novamente.ar/#organization" },
-    serviceType: "Merchandising Musical Personalizado",
+    serviceType: "Merchandising Personalizado",
     areaServed: {
       "@type": "Country",
       name: "Argentina",
@@ -86,7 +86,7 @@ export default function MerchParaBandas() {
     mainEntity: [
       {
         "@type": "Question",
-        name: "Cuanto cuesta el merch para mi banda?",
+        name: "Cuanto cuesta hacer merch personalizado?",
         acceptedAnswer: {
           "@type": "Answer",
           text: "Remeras desde $28.600 (classic fit) y $31.000 (oversize). Musculosas desde $21.800. Hoodies desde $43.000. Descuentos por volumen: 5% en 10-24 un., 10% en 25-99 un. y 15% en 100+ unidades. Un lote de 30 remeras para un show sale $25.740/un. (10% OFF).",
@@ -94,18 +94,18 @@ export default function MerchParaBandas() {
       },
       {
         "@type": "Question",
-        name: "Puedo vender el merch a mis fans y ganar plata?",
+        name: "Puedo vender el merch y ganar margen?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Si, es la idea. Compras al costo de produccion y lo vendes al precio que quieras. Ejemplo: remera a $28.600 costo → la vendes a $45.000-$55.000 en shows = $16.400-$26.400 de ganancia por remera. Si vendes 30 en un show son $492.000-$792.000 de ganancia neta.",
+          text: "Si, es la idea. Compras al costo de produccion y lo vendes al precio que quieras, o usas Novamente Studio para vender sin stock. Ejemplo: remera a $28.600 costo -> la vendes a $45.000-$55.000 = $16.400-$26.400 de margen por remera.",
         },
       },
       {
         "@type": "Question",
-        name: "Puedo disenar el logo de mi banda con la IA?",
+        name: "Puedo disenar el arte de mi merch con IA?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Si, nuestra IA genera logos, arte de album, y disenos unicos para tu banda. Describis el estilo (ej: 'logo de rock pesado con calavera y rayos') y la IA crea opciones profesionales. Tambien podes subir tu arte existente y lo adaptamos.",
+          text: "Si, nuestra IA genera logos, arte para drops, frases, ilustraciones y disenos unicos para tu proyecto. Describis el estilo y la IA crea opciones profesionales. Tambien podes subir tu arte existente y lo adaptamos.",
         },
       },
       {
@@ -113,7 +113,7 @@ export default function MerchParaBandas() {
         name: "Hay minimo de unidades?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "No, podes pedir desde 1 unidad. No hay minimo. Pero si pedis 10+ unidades tenes descuentos por volumen. Muchas bandas arrancan con 20-30 para un show y despues van reponiendo segun la demanda.",
+          text: "No, podes pedir desde 1 unidad. No hay minimo. Pero si pedis 10+ unidades tenes descuentos por volumen. Muchos proyectos arrancan con 20-30 prendas para validar demanda y despues reponen segun ventas.",
         },
       },
       {
@@ -148,7 +148,7 @@ export default function MerchParaBandas() {
       {
         "@type": "ListItem",
         position: 2,
-        name: "Merch para Bandas",
+        name: "Merch personalizado",
         item: "https://www.novamente.ar/merch-para-bandas",
       },
     ],
@@ -156,50 +156,50 @@ export default function MerchParaBandas() {
 
   const useCases = [
     {
-      icon: Guitar,
-      title: "Rock / Indie / Punk",
-      description: "Remeras con el logo de tu banda, arte de disco, o disenos de gira. La clasica del rock: merch negro con arte impactante que tus fans van a usar con orgullo.",
-      example: "50 remeras negras 'Los Fundamentalistas del Aire — Gira 2026'",
+      icon: Users,
+      title: "Creadores y comunidades",
+      description: "Merch para streamers, podcasters, influencers, newsletters, clubes y comunidades. Drops chicos para validar demanda sin comprar stock.",
+      example: "30 oversize para una comunidad de Twitch",
       color: "text-purple-400",
       bg: "bg-purple-500/10",
     },
     {
-      icon: Mic2,
-      title: "Rap / Trap / Hip-Hop",
-      description: "Merch oversize con estetica urbana. Logos, frases ichonicas, arte de single, o tu cara estilizada por IA. El trap argentino necesita merch a la altura.",
-      example: "30 oversize blancas 'DUKI — Antes de Ameri Tour'",
+      icon: Package,
+      title: "Marcas y emprendimientos",
+      description: "Remeras, buzos y hoodies para vender como producto propio. Produccion por cantidad o storefront sin stock con Novamente Studio.",
+      example: "Primer drop de 50 prendas para una marca nueva",
       color: "text-pink-400",
       bg: "bg-pink-500/10",
     },
     {
-      icon: Music,
-      title: "Cumbia / Tropical / Cuarteto",
-      description: "Remeras coloridas para tu banda tropical. Diseños festivos, logo con onda, merch para bailar. Ideal para vender en shows y bailantas.",
-      example: "40 remeras 'La Delio Valdez — Temporada de Carnaval'",
+      icon: Shield,
+      title: "Empresas y B2B",
+      description: "Merch corporativo, regalos empresariales, uniformes livianos, kits internos y prendas para eventos comerciales.",
+      example: "100 remeras para activacion de marca",
       color: "text-amber-400",
       bg: "bg-amber-500/10",
     },
     {
-      icon: HeadphonesIcon,
-      title: "DJs / Electronica / Productores",
-      description: "Merch minimalista o psicodelico para DJs y productores. Logo, alias, arte de set. Ideal para festivales y fiestas electronicas.",
-      example: "25 remeras negras 'DJ Krol — Creamfields Argentina'",
+      icon: Music,
+      title: "Bandas y artistas",
+      description: "Merch para shows, giras, lanzamientos y venta a fans. Bandas sigue siendo un caso fuerte, pero no el unico.",
+      example: "40 remeras para vender en un show",
       color: "text-cyan-400",
       bg: "bg-cyan-500/10",
     },
     {
       icon: Radio,
-      title: "Covers / Tributo / Acustico",
-      description: "Bandas de covers que hacen shows toda la semana. Merch para el pub, la peña, el evento privado. Tu logo + las noches que toca tu banda.",
-      example: "20 remeras 'The Pretenders BA — Viernes en Niceto'",
+      title: "Eventos y productoras",
+      description: "Remeras para festivales, conferencias, torneos, carreras, staff, sponsors y ediciones limitadas del evento.",
+      example: "200 prendas para staff y venta en festival",
       color: "text-green-400",
       bg: "bg-green-500/10",
     },
     {
-      icon: Users,
-      title: "Coros / Ensambles / Orquestas",
-      description: "Remeras o buzos para tu coro, ensamble, o grupo musical. Identidad visual para presentaciones, concursos, y vida cotidiana del grupo.",
-      example: "35 buzos 'Coro Municipal de San Isidro — Temporada 2026'",
+      icon: Palette,
+      title: "Drops con IA",
+      description: "Si no tenes arte, generamos propuestas con IA. Si ya tenes identidad, adaptamos tu logo o ilustracion a prenda.",
+      example: "3 disenos para testear una coleccion",
       color: "text-violet-400",
       bg: "bg-violet-500/10",
     },
@@ -243,7 +243,7 @@ export default function MerchParaBandas() {
   ]
 
   const whatsappMessage = encodeURIComponent(
-    "Hola! Quiero cotizar merch para mi banda/proyecto musical. Somos [nombre de la banda]. Tocamos [genero]. Necesitamos [cantidad] [remeras/buzos/musculosas]. Es para [show/gira/venta online/lanzamiento]. Ya tenemos logo: [si/no, quiero diseñar con IA]."
+    "Hola! Quiero cotizar merch personalizado. Soy [marca/creador/banda/empresa/evento]. Necesito [cantidad] [remeras/buzos/musculosas]. Es para [vender/regalar/evento/staff/drop]. Ya tengo arte: [si/no, quiero disenar con IA]."
   )
 
   return (
@@ -267,7 +267,7 @@ export default function MerchParaBandas() {
           <nav className="text-sm text-zinc-500">
             <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
             <span className="mx-2">/</span>
-            <span className="text-zinc-300">Merch para Bandas</span>
+            <span className="text-zinc-300">Merch personalizado</span>
           </nav>
         </div>
 
@@ -280,22 +280,21 @@ export default function MerchParaBandas() {
             <div className="max-w-3xl">
               <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 mb-6">
                 <Music className="w-3 h-3 mr-1" />
-                Bandas y musicos
+                Merch para vender
               </Badge>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                El merch que tu banda{" "}
+                Merch personalizado para vender{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-                  necesita para crecer
+                  sin stock o por cantidad
                 </span>
               </h1>
 
               <p className="text-lg sm:text-xl text-zinc-300 mb-4 leading-relaxed">
-                Remeras, buzos y merch personalizado para tu banda o proyecto musical.
-                Disena con IA en minutos o subi tu arte. Desde{" "}
+                Remeras, buzos y merch para marcas, creadores, bandas, eventos y empresas.
+                Disena con IA en minutos o subi tu arte. Podes producir por cantidad o vender sin stock con Novamente Studio. Desde{" "}
                 <span className="text-white font-semibold">1 unidad</span>, sin minimos.
                 Remeras desde <span className="text-white font-semibold">$24.310</span> con descuento por volumen.
-                Vende en shows, online, y en giras.
               </p>
 
               <div className="flex flex-wrap gap-3 text-sm text-zinc-400 mb-8">
@@ -315,7 +314,7 @@ export default function MerchParaBandas() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Cotizar merch para mi banda
+                    Cotizar merch personalizado
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </a>
                 </Button>
@@ -326,7 +325,7 @@ export default function MerchParaBandas() {
                   className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-lg px-8 py-6"
                 >
                   <Link href="/design">
-                    Disenar logo con IA
+                    Disenar arte con IA
                   </Link>
                 </Button>
               </div>
@@ -340,7 +339,7 @@ export default function MerchParaBandas() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
               <div>
                 <div className="text-2xl sm:text-3xl font-bold text-purple-400">200+</div>
-                <div className="text-sm text-zinc-400">bandas con merch</div>
+                <div className="text-sm text-zinc-400">proyectos con merch</div>
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-bold text-purple-400">4.9/5</div>
@@ -363,10 +362,10 @@ export default function MerchParaBandas() {
           <div className="max-w-6xl mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                Merch para cada genero musical
+                Merch para cada tipo de proyecto
               </h2>
               <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
-                Rock, cumbia, trap, electronica, covers o clasica. Tu musica merece merch que la represente.
+                Bandas, creadores, marcas, eventos, empresas o comunidades. Tu proyecto necesita merch claro, vendible y bien producido.
               </p>
             </div>
 
@@ -401,7 +400,7 @@ export default function MerchParaBandas() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
               {[
-                { step: "1", icon: Music, title: "Contanos de tu banda", desc: "Genero, estilo visual, si tenes logo/arte o queres que la IA diseñe uno desde cero." },
+                { step: "1", icon: Music, title: "Contanos tu proyecto", desc: "Tipo de proyecto, publico, estilo visual, si tenes logo/arte o queres que la IA disene uno desde cero." },
                 { step: "2", icon: Sparkles, title: "Diseno con IA", desc: "La IA genera logos, arte de disco, y disenos unicos para tu merch. O subi tu arte y lo adaptamos." },
                 { step: "3", icon: Package, title: "Produccion DTG", desc: "Cada prenda se imprime individualmente. Colores vibrantes sobre algodon 100% premium." },
                 { step: "4", icon: Truck, title: "Listo para vender", desc: "Recibis el merch y listo para vender en shows, online, o donde quieras. El margen es tuyo." },
@@ -536,7 +535,7 @@ export default function MerchParaBandas() {
                 Pro tip: vendiendo merch en 2-3 shows financias la grabacion del proximo disco
               </p>
               <p className="text-zinc-400 text-sm mt-1">
-                Muchas bandas generan mas ingreso por merch que por las entradas del show
+                Muchos proyectos usan el merch como nueva linea de ingresos sin comprar stock de entrada
               </p>
             </div>
           </div>
@@ -606,7 +605,7 @@ export default function MerchParaBandas() {
                       Queres tu propia tienda online de merch?
                     </h3>
                     <p className="text-zinc-400 mb-4">
-                      Con el programa Partner de Novamente, tu banda tiene su propia tienda dentro de novamente.ar.
+                      Con el programa Partner de Novamente, tu marca o proyecto tiene su propia tienda dentro de novamente.ar.
                       Tus fans compran directo, vos pones el precio, nosotros producimos y enviamos.
                       Ganas sin mover un dedo.
                     </p>
@@ -629,7 +628,7 @@ export default function MerchParaBandas() {
         <section className="py-16 sm:py-20">
           <div className="max-w-6xl mx-auto px-4">
             <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-12">
-              Lo que dicen las bandas que ya tienen merch
+              Lo que dicen quienes ya venden merch
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -652,7 +651,7 @@ export default function MerchParaBandas() {
             </div>
 
             <div className="text-center mt-6 text-zinc-500">
-              Calificacion promedio: <span className="text-white font-semibold">4.9/5</span> basado en 280 bandas y musicos
+              Calificacion promedio: <span className="text-white font-semibold">4.9/5</span> basado en 280 proyectos con merch
             </div>
           </div>
         </section>
@@ -690,10 +689,10 @@ export default function MerchParaBandas() {
               <CardContent className="p-8 sm:p-12 text-center">
                 <Music className="w-12 h-12 text-purple-400 mx-auto mb-4" />
                 <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                  Tu musica merece merch a la altura
+                  Tu proyecto merece merch a la altura
                 </h2>
                 <p className="text-lg text-zinc-300 mb-8 max-w-xl mx-auto">
-                  Mandanos un WhatsApp con el nombre de tu banda, genero, y que necesitas.
+                  Mandanos un WhatsApp con tu marca, comunidad, evento o proyecto.
                   Te armamos propuestas y disenos con IA en minutos. Sin minimos, sin compromiso.
                 </p>
 
@@ -708,7 +707,7 @@ export default function MerchParaBandas() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      Cotizar merch para mi banda
+                      Cotizar merch personalizado
                       <ArrowRight className="ml-2 w-5 h-5" />
                     </a>
                   </Button>
@@ -719,7 +718,7 @@ export default function MerchParaBandas() {
                     className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-lg px-8 py-6"
                   >
                     <Link href="/design">
-                      Probar el disenador IA
+                      Probar el dise?ador IA
                     </Link>
                   </Button>
                 </div>

@@ -221,11 +221,11 @@ export default function Home() {
               Producción para mi marca
             </Link>
             <Link
-              href="/merch-para-bandas"
+              href="/merchs"
               className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 font-medium text-white/80 transition hover:border-white/50 hover:text-white"
             >
               <Sparkles className="h-4 w-4" />
-              Merch para mi banda
+              Merch para vender
             </Link>
             <Link
               href="/regalos-personalizados"

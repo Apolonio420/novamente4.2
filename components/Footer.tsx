@@ -30,7 +30,8 @@ const SOLUTIONS = {
     { href: "/buzos-personalizados", label: "Buzos personalizados" },
     { href: "/hoodie-personalizado", label: "Hoodies personalizados" },
     { href: "/indumentaria-deportiva", label: "Indumentaria deportiva" },
-    { href: "/merch-para-bandas", label: "Merch para bandas" },
+    { href: "/merchs", label: "Merch para vender" },
+    { href: "/merch-para-bandas", label: "Merch para bandas y artistas" },
     { href: "/merch-para-creadores", label: "Merch para creadores" },
   ],
   "Recursos & técnica": [
