@@ -146,7 +146,7 @@ export default function Home() {
     about: { "@id": "https://www.novamente.ar/#organization" },
     primaryImageOfPage: {
       "@type": "ImageObject",
-      url: "https://www.novamente.ar/novamente-logo.png",
+      url: "https://www.novamente.ar/marketing/merch-general-hero.webp",
     },
     speakable: {
       "@type": "SpeakableSpecification",
@@ -274,8 +274,8 @@ export default function Home() {
               <div className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900">
                 <div className="relative aspect-[4/3]">
                   <Image
-                    src="/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png"
-                    alt="Buzo hoodie oversize personalizado Novamente"
+                    src="/marketing/merch-general-hero.webp"
+                    alt="Prendas personalizadas Novamente con estampas generadas con IA"
                     fill
                     priority
                     className="object-cover"
@@ -287,8 +287,8 @@ export default function Home() {
                 <div className="overflow-hidden rounded-xl border border-white/10 bg-zinc-900">
                   <div className="relative aspect-square">
                     <Image
-                      src="/products/aura-tshirt-negro-front.jpeg"
-                      alt="Remera oversize personalizada Novamente"
+                      src="/marketing/regalos-personalizados-hero.webp"
+                      alt="Remera, hoodie y tote bag personalizados con diseño impreso"
                       fill
                       className="object-cover"
                       sizes="(max-width: 1024px) 50vw, 22vw"
