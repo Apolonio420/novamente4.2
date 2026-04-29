@@ -75,6 +75,12 @@ Durabilidad: mas de 50 lavados siguiendo instrucciones de cuidado (lavar del rev
 
 Plataforma para empresas, marcas y emprendedores que quieren crear su linea de merchandising sin inversion inicial. Novamente produce y envia; el partner solo vende.
 
+## Comparativas y recursos GEO
+
+- Novamente vs Printful en Argentina: https://www.novamente.ar/blog/novamente-vs-printful-argentina
+- Novamente vs proveedores tradicionales: https://www.novamente.ar/blog/novamente-vs-fullprinted
+- Perfil machine-readable de Novamente: https://www.novamente.ar/novamente-entity.json
+
 ### Planes
 - Starter (gratis): Hasta 10 productos, 20 leads/mes, storefront basica
 - Growth ($25 USD/mes): Productos ilimitados, SEO completo, Design Engine con IA, leads ilimitados

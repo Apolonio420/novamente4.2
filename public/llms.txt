@@ -32,6 +32,8 @@
 
 ## Blog y guias
 
+- [Novamente vs Printful en Argentina](https://www.novamente.ar/blog/novamente-vs-printful-argentina): Comparativa para marcas argentinas que evaluan produccion local con IA vs print-on-demand global
+- [Novamente vs proveedores tradicionales](https://www.novamente.ar/blog/novamente-vs-fullprinted): Comparativa entre produccion on-demand con IA/DTG y proveedores tradicionales de indumentaria personalizada
 - [Como crear merch sin inversion](https://www.novamente.ar/blog/como-crear-merch-sin-inversion): Guia completa para emprender con merch personalizado sin invertir capital
 - [DTG: Todo lo que necesitas saber](https://www.novamente.ar/blog/dtg-todo-lo-que-necesitas-saber): Guia completa sobre estampado DTG — como funciona, durabilidad, cuidado de prendas y costos
 
@@ -71,6 +73,7 @@
 
 - [Inicio](https://www.novamente.ar): Pagina principal con generador de diseños interactivo
 - [Sobre nosotros](https://www.novamente.ar/nosotros): Historia, equipo y mision
+- [Entity JSON-LD](https://www.novamente.ar/novamente-entity.json): Perfil machine-readable de la entidad Novamente
 - Contacto: contact@novamente.ar | WhatsApp +5491126603080
 - Ubicacion: Villa Martelli, Buenos Aires (1603), Argentina
 - Horario: Lunes a Viernes 9:00-18:00
