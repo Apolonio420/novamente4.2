@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -35,9 +36,9 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.novamente.ar/products/remera-negra-front.jpeg",
-        width: 800,
-        height: 800,
+        url: "https://www.novamente.ar/marketing/merch-general-hero.webp",
+        width: 1600,
+        height: 900,
         alt: "Merch para bandas personalizado — Novamente",
       },
     ],
@@ -277,7 +278,8 @@ export default function MerchParaBandas() {
           <div className="absolute top-20 right-10 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
 
           <div className="relative max-w-6xl mx-auto px-4">
-            <div className="max-w-3xl">
+            <div className="grid lg:grid-cols-[1fr_0.92fr] gap-10 lg:gap-14 items-center">
+            <div>
               <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 mb-6">
                 <Music className="w-3 h-3 mr-1" />
                 Merch para vender
@@ -329,6 +331,24 @@ export default function MerchParaBandas() {
                   </Link>
                 </Button>
               </div>
+            </div>
+            <div className="relative">
+              <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-purple-500/25 via-pink-500/10 to-transparent blur-2xl" />
+              <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-zinc-950 shadow-2xl">
+                <Image
+                  src="/marketing/merch-general-hero.webp"
+                  alt="Remeras, hoodies y tote bags personalizados para vender merch de marca"
+                  width={1600}
+                  height={900}
+                  priority
+                  className="aspect-[16/10] w-full object-cover"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent p-5">
+                  <p className="text-sm font-medium text-white">Drops, kits B2B y merch on-demand</p>
+                  <p className="text-xs text-zinc-300">Diseno IA + produccion DTG premium en Argentina</p>
+                </div>
+              </div>
+            </div>
             </div>
           </div>
         </section>

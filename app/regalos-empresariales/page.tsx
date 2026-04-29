@@ -36,9 +36,9 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.novamente.ar/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
-        width: 800,
-        height: 800,
+        url: "https://www.novamente.ar/marketing/regalos-empresariales-hero.webp",
+        width: 1600,
+        height: 900,
         alt: "Regalos empresariales personalizados con IA — Novamente",
       },
     ],
@@ -319,47 +319,19 @@ export default function RegalosEmpresariales() {
             </div>
 
             <div className="relative">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-4">
-                  <div className="aspect-[3/4] relative rounded-2xl overflow-hidden shadow-2xl">
-                    <Image
-                      src="/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png"
-                      alt="Hoodie corporativo negro personalizado con logo — algodon 100% DTG"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 50vw, 25vw"
-                      priority
-                    />
-                  </div>
-                  <div className="aspect-square relative rounded-2xl overflow-hidden shadow-2xl">
-                    <Image
-                      src="/products/aura-tshirt-blanco-front.jpeg"
-                      alt="Remera corporativa blanca personalizada — algodon premium DTG"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 50vw, 25vw"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-4 pt-8">
-                  <div className="aspect-square relative rounded-2xl overflow-hidden shadow-2xl">
-                    <Image
-                      src="/products/buzo-cuello-redondo-negro-front.jpeg"
-                      alt="Buzo corporativo cuello redondo personalizado — merchandising empresarial"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 50vw, 25vw"
-                    />
-                  </div>
-                  <div className="aspect-[3/4] relative rounded-2xl overflow-hidden shadow-2xl">
-                    <Image
-                      src="/products/tshirt-aldea-negro-front.jpeg"
-                      alt="Remera corporativa negra Classic Fit — regalos empresariales DTG"
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 50vw, 25vw"
-                    />
-                  </div>
+              <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-amber-500/25 via-orange-500/10 to-transparent blur-2xl" />
+              <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-zinc-950 shadow-2xl">
+                <Image
+                  src="/marketing/regalos-empresariales-hero.webp"
+                  alt="Kit de merch corporativo con hoodie, remeras, tote bag y packaging para empresas"
+                  width={1600}
+                  height={900}
+                  priority
+                  className="aspect-[16/10] w-full object-cover"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent p-5">
+                  <p className="text-sm font-medium text-white">Merch corporativo listo para entregar</p>
+                  <p className="text-xs text-white/70">Kits, onboarding, eventos, clientes VIP y reventa B2B</p>
                 </div>
               </div>
             </div>

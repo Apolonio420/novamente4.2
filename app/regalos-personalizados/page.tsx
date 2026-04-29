@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -46,9 +47,9 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.novamente.ar/products/oversize-negro-front.jpeg",
-        width: 800,
-        height: 800,
+        url: "https://www.novamente.ar/marketing/regalos-personalizados-hero.webp",
+        width: 1600,
+        height: 900,
         alt: "Regalos personalizados con IA — Novamente Argentina",
       },
     ],
@@ -231,43 +232,65 @@ export default function RegalosPersonalizados() {
         {/* Hero */}
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-rose-900/20 via-black to-black" />
-          <div className="relative max-w-6xl mx-auto px-4 py-16 md:py-24 text-center">
-            <Badge className="mb-6 bg-rose-500/20 text-rose-300 border-rose-500/30 text-sm px-4 py-1">
-              <Gift className="w-4 h-4 mr-1" /> Regalos que no existen en ningun otro lugar
-            </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-              Regalos personalizados
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-amber-400">
-                creados con inteligencia artificial
-              </span>
-            </h1>
-            <p className="text-lg md:text-xl text-zinc-300 max-w-3xl mx-auto mb-8">
-              Describe tu idea, la IA diseña algo unico, y nosotros lo estampamos
-              en algodon 100% con DTG premium. Para cumpleanos, Dia del Padre, despedidas,
-              egresados, o cualquier ocasion especial. En 5 minutos tenes el regalo perfecto.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <Button asChild size="lg" className="bg-rose-600 hover:bg-rose-500 text-white text-lg px-8 py-6">
-                <Link href="/design">
-                  <Sparkles className="w-5 h-5 mr-2" /> Diseña Tu Regalo con IA
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="border-zinc-600 text-white hover:bg-zinc-800 text-lg px-8 py-6">
-                <Link
-                  href="https://wa.me/5491126603080?text=Hola!%20Quiero%20un%20regalo%20personalizado.%20Me%20asesoran?"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <MessageCircle className="w-5 h-5 mr-2" /> Consultar por WhatsApp
-                </Link>
-              </Button>
-            </div>
-            <div className="flex flex-wrap justify-center gap-6 text-sm text-zinc-400">
-              <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Desde $21.800</span>
-              <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Desde 1 unidad</span>
-              <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Diseno con IA en minutos</span>
-              <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Envio a todo el pais</span>
+          <div className="relative max-w-6xl mx-auto px-4 py-16 md:py-24">
+            <div className="grid lg:grid-cols-[1fr_0.95fr] gap-10 lg:gap-14 items-center">
+              <div className="text-center lg:text-left">
+                <Badge className="mb-6 bg-rose-500/20 text-rose-300 border-rose-500/30 text-sm px-4 py-1">
+                  <Gift className="w-4 h-4 mr-1" /> Regalos que no existen en ningun otro lugar
+                </Badge>
+                <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                  Regalos personalizados
+                  <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-amber-400">
+                    creados con inteligencia artificial
+                  </span>
+                </h1>
+                <p className="text-lg md:text-xl text-zinc-300 max-w-3xl mx-auto lg:mx-0 mb-8">
+                  Describe tu idea, la IA disena algo unico, y nosotros lo estampamos
+                  en algodon 100% con DTG premium. Para cumpleanos, Dia del Padre, despedidas,
+                  egresados, o cualquier ocasion especial. En 5 minutos tenes el regalo perfecto.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
+                  <Button asChild size="lg" className="bg-rose-600 hover:bg-rose-500 text-white text-lg px-8 py-6">
+                    <Link href="/design">
+                      <Sparkles className="w-5 h-5 mr-2" /> Disena Tu Regalo con IA
+                    </Link>
+                  </Button>
+                  <Button asChild size="lg" variant="outline" className="border-zinc-600 text-white hover:bg-zinc-800 text-lg px-8 py-6">
+                    <Link
+                      href="https://wa.me/5491126603080?text=Hola!%20Quiero%20un%20regalo%20personalizado.%20Me%20asesoran?"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MessageCircle className="w-5 h-5 mr-2" /> Consultar por WhatsApp
+                    </Link>
+                  </Button>
+                </div>
+                <div className="flex flex-wrap justify-center lg:justify-start gap-6 text-sm text-zinc-400">
+                  <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Desde $21.800</span>
+                  <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Desde 1 unidad</span>
+                  <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Diseno con IA en minutos</span>
+                  <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Envio a todo el pais</span>
+                </div>
+              </div>
+
+              <div className="relative">
+                <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-rose-500/25 via-amber-500/10 to-transparent blur-2xl" />
+                <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-zinc-950 shadow-2xl">
+                  <Image
+                    src="/marketing/regalos-personalizados-hero.webp"
+                    alt="Caja de regalo con hoodie, remera y tote bag personalizados"
+                    width={1600}
+                    height={900}
+                    priority
+                    className="aspect-[16/10] w-full object-cover"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent p-5">
+                    <p className="text-sm font-medium text-white">Regalos listos para emocionar</p>
+                    <p className="text-xs text-zinc-300">Prendas personalizadas, empaque cuidado y diseno unico</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -364,7 +387,7 @@ export default function RegalosPersonalizados() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {products.map((product) => (
               <Card
-                key={product.name}
+                key={`${product.name}-${product.category}`}
                 className={`bg-zinc-900 ${product.popular ? "border-rose-500/50 ring-1 ring-rose-500/20" : "border-zinc-800"} hover:border-rose-500/50 transition-all`}
               >
                 <CardContent className="p-5">

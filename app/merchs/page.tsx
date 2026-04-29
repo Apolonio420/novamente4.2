@@ -1,22 +1,23 @@
 import { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Clock, Package, Sparkles, Target, Users, Zap } from "lucide-react"
 import { WHATSAPP_MESSAGES, getWhatsAppLink } from "@/lib/config/links"
 import AutoScrollGallery from "@/components/merchs/AutoScrollGallery"
 
 export const metadata: Metadata = {
-  title: "B2B Merch | Novamente",
-  description: "Potenciá tu marca con merchandising sin inversión inicial. Creá tu línea de productos con Novamente y hacé que tu marca llegue a más personas.",
+  title: "Merch para Vender sin Stock o por Mayor | Novamente",
+  description: "Merch personalizado para marcas, creadores, empresas, eventos y revendedores B2B. Crea tu linea de productos sin stock o pedi por cantidad con produccion DTG premium.",
   openGraph: {
-    title: "Potenciá tu marca con merchandising sin inversión inicial | Novamente",
-    description: "Creá tu línea de productos con Novamente y hacé que tu marca llegue a más personas. Sin riesgo, sin stock y con dos formas de generar ingresos.",
-    images: ["/novamente-logo.png"],
+    title: "Merch para vender sin stock o por mayor | Novamente",
+    description: "Crea tu linea de productos con Novamente: para marcas, creadores, empresas, eventos, comunidades y revendedores B2B.",
+    images: ["/marketing/merch-general-hero.webp"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "B2B Merch — Potenciá tu marca | Novamente",
-    description: "Creá tu línea de productos con Novamente. Sin riesgo, sin stock y con dos formas de generar ingresos.",
+    title: "Merch para vender | Novamente",
+    description: "Merch personalizado para vender sin stock o pedir por cantidad.",
   },
   alternates: { canonical: "https://www.novamente.ar/merchs" },
 }
@@ -78,25 +79,41 @@ export default function MerchsPage() {
   return (
     <div className="container mx-auto px-4 py-8 bg-white min-h-screen border-0">
       {/* Hero Section */}
-      <div className="text-center mb-16">
-        <h1 className="novamente-heading text-4xl md:text-6xl mb-6 text-black">
-          Potenciá tu marca personal con <span className="bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">merchandising</span> sin inversión inicial
-        </h1>
-        <p className="text-gray-700 max-w-4xl mx-auto text-lg md:text-xl mb-8">
-          Creá tu línea de productos con Novamente y hacé que tu comunidad vista tu marca.
-          <br />
-          Nos encargamos del diseño, la producción y el envío bajo demanda.
-          <br />
-          <span className="text-violet-600 font-medium">Sin stock, sin inversión y con ingresos pasivos gracias a tu marca personal.</span>
-        </p>
+      <div className="grid lg:grid-cols-[1fr_0.9fr] gap-10 lg:gap-14 items-center mb-16">
+        <div className="text-center lg:text-left">
+          <h1 className="novamente-heading text-4xl md:text-6xl mb-6 text-black">
+            Merch para vender: <span className="bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">sin stock o por mayor</span>
+          </h1>
+          <p className="text-gray-700 max-w-4xl mx-auto lg:mx-0 text-lg md:text-xl mb-8">
+            Crea tu linea de productos con Novamente: para marcas personales, empresas, creadores, eventos, comunidades y revendedores B2B.
+            <br />
+            Nos encargamos del diseno, la produccion y el envio bajo demanda.
+            <br />
+            <span className="text-violet-600 font-medium">Sin stock si queres vender online; por cantidad si necesitas merch para tu equipo, evento o cliente.</span>
+          </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-          <Link href={getWhatsAppLink(WHATSAPP_MESSAGES.PARTNER)} target="_blank">
-            <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500">
-              <ArrowRight className="h-4 w-4 mr-2" />
-              Sumate como Partner
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
+            <Link href={getWhatsAppLink(WHATSAPP_MESSAGES.PARTNER)} target="_blank">
+              <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500">
+                <ArrowRight className="h-4 w-4 mr-2" />
+                Sumate como Partner
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-transparent blur-2xl" />
+          <div className="relative overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white shadow-2xl">
+            <Image
+              src="/marketing/merch-general-hero.webp"
+              alt="Merch personalizado para marcas, creadores, empresas y venta B2B"
+              width={1600}
+              height={900}
+              priority
+              className="aspect-[16/10] w-full object-cover"
+            />
+          </div>
         </div>
       </div>
 
