@@ -157,6 +157,7 @@ export default function RootLayout({
         <meta name="facebook-domain-verification" content="sfeb3jb2brdts53tea9w908ipny7e0" />
         {/* LLMs.txt for AI discoverability */}
         <link rel="alternate" type="text/plain" href="/llms.txt" title="LLMs.txt — AI-readable site summary" />
+        <link rel="alternate" type="application/ld+json" href="/novamente-entity.json" title="Novamente entity profile" />
         {/* Preconnect to critical third-party origins */}
         <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossOrigin="" />
         <link rel="preconnect" href="https://fvsjvvyohaarivametxq.supabase.co" crossOrigin="" />

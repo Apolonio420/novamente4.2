@@ -50,6 +50,7 @@ export async function GET() {
 - Idioma: Español
 - Fundación: 2024
 - Método de contacto: WhatsApp (+54 9 11 6274-7588), email (contact@novamente.ar)
+- Entity JSON-LD: https://www.novamente.ar/novamente-entity.json
 
 ## Productos Disponibles
 | Producto | Precio (ARS) | Material | Ideal para |

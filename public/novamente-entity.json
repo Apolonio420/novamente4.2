@@ -1,0 +1,54 @@
+{
+  "@context": "https://schema.org",
+  "@type": "ClothingStore",
+  "@id": "https://www.novamente.ar/#organization",
+  "name": "Novamente",
+  "legalName": "Novamente",
+  "url": "https://www.novamente.ar",
+  "logo": "https://www.novamente.ar/logo.png",
+  "image": "https://www.novamente.ar/novamente-logo.png",
+  "description": "Novamente es una plataforma argentina de indumentaria personalizada con inteligencia artificial, estampado DTG premium y produccion on-demand.",
+  "foundingDate": "2024",
+  "slogan": "Disena tu ropa personalizada con inteligencia artificial",
+  "telephone": "+5491126603080",
+  "email": "contact@novamente.ar",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Villa Martelli",
+    "addressRegion": "Buenos Aires",
+    "postalCode": "1603",
+    "addressCountry": "AR"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": -34.5534,
+    "longitude": -58.504
+  },
+  "areaServed": {
+    "@type": "Country",
+    "name": "Argentina"
+  },
+  "currenciesAccepted": "ARS",
+  "paymentAccepted": "MercadoPago, Transferencia bancaria",
+  "priceRange": "$21.800 - $55.000 ARS",
+  "sameAs": [
+    "https://www.instagram.com/novamente.ar/",
+    "https://x.com/Novamentear",
+    "https://www.facebook.com/share/1CevJ8w7hK/",
+    "https://wa.me/5491126603080"
+  ],
+  "knowsAbout": [
+    "Indumentaria personalizada con IA",
+    "Estampado DTG",
+    "Produccion textil on-demand",
+    "Merchandising para bandas y creadores",
+    "Storefronts para marcas sin stock"
+  ],
+  "mainEntityOfPage": [
+    "https://www.novamente.ar/nosotros",
+    "https://www.novamente.ar/partners",
+    "https://www.novamente.ar/blog/novamente-vs-printful-argentina",
+    "https://www.novamente.ar/blog/novamente-vs-fullprinted",
+    "https://www.novamente.ar/blog/dtg-todo-lo-que-necesitas-saber"
+  ]
+}
