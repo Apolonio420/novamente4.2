@@ -278,8 +278,8 @@ export default function RegalosPersonalizados() {
                 <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-rose-500/25 via-amber-500/10 to-transparent blur-2xl" />
                 <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-zinc-950 shadow-2xl">
                   <Image
-                    src="/marketing/lifestyle/hero-merch-personalizado.webp"
-                    alt="Caja de regalo con hoodie, remera y tote bag personalizados"
+                    src="/marketing/lifestyle/hero-regalo-pareja.webp"
+                    alt="Pareja argentina con remera personalizada de regalo, momento íntimo en casa"
                     width={1600}
                     height={900}
                     priority
@@ -313,6 +313,58 @@ export default function RegalosPersonalizados() {
             <div>
               <p className="text-3xl font-bold text-cyan-400">2-5 dias</p>
               <p className="text-sm text-zinc-400">Produccion</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Galería de regalos reales — emoción del momento */}
+        <section className="max-w-6xl mx-auto px-4 py-16">
+          <h2 className="text-2xl md:text-3xl font-bold text-center mb-3">
+            La cara que pone alguien cuando le regalás algo único
+          </h2>
+          <p className="text-zinc-400 text-center mb-10 max-w-2xl mx-auto">
+            Para tu pareja, tu mejor amigo, tu viejo. Una prenda con un diseño
+            pensado para esa persona — no la encontrás en ningún local.
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+              <Image
+                src="/marketing/lifestyle/hero-regalo-pareja.webp"
+                alt="Regalo personalizado para pareja — remera con diseño romántico"
+                fill
+                className="object-cover transition group-hover:scale-105"
+                sizes="(max-width: 1024px) 50vw, 33vw"
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                <p className="text-xs uppercase tracking-widest text-rose-300">Para tu pareja</p>
+                <p className="mt-1 text-sm text-white">Aniversario, San Valentín o "porque sí"</p>
+              </div>
+            </div>
+            <div className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+              <Image
+                src="/marketing/lifestyle/hero-regalo-amigo-cumple.webp"
+                alt="Regalo de cumpleaños para amigo — remera con diseño festivo"
+                fill
+                className="object-cover transition group-hover:scale-105"
+                sizes="(max-width: 1024px) 50vw, 33vw"
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                <p className="text-xs uppercase tracking-widest text-amber-300">Para tu amigo</p>
+                <p className="mt-1 text-sm text-white">Cumpleaños y sorpresas grupales</p>
+              </div>
+            </div>
+            <div className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900">
+              <Image
+                src="/marketing/lifestyle/hero-regalos-dia-del-padre.webp"
+                alt="Regalo del Día del Padre — remera con diseño emotivo"
+                fill
+                className="object-cover transition group-hover:scale-105"
+                sizes="(max-width: 1024px) 50vw, 33vw"
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                <p className="text-xs uppercase tracking-widest text-emerald-300">Para tu viejo</p>
+                <p className="mt-1 text-sm text-white">Día del padre o "por estar siempre"</p>
+              </div>
             </div>
           </div>
         </section>

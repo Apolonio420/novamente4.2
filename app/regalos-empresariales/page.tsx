@@ -367,76 +367,6 @@ export default function RegalosEmpresariales() {
         </div>
       </section>
 
-      {/* How it works for corporates */}
-      <section className="py-16 md:py-24 bg-secondary/10">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="novamente-heading text-3xl md:text-4xl mb-4">
-              COMO FUNCIONA EL PROCESO CORPORATIVO
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              De la idea al delivery en 4 simples pasos. Un ejecutivo te acompana en todo el proceso.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-6 max-w-5xl mx-auto">
-            {[
-              {
-                step: 1,
-                icon: Building2,
-                title: "Contactanos",
-                desc: "Contanos que necesitas: cantidad, tipo de prenda, ocasion y fecha. Te armamos una propuesta personalizada en 24hs.",
-              },
-              {
-                step: 2,
-                icon: Palette,
-                title: "Definimos el diseno",
-                desc: "Usamos tu logo/branding o generamos disenos unicos con IA. Aprobas las muestras digitales antes de producir.",
-              },
-              {
-                step: 3,
-                icon: Zap,
-                title: "Produccion DTG",
-                desc: "Estampamos cada prenda con tecnologia DTG. Algodon 100%, colores vibrantes, durabilidad profesional.",
-              },
-              {
-                step: 4,
-                icon: Truck,
-                title: "Entrega",
-                desc: "Enviamos a tu oficina o a multiples destinos. Packaging individual o grupal segun tu necesidad.",
-              },
-            ].map((s) => (
-              <Card key={s.step} className="text-center border-2 hover:border-amber-500/30 transition-all duration-300 group relative">
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                    {s.step}
-                  </div>
-                </div>
-                <CardContent className="p-6 pt-8">
-                  <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-amber-500/20 transition-colors">
-                    <s.icon className="w-8 h-8 text-amber-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">{s.title}</h3>
-                  <p className="text-sm text-muted-foreground">{s.desc}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Link href="https://wa.me/5491162747588?text=Hola!%20Quiero%20cotizar%20regalos%20empresariales%20personalizados%20para%20mi%20empresa." data-cta="how-it-works-corporativo">
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-500/90 hover:to-orange-500/90 text-white font-medium rounded-xl py-6 px-10 text-lg transition-all"
-              >
-                <Package className="w-5 h-5 mr-2" />
-                Solicitar Cotizacion
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* Pricing tiers */}
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">
@@ -584,50 +514,6 @@ export default function RegalosEmpresariales() {
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Why Novamente for corporates */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="novamente-heading text-3xl md:text-4xl mb-4">
-              POR QUE EMPRESAS ELIGEN NOVAMENTE
-            </h2>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-            {[
-              {
-                icon: Sparkles,
-                title: "Disenos unicos con IA",
-                desc: "Cada prenda puede tener un diseno diferente. Personaliza por equipo, area o persona.",
-              },
-              {
-                icon: Package,
-                title: "Sin minimos",
-                desc: "Desde 1 unidad. No necesitas pedir 100 para arrancar. Descuentos desde 10.",
-              },
-              {
-                icon: Shield,
-                title: "Calidad DTG garantizada",
-                desc: "Algodon 100% + estampado directo sobre fibra. Durabilidad profesional.",
-              },
-              {
-                icon: Clock,
-                title: "Entrega en 7-15 dias",
-                desc: "Produccion rapida + envio a toda Argentina. Para tu evento, sin estrés.",
-              },
-            ].map((f) => (
-              <div key={f.title} className="text-center p-6">
-                <div className="w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <f.icon className="w-7 h-7 text-amber-400" />
-                </div>
-                <h3 className="font-semibold mb-2">{f.title}</h3>
-                <p className="text-sm text-muted-foreground">{f.desc}</p>
-              </div>
-            ))}
           </div>
         </div>
       </section>
