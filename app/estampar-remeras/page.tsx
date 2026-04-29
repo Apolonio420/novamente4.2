@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { LandingHeroImage } from "@/components/LandingHeroImage"
 import {
   Package, Star, Shield, Clock, CheckCircle2,
   Truck, Palette, Sparkles, ArrowRight,
@@ -260,6 +261,10 @@ export default function EstamparRemeras() {
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-orange-900/20 via-black to-black" />
           <div className="relative max-w-6xl mx-auto px-4 py-16 md:py-24 text-center">
+            <LandingHeroImage
+              src="/marketing/lifestyle/hero-otono-streetwear.webp"
+              alt="Resultado de estampado DTG en hoodie gris Novamente"
+            />
             <Badge className="mb-6 bg-orange-500/20 text-orange-300 border-orange-500/30 text-sm px-4 py-1">
               <Printer className="w-4 h-4 mr-1" /> Servicio de Estampado DTG
             </Badge>

@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { LandingHeroImage } from "@/components/LandingHeroImage"
 import {
   Sparkles, PartyPopper, Users, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Palette, Package,
@@ -299,6 +300,10 @@ export default function RemerasCumpleanos() {
           <div className="absolute top-20 right-10 w-96 h-96 bg-pink-500/5 rounded-full blur-3xl" />
 
           <div className="relative max-w-6xl mx-auto px-4">
+            <LandingHeroImage
+              src="/marketing/lifestyle/hero-azotea-blue-hour.webp"
+              alt="Remera personalizada Novamente para celebración de cumpleaños"
+            />
             <div className="max-w-3xl">
               <Badge className="bg-pink-500/20 text-pink-300 border-pink-500/30 mb-6">
                 <PartyPopper className="w-3 h-3 mr-1" />

@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { LandingHeroImage } from "@/components/LandingHeroImage"
 import {
   Sparkles, Trophy, Users, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Palette, Package,
@@ -277,6 +278,10 @@ export default function RemerasParaEventos() {
           <div className="absolute top-20 right-10 w-96 h-96 bg-orange-500/5 rounded-full blur-3xl" />
 
           <div className="relative max-w-6xl mx-auto px-4">
+            <LandingHeroImage
+              src="/marketing/lifestyle/hero-merch-personalizado.webp"
+              alt="Remera personalizada Novamente para staff de eventos"
+            />
             <div className="max-w-3xl">
               <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/30 mb-6">
                 <CalendarDays className="w-3 h-3 mr-1" />

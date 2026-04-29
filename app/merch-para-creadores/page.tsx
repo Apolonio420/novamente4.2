@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { LandingHeroImage } from "@/components/LandingHeroImage"
 import {
   Sparkles, Zap, Users, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Palette, Package,
@@ -299,6 +300,10 @@ export default function MerchParaCreadores() {
           <div className="absolute top-20 right-10 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl" />
 
           <div className="relative max-w-6xl mx-auto px-4">
+            <LandingHeroImage
+              src="/marketing/lifestyle/hero-otono-streetwear.webp"
+              alt="Creador de contenido argentino con merch personalizado Novamente"
+            />
             <div className="max-w-3xl">
               <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/30 mb-6">
                 <Sparkles className="w-3 h-3 mr-1" />

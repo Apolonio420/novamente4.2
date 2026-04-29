@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { LandingHeroImage } from "@/components/LandingHeroImage"
 import {
   Sparkles, ArrowRight, Star, CheckCircle2, XCircle, MinusCircle,
   Shield, Truck, Clock, Zap, Droplets, Layers, Palette
@@ -218,6 +219,10 @@ export default function DtgVsSerigrafia() {
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-cyan-500/10 opacity-40" />
         <div className="container mx-auto px-4 py-16 md:py-24 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
+            <LandingHeroImage
+              src="/marketing/lifestyle/hero-buzos-personalizados.webp"
+              alt="Estampado DTG premium en hoodie negro Novamente"
+            />
             <Badge className="mb-6 bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-sm px-4 py-1.5">
               <Layers className="w-3.5 h-3.5 mr-1.5" />
               Guia comparativa 2026

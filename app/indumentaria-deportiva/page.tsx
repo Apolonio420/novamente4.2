@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { LandingHeroImage } from "@/components/LandingHeroImage"
 import {
   Sparkles, Users, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Palette, Package,
@@ -277,6 +278,10 @@ export default function IndumentariaDeportiva() {
           <div className="absolute top-20 right-10 w-96 h-96 bg-green-500/5 rounded-full blur-3xl" />
 
           <div className="relative max-w-6xl mx-auto px-4">
+            <LandingHeroImage
+              src="/marketing/lifestyle/hero-indumentaria-deportiva.webp"
+              alt="Indumentaria deportiva personalizada Novamente — kit de equipo amateur argentino"
+            />
             <div className="max-w-3xl">
               <Badge className="bg-green-500/20 text-green-300 border-green-500/30 mb-6">
                 <Trophy className="w-3 h-3 mr-1" />

@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, MessageCircle, ArrowRight } from 'lucide-react'
+import { LandingHeroImage } from '@/components/LandingHeroImage'
 
 export const metadata: Metadata = {
   title: 'DTG vs Serigrafia vs Sublimacion — Guia Completa 2026',
@@ -100,6 +101,10 @@ export default function GuiaEstampadoPage() {
       <main className="max-w-4xl mx-auto px-4 pb-20">
         {/* Hero */}
         <header className="pt-8 pb-10">
+          <LandingHeroImage
+            src="/marketing/lifestyle/hero-subte-cinematic.webp"
+            alt="Guía completa de estampado textil — comparativa DTG, serigrafía y sublimación"
+          />
           <p className="text-purple-400 text-sm font-medium mb-3">Guia Completa 2026</p>
           <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-6">
             DTG vs Serigrafia vs Sublimacion: Guia Completa de Estampado Textil
