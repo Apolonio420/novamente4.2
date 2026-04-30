@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   const ctx = await getRequestTenant(req)
   if (!ctx) {
     const loginUrl = new URL('/partners/login', req.url)
-    loginUrl.searchParams.set('redirect', '/partners/workspace/integrations/tiktok')
+    loginUrl.searchParams.set('redirect', '/workspace/integrations/tiktok')
     return NextResponse.redirect(loginUrl)
   }
 
