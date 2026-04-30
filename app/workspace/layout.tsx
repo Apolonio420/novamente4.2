@@ -30,6 +30,7 @@ import {
   ChevronsUpDown,
   Check,
   Shield,
+  Video,
 } from 'lucide-react'
 import { AssistantProvider } from '@/lib/assistant/assistant-context'
 import type { LucideIcon } from 'lucide-react'
@@ -80,6 +81,7 @@ const navSections: NavSection[] = [
       { label: 'Meta Business', href: '/workspace/meta-business', icon: Globe, requiredPlan: 'pro' },
       { label: 'Meta Ads', href: '/workspace/meta-ads', icon: Megaphone, requiredPlan: 'pro' },
       { label: 'Feeds', href: '/workspace/feeds', icon: Rss, requiredPlan: 'pro' },
+      { label: 'TikTok', href: '/workspace/integrations/tiktok', icon: Video },
     ],
   },
   {
@@ -111,6 +113,7 @@ const pageTitles: Record<string, string> = {
   '/workspace/onboarding-call': 'Onboarding Call',
   '/workspace/billing': 'Billing',
   '/workspace/settings': 'Configuracion',
+  '/workspace/integrations/tiktok': 'TikTok',
 }
 
 interface TenantInfo {
