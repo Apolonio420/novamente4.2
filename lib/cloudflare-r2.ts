@@ -127,6 +127,25 @@ export async function getSignedR2Url(key: string, expiresIn: number = 3600): Pro
   return await getSignedUrl(r2Client, command, { expiresIn })
 }
 
+/**
+ * Presigned PUT URL so the browser can upload directly to R2 and skip the
+ * 4.5MB Vercel serverless function body limit. Caller does
+ * `fetch(url, { method: 'PUT', body: file, headers: { 'Content-Type': contentType } })`.
+ */
+export async function getPresignedUploadUrl(
+  key: string,
+  contentType: string,
+  expiresIn: number = 600,
+): Promise<{ url: string; publicUrl: string }> {
+  const command = new PutObjectCommand({
+    Bucket: BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+  })
+  const url = await getSignedUrl(r2Client, command, { expiresIn })
+  return { url, publicUrl: toPublicR2Url(key) ?? '' }
+}
+
 // Función para eliminar imagen de R2
 export async function deleteFromR2(key: string): Promise<void> {
   const command = new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: key })

@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
     refresh_expires_at: data.refresh_expires_in ? new Date(Date.now() + data.refresh_expires_in * 1000).toISOString() : null,
     connected_at: new Date().toISOString(),
   }
-  await sb
+  const { error: updateError } = await sb
     .from('tenants')
     .update({
       metadata: {
@@ -99,6 +99,18 @@ export async function GET(req: NextRequest) {
       },
     })
     .eq('id', tenantId)
+  if (updateError) {
+    return NextResponse.json(
+      {
+        error: 'Failed to persist TikTok integration',
+        detail: updateError.message,
+        hint: /column.*metadata/i.test(updateError.message)
+          ? 'Run scripts/sql/add_tenants_metadata.sql in Supabase to add the missing column'
+          : undefined,
+      },
+      { status: 500 },
+    )
+  }
 
   const res = NextResponse.redirect(`${url.origin}/workspace/integrations/tiktok?connected=1`)
   res.cookies.delete('tiktok_oauth_state')

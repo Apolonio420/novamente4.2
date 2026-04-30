@@ -30,6 +30,7 @@ export default function TikTokPostPage() {
   const [caption, setCaption] = useState('')
   const [scheduledAt, setScheduledAt] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [progress, setProgress] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [connected, setConnected] = useState<boolean | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -93,22 +94,60 @@ export default function TikTokPostPage() {
     }
     setSubmitting(true)
     setError(null)
+    setProgress(0)
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession()
       if (!session) throw new Error('Sesión expirada')
 
-      const fd = new FormData()
-      fd.append('video', file)
-      fd.append('caption', caption)
-      fd.append('mode', mode)
-      if (mode === 'schedule') fd.append('scheduled_at', new Date(scheduledAt).toISOString())
+      // 1. Get presigned PUT URL — bypasses Vercel's 4.5MB function body limit.
+      const ext = file.name.split('.').pop()?.toLowerCase()
+      const urlRes = await fetch('/api/partners/integrations/tiktok/upload-url', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ contentType: file.type, ext, size: file.size }),
+      })
+      if (!urlRes.ok) {
+        const d = await urlRes.json().catch(() => ({}))
+        throw new Error(d.error || `upload-url ${urlRes.status}`)
+      }
+      const { uploadUrl, publicUrl, key } = await urlRes.json()
 
+      // 2. PUT file directly to R2 with progress.
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('PUT', uploadUrl, true)
+        xhr.setRequestHeader('Content-Type', file.type)
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100))
+        }
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve()
+          else reject(new Error(`R2 upload ${xhr.status}: ${xhr.responseText.slice(0, 200)}`))
+        }
+        xhr.onerror = () => reject(new Error('R2 upload network error'))
+        xhr.send(file)
+      })
+      setProgress(null)
+
+      // 3. Tell our API to publish or schedule using the R2 URL.
       const res = await fetch('/api/partners/integrations/tiktok/post', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: fd,
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoUrl: publicUrl,
+          videoKey: key,
+          caption,
+          mode,
+          scheduledAt: mode === 'schedule' ? new Date(scheduledAt).toISOString() : undefined,
+        }),
       })
 
       if (!res.ok) {
@@ -121,6 +160,7 @@ export default function TikTokPostPage() {
       setError(e instanceof Error ? e.message : 'Error al publicar')
     } finally {
       setSubmitting(false)
+      setProgress(null)
     }
   }
 
@@ -293,7 +333,9 @@ export default function TikTokPostPage() {
               <Calendar className="w-4 h-4 mr-2" />
             )}
             {submitting
-              ? 'Procesando…'
+              ? progress !== null
+                ? `Subiendo ${progress}%`
+                : 'Procesando…'
               : mode === 'now'
                 ? 'Publicar ahora'
                 : 'Programar publicación'}
