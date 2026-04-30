@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
     })
     .eq('id', tenantId)
 
-  const res = NextResponse.redirect(`${url.origin}/partners/workspace/integrations/tiktok?connected=1`)
+  const res = NextResponse.redirect(`${url.origin}/workspace/integrations/tiktok?connected=1`)
   res.cookies.delete('tiktok_oauth_state')
   return res
 }
