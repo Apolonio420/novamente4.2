@@ -68,7 +68,7 @@ export default function TikTokSchedulerPage() {
           <Badge className="mb-4 bg-violet-100 text-violet-700 hover:bg-violet-100">
             Novamente Studio · Integración oficial TikTok
           </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-zinc-900">
             TikTok scheduling para marcas de moda argentinas
           </h1>
           <p className="text-xl text-zinc-600 max-w-3xl mx-auto mb-8">
@@ -93,24 +93,24 @@ export default function TikTokSchedulerPage() {
       </section>
 
       <section className="container mx-auto px-4 py-16 max-w-5xl">
-        <h2 className="text-3xl font-bold text-center mb-12">Para quién es esto</h2>
+        <h2 className="text-3xl font-bold text-zinc-900 text-center mb-12">Para quién es esto</h2>
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           <div className="rounded-lg border p-6">
-            <h3 className="font-semibold mb-2">Marcas de ropa independientes</h3>
+            <h3 className="font-semibold mb-2 text-zinc-900">Marcas de ropa independientes</h3>
             <p className="text-sm text-zinc-600">
               Si tenés tu propia marca y usás TikTok para mostrar drops, fittings o detrás de escena —
               programá todo desde un solo lugar.
             </p>
           </div>
           <div className="rounded-lg border p-6">
-            <h3 className="font-semibold mb-2">Creadores y diseñadores</h3>
+            <h3 className="font-semibold mb-2 text-zinc-900">Creadores y diseñadores</h3>
             <p className="text-sm text-zinc-600">
               Diseñás prendas custom o capsule drops. Subí tus videos, programá el lanzamiento, y enfocate en
               crear sin tener que estar pendiente del horario de publicación.
             </p>
           </div>
           <div className="rounded-lg border p-6">
-            <h3 className="font-semibold mb-2">Equipos pequeños</h3>
+            <h3 className="font-semibold mb-2 text-zinc-900">Equipos pequeños</h3>
             <p className="text-sm text-zinc-600">
               Una persona programa, otra revisa. Calendar compartido, aprobación opcional. Cada cuenta de
               TikTok queda atada al usuario que la conectó.
@@ -121,12 +121,12 @@ export default function TikTokSchedulerPage() {
 
       <section className="bg-zinc-50 border-y">
         <div className="container mx-auto px-4 py-16 max-w-5xl">
-          <h2 className="text-3xl font-bold text-center mb-12">Qué incluye</h2>
+          <h2 className="text-3xl font-bold text-zinc-900 text-center mb-12">Qué incluye</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {FEATURES.map((f) => (
               <div key={f.title} className="bg-white rounded-lg p-6 border">
                 <f.icon className="h-8 w-8 text-violet-600 mb-3" />
-                <h3 className="font-semibold mb-2">{f.title}</h3>
+                <h3 className="font-semibold mb-2 text-zinc-900">{f.title}</h3>
                 <p className="text-sm text-zinc-600">{f.description}</p>
               </div>
             ))}
@@ -135,7 +135,7 @@ export default function TikTokSchedulerPage() {
       </section>
 
       <section className="container mx-auto px-4 py-16 max-w-3xl">
-        <h2 className="text-3xl font-bold text-center mb-8">Cómo funciona</h2>
+        <h2 className="text-3xl font-bold text-zinc-900 text-center mb-8">Cómo funciona</h2>
         <ol className="space-y-6">
           {[
             { n: 1, t: "Creá tu cuenta en Novamente Studio", d: "Sign-up con email y contraseña en /partners/join. Es gratis para arrancar." },
@@ -149,7 +149,7 @@ export default function TikTokSchedulerPage() {
                 {s.n}
               </div>
               <div>
-                <h3 className="font-semibold mb-1">{s.t}</h3>
+                <h3 className="font-semibold mb-1 text-zinc-900">{s.t}</h3>
                 <p className="text-sm text-zinc-600">{s.d}</p>
               </div>
             </li>
@@ -159,7 +159,7 @@ export default function TikTokSchedulerPage() {
 
       <section className="bg-violet-600 text-white">
         <div className="container mx-auto px-4 py-16 max-w-3xl text-center">
-          <h2 className="text-3xl font-bold mb-4">Empezá hoy, gratis</h2>
+          <h2 className="text-3xl font-bold text-zinc-900 mb-4">Empezá hoy, gratis</h2>
           <p className="text-lg text-violet-100 mb-8">
             Tier free incluye 1 cuenta de TikTok conectada y hasta 5 publicaciones programadas por mes.
             Sin tarjeta requerida.
