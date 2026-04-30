@@ -68,6 +68,9 @@ export interface Tenant {
   onboarding_step: number
   onboarding_completed: boolean
 
+  // Free-form integration data (TikTok tokens, Meta tokens, etc.)
+  metadata?: Record<string, unknown>
+
   created_at: string
   updated_at: string
 }

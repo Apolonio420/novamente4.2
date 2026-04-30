@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getTenantById } from '@/lib/partners/tenant'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,27 +65,42 @@ export async function GET(req: NextRequest) {
     }, { status: 502 })
   }
 
-  // Persist tokens in Supabase Settings (same table the bot uses)
+  // Multi-tenant: state encodes tenantId before the random nonce.
+  // Persist tokens in tenants.metadata.tiktok_integration so each partner has their own.
+  const tenantId = state.split(':')[0]
+  if (!tenantId) {
+    return NextResponse.json({ error: 'Invalid state encoding' }, { status: 400 })
+  }
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (supabaseUrl && serviceKey) {
-    const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
-    const value = JSON.stringify({
-      access_token: data.access_token,
-      refresh_token: data.refresh_token,
-      open_id: data.open_id,
-      scope: data.scope,
-      expires_at: data.expires_in ? new Date(Date.now() + data.expires_in * 1000).toISOString() : null,
-      refresh_expires_at: data.refresh_expires_in ? new Date(Date.now() + data.refresh_expires_in * 1000).toISOString() : null,
-      stored_at: new Date().toISOString(),
-    })
-    await sb.from('Settings').upsert(
-      { key: 'TIKTOK_TOKENS', value },
-      { onConflict: 'key' }
-    )
+  if (!supabaseUrl || !serviceKey) {
+    return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
   }
+  const tenant = await getTenantById(tenantId)
+  if (!tenant) {
+    return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
+  }
+  const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+  const integration = {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    open_id: data.open_id,
+    scope: data.scope,
+    expires_at: data.expires_in ? new Date(Date.now() + data.expires_in * 1000).toISOString() : null,
+    refresh_expires_at: data.refresh_expires_in ? new Date(Date.now() + data.refresh_expires_in * 1000).toISOString() : null,
+    connected_at: new Date().toISOString(),
+  }
+  await sb
+    .from('tenants')
+    .update({
+      metadata: {
+        ...((tenant as { metadata?: Record<string, unknown> }).metadata ?? {}),
+        tiktok_integration: integration,
+      },
+    })
+    .eq('id', tenantId)
 
-  const res = NextResponse.redirect(`${url.origin}/?tiktok=connected`)
+  const res = NextResponse.redirect(`${url.origin}/partners/workspace/integrations/tiktok?connected=1`)
   res.cookies.delete('tiktok_oauth_state')
   return res
 }
