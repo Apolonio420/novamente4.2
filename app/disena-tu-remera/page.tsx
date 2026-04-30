@@ -65,12 +65,13 @@ export default function DisenaTuRemera() {
     category: "Remeras Personalizadas",
     material: "Algodon 100%",
     offers: {
-      "@type": "AggregateOffer",
-      lowPrice: 28600,
-      highPrice: 31000,
+      "@type": "Offer",
+      url: "https://www.novamente.ar/disena-tu-remera",
+      price: "28600",
       priceCurrency: "ARS",
-      offerCount: 4,
+      priceValidUntil: "2026-12-31",
       availability: "https://schema.org/InStock",
+      itemCondition: "https://schema.org/NewCondition",
       seller: { "@id": "https://www.novamente.ar/#organization" },
       shippingDetails: {
         "@type": "OfferShippingDetails",
