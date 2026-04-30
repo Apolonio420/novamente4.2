@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestTenant } from '@/lib/partners/auth'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { publishToTikTok, resolveTikTokAccessToken } from '@/lib/partners/tiktok-poster'
+import {
+  publishToTikTokFileUpload,
+  resolveTikTokAccessToken,
+} from '@/lib/partners/tiktok-poster'
+import { getSignedR2Url } from '@/lib/cloudflare-r2'
+import { normalizeR2Key } from '@/lib/r2'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -81,11 +86,27 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // Now path → publish via TikTok inbox API (drafts in user's TikTok app —
-  // ideal for sandbox / app review, no Direct Post permission required).
-  const result = await publishToTikTok({
+  // Now path → fetch the binary from R2 (signed GET) and stream it to TikTok
+  // via FILE_UPLOAD. PULL_FROM_URL is rejected by TikTok with
+  // url_ownership_unverified unless the source domain is verified in the dev
+  // portal — which our R2 endpoint isn't.
+  const key = videoKey ?? normalizeR2Key(videoUrl)
+  let videoBuffer: Buffer
+  try {
+    const signed = await getSignedR2Url(key, 600)
+    const r2Res = await fetch(signed)
+    if (!r2Res.ok) throw new Error(`R2 GET ${r2Res.status}`)
+    videoBuffer = Buffer.from(await r2Res.arrayBuffer())
+  } catch (e) {
+    return NextResponse.json(
+      { error: `Failed to fetch video from R2: ${e instanceof Error ? e.message : 'unknown'}` },
+      { status: 500 },
+    )
+  }
+
+  const result = await publishToTikTokFileUpload({
     tenantId: ctx.tenant.id,
-    videoUrl,
+    videoBuffer,
     caption,
     mode: 'inbox',
   })

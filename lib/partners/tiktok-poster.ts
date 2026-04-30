@@ -14,6 +14,103 @@ const TIKTOK_INIT_URL = 'https://open.tiktokapis.com/v2/post/publish/video/init/
 const TIKTOK_INBOX_INIT_URL = 'https://open.tiktokapis.com/v2/post/publish/inbox/video/init/'
 const TIKTOK_REFRESH_URL = 'https://open.tiktokapis.com/v2/oauth/token/'
 
+/**
+ * FILE_UPLOAD flow: TikTok returns an upload_url; we PUT the binary directly.
+ * This avoids the url_ownership_unverified error you'd hit with PULL_FROM_URL
+ * when the source domain (e.g. R2) isn't registered in the developer portal.
+ */
+export async function publishToTikTokFileUpload(params: {
+  tenantId: string
+  videoBuffer: Buffer
+  caption: string
+  mode?: 'direct' | 'inbox'
+  privacyLevel?: 'PUBLIC_TO_EVERYONE' | 'MUTUAL_FOLLOW_FRIENDS' | 'SELF_ONLY'
+}): Promise<PublishResult> {
+  const accessToken = await resolveTikTokAccessToken(params.tenantId)
+  if (!accessToken) {
+    return { success: false, error: 'Tenant has no valid TikTok access token' }
+  }
+
+  const videoSize = params.videoBuffer.length
+  const truncated =
+    params.caption.length > 2000 ? params.caption.slice(0, 1997) + '...' : params.caption
+
+  const initUrl = params.mode === 'inbox' ? TIKTOK_INBOX_INIT_URL : TIKTOK_INIT_URL
+  const initBody =
+    params.mode === 'inbox'
+      ? {
+          source_info: {
+            source: 'FILE_UPLOAD',
+            video_size: videoSize,
+            chunk_size: videoSize,
+            total_chunk_count: 1,
+          },
+        }
+      : {
+          post_info: {
+            title: truncated,
+            privacy_level: params.privacyLevel ?? 'SELF_ONLY',
+            disable_comment: false,
+            disable_duet: false,
+            disable_stitch: false,
+          },
+          source_info: {
+            source: 'FILE_UPLOAD',
+            video_size: videoSize,
+            chunk_size: videoSize,
+            total_chunk_count: 1,
+          },
+        }
+
+  const initRes = await fetch(initUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json; charset=UTF-8',
+    },
+    body: JSON.stringify(initBody),
+  })
+
+  const initData = (await initRes.json()) as {
+    data?: { publish_id?: string; upload_url?: string }
+    error?: { code?: string; message?: string }
+  }
+
+  if (!initRes.ok || (initData.error?.code && initData.error.code !== 'ok')) {
+    return {
+      success: false,
+      error: `[tiktok init] ${initData.error?.code ?? `HTTP ${initRes.status}`}: ${initData.error?.message ?? 'unknown'}`,
+    }
+  }
+
+  const uploadUrl = initData.data?.upload_url
+  const publishId = initData.data?.publish_id
+  if (!uploadUrl || !publishId) {
+    return { success: false, error: '[tiktok init] missing upload_url or publish_id' }
+  }
+
+  // PUT the binary to TikTok's upload server. Single chunk = entire file.
+  const putRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'video/mp4',
+      'Content-Range': `bytes 0-${videoSize - 1}/${videoSize}`,
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    body: params.videoBuffer as any,
+  })
+
+  if (!putRes.ok) {
+    const txt = await putRes.text().catch(() => '')
+    return {
+      success: false,
+      error: `[tiktok upload] HTTP ${putRes.status}: ${txt.slice(0, 200)}`,
+    }
+  }
+
+  return { success: true, publishId }
+}
+
 interface TikTokIntegration {
   access_token: string
   refresh_token?: string
