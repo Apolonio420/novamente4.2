@@ -23,7 +23,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/aura-tshirt-blanco-front.jpeg",
             lifestyle: ["/products/tshirt-blanca-lifestyle-1.jpeg", "/products/tshirt-blanca-lifestyle-2.jpeg"],
-            measurements: "/products/tshirt-blanca-medidas.png",
+            measurements: "/products/size-charts/over.png",
         },
         category: "T-Shirts",
         color: "Blanco",
@@ -38,7 +38,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/aura-tshirt-negro-front.jpeg",
             lifestyle: ["/products/tshirt-negra-lifestyle-1.jpeg", "/products/tshirt-negra-lifestyle-2.jpeg"],
-            measurements: "/products/tshirt-negra-medidas.png",
+            measurements: "/products/size-charts/over.png",
         },
         category: "T-Shirts",
         color: "Negro",
@@ -53,7 +53,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/aura-tshirt-caramel-front.jpeg",
             lifestyle: ["/products/tshirt-caramel-lifestyle-1.jpeg", "/products/tshirt-caramel-lifestyle-2.jpeg"],
-            measurements: "/products/tshirt-caramel-medidas.png",
+            measurements: "/products/size-charts/over.png",
         },
         category: "T-Shirts",
         color: "Caramel",
@@ -86,7 +86,7 @@ export const PRODUCTS: Product[] = [
                 "/products/aura-oversize-tshirt-stone-wash/lifestyle2.jpg",
                 "/products/aura-oversize-tshirt-stone-wash/lifestyle3.jpg"
             ],
-            measurements: "/products/aura-oversize-tshirt-stone-wash/tshirt-blanca-medidas.png"
+            measurements: "/products/size-charts/over.png"
         },
         category: "T-Shirts",
         color: "Stone Wash",

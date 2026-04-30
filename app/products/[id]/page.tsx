@@ -27,9 +27,9 @@ const SIZE_CHARTS: Record<string, SizeChart> = {
     length: ["66", "68", "70", "72", "74", "76"],
   },
   "Aura T-Shirt": {
-    sizes: ["S", "M", "L", "XL"],
-    width: ["53", "55", "58", "60"],
-    length: ["70", "73", "75", "78"],
+    sizes: ["2XS", "XS", "S", "M", "L", "XL", "2XL"],
+    width: ["55", "57", "59", "61", "63", "66", "69"],
+    length: ["69", "71", "73", "75", "77", "79", "81"],
   },
   "Aldea T-Shirt": {
     sizes: ["S", "M", "L", "XL", "XXL"],

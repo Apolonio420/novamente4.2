@@ -106,6 +106,17 @@ const COLORS_BY_GARMENT: Record<string, string[]> = {
   "remera-crop-mujer": ["black", "chocolate", "gray", "yellow"],
 }
 
+const SIZES_BY_GARMENT: Record<string, string[]> = {
+  "aura-oversize-tshirt": ["2XS", "XS", "S", "M", "L", "XL", "2XL"],
+  "aldea-classic-tshirt": ["S", "M", "L", "XL", "XXL"],
+  "buzo-hoodie-unisex": ["XS", "S", "M", "L", "XL", "2XL"],
+  "buzo-cuello-redondo-unisex": ["XS", "S", "M", "L", "XL", "2XL"],
+  "musculosa-bali": ["S", "M", "L", "XL", "2XL"],
+  "remera-clasica-mujer": ["S", "M", "L", "XL", "2XL"],
+  "remera-crop-mujer": ["S", "M", "L", "XL", "2XL"],
+}
+const DEFAULT_SIZES = ["S", "M", "L", "XL"]
+
 const DOUBLE_STAMPING_EXTRA = 7000
 
 export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initialImageUrl, imageId, onImageSelect }, ref) => {
@@ -415,6 +426,15 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
       setSelectedColor(availableColors[0] || "black")
     }
   }, [selectedGarment, selectedColor])
+
+  // Update available sizes when garment changes
+  useEffect(() => {
+    if (!selectedGarment || selectedGarment === 'lienzo') return
+    const availableSizes = SIZES_BY_GARMENT[selectedGarment] || DEFAULT_SIZES
+    if (!availableSizes.includes(selectedSize)) {
+      setSelectedSize(availableSizes.includes("M") ? "M" : availableSizes[0])
+    }
+  }, [selectedGarment, selectedSize])
 
   // Funciones para manejar el flujo dinámico
   const handleGarmentSelect = (garment: string) => {
@@ -2260,7 +2280,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                     <div data-section="size-selection">
                       <h4 className="font-medium mb-3">Talle</h4>
                       <div className="grid grid-cols-4 gap-2">
-                        {["S", "M", "L", "XL"].map((size) => (
+                        {(selectedGarment ? (SIZES_BY_GARMENT[selectedGarment] || DEFAULT_SIZES) : DEFAULT_SIZES).map((size) => (
                           <button
                             key={size}
                             onClick={() => handleSizeSelect(size)}
