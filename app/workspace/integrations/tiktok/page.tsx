@@ -15,6 +15,10 @@ import {
   Plug,
   Unplug,
   ArrowRight,
+  Clock,
+  Send,
+  AlertTriangle,
+  ExternalLink,
 } from 'lucide-react'
 
 interface IntegrationStatus {
@@ -25,12 +29,27 @@ interface IntegrationStatus {
   expires_at?: string | null
 }
 
+interface TikTokPost {
+  id: string
+  video_url: string
+  caption: string
+  status: 'pending' | 'sent' | 'failed' | 'cancelled'
+  scheduled_at: string
+  sent_at: string | null
+  publish_id: string | null
+  error: string | null
+  created_at: string
+}
+
 export default function TikTokIntegrationPage() {
   const [status, setStatus] = useState<IntegrationStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [disconnecting, setDisconnecting] = useState(false)
   const params = useSearchParams()
   const justConnected = params.get('connected') === '1'
+  const justPosted = params.get('posted') === '1'
+  const [posts, setPosts] = useState<TikTokPost[]>([])
+  const [postsLoading, setPostsLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -59,6 +78,29 @@ export default function TikTokIntegrationPage() {
       cancelled = true
     }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadPosts() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) return
+      const res = await fetch('/api/partners/integrations/tiktok/posts', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (cancelled) return
+      if (res.ok) {
+        const data = await res.json()
+        setPosts(data.posts ?? [])
+      }
+      setPostsLoading(false)
+    }
+    loadPosts()
+    return () => {
+      cancelled = true
+    }
+  }, [justPosted])
 
   async function handleDisconnect() {
     if (!confirm('¿Seguro querés desconectar TikTok? Vas a tener que reautorizar para volver a publicar.')) return
@@ -101,12 +143,16 @@ export default function TikTokIntegrationPage() {
           Cargando estado de la integración…
         </div>
       ) : isConnected ? (
-        <ConnectedView
-          status={status}
-          justConnected={justConnected}
-          onDisconnect={handleDisconnect}
-          disconnecting={disconnecting}
-        />
+        <>
+          <ConnectedView
+            status={status}
+            justConnected={justConnected}
+            justPosted={justPosted}
+            onDisconnect={handleDisconnect}
+            disconnecting={disconnecting}
+          />
+          <PostsList posts={posts} loading={postsLoading} />
+        </>
       ) : (
         <DisconnectedView />
       )}
@@ -135,16 +181,32 @@ export default function TikTokIntegrationPage() {
 function ConnectedView({
   status,
   justConnected,
+  justPosted,
   onDisconnect,
   disconnecting,
 }: {
   status: IntegrationStatus | null
   justConnected: boolean
+  justPosted: boolean
   onDisconnect: () => void
   disconnecting: boolean
 }) {
   return (
     <div className="space-y-6">
+      {/* Just-posted banner */}
+      {justPosted && (
+        <div className="rounded-xl border border-violet-500/40 bg-violet-500/10 p-4 flex items-start gap-3">
+          <Send className="h-5 w-5 text-violet-300 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-medium text-violet-200">Video enviado a TikTok</p>
+            <p className="text-sm text-violet-200/70">
+              Aparece como draft en tu app de TikTok — abrila para publicarlo o programarlo desde
+              ahí.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Success banner */}
       <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 flex items-start gap-3">
         <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
@@ -302,6 +364,114 @@ function DisconnectedView() {
         </p>
       </div>
     </div>
+  )
+}
+
+function PostsList({ posts, loading }: { posts: TikTokPost[]; loading: boolean }) {
+  return (
+    <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
+      <div className="px-5 py-3 border-b border-zinc-800 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Video className="w-4 h-4 text-zinc-500" />
+          <span className="text-sm font-medium text-zinc-300">Publicaciones recientes</span>
+        </div>
+        <span className="text-xs text-zinc-600">{posts.length} total</span>
+      </div>
+
+      {loading ? (
+        <div className="px-5 py-8 flex items-center justify-center text-sm text-zinc-500 gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Cargando…
+        </div>
+      ) : posts.length === 0 ? (
+        <div className="px-5 py-12 text-center">
+          <Video className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
+          <p className="text-sm text-zinc-500 mb-4">Todavía no publicaste ni programaste videos.</p>
+          <Link
+            href="/workspace/integrations/tiktok/post"
+            className="inline-flex items-center gap-1.5 text-sm text-violet-400 hover:text-violet-300"
+          >
+            Subir tu primer video
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      ) : (
+        <ul className="divide-y divide-zinc-800">
+          {posts.map((p) => (
+            <PostRow key={p.id} post={p} />
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function PostRow({ post }: { post: TikTokPost }) {
+  const isScheduled = post.status === 'pending'
+  const isSent = post.status === 'sent'
+  const isFailed = post.status === 'failed'
+
+  const statusBadge = isSent ? (
+    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
+      <Send className="w-2.5 h-2.5" />
+      Enviado
+    </span>
+  ) : isScheduled ? (
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-400">
+      <Clock className="w-2.5 h-2.5" />
+      Programado
+    </span>
+  ) : isFailed ? (
+    <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-red-400">
+      <AlertTriangle className="w-2.5 h-2.5" />
+      Falló
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 rounded-full bg-zinc-700/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+      {post.status}
+    </span>
+  )
+
+  const date = new Date(isSent && post.sent_at ? post.sent_at : post.scheduled_at)
+  const dateStr = date.toLocaleString('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  return (
+    <li className="px-5 py-3 hover:bg-zinc-900/60 transition-colors">
+      <div className="flex items-start gap-3">
+        <div className="w-12 aspect-[9/16] rounded-md bg-black overflow-hidden shrink-0">
+          <video src={post.video_url} className="w-full h-full object-cover" muted />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            {statusBadge}
+            <span className="text-xs text-zinc-500">
+              {isSent ? 'Enviado' : isScheduled ? 'Para' : ''} {dateStr}
+            </span>
+          </div>
+          <p className="text-sm text-zinc-200 line-clamp-2">{post.caption || <span className="text-zinc-600 italic">Sin caption</span>}</p>
+          {post.error && (
+            <p className="mt-1 text-xs text-red-400 line-clamp-1" title={post.error}>
+              {post.error}
+            </p>
+          )}
+        </div>
+        <a
+          href={post.video_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-zinc-600 hover:text-zinc-300 shrink-0"
+          title="Abrir archivo en R2"
+        >
+          <ExternalLink className="w-4 h-4" />
+        </a>
+      </div>
+    </li>
   )
 }
 
