@@ -2116,17 +2116,42 @@ export default function PartnersJoinPage() {
           }).catch(() => {}) // Non-blocking — products can be added manually later
         }
         clearWizardProgress()
-        // Auto-login if we have credentials, otherwise redirect to login
+        // Auto-login + set server-side cookie so middleware detects session.
+        // Without /api/auth/set-session the middleware can't see the token and
+        // bounces the user back to /partners/login.
+        let signedIn = false
         if (credentials?.password) {
           try {
             const { getSupabase } = await import('@/lib/supabase')
             const sb = getSupabase()
             if (sb) {
-              await sb.auth.signInWithPassword({ email: credentials.email, password: credentials.password })
+              const { data: authData, error: authErr } = await sb.auth.signInWithPassword({
+                email: credentials.email,
+                password: credentials.password,
+              })
+              if (!authErr && authData?.session?.access_token) {
+                await fetch('/api/auth/set-session', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    access_token: authData.session.access_token,
+                    refresh_token: authData.session.refresh_token,
+                  }),
+                })
+                signedIn = true
+              }
             }
           } catch {}
         }
-        window.location.href = '/workspace'
+        if (signedIn) {
+          window.location.href = '/workspace'
+        } else {
+          // Existing user (no password returned) or signIn failed → send to login with prefill
+          const email = credentials?.email ?? ''
+          const params = new URLSearchParams({ redirect: '/workspace' })
+          if (email) params.set('email', email)
+          window.location.href = `/partners/login?${params.toString()}`
+        }
       } else {
         // Paid plan — save plan, then redirect to MercadoPago
         await callOnboardingAPI({

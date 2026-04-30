@@ -114,6 +114,7 @@ const pageTitles: Record<string, string> = {
   '/workspace/billing': 'Billing',
   '/workspace/settings': 'Configuracion',
   '/workspace/integrations/tiktok': 'TikTok',
+  '/workspace/integrations/tiktok/post': 'Publicar en TikTok',
 }
 
 interface TenantInfo {
