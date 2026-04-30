@@ -106,6 +106,16 @@ const COLORS_BY_GARMENT: Record<string, string[]> = {
   "remera-crop-mujer": ["black", "chocolate", "gray", "yellow"],
 }
 
+const SIZE_CHART_BY_GARMENT: Record<string, string> = {
+  "aura-oversize-tshirt": "/products/size-charts/over.png",
+  "buzo-hoodie-unisex": "/products/size-charts/hoodie.png",
+  "buzo-cuello-redondo-unisex": "/products/size-charts/crewneck.png",
+  "aldea-classic-tshirt": "/products/tshirt-aldea-negro-medidas.png",
+  "musculosa-bali": "/products/musculosa-bali-blanca/Medidas3.png",
+  "remera-clasica-mujer": "/products/remera-clasica-woman-blanca/Medidas2.png",
+  "remera-crop-mujer": "/products/remera-crop-de-mujer-negra/Medidas1.png",
+}
+
 const SIZES_BY_GARMENT: Record<string, string[]> = {
   "aura-oversize-tshirt": ["2XS", "XS", "S", "M", "L", "XL", "2XL"],
   "aldea-classic-tshirt": ["S", "M", "L", "XL", "XXL"],
@@ -127,6 +137,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   const [selectedGarment, setSelectedGarment] = useState<string | null>(null)
   const [selectedColor, setSelectedColor] = useState("black")
   const [selectedSize, setSelectedSize] = useState("M")
+  const [sizeChartOpen, setSizeChartOpen] = useState(false)
   const [showOnModel, setShowOnModel] = useState(false)
   const [activeTab, setActiveTab] = useState("front")
   const [frontDesign, setFrontDesign] = useState<string | null>(null)
@@ -1741,6 +1752,40 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
               </ol>
             </CardContent>
           </Card>
+
+          {/* Guia de talles dinamica segun prenda elegida */}
+          {selectedGarment && selectedGarment !== 'lienzo' && SIZE_CHART_BY_GARMENT[selectedGarment] && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold">Guía de talles</h3>
+                  <button
+                    type="button"
+                    onClick={() => setSizeChartOpen(true)}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    aria-label="Ampliar guia de talles"
+                  >
+                    <ZoomIn className="w-4 h-4" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSizeChartOpen(true)}
+                  className="block w-full rounded-md overflow-hidden border border-border bg-white hover:ring-2 hover:ring-primary transition-all"
+                  aria-label="Ver guia de talles ampliada"
+                >
+                  <img
+                    src={SIZE_CHART_BY_GARMENT[selectedGarment]}
+                    alt="Guia de talles"
+                    className="w-full h-auto"
+                  />
+                </button>
+                <p className="text-[10px] text-muted-foreground mt-2 text-center">
+                  Click para ampliar
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Caja 1: Imagen fija que van a imprimir */}
@@ -2324,6 +2369,24 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
               mode="modal"
             />
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para ampliar la guia de talles */}
+      <Dialog open={sizeChartOpen} onOpenChange={setSizeChartOpen}>
+        <DialogContent className="max-w-3xl bg-white p-0 overflow-hidden text-zinc-900 [&>button]:text-zinc-900 [&>button]:opacity-100 [&>button]:bg-zinc-100 [&>button]:hover:bg-zinc-200 [&>button]:rounded-full [&>button]:p-1.5">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle className="text-zinc-900">Guía de talles</DialogTitle>
+          </DialogHeader>
+          {selectedGarment && SIZE_CHART_BY_GARMENT[selectedGarment] && (
+            <div className="p-6 pt-2">
+              <img
+                src={SIZE_CHART_BY_GARMENT[selectedGarment]}
+                alt="Guia de talles ampliada"
+                className="w-full h-auto rounded-md"
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
