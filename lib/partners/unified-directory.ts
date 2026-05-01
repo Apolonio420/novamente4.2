@@ -21,6 +21,7 @@ const HIDDEN_DB_SLUGS = new Set([
   'demo-inmobiliaria',
   'demo-peluqueria',
   'demo-mayorista',
+  'ar-brand-test',
 ])
 
 // Slug redirects — old slug → current slug (for renamed brands)

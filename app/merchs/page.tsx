@@ -2,206 +2,457 @@ import { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Clock, Package, Sparkles, Target, Users, Zap } from "lucide-react"
+import {
+    ArrowRight,
+    Check,
+    Package,
+    Palette,
+    Rocket,
+    ShieldCheck,
+    ShoppingBag,
+    Store,
+    Truck,
+} from "lucide-react"
 import { WHATSAPP_MESSAGES, getWhatsAppLink } from "@/lib/config/links"
-import AutoScrollGallery from "@/components/merchs/AutoScrollGallery"
+import StickyCTA from "@/components/merchs/StickyCTA"
 
 export const metadata: Metadata = {
-  title: "Merch para Vender sin Stock o por Mayor | Novamente",
-  description: "Merch personalizado para marcas, creadores, empresas, eventos y revendedores B2B. Crea tu linea de productos sin stock o pedi por cantidad con produccion DTG premium.",
-  openGraph: {
-    title: "Merch para vender sin stock o por mayor | Novamente",
-    description: "Crea tu linea de productos con Novamente: para marcas, creadores, empresas, eventos, comunidades y revendedores B2B.",
-    images: ["/marketing/lifestyle/hero-otono-streetwear.webp"],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Merch para vender | Novamente",
-    description: "Merch personalizado para vender sin stock o pedir por cantidad.",
-  },
-  alternates: { canonical: "https://www.novamente.ar/merchs" },
+    title: "Lanzá tu marca de ropa gratis — Sin stock ni inversión | Novamente",
+    description:
+        "Te damos un ecommerce con tu marca y producimos por vos. Vendés online, ganás margen real, sin stock. Activación gratis en el día.",
+    openGraph: {
+        title: "Lanzá tu marca de ropa gratis — Sin stock ni inversión | Novamente",
+        description: "Tu marca, tu ecommerce, tu merch. Producimos y enviamos por vos.",
+        images: ["/marketing/lifestyle/hero-otono-streetwear.webp"],
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "Lanzá tu marca de ropa gratis — Novamente",
+        description: "Tu marca, tu ecommerce, sin stock. Activación gratis.",
+    },
+    alternates: { canonical: "https://www.novamente.ar/merchs" },
 }
 
+const earningsExample = [
+    { label: "Vendés una remera oversize a", value: "$39.900", muted: false },
+    { label: "Costo Novamente (lo que nos pagás)", value: "$24.696", muted: true },
+    { label: "Tu ganancia neta", value: "$15.204", muted: false, highlight: true },
+]
+
+const faqs = [
+    {
+        q: "¿Es gratis de verdad? ¿Dónde está la trampa?",
+        a: "Sí, gratis. Vos ponés el diseño y la marca, nosotros ponemos la plataforma y la producción. Cobramos el costo de cada prenda solo cuando hay una venta. Si no vendés, no pagás nada.",
+    },
+    {
+        q: "No tengo stock ni capital. ¿Cómo funciona?",
+        a: "Esa es la idea. Tu cliente compra en tu tienda, nosotros producimos esa prenda específica, la imprimimos y la enviamos. Vos cobrás la venta y pagás solo el costo de producción. Cero stock, cero inversión inicial.",
+    },
+    {
+        q: "¿Cuánto tardo en tener mi tienda online?",
+        a: "Activamos tu cuenta el mismo día. En 24-48hs tenés tu storefront con tu logo, colores y los productos que elijas listo para vender.",
+    },
+    {
+        q: "¿Y si no vendo nada el primer mes?",
+        a: "No pasa nada. El plan Gratis no tiene mínimos ni cargos mensuales. Probás, ajustás, y cuando despegues escalás al plan que te sirva.",
+    },
+]
+
 export default function MerchsPage() {
-  const benefits = [
-    {
-      icon: <Target className="h-6 w-6" />,
-      title: "Potenciá tu marca",
-      description: "Hacé que tu marca esté presente en cada lugar, evento o red social. Llevá tu identidad a nuevas audiencias con productos únicos."
-    },
-    {
-      icon: <Package className="h-6 w-6" />,
-      title: "Sin inversión inicial",
-      description: "No necesitás stock ni capital. Nosotros nos ocupamos de la producción, impresión y logística."
-    },
-    {
-      icon: <Clock className="h-6 w-6" />,
-      title: "Entrega rápida",
-      description: "Producción y envío en 24–48 hs, con control de calidad y gestión automatizada."
-    },
-    {
-      icon: <Sparkles className="h-6 w-6" />,
-      title: "Diseños con IA a tu medida",
-      description: "Creamos juntos la imagen que quieras para tu marca. Podés inspirarte, co-crear o dejar que nuestro generador te ayude a definir tu estilo."
-    }
-  ]
+    return (
+        <div className="bg-white min-h-screen">
+            <StickyCTA />
 
-  const steps = [
-    {
-      number: "1",
-      title: "Diseñamos juntos",
-      description: "Te ayudamos a definir la imagen que querés para tu marca o negocio. Podés usar nuestro generador con IA o crear con nuestro equipo de diseño."
-    },
-    {
-      number: "2",
-      title: "Elegís tus prendas y modalidad",
-      description: (
-        <>
-          Seleccioná las{" "}
-          <Link href="/products" className="text-violet-600 hover:text-violet-700 hover:underline font-medium">prendas</Link>{" "}
-          que más te representen (remeras, buzos, gorras, etc.) y empezá a vender como Partner con tu propia línea oficial.
-        </>
-      )
-    },
-    {
-      number: "3",
-      title: "Lanzás tu línea",
-      description: (
-        <>
-          Si no tenés ecommerce no te preocupes, nosotros creamos una personalizada para tu marca y la posicionamos en nuestra{" "}
-          <Link href="/merch" className="text-violet-600 hover:text-violet-700 hover:underline font-medium">página de merch</Link>
-          , para que empieces a vender sin inversión inicial.
-        </>
-      )
-    }
-  ]
+            {/* HERO con form inline */}
+            <section className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-50 via-white to-fuchsia-50" />
+                <div className="relative container mx-auto px-4 pt-8 pb-12 md:pt-14 md:pb-20">
+                    <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8 lg:gap-12 items-start">
+                        {/* Left: copy */}
+                        <div className="text-center lg:text-left">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-medium text-violet-700 mb-5 shadow-sm">
+                                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                                Plan Gratis activo · sin tarjeta
+                            </div>
 
-  return (
-    <div className="container mx-auto px-4 py-8 bg-white min-h-screen border-0">
-      {/* Hero Section */}
-      <div className="grid lg:grid-cols-[1fr_0.9fr] gap-10 lg:gap-14 items-center mb-16">
-        <div className="text-center lg:text-left">
-          <h1 className="novamente-heading text-4xl md:text-6xl mb-6 text-black">
-            Merch para vender: <span className="bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">sin stock o por mayor</span>
-          </h1>
-          <p className="text-gray-700 max-w-4xl mx-auto lg:mx-0 text-lg md:text-xl mb-8">
-            Crea tu linea de productos con Novamente: para marcas personales, empresas, creadores, eventos, comunidades y revendedores B2B.
-            <br />
-            Nos encargamos del diseno, la produccion y el envio bajo demanda.
-            <br />
-            <span className="text-violet-600 font-medium">Sin stock si queres vender online; por cantidad si necesitas merch para tu equipo, evento o cliente.</span>
-          </p>
+                            <h1 className="novamente-heading text-4xl md:text-6xl mb-5 text-black leading-[1.05]">
+                                Tu marca de ropa,{" "}
+                                <span className="bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">
+                                    vendiendo en 48hs
+                                </span>
+                            </h1>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-12">
-            <Link href={getWhatsAppLink(WHATSAPP_MESSAGES.PARTNER)} target="_blank">
-              <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500">
-                <ArrowRight className="h-4 w-4 mr-2" />
-                Sumate como Partner
-              </Button>
-            </Link>
-          </div>
+                            <p className="text-gray-700 text-lg md:text-xl mb-6 max-w-xl mx-auto lg:mx-0">
+                                Te damos tu propio ecommerce y producimos cada venta por vos.{" "}
+                                <span className="text-gray-900 font-semibold">
+                                    Sin stock, sin inversión inicial, sin riesgo.
+                                </span>
+                            </p>
+
+                            {/* Trust strip */}
+                            <ul className="grid grid-cols-2 gap-2 max-w-md mx-auto lg:mx-0 mb-6 text-sm">
+                                <li className="flex items-center gap-2 text-gray-700">
+                                    <Check className="h-4 w-4 text-violet-600 shrink-0" />
+                                    Tienda lista en 48hs
+                                </li>
+                                <li className="flex items-center gap-2 text-gray-700">
+                                    <Check className="h-4 w-4 text-violet-600 shrink-0" />
+                                    Producción on-demand
+                                </li>
+                                <li className="flex items-center gap-2 text-gray-700">
+                                    <Check className="h-4 w-4 text-violet-600 shrink-0" />
+                                    Envío a todo el país
+                                </li>
+                                <li className="flex items-center gap-2 text-gray-700">
+                                    <Check className="h-4 w-4 text-violet-600 shrink-0" />
+                                    Cobrás vos, directo
+                                </li>
+                            </ul>
+
+                            {/* Mobile CTA — el form va abajo en mobile */}
+                            <div className="lg:hidden">
+                                <Link href="/partners/join">
+                                    <Button
+                                        size="lg"
+                                        className="w-full h-12 text-base bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 shadow-lg shadow-violet-500/20"
+                                    >
+                                        Empezá gratis
+                                        <ArrowRight className="h-4 w-4 ml-2" />
+                                    </Button>
+                                </Link>
+                                <p className="text-xs text-gray-500 mt-2 text-center">
+                                    Tomá 30 segundos · sin tarjeta
+                                </p>
+                            </div>
+
+                            {/* Para quién (avatar callout) */}
+                            <div className="hidden lg:block mt-8 pt-6 border-t border-gray-200">
+                                <p className="text-xs uppercase tracking-wider text-gray-500 mb-2 font-semibold">
+                                    Pensado para
+                                </p>
+                                <p className="text-gray-700">
+                                    Creadores de contenido · marcas personales · comunidades · emprendedores · equipos · eventos
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Right: CTAs (desktop) + mockup */}
+                        <div className="space-y-5">
+                            <div className="hidden lg:flex flex-col sm:flex-row gap-3">
+                                <Link href="/partners/join" className="flex-1">
+                                    <Button
+                                        size="lg"
+                                        className="w-full h-14 text-base font-semibold bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 shadow-lg shadow-violet-500/20"
+                                    >
+                                        Empezá gratis
+                                        <ArrowRight className="h-4 w-4 ml-2" />
+                                    </Button>
+                                </Link>
+                                <Link
+                                    href={getWhatsAppLink(WHATSAPP_MESSAGES.PARTNER)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1"
+                                >
+                                    <Button
+                                        size="lg"
+                                        variant="outline"
+                                        className="w-full h-14 text-base font-semibold bg-gray-900 border-gray-900 text-white hover:bg-gray-800 hover:text-white hover:border-gray-800"
+                                    >
+                                        Hablar con un asesor
+                                    </Button>
+                                </Link>
+                            </div>
+                            <p className="hidden lg:block text-xs text-gray-500 text-center">
+                                ¿Ya tenés tu workspace?{" "}
+                                <Link href="/login" className="text-violet-600 font-semibold hover:underline">
+                                    Iniciá sesión
+                                </Link>
+                            </p>
+
+                            <div className="hidden md:block relative">
+                                <div className="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-violet-500/15 via-fuchsia-500/10 to-transparent blur-2xl" />
+                                <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+                                    <Image
+                                        src="/marketing/lifestyle/hero-otono-streetwear.webp"
+                                        alt="Tu marca lista para vender"
+                                        width={1200}
+                                        height={700}
+                                        priority
+                                        className="aspect-[16/10] w-full object-cover"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Cómo ganás plata — ejemplo concreto */}
+            <section className="container mx-auto px-4 py-12 md:py-16">
+                <div className="text-center max-w-2xl mx-auto mb-8">
+                    <p className="text-sm font-semibold uppercase tracking-wider text-violet-600 mb-2">
+                        El modelo, en una mirada
+                    </p>
+                    <h2 className="novamente-heading text-3xl md:text-4xl text-gray-900">
+                        Cómo se gana plata sin tocar stock
+                    </h2>
+                </div>
+
+                <div className="grid md:grid-cols-[1.1fr_0.9fr] gap-6 md:gap-10 items-center max-w-5xl mx-auto">
+                    {/* Card de ejemplo */}
+                    <div className="rounded-3xl border border-gray-200 bg-white p-6 md:p-8 shadow-lg">
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center">
+                                <ShoppingBag className="h-5 w-5" />
+                            </div>
+                            <p className="font-semibold text-gray-900">Ejemplo real por venta</p>
+                        </div>
+                        <ul className="space-y-3">
+                            {earningsExample.map((row) => (
+                                <li
+                                    key={row.label}
+                                    className={`flex items-center justify-between py-3 px-4 rounded-xl ${
+                                        row.highlight
+                                            ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white"
+                                            : row.muted
+                                              ? "bg-gray-50 text-gray-600"
+                                              : "bg-gray-50 text-gray-900"
+                                    }`}
+                                >
+                                    <span className="text-sm md:text-base">{row.label}</span>
+                                    <span className="text-lg md:text-xl font-bold tabular-nums">
+                                        {row.value}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                        <p className="text-xs text-gray-500 mt-4 text-center">
+                            Vos definís el precio. El margen lo elegís vos.
+                        </p>
+                    </div>
+
+                    {/* Pasos del flujo */}
+                    <ol className="space-y-4">
+                        {[
+                            {
+                                t: "Tu cliente compra en tu tienda",
+                                d: "Pagás $0 hasta que hay venta.",
+                            },
+                            {
+                                t: "Nos pagás el costo con esa misma venta",
+                                d: "Usás la plata de tu cliente. Cero inversión, cero riesgo.",
+                            },
+                            {
+                                t: "Producimos y enviamos a tu cliente",
+                                d: "Imprimimos en 24-48hs y te queda el margen completo.",
+                            },
+                        ].map((s, i) => (
+                            <li key={i} className="flex gap-4">
+                                <span className="shrink-0 w-9 h-9 rounded-full bg-violet-600 text-white font-bold flex items-center justify-center text-sm">
+                                    {i + 1}
+                                </span>
+                                <div>
+                                    <p className="font-semibold text-gray-900">{s.t}</p>
+                                    <p className="text-gray-600 text-sm">{s.d}</p>
+                                </div>
+                            </li>
+                        ))}
+                    </ol>
+                </div>
+            </section>
+
+            {/* Qué incluye gratis */}
+            <section className="container mx-auto px-4 pb-12 md:pb-16">
+                <div className="rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-6 md:p-10">
+                    <div className="text-center max-w-2xl mx-auto mb-8">
+                        <h2 className="novamente-heading text-2xl md:text-4xl text-gray-900 mb-2">
+                            Todo esto en tu cuenta gratis
+                        </h2>
+                        <p className="text-gray-600">Sin contratos. Sin tarjeta. Sin trampa.</p>
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                            {
+                                icon: <Store className="h-5 w-5" />,
+                                title: "Tu ecommerce",
+                                desc: "Storefront con tu logo, colores y dominio.",
+                            },
+                            {
+                                icon: <ShoppingBag className="h-5 w-5" />,
+                                title: "Catálogo premium",
+                                desc: "Remeras, buzos, gorras y más con tu diseño.",
+                            },
+                            {
+                                icon: <Package className="h-5 w-5" />,
+                                title: "Producción on-demand",
+                                desc: "Producimos cada venta, sin mínimos ni stock.",
+                            },
+                            {
+                                icon: <Palette className="h-5 w-5" />,
+                                title: "Diseños con IA",
+                                desc: "Generador incluido para acelerar tu marca.",
+                            },
+                        ].map((item) => (
+                            <div
+                                key={item.title}
+                                className="rounded-2xl bg-white border border-gray-200 p-5 hover:border-violet-300 hover:shadow-md transition"
+                            >
+                                <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600 mb-3">
+                                    {item.icon}
+                                </div>
+                                <p className="font-semibold text-gray-900 mb-1">{item.title}</p>
+                                <p className="text-sm text-gray-600">{item.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Garantías / risk reversal */}
+            <section className="container mx-auto px-4 pb-12 md:pb-16">
+                <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
+                    {[
+                        {
+                            icon: <ShieldCheck className="h-6 w-6" />,
+                            title: "Cero riesgo",
+                            desc: "Si no vendés, no pagás. Sin cargos mensuales.",
+                        },
+                        {
+                            icon: <Truck className="h-6 w-6" />,
+                            title: "Entregamos por vos",
+                            desc: "Producción, packaging y envío a todo el país.",
+                        },
+                        {
+                            icon: <Rocket className="h-6 w-6" />,
+                            title: "Lista en 48hs",
+                            desc: "Activación el mismo día. Tienda online en 2 días.",
+                        },
+                    ].map((g) => (
+                        <div
+                            key={g.title}
+                            className="rounded-2xl border border-gray-200 bg-white p-5 flex items-start gap-4"
+                        >
+                            <div className="shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white flex items-center justify-center">
+                                {g.icon}
+                            </div>
+                            <div>
+                                <p className="font-semibold text-gray-900">{g.title}</p>
+                                <p className="text-sm text-gray-600">{g.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* FAQ — mata objeciones */}
+            <section className="container mx-auto px-4 pb-12 md:pb-16">
+                <div className="max-w-3xl mx-auto">
+                    <div className="text-center mb-8">
+                        <h2 className="novamente-heading text-3xl md:text-4xl text-gray-900 mb-2">
+                            Lo que casi todos preguntan
+                        </h2>
+                        <p className="text-gray-600">Las dudas reales antes de arrancar.</p>
+                    </div>
+                    <div className="space-y-3">
+                        {faqs.map((f, i) => (
+                            <details
+                                key={i}
+                                className="group rounded-2xl border border-gray-200 bg-white p-5 open:border-violet-300 open:shadow-sm"
+                            >
+                                <summary className="cursor-pointer list-none flex items-start justify-between gap-4">
+                                    <span className="font-semibold text-gray-900">{f.q}</span>
+                                    <span className="shrink-0 w-6 h-6 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-sm font-bold group-open:rotate-45 transition-transform">
+                                        +
+                                    </span>
+                                </summary>
+                                <p className="text-gray-700 mt-3 leading-relaxed">{f.a}</p>
+                            </details>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* CTA final con form */}
+            <section className="container mx-auto px-4 pb-16 md:pb-24">
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-violet-600 to-fuchsia-600 p-6 md:p-12 shadow-2xl shadow-violet-500/30">
+                    <div className="absolute inset-0 opacity-10 [background:radial-gradient(circle_at_30%_20%,white,transparent_40%),radial-gradient(circle_at_70%_80%,white,transparent_40%)]" />
+                    <div className="relative grid md:grid-cols-[1.1fr_0.9fr] gap-8 md:gap-12 items-center">
+                        <div className="text-white text-center md:text-left">
+                            <Rocket className="h-10 w-10 mb-4 mx-auto md:mx-0 opacity-90" />
+                            <h2 className="novamente-heading text-3xl md:text-5xl mb-4 leading-tight">
+                                Tu comunidad ya quiere usar tu marca
+                            </h2>
+                            <p className="text-white/90 text-base md:text-lg max-w-md mx-auto md:mx-0 mb-4">
+                                Activá tu tienda gratis hoy. Si funciona, escalás. Si no, no perdiste nada.
+                            </p>
+                            <ul className="hidden md:block space-y-2 text-white/90">
+                                <li className="flex items-center gap-2">
+                                    <Check className="h-4 w-4" /> Sin tarjeta de crédito
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <Check className="h-4 w-4" /> Sin compromiso mensual
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <Check className="h-4 w-4" /> Respuesta en el día
+                                </li>
+                            </ul>
+                        </div>
+                        <div className="flex flex-col gap-3 w-full">
+                            <Link href="/partners/join" className="w-full">
+                                <Button
+                                    size="lg"
+                                    className="w-full h-14 text-base font-semibold bg-white text-violet-700 hover:bg-gray-100 shadow-lg"
+                                >
+                                    Empezá gratis
+                                    <ArrowRight className="h-4 w-4 ml-2" />
+                                </Button>
+                            </Link>
+                            <Link
+                                href={getWhatsAppLink(WHATSAPP_MESSAGES.PARTNER)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full"
+                            >
+                                <Button
+                                    size="lg"
+                                    variant="outline"
+                                    className="w-full h-14 text-base font-semibold bg-transparent border-white/40 text-white hover:bg-white/10 hover:text-white"
+                                >
+                                    Hablar con un asesor
+                                </Button>
+                            </Link>
+                            <p className="text-xs text-white/80 text-center">
+                                ¿Ya tenés tu workspace?{" "}
+                                <Link href="/login" className="text-white font-semibold underline">
+                                    Iniciá sesión
+                                </Link>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Mayorista — link discreto */}
+            <section className="container mx-auto px-4 pb-16">
+                <div className="border-t border-gray-200 pt-8 text-center">
+                    <p className="text-sm text-gray-500">
+                        ¿Necesitás merch por cantidad para empresa, equipo o evento?{" "}
+                        <Link
+                            href={getWhatsAppLink(WHATSAPP_MESSAGES.MAYORISTA)}
+                            target="_blank"
+                            className="text-violet-600 font-semibold hover:underline inline-flex items-center gap-1"
+                        >
+                            Cotizar pedido mayorista
+                            <ArrowRight className="h-3.5 w-3.5" />
+                        </Link>
+                    </p>
+                </div>
+            </section>
+
+            {/* Spacer para sticky CTA mobile */}
+            <div className="md:hidden h-24" />
         </div>
-
-        <div className="relative">
-          <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-violet-500/20 via-fuchsia-500/10 to-transparent blur-2xl" />
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white shadow-2xl">
-            <Image
-              src="/marketing/lifestyle/hero-otono-streetwear.webp"
-              alt="Merch personalizado para marcas, creadores, empresas y venta B2B"
-              width={1600}
-              height={900}
-              priority
-              className="aspect-[16/10] w-full object-cover"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Final CTA Section */}
-      <div className="text-center bg-gradient-to-r from-violet-50 to-fuchsia-50 rounded-xl p-6 md:p-8 border border-violet-100 max-w-4xl mx-auto mb-16">
-        <h2 className="novamente-heading text-2xl md:text-3xl mb-4 text-gray-900">
-          Tu comunidad quiere vestir tu marca. Dejá que Novamente lo haga posible.
-        </h2>
-        <p className="text-gray-700 max-w-2xl mx-auto text-base md:text-lg">
-          Sumate a la nueva forma de crecer con merchandising inteligente: sin riesgos, con tu esencia y con el respaldo de nuestra tecnología.
-          <br />
-          Hacemos que tus ideas se conviertan en productos reales, listos para el mundo.
-        </p>
-      </div>
-
-      {/* Auto-scroll gallery */}
-      <div className="mb-16 -mx-4 md:-mx-6 lg:-mx-8">
-        <AutoScrollGallery heightClass="h-60 md:h-80 lg:h-96" gapClass="gap-4 md:gap-6" pauseOnHover speedSec={34} />
-      </div>
-
-      {/* Benefits Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-        {benefits.map((benefit, index) => (
-          <div key={index} className="text-center p-6 rounded-xl bg-gray-50 border border-gray-200">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-violet-100 text-violet-600 mb-4">
-              {benefit.icon}
-            </div>
-            <h3 className="text-lg font-semibold mb-2 text-gray-900">{benefit.title}</h3>
-            <p className="text-gray-600 text-sm">{benefit.description}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* How it Works */}
-      <div className="bg-gray-50 rounded-xl p-8 mb-16 border border-gray-200">
-        <h2 className="novamente-heading text-3xl text-center mb-8 text-gray-900">¿Cómo funciona? Tres pasos simples.</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {steps.map((step, index) => (
-            <div key={index} className="text-center">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white flex items-center justify-center mx-auto mb-4 text-lg font-bold">
-                {step.number}
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-gray-900">{step.title}</h3>
-              <p className="text-gray-700">{step.description}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-          <Link href={getWhatsAppLink(WHATSAPP_MESSAGES.PARTNER)} target="_blank">
-            <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500">
-              <ArrowRight className="h-4 w-4 mr-2" />
-              Sumate como Partner
-            </Button>
-          </Link>
-          <Link href="/#generator-section">
-            <Button variant="outline" size="lg" className="w-full sm:w-auto border-gray-300 bg-white text-gray-900 hover:bg-gray-200 hover:border-gray-400">
-              <Zap className="h-4 w-4 mr-2" />
-              Probar Generador
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Aclaración final sobre pedidos puntuales */}
-      <div className="max-w-4xl mx-auto mb-16">
-        <div className="border-t border-gray-300 my-8"></div>
-        <div className="text-center">
-          <div className="mb-6">
-            <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 uppercase">
-              MAYORISTA
-            </h3>
-          </div>
-          <p className="text-gray-700 text-base md:text-lg mb-4">
-            También realizamos pedidos <span className="font-bold text-violet-600">puntuales</span> para empresas, equipos, eventos y acciones especiales, <span className="font-bold text-violet-600">sin</span> necesidad de comprometerse con cantidades <span className="font-bold text-violet-600">mínimas</span> y <span className="font-bold text-violet-600">stock</span>.
-          </p>
-          <p className="text-gray-700 text-base md:text-lg font-bold mb-6">
-            Hacemos tu pedido ajustado a tu necesidad.
-          </p>
-          <Link href={getWhatsAppLink(WHATSAPP_MESSAGES.MAYORISTA)} target="_blank">
-            <Button size="default" className="bg-[#25D366] hover:bg-[#20BA5A] text-white border-0 shadow-md hover:shadow-lg transition-all px-6 py-3 tracking-wide">
-              Hace tu pedido único
-            </Button>
-          </Link>
-        </div>
-        <div className="border-t border-gray-300 my-8"></div>
-      </div>
-
-    </div>
-  )
+    )
 }
