@@ -1174,9 +1174,29 @@ const ventolitoWindSurf: Partner = {
 }
 
 // ---------------------------------------------------------------------------
+// DUB SHIRTS — Reggae / Dub culture, frases del nicho musical
+// Onboarding Modelo Partner · contacto: somos.animales@hotmail.com · +5491135969893
+// Pendiente: logo, banner, paleta y catálogo de productos definitivo
+// ---------------------------------------------------------------------------
+const dubShirts: Partner = {
+    id: "dubshirts",
+    name: "DUB SHIRTS",
+    slogan: "Reggae & dub. Frases que suenan.",
+    description: "DUB SHIRTS nace del nicho musical reggae y dub. Una marca para los que sienten el bajo en el pecho y reconocen una frase de Lee Perry o Mad Professor a la primera escucha.",
+    values: "Cada remera lleva una frase, un sample, un guiño al sound system. Producción on-demand: cada prenda se imprime cuando alguien la pide, sin stock muerto, sin desperdicio.",
+    mission: "Vestir la cultura dub. Que cada prenda sea una declaración de identidad sonora.",
+    logo: "/partners/dubshirts/logo.png",
+    cardImage: "/partners/dubshirts/card.png",
+    banner: "/partners/dubshirts/banner.png",
+    instagramUrl: "",
+    featured: false,
+    products: [],
+}
+
+// ---------------------------------------------------------------------------
 // EXPORTED PARTNERS ARRAY — order determines display in /merch
 // ---------------------------------------------------------------------------
-export const partners: Partner[] = [novamenteMundial, falco, novamenteOriginals, mindset, ventolitoWindSurf]
+export const partners: Partner[] = [novamenteMundial, falco, novamenteOriginals, mindset, ventolitoWindSurf, dubShirts]
 
 /** Helper: find a partner by slug */
 export function getPartnerById(id: string): Partner | undefined {
