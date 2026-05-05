@@ -3,7 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
-import { PartnersHeroCTAs } from "@/components/PartnersHeroCTAs"
+import { PartnersHeroCTAs, PartnersJoinLink } from "@/components/PartnersHeroCTAs"
 import {
   ArrowRight, Store, Palette, BarChart3, Bot,
   Zap, Shield, Globe, Check, Sparkles,
@@ -386,7 +386,7 @@ export default function PartnersPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/partners/join" className="block">
+                <PartnersJoinLink className="block">
                   <Button
                     className={`w-full ${
                       popular
@@ -396,7 +396,7 @@ export default function PartnersPage() {
                   >
                     {plan === 'starter' ? 'Empezar gratis' : 'Elegir plan'}
                   </Button>
-                </Link>
+                </PartnersJoinLink>
               </div>
             ))}
           </div>

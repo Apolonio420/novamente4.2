@@ -1,9 +1,28 @@
 "use client"
 
 import Link from "next/link"
+import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { trackGenerateLead } from "@/lib/analytics"
+
+export function PartnersJoinLink({
+  children,
+  className,
+}: {
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <Link
+      href="/partners/join"
+      className={className}
+      onClick={() => trackGenerateLead("partner_signup_started")}
+    >
+      {children}
+    </Link>
+  )
+}
 
 export function PartnersHeroCTAs() {
   return (
