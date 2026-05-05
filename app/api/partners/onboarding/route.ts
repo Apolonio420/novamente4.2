@@ -20,11 +20,13 @@ function generatePassword(): string {
 }
 
 export async function POST(request: Request) {
+  let body: any = null
   try {
-    const body = await request.json()
+    body = await request.json()
     const { step, tenantId, data } = body
 
     if (!step) {
+      console.error('[onboarding] 400 missing step', { body })
       return NextResponse.json({ error: 'Missing step field' }, { status: 400 })
     }
 
@@ -33,6 +35,7 @@ export async function POST(request: Request) {
       const { name, email, phone, country, currency, industry, website, instagram, description, seo_title, seo_description } = data || {}
 
       if (!name || !email) {
+        console.error('[onboarding] 400 step=1 missing name/email', { hasName: !!name, hasEmail: !!email, dataKeys: Object.keys(data || {}) })
         return NextResponse.json({ error: 'name and email are required' }, { status: 400 })
       }
 
@@ -118,6 +121,7 @@ export async function POST(request: Request) {
     // --- Step 2: Identidad Visual ---
     if (step === 2) {
       if (!tenantId) {
+        console.error('[onboarding] 400 step=2 missing tenantId', { body })
         return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
       }
 
@@ -146,12 +150,14 @@ export async function POST(request: Request) {
     // --- Step 7: Plan ---
     if (step === 7) {
       if (!tenantId) {
+        console.error('[onboarding] 400 step=7 missing tenantId', { body })
         return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
       }
 
       const { plan, billing_cycle } = data || {}
 
       if (!plan) {
+        console.error('[onboarding] 400 step=7 missing plan', { tenantId, dataKeys: Object.keys(data || {}) })
         return NextResponse.json({ error: 'plan is required' }, { status: 400 })
       }
 
@@ -171,6 +177,7 @@ export async function POST(request: Request) {
     // --- Step 9: Brief (onboarding questionnaire) ---
     if (step === 9) {
       if (!tenantId) {
+        console.error('[onboarding] 400 step=9 missing tenantId', { body })
         return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
       }
 
@@ -208,6 +215,7 @@ export async function POST(request: Request) {
     // --- Step 8: Activate ---
     if (step === 8) {
       if (!tenantId) {
+        console.error('[onboarding] 400 step=8 missing tenantId', { body })
         return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
       }
 
@@ -231,9 +239,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ tenant: { id: tenantId } })
     }
 
+    console.error('[onboarding] 400 unknown step', { step, body })
     return NextResponse.json({ error: `Unknown step: ${step}` }, { status: 400 })
   } catch (error) {
-    console.error('Onboarding API error:', error)
+    console.error('[onboarding] 500 unhandled error', { error, body })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

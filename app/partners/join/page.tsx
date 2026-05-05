@@ -2094,6 +2094,13 @@ export default function PartnersJoinPage() {
 
   const handleActivate = useCallback(async () => {
     setError(null)
+    if (!data.tenantId) {
+      setError(
+        'No pudimos completar el paso 1 (creación de tu cuenta). ' +
+        'Volvé al primer paso y revisá los datos básicos antes de activar el storefront.',
+      )
+      return
+    }
     setSubmitting(true)
     try {
       if (data.selectedPlan === 'starter') {

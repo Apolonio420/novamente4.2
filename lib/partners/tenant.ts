@@ -98,7 +98,10 @@ export async function createTenant(input: {
     .select()
     .single()
 
-  if (error || !data) return null
+  if (error || !data) {
+    console.error('[createTenant] insert failed', { error, slugAttempted: input.slug, email: input.email })
+    return null
+  }
   return data as Tenant
 }
 
@@ -110,7 +113,10 @@ export async function updateTenant(id: string, updates: Partial<Tenant>): Promis
     .select()
     .single()
 
-  if (error || !data) return null
+  if (error || !data) {
+    console.error('[updateTenant] update failed', { error, tenantId: id, updateKeys: Object.keys(updates) })
+    return null
+  }
   return data as Tenant
 }
 
