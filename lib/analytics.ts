@@ -40,6 +40,24 @@ export const trackBeginCheckout = (items: Item[]) =>
     items,
   })
 
+export const trackGenerateLead = (
+  leadType:
+    | "partner_signup_started"
+    | "partner_signup_completed"
+    | "contact_advisor",
+) => {
+  if (typeof window === "undefined") return
+  window.dataLayer = window.dataLayer || []
+  window.dataLayer.push({
+    event: "generate_lead",
+    lead_type: leadType,
+    ecommerce: {
+      currency: "ARS",
+      value: 0,
+    },
+  })
+}
+
 export const trackPurchase = (params: {
   orderId: string
   value: number

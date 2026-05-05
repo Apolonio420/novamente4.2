@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { trackGenerateLead } from '@/lib/analytics'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -2101,6 +2102,7 @@ export default function PartnersJoinPage() {
           step: 8,
           tenantId: data.tenantId,
         })
+        trackGenerateLead('partner_signup_completed')
         // Fire-and-forget: generate 3 starter products with AI mockups
         if (data.tenantId) {
           fetch('/api/partners/onboarding/generate-products', {
@@ -2159,6 +2161,7 @@ export default function PartnersJoinPage() {
           tenantId: data.tenantId,
           data: { plan: data.selectedPlan },
         })
+        trackGenerateLead('partner_signup_completed')
         // Fire-and-forget: generate 3 starter products with AI mockups
         if (data.tenantId) {
           fetch('/api/partners/onboarding/generate-products', {

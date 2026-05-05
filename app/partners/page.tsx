@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
+import { PartnersHeroCTAs } from "@/components/PartnersHeroCTAs"
 import {
   ArrowRight, Store, Palette, BarChart3, Bot,
   Zap, Shield, Globe, Check, Sparkles,
@@ -270,19 +271,7 @@ export default function PartnersPage() {
               La unidad de Novamente para marcas, creadores y negocios que quieren verse más pro,
               vender mejor y operar sin stock ni logística propia.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/partners/join">
-                <Button size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-zinc-200 font-semibold px-8 h-12 text-base">
-                  Empezar gratis
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
-                <Button size="lg" variant="outline" className="w-full sm:w-auto border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800 h-12 text-base">
-                  Hablar con un asesor
-                </Button>
-              </Link>
-            </div>
+            <PartnersHeroCTAs />
             <p className="mt-4 text-sm text-zinc-500">
               ¿Ya tenés tu workspace?{" "}
               <Link href="/partners/login" className="text-purple-400 hover:text-purple-300 underline">
