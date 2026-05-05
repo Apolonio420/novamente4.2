@@ -82,6 +82,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/aura-oversize-tshirt-stone-wash/main.png",
             lifestyle: [
+                "/products/aura-oversize-tshirt-stone-wash/back.jpeg",
                 "/products/aura-oversize-tshirt-stone-wash/lifestyle1.jpg",
                 "/products/aura-oversize-tshirt-stone-wash/lifestyle2.jpg",
                 "/products/aura-oversize-tshirt-stone-wash/lifestyle3.jpg"
@@ -171,7 +172,7 @@ export const PRODUCTS: Product[] = [
         description: "Buzo hoodie oversize en color negro. El básico definitivo con fit amplio y algodón frizado premium. Ideal para estampar.",
         images: {
             main: "/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
-            lifestyle: ["/products/buzo-hoddie-unisex-negro/Buzo_Unisex_Studio.png", "/products/buzo-hoddie-unisex-negro/Buzo_Hoodie_Negro_Hombre_Lifestyle.png"],
+            lifestyle: ["/products/buzo-hoddie-unisex-negro/back.jpeg", "/products/buzo-hoddie-unisex-negro/Buzo_Unisex_Studio.png", "/products/buzo-hoddie-unisex-negro/Buzo_Hoodie_Negro_Hombre_Lifestyle.png"],
             measurements: "/products/size-charts/hoodie.png"
         },
         category: "Hoodies",
@@ -185,7 +186,7 @@ export const PRODUCTS: Product[] = [
         description: "Buzo hoodie con efecto lavado Stone Wash. Un estilo vintage y urbano único. Algodón premium frizado para máxima comodidad y abrigo.",
         images: {
             main: "/products/buzo-hoddie-unisex-stone-wash/mockups nuevos productos-13.png",
-            lifestyle: ["/products/buzo-hoddie-unisex-stone-wash/Buzo_Unisex_Studio.png", "/products/buzo-hoddie-unisex-stone-wash/Buzo_Hoodie_Negro_Hombre_Lifestyle.png"],
+            lifestyle: ["/products/buzo-hoddie-unisex-stone-wash/back.jpeg", "/products/buzo-hoddie-unisex-stone-wash/Buzo_Unisex_Studio.png", "/products/buzo-hoddie-unisex-stone-wash/Buzo_Hoodie_Negro_Hombre_Lifestyle.png"],
             measurements: "/products/size-charts/hoodie.png"
         },
         category: "Hoodies",
@@ -255,7 +256,7 @@ export const PRODUCTS: Product[] = [
         description: "Remera crop de corte moderno en color negro. Algodón suave con calce relajado. Ideal para combinar con todo.",
         images: {
             main: "/products/remera-crop-de-mujer-negra/mockups nuevos productos-4.png",
-            lifestyle: ["/products/remera-crop-de-mujer-negra/crop-lifestyle.png", "/products/remera-crop-de-mujer-negra/crop-urban.png"],
+            lifestyle: ["/products/remera-crop-de-mujer-negra/back.jpeg", "/products/remera-crop-de-mujer-negra/crop-lifestyle.png", "/products/remera-crop-de-mujer-negra/crop-urban.png"],
             measurements: "/products/remera-crop-de-mujer-negra/Medidas1.png"
         },
         category: "Remeras Crop",
@@ -269,7 +270,7 @@ export const PRODUCTS: Product[] = [
         description: "Remera crop en color chocolate, tendencia de temporada. Tono cálido y elegante en algodón premium.",
         images: {
             main: "/products/remera-crop-de-mujer-chocolate/mockups nuevos productos-5.png",
-            lifestyle: ["/products/remera-crop-de-mujer-chocolate/crop-lifestyle.png", "/products/remera-crop-de-mujer-chocolate/crop-urban.png"],
+            lifestyle: ["/products/remera-crop-de-mujer-chocolate/back.jpeg", "/products/remera-crop-de-mujer-chocolate/crop-lifestyle.png", "/products/remera-crop-de-mujer-chocolate/crop-urban.png"],
             measurements: "/products/remera-crop-de-mujer-chocolate/Medidas1.png"
         },
         category: "Remeras Crop",
@@ -283,7 +284,7 @@ export const PRODUCTS: Product[] = [
         description: "Remera crop clásica en gris melange. El básico infaltable con un toque urbano.",
         images: {
             main: "/products/remera-crop-de-mujer-gris/mockups nuevos productos-6.png",
-            lifestyle: ["/products/remera-crop-de-mujer-gris/crop-lifestyle.png", "/products/remera-crop-de-mujer-gris/crop-urban.png"],
+            lifestyle: ["/products/remera-crop-de-mujer-gris/back.jpeg", "/products/remera-crop-de-mujer-gris/crop-lifestyle.png", "/products/remera-crop-de-mujer-gris/crop-urban.png"],
             measurements: "/products/remera-crop-de-mujer-gris/Medidas1.png"
         },
         category: "Remeras Crop",
@@ -297,7 +298,7 @@ export const PRODUCTS: Product[] = [
         description: "Remera crop en amarillo vibrante. Color lleno de energía para destacar tu outfit.",
         images: {
             main: "/products/remera-crop-de-mujer-amarillo/mockups nuevos productos-7.png",
-            lifestyle: ["/products/remera-crop-de-mujer-amarillo/crop-lifestyle.png", "/products/remera-crop-de-mujer-amarillo/crop-urban.png"],
+            lifestyle: ["/products/remera-crop-de-mujer-amarillo/back.jpeg", "/products/remera-crop-de-mujer-amarillo/crop-lifestyle.png", "/products/remera-crop-de-mujer-amarillo/crop-urban.png"],
             measurements: "/products/remera-crop-de-mujer-amarillo/Medidas1.png"
         },
         category: "Remeras Crop",
@@ -311,7 +312,7 @@ export const PRODUCTS: Product[] = [
         description: "Buzo de cuello redondo estilo oversize en negro. Clásico y versátil, ideal para cualquier ocasión. Algodón premium.",
         images: {
             main: "/products/buzo-cuello-redondo-unisex-negro-estilo-oversize/mockups nuevos productos-8.png",
-            lifestyle: ["/products/buzo-cuello-redondo-unisex-negro-estilo-oversize/Buzo_Cuello_Redondo_Negro_Mujer_Lifestyle.png"],
+            lifestyle: ["/products/buzo-cuello-redondo-unisex-negro-estilo-oversize/back.jpeg", "/products/buzo-cuello-redondo-unisex-negro-estilo-oversize/Buzo_Cuello_Redondo_Negro_Mujer_Lifestyle.png"],
             measurements: "/products/size-charts/crewneck.png"
         },
         category: "Buzos (Crewneck)",
@@ -325,7 +326,7 @@ export const PRODUCTS: Product[] = [
         description: "Remera clásica de mujer en blanco. Corte femenino y cómodo. Algodón suave perfecto para uso diario.",
         images: {
             main: "/products/remera-clasica-woman-blanca/mockups nuevos productos-2.png",
-            lifestyle: ["/products/remera-clasica-woman-blanca/Remera_Woman_Urban.jpeg"],
+            lifestyle: ["/products/remera-clasica-woman-blanca/back.jpeg", "/products/remera-clasica-woman-blanca/Remera_Woman_Urban.jpeg"],
             measurements: "/products/remera-clasica-woman-blanca/Medidas2.png"
         },
         category: "Remeras Mujer",
@@ -353,7 +354,7 @@ export const PRODUCTS: Product[] = [
         description: "Buzo de cuello redondo con efecto Stone Wash. Estilo único y textura premium frizada. Oversize y super cómodo.",
         images: {
             main: "/products/buzo-cuello-redondo-unisex-stone-wash-friza-premium-estilo-oversize/mockups nuevos productos-10.png",
-            lifestyle: ["/products/buzo-cuello-redondo-unisex-stone-wash-friza-premium-estilo-oversize/Buzo_Cuello_Redondo_Blanco_Mujer_Lifestyle.png"],
+            lifestyle: ["/products/buzo-cuello-redondo-unisex-stone-wash-friza-premium-estilo-oversize/back.jpeg", "/products/buzo-cuello-redondo-unisex-stone-wash-friza-premium-estilo-oversize/Buzo_Cuello_Redondo_Blanco_Mujer_Lifestyle.png"],
             measurements: "/products/size-charts/crewneck.png"
         },
         category: "Buzos (Crewneck)",
@@ -367,7 +368,7 @@ export const PRODUCTS: Product[] = [
         description: "Remera clásica de mujer en negro. El básico indispensable en algodón de alta densidad. Corte favorecedor.",
         images: {
             main: "/products/remera-clasica-woman-negra/mockups nuevos productos-3.png",
-            lifestyle: ["/products/remera-clasica-woman-negra/Remera_Woman_Urban.jpeg"],
+            lifestyle: ["/products/remera-clasica-woman-negra/back.jpeg", "/products/remera-clasica-woman-negra/Remera_Woman_Urban.jpeg"],
             measurements: "/products/remera-clasica-woman-negra/Medidas2.png"
         },
         category: "Remeras Mujer",
