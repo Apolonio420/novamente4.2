@@ -10,6 +10,7 @@ export interface Drop {
   hashtags: string[];
   lifestyleUrl: string | null;
   mockupUrl: string | null;
+  printUrl: string | null;
   topic: string | null;
   garmentKey: string | null;
   styleId: string | null;

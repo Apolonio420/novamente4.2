@@ -12,10 +12,37 @@ import { useCart } from "@/lib/cartStore";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Sparkles, ExternalLink, Check } from "lucide-react";
+import { ShoppingBag, Sparkles, ExternalLink, Check, Palette, Ruler } from "lucide-react";
 import { type Drop, garmentLabel } from "./drop-types";
 
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const;
+
+// Tabla de talles — alineada con app/products/[id]/page.tsx (SIZE_CHARTS).
+type SizeChart = { sizes: string[]; width: string[]; length: string[] };
+const SIZE_CHARTS: Record<string, SizeChart> = {
+  hoodie: {
+    sizes: ["XS", "S", "M", "L", "XL", "2XL"],
+    width: ["64", "66", "68", "70", "72", "74"],
+    length: ["67", "69", "71", "73", "75", "77"],
+  },
+  "remera-classic": {
+    sizes: ["S", "M", "L", "XL", "XXL"],
+    width: ["48", "52", "56", "58", "60"],
+    length: ["63", "68", "72", "75", "77"],
+  },
+  "remera-oversize": {
+    sizes: ["2XS", "XS", "S", "M", "L", "XL", "2XL"],
+    width: ["55", "57", "59", "61", "63", "66", "69"],
+    length: ["69", "71", "73", "75", "77", "79", "81"],
+  },
+};
+
+function getSizeChartForGarment(garmentKey: string | null): SizeChart {
+  if (!garmentKey) return SIZE_CHARTS["remera-classic"]!;
+  if (garmentKey.startsWith("hoodie")) return SIZE_CHARTS.hoodie!;
+  if (garmentKey.includes("oversize")) return SIZE_CHARTS["remera-oversize"]!;
+  return SIZE_CHARTS["remera-classic"]!;
+}
 
 interface GarmentMeta {
   category: "remera" | "hoodie" | "musculosa";
@@ -54,9 +81,10 @@ export default function DropClient({ drop }: { drop: Drop }) {
   const { toast } = useToast();
   const [size, setSize] = useState<string>("");
   const [qty, setQty] = useState<number>(1);
-  const [activeImg, setActiveImg] = useState<"lifestyle" | "mockup">(
-    drop.lifestyleUrl ? "lifestyle" : "mockup",
+  const [activeImg, setActiveImg] = useState<"lifestyle" | "mockup" | "print">(
+    drop.lifestyleUrl ? "lifestyle" : drop.mockupUrl ? "mockup" : "print",
   );
+  const [usingDesign, setUsingDesign] = useState(false);
   const [adding, setAdding] = useState(false);
 
   const meta = GARMENT_META[drop.garmentKey ?? ""] ?? {
@@ -109,9 +137,40 @@ export default function DropClient({ drop }: { drop: Drop }) {
     router.push("/checkout");
   };
 
-  const heroImg = activeImg === "lifestyle" && drop.lifestyleUrl
-    ? drop.lifestyleUrl
-    : (drop.mockupUrl ?? drop.lifestyleUrl ?? "");
+  const heroImg =
+    activeImg === "lifestyle" && drop.lifestyleUrl
+      ? drop.lifestyleUrl
+      : activeImg === "print" && drop.printUrl
+      ? drop.printUrl
+      : drop.mockupUrl ?? drop.lifestyleUrl ?? drop.printUrl ?? "";
+
+  const sizeChart = getSizeChartForGarment(drop.garmentKey);
+
+  const handleUseDesign = async () => {
+    if (!drop.printUrl) {
+      toast({
+        title: "Diseño no disponible",
+        description: "Este drop no tiene el print solo guardado.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setUsingDesign(true);
+    try {
+      const r = await fetch(`/api/drops/${drop.id}/use-design`, { method: "POST" });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const { imageId } = (await r.json()) as { imageId: string };
+      router.push(`/design/${imageId}`);
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "No pude abrir el diseñador",
+        description: "Intentá de nuevo en un momento.",
+        variant: "destructive",
+      });
+      setUsingDesign(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -135,18 +194,19 @@ export default function DropClient({ drop }: { drop: Drop }) {
                   priority
                   sizes="(max-width: 768px) 100vw, 50vw"
                   className={
-                    activeImg === "lifestyle" ? "object-cover" : "object-contain p-4"
+                    activeImg === "lifestyle" ? "object-cover" : "object-contain p-4 bg-white"
                   }
                 />
               ) : null}
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="mt-3 grid grid-cols-3 gap-3">
               {drop.lifestyleUrl ? (
                 <button
                   onClick={() => setActiveImg("lifestyle")}
                   className={`relative aspect-square overflow-hidden rounded-lg border-2 ${
                     activeImg === "lifestyle" ? "border-white" : "border-transparent opacity-60"
                   }`}
+                  aria-label="Vista lifestyle"
                 >
                   <Image src={drop.lifestyleUrl} alt="Lifestyle" fill sizes="200px" className="object-cover" />
                 </button>
@@ -157,8 +217,20 @@ export default function DropClient({ drop }: { drop: Drop }) {
                   className={`relative aspect-square overflow-hidden rounded-lg border-2 bg-zinc-900 ${
                     activeImg === "mockup" ? "border-white" : "border-transparent opacity-60"
                   }`}
+                  aria-label="Packshot prenda"
                 >
                   <Image src={drop.mockupUrl} alt="Packshot" fill sizes="200px" className="object-contain p-2" />
+                </button>
+              ) : null}
+              {drop.printUrl ? (
+                <button
+                  onClick={() => setActiveImg("print")}
+                  className={`relative aspect-square overflow-hidden rounded-lg border-2 bg-white ${
+                    activeImg === "print" ? "border-white" : "border-transparent opacity-60"
+                  }`}
+                  aria-label="Diseño solo"
+                >
+                  <Image src={drop.printUrl} alt="Diseño" fill sizes="200px" className="object-contain p-2" />
                 </button>
               ) : null}
             </div>
@@ -273,6 +345,50 @@ export default function DropClient({ drop }: { drop: Drop }) {
                   "Agregar al carrito"
                 )}
               </Button>
+            </div>
+
+            {drop.printUrl ? (
+              <Button
+                onClick={handleUseDesign}
+                disabled={usingDesign}
+                size="lg"
+                variant="outline"
+                className="mt-3 w-full border-amber-500/40 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20"
+              >
+                <Palette className="mr-2 h-5 w-5" />
+                {usingDesign ? "Abriendo diseñador…" : "Usar este diseño en otra prenda"}
+              </Button>
+            ) : null}
+
+            {/* Tabla de talles */}
+            <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-200">
+                <Ruler className="h-4 w-4 text-amber-300" />
+                Tabla de talles
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-800 text-zinc-400">
+                      <th className="px-2 py-2 text-left font-semibold">Talle</th>
+                      <th className="px-2 py-2 text-center font-semibold">Ancho (cm)</th>
+                      <th className="px-2 py-2 text-center font-semibold">Largo (cm)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sizeChart.sizes.map((s, i) => (
+                      <tr key={s} className="border-b border-zinc-800/60 last:border-0">
+                        <td className="px-2 py-2 font-bold text-zinc-100">{s}</td>
+                        <td className="px-2 py-2 text-center text-zinc-300">{sizeChart.width[i]}</td>
+                        <td className="px-2 py-2 text-center text-zinc-300">{sizeChart.length[i]}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-3 text-xs text-zinc-500">
+                * Las medidas pueden variar ±1 cm. Si dudás entre dos talles, elegí el más grande.
+              </p>
             </div>
 
             <Link
