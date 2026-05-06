@@ -1576,48 +1576,12 @@ const PREVIEW_PRODUCTS = [
   { name: 'Remera Classic', price: '$15.200', fallback: '/garments/tshirt-white-classic-front.jpeg', category: 'Remeras' },
 ]
 
-function usePreviewMockups(data: WizardData) {
-  const [mockups, setMockups] = useState<(string | null)[]>([null, null, null])
-  const [generating, setGenerating] = useState(false)
-  const generatedRef = useRef(false)
-
-  useEffect(() => {
-    if (generatedRef.current || !data.businessName) return
-    generatedRef.current = true
-    setGenerating(true)
-
-    const colors = [data.colorPrimary, data.colorAccent, data.colorSecondary].filter(Boolean)
-
-    // Generate 3 mockups in parallel
-    const promises = [0, 1, 2].map(async (idx) => {
-      try {
-        const res = await fetch('/api/partners/onboarding/preview-mockup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            brandName: data.businessName,
-            industry: data.industry,
-            tagline: data.tagline || data.shortDescription,
-            colors,
-            garmentIndex: idx,
-          }),
-        })
-        const json = await res.json()
-        if (json.success && json.image) {
-          setMockups((prev) => {
-            const next = [...prev]
-            next[idx] = json.image
-            return next
-          })
-        }
-      } catch {
-        // Keep fallback for this slot
-      }
-    })
-
-    Promise.allSettled(promises).then(() => setGenerating(false))
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
+function usePreviewMockups(_data: WizardData) {
+  // Mockup generation moved to novamente-platform (commit 000c27a removed
+  // the heavy preview-mockup route from this app to fit Vercel size limits).
+  // Preview falls back to the "Ejemplo con productos de Novamente" copy.
+  const mockups: (string | null)[] = [null, null, null]
+  const generating = false
   return { mockups, generating }
 }
 
@@ -2110,20 +2074,8 @@ export default function PartnersJoinPage() {
           tenantId: data.tenantId,
         })
         trackGenerateLead('partner_signup_completed')
-        // Fire-and-forget: generate 3 starter products with AI mockups
-        if (data.tenantId) {
-          fetch('/api/partners/onboarding/generate-products', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tenantId: data.tenantId,
-              brandName: data.businessName,
-              industry: data.industry,
-              tagline: data.tagline || data.shortDescription,
-              colors: [data.colorPrimary, data.colorAccent, data.colorSecondary].filter(Boolean),
-            }),
-          }).catch(() => {}) // Non-blocking — products can be added manually later
-        }
+        // Starter-product generation moved to novamente-platform — partners
+        // add products from the dashboard after activation.
         clearWizardProgress()
         // Auto-login + set server-side cookie so middleware detects session.
         // Without /api/auth/set-session the middleware can't see the token and
@@ -2169,20 +2121,8 @@ export default function PartnersJoinPage() {
           data: { plan: data.selectedPlan },
         })
         trackGenerateLead('partner_signup_completed')
-        // Fire-and-forget: generate 3 starter products with AI mockups
-        if (data.tenantId) {
-          fetch('/api/partners/onboarding/generate-products', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tenantId: data.tenantId,
-              brandName: data.businessName,
-              industry: data.industry,
-              tagline: data.tagline || data.shortDescription,
-              colors: [data.colorPrimary, data.colorAccent, data.colorSecondary].filter(Boolean),
-            }),
-          }).catch(() => {})
-        }
+        // Starter-product generation moved to novamente-platform — partners
+        // add products from the dashboard after activation.
 
         // Create MercadoPago subscription preference
         const res = await fetch('/api/partners/subscribe', {
