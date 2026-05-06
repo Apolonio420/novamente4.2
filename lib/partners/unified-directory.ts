@@ -22,6 +22,9 @@ const HIDDEN_DB_SLUGS = new Set([
   'demo-peluqueria',
   'demo-mayorista',
   'ar-brand-test',
+  'karimarketok',
+  'karimarket-ok',
+  'karimarket.ok',
 ])
 
 // Slug redirects — old slug → current slug (for renamed brands)
