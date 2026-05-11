@@ -63,21 +63,48 @@ export function Navbar() {
   const closeSheet = () => setIsSheetOpen(false)
 
   const navItems = [
-    { label: "PRODUCTOS", href: "/products" },
-    { label: "ESTILOS", href: "/styles" },
-    { label: "FAQ", href: "/faq" },
+    {
+      label: "COMPRÁ",
+      href: "/products",
+      isDropdown: true,
+      subItems: [
+        { label: "CATÁLOGO COMPLETO", href: "/products" },
+        { label: "REMERAS PERSONALIZADAS", href: "/remeras-personalizadas" },
+        { label: "HOODIES", href: "/hoodie-personalizado" },
+        { label: "BUZOS", href: "/buzos-personalizados" },
+        { label: "REMERAS CUMPLEAÑOS", href: "/remeras-cumpleanos" },
+        { label: "BUZOS EGRESADOS", href: "/buzos-egresados" },
+        { label: "DESPEDIDAS", href: "/despedidas-personalizadas" },
+        { label: "REGALOS PERSONALIZADOS", href: "/regalos-personalizados" },
+        { label: "REGALOS EMPRESARIALES", href: "/regalos-empresariales" },
+        { label: "COMPRA POR MAYOR", href: "/remeras-por-mayor" },
+      ]
+    },
+    {
+      label: "DISEÑÁ",
+      href: "/design",
+      isDropdown: true,
+      subItems: [
+        { label: "GENERADOR CON IA", href: "/design" },
+        { label: "DISEÑÁ TU REMERA", href: "/disena-tu-remera" },
+        { label: "ESTILOS ARTÍSTICOS", href: "/styles" },
+        { label: "COMPARAR PRENDAS", href: "/comparar" },
+        { label: "GUÍA DE ESTAMPADO", href: "/guia-estampado" },
+      ]
+    },
     {
       label: "STUDIO",
       href: "/partners",
       isDropdown: true,
       subItems: [
+        { label: "LANZÁ TU MARCA", href: "/lanza-tu-marca" },
         { label: "NOVAMENTE STUDIO", href: "/partners" },
-        { label: "DIRECTORIO", href: "/partners/directory" },
-        { label: "MARCAS", href: "/merch" },
-        { label: "MI WORKSPACE", href: "/partners/login" }
+        { label: "COTIZAR PRODUCCIÓN", href: "/cotizador" },
+        { label: "MI WORKSPACE", href: "/partners/login" },
       ]
     },
-    { label: "DISEÑA", href: "/#generator-section", isButton: true },
+    { label: "MARCAS", href: "/merchs" },
+    { label: "FAQ", href: "/faq" },
   ]
 
   return (
