@@ -115,11 +115,20 @@ export default async function ProductDetailPage({ params }: PageProps) {
     )
     .slice(0, 4)
 
-  // Build CTA URL
+  // Build CTA URL — siempre debe haber un CTA para comprar. Si el partner no tiene
+  // phone ni cta_url propios, se cae a WhatsApp de Novamente con texto preformateado
+  // que identifica al partner + producto. Antes el boton desaparecia para partners
+  // sin contacto cargado y los clientes no podian comprar.
+  const NOVAMENTE_FALLBACK_WA = "5491126603080"
+  const productText = encodeURIComponent(`Hola! Me interesa "${product.name}" de la tienda ${tenant.name} en Novamente. Quiero info para comprar.`)
   const ctaHref =
     tenant.commerce_mode === 'whatsapp' && tenant.phone
-      ? `https://wa.me/${tenant.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola! Me interesa: ${product.name}`)}`
-      : tenant.cta_url || (tenant.phone ? `https://wa.me/${tenant.phone.replace(/\D/g, '')}` : null)
+      ? `https://wa.me/${tenant.phone.replace(/\D/g, '')}?text=${productText}`
+      : tenant.cta_url
+      || (tenant.phone ? `https://wa.me/${tenant.phone.replace(/\D/g, '')}?text=${productText}` : null)
+      || `https://wa.me/${NOVAMENTE_FALLBACK_WA}?text=${productText}`
+
+  const ctaUsesFallback = ctaHref?.includes(NOVAMENTE_FALLBACK_WA) ?? false
 
   const features = getPlanFeatures(tenant.plan)
 
@@ -268,20 +277,21 @@ export default async function ProductDetailPage({ params }: PageProps) {
               </div>
             )}
 
-            {/* CTA */}
-            {ctaHref && (
-              <Button
-                asChild
-                size="lg"
-                className="mt-2 w-full text-white sm:w-auto"
-                style={{ backgroundColor: tenant.primary_color }}
-              >
-                <a href={ctaHref} target="_blank" rel="noopener noreferrer">
-                  {tenant.commerce_mode === 'whatsapp'
-                    ? 'Consultar por WhatsApp'
-                    : 'Contactar'}
-                </a>
-              </Button>
+            {/* CTA — siempre presente (fallback a WhatsApp de Novamente si el partner no cargo contacto propio) */}
+            <Button
+              asChild
+              size="lg"
+              className="mt-2 w-full text-white sm:w-auto"
+              style={{ backgroundColor: tenant.primary_color }}
+            >
+              <a href={ctaHref!} target="_blank" rel="noopener noreferrer">
+                Comprar por WhatsApp
+              </a>
+            </Button>
+            {ctaUsesFallback && (
+              <p className="mt-1 text-xs text-zinc-500">
+                Te atendemos desde Novamente y coordinamos con {tenant.name}.
+              </p>
             )}
 
             {/* Back to storefront */}

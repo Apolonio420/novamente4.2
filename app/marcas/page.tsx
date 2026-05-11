@@ -28,6 +28,39 @@ export const metadata: Metadata = {
   },
 }
 
+// Slugs/nombres bloqueados (cuentas de prueba o demos que no corresponden al directorio)
+const BLOCKED_SLUGS = new Set([
+  "ar-brand-test",
+  "centro-medico-vida-sana",
+  "la-parrilla-de-don-carlos",
+  "propiedades-del-sur",
+  "studio-bella",
+  "textilpro-mayorista",
+])
+
+// Industries no afines al universo Novamente (indumentaria/cultura/marca personal).
+// Si un partner se registra en una industry no afin, no aparece en el directorio publico.
+const BLOCKED_INDUSTRIES = new Set([
+  "Salud",
+  "Gastronomia",
+  "Gastronomía",
+  "Inmobiliaria",
+  "Belleza",
+  "Mayorista textil",
+  "Mayorista",
+])
+
+function isPartnerVisibleInDirectory(t: Tenant): boolean {
+  if (BLOCKED_SLUGS.has(t.slug)) return false
+  if (t.industry && BLOCKED_INDUSTRIES.has(t.industry)) return false
+  // Heuristica de cuentas de prueba en nombre o slug
+  const lowerName = t.name.toLowerCase()
+  const lowerSlug = t.slug.toLowerCase()
+  if (lowerName.includes("test") || lowerName.includes("demo")) return false
+  if (lowerSlug.includes("test") || lowerSlug.includes("demo")) return false
+  return true
+}
+
 // Plan order para destacar pagos arriba
 const PLAN_ORDER: Record<Plan, number> = { pro: 0, growth: 1, starter: 2 }
 
@@ -102,7 +135,8 @@ function buildSchema(tenants: Tenant[]) {
 
 export default async function MarcasPage() {
   const allTenants = await getPublishedTenants()
-  const tenants = sortTenants(allTenants)
+  const visibleTenants = allTenants.filter(isPartnerVisibleInDirectory)
+  const tenants = sortTenants(visibleTenants)
   const { itemList, breadcrumb } = buildSchema(tenants)
 
   // Agrupar por industry para filtros (informacional)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestTenant } from '@/lib/partners/auth'
 import { updateProduct, deleteProduct } from '@/lib/partners/catalog'
+import { validatePartnerProductForCreation } from '@/lib/partners/product-policy'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 async function getProductById(productId: string) {
@@ -61,6 +62,19 @@ export async function PUT(
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '')
+    }
+
+    // Policy: si el partner edita name/description/category, revalidar contra la
+    // politica de productos. Bloquea que muten un producto valido a uno prohibido.
+    if (updates.name !== undefined || updates.description !== undefined || updates.category !== undefined) {
+      const policy = validatePartnerProductForCreation({
+        name: (updates.name as string | undefined) ?? existing.name,
+        description: (updates.description as string | undefined) ?? existing.description ?? undefined,
+        category: (updates.category as string | undefined) ?? existing.category ?? undefined,
+      })
+      if (!policy.ok) {
+        return NextResponse.json({ error: policy.reason }, { status: 422 })
+      }
     }
 
     const product = await updateProduct(id, updates)

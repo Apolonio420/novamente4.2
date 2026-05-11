@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getRequestTenant } from '@/lib/partners/auth'
 import { getAllProducts, createProduct, countProducts } from '@/lib/partners/catalog'
 import { canAddProduct } from '@/lib/partners/plans'
+import { validatePartnerProductForCreation } from '@/lib/partners/product-policy'
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,6 +49,17 @@ export async function POST(request: NextRequest) {
 
     if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
       return NextResponse.json({ error: 'El nombre es obligatorio' }, { status: 400 })
+    }
+
+    // Policy: solo prendas del catalogo Novamente — bloquea toallones, ropa de cama,
+    // accesorios no textiles y cualquier producto que el partner haya producido aparte.
+    const policy = validatePartnerProductForCreation({
+      name: body.name,
+      description: body.description,
+      category: body.category,
+    })
+    if (!policy.ok) {
+      return NextResponse.json({ error: policy.reason }, { status: 422 })
     }
 
     const product = await createProduct(tenant.id, {

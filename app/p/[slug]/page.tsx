@@ -399,8 +399,11 @@ function ProductCard({
             )}
         </div>
 
-        <span className="mt-2 inline-flex items-center text-sm font-medium text-[var(--partner-primary)] transition group-hover:underline">
-          Ver detalle &rarr;
+        <span
+          className="mt-3 inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-white transition"
+          style={{ backgroundColor: 'var(--partner-primary)' }}
+        >
+          Ver y comprar &rarr;
         </span>
       </div>
     </Link>

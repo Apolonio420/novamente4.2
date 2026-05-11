@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getRequestTenant } from '@/lib/partners/auth'
 import { parseCsvProducts } from '@/lib/partners/csv-parser'
 import { countProducts, createProduct } from '@/lib/partners/catalog'
+import { validatePartnerProductForCreation } from '@/lib/partners/product-policy'
 import { PLAN_FEATURES } from '@/lib/partners/plans'
 import type { Plan } from '@/lib/partners/types'
 
@@ -62,6 +63,17 @@ export async function POST(request: NextRequest) {
     const importErrors: string[] = []
 
     for (const p of toImport) {
+      // Policy: solo prendas del catalogo Novamente
+      const policy = validatePartnerProductForCreation({
+        name: p.name,
+        description: p.description,
+        category: p.category,
+      })
+      if (!policy.ok) {
+        importErrors.push(`"${p.name}" rechazado: ${policy.reason}`)
+        continue
+      }
+
       try {
         const product = await createProduct(tenant.id, {
           name: p.name,
