@@ -60,9 +60,11 @@ const SLUG_CANDIDATES = SLUG_OVERRIDE
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY!
-const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3-pro-image-preview"
+// Modelo de composite/stamp (mockup sobre prenda real) — multimodal capable
+const GEMINI_MOCKUP_MODEL = process.env.GEMINI_STAMP_MODEL || "gemini-2.5-flash-image"
 const BUCKET = "partner-assets"
 const LOGO_LOCAL_PATH = resolve(__dirname, "../public/marketing/partners/kari-market/logo.jpeg")
+const PRODUCTS_DIR = resolve(__dirname, "../public/products")
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error("Faltan NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY en .env.local")
@@ -105,8 +107,8 @@ interface ProductSpec {
   name: string
   slug: string
   category: string
-  garment_color: "white" | "cream" | "pink"
-  garmentDescription: string
+  /** Foto real de la prenda Novamente (path en /public/products/) */
+  baseGarmentImage: string
   price: number
   designConcept: string
   description: string
@@ -117,81 +119,107 @@ const PRODUCTS: ProductSpec[] = [
     name: "Remera Oversize 'Todo Pasa'",
     slug: "remera-oversize-todo-pasa",
     category: "Remera Oversize",
-    garment_color: "cream",
-    garmentDescription: "cream/off-white oversize t-shirt",
+    baseGarmentImage: "aura-tshirt-blanco-front.jpeg",
     price: 32000,
     designConcept:
-      "Hand-drawn cursive lettering 'Todo Pasa' on chest, with a small heart and a stylized mate gourd line drawing underneath. Rose blush ink on cream fabric.",
+      "Hand-drawn cursive lettering 'Todo Pasa' in rose blush color, with a small heart and a stylized mate gourd line drawing underneath. Centered on the chest area. Small watercolor blush wash behind the text. Romantic feminine vibe matching the Kari Market brand logo.",
     description:
-      "Remera oversize en tono crema con la frase 'Todo Pasa' en lettering cursivo hecho a mano. Diseno minimalista con corazon y mate ilustrado. Estampado DTG premium sobre algodon 100%.",
+      "Remera Aura Oversize blanca con la frase 'Todo Pasa' en lettering cursivo hecho a mano, en rose blush. Corazón y mate ilustrados con line art delicado. Estampado DTG premium sobre algodón 100% peinado.",
   },
   {
-    name: "Remera Classic 'Mate de la Manana'",
+    name: "Remera Classic 'Mate de la Mañana'",
     slug: "remera-classic-mate-de-la-manana",
     category: "Remera Classic",
-    garment_color: "white",
-    garmentDescription: "white classic fit t-shirt",
+    baseGarmentImage: "tshirt-aldea-blanco-front.jpeg",
     price: 28600,
     designConcept:
-      "Centered illustration of a mate gourd with bombilla and curling steam, drawn in delicate line art with rose blush accents. Small hand-written script 'Buen dia' below. Watercolor wash effect.",
+      "Centered illustration of a mate gourd with bombilla and curling steam, drawn in delicate line art with rose blush accents and a soft watercolor wash. Small hand-written cursive script 'Buen día' below in the same rose blush ink. Centered on the chest.",
     description:
-      "Remera classic blanca con ilustracion central de mate con bombilla y vapor. Estilo line art delicado en rose blush. Para empezar la manana con onda. Algodon 100% peinado, estampado DTG.",
+      "Remera Aldea Classic Fit blanca con ilustración central de mate con bombilla y vapor en line art rose blush. Pequeño lettering 'Buen día' debajo. Algodón 100% peinado, estampado DTG.",
   },
   {
     name: "Buzo Hoodie 'Emprende Bonito'",
     slug: "buzo-hoodie-emprende-bonito",
     category: "Hoodie",
-    garment_color: "cream",
-    garmentDescription: "cream/dusty pink oversize hoodie",
+    baseGarmentImage: "hoodie-crema-front.png",
     price: 55000,
     designConcept:
-      "Cursive script lettering 'Emprende Bonito' in deep wine color, framed by a delicate botanical wreath (leaves, small florals, hearts). Centered on chest. Romantic artisan feel.",
+      "Cursive script lettering 'Emprende Bonito' in deep wine / dusty rose color, framed by a delicate botanical wreath (leaves, small florals, tiny hearts and a small mate gourd at the bottom of the wreath). Centered on the chest area of the hoodie. Romantic artisan emprendedora vibe.",
     description:
-      "Hoodie oversize en tono crema con la frase 'Emprende Bonito' rodeada de una guirnalda botanica delicada. Para emprendedoras que aman lo lindo. Algodon frizado premium, estampado DTG de alta calidad.",
+      "Buzo Hoodie Oversize crema con 'Emprendé Bonito' en lettering cursivo rodeado de guirnalda botánica. Algodón frizado premium, estampado DTG de alta calidad.",
   },
   {
-    name: "Musculosa 'Corazon Mate'",
+    name: "Musculosa 'Corazón Mate'",
     slug: "musculosa-corazon-mate",
     category: "Musculosa",
-    garment_color: "white",
-    garmentDescription: "white tank top / musculosa",
+    baseGarmentImage: "musculosa-bali-blanca/Musculosa_Rib_Blanca.png",
     price: 23500,
     designConcept:
-      "Minimalist mate gourd inside a hand-drawn heart outline, rose blush color, centered small print on chest. Single-line continuous drawing style. Romantic and tiny.",
+      "Small minimalist illustration on the chest: a mate gourd outlined inside a hand-drawn heart shape, in rose blush ink. Single-line continuous drawing style. Tiny and delicate, centered on the chest area.",
     description:
-      "Musculosa morley blanca con diseno minimalista: un mate dibujado dentro de un corazon en lettering hand-drawn. Pequeno, delicado y femenino. Algodon 100%, perfecta para el verano emprendedor.",
+      "Musculosa Bali rib blanca con diseño minimalista: un mate dentro de un corazón en line art rose blush. Pequeño y delicado. Algodón 100%, perfecta para el verano.",
   },
   {
     name: "Remera Oversize 'Kari Market Floral'",
     slug: "remera-oversize-kari-floral",
     category: "Remera Oversize",
-    garment_color: "white",
-    garmentDescription: "white oversize t-shirt",
+    baseGarmentImage: "aura-tshirt-blanco-front.jpeg",
     price: 32000,
     designConcept:
-      "Botanical floral pattern in rose blush and dusty pink — small repeated motifs of leaves, tiny hearts, mate gourds and shopping bags (matching the Kari Market logo style). Distributed across the front of the chest. Cohesive with the brand logo aesthetic.",
+      "Botanical floral pattern across the chest area in rose blush and dusty pink. Small repeated motifs scattered organically: leaves, tiny hearts, small mate gourds and small shopping bag silhouettes (matching the Kari Market logo identity). Cursive 'Kari Market' script in the center, with 'Mates personalizados & emprendimientos' in small lettering underneath.",
     description:
-      "Remera oversize blanca con patron floral botanico en rose blush. Motivos repetidos de hojas, corazones, mates y bolsas — la firma visual de Kari Market. Algodon 100%, estampado DTG premium.",
+      "Remera Aura Oversize blanca con patrón floral firma de Kari Market: hojas, corazones, mates y bolsas en rose blush. Algodón 100%, estampado DTG premium.",
   },
 ]
 
 // ─── helpers Gemini + upload ──────────────────────────────────────────────────
-async function geminiGenerateImage(prompt: string): Promise<{ base64: string; mimeType: string } | null> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent?key=${GEMINI_API_KEY}`
+
+interface ImageInput {
+  base64: string
+  mimeType: string
+}
+
+function loadImageAsInput(absolutePath: string): ImageInput {
+  const buffer = readFileSync(absolutePath)
+  const ext = absolutePath.toLowerCase().split(".").pop() || "jpeg"
+  const mimeType =
+    ext === "png" ? "image/png"
+    : ext === "webp" ? "image/webp"
+    : "image/jpeg"
+  return { base64: buffer.toString("base64"), mimeType }
+}
+
+async function geminiGenerateImage(
+  prompt: string,
+  inputImages: ImageInput[] = [],
+): Promise<{ base64: string; mimeType: string } | null> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MOCKUP_MODEL}:generateContent?key=${GEMINI_API_KEY}`
   try {
+    const parts: any[] = [{ text: prompt }]
+    for (const img of inputImages) {
+      parts.push({ inline_data: { mime_type: img.mimeType, data: img.base64 } })
+    }
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [{ parts }],
         generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
       }),
     })
     const data = await res.json()
+    if (data.error) {
+      console.error("    ✗ Gemini API error:", data.error.message)
+      return null
+    }
     for (const cand of data.candidates ?? []) {
       for (const part of cand.content?.parts ?? []) {
         if (part.inlineData?.mimeType?.startsWith("image/") && part.inlineData?.data) {
           return { base64: part.inlineData.data, mimeType: part.inlineData.mimeType }
+        }
+        // snake_case fallback
+        if (part.inline_data?.mime_type?.startsWith("image/") && part.inline_data?.data) {
+          return { base64: part.inline_data.data, mimeType: part.inline_data.mime_type }
         }
       }
     }
@@ -238,15 +266,19 @@ function buildBannerPrompt(): string {
 
 function buildProductPrompt(p: ProductSpec): string {
   return [
-    `Professional product photography of a ${p.garmentDescription} with a custom screen-printed graphic design on the chest area, front view.`,
-    `The design: ${p.designConcept}`,
-    `Brand: "Kari Market" — ${KARI_BRANDING.tagline}.`,
-    `Aesthetic: ${KARI_AESTHETIC_BASE}.`,
-    "Style: high-end artisan brand lookbook photo, soft natural lighting, clean cream/off-white gradient background.",
-    "Flat-lay or invisible mannequin, centered, full garment visible, ample empty space around.",
-    "DO NOT include human models or faces. DO NOT add watermarks or text overlays beyond the printed design itself.",
-    "The printed design should be delicate, feminine, and clearly visible.",
-  ].join(" ")
+    "You are creating a product mockup for an e-commerce storefront.",
+    "INPUT IMAGE 1 is the EXACT garment to use (a real Novamente product photo).",
+    "INPUT IMAGE 2 is the brand logo of 'Kari Market' — use it ONLY as a style/aesthetic reference for the print design (color palette: rose blush #D9A6A6, cream, dusty pink; hand-drawn cursive lettering; line art with botanical and mate motifs).",
+    "TASK: Generate a new product photo that keeps INPUT IMAGE 1 IDENTICAL (same garment, same color, same fit, same background, same lighting, same angle) but adds a CUSTOM PRINTED GRAPHIC on the chest area.",
+    `The print design concept: ${p.designConcept}`,
+    "CRITICAL RULES:",
+    "- Do NOT change the garment shape, color, fabric or background.",
+    "- Do NOT change the photographic style.",
+    "- ONLY add the printed graphic on the chest, as if it were screen-printed / DTG printed.",
+    "- The print must be in rose blush / dusty pink tones, hand-drawn aesthetic, matching the Kari Market brand from INPUT IMAGE 2.",
+    "- Do NOT include human models or faces. Do NOT add watermarks, brand stamps, or extra text outside the print itself.",
+    "- The print should look professionally printed onto the garment (with the natural fabric texture showing through).",
+  ].join("\n")
 }
 
 // ─── main ─────────────────────────────────────────────────────────────────────
@@ -358,14 +390,21 @@ async function main() {
 
     let imgUrl: string | null = null
     if (SKIP_GEN) {
-      // Reusar imagen ya subida en run anterior
-      const path = `products/${tenant.id}/kari-${p.slug}.jpg`
+      const path = `products/${tenant.id}/kari-${p.slug}.png`
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
       imgUrl = data.publicUrl
       console.log(`    → Reusando imagen ya subida: ${imgUrl}`)
     } else {
-      console.log(`    → Generando mockup via Gemini (${GEMINI_IMAGE_MODEL})...`)
-      const img = await geminiGenerateImage(buildProductPrompt(p))
+      console.log(`    → Generando mockup via Gemini (${GEMINI_MOCKUP_MODEL})...`)
+      console.log(`      Base garment: ${p.baseGarmentImage}`)
+      const garmentPath = resolve(PRODUCTS_DIR, p.baseGarmentImage)
+      if (!existsSync(garmentPath)) {
+        console.warn(`    ⚠ Foto base no encontrada: ${garmentPath}`)
+        continue
+      }
+      const garmentInput = loadImageAsInput(garmentPath)
+      const logoInput = loadImageAsInput(LOGO_LOCAL_PATH)
+      const img = await geminiGenerateImage(buildProductPrompt(p), [garmentInput, logoInput])
       if (!img) {
         console.warn(`    ⚠ Mockup no generado, skip producto`)
         continue
