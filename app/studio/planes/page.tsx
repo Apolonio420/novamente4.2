@@ -312,7 +312,7 @@ export default function PlanesPage() {
             <Link href="/lanza-tu-marca">
               <Button size="lg">Empezar gratis</Button>
             </Link>
-            <Link href="/partners">
+            <Link href="/studio">
               <Button size="lg" variant="outline">
                 Conocer Novamente Studio
               </Button>

@@ -94,11 +94,11 @@ export function Navbar() {
     },
     {
       label: "STUDIO",
-      href: "/partners",
+      href: "/studio",
       isDropdown: true,
       subItems: [
+        { label: "NOVAMENTE STUDIO", href: "/studio" },
         { label: "LANZÁ TU MARCA", href: "/lanza-tu-marca" },
-        { label: "NOVAMENTE STUDIO", href: "/partners" },
         { label: "PLANES Y PRECIOS", href: "/studio/planes" },
         { label: "COTIZAR PRODUCCIÓN", href: "/cotizador" },
         { label: "MI WORKSPACE", href: "/partners/login" },

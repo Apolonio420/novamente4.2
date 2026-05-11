@@ -280,7 +280,7 @@ export default async function MarcasPage() {
                 <Link href="/lanza-tu-marca">
                   <Button size="lg">Lanzá tu marca gratis</Button>
                 </Link>
-                <Link href="/partners">
+                <Link href="/studio">
                   <Button size="lg" variant="outline">
                     Conocer Novamente Studio
                   </Button>

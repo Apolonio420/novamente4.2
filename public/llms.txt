@@ -64,11 +64,14 @@
 - [Surf Club](https://www.novamente.ar/p/surf-club): Coleccion surf y lifestyle
 - [Ventolito Wind Surf](https://www.novamente.ar/p/ventolito-wind-surf): Windsurf lifestyle apparel
 
-## Programa Partners (B2B)
+## Novamente Studio (B2B)
 
-- [Partners](https://www.novamente.ar/partners): Lanza tu marca de ropa sin inversion inicial
-- [Unirse](https://www.novamente.ar/partners/join): Onboarding con 3 planes (Starter gratis, Growth $50 USD/mes, Pro $100 USD/mes)
-- [Directorio publico](https://www.novamente.ar/marcas): Marcas que ya estan vendiendo con Novamente
+- [Novamente Studio](https://www.novamente.ar/studio): Hub canonico de la plataforma B2B — storefront, IA, growth para marcas
+- [Planes y precios](https://www.novamente.ar/studio/planes): Grilla detallada con los 3 planes (Starter gratis, Growth USD$50/mes con prendas a costo + $1.000 ARS, Pro USD$100/mes con chatbot WhatsApp/IG y automatizacion de contenido IG/FB/X) + tabla de precios por prenda
+- [Lanza tu marca](https://www.novamente.ar/lanza-tu-marca): Landing especifica para emprendedores que quieren lanzar una marca de ropa sin inversion
+- [Unirse al programa](https://www.novamente.ar/partners/join): Onboarding paso a paso
+- [Mi workspace](https://www.novamente.ar/partners/login): Login para partners activos
+- [Partners (legacy)](https://www.novamente.ar/partners): URL anterior del hub Studio, sigue activa durante el periodo de transicion
 
 ## Empresa
 
