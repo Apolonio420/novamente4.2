@@ -8,13 +8,12 @@ import {
   getPartnerPlanPrice,
   getPlanMargin,
   formatPrice,
-  PLAN_GROWTH_PRO_MARGIN_ARS,
 } from "@/lib/partners/garment-pricing"
 
 export const metadata: Metadata = {
   title: "Planes y precios — Novamente Studio",
   description:
-    "Conocé los planes de Novamente Studio: Starter gratis, Growth USD$50/mes con prendas a costo + $1.000 ARS, y Pro USD$100/mes con chatbot WhatsApp/Instagram y automatización de contenido para tu marca.",
+    "Conocé los planes de Novamente Studio: Starter gratis, Growth USD$50/mes con prendas al costo Novamente, y Pro USD$100/mes con chatbot WhatsApp/Instagram y automatización de contenido para tu marca.",
   alternates: { canonical: "https://www.novamente.ar/studio/planes" },
   openGraph: {
     title: "Planes Novamente Studio — Starter, Growth, Pro",
@@ -53,7 +52,7 @@ const planSchema = {
         name: "Growth",
         price: "50",
         priceCurrency: "USD",
-        description: "Plan para marcas en crecimiento. Prendas a costo + $1.000 ARS + branding completo + analytics.",
+        description: "Plan para marcas en crecimiento. Prendas al costo Novamente + branding completo + analytics.",
         url: `${baseUrl}/studio/planes`,
       },
       {
@@ -88,15 +87,15 @@ const faqSchema = {
       name: "¿Cuál es la diferencia entre Starter, Growth y Pro?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Starter es gratis: storefront propio, diseño con IA, hasta 10 productos y 20 leads/mes, prendas a precio retail. Growth (USD$50/mes) suma productos y leads ilimitados, SEO completo, Design Engine, analytics y prendas a costo + $1.000 ARS (margen alto para el partner). Pro (USD$100/mes) suma chatbot WhatsApp + Instagram DM, automatización de contenido IG/FB/X, setup Meta Business, plantillas de Meta Ads y onboarding 1:1.",
+        text: "Starter es gratis: storefront propio, diseño con IA, hasta 10 productos y 20 leads/mes, prendas a precio retail. Growth (USD$50/mes) suma productos y leads ilimitados, SEO completo, Design Engine, analytics y prendas al costo Novamente (margen alto para el partner). Pro (USD$100/mes) suma chatbot WhatsApp + Instagram DM, automatización de contenido IG/FB/X, setup Meta Business, plantillas de Meta Ads y onboarding 1:1.",
       },
     },
     {
       "@type": "Question",
-      name: "¿Qué significa 'prendas a costo + $1.000 ARS'?",
+      name: "¿Qué significa 'prendas al costo'?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "En los planes Growth y Pro, el partner paga el costo de producción Novamente más solo $1.000 ARS de margen para nosotros. Por ejemplo, una remera Aldea sale $25.696 (en vez de $28.600 retail). El partner vende a precio retail en su storefront y se queda con todo el margen restante.",
+        text: "En los planes Growth y Pro, el partner paga el costo de producción Novamente sin nuestro margen retail. Por ejemplo, una remera Aldea sale $25.696 (en vez de $28.600 retail). El partner vende a precio retail en su storefront y se queda con todo el margen.",
       },
     },
     {
@@ -151,7 +150,7 @@ const howToSchema = {
       "@type": "HowToStep",
       position: 2,
       name: "Upgradeá a Growth cuando empieces a vender",
-      text: "Cuando estés haciendo 10+ ventas/mes, el plan Growth (USD$50/mes) se paga solo: las prendas pasan a costo + $1.000 ARS y tu margen por unidad sube ~$3.000-$24.000 según producto. También sumás SEO, analytics y branding avanzado.",
+      text: "Cuando estés haciendo 10+ ventas/mes, el plan Growth (USD$50/mes) se paga solo: las prendas pasan al costo Novamente y tu margen por unidad sube ~$3.000-$24.000 según producto. También sumás SEO, analytics y branding avanzado.",
     },
     {
       "@type": "HowToStep",
@@ -256,7 +255,7 @@ export default function PlanesPage() {
           <ul className="space-y-3 text-sm flex-1 mb-6">
             {[
               "Todo lo del plan Starter",
-              "Prendas a costo + $1.000 ARS (margen alto)",
+              "Prendas al costo Novamente (margen alto)",
               "Productos ilimitados",
               "Leads ilimitados",
               "Branding avanzado (fuentes, estilos, CTA custom)",
@@ -335,8 +334,8 @@ export default function PlanesPage() {
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold mb-3">Cuánto pagás por cada prenda</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            En el plan Growth y Pro pagás solo {formatPrice(PLAN_GROWTH_PRO_MARGIN_ARS)} por encima del costo Novamente
-            — el margen es tuyo. En Starter pagás el precio retail web.
+            En los planes Growth y Pro pagás el costo Novamente — el margen es tuyo. En Starter pagás el precio
+            retail web.
           </p>
         </div>
 
@@ -351,7 +350,7 @@ export default function PlanesPage() {
                 </th>
                 <th className="text-right py-4 px-4 font-semibold text-primary bg-primary/5">
                   Growth · Pro
-                  <div className="text-[10px] font-normal mt-0.5 text-muted-foreground">costo + $1.000</div>
+                  <div className="text-[10px] font-normal mt-0.5 text-muted-foreground">al costo Novamente</div>
                 </th>
                 <th className="text-right py-4 px-4 font-medium text-muted-foreground">
                   Tu margen Growth

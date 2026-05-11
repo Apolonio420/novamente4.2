@@ -127,6 +127,6 @@ export const PLAN_NAMES: Record<Plan, string> = {
 
 export const PLAN_DESCRIPTIONS: Record<Plan, string> = {
   starter: 'Ideal para empezar. Storefront con branding completo. Prendas a precio retail.',
-  growth: 'Para marcas que quieren crecer. Prendas a costo + $1.000 ARS, SEO, Design Engine y analytics.',
+  growth: 'Para marcas que quieren crecer. Prendas al costo Novamente, SEO, Design Engine y analytics.',
   pro: 'Experiencia completa con chatbot WhatsApp + Instagram, automatización de contenido y Meta Ads.',
 }

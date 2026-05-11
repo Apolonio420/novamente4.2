@@ -85,7 +85,7 @@ const TIERS: { plan: Plan; popular?: boolean; features: string[] }[] = [
     popular: true,
     features: [
       'Todo lo de Starter +',
-      'Prendas a costo + $1.000 ARS (margen alto)',
+      'Prendas al costo Novamente (margen alto)',
       'Branding avanzado (fuentes, estilos, CTA)',
       'Productos ilimitados',
       'Leads ilimitados',
@@ -132,7 +132,7 @@ const partnersFaqJsonLd = {
       name: "¿Cuánto cuesta Novamente Studio?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Hay 3 planes: Starter es gratis (hasta 10 productos, 20 leads/mes, prendas a precio retail). Growth cuesta USD$50/mes y suma productos ilimitados, SEO, Design Engine, analytics y prendas a costo + $1.000 ARS (margen alto para el partner). Pro cuesta USD$100/mes y suma chatbot WhatsApp + Instagram, automatización de contenido para IG/FB/X, Meta Ads y onboarding 1:1.",
+        text: "Hay 3 planes: Starter es gratis (hasta 10 productos, 20 leads/mes, prendas a precio retail). Growth cuesta USD$50/mes y suma productos ilimitados, SEO, Design Engine, analytics y prendas al costo Novamente (margen alto para el partner). Pro cuesta USD$100/mes y suma chatbot WhatsApp + Instagram, automatización de contenido para IG/FB/X, Meta Ads y onboarding 1:1.",
       },
     },
     {

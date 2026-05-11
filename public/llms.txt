@@ -71,7 +71,7 @@
 ## Novamente Studio (B2B)
 
 - [Novamente Studio](https://www.novamente.ar/studio): Hub canonico de la plataforma B2B — storefront, IA, growth para marcas
-- [Planes y precios](https://www.novamente.ar/studio/planes): Grilla detallada con los 3 planes (Starter gratis, Growth USD$50/mes con prendas a costo + $1.000 ARS, Pro USD$100/mes con chatbot WhatsApp/IG y automatizacion de contenido IG/FB/X) + tabla de precios por prenda
+- [Planes y precios](https://www.novamente.ar/studio/planes): Grilla detallada con los 3 planes (Starter gratis con prendas a precio retail, Growth USD$50/mes con prendas al costo Novamente, Pro USD$100/mes con chatbot WhatsApp/IG y automatizacion de contenido IG/FB/X) + tabla de precios por prenda
 - [Lanza tu marca](https://www.novamente.ar/lanza-tu-marca): Landing especifica para emprendedores que quieren lanzar una marca de ropa sin inversion
 - [Unirse al programa](https://www.novamente.ar/partners/join): Onboarding paso a paso
 - [Mi workspace](https://www.novamente.ar/partners/login): Login para partners activos

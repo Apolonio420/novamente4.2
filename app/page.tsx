@@ -757,8 +757,8 @@ export default function Home() {
               </p>
               <p className="text-sm text-muted-foreground/80 max-w-3xl mx-auto mt-4">
                 Plan <span className="text-foreground font-medium">Starter gratis</span>, plan{" "}
-                <span className="text-foreground font-medium">Growth a USD$50/mes</span> con prendas a costo + $1.000
-                ARS, y plan <span className="text-foreground font-medium">Pro a USD$100/mes</span> con chatbot
+                <span className="text-foreground font-medium">Growth a USD$50/mes</span> con prendas al costo,
+                y plan <span className="text-foreground font-medium">Pro a USD$100/mes</span> con chatbot
                 WhatsApp/Instagram y automatización de contenido.
               </p>
             </div>

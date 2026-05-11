@@ -19,7 +19,7 @@ import PartnersPage from "../partners/page"
 export const metadata: Metadata = {
   title: "Novamente Studio — Lanzá tu marca con storefront, IA y growth",
   description:
-    "Novamente Studio es la plataforma para que marcas, creadores y negocios lancen su tienda online con storefront propio, diseño con IA, producción on-demand y growth comercial. Empezá gratis con plan Starter, escalá a Growth USD$50/mes con prendas a costo + $1.000 ARS, o Pro USD$100/mes con chatbot y automatización de contenido.",
+    "Novamente Studio es la plataforma para que marcas, creadores y negocios lancen su tienda online con storefront propio, diseño con IA, producción on-demand y growth comercial. Empezá gratis con plan Starter, escalá a Growth USD$50/mes con prendas al costo Novamente, o Pro USD$100/mes con chatbot y automatización de contenido.",
   alternates: { canonical: "https://www.novamente.ar/studio" },
   openGraph: {
     title: "Novamente Studio — Storefront + IA + Growth para tu marca",
