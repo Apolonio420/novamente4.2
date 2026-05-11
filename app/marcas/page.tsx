@@ -36,7 +36,11 @@ const BLOCKED_SLUGS = new Set([
   "propiedades-del-sur",
   "studio-bella",
   "textilpro-mayorista",
+  "cristian-dior",
 ])
+
+// Tambien matcheamos por nombre (lowercase) para slugs alternativos del mismo partner
+const BLOCKED_NAMES_LOWERCASE = new Set(["cristian dior"])
 
 // Industries no afines al universo Novamente (indumentaria/cultura/marca personal).
 // Si un partner se registra en una industry no afin, no aparece en el directorio publico.
@@ -53,9 +57,11 @@ const BLOCKED_INDUSTRIES = new Set([
 function isPartnerVisibleInDirectory(t: Tenant): boolean {
   if (BLOCKED_SLUGS.has(t.slug)) return false
   if (t.industry && BLOCKED_INDUSTRIES.has(t.industry)) return false
-  // Heuristica de cuentas de prueba en nombre o slug
-  const lowerName = t.name.toLowerCase()
+  const lowerName = t.name.toLowerCase().trim()
   const lowerSlug = t.slug.toLowerCase()
+  // Match exacto por nombre (case-insensitive) — para evitar suplantaciones de marcas reales
+  if (BLOCKED_NAMES_LOWERCASE.has(lowerName)) return false
+  // Heuristica de cuentas de prueba
   if (lowerName.includes("test") || lowerName.includes("demo")) return false
   if (lowerSlug.includes("test") || lowerSlug.includes("demo")) return false
   return true
