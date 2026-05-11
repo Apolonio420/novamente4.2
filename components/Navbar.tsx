@@ -103,7 +103,7 @@ export function Navbar() {
         { label: "MI WORKSPACE", href: "/partners/login" },
       ]
     },
-    { label: "MARCAS", href: "/merchs" },
+    { label: "MARCAS", href: "/marcas" },
     { label: "FAQ", href: "/faq" },
   ]
 

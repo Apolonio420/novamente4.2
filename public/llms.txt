@@ -57,8 +57,9 @@
 - [Comparador de productos](https://www.novamente.ar/comparar): Compara modelos lado a lado
 - [Informacion de envios](https://www.novamente.ar/envios): Costos y tiempos de envio a todo el pais
 
-## Marcas Partner
+## Marcas que producen con Novamente
 
+- [Directorio publico de marcas](https://www.novamente.ar/marcas): Listado completo de bandas, artistas, creadores, comunidades y emprendedores con storefront en Novamente — comprá directo a la marca, producción on-demand y DTG premium
 - [Maldito Demonio](https://www.novamente.ar/p/maldito-demonio): Streetwear con diseños dark y emocionales
 - [Surf Club](https://www.novamente.ar/p/surf-club): Coleccion surf y lifestyle
 - [Ventolito Wind Surf](https://www.novamente.ar/p/ventolito-wind-surf): Windsurf lifestyle apparel
@@ -66,8 +67,8 @@
 ## Programa Partners (B2B)
 
 - [Partners](https://www.novamente.ar/partners): Lanza tu marca de ropa sin inversion inicial
-- [Unirse](https://www.novamente.ar/partners/join): Onboarding con 3 planes (Starter gratis, Growth $25 USD/mes, Pro $100 USD/mes)
-- [Directorio de partners](https://www.novamente.ar/partners/directory): Marcas que usan la plataforma
+- [Unirse](https://www.novamente.ar/partners/join): Onboarding con 3 planes (Starter gratis, Growth $50 USD/mes, Pro $100 USD/mes)
+- [Directorio publico](https://www.novamente.ar/marcas): Marcas que ya estan vendiendo con Novamente
 
 ## Empresa
 
