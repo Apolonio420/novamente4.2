@@ -73,8 +73,92 @@ const breadcrumbSchema = {
   "@type": "BreadcrumbList",
   itemListElement: [
     { "@type": "ListItem", position: 1, name: "Inicio", item: `${baseUrl}/` },
-    { "@type": "ListItem", position: 2, name: "Studio", item: `${baseUrl}/partners` },
+    { "@type": "ListItem", position: 2, name: "Studio", item: `${baseUrl}/studio` },
     { "@type": "ListItem", position: 3, name: "Planes", item: `${baseUrl}/studio/planes` },
+  ],
+}
+
+// FAQ schema — preguntas frecuentes sobre los planes
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "¿Cuál es la diferencia entre Starter, Growth y Pro?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Starter es gratis: storefront propio, diseño con IA, hasta 10 productos y 20 leads/mes, prendas a precio retail. Growth (USD$50/mes) suma productos y leads ilimitados, SEO completo, Design Engine, analytics y prendas a costo + $1.000 ARS (margen alto para el partner). Pro (USD$100/mes) suma chatbot WhatsApp + Instagram DM, automatización de contenido IG/FB/X, setup Meta Business, plantillas de Meta Ads y onboarding 1:1.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "¿Qué significa 'prendas a costo + $1.000 ARS'?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "En los planes Growth y Pro, el partner paga el costo de producción Novamente más solo $1.000 ARS de margen para nosotros. Por ejemplo, una remera Aldea sale $25.696 (en vez de $28.600 retail). El partner vende a precio retail en su storefront y se queda con todo el margen restante.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "¿Puedo cambiar de plan en cualquier momento?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Sí. Podés empezar en Starter sin tarjeta, upgradear a Growth cuando empieces a vender, y a Pro cuando necesites el chatbot y la automatización. También se puede bajar de plan o cancelar cuando quieras, sin compromiso.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "¿Qué incluye el chatbot del plan Pro?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "El plan Pro incluye un chatbot personalizado para WhatsApp e Instagram DM que atiende consultas, ofrece productos y cierra ventas 24/7. También viene con setup completo de Meta Business, plantillas de Meta Ads, feed Meta Commerce, y automatización de contenido para postear en Instagram, Facebook y X.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "¿Los planes anuales tienen descuento?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Sí, los planes anuales tienen 15% de descuento. Growth anual sale US$42.5/mes (US$510/año) y Pro anual sale US$85/mes (US$1.020/año). El pago se factura en ARS al tipo de cambio del día.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "¿Aparezco en el directorio /marcas?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Sí. Todas las marcas con storefront publicado aparecen en novamente.ar/marcas. Los planes Pro aparecen primero (badge destacado), después Growth (badge Growth), después Starter. El orden dentro de cada plan es por completitud del perfil.",
+      },
+    },
+  ],
+}
+
+// HowTo schema — como elegir tu plan
+const howToSchema = {
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  name: "Cómo elegir tu plan de Novamente Studio",
+  description: "Guía rápida para decidir entre los planes Starter (gratis), Growth (USD$50) y Pro (USD$100).",
+  step: [
+    {
+      "@type": "HowToStep",
+      position: 1,
+      name: "Empezá con Starter si estás probando",
+      text: "Si todavía no tenés audiencia o estás validando si querés vender ropa, arrancá con Starter (gratis). Tenés storefront, IA y producción on-demand. Prendas a precio retail, margen menor.",
+    },
+    {
+      "@type": "HowToStep",
+      position: 2,
+      name: "Upgradeá a Growth cuando empieces a vender",
+      text: "Cuando estés haciendo 10+ ventas/mes, el plan Growth (USD$50/mes) se paga solo: las prendas pasan a costo + $1.000 ARS y tu margen por unidad sube ~$3.000-$24.000 según producto. También sumás SEO, analytics y branding avanzado.",
+    },
+    {
+      "@type": "HowToStep",
+      position: 3,
+      name: "Subí a Pro cuando quieras escalar con automatización",
+      text: "El plan Pro (USD$100/mes) suma chatbot WhatsApp + Instagram DM que vende por vos 24/7, automatización de contenido para IG/FB/X, setup Meta Business, plantillas de ads y onboarding 1:1. Ideal cuando ya no podés escalar manualmente.",
+    },
   ],
 }
 
@@ -94,6 +178,8 @@ export default function PlanesPage() {
     <div className="container mx-auto px-4 py-10 md:py-16 max-w-6xl">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(planSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }} />
 
       {/* Header */}
       <header className="text-center mb-12 md:mb-16">

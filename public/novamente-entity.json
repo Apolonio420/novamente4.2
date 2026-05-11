@@ -42,13 +42,42 @@
     "Estampado DTG",
     "Produccion textil on-demand",
     "Merchandising para bandas y creadores",
-    "Storefronts para marcas sin stock"
+    "Storefronts para marcas sin stock",
+    "Chatbot WhatsApp e Instagram para ecommerce",
+    "Automatizacion de contenido para Instagram, Facebook y X"
   ],
   "mainEntityOfPage": [
     "https://www.novamente.ar/nosotros",
+    "https://www.novamente.ar/studio",
+    "https://www.novamente.ar/studio/planes",
+    "https://www.novamente.ar/marcas",
     "https://www.novamente.ar/partners",
+    "https://www.novamente.ar/lanza-tu-marca",
     "https://www.novamente.ar/blog/novamente-vs-printful-argentina",
     "https://www.novamente.ar/blog/novamente-vs-fullprinted",
     "https://www.novamente.ar/blog/dtg-todo-lo-que-necesitas-saber"
+  ],
+  "makesOffer": [
+    {
+      "@type": "Offer",
+      "name": "Plan Starter",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "Plan gratis. Storefront propio, diseno con IA, produccion on-demand. Prendas a precio retail."
+    },
+    {
+      "@type": "Offer",
+      "name": "Plan Growth",
+      "price": "50",
+      "priceCurrency": "USD",
+      "description": "USD$50/mes. Prendas a costo + $1.000 ARS, productos y leads ilimitados, SEO completo, Design Engine, analytics."
+    },
+    {
+      "@type": "Offer",
+      "name": "Plan Pro",
+      "price": "100",
+      "priceCurrency": "USD",
+      "description": "USD$100/mes. Todo lo de Growth + chatbot WhatsApp e Instagram DM, automatizacion de contenido para Instagram, Facebook y X, setup Meta Business y onboarding 1:1."
+    }
   ]
 }
