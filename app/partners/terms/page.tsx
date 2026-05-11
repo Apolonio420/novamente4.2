@@ -97,15 +97,17 @@ export default function TermsPage() {
                 10 productos y 20 leads por mes.
               </li>
               <li>
-                <span className="text-zinc-200 font-medium">Growth</span> — $25
-                USD/mes. Productos ilimitados, leads ilimitados, SEO completo,
-                Design Engine, branding avanzado y analytics basicos.
+                <span className="text-zinc-200 font-medium">Growth</span> — USD$50
+                /mes. Productos ilimitados, leads ilimitados, SEO completo,
+                Design Engine, branding avanzado, analytics basicos y prendas
+                a costo + $1.000 ARS (margen alto para el partner).
               </li>
               <li>
-                <span className="text-zinc-200 font-medium">Pro</span> — $100
-                USD/mes. Todo lo de Growth mas chatbot WhatsApp, setup Meta
-                Business, templates de Ads, analytics avanzados y soporte
-                prioritario.
+                <span className="text-zinc-200 font-medium">Pro</span> — USD$100
+                /mes. Todo lo de Growth mas chatbot WhatsApp + Instagram DM,
+                automatizacion de contenido para Instagram, Facebook y X, setup
+                Meta Business, plantillas de Ads, feed Meta Commerce, analytics
+                avanzados, onboarding 1:1 y soporte WhatsApp prioritario.
               </li>
             </ul>
             <p className="mt-3">

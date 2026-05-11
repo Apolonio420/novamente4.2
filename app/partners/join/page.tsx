@@ -1424,7 +1424,7 @@ const PLAN_CARDS = [
   {
     id: 'growth' as const,
     name: 'Growth',
-    price: '$25 USD',
+    price: '$50 USD',
     priceDetail: '/mes',
     icon: Rocket,
     color: 'purple',

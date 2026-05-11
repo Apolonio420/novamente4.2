@@ -99,6 +99,7 @@ export function Navbar() {
       subItems: [
         { label: "LANZÁ TU MARCA", href: "/lanza-tu-marca" },
         { label: "NOVAMENTE STUDIO", href: "/partners" },
+        { label: "PLANES Y PRECIOS", href: "/studio/planes" },
         { label: "COTIZAR PRODUCCIÓN", href: "/cotizador" },
         { label: "MI WORKSPACE", href: "/partners/login" },
       ]

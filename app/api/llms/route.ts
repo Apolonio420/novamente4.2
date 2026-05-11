@@ -83,7 +83,7 @@ Anime, Art Deco, Bauhaus, Botanical, Brutalist, Chibi, Comic, Cyberpunk, Dark Fa
 ## Programa de Partners (B2B)
 Novamente ofrece storefronts a marcas y creadores para vender merch premium sin stock ni logística. 3 planes:
 - **Starter** (gratis): Tienda básica, hasta 5 productos
-- **Growth** ($25 USD/mes): SEO, dominio personalizado, analytics
+- **Growth** (USD$50/mes): prendas a costo + $1.000 ARS, SEO completo, Design Engine, analytics, productos y leads ilimitados
 - **Pro** ($100 USD/mes): Google Shopping feed, prioridad de producción, soporte dedicado
 ${partnersSection}
 ## Comparativas utiles

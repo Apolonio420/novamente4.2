@@ -98,21 +98,24 @@ export function canReceiveLead(plan: Plan, currentMonthCount: number): boolean {
 }
 
 // Pricing in USD (converted to ARS at checkout)
+// Updated 2026-05-11 (PR 5 re-arquitectura): Growth 25→50, agrega beneficio
+// "prendas a costo + $1.000 ARS". Pro mantiene $100, agrega chatbot WhatsApp/IG
+// + automatización de contenido IG/FB/X.
 export const PLAN_PRICING_USD: Record<Plan, number> = {
   starter: 0,
-  growth: 25,
+  growth: 50,
   pro: 100,
 }
 
 export const PLAN_PRICING_ANNUAL_USD: Record<Plan, number> = {
   starter: 0,
-  growth: Math.round(25 * 12 * 0.85), // $255/year (15% off)
+  growth: Math.round(50 * 12 * 0.85), // $510/year (15% off)
   pro: Math.round(100 * 12 * 0.85), // $1020/year (15% off)
 }
 
 export const PLAN_PRICING_MONTHLY_FROM_ANNUAL: Record<Plan, number> = {
   starter: 0,
-  growth: Math.round(25 * 0.85 * 100) / 100, // ~$21.25/mo
+  growth: Math.round(50 * 0.85 * 100) / 100, // ~$42.5/mo
   pro: Math.round(100 * 0.85 * 100) / 100, // ~$85/mo
 }
 
@@ -123,7 +126,7 @@ export const PLAN_NAMES: Record<Plan, string> = {
 }
 
 export const PLAN_DESCRIPTIONS: Record<Plan, string> = {
-  starter: 'Ideal para empezar. Storefront con branding completo y acceso a precios mayoristas.',
-  growth: 'Para marcas que quieren crecer. SEO, Design Engine y storefront personalizable.',
-  pro: 'La experiencia completa. Chatbot, Meta Ads, soporte premium y más.',
+  starter: 'Ideal para empezar. Storefront con branding completo. Prendas a precio retail.',
+  growth: 'Para marcas que quieren crecer. Prendas a costo + $1.000 ARS, SEO, Design Engine y analytics.',
+  pro: 'Experiencia completa con chatbot WhatsApp + Instagram, automatización de contenido y Meta Ads.',
 }

@@ -10,16 +10,57 @@
 export interface GarmentPricing {
   key: string
   name: string
-  /** On-demand price (1+ units, default starting tier) */
+  /** On-demand price (1+ units, default starting tier). Used as base "cost" for plan_growth_pro. */
   on_demand: number
-  /** B2B Starter price (5+ units/month) */
+  /** B2B Starter price (5+ units/month, legacy volume-based) */
   b2b_starter: number
-  /** B2B Pro price (10+ units/month) */
+  /** B2B Pro price (10+ units/month, legacy volume-based) */
   b2b_pro: number
-  /** B2B Drop price (30+ units/month) */
+  /** B2B Drop price (30+ units/month, legacy volume-based) */
   b2b_drop: number
-  /** Suggested retail price (B2C web) */
+  /** Suggested retail price (B2C web). What Starter plan partners pay. */
   b2c_suggested: number
+}
+
+// ---------------------------------------------------------------------------
+// Plan-based pricing (Re-arquitectura 2026-05)
+// ---------------------------------------------------------------------------
+//
+// Partners en plan Growth ($50/mes) o Pro ($100/mes) acceden a precios de
+// costo + $1.000 ARS por prenda. Plan Starter (gratis) paga el precio retail
+// sugerido (b2c_suggested). El margen del partner depende del plan.
+//
+// Ver docs/seo/REARQUITECTURA-2026-05.md para la decision completa.
+
+/** Margen fijo agregado al costo (on_demand) para partners Growth/Pro. */
+export const PLAN_GROWTH_PRO_MARGIN_ARS = 1000
+
+/**
+ * Devuelve el precio que paga un partner por una prenda, segun su plan.
+ * - starter: paga retail (b2c_suggested) → casi sin margen propio
+ * - growth/pro: paga on_demand + $1.000 ARS → margen alto para el partner
+ *
+ * Retorna null si la prenda no existe en el catalogo.
+ */
+export function getPartnerPlanPrice(
+  garmentKey: string,
+  plan: 'starter' | 'growth' | 'pro'
+): number | null {
+  const pricing = ALL_GARMENT_PRICING[garmentKey]
+  if (!pricing) return null
+  if (plan === 'starter') return pricing.b2c_suggested
+  return pricing.on_demand + PLAN_GROWTH_PRO_MARGIN_ARS
+}
+
+/** Devuelve la diferencia (margen para el partner) entre retail y precio del plan. */
+export function getPlanMargin(
+  garmentKey: string,
+  plan: 'starter' | 'growth' | 'pro'
+): number {
+  const pricing = ALL_GARMENT_PRICING[garmentKey]
+  if (!pricing) return 0
+  const partnerPrice = getPartnerPlanPrice(garmentKey, plan) ?? 0
+  return Math.max(0, pricing.b2c_suggested - partnerPrice)
 }
 
 export const GARMENT_PRICING: Record<string, GarmentPricing> = {
