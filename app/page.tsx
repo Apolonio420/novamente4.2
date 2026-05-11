@@ -358,7 +358,7 @@ export default function Home() {
                     </p>
                   </div>
                   <Link
-                    href="/merch"
+                    href="/marcas"
                     className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-cyan-300 hover:text-cyan-200"
                   >
                     Ver marcas que producen con nosotros →
@@ -689,6 +689,12 @@ export default function Home() {
                 catálogos, identidad visual, diseño con IA y una presencia digital más seria para marcas,
                 creadores y negocios que quieren vender mejor.
               </p>
+              <p className="text-sm text-muted-foreground/80 max-w-3xl mx-auto mt-4">
+                Plan <span className="text-foreground font-medium">Starter gratis</span>, plan{" "}
+                <span className="text-foreground font-medium">Growth a USD$50/mes</span> con prendas a costo + $1.000
+                ARS, y plan <span className="text-foreground font-medium">Pro a USD$100/mes</span> con chatbot
+                WhatsApp/Instagram y automatización de contenido.
+              </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 mb-10">
@@ -730,15 +736,20 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/partners">
+              <Link href="/studio/planes">
                 <Button size="lg" className="w-full sm:w-auto">
-                  Conocer Novamente Studio
+                  Ver planes y precios
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+              <Link href="/lanza-tu-marca">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                  Hablar sobre mi marca
+                  Lanzá tu marca gratis
+                </Button>
+              </Link>
+              <Link href="/marcas">
+                <Button size="lg" variant="ghost" className="w-full sm:w-auto">
+                  Ver marcas que ya venden
                 </Button>
               </Link>
             </div>
