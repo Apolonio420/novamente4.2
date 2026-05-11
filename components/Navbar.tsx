@@ -68,6 +68,7 @@ export function Navbar() {
       href: "/products",
       isDropdown: true,
       subItems: [
+        { label: "🔥 OFERTAS HOT SALE", href: "/ofertas" },
         { label: "CATÁLOGO COMPLETO", href: "/products" },
         { label: "REMERAS PERSONALIZADAS", href: "/remeras-personalizadas" },
         { label: "HOODIES", href: "/hoodie-personalizado" },

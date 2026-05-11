@@ -12,7 +12,8 @@ const HomeGeneratorWrapper = dynamic(() => import("@/components/HomeGeneratorWra
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowRight, Zap, Shirt, Star, Sparkles, Palette, Wand2, Quote, Users, TrendingUp, ShieldCheck, Globe, Store, Eye } from "lucide-react"
+import { ArrowRight, Zap, Shirt, Star, Sparkles, Palette, Wand2, Quote, Users, TrendingUp, ShieldCheck, Globe, Store, Eye, Flame } from "lucide-react"
+import { HOT_SALE_OFFERS, formatARS, getDiscountPercent } from "@/lib/offers"
 import Link from "next/link"
 import Image from "next/image"
 // Image history now fetches via /api/images/history (session-based)
@@ -366,6 +367,71 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Hot Sale — ofertas activas */}
+      <section className="py-16 md:py-20 border-t border-orange-500/20 bg-gradient-to-b from-orange-500/[0.04] via-transparent to-transparent">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-10">
+            <Badge className="mb-4 bg-orange-500/15 text-orange-400 border-orange-500/40 text-xs tracking-widest uppercase hover:bg-orange-500/20">
+              <Flame className="w-3 h-3 mr-1.5" />
+              Hot Sale
+            </Badge>
+            <h2 className="novamente-heading text-3xl md:text-4xl mb-3">OFERTAS DE LA SEMANA</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-base md:text-lg">
+              5 remeras oversize del mundial argentino con hasta 30% OFF — stock limitado.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-5 mb-8">
+            {HOT_SALE_OFFERS.map((offer, i) => {
+              const discount = getDiscountPercent(offer)
+              return (
+                <a
+                  key={offer.slug}
+                  href={offer.url}
+                  target="_blank"
+                  rel="noopener"
+                  className="group rounded-xl border border-border/40 bg-card/50 hover:border-orange-500/40 hover:bg-card transition-all overflow-hidden"
+                >
+                  <div className="relative aspect-square overflow-hidden bg-zinc-900">
+                    <Image
+                      src={offer.image}
+                      alt={offer.alt}
+                      fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-2 left-2">
+                      <Badge className="bg-orange-500 text-white text-[10px] tracking-widest uppercase border-0">
+                        <Flame className="w-2.5 h-2.5 mr-1" />
+                        {discount}% OFF
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="p-3">
+                    <h3 className="font-semibold text-xs md:text-sm leading-tight line-clamp-2 mb-1.5">{offer.name}</h3>
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-base md:text-lg font-bold text-orange-400">{formatARS(offer.priceCurrent)}</span>
+                      <span className="text-[11px] md:text-xs text-muted-foreground line-through">
+                        {formatARS(offer.priceOriginal)}
+                      </span>
+                    </div>
+                  </div>
+                </a>
+              )
+            })}
+          </div>
+
+          <div className="text-center">
+            <Link href="/ofertas">
+              <Button size="lg" className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white border-0">
+                Ver todas las ofertas
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
