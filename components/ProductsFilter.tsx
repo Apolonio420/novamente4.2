@@ -157,12 +157,14 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
                     <div className="border rounded-xl overflow-hidden bg-card hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                       {/* Image */}
                       <Link href={`/products/${product.id}`} className="block">
-                        <div className="aspect-square relative overflow-hidden">
+                        <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-zinc-800/40 to-zinc-900/60">
                           <Image
                             src={product.images.main || "/placeholder.svg"}
                             alt={`${product.name} — prenda personalizable de Novamente`}
                             fill
-                            priority={index < 4}
+                            priority={index < 6}
+                            fetchPriority={index < 6 ? "high" : "auto"}
+                            loading={index < 6 ? "eager" : "lazy"}
                             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                             quality={80}
                             className="object-cover group-hover:scale-105 transition-transform duration-300"

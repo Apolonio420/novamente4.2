@@ -294,6 +294,8 @@ export default function Home() {
                       src="/marketing/lifestyle/hero-merch-personalizado.webp"
                       alt="Hoodie crema Novamente en azotea San Telmo blue hour"
                       fill
+                      priority
+                      fetchPriority="high"
                       className="object-cover"
                       sizes="(max-width: 1024px) 33vw, 15vw"
                     />
@@ -305,6 +307,8 @@ export default function Home() {
                       src="/marketing/lifestyle/home-carousel-1.webp"
                       alt="Remera oversize negra Novamente con estampa streetwear urbano argentino"
                       fill
+                      priority
+                      fetchPriority="high"
                       className="object-cover"
                       sizes="(max-width: 1024px) 33vw, 15vw"
                     />
@@ -316,6 +320,8 @@ export default function Home() {
                       src="/marketing/lifestyle/home-carousel-2.webp"
                       alt="Hoodie negro Novamente con diseño impreso DTG premium"
                       fill
+                      priority
+                      fetchPriority="high"
                       className="object-cover"
                       sizes="(max-width: 1024px) 33vw, 15vw"
                     />
@@ -329,6 +335,8 @@ export default function Home() {
                       src="/marketing/lifestyle/hero-azotea-blue-hour.webp"
                       alt="Hoodie crema con estampa de fútbol Novamente"
                       fill
+                      priority
+                      fetchPriority="high"
                       className="object-cover"
                       sizes="(max-width: 1024px) 50vw, 22vw"
                     />
