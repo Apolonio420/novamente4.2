@@ -14,6 +14,7 @@ import {
   generateBreadcrumbSchema,
 } from '@/lib/partners/seo'
 import { StorefrontTracker } from '@/components/partners/storefront-tracker'
+import { AddToCartButtons } from './AddToCartButtons'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -277,22 +278,20 @@ export default async function ProductDetailPage({ params }: PageProps) {
               </div>
             )}
 
-            {/* CTA — siempre presente (fallback a WhatsApp de Novamente si el partner no cargo contacto propio) */}
-            <Button
-              asChild
-              size="lg"
-              className="mt-2 w-full text-white sm:w-auto"
-              style={{ backgroundColor: tenant.primary_color }}
-            >
-              <a href={ctaHref!} target="_blank" rel="noopener noreferrer">
-                Comprar por WhatsApp
-              </a>
-            </Button>
-            {ctaUsesFallback && (
-              <p className="mt-1 text-xs text-zinc-500">
-                Te atendemos desde Novamente y coordinamos con {tenant.name}.
-              </p>
-            )}
+            {/* CTA — carrito + buy now (Novamente checkout). El WhatsApp queda como
+                fallback de consulta para clientes que prefieren ese canal. */}
+            <AddToCartButtons
+              productId={product.id}
+              productName={product.name}
+              brandName={tenant.name}
+              category={product.category ?? null}
+              price={product.price ?? 0}
+              imageUrl={product.images?.[0] ?? null}
+              sizes={Array.isArray((product.metadata as any)?.sizes) ? (product.metadata as any).sizes : undefined}
+              fallbackWhatsappUrl={ctaHref ?? undefined}
+              whatsappLabel={ctaUsesFallback ? "Consultar a Novamente por WhatsApp" : `Consultar a ${tenant.name} por WhatsApp`}
+              primaryColor={tenant.primary_color}
+            />
 
             {/* Back to storefront */}
             <Link
