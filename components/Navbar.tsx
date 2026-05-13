@@ -28,6 +28,7 @@ export function Navbar() {
   const [user, setUser] = useState<any>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [openMobileSection, setOpenMobileSection] = useState<string | null>(null)
   const supabase = getClientSupabase()
 
   useEffect(() => { setMounted(true) }, [])
@@ -60,7 +61,10 @@ export function Navbar() {
     window.location.reload()
   }
 
-  const closeSheet = () => setIsSheetOpen(false)
+  const closeSheet = () => {
+    setIsSheetOpen(false)
+    setOpenMobileSection(null)
+  }
 
   const navItems = [
     {
@@ -215,7 +219,7 @@ export function Navbar() {
               <VisuallyHidden.Root>
                 <SheetTitle>Menú de navegación</SheetTitle>
               </VisuallyHidden.Root>
-              <div className="flex flex-col gap-6 mt-8">
+              <div className="flex flex-col gap-2 mt-8">
                 <div className="flex items-center justify-center mb-4">
                   <Logo />
                 </div>
@@ -228,7 +232,7 @@ export function Navbar() {
                           closeSheet()
                           setTimeout(scrollToGenerator, 300)
                         }}
-                        className="text-lg tracking-widest font-medium uppercase transition-colors hover:text-primary text-center"
+                        className="text-base tracking-widest font-medium uppercase transition-colors hover:text-primary text-left py-2 border-b border-border/40"
                         data-cta="header-design-mobile"
                       >
                         {item.label}
@@ -236,21 +240,40 @@ export function Navbar() {
                     )
                   }
                   if ((item as any).isDropdown) {
+                    const isOpen = openMobileSection === item.label
                     return (
-                      <div key={item.label} className="flex flex-col gap-3">
-                        <span className="text-lg tracking-widest font-medium uppercase text-muted-foreground text-center">
-                          {item.label}
-                        </span>
-                        {(item as any).subItems.map((sub: any) => (
-                          <Link
-                            key={sub.href}
-                            href={sub.href}
-                            className="text-sm tracking-widest font-normal uppercase transition-colors hover:text-primary text-center text-zinc-500 dark:text-zinc-400"
-                            onClick={closeSheet}
-                          >
-                            {sub.label}
-                          </Link>
-                        ))}
+                      <div key={item.label} className="flex flex-col border-b border-border/40 pb-3">
+                        <button
+                          type="button"
+                          onClick={() => setOpenMobileSection(isOpen ? null : item.label)}
+                          className="flex items-center justify-between w-full py-2 text-base tracking-widest font-medium uppercase transition-colors hover:text-primary"
+                          aria-expanded={isOpen}
+                        >
+                          <span>{item.label}</span>
+                          <ChevronDown
+                            className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                          />
+                        </button>
+                        <div
+                          className={`grid transition-all duration-200 ease-out ${
+                            isOpen ? "grid-rows-[1fr] opacity-100 mt-2" : "grid-rows-[0fr] opacity-0"
+                          }`}
+                        >
+                          <div className="overflow-hidden">
+                            <div className="flex flex-col gap-2 pl-3 py-1">
+                              {(item as any).subItems.map((sub: any) => (
+                                <Link
+                                  key={sub.href}
+                                  href={sub.href}
+                                  className="text-xs tracking-widest font-normal uppercase transition-colors hover:text-primary text-zinc-500 dark:text-zinc-400 py-1"
+                                  onClick={closeSheet}
+                                >
+                                  {sub.label}
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     )
                   }
@@ -258,7 +281,7 @@ export function Navbar() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className="text-lg tracking-widest font-medium uppercase transition-colors hover:text-primary text-center"
+                      className="text-base tracking-widest font-medium uppercase transition-colors hover:text-primary text-left py-2 border-b border-border/40"
                       onClick={closeSheet}
                     >
                       {item.label}
