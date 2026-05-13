@@ -288,7 +288,7 @@ export default function EstamparRemeras() {
               </Button>
               <Button asChild size="lg" variant="outline" className="border-zinc-600 text-white hover:bg-zinc-800 text-lg px-8 py-6">
                 <Link
-                  href="https://wa.me/5491126603080?text=Hola!%20Quiero%20estampar%20remeras.%20Me%20pueden%20asesorar%20sobre%20el%20servicio%20DTG?"
+                  href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Quiero%20estampar%20remeras.%20Me%20pueden%20asesorar%20sobre%20el%20servicio%20DTG%3F%20(ref%20%C2%B7%20NV-EST)"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -656,7 +656,7 @@ export default function EstamparRemeras() {
               </Button>
               <Button asChild size="lg" variant="outline" className="border-zinc-600 text-white hover:bg-zinc-800 text-lg px-8 py-6">
                 <Link
-                  href="https://wa.me/5491126603080?text=Hola!%20Quiero%20estampar%20remeras%20con%20DTG.%20Me%20pasan%20info?"
+                  href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Quiero%20estampar%20remeras%20con%20DTG.%20Me%20pasan%20info%3F%20(ref%20%C2%B7%20NV-EST-DTG)"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

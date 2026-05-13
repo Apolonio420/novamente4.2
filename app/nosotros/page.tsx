@@ -51,7 +51,7 @@ export default function NosotrosPage() {
       addressCountry: 'AR',
     },
     geo: { '@type': 'GeoCoordinates', latitude: -34.5534, longitude: -58.504 },
-    telephone: '+5491126603080',
+    telephone: '+5492235169720',
     email: 'contact@novamente.ar',
     priceRange: '$21,800 - $55,000 ARS',
     paymentAccepted: 'MercadoPago, Transferencia Bancaria',
@@ -113,7 +113,7 @@ export default function NosotrosPage() {
           Volver al inicio
         </Link>
         <Link
-          href="https://wa.me/5491162747588?text=Hola!%20Quiero%20saber%20m%C3%A1s%20sobre%20Novamente"
+          href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Quiero%20saber%20mas%20sobre%20ustedes.%20Visite%20la%20pagina%20'Nosotros'.%20(ref%20%C2%B7%20NV-NOS)"
           target="_blank"
           className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium px-4 py-2 rounded-full transition-colors"
         >
@@ -307,14 +307,14 @@ export default function NosotrosPage() {
               </div>
             </Link>
             <Link
-              href="https://wa.me/5491162747588"
+              href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Vengo%20desde%20la%20pagina%20Nosotros.%20(ref%20%C2%B7%20NV-NOS)"
               target="_blank"
               className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/10 transition-colors"
             >
               <Phone className="w-5 h-5 text-green-400 shrink-0" />
               <div>
                 <p className="text-white font-medium">WhatsApp</p>
-                <p className="text-white/50 text-sm">+54 9 11 6274-7588</p>
+                <p className="text-white/50 text-sm">+54 9 223 516-9720</p>
               </div>
             </Link>
             <Link

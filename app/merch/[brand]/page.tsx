@@ -185,7 +185,7 @@ export default async function BrandPage(props: BrandPageProps) {
                     <Button variant="outline">Seguir a {storefront.name}</Button>
                   </Link>
                 )}
-                <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+                <Link href="https://wa.me/5492235169720?text=Hola!%20Estoy%20comprando%20en%20una%20tienda%20partner%20de%20Novamente%20y%20quiero%20contactarlos.%20(ref%20%C2%B7%20NV-MERCH)" target="_blank">
                   <Button>Consultá por WhatsApp</Button>
                 </Link>
               </div>
@@ -318,7 +318,7 @@ export default async function BrandPage(props: BrandPageProps) {
                   <Button variant="outline">Seguir a {brandInfo.name}</Button>
                 </Link>
               )}
-              <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+              <Link href="https://wa.me/5492235169720?text=Hola!%20Estoy%20comprando%20en%20una%20tienda%20partner%20de%20Novamente%20y%20quiero%20contactarlos.%20(ref%20%C2%B7%20NV-MERCH)" target="_blank">
                 <Button>Consultá por WhatsApp</Button>
               </Link>
             </div>

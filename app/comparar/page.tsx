@@ -44,7 +44,7 @@ export default function CompararPage() {
           Volver al inicio
         </Link>
         <Link
-          href="https://wa.me/5491162747588?text=Hola!%20Quiero%20comparar%20opciones%20de%20indumentaria"
+          href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Vi%20su%20pagina%20de%20comparacion%20y%20quiero%20asesoramiento%20para%20elegir%20mi%20prenda.%20(ref%20%C2%B7%20NV-COMP)"
           target="_blank"
           className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium px-4 py-2 rounded-full transition-colors"
         >
@@ -275,7 +275,7 @@ export default function CompararPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="https://wa.me/5491162747588?text=Hola!%20Quiero%20disenar%20mi%20primera%20prenda"
+              href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Vi%20su%20pagina%20de%20comparacion%20y%20quiero%20disenar%20mi%20primera%20prenda.%20(ref%20%C2%B7%20NV-COMP-CTA)"
               target="_blank"
               className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white font-medium px-6 py-3 rounded-full transition-colors"
             >

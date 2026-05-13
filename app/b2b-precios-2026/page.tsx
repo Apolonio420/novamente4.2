@@ -139,7 +139,7 @@ export default function B2BPricesPage() {
           ajuste a tu volumen.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+          <Link href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Vi%20el%20catalogo%20B2B%202026%20y%20quiero%20coordinar%20pedido%20%2F%20drop.%20(ref%20%C2%B7%20NV-B2B26)" target="_blank">
             <Button className="rounded-lg">Hablar por WhatsApp</Button>
           </Link>
           <Link href="/partners">

@@ -281,7 +281,7 @@ export default function RegalosEmpresariales() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Link href="https://wa.me/5491162747588?text=Hola!%20Quiero%20cotizar%20regalos%20empresariales%20personalizados.%20Somos%20[nombre%20empresa]%20y%20necesitamos%20[cantidad]%20unidades." data-cta="hero-regalos-empresariales">
+                <Link href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Quiero%20cotizar%20regalos%20empresariales%20personalizados.%20Somos%20%5Bnombre%20empresa%5D%20y%20necesitamos%20%5Bcantidad%5D%20unidades.%20(ref%20%C2%B7%20NV-EMP-HERO)" data-cta="hero-regalos-empresariales">
                   <Button
                     size="lg"
                     className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-500/90 hover:to-orange-500/90 text-white font-medium rounded-xl py-6 px-8 text-lg transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
@@ -643,7 +643,7 @@ export default function RegalosEmpresariales() {
             Desde $28.600/un. · Descuentos por cantidad · Factura A/B · Envios a todo el pais
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="https://wa.me/5491162747588?text=Hola!%20Quiero%20cotizar%20regalos%20empresariales%20personalizados.%20Somos%20[nombre%20empresa]%20y%20necesitamos%20[cantidad]%20unidades%20para%20[ocasion]." data-cta="final-cta-regalos-empresariales">
+            <Link href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Quiero%20cotizar%20regalos%20empresariales%20personalizados.%20Somos%20%5Bnombre%20empresa%5D%20y%20necesitamos%20%5Bcantidad%5D%20unidades%20para%20%5Bocasion%5D.%20(ref%20%C2%B7%20NV-EMP-FINAL)" data-cta="final-cta-regalos-empresariales">
               <Button
                 size="lg"
                 className="w-full sm:w-auto bg-white text-amber-700 hover:bg-white/90 font-medium rounded-xl py-6 px-10 text-lg shadow-lg"

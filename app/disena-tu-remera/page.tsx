@@ -658,7 +658,7 @@ export default function DisenaTuRemera() {
                 Disenar Mi Remera
               </Button>
             </Link>
-            <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+            <Link href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Quiero%20disenar%20mi%20remera%20con%20IA.%20Como%20sigo%3F%20(ref%20%C2%B7%20NV-DISENA)" target="_blank">
               <Button
                 size="lg"
                 variant="outline"

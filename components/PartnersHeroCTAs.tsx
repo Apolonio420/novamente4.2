@@ -34,7 +34,7 @@ export function PartnersHeroCTAs() {
         </Button>
       </Link>
       <Link
-        href="https://wa.me/message/DRWR3O2HZY2JG1"
+        href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Me%20interesa%20ser%20partner.%20Me%20pasan%20info%20del%20Plan%20Partner%20y%20precios%20On%20Demand%3F%20(ref%20%C2%B7%20NV-PARTNER)"
         target="_blank"
         onClick={() => trackGenerateLead("contact_advisor")}
       >

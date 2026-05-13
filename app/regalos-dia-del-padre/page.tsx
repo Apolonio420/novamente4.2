@@ -252,7 +252,7 @@ export default function RegalosDiaDelPadre() {
               </Button>
               <Button asChild size="lg" variant="outline" className="border-zinc-600 text-white hover:bg-zinc-800 text-lg px-8 py-6">
                 <Link
-                  href="https://wa.me/5491126603080?text=Hola!%20Quiero%20un%20regalo%20personalizado%20para%20el%20Dia%20del%20Padre.%20Me%20asesoran?"
+                  href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Quiero%20un%20regalo%20personalizado%20para%20el%20Dia%20del%20Padre.%20Me%20asesoran%3F%20(ref%20%C2%B7%20NV-PADRE)"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -613,7 +613,7 @@ export default function RegalosDiaDelPadre() {
               </Button>
               <Button asChild size="lg" variant="outline" className="border-zinc-600 text-white hover:bg-zinc-800 text-lg px-8 py-6">
                 <Link
-                  href="https://wa.me/5491126603080?text=Hola!%20Quiero%20un%20regalo%20personalizado%20para%20el%20Dia%20del%20Padre.%20Que%20me%20recomiendan?"
+                  href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Quiero%20un%20regalo%20personalizado%20para%20el%20Dia%20del%20Padre.%20Que%20me%20recomiendan%3F%20(ref%20%C2%B7%20NV-PADRE-FINAL)"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

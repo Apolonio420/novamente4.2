@@ -239,7 +239,7 @@ export default function FAQPage() {
             Si no encontraste lo que buscabas, contactanos directamente y te respondemos al toque.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+            <Link href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Tengo%20dudas%20que%20no%20resolvi%20en%20la%20seccion%20de%20Preguntas%20Frecuentes.%20Pueden%20ayudarme%3F%20(ref%20%C2%B7%20NV-FAQ)" target="_blank">
               <Button className="rounded-lg">Consultá por WhatsApp</Button>
             </Link>
             <Link href="/#generator-section">

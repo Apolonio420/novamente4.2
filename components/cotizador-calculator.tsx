@@ -220,7 +220,7 @@ export default function CotizadorCalculator() {
               className="flex-1 bg-green-600 hover:bg-green-700 text-white text-base font-semibold h-14"
             >
               <a
-                href={`https://wa.me/5491162376081?text=${whatsappMessage}`}
+                href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >

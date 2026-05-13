@@ -191,7 +191,7 @@ export const QuotePdfDocument: React.FC<QuotePdfDocumentProps> = ({
                         <Text style={styles.headerLabel}>PRESUPUESTO {quoteNumber}</Text>
                         <Text>Fecha: {format(new Date(), "dd/MM/yyyy")}</Text>
                         <Text>Email: contact@novamente.ar</Text>
-                        <Text>Tel: +54 9 11 6274-7588</Text>
+                        <Text>Tel: +54 9 223 516-9720</Text>
                     </View>
                 </View>
 

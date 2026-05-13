@@ -316,7 +316,7 @@ export default function SupportPage() {
               </div>
             </div>
             <a
-              href="https://wa.me/message/DRWR3O2HZY2JG1"
+              href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Soy%20partner%20y%20necesito%20soporte%20desde%20el%20workspace.%20(ref%20%C2%B7%20NV-WSSUP)"
               target="_blank"
               rel="noopener noreferrer"
               className="shrink-0"

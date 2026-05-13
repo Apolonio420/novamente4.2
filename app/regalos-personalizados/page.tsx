@@ -258,7 +258,7 @@ export default function RegalosPersonalizados() {
                   </Button>
                   <Button asChild size="lg" variant="outline" className="border-zinc-600 text-white hover:bg-zinc-800 text-lg px-8 py-6">
                     <Link
-                      href="https://wa.me/5491126603080?text=Hola!%20Quiero%20un%20regalo%20personalizado.%20Me%20asesoran?"
+                      href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Quiero%20un%20regalo%20personalizado.%20Me%20asesoran%3F%20(ref%20%C2%B7%20NV-REG)"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -638,7 +638,7 @@ export default function RegalosPersonalizados() {
               </Button>
               <Button asChild size="lg" variant="outline" className="border-zinc-600 text-white hover:bg-zinc-800 text-lg px-8 py-6">
                 <Link
-                  href="https://wa.me/5491126603080?text=Hola!%20Quiero%20un%20regalo%20personalizado.%20Me%20ayudan?"
+                  href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Quiero%20un%20regalo%20personalizado.%20Me%20ayudan%3F%20(ref%20%C2%B7%20NV-REG-FINAL)"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

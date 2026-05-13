@@ -49,7 +49,7 @@ export async function GET() {
 - Ciudad: Villa Martelli, Buenos Aires
 - Idioma: Español
 - Fundación: 2024
-- Método de contacto: WhatsApp (+54 9 11 6274-7588), email (contact@novamente.ar)
+- Método de contacto: WhatsApp (+54 9 223 516-9720), email (contact@novamente.ar)
 - Entity JSON-LD: https://www.novamente.ar/novamente-entity.json
 
 ## Productos Disponibles
@@ -103,7 +103,7 @@ Novamente ofrece venta por mayor de remeras, buzos y hoodies YA ESTAMPADOS con d
 - URL: https://www.novamente.ar/remeras-por-mayor
 
 ## Contacto
-- WhatsApp: +54 9 11 6274-7588
+- WhatsApp: +54 9 223 516-9720
 - Email: contact@novamente.ar
 - Instagram: @novamente.ar
 - Twitter/X: @Novamentear

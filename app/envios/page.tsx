@@ -248,7 +248,7 @@ export default function EnviosPage() {
               </a>{' '}
               o por{' '}
               <a
-                href="https://wa.me/5491126603080"
+                href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Tengo%20consultas%20sobre%20envios%20y%20entregas.%20(ref%20%C2%B7%20NV-ENV)"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-purple-400 hover:text-purple-300 underline"

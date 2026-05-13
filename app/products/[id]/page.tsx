@@ -354,7 +354,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   Personalizar con IA
                 </Button>
               </Link>
-              <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank" className="flex-1">
+              <Link href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Estoy%20viendo%20un%20producto%20en%20su%20web%20y%20quiero%20cotizar%20%2F%20comprar.%20(ref%20%C2%B7%20NV-PDP)" target="_blank" className="flex-1">
                 <Button variant="outline" className="w-full rounded-xl py-6 text-lg">
                   Consultar por WhatsApp
                 </Button>

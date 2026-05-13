@@ -285,7 +285,7 @@ export default function PrivacidadPage() {
               <p>
                 <strong className="text-white/90">WhatsApp:</strong>{' '}
                 <a
-                  href="https://wa.me/5491126603080"
+                  href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Tengo%20una%20consulta%20sobre%20Politica%20de%20Privacidad%20%2F%20datos%20personales.%20(ref%20%C2%B7%20NV-PRIV)"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-purple-400 hover:text-purple-300 underline"

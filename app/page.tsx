@@ -1040,7 +1040,7 @@ export default function Home() {
               <Sparkles className="h-5 w-5" />
               Crear Mi Diseño
             </ScrollButton>
-            <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+            <Link href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Llego%20desde%20el%20home%20de%20la%20web%20y%20quiero%20empezar%20a%20disenar%20prendas.%20Como%20arrancamos%3F%20(ref%20%C2%B7%20NV-HOME)" target="_blank">
               <Button
                 size="lg"
                 variant="outline"

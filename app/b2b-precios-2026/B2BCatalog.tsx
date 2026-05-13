@@ -225,7 +225,7 @@ export default function B2BCatalog() {
                   </div>
                 </div>
 
-                <a href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank" rel="noreferrer">
+                <a href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Vi%20el%20catalogo%20B2B%202026%20y%20quiero%20cotizar%20una%20prenda%20especifica.%20(ref%20%C2%B7%20NV-B2B26-MODAL)" target="_blank" rel="noreferrer">
                   <Button className="w-full rounded-lg">
                     Cotizar {openModel.name} por WhatsApp
                   </Button>

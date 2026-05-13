@@ -76,7 +76,7 @@ const organizationJsonLd = {
   logo: "https://www.novamente.ar/logo.png",
   image: "https://www.novamente.ar/novamente-logo.png",
   description: "Novamente es la primera marca argentina de indumentaria personalizada con inteligencia artificial. Diseñá remeras, hoodies y buzos con 37 estilos artísticos y estampado DTG premium.",
-  telephone: "+5491126603080",
+  telephone: "+5492235169720",
   email: "contact@novamente.ar",
   address: {
     "@type": "PostalAddress",
@@ -107,7 +107,7 @@ const organizationJsonLd = {
     "https://www.instagram.com/novamente.ar/",
     "https://x.com/Novamentear",
     "https://www.facebook.com/share/1CevJ8w7hK/",
-    "https://wa.me/5491126603080",
+    "https://wa.me/5492235169720",
   ],
   hasMerchantReturnPolicy: { "@id": "https://www.novamente.ar/#return-policy" },
   foundingDate: "2024",

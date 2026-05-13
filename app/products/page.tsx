@@ -128,7 +128,7 @@ export default function ProductsPage() {
                 Seguinos en Instagram
               </Button>
             </Link>
-            <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+            <Link href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Estoy%20viendo%20el%20catalogo%20de%20productos%20y%20quiero%20mas%20info%20%2F%20cotizacion.%20(ref%20%C2%B7%20NV-CAT)" target="_blank">
               <Button className="rounded-lg">Consultá por WhatsApp</Button>
             </Link>
           </div>

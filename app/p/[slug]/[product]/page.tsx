@@ -120,7 +120,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   // phone ni cta_url propios, se cae a WhatsApp de Novamente con texto preformateado
   // que identifica al partner + producto. Antes el boton desaparecia para partners
   // sin contacto cargado y los clientes no podian comprar.
-  const NOVAMENTE_FALLBACK_WA = "5491126603080"
+  const NOVAMENTE_FALLBACK_WA = "5492235169720"
   const productText = encodeURIComponent(`Hola! Me interesa "${product.name}" de la tienda ${tenant.name} en Novamente. Quiero info para comprar.`)
   const ctaHref =
     tenant.commerce_mode === 'whatsapp' && tenant.phone

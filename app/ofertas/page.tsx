@@ -172,7 +172,7 @@ export default function OfertasPage() {
                     </Button>
                   </a>
                   <a
-                    href={`https://wa.me/5491126603080?text=${encodeURIComponent(
+                    href={`https://wa.me/5492235169720?text=${encodeURIComponent(
                       `Hola! Vi la oferta Hot Sale de "${offer.name}" a ${formatARS(offer.priceCurrent)}. Quiero comprarla.`
                     )}`}
                     target="_blank"

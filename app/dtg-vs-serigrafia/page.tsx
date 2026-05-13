@@ -691,7 +691,7 @@ export default function DtgVsSerigrafia() {
                 Crear Mi Diseno con IA
               </Button>
             </Link>
-            <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+            <Link href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Vi%20su%20guia%20DTG%20vs%20Serigrafia%20y%20quiero%20asesoramiento%20para%20mi%20prenda.%20(ref%20%C2%B7%20NV-DTGSER)" target="_blank">
               <Button
                 size="lg"
                 variant="outline"

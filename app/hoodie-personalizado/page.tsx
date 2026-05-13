@@ -768,7 +768,7 @@ export default function HoodiePersonalizado() {
                 Disenar Mi Hoodie
               </Button>
             </Link>
-            <Link href="https://wa.me/message/DRWR3O2HZY2JG1" target="_blank">
+            <Link href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Estoy%20interesado%20en%20un%20hoodie%20personalizado.%20Me%20pasan%20info%3F%20(ref%20%C2%B7%20NV-HOODIE)" target="_blank">
               <Button
                 size="lg"
                 variant="outline"
