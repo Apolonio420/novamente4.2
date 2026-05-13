@@ -43,21 +43,47 @@ export default function CheckoutSuccessPage() {
     })
 
     const paid = status === "approved" || status === "success" || !status
-    if (paid && items.length > 0 && !purchaseTrackedRef.current) {
+
+    // Resolver el snapshot de la compra: cart vivo (camino feliz) o sessionStorage
+    // (fallback cuando el cart se perdió en el redirect a MercadoPago).
+    type SnapshotItem = { id: string; name: string; garmentType?: string; price: number; quantity: number }
+    let snapshotItems: SnapshotItem[] = items.map((i) => ({
+      id: i.id, name: i.name, garmentType: i.garmentType, price: i.price, quantity: i.quantity,
+    }))
+    let snapshotValue = getTotalPrice()
+    let snapshotSource: "cart" | "storage" | "none" = items.length > 0 ? "cart" : "none"
+
+    if (paid && snapshotItems.length === 0 && externalReference) {
+      try {
+        const stored = sessionStorage.getItem(`nm_pending_purchase_${externalReference}`)
+        if (stored) {
+          const parsed = JSON.parse(stored) as { value: number; items: SnapshotItem[] }
+          if (Array.isArray(parsed.items) && parsed.items.length > 0 && typeof parsed.value === "number") {
+            snapshotItems = parsed.items
+            snapshotValue = parsed.value
+            snapshotSource = "storage"
+          }
+        }
+      } catch {
+        // snapshot inválido o sessionStorage no disponible — sigue como "none"
+      }
+    }
+
+    if (paid && snapshotItems.length > 0 && !purchaseTrackedRef.current) {
       purchaseTrackedRef.current = true
-      const value = getTotalPrice()
       const orderId = externalReference || merchantOrderId || paymentId || undefined
-      fpixel.purchase(value, "ARS", {
-        content_ids: items.map((i) => i.id),
-        contents: items.map((i) => ({ id: i.id, quantity: i.quantity, item_price: i.price })),
-        num_items: items.reduce((n, i) => n + i.quantity, 0),
+      console.log(`[PIXEL] Purchase dispatching (source=${snapshotSource}, value=${snapshotValue}, items=${snapshotItems.length})`)
+      fpixel.purchase(snapshotValue, "ARS", {
+        content_ids: snapshotItems.map((i) => i.id),
+        contents: snapshotItems.map((i) => ({ id: i.id, quantity: i.quantity, item_price: i.price })),
+        num_items: snapshotItems.reduce((n, i) => n + i.quantity, 0),
         order_id: orderId,
       })
-      gadsPurchase(value, orderId, "ARS")
+      gadsPurchase(snapshotValue, orderId, "ARS")
       dataLayerPurchase({
         orderId: orderId ?? "",
-        value,
-        items: items.map((i) => ({
+        value: snapshotValue,
+        items: snapshotItems.map((i) => ({
           item_id: i.id,
           item_name: i.name,
           item_category: i.garmentType,
@@ -65,7 +91,13 @@ export default function CheckoutSuccessPage() {
           quantity: i.quantity,
         })),
       })
+      // Limpiar snapshot y cart (el cart puede ya estar vacío, no es problema)
+      if (externalReference) {
+        try { sessionStorage.removeItem(`nm_pending_purchase_${externalReference}`) } catch {}
+      }
       clearCart()
+    } else if (paid && snapshotItems.length === 0) {
+      console.warn("[PIXEL] Purchase skipped — no cart and no sessionStorage snapshot. external_reference:", externalReference)
     }
 
     // Fallback de confirmación server-side (no depende de que el webhook llegue primero)

@@ -173,6 +173,30 @@ export default function CheckoutPage() {
               quantity: i.quantity,
             })),
           )
+          // Snapshot del cart para que /checkout/success pueda disparar Purchase
+          // aunque el cart ya esté vacío (el store de Zustand puede perderse en el redirect).
+          // external_reference viene del API y es el mismo que MP devuelve en el callback.
+          try {
+            if (data.external_reference) {
+              sessionStorage.setItem(
+                `nm_pending_purchase_${data.external_reference}`,
+                JSON.stringify({
+                  value: total,
+                  items: items.map((i) => ({
+                    id: i.id,
+                    name: i.name,
+                    garmentType: i.garmentType,
+                    price: i.price,
+                    quantity: i.quantity,
+                  })),
+                  numItems: getTotalItems(),
+                  ts: Date.now(),
+                }),
+              )
+            }
+          } catch {
+            // sessionStorage puede fallar en modo privado — no es crítico, sigue el flow
+          }
           // Redirigir a MercadoPago
           window.location.href = data.init_point
         } else {

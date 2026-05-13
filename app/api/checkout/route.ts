@@ -178,7 +178,9 @@ export async function POST(request: NextRequest) {
         failure: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/cancel`,
         pending: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/pending`,
       },
-      // auto_return: "approved", // Comentado para evitar problemas con localhost
+      // MP exige HTTPS en back_urls.success para auto_return. Solo activar en prod (HTTPS),
+      // en dev local mantener desactivado para no romper el flujo.
+      ...(process.env.NEXT_PUBLIC_BASE_URL?.startsWith('https://') ? { auto_return: 'approved' as const } : {}),
       notification_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/webhooks/mercadopago`,
       statement_descriptor: "NOVAMENTE",
       external_reference: externalReference, // Usar el mismo external_reference del pedido creado
