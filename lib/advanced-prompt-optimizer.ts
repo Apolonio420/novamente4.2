@@ -310,14 +310,40 @@ function extractCentralTheme(prompt: string): string {
   return cleanedPrompt
 }
 
+// Mapping inglés -> español para colorway. El Studio UI manda colores en inglés
+// ('black', 'white', etc.) pero TEXTILE_COLOR_PALETTES solo tiene keys en español.
+// Sin este mapping, el lookup devuelve undefined y rompe el .slice() posterior.
+const COLORWAY_EN_TO_ES: Record<string, keyof typeof TEXTILE_COLOR_PALETTES> = {
+  black: 'negro',
+  white: 'blanco',
+  gray: 'gris',
+  grey: 'gris',
+  cream: 'crema',
+  caramel: 'caramel',
+  marron: 'marron',
+  brown: 'marron',
+  chocolate: 'marron',
+  'stone-wash': 'gris',
+  yellow: 'negro', // sin paleta especifica para amarillo todavia
+}
+
+function normalizeColorway(value?: string): keyof typeof TEXTILE_COLOR_PALETTES {
+  if (!value) return 'negro'
+  const lower = value.toLowerCase().trim()
+  if (lower in TEXTILE_COLOR_PALETTES) return lower as keyof typeof TEXTILE_COLOR_PALETTES
+  if (lower in COLORWAY_EN_TO_ES) return COLORWAY_EN_TO_ES[lower]
+  return 'negro'
+}
+
 // Aplicar parámetros de marca NovaMente
 function applyBrandParameters(params: Partial<NovaMenteBrandParams>): NovaMenteBrandParams {
+  const colorway = normalizeColorway(params.colorway as any)
   return {
     garmentType: params.garmentType || 'remera-oversize',
-    colorway: params.colorway || 'negro',
+    colorway: colorway as any,
     printArea: params.printArea || 'R3',
     artisticStyle: params.artisticStyle || 'vectorial',
-    colorPalette: params.colorPalette || TEXTILE_COLOR_PALETTES[params.colorway || 'negro']
+    colorPalette: params.colorPalette || TEXTILE_COLOR_PALETTES[colorway] || TEXTILE_COLOR_PALETTES['negro']
   }
 }
 
