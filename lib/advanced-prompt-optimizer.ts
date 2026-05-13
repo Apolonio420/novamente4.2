@@ -323,8 +323,11 @@ function applyBrandParameters(params: Partial<NovaMenteBrandParams>): NovaMenteB
 
 // Generar prompt optimizado principal
 function generateOptimizedPrompt(theme: string, params: NovaMenteBrandParams): string {
-  const style = ARTISTIC_STYLES[params.artisticStyle]
-  const printArea = PRINT_AREAS[params.printArea]
+  // Fallback robusto: si la UI pasa un estilo/printArea que no esta en el enum
+  // (ej: "minimal" en vez de "minimalista-lineal"), caer a defaults seguros para
+  // no crashear con "Cannot read properties of undefined (reading 'name')".
+  const style = ARTISTIC_STYLES[params.artisticStyle] || ARTISTIC_STYLES['vectorial']
+  const printArea = PRINT_AREAS[params.printArea] || PRINT_AREAS['R3']
   
   // Construir el prompt optimizado - SIEMPRE vectorial para evitar prendas
   let optimizedPrompt = `Ilustración vectorial: ${theme}`
@@ -419,8 +422,10 @@ function getCompatibleStyles(mainStyle: string): string[] {
 // Generar sugerencias para impresión
 function generatePrintSuggestions(params: NovaMenteBrandParams): string[] {
   const suggestions: string[] = []
-  const printArea = PRINT_AREAS[params.printArea]
-  const style = ARTISTIC_STYLES[params.artisticStyle]
+  // Mismo fallback que generateOptimizedPrompt para evitar crashes
+  // cuando el style/printArea no esta en el enum esperado.
+  const printArea = PRINT_AREAS[params.printArea] || PRINT_AREAS['R3']
+  const style = ARTISTIC_STYLES[params.artisticStyle] || ARTISTIC_STYLES['vectorial']
   
   // Sugerencias generales
   suggestions.push(`Área de impresión: ${printArea.name}`)
