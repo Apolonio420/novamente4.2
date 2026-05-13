@@ -38,13 +38,16 @@ export interface PartnerAsset {
   created_at: string
 }
 
-// Available garment types (matches PATH_BUILDERS in garment-mappings.ts)
-export const GARMENT_TYPES = {
-  'aura-oversize-tshirt': { name: 'Aura Oversize T-Shirt', colors: ['black', 'white', 'cream', 'gray'] },
-  'aldea-classic-tshirt': { name: 'Aldea Classic T-Shirt', colors: ['black', 'white', 'cream', 'gray'] },
-  'buzo-hoodie-unisex': { name: 'Buzo Hoodie Oversize', colors: ['black', 'white', 'stone-wash', 'marron', 'cream', 'gray'] },
-  'lienzo': { name: 'Lienzo (Canvas)', colors: ['white'] },
-}
+// Available garment types — derivado de lib/catalog/products.ts (source of truth).
+// Esto reemplaza el listado hardcodeado anterior que solo tenia 4 garments e
+// incluia colores inexistentes (cream/gray para Aldea no existian fisicamente).
+// Mantener esta forma como mapping plano para retrocompatibilidad con el codigo
+// que ya hace `GARMENT_TYPES[key].colors`.
+import { CATALOG_PRODUCTS } from '@/lib/catalog/products'
+
+export const GARMENT_TYPES: Record<string, { name: string; colors: string[] }> = Object.fromEntries(
+  CATALOG_PRODUCTS.map(p => [p.key, { name: p.name, colors: p.colors.map(c => c.key) }]),
+)
 
 // ---------------------------------------------------------------------------
 // Default config
