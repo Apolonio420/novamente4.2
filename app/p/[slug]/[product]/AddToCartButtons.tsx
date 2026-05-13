@@ -88,7 +88,7 @@ export function AddToCartButtons({
               key={size}
               type="button"
               onClick={() => setSelectedSize(size)}
-              className={`min-w-[44px] rounded-md border px-3 py-1.5 text-sm transition ${
+              className={`min-w-[56px] h-12 rounded-md border px-4 py-2 text-base font-medium transition ${
                 selectedSize === size
                   ? "border-white bg-white text-zinc-950"
                   : "border-zinc-700 bg-transparent text-zinc-300 hover:border-zinc-500"
@@ -108,18 +108,18 @@ export function AddToCartButtons({
           variant="outline"
           onClick={handleAddToCart}
           disabled={adding}
-          className="flex-1 border-zinc-700 text-white hover:bg-zinc-800"
+          className="flex-1 h-14 text-base font-semibold border-zinc-700 text-white hover:bg-zinc-800"
         >
-          <ShoppingCart className="mr-2 h-4 w-4" />
+          <ShoppingCart className="mr-2 h-5 w-5" />
           {adding ? "Agregado" : "Agregar al carrito"}
         </Button>
         <Button
           size="lg"
           onClick={handleBuyNow}
-          className="flex-1 text-white"
+          className="flex-1 h-14 text-base font-semibold text-white"
           style={{ backgroundColor: primaryColor }}
         >
-          <Zap className="mr-2 h-4 w-4" />
+          <Zap className="mr-2 h-5 w-5" />
           Comprar ahora
         </Button>
       </div>
