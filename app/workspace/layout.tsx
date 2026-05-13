@@ -28,6 +28,8 @@ import {
   CreditCard,
   Lock,
   ChevronsUpDown,
+  ImageIcon,
+  Tag,
   Check,
   Shield,
   Video,
@@ -58,6 +60,7 @@ const navSections: NavSection[] = [
       { label: 'Branding', href: '/workspace/branding', icon: Palette },
       { label: 'Catalogo', href: '/workspace/catalog', icon: Package },
       { label: 'Studio', href: '/workspace/design-engine', icon: Sparkles },
+      { label: 'Biblioteca de disenos', href: '/workspace/design-library', icon: ImageIcon },
     ],
   },
   {
@@ -65,6 +68,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Leads', href: '/workspace/leads', icon: Users },
       { label: 'Pedidos', href: '/workspace/orders', icon: ShoppingBag },
+      { label: 'Descuentos', href: '/workspace/discounts', icon: Tag },
       { label: 'Analytics', href: '/workspace/analytics', icon: BarChart3, requiredPlan: 'growth' },
     ],
   },
@@ -105,6 +109,8 @@ const pageTitles: Record<string, string> = {
   '/workspace/leads': 'Leads',
   '/workspace/orders': 'Pedidos',
   '/workspace/design-engine': 'Design Engine',
+  '/workspace/design-library': 'Biblioteca de disenos',
+  '/workspace/discounts': 'Descuentos',
   '/workspace/chatbot': 'Chatbot',
   '/workspace/support': 'Soporte',
   '/workspace/meta-business': 'Meta Business',
