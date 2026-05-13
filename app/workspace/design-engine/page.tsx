@@ -60,31 +60,60 @@ const COLOR_LABELS: Record<string, string> = {
 
 const STAMP_INTENT_RE = /estampa|stampe|ponel[oae]?|aplica|aplicalo|mockup|pone[mr]?lo|ubicalo|coloca/i
 
+// Mantener sincronizado con ALL_GARMENT_PRICING (lib/partners/garment-pricing.ts).
+// Las keys deben matchear exactamente para que getPartnerPlanPrice() resuelva el costo.
 const GARMENT_OPTIONS: { key: string; label: string }[] = [
-  { key: 'aldea-classic-tshirt', label: 'Remera Clasica' },
-  { key: 'aura-oversize-tshirt', label: 'Remera Oversize' },
-  { key: 'buzo-hoodie-unisex', label: 'Hoodie' },
-  { key: 'buzo-hoodie', label: 'Buzo' },
-  { key: 'musculosa-bali', label: 'Musculosa' },
-  { key: 'crop-top', label: 'Crop Top' },
-  { key: 'lienzo', label: 'Lienzo' },
+  { key: 'aldea-classic-tshirt', label: 'Remera Aldea Classic Fit' },
+  { key: 'aura-oversize-tshirt', label: 'Remera Aura Oversize' },
+  { key: 'remera-clasica-mujer', label: 'Remera Clasica Mujer' },
+  { key: 'remera-crop-mujer', label: 'Remera Crop Mujer' },
+  { key: 'musculosa-bali', label: 'Musculosa Bali' },
+  { key: 'buzo-cuello-redondo', label: 'Buzo Cuello Redondo' },
+  { key: 'buzo-hoodie-unisex', label: 'Buzo Hoodie Oversize' },
+  { key: 'lienzo', label: 'Lienzo (Arte)' },
 ]
 
 // Garment thumbnail mapping (key → front image path)
+// Mapping de garment_key → color → ruta de thumbnail. Sincronizado con los
+// archivos reales en /public/garments/. Mantener consistente con los colores
+// disponibles en cada producto del catalogo Novamente.
 const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = {
-  'aura-oversize-tshirt': {
-    black: '/garments/tshirt-black-oversize-front.jpeg',
-    white: '/garments/tshirt-white-oversize-front.jpeg',
-  },
   'aldea-classic-tshirt': {
     black: '/garments/tshirt-black-classic-front.jpeg',
     white: '/garments/tshirt-white-classic-front.jpeg',
   },
+  'aura-oversize-tshirt': {
+    black: '/garments/tshirt-black-oversize-front.jpeg',
+    white: '/garments/tshirt-white-oversize-front.jpeg',
+    caramel: '/garments/tshirt-caramel-oversize-front.png',
+  },
+  'remera-clasica-mujer': {
+    black: '/garments/remera-clasica-mujer-black-front.png',
+    white: '/garments/remera-clasica-mujer-white-front.png',
+  },
+  'remera-crop-mujer': {
+    black: '/garments/remera-crop-mujer-black-front.png',
+    chocolate: '/garments/remera-crop-mujer-chocolate-front.png',
+    gray: '/garments/remera-crop-mujer-gray-front.png',
+    yellow: '/garments/remera-crop-mujer-yellow-front.png',
+  },
+  'musculosa-bali': {
+    black: '/garments/musculosa-bali-black-front.png',
+    white: '/garments/musculosa-bali-white-front.png',
+    gray: '/garments/musculosa-bali-gray-front.png',
+  },
+  'buzo-cuello-redondo': {
+    black: '/garments/buzo-cuello-redondo-black-front.png',
+    white: '/garments/buzo-cuello-redondo-white-front.png',
+    'stone-wash': '/garments/buzo-cuello-redondo-stone-wash-front.png',
+  },
   'buzo-hoodie-unisex': {
     black: '/garments/buzo-hoodie-unisex-black-front.png',
+    white: '/garments/buzo-hoodie-unisex-white-front.png',
     cream: '/garments/buzo-hoodie-unisex-crema-front.jpeg',
     gray: '/garments/buzo-hoodie-unisex-gris-front.jpeg',
     marron: '/garments/buzo-hoodie-unisex-marron-front.jpeg',
+    'stone-wash': '/garments/buzo-hoodie-unisex-stone-wash-front.png',
   },
   lienzo: {
     white: '/garments/lienzo-main.png',

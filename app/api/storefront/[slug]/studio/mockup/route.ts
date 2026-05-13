@@ -130,7 +130,7 @@ export async function POST(
 
     const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image-preview',
+      model: process.env.GEMINI_STAMP_MODEL || process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image',
       safetySettings: getGeminiSafetySettings() as any,
     })
 

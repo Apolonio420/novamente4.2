@@ -85,11 +85,15 @@ export const GARMENT_PRICING: Record<string, GarmentPricing> = {
   lienzo: {
     key: 'lienzo',
     name: 'Lienzo (Canvas)',
+    // Retail web (b2c_suggested) sincronizado con lib/products.ts donde el
+    // Lienzo Premium se publica en $59.900. TODO: confirmar con el usuario si
+    // on_demand $15.000 sigue vigente o si tambien hay que actualizarlo
+    // (la ratio retail/on_demand del Lienzo era muy alta vs otros productos).
     on_demand: 15000,
     b2b_starter: 14000,
     b2b_pro: 13000,
     b2b_drop: 12000,
-    b2c_suggested: 20000,
+    b2c_suggested: 59900,
   },
 }
 

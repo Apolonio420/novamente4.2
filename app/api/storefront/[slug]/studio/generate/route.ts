@@ -95,7 +95,7 @@ export async function POST(
     // Generate
     const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image-preview',
+      model: process.env.GEMINI_DESIGN_MODEL || process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image-preview',
       safetySettings: getGeminiSafetySettings() as any,
     })
 
