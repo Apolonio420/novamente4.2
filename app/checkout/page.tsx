@@ -14,6 +14,7 @@ import { Loader2, ArrowLeft, CreditCard, Smartphone, Building2, Shield, Truck, C
 import Link from "next/link"
 import Image from "next/image"
 import { Separator } from "@/components/ui/separator"
+import { DiscountInput } from "@/components/checkout/DiscountInput"
 
 interface CustomerData {
   email: string
@@ -54,7 +55,24 @@ export default function CheckoutPage() {
   const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0)
   const shippingThreshold = 85000
   const shippingCost = subtotal >= shippingThreshold ? 0 : 6500
-  const total = subtotal + shippingCost
+
+  // Discount code aplicado (estado en cliente — se valida via /api/discounts/validate)
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    code: string
+    codeId: string
+    discountARS: number
+    codeLabel: string
+  } | null>(null)
+
+  // Si cambia el subtotal (agrega/quita item), invalidar el descuento aplicado
+  useEffect(() => {
+    if (appliedDiscount && subtotal === 0) {
+      setAppliedDiscount(null)
+    }
+  }, [subtotal, appliedDiscount])
+
+  const discountARS = appliedDiscount?.discountARS ?? 0
+  const total = Math.max(0, subtotal + shippingCost - discountARS)
 
   console.log("💰 Checkout totals:", {
     subtotal,
@@ -589,6 +607,21 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 )}
+                {appliedDiscount && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-emerald-600">Descuento ({appliedDiscount.code})</span>
+                    <span className="text-emerald-600 font-medium">−{formatCurrency(discountARS)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-3 mb-1">
+                <DiscountInput
+                  subtotal={subtotal}
+                  applied={appliedDiscount ? { code: appliedDiscount.code, discountARS: appliedDiscount.discountARS, codeLabel: appliedDiscount.codeLabel } : null}
+                  onApply={data => setAppliedDiscount({ code: data.code, codeId: data.codeId, discountARS: data.discountARS, codeLabel: data.codeLabel })}
+                  onRemove={() => setAppliedDiscount(null)}
+                />
               </div>
 
               <Separator className="my-4" />
