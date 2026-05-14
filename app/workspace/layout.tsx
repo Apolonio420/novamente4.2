@@ -486,7 +486,7 @@ export default function WorkspaceLayout({
 
   return (
     <AssistantProvider>
-    <div className="flex h-dvh bg-zinc-950 text-zinc-100 overflow-hidden">
+    <div className="flex h-full min-h-0 bg-zinc-950 text-zinc-100 overflow-hidden">
       {/* Desktop sidebar */}
       <aside className={cn(
         'hidden lg:flex lg:flex-col shrink-0 border-r border-zinc-800 bg-zinc-950 transition-all duration-300',

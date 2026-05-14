@@ -18,8 +18,18 @@ export function GlobalChrome({ children }: { children: React.ReactNode }) {
   const isWorkspace = pathname?.startsWith("/workspace") ?? false
 
   if (isWorkspace) {
-    // Workspace lleva su propio chrome y full-height layout.
-    return <main id="main-content" className="h-dvh">{children}</main>
+    // En workspace mantenemos el Navbar global (para que el partner pueda volver
+    // al sitio público con un click) pero ocultamos Footer + flotantes que
+    // generaban scroll exterior. El workspace internamente usa
+    // h-[calc(100dvh-4rem)] para descontar el navbar.
+    return (
+      <div className="flex flex-col h-dvh">
+        <Navbar />
+        <main id="main-content" className="flex-1 min-h-0 overflow-hidden">
+          {children}
+        </main>
+      </div>
+    )
   }
 
   return (
