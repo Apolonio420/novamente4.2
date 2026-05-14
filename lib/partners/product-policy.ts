@@ -14,6 +14,7 @@
 /** Categorias permitidas — corresponden al catalogo Novamente. */
 export const ALLOWED_PARTNER_CATEGORIES = [
   // T-shirts / Remeras
+  "Remera",
   "Remera Oversize",
   "Remera Classic",
   "Remera Classic Fit",
@@ -22,6 +23,7 @@ export const ALLOWED_PARTNER_CATEGORIES = [
   "Remera Crop Mujer",
   "Musculosa",
   // Sweatshirts / Buzos
+  "Buzo",
   "Hoodie",
   "Buzo Hoodie",
   "Buzo Hoodie Oversize",
@@ -33,6 +35,22 @@ export const ALLOWED_PARTNER_CATEGORIES = [
 ] as const
 
 const ALLOWED_SET = new Set<string>(ALLOWED_PARTNER_CATEGORIES.map(c => c.toLowerCase()))
+
+/**
+ * Tokens raiz aceptados — si una categoria escrita por el partner contiene
+ * alguno de estos como palabra (no como sustring arbitrario), se considera
+ * valida. Esto es mas permisivo que el ALLOWED_SET exacto y evita falsos
+ * negativos como "buzo" o "remera de verano" que claramente son del catalogo.
+ */
+const CATEGORY_ROOT_TOKENS = [
+  "remera",
+  "buzo",
+  "hoodie",
+  "musculosa",
+  "crop",
+  "lienzo",
+  "arte",
+]
 
 /**
  * Keywords prohibidos en name o description — productos que claramente NO son
@@ -107,11 +125,20 @@ export function validatePartnerProductForCreation(input: {
   const description = (input.description || "").toLowerCase()
   const category = (input.category || "").toLowerCase().trim()
 
-  // 1. Category, si esta presente, debe estar en allowlist
-  if (category && !ALLOWED_SET.has(category)) {
-    return {
-      ok: false,
-      reason: `La categoria "${input.category}" no esta permitida. Solo se pueden vender prendas del catalogo Novamente. Categorias validas: ${ALLOWED_PARTNER_CATEGORIES.join(", ")}.`,
+  // 1. Category, si esta presente: aceptar si esta en la allowlist exacta O si
+  //    contiene alguno de los root tokens (remera, buzo, hoodie, etc.) como
+  //    palabra. Esto permite categorias mas amplias como "buzo", "Remera de
+  //    verano", "Hoodie unisex", etc. sin sobre-validar.
+  if (category) {
+    const isExactMatch = ALLOWED_SET.has(category)
+    const tokens = category.split(/\s+/)
+    const hasRootToken = tokens.some(t => CATEGORY_ROOT_TOKENS.includes(t)) ||
+      CATEGORY_ROOT_TOKENS.some(root => category === root || category.startsWith(`${root} `) || category.endsWith(` ${root}`))
+    if (!isExactMatch && !hasRootToken) {
+      return {
+        ok: false,
+        reason: `La categoria "${input.category}" no esta permitida. Solo se pueden vender prendas del catalogo Novamente. Usa una categoria que contenga: ${CATEGORY_ROOT_TOKENS.join(", ")}.`,
+      }
     }
   }
 

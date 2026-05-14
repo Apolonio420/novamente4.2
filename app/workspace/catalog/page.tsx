@@ -176,6 +176,13 @@ export default function CatalogPage() {
   const [aiGenerating, setAiGenerating] = useState(false)
   const [aiShowPanel, setAiShowPanel] = useState(false)
 
+  // Bulk price edit state
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulkCategory, setBulkCategory] = useState('')
+  const [bulkMode, setBulkMode] = useState<'set' | 'pct'>('set')
+  const [bulkValue, setBulkValue] = useState('')
+  const [bulkSubmitting, setBulkSubmitting] = useState(false)
+
   // Toast
   const [toast, setToast] = useState<Toast | null>(null)
 
@@ -447,6 +454,50 @@ export default function CatalogPage() {
     }
   }
 
+  const handleBulkPriceUpdate = async () => {
+    if (!bulkCategory.trim()) {
+      showToast('Ingresa una categoria', 'error')
+      return
+    }
+    const value = parseFloat(bulkValue)
+    if (isNaN(value)) {
+      showToast('Ingresa un valor numerico', 'error')
+      return
+    }
+    if (bulkMode === 'set' && value < 0) {
+      showToast('El precio no puede ser negativo', 'error')
+      return
+    }
+    setBulkSubmitting(true)
+    try {
+      const body: Record<string, unknown> = {
+        filter: { category: bulkCategory.trim() },
+      }
+      if (bulkMode === 'set') body.setPrice = value
+      else body.adjustPct = value
+
+      const res = await authFetch('/api/partners/catalog/bulk-price', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al actualizar precios')
+      }
+      showToast(`${data.updated} producto(s) actualizado(s)`, 'success')
+      setBulkOpen(false)
+      setBulkCategory('')
+      setBulkValue('')
+      await fetchProducts()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Error inesperado'
+      showToast(message, 'error')
+    } finally {
+      setBulkSubmitting(false)
+    }
+  }
+
   // ---------- Render ----------
 
   return (
@@ -484,6 +535,18 @@ export default function CatalogPage() {
             )}
           </div>
 
+          <div className="flex items-center gap-2">
+            {products.length > 0 && (
+              <Button
+                onClick={() => setBulkOpen(true)}
+                variant="outline"
+                className="border-zinc-700 bg-zinc-900/60 text-zinc-200 hover:bg-zinc-800 hover:text-white"
+              >
+                <Pencil className="w-4 h-4 mr-2" />
+                Cambio masivo de precios
+              </Button>
+            )}
+
           <div className="relative group">
             <Button
               onClick={openCreateForm}
@@ -498,6 +561,7 @@ export default function CatalogPage() {
                 Alcanzaste el limite de tu plan. Actualiza para agregar mas productos.
               </div>
             )}
+          </div>
           </div>
         </div>
 
@@ -1199,6 +1263,143 @@ export default function CatalogPage() {
                   {formMode === 'create' ? 'Crear producto' : 'Guardar cambios'}
                 </Button>
               </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ============================================================== */}
+      {/* Bulk price edit modal                                            */}
+      {/* ============================================================== */}
+      {bulkOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => !bulkSubmitting && setBulkOpen(false)}
+          />
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/80">
+              <div>
+                <h3 className="text-base font-bold text-zinc-100">Cambio masivo de precios</h3>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Actualiza el precio de todos los productos de una categoria a la vez.
+                </p>
+              </div>
+              <button
+                onClick={() => !bulkSubmitting && setBulkOpen(false)}
+                className="p-2 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Category */}
+              <div className="space-y-2">
+                <Label className="text-zinc-300 text-sm font-medium">
+                  Categoria <span className="text-red-400">*</span>
+                </Label>
+                {categories.length > 0 ? (
+                  <div className="relative">
+                    <select
+                      value={bulkCategory}
+                      onChange={(e) => setBulkCategory(e.target.value)}
+                      className="appearance-none w-full h-11 rounded-md border border-zinc-800 bg-zinc-900/60 px-3 pr-9 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50"
+                    >
+                      <option value="">Selecciona una categoria</option>
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                      <option value="__custom__">Otra (escribir manualmente)</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                  </div>
+                ) : null}
+                {(categories.length === 0 || bulkCategory === '__custom__') && (
+                  <Input
+                    value={bulkCategory === '__custom__' ? '' : bulkCategory}
+                    onChange={(e) => setBulkCategory(e.target.value)}
+                    placeholder="Ej: Buzo, Remera, Hoodie..."
+                    className="bg-zinc-900/60 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 h-11 mt-2"
+                  />
+                )}
+                <p className="text-[11px] text-zinc-500">
+                  Coincide parcialmente (case-insensitive). "Buzo" matchea "Buzo Hoodie", "Buzo Oversize", etc.
+                </p>
+              </div>
+
+              {/* Mode toggle */}
+              <div className="space-y-2">
+                <Label className="text-zinc-300 text-sm font-medium">Tipo de cambio</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBulkMode('set')}
+                    className={`px-3 py-2.5 rounded-md text-sm font-medium border transition-colors ${
+                      bulkMode === 'set'
+                        ? 'bg-violet-600/20 border-violet-500/50 text-violet-300'
+                        : 'bg-zinc-900/60 border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                    }`}
+                  >
+                    Precio fijo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBulkMode('pct')}
+                    className={`px-3 py-2.5 rounded-md text-sm font-medium border transition-colors ${
+                      bulkMode === 'pct'
+                        ? 'bg-violet-600/20 border-violet-500/50 text-violet-300'
+                        : 'bg-zinc-900/60 border-zinc-800 text-zinc-500 hover:border-zinc-700'
+                    }`}
+                  >
+                    Ajuste por %
+                  </button>
+                </div>
+              </div>
+
+              {/* Value */}
+              <div className="space-y-2">
+                <Label className="text-zinc-300 text-sm font-medium">
+                  {bulkMode === 'set' ? 'Precio nuevo (ARS)' : 'Porcentaje de ajuste'}
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-500 font-medium">
+                    {bulkMode === 'set' ? '$' : '%'}
+                  </span>
+                  <Input
+                    type="number"
+                    value={bulkValue}
+                    onChange={(e) => setBulkValue(e.target.value)}
+                    placeholder={bulkMode === 'set' ? '28500' : 'Ej: 10 = +10%, -5 = -5%'}
+                    step={bulkMode === 'set' ? '1' : '0.1'}
+                    className="pl-7 bg-zinc-900/60 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 h-11"
+                  />
+                </div>
+                {bulkMode === 'pct' && (
+                  <p className="text-[11px] text-zinc-500">
+                    Valor positivo aumenta, negativo descuenta. Ej: 10 = +10%, -5 = -5%.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="border-t border-zinc-800/80 px-6 py-4 flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setBulkOpen(false)}
+                disabled={bulkSubmitting}
+                className="flex-1 border-zinc-800 text-zinc-300 hover:bg-zinc-900 h-11"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleBulkPriceUpdate}
+                disabled={bulkSubmitting || !bulkCategory.trim() || !bulkValue.trim()}
+                className="flex-1 bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-600/20 h-11 disabled:opacity-40"
+              >
+                {bulkSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Aplicar a todos
+              </Button>
             </div>
           </div>
         </>
