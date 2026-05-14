@@ -9,6 +9,11 @@ import { useToast } from "@/hooks/use-toast"
 
 const DEFAULT_SIZES = ["S", "M", "L", "XL", "XXL"] as const
 
+interface ColorOption {
+  name: string
+  code: string
+}
+
 interface AddToCartButtonsProps {
   productId: string
   productName: string
@@ -19,6 +24,11 @@ interface AddToCartButtonsProps {
   // Talles posibles — si el partner_product.metadata.sizes existe se pasan;
   // si no, default unisex S-XXL.
   sizes?: string[]
+  // Colores disponibles · cuando el partner produce el mismo diseño en
+  // múltiples colores (ej: Blanco/Negro/Stone Wash) · pasados como metadata.available_colors
+  availableColors?: ColorOption[]
+  // Color por default (el que muestra el mockup actual del producto)
+  defaultColor?: string
   // Botón de fallback WhatsApp por si el partner no quiere el flow de carrito
   // y prefiere contacto directo. Si se pasa, aparece como secundario.
   fallbackWhatsappUrl?: string
@@ -34,12 +44,19 @@ export function AddToCartButtons({
   price,
   imageUrl,
   sizes,
+  availableColors,
+  defaultColor,
   fallbackWhatsappUrl,
   whatsappLabel = "Consultar por WhatsApp",
   primaryColor,
 }: AddToCartButtonsProps) {
   const availableSizes = sizes && sizes.length > 0 ? sizes : DEFAULT_SIZES
   const [selectedSize, setSelectedSize] = useState<string>(availableSizes[0])
+  const hasColors = availableColors && availableColors.length > 0
+  const initialColor = defaultColor && availableColors?.some(c => c.name === defaultColor)
+    ? defaultColor
+    : (availableColors?.[0]?.name ?? "")
+  const [selectedColor, setSelectedColor] = useState<string>(initialColor)
   const [adding, setAdding] = useState(false)
   const { addItem } = useCart()
   const { toast } = useToast()
@@ -47,10 +64,10 @@ export function AddToCartButtons({
 
   const doAdd = () => {
     addItem({
-      id: `${productId}-${selectedSize}-${Date.now()}`,
+      id: `${productId}-${selectedSize}-${selectedColor || 'def'}-${Date.now()}`,
       name: `${productName} — ${brandName}`,
       garmentType: category || "Producto",
-      color: "",
+      color: selectedColor,
       size: selectedSize,
       price,
       quantity: 1,
@@ -79,6 +96,44 @@ export function AddToCartButtons({
 
   return (
     <div className="flex flex-col gap-3">
+      {/* Color picker · solo si el producto tiene available_colors en metadata */}
+      {hasColors && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs uppercase tracking-wider text-zinc-500">Color</span>
+            <span className="text-xs text-zinc-400">{selectedColor || "Elegí color"}</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {availableColors!.map(c => (
+              <button
+                key={c.name}
+                type="button"
+                onClick={() => setSelectedColor(c.name)}
+                title={c.name}
+                aria-label={`Color ${c.name}`}
+                aria-pressed={selectedColor === c.name}
+                className={`relative w-12 h-12 rounded-full border-2 transition ${
+                  selectedColor === c.name
+                    ? "border-white shadow-md scale-105"
+                    : "border-zinc-700 hover:border-zinc-400"
+                }`}
+                style={{ backgroundColor: c.code }}
+              >
+                {selectedColor === c.name && (
+                  <span className="absolute inset-0 flex items-center justify-center text-lg font-bold"
+                    style={{ color: c.code === '#FFFFFF' || c.code.toLowerCase() === '#fff' ? '#000' : '#fff' }}>
+                    ✓
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+          <span className="text-[11px] text-zinc-500 italic">
+            El mockup muestra un color · el resto se produce a pedido sin recargo
+          </span>
+        </div>
+      )}
+
       {/* Talles */}
       <div className="flex flex-col gap-2">
         <span className="text-xs uppercase tracking-wider text-zinc-500">Talle</span>

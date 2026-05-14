@@ -289,6 +289,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
               price={product.price ?? 0}
               imageUrl={product.images?.[0] ?? null}
               sizes={Array.isArray((product.metadata as any)?.sizes) ? (product.metadata as any).sizes : undefined}
+              availableColors={Array.isArray((product.metadata as any)?.available_colors) ? (product.metadata as any).available_colors : undefined}
+              defaultColor={(product.metadata as any)?.color ?? undefined}
               fallbackWhatsappUrl={ctaHref ?? undefined}
               whatsappLabel={ctaUsesFallback ? "Consultar a Novamente por WhatsApp" : `Consultar a ${tenant.name} por WhatsApp`}
               primaryColor={tenant.primary_color}
