@@ -3,17 +3,16 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import Script from "next/script"
 import "./globals.css"
-import { Navbar } from "@/components/Navbar"
-import { Footer } from "@/components/Footer"
+// Navbar, Footer, WhatsAppButton, PublicAssistantLoader, EmailCaptureLoader
+// se renderizan ahora dentro de GlobalChrome (client) que decide si se muestran
+// o no segun la ruta (se ocultan en /workspace/*).
+import { GlobalChrome } from "@/components/GlobalChrome"
 import { Toaster } from "@/components/Toaster"
-import { WhatsAppButton } from "@/components/WhatsAppButton"
-import { PublicAssistantLoader } from "@/components/PublicAssistantLoader"
 import { ImageHistoryProvider } from "@/contexts/ImageHistoryContext"
 import { Background } from "@/components/ui/Background"
 import FacebookPixel from "@/components/FacebookPixel"
 import GoogleAdsPixel from "@/components/GoogleAdsPixel"
 import { WebVitals } from "@/components/web-vitals"
-import { EmailCaptureLoader } from "@/components/EmailCaptureLoader"
 
 const inter = Inter({ subsets: ["latin"], display: "swap" })
 
@@ -200,15 +199,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <WebVitals />
         <Background />
         <ImageHistoryProvider>
-          <div className="min-h-screen flex flex-col">
-            <Navbar />
-            <main id="main-content" className="flex-1">{children}</main>
-            <Footer />
-          </div>
+          {/* GlobalChrome oculta Navbar+Footer+flotantes para /workspace/*
+              (el workspace tiene su propio chrome y necesita full-height sin
+              capas extras que crean nested scrolls) */}
+          <GlobalChrome>{children}</GlobalChrome>
           <Toaster />
-          <WhatsAppButton />
-          <PublicAssistantLoader />
-          <EmailCaptureLoader />
         </ImageHistoryProvider>
       </body>
     </html>
