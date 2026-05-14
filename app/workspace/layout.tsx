@@ -607,8 +607,13 @@ export default function WorkspaceLayout({
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        {/* Page content — Studio/Design Engine usa layout fullscreen sin padding/scroll
+            propios para evitar nested scrolls (page maneja su propia altura). */}
+        <main className={
+          pathname === '/workspace/design-engine'
+            ? 'flex-1 overflow-hidden min-h-0'
+            : 'flex-1 overflow-y-auto p-4 lg:p-6'
+        }>
           {children}
         </main>
       </div>

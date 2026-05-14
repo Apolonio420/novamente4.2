@@ -589,7 +589,7 @@ export default function DesignStudioPage() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden">
+    <div className="flex h-full min-h-0 overflow-hidden">
       {/* ---- Sidebar ---- */}
       <div className={`
         fixed inset-y-0 left-0 z-40 w-72 bg-zinc-900/95 backdrop-blur border-r border-zinc-800
