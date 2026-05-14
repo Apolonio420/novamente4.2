@@ -9,6 +9,7 @@ import type { Tenant, PartnerProduct } from '@/lib/partners/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { JsonLd } from '@/components/partners/json-ld'
+import ImageGalleryClient from './ImageGalleryClient'
 import {
   generateProductSchema,
   generateBreadcrumbSchema,
@@ -346,54 +347,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 // ---------------------------------------------------------------------------
 
 function ImageGallery({ product }: { product: PartnerProduct }) {
-  const images = product.images || []
-  const mainImage = images[0]
-
-  return (
-    <div className="flex flex-col gap-4">
-      {/* Main image */}
-      <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900">
-        {mainImage ? (
-          <Image
-            src={mainImage}
-            alt={product.name}
-            fill
-            priority
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className="object-cover"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <span className="text-6xl text-zinc-700">
-              {product.name.charAt(0).toUpperCase()}
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Thumbnails */}
-      {images.length > 1 && (
-        <div className="grid grid-cols-4 gap-3">
-          {images.slice(0, 4).map((img, i) => (
-            <div
-              key={i}
-              className={`relative aspect-square overflow-hidden rounded-lg border bg-zinc-900 ${
-                i === 0 ? 'border-[var(--partner-primary)]' : 'border-zinc-800'
-              }`}
-            >
-              <Image
-                src={img}
-                alt={`${product.name} ${i + 1}`}
-                fill
-                sizes="(max-width: 1024px) 25vw, 12vw"
-                className="object-cover"
-              />
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
+  return <ImageGalleryClient images={product.images || []} name={product.name} />
 }
 
 // ---------------------------------------------------------------------------
