@@ -34,4 +34,4 @@ Cada prenda se produce al momento del pedido. Sin stock, sin desperdicio, sin m√
 Villa Martelli, zona norte de Buenos Aires, Argentina (CP 1603). Directo de f√°brica al cliente.
 
 ## Contacto
-WhatsApp: +54 9 11 3137-0561 | B2B: +54 9 11 6274-7588 | Email: contact@novamente.ar | IG: @novamente.ar | Web: novamente.ar
+WhatsApp: +54 9 223 516-9720 | Email: contact@novamente.ar | IG: @novamente.ar | Web: novamente.ar

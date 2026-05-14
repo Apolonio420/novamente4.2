@@ -70,5 +70,5 @@ Plataforma para crear tu línea de merch sin inversión. Nosotros producimos y e
 Starter (gratis, hasta 20 productos), Growth ($25 USD/mes, ilimitado + SEO), Pro ($100 USD/mes, todo incluido + envío gratis).
 
 ## Contacto
-WhatsApp: +54 9 11 3137-0561 | B2B: +54 9 11 6274-7588 | Email: contact@novamente.ar | IG: @novamente.ar
+WhatsApp: +54 9 223 516-9720 | Email: contact@novamente.ar | IG: @novamente.ar
 

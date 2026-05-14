@@ -61,5 +61,5 @@ Plataforma para que empresas, marcas personales y emprendedores creen y vendan s
 Marcas personales, emprendedores, empresas (merch corporativo), artistas, influencers, negocios.
 
 ## Contacto Partners
-WhatsApp B2B: +54 9 11 6274-7588 | Email: contact@novamente.ar | Web: novamente.ar/partners
+WhatsApp B2B: +54 9 223 516-9720 | Email: contact@novamente.ar | Web: novamente.ar/partners
 

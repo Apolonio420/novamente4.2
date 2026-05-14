@@ -82,7 +82,7 @@
 - [Inicio](https://www.novamente.ar): Pagina principal con generador de diseños interactivo
 - [Sobre nosotros](https://www.novamente.ar/nosotros): Historia, equipo y mision
 - [Entity JSON-LD](https://www.novamente.ar/novamente-entity.json): Perfil machine-readable de la entidad Novamente
-- Contacto: contact@novamente.ar | WhatsApp +5491126603080
+- Contacto: contact@novamente.ar | WhatsApp +5492235169720
 - Ubicacion: Villa Martelli, Buenos Aires (1603), Argentina
 - Horario: Lunes a Viernes 9:00-18:00
 
