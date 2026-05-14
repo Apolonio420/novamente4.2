@@ -174,39 +174,45 @@ export function buildTenantPrompt(
   style?: string,
   garmentColor?: string,
 ): string {
-  // Start with the advanced prompt optimizer
-  const colorway = garmentColor as any || 'negro'
-  const artisticStyle = style as any || 'vectorial'
+  // Si el partner NO eligio estilo, devolvemos el prompt casi tal cual con un
+  // wrapper minimo (solo para indicar que es para estampa textil). Antes
+  // forzabamos artisticStyle='vectorial' y eso pasaba el prompt por todo el
+  // optimizer agregando 200+ caracteres de "ilustracion vectorial, colores
+  // planos, etc" que sesgaba el resultado (ej: usuario pide "dalia roja" y
+  // sale violeta por la cadena de instrucciones automaticas).
+  const hasExplicitStyle = !!style && style.length > 0
+  let prompt: string
 
-  const result = optimizePromptForNovaMente(userPrompt, {
-    artisticStyle,
-    colorway,
-    printArea: 'R3',
-  })
+  if (!hasExplicitStyle) {
+    // Wrapper minimo. Solo agregar contexto de "imprimible sobre tela"
+    // y "fondo limpio" para que el output sea utilizable como estampa.
+    // No imponer estilo ni paleta.
+    prompt = `${userPrompt.trim()}. Diseño para estampado textil DTG, fondo limpio (transparente o blanco), alta resolucion.`
+  } else {
+    // Modo "con estilo": pasar por el optimizer completo
+    const colorway = garmentColor as any || 'negro'
+    const artisticStyle = style as any
+    const result = optimizePromptForNovaMente(userPrompt, {
+      artisticStyle,
+      colorway,
+      printArea: 'R3',
+    })
+    prompt = result.optimizedPrompt
+  }
 
-  let prompt = result.optimizedPrompt
-
-  // Apply tenant palette override
+  // Tenant config — solo aplicar lo que el partner haya configurado explicitamente
   if (config.palette && config.palette.length > 0) {
     prompt += `. Use ONLY these brand colors: ${config.palette.join(', ')}`
   }
-
-  // Apply forbidden colors
   if (config.forbidden_colors && config.forbidden_colors.length > 0) {
     prompt += `. NEVER use these colors: ${config.forbidden_colors.join(', ')}`
   }
-
-  // Apply tone
   if (config.tone) {
     prompt += `. Tone: ${config.tone}`
   }
-
-  // Apply preferred background
   if (config.preferred_background) {
     prompt += `. Background: ${config.preferred_background}`
   }
-
-  // Apply custom prompts (append any suffix)
   if (config.custom_prompts?.suffix) {
     prompt += `. ${config.custom_prompts.suffix}`
   }

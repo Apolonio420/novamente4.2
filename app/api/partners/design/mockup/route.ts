@@ -78,24 +78,37 @@ export async function POST(request: NextRequest) {
     // Get garment mapping for coordinates
     const mapping = getGarmentMapping(garmentType, color, sideChoice)
 
-    // Fetch design image as base64
+    // Resolver origin para URLs relativas (necesario en Node fetch)
+    const h = await headers()
+    const hostHeader = h.get('host')
+    const protoHeader = h.get('x-forwarded-proto') || 'https'
+    const originFromHeaders = hostHeader ? `${protoHeader}://${hostHeader}` : null
+    const origin =
+      originFromHeaders
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || 'http://localhost:3000'
+
+    // Fetch design image as base64. Soporta:
+    // - data: URI
+    // - URLs absolutas (https://...)
+    // - URLs relativas (/api/proxy-image?key=... o /foo.png) -> se resuelven contra origin
     let designBase64: string
     if (designImageUrl.startsWith('data:')) {
       designBase64 = designImageUrl.replace(/^data:image\/[^;]+;base64,/, '')
     } else {
-      const imgResp = await fetch(designImageUrl)
+      const absoluteDesignUrl = designImageUrl.startsWith('http')
+        ? designImageUrl
+        : `${origin}${designImageUrl.startsWith('/') ? '' : '/'}${designImageUrl}`
+      const imgResp = await fetch(absoluteDesignUrl)
       if (!imgResp.ok) {
-        return NextResponse.json({ error: 'No se pudo descargar la imagen del diseno' }, { status: 400 })
+        return NextResponse.json(
+          { error: `No se pudo descargar la imagen del diseno (${imgResp.status} en ${absoluteDesignUrl})` },
+          { status: 400 },
+        )
       }
       const imgBuf = await imgResp.arrayBuffer()
       designBase64 = Buffer.from(imgBuf).toString('base64')
     }
-
-    // Fetch garment base image via HTTP
-    const h = await headers()
-    const origin = h.get('origin') || process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000'
 
     const garmentPath = mapping?.garmentPath?.replace(/^\//, '') || `garments/tshirt-${color}-oversize-front.jpeg`
     const garmentUrl = `${origin}/${garmentPath}`

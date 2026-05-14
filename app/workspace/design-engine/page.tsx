@@ -108,7 +108,9 @@ export default function DesignStudioPage() {
   const [selectedSide, setSelectedSide] = useState<'front' | 'back'>('front')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [styleModalOpen, setStyleModalOpen] = useState(false)
-  const [useBrandEssence, setUseBrandEssence] = useState(true)
+  // Default OFF: la "esencia de marca" influia demasiado en el prompt. El partner
+  // la activa explicitamente si quiere que los disenos hereden su paleta/tono.
+  const [useBrandEssence, setUseBrandEssence] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Usage
@@ -160,7 +162,10 @@ export default function DesignStudioPage() {
         setPlan(data.plan || '')
         setStyles(data.styles || [])
         setGarments(data.garments || [])
-        if (data.styles?.length > 0) setSelectedStyle(data.styles[0].key)
+        // No autoseleccionar estilo. Default "sin estilo" para que el prompt del
+        // partner mande sin sesgos. Si quiere un estilo, lo abre del modal y elige.
+        // (antes auto-seleccionaba el primero, lo que cambiaba el output sin que
+        // el partner lo pidiera).
         if (data.garments?.length > 0) setSelectedGarment(data.garments[0].key)
         else setSelectedGarment(GARMENT_OPTIONS[0].key)
       } catch (e: any) {
@@ -750,7 +755,7 @@ export default function DesignStudioPage() {
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-zinc-800 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors whitespace-nowrap"
           >
             <Sparkles className="h-3 w-3 text-violet-400" />
-            {styles.find(s => s.key === selectedStyle)?.name || 'Estilo'}
+            {styles.find(s => s.key === selectedStyle)?.name || 'Sin estilo'}
           </button>
 
           {/* Current garment indicator (click opens right panel on mobile) */}
@@ -1145,6 +1150,23 @@ export default function DesignStudioPage() {
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {/* Sin estilo — primera opcion para no sesgar el prompt */}
+                <button
+                  onClick={() => { setSelectedStyle(''); setStyleModalOpen(false) }}
+                  className={`text-left p-3 rounded-xl border transition-all ${
+                    selectedStyle === ''
+                      ? 'border-violet-500 bg-violet-500/10'
+                      : 'border-zinc-700 hover:border-zinc-500 bg-zinc-800/50'
+                  }`}
+                >
+                  <p className="font-medium text-sm mb-1 flex items-center gap-1.5">
+                    <X className="w-3.5 h-3.5 text-zinc-400" />
+                    Sin estilo
+                  </p>
+                  <p className="text-xs text-zinc-500 line-clamp-2">
+                    Generar exactamente lo que pidas, sin filtros artisticos.
+                  </p>
+                </button>
                 {styles.map(s => (
                   <button
                     key={s.key}

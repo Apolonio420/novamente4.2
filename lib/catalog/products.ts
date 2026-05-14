@@ -301,6 +301,8 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     measurementsImage: '/products/size-charts/hoodie.png',
     hasDrawstrings: false,
     shortDescription: 'Buzo hoodie oversize, algodon frizado 300 g/m². Sin cordones, capucha tipica de oversize.',
+    // Colores actuales en venta: blanco, negro, stone wash. Otros colores (marron,
+    // crema, gris melange) tienen assets fisicos pero no estan en oferta actual.
     colors: [
       {
         key: 'black',
@@ -322,27 +324,6 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
         hex: '#9a9085',
         thumbnail: '/garments/buzo-hoodie-unisex-stone-wash-front.png',
         hero: '/products/buzo-hoddie-unisex-stone-wash/mockups nuevos productos-13.png',
-      },
-      {
-        key: 'marron',
-        name: 'Marron',
-        hex: '#8B5E34',
-        thumbnail: '/garments/buzo-hoodie-unisex-marron-front.jpeg',
-        hero: '/products/buzo-hoddie-unisex-marron/front.jpeg',
-      },
-      {
-        key: 'cream',
-        name: 'Crema',
-        hex: '#f5f0e1',
-        thumbnail: '/garments/buzo-hoodie-unisex-crema-front.jpeg',
-        hero: '/products/buzo-hoddie-unisex-crema/front.jpeg',
-      },
-      {
-        key: 'gray',
-        name: 'Gris Melange',
-        hex: '#9aa0a6',
-        thumbnail: '/garments/buzo-hoodie-unisex-gris-front.jpeg',
-        hero: '/products/buzo-hoddie-unisex-gris/front.jpeg',
       },
     ],
   },
