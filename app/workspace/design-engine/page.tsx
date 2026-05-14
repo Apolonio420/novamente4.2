@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Sparkles, Loader2, ImageIcon, Shirt, X, ZoomIn, Send, Plus, Menu, Trash2,
   Download, ArrowUp, Clock, Palette, ChevronDown, Upload as UploadIcon, ExternalLink,
-  ChevronRight, TrendingUp, Info,
+  ChevronRight, TrendingUp, Info, Pin, Check,
 } from 'lucide-react'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import type { StudioMessage, StudioSession, UsageInfo } from '@/lib/partners/studio/types'
@@ -132,6 +132,8 @@ export default function DesignStudioPage() {
     imageUrl: string
     garmentKey?: string
     color?: string
+    /** Si se setea, el producto se crea con 2 imagenes (frente + espalda) */
+    backImageUrl?: string
   } | null>(null)
   const [catalogProductName, setCatalogProductName] = useState('')
   const [catalogProductPrice, setCatalogProductPrice] = useState('')
@@ -141,6 +143,20 @@ export default function DesignStudioPage() {
   // Upload propio (logo / imagen ya creada)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+
+  // Lados afianzados — para producto doble estampa frente + espalda
+  // Cuando el partner afianza frente y espalda DE LA MISMA prenda+color, aparece
+  // un panel "Producto doble estampa listo" que permite crear un producto con
+  // las 2 imagenes (frente como principal, espalda como secundaria).
+  interface PinnedSide {
+    imageUrl: string
+    garmentKey: string
+    garmentColor: string
+    side: 'front' | 'back'
+    pinnedAt: number
+  }
+  const [pinnedFront, setPinnedFront] = useState<PinnedSide | null>(null)
+  const [pinnedBack, setPinnedBack] = useState<PinnedSide | null>(null)
   const [publishing, setPublishing] = useState(false)
 
   // Refs
@@ -389,6 +405,8 @@ export default function DesignStudioPage() {
         imageUrl: data.mockupUrl,
         timestamp: Date.now(),
         garmentKey: selectedGarment,
+        garmentColor: selectedColor,
+        side: selectedSide,
       }
 
       updateMessages(msgs => msgs.map(m => m.id === placeholderId ? assistantMsg : m))
@@ -477,6 +495,56 @@ export default function DesignStudioPage() {
   }
 
   // ---------------------------------------------------------------------------
+  // Afianzar lado (frente / espalda) para producto doble estampa
+  // ---------------------------------------------------------------------------
+
+  const handlePinSide = useCallback((msg: StudioMessage) => {
+    if (msg.type !== 'mockup' || !msg.imageUrl || !msg.garmentKey || !msg.side) return
+    const pin: PinnedSide = {
+      imageUrl: msg.imageUrl,
+      garmentKey: msg.garmentKey,
+      garmentColor: msg.garmentColor || 'black',
+      side: msg.side,
+      pinnedAt: Date.now(),
+    }
+
+    // Si el partner cambia de prenda o color, invalidamos lo afianzado del otro lado
+    const samePrenda = (other: PinnedSide | null) =>
+      other && other.garmentKey === pin.garmentKey && other.garmentColor === pin.garmentColor
+
+    if (pin.side === 'front') {
+      setPinnedFront(pin)
+      if (!samePrenda(pinnedBack)) setPinnedBack(null)
+    } else {
+      setPinnedBack(pin)
+      if (!samePrenda(pinnedFront)) setPinnedFront(null)
+    }
+  }, [pinnedFront, pinnedBack])
+
+  const handleUnpinSide = useCallback((side: 'front' | 'back') => {
+    if (side === 'front') setPinnedFront(null)
+    else setPinnedBack(null)
+  }, [])
+
+  const handleCreateDualSideProduct = useCallback(() => {
+    if (!pinnedFront || !pinnedBack) return
+    if (pinnedFront.garmentKey !== pinnedBack.garmentKey || pinnedFront.garmentColor !== pinnedBack.garmentColor) {
+      setCatalogToast('Frente y espalda deben ser de la misma prenda y color')
+      setTimeout(() => setCatalogToast(null), 3500)
+      return
+    }
+    const cat = CATALOG_PRODUCTS.find(p => p.key === pinnedFront.garmentKey)
+    setCatalogProductName(cat ? `${cat.name} ${COLOR_LABELS[pinnedFront.garmentColor] || ''} doble estampa` : 'Producto doble estampa')
+    setCatalogProductPrice(cat ? String(Math.round(cat.retailARS * 1.1)) : '32000') // +10% por doble estampa
+    setCatalogModal({
+      imageUrl: pinnedFront.imageUrl,
+      garmentKey: pinnedFront.garmentKey,
+      color: pinnedFront.garmentColor,
+      backImageUrl: pinnedBack.imageUrl,
+    })
+  }, [pinnedFront, pinnedBack])
+
+  // ---------------------------------------------------------------------------
   // Add to catalog
   // ---------------------------------------------------------------------------
 
@@ -494,22 +562,34 @@ export default function DesignStudioPage() {
 
     setCatalogCreating(true)
     try {
+      // Si es doble estampa, mandamos las 2 imagenes (frente primero, espalda segunda)
+      const images = catalogModal.backImageUrl
+        ? [catalogModal.imageUrl, catalogModal.backImageUrl]
+        : [catalogModal.imageUrl]
+      const isDualSide = !!catalogModal.backImageUrl
+      const description = isDualSide
+        ? `${cat?.name || 'Producto'} con doble estampa (frente y espalda) — diseño custom Novamente.`
+        : (cat?.shortDescription || `${cat?.name || 'Producto'} con diseno custom Novamente.`)
+      const tags = ['novamente', 'estampado-dtg', cat?.fit || 'oversize']
+      if (isDualSide) tags.push('doble-estampa')
+
       const res = await authFetch('/api/partners/catalog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
-          description: cat?.shortDescription || `${cat?.name || 'Producto'} con diseno custom Novamente.`,
+          description,
           category: cat?.category || 'Remera Oversize',
           price,
-          images: [catalogModal.imageUrl],
-          tags: ['novamente', 'estampado-dtg', cat?.fit || 'oversize'],
+          images,
+          tags,
           status: 'draft',
           metadata: {
             garmentKey,
             color: colorKey,
             sizes: cat?.sizes || ['S', 'M', 'L', 'XL', 'XXL'],
             source: 'design-engine',
+            dualSide: isDualSide,
           },
         }),
       })
@@ -518,8 +598,16 @@ export default function DesignStudioPage() {
         setCatalogToast(data.error || 'Error creando producto')
         return
       }
-      setCatalogToast('Producto creado en tu catalogo (borrador)')
+      const successMsg = catalogModal.backImageUrl
+        ? 'Producto doble estampa creado (borrador en /workspace/catalog)'
+        : 'Producto creado en tu catalogo (borrador)'
+      setCatalogToast(successMsg)
       setCatalogModal(null)
+      // Si era doble estampa, limpiar los lados afianzados (ya consumidos)
+      if (catalogModal.backImageUrl) {
+        setPinnedFront(null)
+        setPinnedBack(null)
+      }
       setCatalogProductName('')
       setCatalogProductPrice('')
     } catch (err: any) {
@@ -741,11 +829,74 @@ export default function DesignStudioPage() {
                   setCatalogProductPrice(cat ? String(cat.retailARS) : '28600')
                   setCatalogModal({ imageUrl: url, garmentKey, color: garmentColor })
                 }}
+                onPinSide={handlePinSide}
+                isPinned={
+                  !!msg.imageUrl &&
+                  ((msg.side === 'front' && pinnedFront?.imageUrl === msg.imageUrl) ||
+                    (msg.side === 'back' && pinnedBack?.imageUrl === msg.imageUrl))
+                }
               />
             ))
           )}
           <div ref={chatEndRef} />
         </div>
+
+        {/* Banner doble estampa — aparece cuando hay frente y/o espalda afianzados */}
+        {(pinnedFront || pinnedBack) && (
+          <div className="border-t border-violet-500/30 bg-gradient-to-r from-violet-950/40 via-zinc-900 to-emerald-950/40 px-4 py-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-violet-300 font-medium shrink-0">
+                <Pin className="w-3.5 h-3.5" />
+                Doble estampa
+              </div>
+              {/* Front slot */}
+              <div className="flex items-center gap-2">
+                {pinnedFront ? (
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/15 border border-amber-500/40">
+                    <img src={pinnedFront.imageUrl} alt="Frente" className="w-8 h-8 rounded object-cover" />
+                    <span className="text-xs text-amber-300 font-medium">Frente</span>
+                    <button onClick={() => handleUnpinSide('front')} className="p-0.5 hover:bg-amber-500/20 rounded" title="Quitar frente">
+                      <X className="w-3 h-3 text-amber-400" />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-xs text-zinc-500 px-2 py-1 rounded-lg border border-dashed border-zinc-700">
+                    Frente pendiente
+                  </span>
+                )}
+                <span className="text-zinc-600 text-xs">+</span>
+                {pinnedBack ? (
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-500/15 border border-amber-500/40">
+                    <img src={pinnedBack.imageUrl} alt="Espalda" className="w-8 h-8 rounded object-cover" />
+                    <span className="text-xs text-amber-300 font-medium">Espalda</span>
+                    <button onClick={() => handleUnpinSide('back')} className="p-0.5 hover:bg-amber-500/20 rounded" title="Quitar espalda">
+                      <X className="w-3 h-3 text-amber-400" />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-xs text-zinc-500 px-2 py-1 rounded-lg border border-dashed border-zinc-700">
+                    Espalda pendiente
+                  </span>
+                )}
+              </div>
+
+              {/* CTA cuando ambos estan listos */}
+              {pinnedFront && pinnedBack ? (
+                <button
+                  onClick={handleCreateDualSideProduct}
+                  className="ml-auto px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold inline-flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all"
+                >
+                  <Check className="w-4 h-4" />
+                  Crear producto doble estampa
+                </button>
+              ) : (
+                <span className="ml-auto text-[11px] text-zinc-500">
+                  Generá mockup del {pinnedFront ? 'lado espalda' : 'lado frente'} y afianzalo
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Compact controls bar: style + side */}
         <div className="flex items-center gap-2 px-4 py-2 border-t border-zinc-800/50 bg-zinc-900/30 overflow-x-auto">
@@ -1243,9 +1394,24 @@ export default function DesignStudioPage() {
           <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md p-6">
             <div className="flex items-center gap-2 mb-4">
               <Plus className="w-5 h-5 text-emerald-400" />
-              <h3 className="font-semibold text-lg">Agregar al catalogo</h3>
+              <h3 className="font-semibold text-lg">
+                {catalogModal.backImageUrl ? 'Agregar al catalogo · Doble estampa' : 'Agregar al catalogo'}
+              </h3>
             </div>
-            <img src={catalogModal.imageUrl} alt="Mockup" className="w-full h-48 object-contain bg-zinc-800 rounded-lg mb-4" />
+            {catalogModal.backImageUrl ? (
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <div className="relative">
+                  <img src={catalogModal.imageUrl} alt="Frente" className="w-full h-44 object-contain bg-zinc-800 rounded-lg" />
+                  <span className="absolute top-1.5 left-1.5 text-[10px] uppercase tracking-widest bg-black/70 text-white px-1.5 py-0.5 rounded">Frente</span>
+                </div>
+                <div className="relative">
+                  <img src={catalogModal.backImageUrl} alt="Espalda" className="w-full h-44 object-contain bg-zinc-800 rounded-lg" />
+                  <span className="absolute top-1.5 left-1.5 text-[10px] uppercase tracking-widest bg-black/70 text-white px-1.5 py-0.5 rounded">Espalda</span>
+                </div>
+              </div>
+            ) : (
+              <img src={catalogModal.imageUrl} alt="Mockup" className="w-full h-48 object-contain bg-zinc-800 rounded-lg mb-4" />
+            )}
 
             <div className="space-y-3 mb-5">
               <div>
@@ -1347,6 +1513,8 @@ function ChatBubble({
   onDownload,
   onPublish,
   onAddToCatalog,
+  onPinSide,
+  isPinned,
 }: {
   msg: StudioMessage
   onZoom: (url: string) => void
@@ -1354,6 +1522,8 @@ function ChatBubble({
   onDownload: (url: string) => void
   onPublish: (url: string) => void
   onAddToCatalog: (url: string, garmentKey?: string, color?: string) => void
+  onPinSide: (msg: StudioMessage) => void
+  isPinned: boolean
 }) {
   if (msg.role === 'system') {
     return (
@@ -1421,14 +1591,30 @@ function ChatBubble({
                 </button>
               )}
               {msg.type === 'mockup' && (
-                <button
-                  onClick={() => onAddToCatalog(msg.imageUrl!, msg.garmentKey, undefined)}
-                  className="px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold inline-flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all"
-                  title="Agregar este producto a tu catalogo"
-                >
-                  <Plus className="h-4 w-4" />
-                  Agregar al catalogo
-                </button>
+                <>
+                  {msg.side && (
+                    <button
+                      onClick={() => onPinSide(msg)}
+                      className={`px-3 py-2.5 rounded-lg text-white text-sm font-semibold inline-flex items-center gap-1.5 shadow-lg transition-all ${
+                        isPinned
+                          ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/30'
+                          : 'bg-zinc-700 hover:bg-zinc-600 shadow-zinc-700/30'
+                      }`}
+                      title={isPinned ? `${msg.side === 'front' ? 'Frente' : 'Espalda'} afianzado — click para guardar` : `Afianzar ${msg.side === 'front' ? 'frente' : 'espalda'} para doble estampa`}
+                    >
+                      <Pin className="h-3.5 w-3.5" />
+                      {isPinned ? 'Afianzado' : `Afianzar ${msg.side === 'front' ? 'frente' : 'espalda'}`}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => onAddToCatalog(msg.imageUrl!, msg.garmentKey, undefined)}
+                    className="px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold inline-flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all"
+                    title="Agregar este producto a tu catalogo"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Agregar al catalogo
+                  </button>
+                </>
               )}
               {/* Secundarios pequenos: zoom + publicar (descarga eliminada) */}
               <button

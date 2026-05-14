@@ -9,6 +9,10 @@ export interface StudioMessage {
   styleName?: string
   promptUsed?: string
   garmentKey?: string
+  /** Color del garment para el mockup ('black', 'white', etc.) */
+  garmentColor?: string
+  /** Lado del estampado ('front' | 'back') — usado para doble estampa */
+  side?: 'front' | 'back'
   moderationStatus?: 'passed' | 'blocked' | 'flagged'
   error?: string
   isLoading?: boolean
