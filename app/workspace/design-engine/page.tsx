@@ -453,7 +453,7 @@ export default function DesignStudioPage() {
       const assistantMsg: StudioMessage = {
         id: placeholderId,
         role: 'assistant',
-        content: 'Imagen subida — usala como diseño aplicandola a una prenda',
+        content: 'Diseño subido. Click en la imagen → ícono remera para aplicarlo a una prenda Novamente.',
         type: 'design',
         isLoading: false,
         imageUrl: data.url,
@@ -843,7 +843,7 @@ export default function DesignStudioPage() {
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading || generating}
               className="p-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              title="Subir mi logo o imagen propia"
+              title="Subir tu propio diseño, logo o imagen"
             >
               {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageIcon className="h-5 w-5" />}
             </button>
@@ -872,7 +872,7 @@ export default function DesignStudioPage() {
           </div>
           <p className="text-[10px] text-zinc-500 mt-1.5 px-1">
             <ImageIcon className="w-3 h-3 inline mr-1" />
-            Tip: tambien podés subir tu logo o un diseño que ya tengas. Despues clickeá la imagen subida → icono de remera para aplicarlo a una prenda Novamente.
+            <strong className="text-zinc-400">Subí tu propio diseño:</strong> logo, ilustración, foto, arte que ya tengas o que diseñaste afuera (PNG, JPG, WEBP, SVG). Después clickeá la imagen subida → ícono de remera para aplicarla como estampa sobre cualquiera de nuestras 8 prendas.
           </p>
         </div>
       </div>
