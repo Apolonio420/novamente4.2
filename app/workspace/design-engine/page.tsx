@@ -48,29 +48,31 @@ interface GarmentOption {
 }
 
 // ---------------------------------------------------------------------------
-// Color helpers
+// Catalogo + colores (todo derivado de lib/catalog/products.ts)
 // ---------------------------------------------------------------------------
 
-const COLOR_MAP: Record<string, string> = {
-  black: '#1a1a1a', white: '#f5f5f5', cream: '#f5f0e1', gray: '#6b7280', marron: '#8B5E34',
-}
-const COLOR_LABELS: Record<string, string> = {
-  black: 'Negro', white: 'Blanco', cream: 'Crema', gray: 'Gris', marron: 'Marron',
-}
+import { CATALOG_PRODUCTS } from '@/lib/catalog/products'
 
 const STAMP_INTENT_RE = /estampa|stampe|ponel[oae]?|aplica|aplicalo|mockup|pone[mr]?lo|ubicalo|coloca/i
-
-// Derivado de lib/catalog/products.ts (source of truth). Antes este array
-// estaba duplicado y se desincronizaba con GARMENT_TYPES + garment-pricing.
-import { CATALOG_PRODUCTS } from '@/lib/catalog/products'
 
 const GARMENT_OPTIONS: { key: string; label: string }[] = CATALOG_PRODUCTS.map(p => ({
   key: p.key,
   label: p.name,
 }))
 
-// Garment thumbnail mapping (key → front image path)
-// Derivado de lib/catalog/products.ts — cada color tiene su thumbnail propio.
+// Color hex y nombres en español — derivados del catalog (cada producto tiene
+// sus colores con hex y name definidos). Cubre TODOS los colores reales.
+const COLOR_MAP: Record<string, string> = {}
+const COLOR_LABELS: Record<string, string> = {}
+for (const p of CATALOG_PRODUCTS) {
+  for (const c of p.colors) {
+    if (!COLOR_MAP[c.key]) COLOR_MAP[c.key] = c.hex
+    if (!COLOR_LABELS[c.key]) COLOR_LABELS[c.key] = c.name
+  }
+}
+
+// Garment thumbnail mapping (key → color → ruta de imagen). Derivado del
+// catalog — cada color tiene su thumbnail propio en /public/garments/.
 const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = Object.fromEntries(
   CATALOG_PRODUCTS.map(p => [
     p.key,
@@ -122,6 +124,21 @@ export default function DesignStudioPage() {
   // Publish dialog
   const [publishUrl, setPublishUrl] = useState<string | null>(null)
   const [publishSlot, setPublishSlot] = useState<'hero' | 'banner'>('hero')
+
+  // Add to catalog modal
+  const [catalogModal, setCatalogModal] = useState<{
+    imageUrl: string
+    garmentKey?: string
+    color?: string
+  } | null>(null)
+  const [catalogProductName, setCatalogProductName] = useState('')
+  const [catalogProductPrice, setCatalogProductPrice] = useState('')
+  const [catalogCreating, setCatalogCreating] = useState(false)
+  const [catalogToast, setCatalogToast] = useState<string | null>(null)
+
+  // Upload propio (logo / imagen ya creada)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
   const [publishing, setPublishing] = useState(false)
 
   // Refs
@@ -403,6 +420,112 @@ export default function DesignStudioPage() {
   }
 
   // ---------------------------------------------------------------------------
+  // Upload custom image / logo del partner
+  // ---------------------------------------------------------------------------
+
+  const handleUploadDesign = async (file: File) => {
+    if (uploading) return
+    setUploading(true)
+    setError(null)
+    const sessionId = await ensureRemoteSession()
+
+    // Placeholder mientras sube
+    const sysMsg = createStudioMessage('system', `Subiendo: ${file.name}`)
+    const placeholderId = crypto.randomUUID()
+    const placeholder: StudioMessage = {
+      id: placeholderId,
+      role: 'assistant',
+      content: '',
+      type: 'design',
+      isLoading: true,
+      timestamp: Date.now(),
+    }
+    updateMessages(msgs => [...msgs, sysMsg, placeholder])
+    if (sessionId) saveStudioMessage(sessionId, sysMsg).catch(() => {})
+
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await authFetch('/api/partners/design/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
+
+      const assistantMsg: StudioMessage = {
+        id: placeholderId,
+        role: 'assistant',
+        content: 'Imagen subida — usala como diseño aplicandola a una prenda',
+        type: 'design',
+        isLoading: false,
+        imageUrl: data.url,
+        timestamp: Date.now(),
+      }
+      updateMessages(msgs => msgs.map(m => m.id === placeholderId ? assistantMsg : m))
+      if (sessionId) saveStudioMessage(sessionId, assistantMsg).catch(() => {})
+    } catch (err: any) {
+      updateMessages(msgs =>
+        msgs.map(m => m.id === placeholderId ? { ...m, isLoading: false, error: err.message } : m)
+      )
+      setError(err.message || 'Error subiendo imagen')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Add to catalog
+  // ---------------------------------------------------------------------------
+
+  const handleCreateCatalogProduct = async () => {
+    if (!catalogModal) return
+    const name = catalogProductName.trim()
+    if (!name) {
+      setCatalogToast('Falta nombre del producto')
+      return
+    }
+    const price = parseInt(catalogProductPrice, 10) || 0
+    const garmentKey = catalogModal.garmentKey || selectedGarment
+    const colorKey = catalogModal.color || selectedColor
+    const cat = CATALOG_PRODUCTS.find(p => p.key === garmentKey)
+
+    setCatalogCreating(true)
+    try {
+      const res = await authFetch('/api/partners/catalog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          description: cat?.shortDescription || `${cat?.name || 'Producto'} con diseno custom Novamente.`,
+          category: cat?.category || 'Remera Oversize',
+          price,
+          images: [catalogModal.imageUrl],
+          tags: ['novamente', 'estampado-dtg', cat?.fit || 'oversize'],
+          status: 'draft',
+          metadata: {
+            garmentKey,
+            color: colorKey,
+            sizes: cat?.sizes || ['S', 'M', 'L', 'XL', 'XXL'],
+            source: 'design-engine',
+          },
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setCatalogToast(data.error || 'Error creando producto')
+        return
+      }
+      setCatalogToast('Producto creado en tu catalogo (borrador)')
+      setCatalogModal(null)
+      setCatalogProductName('')
+      setCatalogProductPrice('')
+    } catch (err: any) {
+      setCatalogToast(err.message || 'Error')
+    } finally {
+      setCatalogCreating(false)
+      setTimeout(() => setCatalogToast(null), 4000)
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Download
   // ---------------------------------------------------------------------------
 
@@ -605,6 +728,14 @@ export default function DesignStudioPage() {
                 onMockup={(url) => handleMockup(url)}
                 onDownload={(url) => handleDownload(url)}
                 onPublish={(url) => { setPublishUrl(url); setPublishSlot('hero') }}
+                onAddToCatalog={(url, gKey, gColor) => {
+                  const garmentKey = gKey || selectedGarment
+                  const garmentColor = gColor || selectedColor
+                  const cat = CATALOG_PRODUCTS.find(p => p.key === garmentKey)
+                  setCatalogProductName(cat ? `${cat.name} ${COLOR_LABELS[garmentColor] || garmentColor}` : 'Producto Novamente')
+                  setCatalogProductPrice(cat ? String(cat.retailARS) : '28600')
+                  setCatalogModal({ imageUrl: url, garmentKey, color: garmentColor })
+                }}
               />
             ))
           )}
@@ -694,6 +825,28 @@ export default function DesignStudioPage() {
             })()}
           </div>
           <div className="flex items-end gap-2">
+            {/* Upload logo / imagen propia */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) handleUploadDesign(f)
+                // reset para permitir re-subir el mismo archivo
+                if (e.target) e.target.value = ''
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || generating}
+              className="p-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              title="Subir mi logo o imagen propia"
+            >
+              {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageIcon className="h-5 w-5" />}
+            </button>
             <textarea
               ref={inputRef}
               value={prompt}
@@ -717,6 +870,10 @@ export default function DesignStudioPage() {
               {generating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
             </button>
           </div>
+          <p className="text-[10px] text-zinc-500 mt-1.5 px-1">
+            <ImageIcon className="w-3 h-3 inline mr-1" />
+            Tip: tambien podés subir tu logo o un diseño que ya tengas. Despues clickeá la imagen subida → icono de remera para aplicarlo a una prenda Novamente.
+          </p>
         </div>
       </div>
 
@@ -739,74 +896,149 @@ export default function DesignStudioPage() {
             </button>
           </div>
 
+          {/* Header info */}
+          <div className="px-4 py-2 border-b border-zinc-900/50 text-[10px] uppercase tracking-widest text-zinc-500">
+            8 prendas disponibles · click para usar
+          </div>
+
           {/* Garment cards */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {garments.map(g => {
               const pricing = GARMENT_PRICING[g.key]
+              const catalogProduct = CATALOG_PRODUCTS.find(p => p.key === g.key)
               const isSelected = selectedGarment === g.key
               const thumbKey = Object.keys(GARMENT_THUMBNAILS[g.key] || {})[0] || 'black'
               const thumbUrl = GARMENT_THUMBNAILS[g.key]?.[selectedColor] || GARMENT_THUMBNAILS[g.key]?.[thumbKey]
+              const availableColors = g.colors // colores ya validados por design-engine.ts contra catalog
 
               return (
-                <button
+                <div
                   key={g.key}
-                  onClick={() => {
-                    setSelectedGarment(g.key)
-                    // Reset color if not available for this garment
-                    if (!g.colors.includes(selectedColor)) {
-                      setSelectedColor(g.colors[0] || 'black')
-                    }
-                  }}
-                  className={`w-full text-left rounded-xl border transition-all ${
+                  className={`rounded-xl border transition-all ${
                     isSelected
-                      ? 'border-violet-500 bg-violet-500/10 shadow-lg shadow-violet-500/5'
-                      : 'border-zinc-800 hover:border-zinc-600 bg-zinc-800/30'
+                      ? 'border-violet-500 bg-violet-500/10 shadow-lg shadow-violet-500/10'
+                      : 'border-zinc-800 hover:border-zinc-600 bg-zinc-900/40'
                   }`}
                 >
-                  <div className="flex gap-3 p-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedGarment(g.key)
+                      if (!g.colors.includes(selectedColor)) {
+                        setSelectedColor(g.colors[0] || 'black')
+                      }
+                    }}
+                    className="w-full text-left p-3 flex gap-3"
+                  >
                     {/* Thumbnail */}
-                    {thumbUrl && (
-                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0">
+                    {thumbUrl ? (
+                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0 ring-1 ring-zinc-700">
                         <img src={thumbUrl} alt={g.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                        <Shirt className="w-7 h-7 text-zinc-600" />
                       </div>
                     )}
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${isSelected ? 'text-violet-300' : 'text-zinc-200'}`}>
+                      <p className={`text-sm font-semibold ${isSelected ? 'text-violet-300' : 'text-zinc-100'}`}>
                         {g.name}
                       </p>
-
-                      {/* Price */}
-                      {pricing && (
-                        <p className="text-sm font-semibold text-emerald-400 mt-0.5">
-                          {formatGarmentPrice(pricing.on_demand)}
+                      {catalogProduct && (
+                        <p className="text-[10px] text-zinc-500 mt-0.5">
+                          {catalogProduct.fit} · {catalogProduct.weightGsm ?? '—'} g/m²
                         </p>
                       )}
 
-                      {/* Color dots */}
-                      <div className="flex items-center gap-1 mt-1.5">
-                        {g.colors.map(c => (
-                          <button
+                      {/* Price */}
+                      {pricing && (
+                        <div className="mt-1 flex items-baseline gap-1.5">
+                          <span className="text-sm font-bold text-emerald-400">
+                            {formatGarmentPrice(pricing.on_demand)}
+                          </span>
+                          {catalogProduct && catalogProduct.retailARS > pricing.on_demand && (
+                            <span className="text-[10px] text-zinc-500">
+                              retail {formatGarmentPrice(catalogProduct.retailARS)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Talles disponibles */}
+                      {catalogProduct && (
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {catalogProduct.sizes.map(s => (
+                            <span
+                              key={s}
+                              className="text-[9px] tracking-wider uppercase px-1 py-0.5 rounded bg-zinc-800/60 text-zinc-500 border border-zinc-700/50"
+                            >
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Color swatches — visibles solo cuando selected, con nombres */}
+                  {isSelected && availableColors.length > 0 && (
+                    <div className="border-t border-violet-500/20 px-3 pb-3 pt-2.5">
+                      <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-1.5">
+                        Color ({availableColors.length} disponible{availableColors.length === 1 ? '' : 's'})
+                      </p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {availableColors.map(c => {
+                          const isColorSelected = selectedColor === c
+                          return (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setSelectedColor(c)
+                              }}
+                              className={`flex items-center gap-1.5 px-1.5 py-1 rounded-md border transition ${
+                                isColorSelected
+                                  ? 'border-violet-500 bg-violet-500/15'
+                                  : 'border-zinc-700 hover:border-zinc-500 bg-zinc-900/60'
+                              }`}
+                              aria-pressed={isColorSelected}
+                            >
+                              <span
+                                className="w-3 h-3 rounded-full border border-zinc-600 flex-shrink-0"
+                                style={{ backgroundColor: COLOR_MAP[c] || c }}
+                              />
+                              <span className={`text-[10px] truncate ${isColorSelected ? 'text-violet-200 font-medium' : 'text-zinc-400'}`}>
+                                {COLOR_LABELS[c] || c}
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cuando NO esta seleccionado, mostrar dots compactos */}
+                  {!isSelected && availableColors.length > 0 && (
+                    <div className="px-3 pb-3 pt-0">
+                      <div className="flex items-center gap-1">
+                        {availableColors.slice(0, 8).map(c => (
+                          <span
                             key={c}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedGarment(g.key)
-                              setSelectedColor(c)
-                            }}
-                            className={`w-4 h-4 rounded-full border transition-all ${
-                              isSelected && selectedColor === c
-                                ? 'border-violet-500 scale-110 ring-1 ring-violet-500/50'
-                                : 'border-zinc-600'
-                            }`}
+                            className="w-3 h-3 rounded-full border border-zinc-700"
                             style={{ backgroundColor: COLOR_MAP[c] || c }}
                             title={COLOR_LABELS[c] || c}
                           />
                         ))}
+                        {availableColors.length > 8 && (
+                          <span className="text-[9px] text-zinc-600 ml-1">+{availableColors.length - 8}</span>
+                        )}
                       </div>
                     </div>
-                  </div>
-                </button>
+                  )}
+                </div>
               )
             })}
 
@@ -983,6 +1215,101 @@ export default function DesignStudioPage() {
         </div>
       )}
 
+      {/* ─── Add to catalog modal ────────────────────────────────────── */}
+      {catalogModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Plus className="w-5 h-5 text-emerald-400" />
+              <h3 className="font-semibold text-lg">Agregar al catalogo</h3>
+            </div>
+            <img src={catalogModal.imageUrl} alt="Mockup" className="w-full h-48 object-contain bg-zinc-800 rounded-lg mb-4" />
+
+            <div className="space-y-3 mb-5">
+              <div>
+                <label className="text-xs uppercase tracking-widest text-zinc-500 mb-1.5 block">Nombre del producto</label>
+                <input
+                  type="text"
+                  value={catalogProductName}
+                  onChange={e => setCatalogProductName(e.target.value)}
+                  placeholder="Ej: Remera Oversize 'Mi Diseño'"
+                  className="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-700 rounded-md text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-violet-500"
+                  maxLength={120}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-widest text-zinc-500 mb-1.5 block">Precio de venta (ARS)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="100"
+                  value={catalogProductPrice}
+                  onChange={e => setCatalogProductPrice(e.target.value)}
+                  className="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-700 rounded-md text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-violet-500"
+                />
+                <p className="text-[10px] text-zinc-500 mt-1">
+                  Sugerencia: usar el precio retail. Vas a poder editarlo despues desde /workspace/catalog.
+                </p>
+              </div>
+              {catalogModal.garmentKey && (
+                <div className="text-xs text-zinc-400 bg-zinc-800/50 rounded-md px-3 py-2">
+                  <span className="text-zinc-500">Prenda base: </span>
+                  <span className="font-medium text-zinc-200">
+                    {CATALOG_PRODUCTS.find(p => p.key === catalogModal.garmentKey)?.name || catalogModal.garmentKey}
+                  </span>
+                  {catalogModal.color && (
+                    <>
+                      <span className="text-zinc-500 ml-2">color: </span>
+                      <span className="font-medium text-zinc-200">{COLOR_LABELS[catalogModal.color] || catalogModal.color}</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCatalogModal(null)}
+                disabled={catalogCreating}
+                className="flex-1 px-4 py-2 rounded-lg border border-zinc-700 text-sm hover:bg-zinc-800 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateCatalogProduct}
+                disabled={catalogCreating || !catalogProductName.trim()}
+                className="flex-1 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50 transition-colors inline-flex items-center justify-center gap-1.5"
+              >
+                {catalogCreating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Crear producto
+                  </>
+                )}
+              </button>
+            </div>
+
+            <p className="text-[10px] text-zinc-500 mt-3 text-center">
+              Se crea como <strong className="text-zinc-400">borrador</strong>. Andá a{' '}
+              <a href="/workspace/catalog" className="text-violet-400 hover:underline">/workspace/catalog</a> para publicarlo.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Toast catalog */}
+      {catalogToast && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg bg-zinc-900 border border-emerald-500/30 text-sm text-emerald-300 shadow-lg">
+          {catalogToast}
+        </div>
+      )}
+
     </div>
   )
 }
@@ -997,12 +1324,14 @@ function ChatBubble({
   onMockup,
   onDownload,
   onPublish,
+  onAddToCatalog,
 }: {
   msg: StudioMessage
   onZoom: (url: string) => void
   onMockup: (url: string) => void
   onDownload: (url: string) => void
   onPublish: (url: string) => void
+  onAddToCatalog: (url: string, garmentKey?: string, color?: string) => void
 }) {
   if (msg.role === 'system') {
     return (
@@ -1076,9 +1405,19 @@ function ChatBubble({
                 <button
                   onClick={() => onMockup(msg.imageUrl!)}
                   className="p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white text-xs"
-                  title="Crear mockup"
+                  title="Crear mockup sobre prenda"
                 >
                   <Shirt className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {msg.type === 'mockup' && (
+                <button
+                  onClick={() => onAddToCatalog(msg.imageUrl!, msg.garmentKey, undefined)}
+                  className="p-1.5 px-2 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-medium inline-flex items-center gap-1"
+                  title="Agregar al catalogo"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Catalogo
                 </button>
               )}
               <button
