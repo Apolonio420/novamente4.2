@@ -30,6 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { KpiOverview } from '@/components/workspace/KpiOverview'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -660,6 +661,7 @@ export default function WorkspaceDashboard() {
             <h1 className="text-2xl lg:text-3xl font-bold text-zinc-100 tracking-tight">
               Hola, {data.tenant.name}
             </h1>
+            {/* KpiOverview se inserta debajo del header */}
             <Badge
               className={`text-xs font-medium border px-2.5 py-0.5 ${planStyle}`}
             >
@@ -727,6 +729,11 @@ export default function WorkspaceDashboard() {
           </div>
         </div>
       )}
+
+      {/* ================================================================= */}
+      {/* KPI OVERVIEW — Performance ultimos 30 dias                        */}
+      {/* ================================================================= */}
+      <KpiOverview />
 
       {/* ================================================================= */}
       {/* METRIC CARDS                                                      */}

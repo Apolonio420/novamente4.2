@@ -170,6 +170,12 @@ export default function CatalogPage() {
   const [formCardDesc, setFormCardDesc] = useState('')
   const [formBrandValues, setFormBrandValues] = useState('')
 
+  // AI copywriting state
+  const [aiIdea, setAiIdea] = useState('')
+  const [aiTone, setAiTone] = useState<'urban' | 'minimal' | 'fun' | 'premium' | 'sport' | 'romantic'>('urban')
+  const [aiGenerating, setAiGenerating] = useState(false)
+  const [aiShowPanel, setAiShowPanel] = useState(false)
+
   // Toast
   const [toast, setToast] = useState<Toast | null>(null)
 
@@ -207,6 +213,43 @@ export default function CatalogPage() {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3500)
   }, [])
+
+  // AI copywriting — genera nombre + descripcion + tags + SEO a partir de una idea
+  const handleAiGenerate = useCallback(async () => {
+    if (!aiIdea.trim() || aiGenerating) return
+    setAiGenerating(true)
+    try {
+      const res = await authFetch('/api/partners/catalog/copy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idea: aiIdea.trim(),
+          category: formCategory || undefined,
+          color: formColors[0]?.name || undefined,
+          tone: aiTone,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        showToast(data.error || 'Error generando copy con IA', 'error')
+        return
+      }
+      // Solo rellena si los campos estan vacios — no pisa lo que el partner ya escribio
+      if (data.name && !formName.trim()) setFormName(data.name)
+      if (data.shortDescription && !formCardDesc.trim()) setFormCardDesc(data.shortDescription)
+      if (data.description) {
+        if (!formDescription.trim()) setFormDescription(data.description.slice(0, 600))
+        if (!formDetailedDesc.trim()) setFormDetailedDesc(data.description)
+      }
+      setAiShowPanel(false)
+      setAiIdea('')
+      showToast('Copy generado — revisalo y editalo a gusto', 'success')
+    } catch (err: any) {
+      showToast(err.message || 'Error', 'error')
+    } finally {
+      setAiGenerating(false)
+    }
+  }, [aiIdea, aiTone, aiGenerating, formCategory, formColors, formName, formCardDesc, formDescription, formDetailedDesc, showToast])
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -716,6 +759,75 @@ export default function CatalogPage() {
                   placeholder="Ej: Remera Clasica"
                   className="bg-zinc-900/60 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-violet-500/50 focus-visible:border-violet-500/50 h-11"
                 />
+              </div>
+
+              {/* AI Copywriting panel */}
+              <div className="rounded-lg border border-violet-500/20 bg-gradient-to-br from-violet-950/20 to-zinc-900/40 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-md bg-violet-500/15 flex items-center justify-center">
+                      <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                    </div>
+                    <span className="text-xs font-medium text-zinc-300">Generar copy con IA</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAiShowPanel(v => !v)}
+                    className="h-7 text-xs text-violet-400 hover:text-violet-300 hover:bg-violet-500/10"
+                  >
+                    {aiShowPanel ? 'Cerrar' : 'Abrir'}
+                  </Button>
+                </div>
+                {aiShowPanel && (
+                  <div className="mt-3 space-y-2">
+                    <Textarea
+                      value={aiIdea}
+                      onChange={e => setAiIdea(e.target.value)}
+                      placeholder='Describi en 1-2 oraciones tu idea. Ej: "remera para fans de Boca, con escudo retro 90s, vibe vintage"'
+                      rows={2}
+                      maxLength={300}
+                      className="bg-zinc-900/60 border-zinc-800 text-sm resize-none"
+                    />
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <select
+                        value={aiTone}
+                        onChange={e => setAiTone(e.target.value as any)}
+                        className="text-xs bg-zinc-900/60 border border-zinc-800 rounded-md px-2 py-1 text-zinc-300"
+                      >
+                        <option value="urban">Urbano / Streetwear</option>
+                        <option value="minimal">Minimalista</option>
+                        <option value="premium">Premium / Sofisticado</option>
+                        <option value="fun">Divertido / Casual</option>
+                        <option value="sport">Deportivo</option>
+                        <option value="romantic">Romantico / Femenino</option>
+                      </select>
+                      <Button
+                        type="button"
+                        onClick={handleAiGenerate}
+                        disabled={!aiIdea.trim() || aiGenerating}
+                        size="sm"
+                        className="bg-violet-600 hover:bg-violet-500 text-white"
+                      >
+                        {aiGenerating ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                            Generando
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="w-3.5 h-3.5 mr-1" />
+                            Generar
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-zinc-500">
+                      Genera nombre, descripcion y tags. Solo completa campos vacios — no pisa lo que ya escribiste.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Description */}
