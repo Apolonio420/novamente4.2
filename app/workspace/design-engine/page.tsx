@@ -1592,20 +1592,26 @@ function ChatBubble({
               )}
               {msg.type === 'mockup' && (
                 <>
-                  {msg.side && (
-                    <button
-                      onClick={() => onPinSide(msg)}
-                      className={`px-3 py-2.5 rounded-lg text-white text-sm font-semibold inline-flex items-center gap-1.5 shadow-lg transition-all ${
-                        isPinned
-                          ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/30'
-                          : 'bg-zinc-700 hover:bg-zinc-600 shadow-zinc-700/30'
-                      }`}
-                      title={isPinned ? `${msg.side === 'front' ? 'Frente' : 'Espalda'} afianzado — click para guardar` : `Afianzar ${msg.side === 'front' ? 'frente' : 'espalda'} para doble estampa`}
-                    >
-                      <Pin className="h-3.5 w-3.5" />
-                      {isPinned ? 'Afianzado' : `Afianzar ${msg.side === 'front' ? 'frente' : 'espalda'}`}
-                    </button>
-                  )}
+                  {(() => {
+                    // Mockups antiguos (creados antes de agregar msg.side en DB) no tienen
+                    // el campo. Default a 'front' para que igual se pueda afianzar.
+                    const effectiveSide = msg.side || 'front'
+                    const sideLabel = effectiveSide === 'front' ? 'frente' : 'espalda'
+                    return (
+                      <button
+                        onClick={() => onPinSide({ ...msg, side: effectiveSide })}
+                        className={`px-3 py-2.5 rounded-lg text-white text-sm font-semibold inline-flex items-center gap-1.5 shadow-lg transition-all ${
+                          isPinned
+                            ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/30'
+                            : 'bg-zinc-700 hover:bg-zinc-600 shadow-zinc-700/30'
+                        }`}
+                        title={isPinned ? `${sideLabel === 'frente' ? 'Frente' : 'Espalda'} afianzado` : `Afianzar ${sideLabel} para doble estampa`}
+                      >
+                        <Pin className="h-3.5 w-3.5" />
+                        {isPinned ? 'Afianzado' : `Afianzar ${sideLabel}`}
+                      </button>
+                    )
+                  })()}
                   <button
                     onClick={() => onAddToCatalog(msg.imageUrl!, msg.garmentKey, undefined)}
                     className="px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold inline-flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all"
