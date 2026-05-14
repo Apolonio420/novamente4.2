@@ -170,12 +170,15 @@ export async function POST(request: NextRequest) {
 - El diseno debe verse natural y bien integrado
 - Devuelve solo la imagen final de la prenda con el diseno aplicado`
 
-    // Mockup composite usa gemini-2.5-flash-image (sin -preview, ya en GA) —
-    // este es el modelo de STAMP/COMPOSITE distinto al de DISEÑO. Probado en
-    // scripts/restyle-kari-market.ts y funciona correctamente con multimodal.
+    // Mockup composite SOLO usa gemini-2.5-flash-image (sin -preview, ya en GA).
+    // IMPORTANTE: NO usar GEMINI_IMAGE_MODEL como fallback porque ese env esta
+    // apuntando a gemini-3-pro-image-preview en Vercel — ese modelo es lento
+    // y devuelve 503 Service Unavailable / Deadline expired en composites
+    // multimodales pesados. Solo aceptamos override explicito via
+    // GEMINI_STAMP_MODEL para futuros tests.
     const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_STAMP_MODEL || process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image',
+      model: process.env.GEMINI_STAMP_MODEL || 'gemini-2.5-flash-image',
       safetySettings: getGeminiSafetySettings() as any,
     })
 

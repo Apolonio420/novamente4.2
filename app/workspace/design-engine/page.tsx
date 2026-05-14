@@ -1407,47 +1407,43 @@ function ChatBubble({
               className="max-w-full rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
               onClick={() => onZoom(msg.imageUrl!)}
             />
-            {/* Action buttons */}
-            <div className="absolute bottom-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={() => onZoom(msg.imageUrl!)}
-                className="p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white text-xs"
-                title="Ampliar"
-              >
-                <ZoomIn className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={() => onDownload(msg.imageUrl!)}
-                className="p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white text-xs"
-                title="Descargar"
-              >
-                <Download className="h-3.5 w-3.5" />
-              </button>
+            {/* Action buttons — boton primario destacado segun el tipo */}
+            <div className="absolute bottom-3 right-3 flex flex-wrap gap-2 justify-end">
+              {/* Boton primario destacado: depende del tipo de mensaje */}
               {msg.type === 'design' && (
                 <button
                   onClick={() => onMockup(msg.imageUrl!)}
-                  className="p-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white text-xs"
-                  title="Crear mockup sobre prenda"
+                  className="px-4 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold inline-flex items-center gap-2 shadow-lg shadow-violet-600/30 transition-all"
+                  title="Aplicar a una prenda Novamente"
                 >
-                  <Shirt className="h-3.5 w-3.5" />
+                  <Shirt className="h-4 w-4" />
+                  Aplicar a prenda
                 </button>
               )}
               {msg.type === 'mockup' && (
                 <button
                   onClick={() => onAddToCatalog(msg.imageUrl!, msg.garmentKey, undefined)}
-                  className="p-1.5 px-2 rounded-lg bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-medium inline-flex items-center gap-1"
-                  title="Agregar al catalogo"
+                  className="px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold inline-flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all"
+                  title="Agregar este producto a tu catalogo"
                 >
-                  <Plus className="h-3.5 w-3.5" />
-                  Catalogo
+                  <Plus className="h-4 w-4" />
+                  Agregar al catalogo
                 </button>
               )}
+              {/* Secundarios pequenos: zoom + publicar (descarga eliminada) */}
+              <button
+                onClick={() => onZoom(msg.imageUrl!)}
+                className="p-2 rounded-lg bg-black/60 hover:bg-black/80 text-white"
+                title="Ampliar"
+              >
+                <ZoomIn className="h-4 w-4" />
+              </button>
               <button
                 onClick={() => onPublish(msg.imageUrl!)}
-                className="p-1.5 rounded-lg bg-violet-600/80 hover:bg-violet-500 text-white text-xs"
-                title="Publicar en tienda"
+                className="p-2 rounded-lg bg-black/60 hover:bg-black/80 text-white"
+                title="Publicar en tu tienda"
               >
-                <ExternalLink className="h-3.5 w-3.5" />
+                <ExternalLink className="h-4 w-4" />
               </button>
             </div>
           </div>
