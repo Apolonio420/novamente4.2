@@ -40,7 +40,13 @@ export default function PrivacidadPage() {
               <strong className="text-white">Novamente</strong> — CUIT
               20-40207637-3, con domicilio en Villa Martelli, Buenos Aires,
               Argentina, es responsable del tratamiento de los datos personales
-              recopilados a traves de este sitio web y sus servicios asociados.
+              recopilados. Esta Politica de Privacidad se aplica a la aplicacion{' '}
+              <strong className="text-white">Novamente</strong> (en adelante,
+              "la Aplicacion" o "Novamente"), disponible en{' '}
+              <strong className="text-white">novamente.ar</strong>, e incluye
+              tanto el sitio web como sus integraciones con servicios de terceros
+              (incluyendo la API de TikTok for Developers, segun se detalla en
+              la seccion 10).
             </p>
           </section>
 
@@ -239,18 +245,31 @@ export default function PrivacidadPage() {
           {/* TikTok API */}
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">
-              10. Uso de la API de TikTok
+              10. Uso de la API de TikTok por parte de Novamente
             </h2>
             <p>
-              La aplicacion <strong className="text-white/90">novamente.ar</strong> accede
-              a la API de TikTok mediante Login Kit y Content Posting API para publicar
-              contenido en nuestra cuenta oficial{' '}
+              La aplicacion <strong className="text-white/90">Novamente</strong>{' '}
+              (operada desde <strong className="text-white/90">novamente.ar</strong> y
+              registrada como tal en TikTok for Developers) accede a la API de TikTok
+              mediante Login Kit y Content Posting API para publicar contenido en la
+              cuenta oficial{' '}
               <strong className="text-white/90">@novamente.ar</strong>.{' '}
               <strong className="text-white/90">
-                No almacenamos datos de usuarios de TikTok.
+                Novamente no almacena datos personales de usuarios de TikTok
               </strong>{' '}
-              La integracion se utiliza exclusivamente para la publicacion automatizada
-              de contenido en nuestra propia cuenta.
+              mas alla del open_id y display_name necesarios para identificar la
+              cuenta conectada. Esta Politica de Privacidad cubre el uso que
+              Novamente hace de la API de TikTok; el tratamiento de datos por parte
+              de TikTok se rige por la{' '}
+              <a
+                href="https://www.tiktok.com/legal/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-purple-400 hover:text-purple-300 underline"
+              >
+                Politica de Privacidad de TikTok
+              </a>
+              .
             </p>
           </section>
 

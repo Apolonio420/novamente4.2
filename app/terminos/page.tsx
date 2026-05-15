@@ -39,9 +39,14 @@ export default function TerminosPage() {
             <p>
               <strong className="text-white">Novamente</strong> — CUIT
               20-40207637-3, con domicilio en Villa Martelli, Buenos Aires
-              1603, Argentina. Los presentes terminos regulan el uso del sitio
-              web y la compra de productos a traves de nuestros canales
-              digitales.
+              1603, Argentina. Los presentes Terminos y Condiciones se aplican
+              al uso de la aplicacion <strong className="text-white">Novamente</strong>{' '}
+              (en adelante, "la Aplicacion" o "Novamente"), disponible en{' '}
+              <strong className="text-white">novamente.ar</strong>, e incluyen
+              tanto la compra de productos a traves de nuestros canales digitales
+              como las integraciones de la Aplicacion con servicios de terceros
+              (incluyendo la API de TikTok for Developers, segun se detalla en la
+              seccion 15).
             </p>
           </section>
 
@@ -301,14 +306,17 @@ export default function TerminosPage() {
           {/* Automatizacion TikTok */}
           <section>
             <h2 className="text-xl font-semibold text-white mb-3">
-              15. Uso de la API de TikTok
+              15. Uso de la API de TikTok por parte de Novamente
             </h2>
             <p>
-              La aplicacion <strong className="text-white/90">novamente.ar</strong> utiliza
-              la API de TikTok for Developers para publicar contenido de forma automatizada
-              en la cuenta oficial{' '}
-              <strong className="text-white/90">@novamente.ar</strong> de TikTok. El uso de
-              esta integracion se rige por los{' '}
+              La aplicacion <strong className="text-white/90">Novamente</strong> (operada
+              desde <strong className="text-white/90">novamente.ar</strong> y registrada
+              como tal en TikTok for Developers) utiliza la API de TikTok mediante Login
+              Kit y Content Posting API para publicar contenido de forma automatizada en
+              la cuenta oficial <strong className="text-white/90">@novamente.ar</strong>{' '}
+              en TikTok. Estos Terminos de Servicio se aplican al uso de la aplicacion
+              Novamente y su integracion con la API de TikTok. El uso de esta integracion
+              se rige adicionalmente por los{' '}
               <a
                 href="https://www.tiktok.com/legal/terms-of-service"
                 target="_blank"
