@@ -308,15 +308,39 @@ export default function TerminosPage() {
             <h2 className="text-xl font-semibold text-white mb-3">
               15. Uso de la API de TikTok por parte de Novamente
             </h2>
-            <p>
+            <p className="mb-3">
               La aplicacion <strong className="text-white/90">Novamente</strong> (operada
               desde <strong className="text-white/90">novamente.ar</strong> y registrada
-              como tal en TikTok for Developers) utiliza la API de TikTok mediante Login
-              Kit y Content Posting API para publicar contenido de forma automatizada en
-              la cuenta oficial <strong className="text-white/90">@novamente.ar</strong>{' '}
-              en TikTok. Estos Terminos de Servicio se aplican al uso de la aplicacion
-              Novamente y su integracion con la API de TikTok. El uso de esta integracion
-              se rige adicionalmente por los{' '}
+              como tal en TikTok for Developers) integra la API de TikTok mediante{' '}
+              <strong className="text-white/90">Login Kit</strong> y{' '}
+              <strong className="text-white/90">Content Posting API</strong>. Esta
+              integracion tiene dos usos dentro de la Aplicacion:
+            </p>
+            <ol className="list-decimal list-inside space-y-2 mb-3">
+              <li>
+                <strong className="text-white/90">Uso por marcas y creadores (multi-tenant):</strong>{' '}
+                a traves de Novamente Studio (
+                <Link
+                  href="/partners/scheduler"
+                  className="text-purple-400 hover:text-purple-300 underline"
+                >
+                  novamente.ar/partners/scheduler
+                </Link>
+                ), marcas independientes y creadores pueden conectar sus propias cuentas
+                de TikTok via OAuth oficial para programar y publicar videos en sus feeds.
+                Cada partner autoriza explicitamente la conexion; los tokens se almacenan
+                de forma aislada por cada cuenta de Novamente y nunca se comparten entre
+                partners.
+              </li>
+              <li>
+                <strong className="text-white/90">Uso por Novamente:</strong> Novamente
+                tambien utiliza la API para publicar contenido propio (drops, lookbooks,
+                detras de escena) en su cuenta oficial{' '}
+                <strong className="text-white/90">@novamente.ar</strong> en TikTok.
+              </li>
+            </ol>
+            <p>
+              En ambos casos, el uso de esta integracion se rige adicionalmente por los{' '}
               <a
                 href="https://www.tiktok.com/legal/terms-of-service"
                 target="_blank"
@@ -325,7 +349,9 @@ export default function TerminosPage() {
               >
                 Terminos de Servicio de TikTok
               </a>{' '}
-              y las politicas de la plataforma para desarrolladores.
+              y las politicas de la plataforma para desarrolladores. Los usuarios pueden
+              revocar el acceso en cualquier momento desde la configuracion de TikTok o
+              desde su workspace en Novamente Studio.
             </p>
           </section>
         </div>

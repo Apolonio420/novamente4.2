@@ -247,20 +247,55 @@ export default function PrivacidadPage() {
             <h2 className="text-xl font-semibold text-white mb-3">
               10. Uso de la API de TikTok por parte de Novamente
             </h2>
-            <p>
+            <p className="mb-3">
               La aplicacion <strong className="text-white/90">Novamente</strong>{' '}
               (operada desde <strong className="text-white/90">novamente.ar</strong> y
-              registrada como tal en TikTok for Developers) accede a la API de TikTok
-              mediante Login Kit y Content Posting API para publicar contenido en la
-              cuenta oficial{' '}
-              <strong className="text-white/90">@novamente.ar</strong>.{' '}
+              registrada como tal en TikTok for Developers) integra la API de TikTok
+              mediante Login Kit y Content Posting API. La integracion se utiliza en
+              dos contextos:
+            </p>
+            <ul className="list-disc list-inside space-y-2 mb-3">
+              <li>
+                <strong className="text-white/90">Marcas y creadores (Novamente Studio):</strong>{' '}
+                cada partner puede conectar voluntariamente su propia cuenta de TikTok
+                via OAuth oficial desde su workspace en{' '}
+                <Link
+                  href="/partners/scheduler"
+                  className="text-purple-400 hover:text-purple-300 underline"
+                >
+                  novamente.ar/partners/scheduler
+                </Link>
+                . Los tokens y datos de cada partner se almacenan de forma{' '}
+                <strong className="text-white/90">aislada por tenant</strong> en
+                nuestra base de datos (Supabase) y nunca se comparten entre marcas.
+              </li>
+              <li>
+                <strong className="text-white/90">Uso propio:</strong> Novamente publica
+                contenido en su cuenta oficial{' '}
+                <strong className="text-white/90">@novamente.ar</strong> en TikTok.
+              </li>
+            </ul>
+            <p className="mb-3">
               <strong className="text-white/90">
-                Novamente no almacena datos personales de usuarios de TikTok
+                Datos que Novamente retiene de TikTok:
               </strong>{' '}
-              mas alla del open_id y display_name necesarios para identificar la
-              cuenta conectada. Esta Politica de Privacidad cubre el uso que
-              Novamente hace de la API de TikTok; el tratamiento de datos por parte
-              de TikTok se rige por la{' '}
+              unicamente <code className="text-purple-300">open_id</code>,{' '}
+              <code className="text-purple-300">display_name</code>, avatar (URL publica)
+              y los tokens de acceso/refresh necesarios para mantener la conexion. No
+              recolectamos seguidores, mensajes privados, contactos ni ningun dato
+              personal de los seguidores del partner.
+            </p>
+            <p className="mb-3">
+              <strong className="text-white/90">Retencion y borrado:</strong> los datos
+              se conservan mientras la cuenta de TikTok este conectada al workspace del
+              partner. El partner puede desconectar su cuenta en cualquier momento desde
+              su workspace (lo que revoca los tokens) o desde la configuracion oficial
+              de TikTok. La desconexion borra los tokens almacenados en un plazo de 30
+              dias.
+            </p>
+            <p>
+              Esta Politica de Privacidad cubre el uso que Novamente hace de la API de
+              TikTok; el tratamiento de datos por parte de TikTok se rige por la{' '}
               <a
                 href="https://www.tiktok.com/legal/privacy-policy"
                 target="_blank"
