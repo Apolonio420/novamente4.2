@@ -69,8 +69,8 @@ export default function UniformesPersonalizados() {
     },
     offers: {
       "@type": "AggregateOffer",
-      lowPrice: 31000,
-      highPrice: 58000,
+      lowPrice: 28600,
+      highPrice: 55000,
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",

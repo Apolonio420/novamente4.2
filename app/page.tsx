@@ -60,7 +60,7 @@ export default function Home() {
     estimatedCost: {
       "@type": "MonetaryAmount",
       currency: "ARS",
-      value: "31000",
+      value: "28600",
     },
     step: [
       {

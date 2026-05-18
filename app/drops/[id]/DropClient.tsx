@@ -56,15 +56,15 @@ interface GarmentMeta {
  * categoría y tipo). Mantenido en sync con lib/catalog.ts.
  */
 const GARMENT_META: Record<string, GarmentMeta> = {
-  "tshirt-black":          { category: "remera",   price: 31000, garmentType: "aldea-classic-tshirt",   colorEs: "Negra" },
-  "tshirt-white":          { category: "remera",   price: 31000, garmentType: "aldea-classic-tshirt",   colorEs: "Blanca" },
-  "tshirt-caramel":        { category: "remera",   price: 31000, garmentType: "aldea-classic-tshirt",   colorEs: "Caramel" },
-  "tshirt-black-oversize": { category: "remera",   price: 33000, garmentType: "aura-oversize-tshirt",   colorEs: "Negra (oversize)" },
-  "tshirt-white-oversize": { category: "remera",   price: 33000, garmentType: "aura-oversize-tshirt",   colorEs: "Blanca (oversize)" },
-  "hoodie-black":          { category: "hoodie",   price: 58000, garmentType: "buzo-hoodie-unisex",     colorEs: "Negro" },
-  "hoodie-cream":          { category: "hoodie",   price: 58000, garmentType: "buzo-hoodie-unisex",     colorEs: "Crema" },
-  "hoodie-gray":           { category: "hoodie",   price: 58000, garmentType: "buzo-hoodie-unisex",     colorEs: "Gris" },
-  "hoodie-caramel":        { category: "hoodie",   price: 58000, garmentType: "buzo-hoodie-unisex",     colorEs: "Caramel" },
+  "tshirt-black":          { category: "remera",   price: 28600, garmentType: "aldea-classic-tshirt",   colorEs: "Negra" },
+  "tshirt-white":          { category: "remera",   price: 28600, garmentType: "aldea-classic-tshirt",   colorEs: "Blanca" },
+  "tshirt-caramel":        { category: "remera",   price: 28600, garmentType: "aldea-classic-tshirt",   colorEs: "Caramel" },
+  "tshirt-black-oversize": { category: "remera",   price: 31000, garmentType: "aura-oversize-tshirt",   colorEs: "Negra (oversize)" },
+  "tshirt-white-oversize": { category: "remera",   price: 31000, garmentType: "aura-oversize-tshirt",   colorEs: "Blanca (oversize)" },
+  "hoodie-black":          { category: "hoodie",   price: 55000, garmentType: "buzo-hoodie-unisex",     colorEs: "Negro" },
+  "hoodie-cream":          { category: "hoodie",   price: 55000, garmentType: "buzo-hoodie-unisex",     colorEs: "Crema" },
+  "hoodie-gray":           { category: "hoodie",   price: 55000, garmentType: "buzo-hoodie-unisex",     colorEs: "Gris" },
+  "hoodie-caramel":        { category: "hoodie",   price: 55000, garmentType: "buzo-hoodie-unisex",     colorEs: "Caramel" },
 };
 
 function formatPrice(p: number): string {
@@ -89,7 +89,7 @@ export default function DropClient({ drop }: { drop: Drop }) {
 
   const meta = GARMENT_META[drop.garmentKey ?? ""] ?? {
     category: "remera" as const,
-    price: 31000,
+    price: 28600,
     garmentType: "aldea-classic-tshirt",
     colorEs: "Negra",
   };
