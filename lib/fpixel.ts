@@ -34,19 +34,39 @@ export const pageview = () => {
     }
 }
 
-export const event = (name: string, options: Record<string, unknown> = {}) => {
+/**
+ * Fire a Pixel event. Pass `eventID` to dedup with server-side CAPI:
+ * https://developers.facebook.com/docs/marketing-api/conversions-api/deduplicate-pixel-and-server-events
+ */
+export const event = (
+    name: string,
+    options: Record<string, unknown> = {},
+    eventID?: string
+) => {
     const fbq = getFbq()
     if (!fbq) {
         if (typeof window !== "undefined") console.warn(`[PIXEL] ${name} dropped — fbq not ready`, options)
         return
     }
     const enriched = enrichWithUser(options)
-    console.log(`[PIXEL] ${name} fired`, enriched)
-    fbq("track", name, enriched)
+    console.log(`[PIXEL] ${name} fired`, enriched, eventID ? `eventID=${eventID}` : '')
+    if (eventID) {
+        fbq("track", name, enriched, { eventID })
+    } else {
+        fbq("track", name, enriched)
+    }
 }
 
 // Custom Helpers
 export const viewContent = (options: Record<string, unknown> = {}) => event("ViewContent", options)
 export const lead = (options: Record<string, unknown> = {}) => event("Lead", options)
-export const purchase = (amount: number, currency = "ARS", options: Record<string, unknown> = {}) =>
-    event("Purchase", { value: amount, currency, ...options })
+/**
+ * Fire Purchase. Pass `orderId` so it dedups with server-side CAPI
+ * (which uses external_reference == order.id as event_id).
+ */
+export const purchase = (
+    amount: number,
+    currency = "ARS",
+    options: Record<string, unknown> = {},
+    orderId?: string
+) => event("Purchase", { value: amount, currency, ...options }, orderId)

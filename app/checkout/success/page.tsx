@@ -78,7 +78,7 @@ export default function CheckoutSuccessPage() {
         contents: snapshotItems.map((i) => ({ id: i.id, quantity: i.quantity, item_price: i.price })),
         num_items: snapshotItems.reduce((n, i) => n + i.quantity, 0),
         order_id: orderId,
-      })
+      }, orderId)  // eventID for Pixel/CAPI dedup
       gadsPurchase(snapshotValue, orderId, "ARS")
       dataLayerPurchase({
         orderId: orderId ?? "",
