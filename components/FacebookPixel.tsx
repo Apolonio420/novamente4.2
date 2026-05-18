@@ -52,8 +52,17 @@ export default function FacebookPixel() {
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${pixelId}');
-            fbq('track', 'PageView');
+            (function(){
+              var u={};
+              try{var s=localStorage.getItem('nm_pixel_user');if(s)u=JSON.parse(s);}catch(e){}
+              if(Object.keys(u).length>0){
+                fbq('init','${pixelId}',u);
+                fbq('track','PageView',u);
+              } else {
+                fbq('init','${pixelId}');
+                fbq('track','PageView');
+              }
+            })();
           `,
                 }}
             />

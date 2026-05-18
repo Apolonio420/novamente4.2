@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCart } from "@/lib/cartStore"
 import * as fpixel from "@/lib/fpixel"
+import { setPixelUser } from "@/lib/pixel-user"
 import { trackBeginCheckout } from "@/lib/analytics"
 import { formatCurrency } from "@/lib/utils"
 import { Loader2, ArrowLeft, CreditCard, Smartphone, Building2, Shield, Truck, Clock } from "lucide-react"
@@ -112,6 +113,19 @@ export default function CheckoutPage() {
       alert("Por favor completa todos los campos requeridos")
       return
     }
+
+    // Persist Advanced Matching data so all subsequent Pixel events (and
+    // PageViews on future visits) carry hashed user info → improves Event
+    // Match Quality from ~6/10 to 8-9/10.
+    setPixelUser({
+      em: customerInfo.email,
+      ph: customerInfo.phone,
+      fn: customerInfo.firstName,
+      ln: customerInfo.lastName,
+      ct: customerInfo.city,
+      zp: customerInfo.postalCode,
+      country: 'ar',
+    })
 
     fpixel.event("InitiateCheckout", {
       content_ids: items.map((i) => i.id),
