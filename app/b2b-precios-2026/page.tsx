@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import B2BCatalog from "./B2BCatalog"
-import { MODELS, TIERS } from "./data"
+import UnifiedPriceTable from "./UnifiedPriceTable"
+import { TIERS } from "./data"
 
 export const metadata: Metadata = {
   title: "Catalogo B2B Novamente — Tarifas Exclusivas 2026",
@@ -14,10 +15,6 @@ export const metadata: Metadata = {
     googleBot: { index: false, follow: false },
   },
   alternates: { canonical: undefined },
-}
-
-function formatPrice(value: number) {
-  return `$${value.toLocaleString("es-AR")}`
 }
 
 export default function B2BPricesPage() {
@@ -59,50 +56,7 @@ export default function B2BPricesPage() {
 
       <B2BCatalog />
 
-      <section className="mb-14">
-        <div className="text-center mb-6">
-          <h2 className="novamente-heading text-2xl mb-2">Tabla de Precios Unificados</h2>
-          <p className="text-sm text-muted-foreground">
-            Precios finales por unidad en Pesos (ARS), incluyen estampa estandar.
-          </p>
-        </div>
-
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-muted/40">
-                <th className="text-left p-4 font-semibold">Producto</th>
-                {TIERS.map((t) => (
-                  <th
-                    key={t.key}
-                    className="text-right p-4 font-semibold whitespace-nowrap"
-                  >
-                    {t.label}
-                    <span className="block text-xs font-normal text-muted-foreground">
-                      ({t.range})
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {MODELS.map((p) => (
-                <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/20">
-                  <td className="p-4">
-                    <p className="font-semibold">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.subtitle}</p>
-                  </td>
-                  {TIERS.map((t) => (
-                    <td key={t.key} className="p-4 text-right tabular-nums whitespace-nowrap">
-                      {formatPrice(p.prices[t.key])}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <UnifiedPriceTable />
 
       <section className="mb-14">
         <h2 className="novamente-heading text-2xl text-center mb-6">

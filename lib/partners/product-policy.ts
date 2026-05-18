@@ -31,7 +31,6 @@ export const ALLOWED_PARTNER_CATEGORIES = [
   "Buzo Cuello Redondo",
   // Otros
   "Arte",
-  "Lienzo",
 ] as const
 
 const ALLOWED_SET = new Set<string>(ALLOWED_PARTNER_CATEGORIES.map(c => c.toLowerCase()))
@@ -48,7 +47,6 @@ const CATEGORY_ROOT_TOKENS = [
   "hoodie",
   "musculosa",
   "crop",
-  "lienzo",
   "arte",
 ]
 
@@ -150,7 +148,7 @@ export function validatePartnerProductForCreation(input: {
     if (re.test(haystack)) {
       return {
         ok: false,
-        reason: `El producto contiene "${kw}" en el nombre o descripcion. Solo se pueden vender prendas producidas por Novamente (remeras, hoodies, buzos, musculosas, lienzos). Contactanos si tu producto deberia estar permitido.`,
+        reason: `El producto contiene "${kw}" en el nombre o descripcion. Solo se pueden vender prendas producidas por Novamente (remeras, hoodies, buzos, musculosas). Contactanos si tu producto deberia estar permitido.`,
       }
     }
   }

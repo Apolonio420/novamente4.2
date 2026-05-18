@@ -67,7 +67,7 @@ export default function DisenaTuRemera() {
     offers: {
       "@type": "Offer",
       url: "https://www.novamente.ar/disena-tu-remera",
-      price: "28600",
+      price: "31000",
       priceCurrency: "ARS",
       priceValidUntil: "2026-12-31",
       availability: "https://schema.org/InStock",

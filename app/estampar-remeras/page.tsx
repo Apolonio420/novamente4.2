@@ -71,8 +71,8 @@ export default function EstamparRemeras() {
     },
     offers: {
       "@type": "AggregateOffer",
-      lowPrice: 21800,
-      highPrice: 55000,
+      lowPrice: 24000,
+      highPrice: 58000,
       priceCurrency: "ARS",
       offerCount: 9,
       availability: "https://schema.org/InStock",
@@ -187,13 +187,13 @@ export default function EstamparRemeras() {
   ]
 
   const pricingTiers = [
-    { garment: "Musculosa Bali", price: 21800, description: "Morley, ideal verano" },
-    { garment: "Remera Crop Mujer", price: 23500, description: "Crop top moderno" },
-    { garment: "Remera Clasica", price: 28600, description: "Fit regular, unisex/mujer" },
-    { garment: "Aura Oversize T-Shirt", price: 31000, description: "La mas vendida", popular: true },
-    { garment: "Buzo Cuello Redondo", price: 43000, description: "Crewneck oversize" },
-    { garment: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize" },
-    { garment: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize" },
+    { garment: "Musculosa Bali", price: 24000, description: "Morley, ideal verano" },
+    { garment: "Remera Crop Mujer", price: 26000, description: "Crop top moderno" },
+    { garment: "Remera Clasica", price: 31000, description: "Fit regular, unisex/mujer" },
+    { garment: "Aura Oversize T-Shirt", price: 33000, description: "La mas vendida", popular: true },
+    { garment: "Buzo Cuello Redondo", price: 45000, description: "Crewneck oversize" },
+    { garment: "Buzo Hoodie Oversize", price: 58000, description: "Hoodie oversize" },
+    { garment: "Buzo Hoodie Oversize", price: 58000, description: "Hoodie oversize" },
   ]
 
   const steps = [

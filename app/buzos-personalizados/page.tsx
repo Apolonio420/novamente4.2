@@ -73,8 +73,8 @@ export default function BuzosPersonalizados() {
     },
     offers: {
       "@type": "AggregateOffer",
-      lowPrice: 43000,
-      highPrice: 55000,
+      lowPrice: 45000,
+      highPrice: 58000,
       priceCurrency: "ARS",
       offerCount: 7,
       availability: "https://schema.org/InStock",
@@ -162,13 +162,13 @@ export default function BuzosPersonalizados() {
   }
 
   const products = [
-    { name: "Buzo Cuello Redondo Negro", price: 43000, description: "Crewneck oversize, algodon 100% frizado", category: "Crewneck" },
-    { name: "Buzo Cuello Redondo Crema", price: 43000, description: "Crewneck oversize, base neutra", category: "Crewneck" },
-    { name: "Buzo Cuello Redondo Gris", price: 43000, description: "Crewneck oversize, gris melange clasico", category: "Crewneck" },
-    { name: "Buzo Hoodie Oversize Negro", price: 55000, description: "Hoodie oversize con capucha y bolsillo", category: "Hoodie", popular: true },
-    { name: "Buzo Hoodie Oversize Marron", price: 55000, description: "Hoodie oversize, tono marron", category: "Hoodie" },
-    { name: "Buzo Hoodie Oversize Crema", price: 55000, description: "Hoodie oversize, base neutra versatil", category: "Hoodie" },
-    { name: "Buzo Hoodie Oversize Gris", price: 55000, description: "Hoodie oversize, gris melange", category: "Hoodie" },
+    { name: "Buzo Cuello Redondo Negro", price: 45000, description: "Crewneck oversize, algodon 100% frizado", category: "Crewneck" },
+    { name: "Buzo Cuello Redondo Crema", price: 45000, description: "Crewneck oversize, base neutra", category: "Crewneck" },
+    { name: "Buzo Cuello Redondo Gris", price: 45000, description: "Crewneck oversize, gris melange clasico", category: "Crewneck" },
+    { name: "Buzo Hoodie Oversize Negro", price: 58000, description: "Hoodie oversize con capucha y bolsillo", category: "Hoodie", popular: true },
+    { name: "Buzo Hoodie Oversize Marron", price: 58000, description: "Hoodie oversize, tono marron", category: "Hoodie" },
+    { name: "Buzo Hoodie Oversize Crema", price: 58000, description: "Hoodie oversize, base neutra versatil", category: "Hoodie" },
+    { name: "Buzo Hoodie Oversize Gris", price: 58000, description: "Hoodie oversize, gris melange", category: "Hoodie" },
   ]
 
   const advantages = [

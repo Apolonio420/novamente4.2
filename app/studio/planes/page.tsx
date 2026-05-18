@@ -2,13 +2,14 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, Sparkles, MessageCircle, Zap, TrendingUp } from "lucide-react"
+import { Check, Sparkles } from "lucide-react"
 import {
   ALL_GARMENT_PRICING,
   getPartnerPlanPrice,
   getPlanMargin,
   formatPrice,
 } from "@/lib/partners/garment-pricing"
+import { PlanCards } from "./PlanCards"
 
 export const metadata: Metadata = {
   title: "Planes y precios — Novamente Studio",
@@ -87,15 +88,15 @@ const faqSchema = {
       name: "¿Cuál es la diferencia entre Starter, Growth y Pro?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Starter es gratis: storefront propio, diseño con IA, hasta 10 productos y 20 leads/mes, prendas a precio retail. Growth (USD$50/mes) suma productos y leads ilimitados, SEO completo, Design Engine, analytics y prendas al costo Novamente (margen alto para el partner). Pro (USD$100/mes) suma chatbot WhatsApp + Instagram DM, automatización de contenido IG/FB/X, setup Meta Business, plantillas de Meta Ads y onboarding 1:1.",
+        text: "Starter es gratis: storefront propio, diseño con IA, hasta 10 productos y 20 leads/mes, prendas a precio partner (mismo precio que /b2b-precios-2026). Growth (USD$50/mes) suma productos y leads ilimitados, SEO completo, Design Engine, analytics y un precio aún más bajo por prenda. Pro (USD$100/mes) suma chatbot WhatsApp + Instagram DM, automatización de contenido IG/FB/X, setup Meta Business, plantillas de Meta Ads y onboarding 1:1.",
       },
     },
     {
       "@type": "Question",
-      name: "¿Qué significa 'prendas al costo'?",
+      name: "¿Cómo se comparan los precios entre planes?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "En los planes Growth y Pro, el partner paga el costo de producción Novamente sin nuestro margen retail. Por ejemplo, una remera Aldea sale $25.696 (en vez de $28.600 retail). El partner vende a precio retail en su storefront y se queda con todo el margen.",
+        text: "Los partners Starter pagan el precio publicado en /b2b-precios-2026 (por ejemplo, una remera Aldea $25.700 en lugar de $28.600 retail). Los partners Growth y Pro acceden a un precio aún más competitivo (Aldea $21.696, Buzo Hoodie $30.170) que multiplica el margen al vender a retail web. Mismo precio para todos los colores dentro de cada familia.",
       },
     },
     {
@@ -144,13 +145,13 @@ const howToSchema = {
       "@type": "HowToStep",
       position: 1,
       name: "Empezá con Starter si estás probando",
-      text: "Si todavía no tenés audiencia o estás validando si querés vender ropa, arrancá con Starter (gratis). Tenés storefront, IA y producción on-demand. Prendas a precio retail, margen menor.",
+      text: "Si todavía no tenés audiencia o estás validando si querés vender ropa, arrancá con Starter (gratis). Tenés storefront, IA y producción on-demand. Prendas a precio partner publicado en /b2b-precios-2026.",
     },
     {
       "@type": "HowToStep",
       position: 2,
       name: "Upgradeá a Growth cuando empieces a vender",
-      text: "Cuando estés haciendo 10+ ventas/mes, el plan Growth (USD$50/mes) se paga solo: las prendas pasan al costo Novamente y tu margen por unidad sube ~$3.000-$24.000 según producto. También sumás SEO, analytics y branding avanzado.",
+      text: "Cuando estés haciendo 10+ ventas/mes, el plan Growth (USD$50/mes) se paga solo: el precio por prenda baja respecto al tier Starter y tu margen por unidad sube entre $2.000 y $9.000 adicionales según producto. También sumás SEO, analytics y branding avanzado.",
     },
     {
       "@type": "HowToStep",
@@ -193,149 +194,17 @@ export default function PlanesPage() {
         </p>
       </header>
 
-      {/* Plan cards */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-16 md:mb-24">
-        {/* Starter */}
-        <article className="rounded-2xl border border-border/40 bg-card/50 p-6 md:p-8 flex flex-col">
-          <header className="mb-6">
-            <h2 className="text-2xl font-bold mb-1">Starter</h2>
-            <p className="text-sm text-muted-foreground">Para arrancar y probar el modelo.</p>
-          </header>
-          <div className="mb-6">
-            <div className="flex items-baseline gap-1">
-              <span className="text-5xl font-bold">Gratis</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Por siempre. Sin tarjeta.</p>
-          </div>
-          <ul className="space-y-3 text-sm flex-1 mb-6">
-            {[
-              "Storefront propio en novamente.ar/p/tu-marca",
-              "Logo, colores, banner y branding básico",
-              "Hasta 10 productos publicados",
-              "20 leads / mes",
-              "Diseño con IA (37 estilos)",
-              "Producción on-demand sin stock",
-              "Aparece en el directorio público /marcas",
-              "Prendas a precio retail (margen menor)",
-            ].map(item => (
-              <li key={item} className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-          <Link href="/lanza-tu-marca">
-            <Button variant="outline" className="w-full" size="lg">
-              Empezar gratis
-            </Button>
-          </Link>
-        </article>
+      {/* Plan cards with Mensual/Anual toggle */}
+      <PlanCards />
 
-        {/* Growth — destacado */}
-        <article className="rounded-2xl border-2 border-primary bg-gradient-to-br from-primary/10 to-purple-600/10 p-6 md:p-8 flex flex-col relative">
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-            <Badge className="bg-primary text-white text-[10px] tracking-widest uppercase">Más popular</Badge>
-          </div>
-          <header className="mb-6">
-            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
-              Growth
-              <TrendingUp className="w-5 h-5 text-primary" />
-            </h2>
-            <p className="text-sm text-muted-foreground">Para marcas que quieren crecer en serio.</p>
-          </header>
-          <div className="mb-6">
-            <div className="flex items-baseline gap-1">
-              <span className="text-5xl font-bold">USD$50</span>
-              <span className="text-sm text-muted-foreground">/mes</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Facturado en ARS al tipo de cambio del día · −15% en plan anual
-            </p>
-          </div>
-          <ul className="space-y-3 text-sm flex-1 mb-6">
-            {[
-              "Todo lo del plan Starter",
-              "Prendas al costo Novamente (margen alto)",
-              "Productos ilimitados",
-              "Leads ilimitados",
-              "Branding avanzado (fuentes, estilos, CTA custom)",
-              "SEO completo + indexación + sitemap",
-              "Design Engine completo (mockups + estilos)",
-              "Analytics y dashboard de ventas",
-              "Destacado en /marcas (badge Growth)",
-              "Soporte por email prioritario",
-            ].map(item => (
-              <li key={item} className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-          <Link href="/lanza-tu-marca">
-            <Button className="w-full" size="lg">
-              Elegir Growth
-            </Button>
-          </Link>
-        </article>
-
-        {/* Pro */}
-        <article className="rounded-2xl border border-purple-600/40 bg-gradient-to-br from-purple-950/30 to-pink-950/20 p-6 md:p-8 flex flex-col">
-          <header className="mb-6">
-            <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
-              Pro
-              <Zap className="w-5 h-5 text-pink-400" />
-            </h2>
-            <p className="text-sm text-muted-foreground">La experiencia completa con automatización de marketing.</p>
-          </header>
-          <div className="mb-6">
-            <div className="flex items-baseline gap-1">
-              <span className="text-5xl font-bold">USD$100</span>
-              <span className="text-sm text-muted-foreground">/mes</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Facturado en ARS al tipo de cambio del día · −15% en plan anual
-            </p>
-          </div>
-          <ul className="space-y-3 text-sm flex-1 mb-6">
-            {[
-              "Todo lo del plan Growth",
-              <span key="chatbot" className="font-medium">
-                <MessageCircle className="w-3.5 h-3.5 inline mr-1 -mt-0.5 text-pink-400" />
-                Chatbot WhatsApp + Instagram DM
-              </span>,
-              <span key="content" className="font-medium">
-                <Sparkles className="w-3.5 h-3.5 inline mr-1 -mt-0.5 text-pink-400" />
-                Automatización de contenido IG / FB / X
-              </span>,
-              "Setup Meta Business completo",
-              "Plantillas de Meta Ads incluidas",
-              "Feed Meta Commerce / Google Shopping",
-              "Analytics avanzado + atribución",
-              "Top del directorio /marcas (badge Pro)",
-              "Onboarding 1:1 (60 min)",
-              "Soporte WhatsApp prioritario",
-            ].map((item, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-          <Link href="/lanza-tu-marca">
-            <Button variant="outline" className="w-full border-purple-600/60 hover:bg-purple-600/10" size="lg">
-              Elegir Pro
-            </Button>
-          </Link>
-        </article>
-      </section>
 
       {/* Grilla de precios de prendas */}
       <section className="mb-16 md:mb-24">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold mb-3">Cuánto pagás por cada prenda</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            En los planes Growth y Pro pagás el costo Novamente — el margen es tuyo. En Starter pagás el precio
-            retail web.
+            En Starter ya pagás precios partner (más bajos que retail web). En Growth y Pro el precio baja aún más
+            — vendés al mismo retail y multiplicás tu margen.
           </p>
         </div>
 
@@ -345,12 +214,16 @@ export default function PlanesPage() {
               <tr className="border-b border-border/40">
                 <th className="text-left py-4 px-4 font-semibold">Producto</th>
                 <th className="text-right py-4 px-4 font-medium text-muted-foreground">
+                  Retail web
+                  <div className="text-[10px] font-normal mt-0.5">precio público</div>
+                </th>
+                <th className="text-right py-4 px-4 font-medium text-muted-foreground">
                   Starter
-                  <div className="text-[10px] font-normal mt-0.5">precio retail</div>
+                  <div className="text-[10px] font-normal mt-0.5">plan gratis</div>
                 </th>
                 <th className="text-right py-4 px-4 font-semibold text-primary bg-primary/5">
                   Growth · Pro
-                  <div className="text-[10px] font-normal mt-0.5 text-muted-foreground">al costo Novamente</div>
+                  <div className="text-[10px] font-normal mt-0.5 text-muted-foreground">USD$50–100/mes</div>
                 </th>
                 <th className="text-right py-4 px-4 font-medium text-muted-foreground">
                   Tu margen Growth
@@ -362,12 +235,14 @@ export default function PlanesPage() {
               {FEATURED_GARMENTS.map(key => {
                 const garment = ALL_GARMENT_PRICING[key]
                 if (!garment) return null
+                const retailPrice = garment.b2c_suggested
                 const starterPrice = getPartnerPlanPrice(key, "starter")!
                 const growthPrice = getPartnerPlanPrice(key, "growth")!
                 const margin = getPlanMargin(key, "growth")
                 return (
                   <tr key={key} className="border-b border-border/20 last:border-0 hover:bg-muted/20">
                     <td className="py-4 px-4 font-medium">{garment.name}</td>
+                    <td className="py-4 px-4 text-right text-muted-foreground">{formatPrice(retailPrice)}</td>
                     <td className="py-4 px-4 text-right text-muted-foreground">{formatPrice(starterPrice)}</td>
                     <td className="py-4 px-4 text-right font-bold text-primary bg-primary/5">
                       {formatPrice(growthPrice)}
@@ -381,8 +256,7 @@ export default function PlanesPage() {
         </div>
 
         <p className="text-xs text-muted-foreground mt-4 text-center">
-          Precios en ARS. El precio retail mostrado en Starter es el precio web sugerido — el partner puede ajustarlo en
-          su storefront. Costos sujetos a actualización por inflación.
+          Precios en ARS. Retail web es el precio público sugerido para vender en tu storefront. Precios sujetos a actualización por inflación.
         </p>
       </section>
 

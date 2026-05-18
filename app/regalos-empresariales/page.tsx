@@ -67,8 +67,8 @@ export default function RegalosEmpresariales() {
     },
     offers: {
       "@type": "AggregateOffer",
-      lowPrice: 28600,
-      highPrice: 55000,
+      lowPrice: 31000,
+      highPrice: 58000,
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",

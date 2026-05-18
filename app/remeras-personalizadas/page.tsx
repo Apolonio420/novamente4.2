@@ -72,8 +72,8 @@ export default function RemerasPersonalizadas() {
     },
     offers: {
       "@type": "AggregateOffer",
-      lowPrice: 21800,
-      highPrice: 55000,
+      lowPrice: 24000,
+      highPrice: 58000,
       priceCurrency: "ARS",
       offerCount: 9,
       availability: "https://schema.org/InStock",
@@ -163,7 +163,7 @@ export default function RemerasPersonalizadas() {
   const products = [
     {
       name: "Aura Oversize T-Shirt",
-      price: 31000,
+      price: 33000,
       badge: "Mas vendida",
       description: "Corte oversize, algodon 100%, 4 colores. La favorita de nuestros clientes.",
       colors: "Blanco, Negro, Marron, Stone Wash",
@@ -171,7 +171,7 @@ export default function RemerasPersonalizadas() {
     },
     {
       name: "Aldea Classic Fit",
-      price: 28600,
+      price: 31000,
       badge: "Clasica",
       description: "Fit regular, ideal para estampados limpios y profesionales.",
       colors: "Negro, Blanco",
@@ -179,7 +179,7 @@ export default function RemerasPersonalizadas() {
     },
     {
       name: "Remera Clasica Mujer",
-      price: 28600,
+      price: 31000,
       badge: "Mujer",
       description: "Corte femenino, algodon suave, ideal para disenos delicados.",
       colors: "Blanca, Negra",
@@ -187,7 +187,7 @@ export default function RemerasPersonalizadas() {
     },
     {
       name: "Remera Crop Mujer",
-      price: 23500,
+      price: 26000,
       badge: "Tendencia",
       description: "Crop top moderno, ideal para looks casuales y streetwear.",
       colors: "Negra, Chocolate, Gris, Amarillo",
@@ -195,7 +195,7 @@ export default function RemerasPersonalizadas() {
     },
     {
       name: "Musculosa Bali",
-      price: 21800,
+      price: 24000,
       badge: "Desde $21.800",
       description: "Musculosa morley, perfecta para verano y looks urbanos.",
       colors: "Blanca, Negra, Gris",
@@ -203,7 +203,7 @@ export default function RemerasPersonalizadas() {
     },
     {
       name: "Buzo Hoodie Oversize",
-      price: 55000,
+      price: 58000,
       badge: "Premium",
       description: "Hoodie oversize con capucha, algodon pesado, maximo impacto visual.",
       colors: "Negro, Marron, Crema, Gris Melange",

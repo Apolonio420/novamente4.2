@@ -10,11 +10,12 @@ import { authFetch } from '@/lib/partners/auth-fetch'
 import type { StudioMessage, StudioSession, UsageInfo } from '@/lib/partners/studio/types'
 import { createStudioMessage, createStudioSession } from '@/lib/partners/studio/types'
 import {
-  GARMENT_PRICING,
+  ALL_GARMENT_PRICING,
   TIER_THRESHOLDS,
   getTierForVolume,
   getTierLabel,
   getNextTier,
+  getPartnerPlanPrice,
   formatPrice as formatGarmentPrice,
   type PricingTier,
   type GarmentPricing,
@@ -937,12 +938,21 @@ export default function DesignStudioPage() {
 
           <div className="ml-auto" />
 
-          {/* Selected garment price badge */}
-          {selectedGarment && GARMENT_PRICING[selectedGarment] && (
-            <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md whitespace-nowrap">
-              Costo: {formatGarmentPrice(GARMENT_PRICING[selectedGarment].on_demand)}
-            </span>
-          )}
+          {/* Selected garment price badge — segun plan del partner */}
+          {selectedGarment && ALL_GARMENT_PRICING[selectedGarment] && (() => {
+            const planKey = (plan || '').toLowerCase() === 'pro'
+              ? 'pro'
+              : (plan || '').toLowerCase() === 'growth'
+                ? 'growth'
+                : 'starter'
+            const myPrice = getPartnerPlanPrice(selectedGarment, planKey as 'starter' | 'growth' | 'pro')
+            if (myPrice == null) return null
+            return (
+              <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md whitespace-nowrap">
+                Tu precio: {formatGarmentPrice(myPrice)}
+              </span>
+            )
+          })()}
         </div>
 
         {/* Input area */}
@@ -1060,7 +1070,7 @@ export default function DesignStudioPage() {
           {/* Garment cards */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {garments.map(g => {
-              const pricing = GARMENT_PRICING[g.key]
+              const pricing = ALL_GARMENT_PRICING[g.key]
               const catalogProduct = CATALOG_PRODUCTS.find(p => p.key === g.key)
               const isSelected = selectedGarment === g.key
               const thumbKey = Object.keys(GARMENT_THUMBNAILS[g.key] || {})[0] || 'black'
@@ -1108,19 +1118,40 @@ export default function DesignStudioPage() {
                         </p>
                       )}
 
-                      {/* Price */}
-                      {pricing && (
-                        <div className="mt-1 flex items-baseline gap-1.5">
-                          <span className="text-sm font-bold text-emerald-400">
-                            {formatGarmentPrice(pricing.on_demand)}
-                          </span>
-                          {catalogProduct && catalogProduct.retailARS > pricing.on_demand && (
-                            <span className="text-[10px] text-zinc-500">
-                              retail {formatGarmentPrice(catalogProduct.retailARS)}
-                            </span>
-                          )}
-                        </div>
-                      )}
+                      {/* Price — segun plan del partner */}
+                      {pricing && (() => {
+                        const planKey = (plan || '').toLowerCase() === 'pro'
+                          ? 'pro'
+                          : (plan || '').toLowerCase() === 'growth'
+                            ? 'growth'
+                            : 'starter'
+                        const myPrice = getPartnerPlanPrice(g.key, planKey as 'starter' | 'growth' | 'pro')
+                        const retail = catalogProduct?.retailARS ?? pricing.b2c_suggested
+                        if (myPrice == null) return null
+                        const growthPrice = planKey === 'starter'
+                          ? getPartnerPlanPrice(g.key, 'growth')
+                          : null
+                        const growthSavings = growthPrice != null ? myPrice - growthPrice : 0
+                        return (
+                          <>
+                            <div className="mt-1 flex items-baseline gap-1.5 flex-wrap">
+                              <span className="text-sm font-bold text-emerald-400">
+                                {formatGarmentPrice(myPrice)}
+                              </span>
+                              {retail > myPrice && (
+                                <span className="text-[10px] text-zinc-500">
+                                  retail {formatGarmentPrice(retail)}
+                                </span>
+                              )}
+                            </div>
+                            {planKey === 'starter' && growthSavings > 0 && (
+                              <p className="text-[10px] text-emerald-400 mt-0.5 font-medium">
+                                ↑ Plan Growth: +{formatGarmentPrice(growthSavings)} de margen
+                              </p>
+                            )}
+                          </>
+                        )
+                      })()}
 
                       {/* Talles disponibles */}
                       {catalogProduct && (
@@ -1221,7 +1252,7 @@ export default function DesignStudioPage() {
 
               <p className="text-xs text-zinc-500 mt-2 flex items-start gap-1">
                 <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                Vendé más y desbloqueá precios más bajos automáticamente.
+                Pedí más unidades en un mismo pedido y desbloqueá precios más bajos.
               </p>
 
               {/* Expandable pricing table */}
@@ -1234,7 +1265,7 @@ export default function DesignStudioPage() {
                         i === 0 ? 'bg-violet-600/10 text-violet-300' : 'text-zinc-400'
                       }`}>
                         <span className="font-medium">{t.label}</span>
-                        <span>{t.minUnits === 0 ? 'Base' : `${t.minUnits}+ uds/mes`}</span>
+                        <span>{t.minUnits === 0 ? 'Base' : `${t.minUnits}+ uds por pedido`}</span>
                       </div>
                     ))}
                   </div>
@@ -1243,7 +1274,7 @@ export default function DesignStudioPage() {
                   <div className="border-t border-zinc-700 pt-3">
                     <p className="text-xs font-medium text-zinc-400 mb-2">Precios por prenda</p>
                     <div className="space-y-2">
-                      {Object.values(GARMENT_PRICING).map(gp => (
+                      {Object.values(ALL_GARMENT_PRICING).map(gp => (
                         <div key={gp.key} className="text-xs">
                           <p className="text-zinc-300 font-medium mb-1">{gp.name}</p>
                           <div className="grid grid-cols-4 gap-1">
@@ -1266,20 +1297,27 @@ export default function DesignStudioPage() {
               )}
             </div>
 
-            {/* B2C suggested price hint */}
-            {selectedGarment && GARMENT_PRICING[selectedGarment] && (
+            {/* B2C suggested price hint — margen segun plan del partner */}
+            {selectedGarment && ALL_GARMENT_PRICING[selectedGarment] && (() => {
+              const planKey = (plan || '').toLowerCase() === 'pro'
+                ? 'pro'
+                : (plan || '').toLowerCase() === 'growth'
+                  ? 'growth'
+                  : 'starter'
+              const myPrice = getPartnerPlanPrice(selectedGarment, planKey as 'starter' | 'growth' | 'pro') ?? 0
+              const retail = ALL_GARMENT_PRICING[selectedGarment].b2c_suggested
+              return (
               <div className="rounded-xl border border-zinc-800 bg-zinc-800/30 p-3">
                 <p className="text-xs text-zinc-400">
                   <span className="font-medium text-zinc-300">Precio sugerido de venta:</span>{' '}
-                  {formatGarmentPrice(GARMENT_PRICING[selectedGarment].b2c_suggested)}
+                  {formatGarmentPrice(retail)}
                 </p>
                 <p className="text-[10px] text-zinc-600 mt-1">
-                  Margen estimado: {formatGarmentPrice(
-                    GARMENT_PRICING[selectedGarment].b2c_suggested - GARMENT_PRICING[selectedGarment].on_demand
-                  )}
+                  Margen estimado: {formatGarmentPrice(Math.max(0, retail - myPrice))}
                 </p>
               </div>
-            )}
+              )
+            })()}
           </div>
         </div>
       </div>

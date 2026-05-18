@@ -78,8 +78,8 @@ export default function RegalosPersonalizados() {
     },
     offers: {
       "@type": "AggregateOffer",
-      lowPrice: 21800,
-      highPrice: 55000,
+      lowPrice: 24000,
+      highPrice: 58000,
       priceCurrency: "ARS",
       offerCount: 9,
       availability: "https://schema.org/InStock",
@@ -167,14 +167,14 @@ export default function RegalosPersonalizados() {
   }
 
   const products = [
-    { name: "Musculosa Bali", price: 21800, description: "Morley algodon, ideal verano o gym", category: "Musculosa" },
-    { name: "Remera Crop Mujer", price: 23500, description: "Crop moderno, corte femenino", category: "Remera" },
-    { name: "Aldea Classic Fit", price: 28600, description: "Clasica unisex, algodon 100%", category: "Remera", popular: true },
-    { name: "Remera Clasica Mujer", price: 28600, description: "Fit femenino, tela premium", category: "Remera" },
-    { name: "Aura Oversize T-Shirt", price: 31000, description: "Oversize premium, caida amplia", category: "Remera" },
-    { name: "Buzo Cuello Redondo", price: 43000, description: "Crewneck frizado, ideal otono-invierno", category: "Buzo" },
-    { name: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize con capucha", category: "Hoodie", popular: true },
-    { name: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize", category: "Buzo Hoodie Oversize" },
+    { name: "Musculosa Bali", price: 24000, description: "Morley algodon, ideal verano o gym", category: "Musculosa" },
+    { name: "Remera Crop Mujer", price: 26000, description: "Crop moderno, corte femenino", category: "Remera" },
+    { name: "Aldea Classic Fit", price: 31000, description: "Clasica unisex, algodon 100%", category: "Remera", popular: true },
+    { name: "Remera Clasica Mujer", price: 31000, description: "Fit femenino, tela premium", category: "Remera" },
+    { name: "Aura Oversize T-Shirt", price: 33000, description: "Oversize premium, caida amplia", category: "Remera" },
+    { name: "Buzo Cuello Redondo", price: 45000, description: "Crewneck frizado, ideal otono-invierno", category: "Buzo" },
+    { name: "Buzo Hoodie Oversize", price: 58000, description: "Hoodie oversize con capucha", category: "Hoodie", popular: true },
+    { name: "Buzo Hoodie Oversize", price: 58000, description: "Hoodie oversize", category: "Buzo Hoodie Oversize" },
   ]
 
   const occasions = [
