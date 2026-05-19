@@ -16,6 +16,20 @@ Formato:
 
 ---
 
+## Sprint 019 — 2026-05-19
+**Model:** sonnet
+**Tasks DONE:**
+- AUTOFEED-20260518-4 — fix(design-library): `a.url` → `a.public_url` en PartnerAsset map (commit b6ecc1e)
+- AUTOFEED-20260518-5 — fix(whatsapp-webhook): cast `supabaseAdmin as any` para whatsapp_chats insert (commit f65d3fb)
+**Tasks BLOCKED:** ninguna
+**tsc:** PASS
+**build:** SKIPPED
+**Notas:**
+- Ambos fixes ya estaban aplicados como cambios working-tree no commiteados; se commitearon en este sprint.
+- Sprint ACTUAL queda sin tareas PENDING. Próximo sprint requiere nuevas tareas del backlog.
+
+---
+
 ## Sprint 018 — 2026-05-19
 **Model:** sonnet
 **Tasks DONE:**

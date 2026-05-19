@@ -17,8 +17,8 @@
 | 5 | AUTOFEED-20260518-1 | tsc: rag-sources.test.ts:36 | 1 | sí | DONE |
 | 6 | AUTOFEED-20260518-2 | tsc: rag-sources.test.ts:101 | 1 | sí | DONE |
 | 7 | AUTOFEED-20260518-3 | tsc: generate-stamp.test.ts:105 | 1 | sí | DONE |
-| 8 | AUTOFEED-20260518-4 | tsc: route.ts:37 | 1 | sí | PENDING |
-| 9 | AUTOFEED-20260518-5 | tsc: route.ts:40 | 1 | sí | PENDING |
+| 8 | AUTOFEED-20260518-4 | tsc: route.ts:37 | 1 | sí | DONE |
+| 9 | AUTOFEED-20260518-5 | tsc: route.ts:40 | 1 | sí | DONE |
 
 ---
 
