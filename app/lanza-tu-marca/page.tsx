@@ -360,7 +360,7 @@ export default function LanzaTuMarca() {
                   className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-lg px-8 py-6"
                 >
                   <a
-                    href={`https://wa.me/5491162377535?text=${whatsappMessage}`}
+                    href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -709,7 +709,7 @@ export default function LanzaTuMarca() {
                     className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-lg px-8 py-6"
                   >
                     <a
-                      href={`https://wa.me/5491162377535?text=${whatsappMessage}`}
+                      href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

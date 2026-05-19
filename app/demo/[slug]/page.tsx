@@ -545,7 +545,7 @@ export default function DemoChatPage() {
           </p>
           <div className="flex gap-2">
             <a
-              href="https://wa.me/5491161759011?text=Hola!%20Vi%20la%20demo%20del%20chatbot%20y%20me%20interesa"
+              href="https://wa.me/5492235169720?text=Hola!%20Vi%20la%20demo%20del%20chatbot%20y%20me%20interesa"
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-500"

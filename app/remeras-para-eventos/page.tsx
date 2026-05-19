@@ -316,7 +316,7 @@ export default function RemerasParaEventos() {
                   className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white text-lg px-8 py-6"
                 >
                   <a
-                    href={`https://wa.me/5491162377535?text=${whatsappMessage}`}
+                    href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -646,7 +646,7 @@ export default function RemerasParaEventos() {
                     className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white text-lg px-8 py-6"
                   >
                     <a
-                      href={`https://wa.me/5491162377535?text=${whatsappMessage}`}
+                      href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

@@ -316,7 +316,7 @@ export default function IndumentariaDeportiva() {
                   className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white text-lg px-8 py-6"
                 >
                   <a
-                    href={`https://wa.me/5491162377535?text=${whatsappMessage}`}
+                    href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -636,7 +636,7 @@ export default function IndumentariaDeportiva() {
                     className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white text-lg px-8 py-6"
                   >
                     <a
-                      href={`https://wa.me/5491162377535?text=${whatsappMessage}`}
+                      href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

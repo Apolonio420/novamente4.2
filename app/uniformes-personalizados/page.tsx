@@ -316,7 +316,7 @@ export default function UniformesPersonalizados() {
                   className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-lg px-8 py-6"
                 >
                   <a
-                    href={`https://wa.me/5491162377535?text=${whatsappMessage}`}
+                    href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -621,7 +621,7 @@ export default function UniformesPersonalizados() {
                     className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-lg px-8 py-6"
                   >
                     <a
-                      href={`https://wa.me/5491162377535?text=${whatsappMessage}`}
+                      href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

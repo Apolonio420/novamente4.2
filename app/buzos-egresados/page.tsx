@@ -315,7 +315,7 @@ export default function BuzosEgresados() {
                   className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white text-lg px-8 py-6"
                 >
                   <a
-                    href={`https://wa.me/5491162377535?text=${whatsappMessage}`}
+                    href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -629,7 +629,7 @@ export default function BuzosEgresados() {
                     className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white text-lg px-8 py-6"
                   >
                     <a
-                      href={`https://wa.me/5491162377535?text=${whatsappMessage}`}
+                      href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

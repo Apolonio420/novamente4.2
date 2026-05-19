@@ -339,7 +339,7 @@ export default function MerchParaCreadores() {
                   </Link>
                 </Button>
                 <Button asChild variant="outline" size="lg" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-lg px-8 py-6">
-                  <Link href={`https://wa.me/5491169696741?text=${whatsappMessage}`} target="_blank">
+                  <Link href={`https://wa.me/5492235169720?text=${whatsappMessage}`} target="_blank">
                     Consultar por WhatsApp
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Link>
@@ -612,7 +612,7 @@ export default function MerchParaCreadores() {
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-lg px-8 py-6">
-                <Link href={`https://wa.me/5491169696741?text=${whatsappMessage}`} target="_blank">
+                <Link href={`https://wa.me/5492235169720?text=${whatsappMessage}`} target="_blank">
                   Hablar por WhatsApp
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>

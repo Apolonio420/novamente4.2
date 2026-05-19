@@ -122,7 +122,7 @@ export default function DemoPage() {
               Agendar demo gratuita
             </a>
             <a
-              href="https://wa.me/5491161759011?text=Hola!%20Vi%20la%20demo%20del%20chatbot%20y%20me%20interesa%20para%20mi%20negocio"
+              href="https://wa.me/5492235169720?text=Hola!%20Vi%20la%20demo%20del%20chatbot%20y%20me%20interesa%20para%20mi%20negocio"
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-xl border border-zinc-700 px-6 py-3 font-semibold text-white transition hover:bg-zinc-800"
