@@ -16,6 +16,34 @@ Formato:
 
 ---
 
+## Sprint 021 — 2026-05-19
+**Model:** sonnet
+**Tasks DONE:**
+- TASK-010 — fix(contact): unificar WhatsApp a +54 9 2235 16-9720 (commit 73907c5) — 12 archivos, 3 números incorrectos → 5492235169720
+**Tasks BLOCKED:** ninguna
+**tsc:** PASS
+**build:** SKIPPED
+**Notas:**
+- Números reemplazados: 5491162377535 (9 landings), 5491161759011 (demo x2), 5491169696741 (merch-para-creadores x2)
+- Audit final: único número en wa.me/* es 5492235169720
+
+---
+
+## Sprint 020 — 2026-05-19
+**Model:** sonnet
+**Tasks DONE:**
+- TASK-009 — feat(design-engine): garment mismatch fix + toggle Frente/Espalda + selector modo estampa (Grande/Logo pecho/Logo manga) en mockup route y page
+**Tasks BLOCKED:** ninguna
+**tsc:** PASS
+**build:** SKIPPED
+**Notas:**
+- UI ya tenía selectedSide + selectedStampMode states y ambos controles visuales implementados en working tree (unstaged desde commit previo 8c7f3a3).
+- Mockup route recibe y aplica correctamente side + stampMode al prompt de Gemini.
+- garment-mappings.ts tiene path builders para todos los garment types del catálogo.
+- Requiere verificación visual: seleccionar Aldea Classic Fit → mockup debe salir en esa prenda.
+
+---
+
 ## Sprint 019 — 2026-05-19
 **Model:** sonnet
 **Tasks DONE:**

@@ -21,7 +21,8 @@
 | 9 | AUTOFEED-20260518-5 | tsc: route.ts:40 | 1 | sí | DONE |
 | 10 | TASK-007 | Soporte sidebar: quitar candado para Starter (consistencia con TASK-002) | 1 | sí | DONE |
 | 11 | TASK-008 | Storefront Falco roto: logo + banner no cargan en /p/falco | 1 | sí (migración SQL lista, correr en Supabase) | NEEDS_MANUAL |
-| 12 | TASK-009 | Design engine: garment mismatch + controles de placement y tamaño de estampa | 3 | sí (con auditoría componente) | PENDING |
+| 12 | TASK-009 | Design engine: garment mismatch + controles de placement y tamaño de estampa | 3 | sí (con auditoría componente) | DONE |
+| 13 | TASK-010 | Unificar todos los WhatsApp (bubbles + links + tel) a +54 9 2235 16-9720 | 1 | sí | DONE |
 
 ---
 
@@ -293,6 +294,44 @@
 
 ---
 
+### TASK-010 — Unificar todos los WhatsApp a +54 9 2235 16-9720
+
+**Por qué:** Hay múltiples números de WhatsApp distintos hardcodeados en la web (`5491161759011`, `5491162377535`, `5491169696741`, además del oficial `5492235169720`). Esto disperse los leads a chats que pueden estar inactivos o ser personales. El número oficial único es **+54 9 2235 16-9720** (`5492235169720`).
+
+**Alcance:**
+- Reemplazar todos los números de WhatsApp en `app/**` (páginas públicas, demos, landings, workspace) por `5492235169720` en:
+  - URLs `https://wa.me/<numero>` (preservar el `?text=...` existente de cada CTA, NO tocar el mensaje).
+  - Campos `telephone:` de JSON-LD (`app/layout.tsx`, `app/nosotros/page.tsx`, etc.).
+  - Texto visible tipo "+54 9 ..." que aparezca en la UI (ej. [app/nosotros/page.tsx:317](app/nosotros/page.tsx#L317)).
+- Revisar también `components/`, `lib/`, `content/`, `data/`, `docs/` por si hay números en componentes compartidos, bubbles flotantes (WhatsApp floating button), constantes (`WA_NUMBER`, `CONTACT_PHONE`), o markdown.
+- Si encontrás una constante centralizada de número de WhatsApp, usarla y dejar `5492235169720` ahí — preferir centralizar a reemplazar in-place cuando ya exista la constante.
+- **NO** tocar números en `node_modules/`, `.next/`, `migrations/`, archivos de tests que validen formato genérico, ni en backups (`_originals/`, `.bak`).
+- **NO** modificar los mensajes `?text=...` ni los `ref · NV-XXX` de tracking — solo el número.
+
+**Candidatos detectados (no exhaustivo, verificar con grep):**
+- `5491161759011` — `app/demo/page.tsx`, `app/demo/[slug]/page.tsx`
+- `5491162377535` — `app/merch-para-bandas/page.tsx`, `app/lanza-tu-marca/page.tsx`, `app/uniformes-personalizados/page.tsx`, `app/indumentaria-deportiva/page.tsx`, `app/remeras-cumpleanos/page.tsx`
+- `5491169696741` — `app/merch-para-creadores/page.tsx`
+
+**Comando de auditoría sugerido antes y después:**
+```bash
+grep -rEn "wa\.me/[0-9]+|tel:\+?[0-9]{10,}|\b549[0-9]{10}\b" --include="*.tsx" --include="*.ts" app/ components/ lib/ 2>/dev/null | grep -v node_modules
+```
+Después del cambio, **el único número que debe aparecer es `5492235169720`** (o su forma con espacios/guiones `+54 9 2235 16-9720`).
+
+**Checklist:**
+- [ ] Audit inicial (grep) — listar todas las ocurrencias.
+- [ ] Reemplazar números en `app/**`.
+- [ ] Revisar `components/`, `lib/`, `data/`, `content/` por bubbles flotantes y constantes compartidas.
+- [ ] Audit final (mismo grep) — solo debe quedar `5492235169720`.
+- [ ] `npx tsc --noEmit` verde.
+- [ ] `npm run build` verde.
+- [ ] Commit `fix(contact): unificar WhatsApp a +54 9 2235 16-9720 [AP-v4.2 TASK-010]`.
+
+**Sprints estimados:** 1.
+
+---
+
 ## BACKLOG FUTURO (no corre todavía)
 
 Mover items acá cuando aparecen ideas pero no están listas para sprint.
@@ -423,5 +462,47 @@ TS2344: Type 'PageProps' does not satisfy the constraint 'import("/Users/sambuju
 - [ ] Error resuelto
 - [ ] `npx tsc --noEmit` verde
 - [ ] Commit con tag `[AP-v4.2 AUTOFEED-20260518-1]`
+
+---
+
+## AUTO-FEEDER — 2026-05-19
+
+Detectados por `scripts/backlog-auto-feeder.sh`. Mover a SPRINT ACTUAL si se quieren correr.
+
+### AUTOFEED-20260519-1 — tsc: DesignCanvas.tsx:4
+
+**Por qué:** Detectado por auto-feeder (tsc).
+
+**Archivos:**
+- `app/crear/DesignCanvas.tsx` línea 4
+
+**Error:**
+```
+TS2307: Cannot find module 'react-konva' or its corresponding type declarations.
+```
+
+**Criterio DONE:**
+- [ ] Error resuelto
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 AUTOFEED-20260519-1]`
+
+---
+
+### AUTOFEED-20260519-2 — tsc: DesignCanvas.tsx:5
+
+**Por qué:** Detectado por auto-feeder (tsc).
+
+**Archivos:**
+- `app/crear/DesignCanvas.tsx` línea 5
+
+**Error:**
+```
+TS2307: Cannot find module 'konva' or its corresponding type declarations.
+```
+
+**Criterio DONE:**
+- [ ] Error resuelto
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 AUTOFEED-20260519-2]`
 
 ---
