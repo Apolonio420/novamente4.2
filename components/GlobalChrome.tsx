@@ -16,6 +16,10 @@ import { EmailCaptureLoader } from "./EmailCaptureLoader"
 export function GlobalChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isWorkspace = pathname?.startsWith("/workspace") ?? false
+  // /crear es full-screen design tool — esconder flotantes (WhatsApp, asistente
+  // publico, email capture) para no competir con la UI. Mantenemos Navbar
+  // para que el carrito siga accesible.
+  const isCrear = pathname?.startsWith("/crear") ?? false
 
   if (isWorkspace) {
     // En workspace mantenemos el Navbar global (para que el partner pueda volver
@@ -39,9 +43,13 @@ export function GlobalChrome({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <Footer />
-      <WhatsAppButton />
-      <PublicAssistantLoader />
-      <EmailCaptureLoader />
+      {!isCrear && (
+        <>
+          <WhatsAppButton />
+          <PublicAssistantLoader />
+          <EmailCaptureLoader />
+        </>
+      )}
     </div>
   )
 }

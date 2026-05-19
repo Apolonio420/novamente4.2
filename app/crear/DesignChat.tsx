@@ -144,16 +144,31 @@ export function DesignChat({
     setLoading(true)
 
     try {
-      const isIteration = !!session.currentDesignUrl && !!lastPromptRef.current
+      // Decision tree:
+      // 1) User subio una imagen como referencia → image-to-image edit con su foto
+      // 2) Ya hay un design previo → iterar sobre el con image-to-image edit
+      // 3) Sino → generar desde texto
+      const hasAttachment = !!pendingAttachment
+      const hasPreviousDesign = !!session.currentDesignUrl
+      const useEdit = hasAttachment || hasPreviousDesign
 
+      let endpoint: string
       let body: Record<string, unknown>
-      if (isIteration) {
-        body = { instruction: text, lastPrompt: lastPromptRef.current }
+      if (useEdit) {
+        endpoint = "/api/public/design/edit"
+        body = {
+          previousImageUrl: hasAttachment ? pendingAttachment : session.currentDesignUrl,
+          instruction: text,
+          // photo: user subio su propia foto (preservar personas/pet/fondo)
+          // illustration: iterar sobre un design generado (constraints textile)
+          mode: hasAttachment ? "photo" : "illustration",
+        }
       } else {
+        endpoint = "/api/generate-image"
         body = { prompt: text }
       }
 
-      const res = await fetch("/api/generate-image", {
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -170,7 +185,11 @@ export function DesignChat({
 
       const assistantMsg: Msg = {
         role: "assistant",
-        text: isIteration ? "Acá va la versión actualizada:" : "Acá está tu diseño:",
+        text: useEdit
+          ? hasAttachment
+            ? "Listo, esto es lo que conseguí con tu foto:"
+            : "Acá va la versión actualizada:"
+          : "Acá está tu diseño:",
         imageUrl,
         prompt: promptUsed,
       }

@@ -35,8 +35,15 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) return ok({ error: "Missing GEMINI_API_KEY" }, 500)
 
-    const body = await req.json() as { previousImageUrl: string; instruction: string }
+    const body = await req.json() as {
+      previousImageUrl: string
+      instruction: string
+      mode?: "photo" | "illustration"
+    }
     const { previousImageUrl, instruction } = body
+    // 'photo' = user-uploaded photo (preserva personas/fondo real)
+    // 'illustration' = iterar sobre un design generado (textile/vectorial constraints)
+    const mode = body.mode ?? "illustration"
 
     if (!previousImageUrl || !instruction?.trim()) {
       return ok({ error: "Se requieren previousImageUrl e instruction" }, 400)
@@ -51,14 +58,27 @@ export async function POST(req: NextRequest) {
     const contentType = imgRes.headers.get("content-type") || "image/png"
     const base64Data = imgBuffer.toString("base64")
 
-    // Optimize the instruction as a design prompt
-    const { optimizedPrompt } = optimizeDesignPrompt(instruction)
-    const editInstruction = [
-      `Edit this illustration: ${optimizedPrompt}.`,
-      "Keep the same general composition and style but apply the requested change.",
-      "SOLO una ilustración aislada. PROHIBIDO: prendas, remeras, buzos, hoodies, personas, mockups, fotografía, marcos, texto superpuesto.",
-      "Respond ONLY with an image (inlineData). No text.",
-    ].join(" ")
+    // Modo PHOTO: respetar el contenido original (personas, mascotas, etc).
+    // Modo ILLUSTRATION: forzar estilo textile/vectorial para uso en estampa.
+    let editInstruction: string
+    if (mode === "photo") {
+      editInstruction = [
+        `Apply this change to the image: ${instruction.trim()}.`,
+        "PRESERVE the original subjects (faces, pets, objects), proportions, identity and overall composition exactly.",
+        "Only apply the requested modification (e.g. remove background, change color, add element). Do NOT replace the subjects with something else.",
+        "If the user asks to 'remove background' or 'sin fondo', output a transparent PNG with only the main subject isolated, clean alpha edges, no halo.",
+        "If the user asks to make it suitable for a textile print/stamp, keep the subject realistic but simplify shadows and ensure clean edges.",
+        "Respond ONLY with an image (inlineData). No text.",
+      ].join(" ")
+    } else {
+      const { optimizedPrompt } = optimizeDesignPrompt(instruction)
+      editInstruction = [
+        `Edit this illustration: ${optimizedPrompt}.`,
+        "Keep the same general composition and style but apply the requested change.",
+        "SOLO una ilustración aislada. PROHIBIDO: prendas, remeras, buzos, hoodies, mockups, marcos, texto superpuesto.",
+        "Respond ONLY with an image (inlineData). No text.",
+      ].join(" ")
+    }
 
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({ model: IMAGE_MODEL })
