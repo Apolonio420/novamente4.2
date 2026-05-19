@@ -847,9 +847,10 @@ export interface Order {
   customer_first_name: string
   customer_last_name: string
   customer_phone?: string | null
-  shipping_address: string
-  shipping_city: string
+  shipping_address?: string | null
+  shipping_city?: string | null
   shipping_postal_code?: string | null
+  shipping_zone?: string | null // 'BA' | 'RESTO' — se guarda en metadata
   payment_method: 'mercadopago' | 'transferencia'
   payment_status?: string
   payment_id?: string | null
@@ -921,8 +922,10 @@ export async function createOrder(orderData: Omit<Order, 'id' | 'order_number'>)
       customer_first_name: orderData.customer_first_name,
       customer_last_name: orderData.customer_last_name,
       customer_phone: orderData.customer_phone || null,
-      shipping_address: orderData.shipping_address,
-      shipping_city: orderData.shipping_city,
+      // Express checkout: si la dirección/ciudad no vinieron pre-pago se completan
+      // post-pago en /checkout/success · usamos placeholder para no romper NOT NULL
+      shipping_address: orderData.shipping_address || 'PENDIENTE_POST_PAGO',
+      shipping_city: orderData.shipping_city || 'PENDIENTE_POST_PAGO',
       shipping_postal_code: orderData.shipping_postal_code || null,
       payment_method: orderData.payment_method,
       payment_status: orderData.payment_status || 'pending',
@@ -936,7 +939,10 @@ export async function createOrder(orderData: Omit<Order, 'id' | 'order_number'>)
       currency: orderData.currency || 'ARS',
       status: orderData.status || 'pending',
       notes: orderData.notes || null,
-      metadata: orderData.metadata || null,
+      metadata: {
+        ...(orderData.metadata || {}),
+        ...(orderData.shipping_zone ? { shipping_zone: orderData.shipping_zone } : {}),
+      },
       id: uuidv4(), // Explicitly generate ID to avoid "null value in column id" error
     }
 

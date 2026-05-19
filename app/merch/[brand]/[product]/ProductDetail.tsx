@@ -104,6 +104,15 @@ export function ProductDetail({ product, partner, brandSlug }: ProductDetailProp
       image: selectedColorData?.images.front || '',
     })
 
+    fpixel.event("AddToCart", {
+      content_ids: [product.id],
+      content_name: `${product.name} - ${product.brand}`,
+      content_type: "product",
+      content_category: product.category,
+      value: product.price * quantity,
+      currency: "ARS",
+    })
+
     toast({
       title: "Producto agregado",
       description: `${product.name} agregado al carrito`,
@@ -129,6 +138,24 @@ export function ProductDetail({ product, partner, brandSlug }: ProductDetailProp
       price: product.price,
       quantity: quantity,
       image: selectedColorData?.images.front || '',
+    })
+
+    fpixel.event("AddToCart", {
+      content_ids: [product.id],
+      content_name: `${product.name} - ${product.brand}`,
+      content_type: "product",
+      content_category: product.category,
+      value: product.price * quantity,
+      currency: "ARS",
+    })
+
+    fpixel.event("InitiateCheckout", {
+      content_ids: [product.id],
+      content_name: `${product.name} - ${product.brand}`,
+      content_type: "product",
+      num_items: quantity,
+      value: product.price * quantity,
+      currency: "ARS",
     })
 
     toast({

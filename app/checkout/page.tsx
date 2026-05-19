@@ -32,6 +32,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<'mercadopago' | 'transferencia'>('mercadopago')
+  const [shippingZone, setShippingZone] = useState<'BA' | 'RESTO'>('BA')
   // Estado para previsualización
   const [selectedItemIndex, setSelectedItemIndex] = useState(0)
   const selectedItem = items[selectedItemIndex] || items[0]
@@ -55,7 +56,8 @@ export default function CheckoutPage() {
   // Calcular totales usando exactamente los precios del carrito
   const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0)
   const shippingThreshold = 85000
-  const shippingCost = subtotal >= shippingThreshold ? 0 : 6500
+  const baseShippingByZone = shippingZone === 'BA' ? 7000 : 9000
+  const shippingCost = subtotal >= shippingThreshold ? 0 : baseShippingByZone
 
   // Discount code aplicado (estado en cliente — se valida via /api/discounts/validate)
   const [appliedDiscount, setAppliedDiscount] = useState<{
@@ -104,7 +106,9 @@ export default function CheckoutPage() {
   }
 
   const validateForm = () => {
-    const required = ["email", "firstName", "lastName", "phone", "address", "city"]
+    // Express checkout: solo lo mínimo para procesar el pago + poder contactarte
+    // después si falta la dirección. Pedimos calle/ciudad después del pago en /checkout/success
+    const required = ["email", "firstName", "lastName", "phone"]
     return required.every((field) => customerInfo[field as keyof typeof customerInfo].trim() !== "")
   }
 
@@ -174,6 +178,7 @@ export default function CheckoutPage() {
           cartItems: items, // Enviar items completos del carrito
           subtotal: subtotal,
           shippingCost: shippingCost,
+          shippingZone: shippingZone, // 'BA' | 'RESTO'
         }
 
         console.log("📤 Request body:", JSON.stringify(requestBody, null, 2))
@@ -248,6 +253,7 @@ export default function CheckoutPage() {
             items: items,
             subtotal: subtotal,
             shippingCost: shippingCost,
+            shippingZone: shippingZone,
             total: total,
           }),
         })
@@ -379,40 +385,82 @@ export default function CheckoutPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Dirección de Envío</CardTitle>
+              <CardTitle>Envío</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="address">Dirección *</Label>
-                <Input
-                  id="address"
-                  value={customerInfo.address}
-                  onChange={(e) => handleInputChange("address", e.target.value)}
-                  placeholder="Av. Corrientes 1234"
-                  required
-                />
+              {/* Selector de zona — tipo botón grande */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShippingZone('BA')}
+                  aria-pressed={shippingZone === 'BA'}
+                  className={`p-4 border-2 rounded-lg text-left transition-colors ${
+                    shippingZone === 'BA'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-medium">Buenos Aires</div>
+                  <div className="text-sm text-muted-foreground">
+                    {subtotal >= shippingThreshold ? 'Gratis' : '$7.000'}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">CABA + GBA</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShippingZone('RESTO')}
+                  aria-pressed={shippingZone === 'RESTO'}
+                  className={`p-4 border-2 rounded-lg text-left transition-colors ${
+                    shippingZone === 'RESTO'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-medium">Resto del país</div>
+                  <div className="text-sm text-muted-foreground">
+                    {subtotal >= shippingThreshold ? 'Gratis' : '$9.000'}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Interior</div>
+                </button>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="city">Ciudad *</Label>
-                  <Input
-                    id="city"
-                    value={customerInfo.city}
-                    onChange={(e) => handleInputChange("city", e.target.value)}
-                    placeholder="Buenos Aires"
-                    required
-                  />
+
+              {/* Dirección opcional pre-pago — se completa post-pago si la dejan vacía */}
+              <details className="rounded-lg border border-dashed border-gray-300 p-3">
+                <summary className="cursor-pointer text-sm text-muted-foreground">
+                  Agregar dirección ahora (opcional) — si no, te la pedimos después del pago
+                </summary>
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <Label htmlFor="address">Dirección</Label>
+                    <Input
+                      id="address"
+                      value={customerInfo.address}
+                      onChange={(e) => handleInputChange("address", e.target.value)}
+                      placeholder="Av. Corrientes 1234"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="city">Ciudad</Label>
+                      <Input
+                        id="city"
+                        value={customerInfo.city}
+                        onChange={(e) => handleInputChange("city", e.target.value)}
+                        placeholder="Buenos Aires"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="postalCode">Código Postal</Label>
+                      <Input
+                        id="postalCode"
+                        value={customerInfo.postalCode}
+                        onChange={(e) => handleInputChange("postalCode", e.target.value)}
+                        placeholder="1000"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="postalCode">Código Postal</Label>
-                  <Input
-                    id="postalCode"
-                    value={customerInfo.postalCode}
-                    onChange={(e) => handleInputChange("postalCode", e.target.value)}
-                    placeholder="1000"
-                  />
-                </div>
-              </div>
+              </details>
             </CardContent>
           </Card>
 

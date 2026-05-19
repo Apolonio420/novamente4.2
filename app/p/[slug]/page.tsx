@@ -155,7 +155,9 @@ export default async function PartnerStorefrontPage({ params, searchParams }: Pa
 
       {/* ── Products ──────────────────────────────────────────── */}
       {products.length > 0 && (
-        <ProductsGrid tenant={tenant} products={products} />
+        <div id="productos">
+          <ProductsGrid tenant={tenant} products={products} />
+        </div>
       )}
 
       {/* ── Storefront Designer (Growth+ only) ────────────────── */}
@@ -168,7 +170,7 @@ export default async function PartnerStorefrontPage({ params, searchParams }: Pa
       )}
 
       {/* ── CTA ───────────────────────────────────────────────── */}
-      <CtaSection tenant={tenant} utmRef={utmRef} />
+      <CtaSection tenant={tenant} utmRef={utmRef} hasProducts={products.length > 0} />
 
       {/* ── FAQ Section (Growth+) ─────────────────────────────── */}
       {faqs.length > 0 && (
@@ -414,19 +416,29 @@ function ProductCard({
 // CTA
 // ---------------------------------------------------------------------------
 
-function CtaSection({ tenant, utmRef = '' }: { tenant: Tenant; utmRef?: string }) {
-  let ctaHref =
+function CtaSection({
+  tenant,
+  utmRef = '',
+  hasProducts = false,
+}: {
+  tenant: Tenant
+  utmRef?: string
+  hasProducts?: boolean
+}) {
+  // Si el partner tiene productos, el CTA principal vende — el WhatsApp queda
+  // como link secundario para consultas. Esto es lo que da más conversión:
+  // antes mandábamos todo a WhatsApp y se cerraba ~0,3 % de los leads.
+  let waHref =
     tenant.cta_url ||
     (tenant.phone
       ? `https://wa.me/${tenant.phone.replace(/\D/g, '')}`
       : null)
 
-  // Append UTM ref to WhatsApp CTA for SEM tracking
-  if (ctaHref && utmRef && ctaHref.includes('wa.me/')) {
-    ctaHref = `${ctaHref}?text=${encodeURIComponent(`Hola! Ref: ${utmRef}`)}`
+  if (waHref && utmRef && waHref.includes('wa.me/')) {
+    waHref = `${waHref}?text=${encodeURIComponent(`Hola! Ref: ${utmRef}`)}`
   }
 
-  if (!ctaHref) return null
+  if (!hasProducts && !waHref) return null
 
   return (
     <section className="px-6 py-20">
@@ -441,16 +453,43 @@ function CtaSection({ tenant, utmRef = '' }: { tenant: Tenant; utmRef?: string }
           {tenant.cta_text}
         </h2>
 
-        <Button
-          asChild
-          size="lg"
-          className="mt-4 text-white"
-          style={{ backgroundColor: tenant.primary_color }}
-        >
-          <a href={ctaHref} target="_blank" rel="noopener noreferrer">
-            {tenant.cta_url ? 'Ir ahora' : 'Escribinos por WhatsApp'}
-          </a>
-        </Button>
+        {hasProducts ? (
+          <>
+            <Button
+              asChild
+              size="lg"
+              className="mt-4 text-white"
+              style={{ backgroundColor: tenant.primary_color }}
+            >
+              <a href="#productos">Ver productos</a>
+            </Button>
+            {waHref && (
+              <div className="mt-4">
+                <a
+                  href={waHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-white/70 underline-offset-4 hover:text-white hover:underline"
+                >
+                  ¿Preferís consultar por WhatsApp? Escribinos
+                </a>
+              </div>
+            )}
+          </>
+        ) : (
+          waHref && (
+            <Button
+              asChild
+              size="lg"
+              className="mt-4 text-white"
+              style={{ backgroundColor: tenant.primary_color }}
+            >
+              <a href={waHref} target="_blank" rel="noopener noreferrer">
+                {tenant.cta_url ? 'Ir ahora' : 'Escribinos por WhatsApp'}
+              </a>
+            </Button>
+          )
+        )}
       </div>
     </section>
   )

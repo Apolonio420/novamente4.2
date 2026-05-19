@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ShoppingCart, Zap, MessageCircle } from "lucide-react"
 import { useCart } from "@/lib/cartStore"
 import { useToast } from "@/hooks/use-toast"
+import * as fpixel from "@/lib/fpixel"
 
 const DEFAULT_SIZES = ["S", "M", "L", "XL", "XXL"] as const
 
@@ -62,6 +63,20 @@ export function AddToCartButtons({
   const { toast } = useToast()
   const router = useRouter()
 
+  const viewContentFiredRef = useRef(false)
+  useEffect(() => {
+    if (viewContentFiredRef.current) return
+    viewContentFiredRef.current = true
+    fpixel.event("ViewContent", {
+      content_ids: [productId],
+      content_name: `${productName} — ${brandName}`,
+      content_type: "product",
+      content_category: category || undefined,
+      value: price,
+      currency: "ARS",
+    })
+  }, [productId, productName, brandName, category, price])
+
   const doAdd = () => {
     addItem({
       id: `${productId}-${selectedSize}-${selectedColor || 'def'}-${Date.now()}`,
@@ -72,6 +87,14 @@ export function AddToCartButtons({
       price,
       quantity: 1,
       image: imageUrl || "",
+    })
+    fpixel.event("AddToCart", {
+      content_ids: [productId],
+      content_name: `${productName} — ${brandName}`,
+      content_type: "product",
+      content_category: category || undefined,
+      value: price,
+      currency: "ARS",
     })
   }
 
@@ -87,6 +110,14 @@ export function AddToCartButtons({
 
   const handleBuyNow = () => {
     doAdd()
+    fpixel.event("InitiateCheckout", {
+      content_ids: [productId],
+      content_name: `${productName} — ${brandName}`,
+      content_type: "product",
+      num_items: 1,
+      value: price,
+      currency: "ARS",
+    })
     toast({
       title: "Producto agregado",
       description: `Te llevamos al checkout...`,

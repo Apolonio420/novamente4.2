@@ -5,7 +5,9 @@ import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, Package, Mail, Home } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { CheckCircle, Package, Mail, Home, Truck } from "lucide-react"
 import * as fpixel from "@/lib/fpixel"
 import { trackPurchase as gadsPurchase } from "@/lib/gads"
 import { trackPurchase as dataLayerPurchase } from "@/lib/analytics"
@@ -18,6 +20,49 @@ export default function CheckoutSuccessPage() {
   const getTotalPrice = useCart((s) => s.getTotalPrice)
   const clearCart = useCart((s) => s.clearCart)
   const purchaseTrackedRef = useRef(false)
+
+  // Form post-pago para completar dirección si quedó pendiente.
+  // Lo mostramos siempre que la orden venga del express checkout — si ya tenían
+  // dirección cargada, el operations team lo confirma luego pero no rompe nada.
+  const [shippingForm, setShippingForm] = useState({ address: "", city: "", postal_code: "", phone: "" })
+  const [shippingSubmitted, setShippingSubmitted] = useState(false)
+  const [shippingSubmitting, setShippingSubmitting] = useState(false)
+  const [shippingError, setShippingError] = useState<string | null>(null)
+
+  const handleShippingSubmit = async () => {
+    setShippingError(null)
+    if (!shippingForm.address.trim() || !shippingForm.city.trim()) {
+      setShippingError("Calle/altura y ciudad son obligatorios")
+      return
+    }
+    setShippingSubmitting(true)
+    try {
+      const externalReference = searchParams.get("external_reference")
+      const paymentId = searchParams.get("payment_id")
+      const res = await fetch("/api/orders/shipping-info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          external_reference: externalReference,
+          payment_id: paymentId,
+          address: shippingForm.address,
+          city: shippingForm.city,
+          postal_code: shippingForm.postal_code,
+          phone: shippingForm.phone,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        setShippingError(data.error || "No pudimos guardar la dirección — escribinos por WhatsApp")
+        return
+      }
+      setShippingSubmitted(true)
+    } catch (err) {
+      setShippingError((err as Error).message || "Error de conexión")
+    } finally {
+      setShippingSubmitting(false)
+    }
+  }
 
   useEffect(() => {
     // Get payment data from URL parameters
@@ -166,6 +211,76 @@ export default function CheckoutSuccessPage() {
                   <p className="text-sm text-muted-foreground">Te enviaremos actualizaciones por email</p>
                 </div>
               </div>
+            </div>
+
+            {/* Express checkout: completar dirección post-pago */}
+            <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 text-left">
+              <div className="flex items-start gap-3 mb-3">
+                <Truck className="w-5 h-5 text-primary mt-0.5" />
+                <div>
+                  <h3 className="font-semibold">¿A dónde te lo enviamos?</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Completá la dirección para que podamos despachar tu pedido. Tardamos 1 min.
+                  </p>
+                </div>
+              </div>
+
+              {shippingSubmitted ? (
+                <div className="rounded-md bg-green-100 border border-green-300 p-3 text-sm text-green-800">
+                  ✓ Listo · ya tenemos tu dirección. Te avisamos cuando salga el envío.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="ship-address">Dirección *</Label>
+                    <Input
+                      id="ship-address"
+                      value={shippingForm.address}
+                      onChange={(e) => setShippingForm((p) => ({ ...p, address: e.target.value }))}
+                      placeholder="Av. Corrientes 1234, Piso 5 Depto B"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="ship-city">Ciudad *</Label>
+                      <Input
+                        id="ship-city"
+                        value={shippingForm.city}
+                        onChange={(e) => setShippingForm((p) => ({ ...p, city: e.target.value }))}
+                        placeholder="Buenos Aires"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="ship-postal">Código Postal</Label>
+                      <Input
+                        id="ship-postal"
+                        value={shippingForm.postal_code}
+                        onChange={(e) => setShippingForm((p) => ({ ...p, postal_code: e.target.value }))}
+                        placeholder="1414"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="ship-phone">Teléfono (opcional)</Label>
+                    <Input
+                      id="ship-phone"
+                      value={shippingForm.phone}
+                      onChange={(e) => setShippingForm((p) => ({ ...p, phone: e.target.value }))}
+                      placeholder="+54 9 11 1234-5678"
+                    />
+                  </div>
+                  {shippingError && (
+                    <p className="text-sm text-red-600">{shippingError}</p>
+                  )}
+                  <Button
+                    onClick={handleShippingSubmit}
+                    disabled={shippingSubmitting}
+                    className="w-full"
+                  >
+                    {shippingSubmitting ? "Guardando..." : "Guardar dirección"}
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-3">

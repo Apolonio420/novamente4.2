@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { items, customer, total, cartItems, subtotal, shippingCost } = await request.json()
+    const { items, customer, total, cartItems, subtotal, shippingCost, shippingZone } = await request.json()
 
     console.log("🛒 Checkout API received:", {
       itemsCount: items?.length || 0,
@@ -63,9 +63,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Price validation failed" }, { status: 400 })
     }
 
-    // Calcular subtotal y shipping si no vienen
+    // Calcular subtotal y shipping si no vienen.
+    // Fallback por zona: BA $7.000 · Resto $9.000 · gratis >= $85.000
     const finalSubtotal = subtotal || calculatedTotal
-    const finalShippingCost = shippingCost || (calculatedTotal >= 85000 ? 0 : 6500)
+    const fallbackShipping = calculatedTotal >= 85000
+      ? 0
+      : (shippingZone === 'RESTO' ? 9000 : 7000)
+    const finalShippingCost = typeof shippingCost === 'number' ? shippingCost : fallbackShipping
     const finalTotal = finalSubtotal + finalShippingCost
 
     // Preparar items del pedido desde cartItems si están disponibles, sino desde items simplificados
@@ -119,14 +123,16 @@ export async function POST(request: NextRequest) {
     // Crear el pedido en la base de datos ANTES de crear la preferencia
     const externalReference = `order_${Date.now()}`
 
+    // Express checkout: address/city pueden venir vacíos · se completan post-pago en /checkout/success
     const newOrder = await createOrder({
       customer_email: customer.email,
       customer_first_name: customer.firstName,
       customer_last_name: customer.lastName,
       customer_phone: customer.phone || null,
-      shipping_address: customer.address,
-      shipping_city: customer.city,
+      shipping_address: customer.address || null,
+      shipping_city: customer.city || null,
       shipping_postal_code: customer.postalCode || null,
+      shipping_zone: shippingZone || null,
       payment_method: 'mercadopago',
       payment_status: 'pending',
       external_reference: externalReference,
@@ -164,14 +170,16 @@ export async function POST(request: NextRequest) {
         email: customer.email,
         name: customer.firstName,
         surname: customer.lastName,
-        phone: {
-          number: customer.phone,
-        },
-        address: {
-          street_name: customer.address,
-          city_name: customer.city,
-          zip_code: customer.postalCode,
-        },
+        ...(customer.phone ? { phone: { number: customer.phone } } : {}),
+        ...(customer.address || customer.city || customer.postalCode
+          ? {
+              address: {
+                street_name: customer.address || undefined,
+                city_name: customer.city || undefined,
+                zip_code: customer.postalCode || undefined,
+              },
+            }
+          : {}),
       },
       back_urls: {
         success: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/success`,
