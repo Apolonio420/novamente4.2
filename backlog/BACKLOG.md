@@ -10,10 +10,15 @@
 
 | # | ID | Tarea | Sprints | Apto autopilot | Estado |
 |---|----|-------|---------|----------------|--------|
-| 1 | TASK-001 | CBU + alias de depósito en /workspace/settings | 1 | sí | PENDING |
-| 2 | TASK-002 | Tickets disponibles para todos los tiers | 1 | sí | PENDING |
-| 3 | TASK-003 | Auditar tracking de ventas (research, no code) | 1 | sí | PENDING |
-| 4 | TASK-004 | Auditar + regenerar con Gemini imágenes de marketing baja calidad (full-auto) | 2 | sí | PENDING |
+| 1 | TASK-001 | CBU + alias de depósito en /workspace/settings | 1 | sí | DONE |
+| 2 | TASK-002 | Tickets disponibles para todos los tiers | 1 | sí | DONE |
+| 3 | TASK-003 | Auditar tracking de ventas (research, no code) | 1 | sí | DONE |
+| 4 | TASK-004 | Auditar + regenerar con Gemini imágenes de marketing baja calidad (full-auto) | 2 | no (`node` requiere aprobación manual) | BLOCKED → movido a BACKLOG FUTURO |
+| 5 | AUTOFEED-20260518-1 | tsc: rag-sources.test.ts:36 | 1 | sí | PENDING |
+| 6 | AUTOFEED-20260518-2 | tsc: rag-sources.test.ts:101 | 1 | sí | PENDING |
+| 7 | AUTOFEED-20260518-3 | tsc: generate-stamp.test.ts:105 | 1 | sí | PENDING |
+| 8 | AUTOFEED-20260518-4 | tsc: route.ts:37 | 1 | sí | PENDING |
+| 9 | AUTOFEED-20260518-5 | tsc: route.ts:40 | 1 | sí | PENDING |
 
 ---
 
@@ -159,6 +164,35 @@
 
 ---
 
+| 3 | TASK-003 | Auditar tracking de ventas (research, no code) | 1 | sí | DONE |
+
+---
+
+### TASK-005 — Bridgear ventas B2C hacia partner_orders (BUG-1 crítico)
+
+**Detectado por:** TASK-003 auditoría de tracking de ventas.
+
+**Por qué:** Las ventas en storefronts públicos se guardan en `orders` (sin tenant_id). El dashboard del partner lee de `partner_orders`. No hay puente → el partner ve revenue = 0 aunque haya ventas reales.
+
+**Alcance:**
+1. Agregar `tenant_id` a la tabla `orders` (nuevo campo nullable, migración).
+2. Modificar el checkout (`app/api/checkout/route.ts`) para recibir y guardar el `tenant_id` del storefront.
+3. En el webhook MP principal (`app/api/webhooks/mercadopago/route.ts`), cuando `payment_status = approved`, upsert también en `partner_orders` usando el `tenant_id` de la orden.
+
+**NO hacer:** tocar el modelo de datos de `partner_orders` ni la lógica de KPIs existente.
+
+---
+
+### TASK-006 — Corregir ventana temporal de conversionRate (BUG-2)
+
+**Detectado por:** TASK-003 auditoría.
+
+**Por qué:** `orders30d` usa ventana rolling de 30 días, `leadsThisMonth` usa mes calendario. El rate es inconsistente.
+
+**Alcance:** En `lib/partners/dashboard-kpis.ts`, usar la misma ventana rolling de 30 días para contar leads (`gte created_at, t30d`).
+
+---
+
 ## BACKLOG FUTURO (no corre todavía)
 
 Mover items acá cuando aparecen ideas pero no están listas para sprint.
@@ -169,3 +203,125 @@ Mover items acá cuando aparecen ideas pero no están listas para sprint.
   - NO recalcular ni modificar la columna B2C en otras hojas ni los tiers Partner/Starter/Pro/Drop/Bulk.
   - Ejecutarlo desde la extensión Claude Code del Excel (ver prompt guardado en chat de Sambu del 2026-05-18).
 
+
+## AUTO-FEEDER — 2026-05-18
+
+Detectados por `scripts/backlog-auto-feeder.sh`. Mover a SPRINT ACTUAL si se quieren correr.
+
+### AUTOFEED-20260518-1 — tsc: rag-sources.test.ts:36
+
+**Por qué:** Detectado por auto-feeder (tsc).
+
+**Archivos:**
+- `__tests__/chat/rag-sources.test.ts` línea 36
+
+**Error:**
+```
+TS2304: Cannot find name 'beforeAll'.
+```
+
+**Criterio DONE:**
+- [ ] Error resuelto
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 AUTOFEED-20260518-1]`
+
+---
+
+### AUTOFEED-20260518-2 — tsc: rag-sources.test.ts:101
+
+**Por qué:** Detectado por auto-feeder (tsc).
+
+**Archivos:**
+- `__tests__/chat/rag-sources.test.ts` línea 101
+
+**Error:**
+```
+TS2304: Cannot find name 'beforeAll'.
+```
+
+**Criterio DONE:**
+- [ ] Error resuelto
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 AUTOFEED-20260518-2]`
+
+---
+
+### AUTOFEED-20260518-3 — tsc: generate-stamp.test.ts:105
+
+**Por qué:** Detectado por auto-feeder (tsc).
+
+**Archivos:**
+- `__tests__/generation/generate-stamp.test.ts` línea 105
+
+**Error:**
+```
+TS2304: Cannot find name 'afterEach'.
+```
+
+**Criterio DONE:**
+- [ ] Error resuelto
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 AUTOFEED-20260518-3]`
+
+---
+
+### AUTOFEED-20260518-4 — tsc: route.ts:37
+
+**Por qué:** Detectado por auto-feeder (tsc).
+
+**Archivos:**
+- `app/api/partners/design/library/route.ts` línea 37
+
+**Error:**
+```
+TS2339: Property 'url' does not exist on type 'PartnerAsset'.
+```
+
+**Criterio DONE:**
+- [ ] Error resuelto
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 AUTOFEED-20260518-4]`
+
+---
+
+### AUTOFEED-20260518-5 — tsc: route.ts:40
+
+**Por qué:** Detectado por auto-feeder (tsc).
+
+**Archivos:**
+- `app/api/webhooks/whatsapp/route.ts` línea 40
+
+**Error:**
+```
+TS2769: No overload matches this call.
+```
+
+**Criterio DONE:**
+- [ ] Error resuelto
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 AUTOFEED-20260518-5]`
+
+---
+
+## AUTO-FEEDER — 2026-05-18
+
+Detectados por `scripts/backlog-auto-feeder.sh`. Mover a SPRINT ACTUAL si se quieren correr.
+
+### AUTOFEED-20260518-1 — tsc: page.ts:34
+
+**Por qué:** Detectado por auto-feeder (tsc).
+
+**Archivos:**
+- `.next/types/app/design/[imageId]/page.ts` línea 34
+
+**Error:**
+```
+TS2344: Type 'PageProps' does not satisfy the constraint 'import("/Users/sambujuan/novamente/dev/novamente4.2-main 2/.next/types/app/design/[imageId]/page").PageProps'.
+```
+
+**Criterio DONE:**
+- [ ] Error resuelto
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 AUTOFEED-20260518-1]`
+
+---
