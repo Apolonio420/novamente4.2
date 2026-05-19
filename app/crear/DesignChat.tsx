@@ -4,13 +4,6 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { useCart } from "@/lib/cartStore"
 import type { DesignSession } from "./page"
@@ -23,6 +16,7 @@ import {
   RotateCcw,
   Sparkles,
 } from "lucide-react"
+import { GarmentCatalog } from "./GarmentCatalog"
 
 // ============================================================
 // Types
@@ -41,25 +35,23 @@ type Msg = {
 // ============================================================
 
 const GARMENT_OPTIONS = [
-  { value: "aldea_classic_fit", label: "Remera Clásica (Aldea)" },
-  { value: "aura_oversized", label: "Remera Oversize (Aura)" },
-  { value: "boston_hoodie", label: "Hoodie (Boston)" },
-  { value: "astra_crop", label: "Crop Top (Astra)" },
-]
-
-const COLOR_OPTIONS = [
-  { value: "negro", label: "Negro" },
-  { value: "blanco", label: "Blanco" },
-  { value: "stone_wash", label: "Stone Wash" },
+  { value: "aldea_classic_fit", label: "Remera Clásica" },
+  { value: "aura_oversized", label: "Remera Oversize" },
+  { value: "boston_hoodie", label: "Buzo Hoodie" },
+  { value: "buzo_cuello_redondo", label: "Buzo Cuello Redondo" },
+  { value: "musculosa_bali", label: "Musculosa Bali" },
+  { value: "astra_crop", label: "Remera Crop" },
 ]
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"]
 
 const PRICES: Record<string, number> = {
-  aldea_classic_fit: 32000,
-  aura_oversized: 35000,
+  aldea_classic_fit: 28600,
+  aura_oversized: 31000,
   boston_hoodie: 52000,
-  astra_crop: 28000,
+  buzo_cuello_redondo: 43000,
+  musculosa_bali: 21800,
+  astra_crop: 23500,
 }
 
 // ============================================================
@@ -70,8 +62,13 @@ function garmentLabel(g: string) {
   return GARMENT_OPTIONS.find((o) => o.value === g)?.label ?? g
 }
 
+const COLOR_LABELS: Record<string, string> = {
+  negro: "Negro", blanco: "Blanco", stone_wash: "Stone Wash",
+  gris: "Gris", crema: "Crema", marron: "Marrón", caramel: "Caramel",
+}
+
 function colorLabel(c: string) {
-  return COLOR_OPTIONS.find((o) => o.value === c)?.label ?? c
+  return COLOR_LABELS[c] ?? c
 }
 
 // ============================================================
@@ -100,6 +97,7 @@ export function DesignChat({
   const [mockupLoading, setMockupLoading] = useState(false)
   const [pendingAttachment, setPendingAttachment] = useState<string | null>(null)
   const [selectedSize, setSelectedSize] = useState("M")
+  const [orientation, setOrientation] = useState<"vertical" | "horizontal" | "cuadrado">("cuadrado")
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -206,6 +204,14 @@ export function DesignChat({
         return
       }
 
+      // Aspect ratio según la orientación elegida
+      const aspectSize =
+        orientation === "vertical"
+          ? { width: 768, height: 1024 }
+          : orientation === "horizontal"
+            ? { width: 1024, height: 768 }
+            : { width: 1024, height: 1024 } // cuadrado
+
       if (hasAttachment || hasPreviousDesign) {
         endpoint = "/api/public/design/edit"
         body = {
@@ -213,10 +219,16 @@ export function DesignChat({
           instruction: text,
           mode: hasAttachment ? "photo" : "illustration",
           raw: true,
+          garmentColor: session.garmentColor,
         }
       } else {
         endpoint = "/api/generate-image"
-        body = { prompt: text, raw: true }
+        body = {
+          prompt: text,
+          raw: true,
+          size: aspectSize,
+          garmentColor: session.garmentColor,
+        }
       }
 
       const useEdit = endpoint !== "/api/generate-image"
@@ -450,6 +462,33 @@ export function DesignChat({
           </div>
         )}
 
+        {/* Orientation selector — visible siempre que no haya imagen previa
+            (cuando hay design previo el aspect ratio ya está definido) */}
+        {!session.currentDesignUrl && !pendingAttachment && (
+          <div className="px-4 pt-1 pb-2 border-t border-zinc-800 flex items-center gap-2">
+            <span className="text-xs text-zinc-500">Orientación:</span>
+            {(["vertical", "horizontal", "cuadrado"] as const).map((o) => {
+              const isActive = orientation === o
+              const icon = o === "vertical" ? "▯" : o === "horizontal" ? "▭" : "▢"
+              return (
+                <button
+                  key={o}
+                  type="button"
+                  onClick={() => setOrientation(o)}
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition ${
+                    isActive
+                      ? "border-violet-500 bg-violet-600/20 text-white"
+                      : "border-zinc-700 bg-transparent text-zinc-400 hover:border-zinc-500"
+                  }`}
+                >
+                  <span className="text-base leading-none">{icon}</span>
+                  <span className="capitalize">{o}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         {/* Pending attachment preview */}
         {pendingAttachment && (
           <div className="px-4 py-2 border-t border-zinc-800 flex items-center gap-2">
@@ -473,6 +512,19 @@ export function DesignChat({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={(e) => {
+                // Permite pegar imagen del clipboard (Ctrl+V) — busca un
+                // ClipboardItem de tipo image/* y lo trata como attachment.
+                const items = Array.from(e.clipboardData?.items ?? [])
+                const imgItem = items.find((it) => it.type.startsWith("image/"))
+                if (imgItem) {
+                  e.preventDefault()
+                  const file = imgItem.getAsFile()
+                  if (file) {
+                    void handleAttach(file)
+                  }
+                }
+              }}
               placeholder={
                 session.currentDesignUrl
                   ? "Sugerí un cambio: \"hacelo más oscuro\", \"agregá detalles en dorado\"..."
@@ -524,7 +576,7 @@ export function DesignChat({
           </div>
 
           <p className="text-xs text-zinc-600 mt-2">
-            Enter para enviar · Shift+Enter nueva línea · 📎 para adjuntar referencia visual
+            Enter para enviar · Shift+Enter nueva línea · 📎 o Ctrl+V para pegar imagen
           </p>
         </div>
       </div>
@@ -575,79 +627,20 @@ export function DesignChat({
           )}
         </div>
 
-        {/* Garment controls */}
-        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-4 space-y-3">
-          <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Configurar prenda</p>
-
-          {/* Garment type */}
-          <div className="space-y-1.5">
-            <label className="text-xs text-zinc-500">Prenda</label>
-            <Select
-              value={session.garmentType}
-              onValueChange={(v) =>
-                setSession((prev) => ({ ...prev, garmentType: v, currentMockupUrl: null }))
-              }
-            >
-              <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white text-sm h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-800 border-zinc-700">
-                {GARMENT_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value} className="text-white focus:bg-zinc-700">
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Color */}
-          <div className="space-y-1.5">
-            <label className="text-xs text-zinc-500">Color</label>
-            <Select
-              value={session.garmentColor}
-              onValueChange={(v) =>
-                setSession((prev) => ({ ...prev, garmentColor: v, currentMockupUrl: null }))
-              }
-            >
-              <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white text-sm h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-800 border-zinc-700">
-                {COLOR_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value} className="text-white focus:bg-zinc-700">
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Side toggle */}
-          <div className="space-y-1.5">
-            <label className="text-xs text-zinc-500">Posición de estampa</label>
-            <div className="flex gap-2">
-              {(["front", "back"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() =>
-                    setSession((prev) => ({ ...prev, side: s, currentMockupUrl: null }))
-                  }
-                  className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition ${
-                    session.side === s
-                      ? "bg-violet-600 text-white"
-                      : "bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700"
-                  }`}
-                >
-                  {s === "front" ? "Frente" : "Espalda"}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Garment catalog */}
+        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-4">
+          <GarmentCatalog
+            garmentType={session.garmentType}
+            garmentColor={session.garmentColor}
+            side={session.side}
+            onChange={({ garmentType, garmentColor, side }) =>
+              setSession((prev) => ({ ...prev, garmentType, garmentColor, side, currentMockupUrl: null }))
+            }
+          />
 
           {/* Mockup button */}
           <Button
-            className="w-full bg-zinc-700 hover:bg-zinc-600 text-white text-sm"
+            className="w-full bg-zinc-700 hover:bg-zinc-600 text-white text-sm mt-4"
             onClick={handleMockup}
             disabled={!session.currentDesignUrl || mockupLoading}
           >

@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
       instruction: string
       mode?: "photo" | "illustration"
       raw?: boolean
+      garmentColor?: string
     }
     const { previousImageUrl, instruction } = body
     // 'photo' = user-uploaded photo (preserva personas/fondo real)
@@ -77,13 +78,14 @@ export async function POST(req: NextRequest) {
         "Respond ONLY with an image (inlineData). No text.",
       ].join(" ")
     } else if (rawMode) {
-      // Raw illustration: respect user prompt as-is, no style forcing
-      editInstruction = [
-        `Edit this image with the following instruction: ${instruction.trim()}.`,
-        "Apply the change while preserving the overall composition. Keep the user's creative direction — do not force vectorial style unless they ask for it.",
-        "PROHIBIDO devolver prendas/remeras/buzos/hoodies/mockups/fotografía de producto. Devolvé SOLO la imagen del diseño.",
-        "Respond ONLY with an image (inlineData). No text.",
-      ].join(" ")
+      // Raw illustration: respect user prompt as-is, + print-ready layer
+      // según el color de la prenda destino.
+      const { buildPrintReadyPrompt } = await import("@/lib/designer/print-ready-prompt")
+      const printReady = buildPrintReadyPrompt(
+        `Edit this image with the following instruction: ${instruction.trim()}. Apply the change while preserving the overall composition.`,
+        { garmentColor: body.garmentColor },
+      )
+      editInstruction = `${printReady} Respond ONLY with an image (inlineData). No text.`
     } else {
       const { optimizedPrompt } = optimizeDesignPrompt(instruction)
       editInstruction = [

@@ -99,14 +99,17 @@ export async function POST(req: NextRequest) {
     //    - raw=false (default): pasa por optimizer que fuerza estilo vectorial textile
     const { styleId, colorway, printArea } = body as OptimizerOptions
     const rawMode = (body as { raw?: boolean }).raw === true
+    const garmentColor = (body as { garmentColor?: string }).garmentColor
 
     let finalPrompt: string
     let optimized = { optimizedPrompt: "", styleApplied: null as string | null, variants: [] as string[] }
-    const minimalGuard =
-      "PROHIBIDO devolver prendas/remeras/buzos/hoodies/mockups/fotografía de producto. Devolvé SOLO la imagen del diseño solicitado, aislada, lista para estampar."
 
     if (rawMode) {
-      finalPrompt = `${basePrompt}. ${minimalGuard}${aspectRatioHint}`.trim()
+      // Print-ready layer: aplica reglas de contraste, separacion de bordes y
+      // safety rules segun el color de prenda destino. Reemplaza al optimizer
+      // textil viejo cuando el flow del nuevo /crear usa raw=true.
+      const { buildPrintReadyPrompt } = await import("@/lib/designer/print-ready-prompt")
+      finalPrompt = `${buildPrintReadyPrompt(basePrompt, { garmentColor })}${aspectRatioHint}`
     } else {
       optimized = optimizeDesignPrompt(basePrompt, styleId, { colorway, printArea })
       const hardGuard =
