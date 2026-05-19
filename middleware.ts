@@ -89,11 +89,13 @@ export async function middleware(request: NextRequest) {
   // Content Security Policy — balanced for functionality
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net",
+    // 'wasm-unsafe-eval' permite cargar WASM (necesario para @imgly background-removal en /crear)
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://staticimgly.com",
+    "worker-src 'self' blob:",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.googletagmanager.com",
     "img-src 'self' data: blob: https: http:",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://api.mercadopago.com https://*.r2.cloudflarestorage.com https://*.r2.dev https://cdn.novamente.ar https://www.facebook.com https://graph.facebook.com https://*.facebook.com https://*.conversionsapigateway.com https://*.ecs.us-east-2.on.aws https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com https://www.google.com https://*.google.com.ar https://www.google.com.ar https://*.googleadservices.com https://www.googleadservices.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://api.mercadopago.com https://*.r2.cloudflarestorage.com https://*.r2.dev https://cdn.novamente.ar https://www.facebook.com https://graph.facebook.com https://*.facebook.com https://*.conversionsapigateway.com https://*.ecs.us-east-2.on.aws https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.g.doubleclick.net https://*.google.com https://www.google.com https://*.google.com.ar https://www.google.com.ar https://*.googleadservices.com https://www.googleadservices.com https://staticimgly.com",
     "frame-src 'self' https://www.mercadopago.com.ar https://www.facebook.com https://td.doubleclick.net https://bid.g.doubleclick.net",
     "form-action 'self' https://www.facebook.com https://*.facebook.com https://*.conversionsapigateway.com",
     "media-src 'self' blob:",
