@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     assets: assets.map(a => ({
       id: a.id,
       type: a.type,
-      url: a.url,
+      url: a.public_url,
       storageKey: a.storage_key,
       metadata: a.metadata,
       createdAt: a.created_at,
