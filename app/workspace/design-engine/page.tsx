@@ -107,6 +107,7 @@ export default function DesignStudioPage() {
   const [selectedGarment, setSelectedGarment] = useState(GARMENT_OPTIONS[0].key)
   const [selectedColor, setSelectedColor] = useState('black')
   const [selectedSide, setSelectedSide] = useState<'front' | 'back'>('front')
+  const [selectedStampMode, setSelectedStampMode] = useState<'large' | 'chest-logo' | 'sleeve-logo'>('large')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [styleModalOpen, setStyleModalOpen] = useState(false)
   // Default OFF: la "esencia de marca" influia demasiado en el prompt. El partner
@@ -390,6 +391,7 @@ export default function DesignStudioPage() {
           garmentType: selectedGarment,
           garmentColor: selectedColor,
           side: selectedSide,
+          stampMode: selectedStampMode,
           sessionId,
         }),
       })
@@ -936,6 +938,31 @@ export default function DesignStudioPage() {
             </button>
           </div>
 
+          {/* Stamp mode selector */}
+          <div className="flex items-center bg-zinc-800 rounded-lg overflow-hidden text-xs">
+            <button
+              onClick={() => setSelectedStampMode('large')}
+              className={`px-2.5 py-1.5 ${selectedStampMode === 'large' ? 'bg-violet-600 text-white' : 'text-zinc-400'}`}
+              title="Estampa grande centrada (~30×30 cm)"
+            >
+              Grande
+            </button>
+            <button
+              onClick={() => setSelectedStampMode('chest-logo')}
+              className={`px-2.5 py-1.5 ${selectedStampMode === 'chest-logo' ? 'bg-violet-600 text-white' : 'text-zinc-400'}`}
+              title="Logo pequeño en pecho izquierdo (~10×10 cm)"
+            >
+              Logo pecho
+            </button>
+            <button
+              onClick={() => setSelectedStampMode('sleeve-logo')}
+              className={`px-2.5 py-1.5 ${selectedStampMode === 'sleeve-logo' ? 'bg-violet-600 text-white' : 'text-zinc-400'}`}
+              title="Logo en manga (~8×8 cm)"
+            >
+              Logo manga
+            </button>
+          </div>
+
           <div className="ml-auto" />
 
           {/* Selected garment price badge — segun plan del partner */}
@@ -1052,13 +1079,18 @@ export default function DesignStudioPage() {
       `}>
         <div className="flex flex-col h-full">
           {/* Panel header */}
-          <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+          <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/95 backdrop-blur">
             <h3 className="font-semibold text-sm text-zinc-300 flex items-center gap-2">
               <Shirt className="h-4 w-4 text-violet-400" />
               Prendas Base
             </h3>
-            <button onClick={() => setRightPanelOpen(false)} className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 lg:hidden">
+            <button
+              onClick={() => setRightPanelOpen(false)}
+              aria-label="Cerrar panel de prendas"
+              className="lg:hidden inline-flex items-center gap-1.5 min-h-[40px] px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-100 text-xs font-medium"
+            >
               <X className="h-4 w-4" />
+              Cerrar
             </button>
           </div>
 

@@ -811,6 +811,21 @@ export default function CatalogPage() {
 
             {/* Panel body */}
             <div className="p-6 space-y-6">
+              {formMode === 'create' && (
+                <a
+                  href="/workspace/design-engine"
+                  className="block rounded-lg border border-violet-500/30 bg-gradient-to-br from-violet-950/30 to-zinc-900/40 p-3 hover:border-violet-500/60 transition-colors"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <Sparkles className="w-4 h-4 text-violet-400 mt-0.5 shrink-0" />
+                    <div className="text-xs leading-relaxed">
+                      <p className="font-semibold text-zinc-100 mb-0.5">¿Querés diseñar sobre una prenda Novamente?</p>
+                      <p className="text-zinc-400">Este formulario es para subir tu propio producto con tus imágenes. Para usar nuestras prendas base (remeras, buzos, hoodies) usá el <span className="text-violet-400 font-medium">Design Engine →</span></p>
+                    </div>
+                  </div>
+                </a>
+              )}
+
               {/* Name */}
               <div className="space-y-2">
                 <Label htmlFor="product-name" className="text-zinc-300 text-sm font-medium">

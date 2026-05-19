@@ -23,6 +23,7 @@
 | 11 | TASK-008 | Storefront Falco roto: logo + banner no cargan en /p/falco | 1 | sí (migración SQL lista, correr en Supabase) | NEEDS_MANUAL |
 | 12 | TASK-009 | Design engine: garment mismatch + controles de placement y tamaño de estampa | 3 | sí (con auditoría componente) | DONE |
 | 13 | TASK-010 | Unificar todos los WhatsApp (bubbles + links + tel) a +54 9 2235 16-9720 | 1 | sí | DONE |
+| 14 | TASK-011 | Mobile UX Design Engine + claridad de límites (drawer X + banner + límite semanal) | 1 | sí | PARTIAL — fix drawer + banner DONE, mensaje límite PENDING |
 
 ---
 
@@ -329,6 +330,27 @@ Después del cambio, **el único número que debe aparecer es `5492235169720`** 
 - [ ] Commit `fix(contact): unificar WhatsApp a +54 9 2235 16-9720 [AP-v4.2 TASK-010]`.
 
 **Sprints estimados:** 1.
+
+---
+
+### TASK-011 — Mobile UX Design Engine + claridad de límites
+
+**Por qué:** Partner real (+54 9 2236 68-1701, Shopsur) reportó por WhatsApp el 2026-05-19 que (a) no encontraba cómo cerrar el drawer de prendas en mobile, (b) entró a "Agregar producto" buscando elegir una prenda Novamente y no aparecía el selector, (c) "no me deja poner más" en Design Engine sin entender que era el límite semanal Starter (2/5 generaciones).
+
+**Alcance hecho (DONE en este commit):**
+- [app/workspace/design-engine/page.tsx](app/workspace/design-engine/page.tsx) — header del drawer "Prendas Base" ahora `sticky top-0`, botón cerrar pasó de X chiquito a un botón "✕ Cerrar" con label visible, fondo `bg-zinc-800`, touch target ≥40px, solo en mobile (`lg:hidden`).
+- [app/workspace/catalog/page.tsx](app/workspace/catalog/page.tsx) — banner clickeable arriba del modal "Nuevo producto" (solo en modo `create`) que linkea a `/workspace/design-engine` y explica que ese formulario es para subir el producto propio del partner, no para diseñar sobre prendas Novamente.
+
+**Pending (NO incluido todavía — sumar a próximo sprint):**
+- [ ] Cuando el partner alcanza el límite semanal de generaciones en Design Engine (ej. 5/5 Starter), mostrar un mensaje explícito tipo "Llegaste a 5/5 generaciones esta semana. Renueva el lunes o pasá a Growth para 25/semana" en lugar de simplemente bloquear silenciosamente el botón send.
+- [ ] Botón "Crear producto" en catálogo: cuando está `disabled` porque falta `formName.trim()`, agregar tooltip o helper text inline ("Falta nombre del producto") para que no parezca un bug.
+- [ ] Revisar contraste de los botones flotantes del chat (Aplicar a prenda, zoom, abrir) en pantallas ≤375px — el cliente reportó "no se ven bien" aunque visualmente parecen OK; pedir screenshot adicional si se vuelve a quejar.
+
+**Validación:**
+- [x] `npx tsc --noEmit` verde tras los dos fixes aplicados.
+- [ ] Smoke manual en mobile real (Chrome Android) — abrir drawer en Design Engine, verificar que "Cerrar" cierra el panel; abrir "Agregar producto" desde catálogo, verificar banner clickeable hacia design-engine.
+
+**Sprints estimados:** 1 (para cerrar pendientes).
 
 ---
 
