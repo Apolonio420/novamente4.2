@@ -83,7 +83,7 @@ export const GARMENT_PRICING: Record<string, GarmentPricing> = {
     b2b_starter: 24700,
     b2b_pro: 23700,
     b2b_drop: 22700,
-    b2c_suggested: 31000,
+    b2c_suggested: 28600,
   },
   'aura-oversize-tshirt': {
     key: 'aura-oversize-tshirt',
@@ -91,9 +91,9 @@ export const GARMENT_PRICING: Record<string, GarmentPricing> = {
     cost: 20496,
     on_demand: 25400,
     b2b_starter: 24700,
-    b2b_pro: 24000,
+    b2b_pro: 21800,
     b2b_drop: 23200,
-    b2c_suggested: 33000,
+    b2c_suggested: 31000,
   },
   // Lienzo (Canvas) discontinuado del catalogo partner el 2026-05-18.
   // Si vuelve a ofrecerse, reagregar entrada con campo cost del Excel.
@@ -109,7 +109,7 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
     b2b_starter: 24700,
     b2b_pro: 23700,
     b2b_drop: 22700,
-    b2c_suggested: 31000,
+    b2c_suggested: 28600,
   },
   'remera-crop-mujer': {
     key: 'remera-crop-mujer',
@@ -119,7 +119,7 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
     b2b_starter: 18800,
     b2b_pro: 18200,
     b2b_drop: 17700,
-    b2c_suggested: 26000,
+    b2c_suggested: 23500,
   },
   'buzo-cuello-redondo': {
     key: 'buzo-cuello-redondo',
@@ -129,7 +129,7 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
     b2b_starter: 31200,
     b2b_pro: 30200,
     b2b_drop: 29200,
-    b2c_suggested: 45000,
+    b2c_suggested: 43000,
   },
   'buzo-hoodie-unisex': {
     key: 'buzo-hoodie-unisex',
@@ -139,7 +139,7 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
     b2b_starter: 36600,
     b2b_pro: 34500,
     b2b_drop: 32400,
-    b2c_suggested: 58000,
+    b2c_suggested: 55000,
   },
   'musculosa-bali': {
     key: 'musculosa-bali',
@@ -149,7 +149,7 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
     b2b_starter: 16800,
     b2b_pro: 16200,
     b2b_drop: 15700,
-    b2c_suggested: 24000,
+    b2c_suggested: 21800,
   },
 }
 
