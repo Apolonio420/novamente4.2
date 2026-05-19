@@ -131,8 +131,10 @@ export function DesignChat({
   }, [toast])
 
   // ---- Generate design ----
-  const handleSend = useCallback(async () => {
-    const text = input.trim()
+  // `overridePrompt` permite que botones inline disparen sin pasar por
+  // el state de `input` (evita closure issues con useCallback deps).
+  const handleSend = useCallback(async (overridePrompt?: string) => {
+    const text = (overridePrompt ?? input).trim()
     if (!text || loading) return
 
     const userMsg: Msg = {
@@ -465,17 +467,7 @@ export function DesignChat({
               onClick={() => fileInputRef.current?.click()}
               className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-200 hover:border-violet-500 hover:text-white transition"
             >
-              📸 Subir foto + sacar fondo
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                fileInputRef.current?.click()
-                setInput("usá esta imagen tal cual, no le cambies nada")
-              }}
-              className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-200 hover:border-violet-500 hover:text-white transition"
-            >
-              🖼️ Subir foto y usar tal cual
+              📸 Subir mi foto
             </button>
             <button
               type="button"
@@ -550,19 +542,50 @@ export function DesignChat({
           </div>
         )}
 
-        {/* Pending attachment preview */}
+        {/* Pending attachment — preview + 3 acciones explicitas */}
         {pendingAttachment && (
-          <div className="px-4 py-2 border-t border-zinc-800 flex items-center gap-2">
-            <div className="relative w-10 h-10 rounded overflow-hidden border border-zinc-600">
-              <Image src={pendingAttachment} alt="Adjunto" fill className="object-cover" />
+          <div className="border-t border-zinc-800 bg-zinc-900/50">
+            <div className="px-4 py-3 flex items-start gap-3">
+              <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-zinc-600 shrink-0">
+                <Image src={pendingAttachment} alt="Adjunto" fill className="object-cover" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-white">Tu imagen está lista</span>
+                  <button
+                    className="text-zinc-500 hover:text-zinc-200 text-xs"
+                    onClick={() => setPendingAttachment(null)}
+                  >
+                    Quitar
+                  </button>
+                </div>
+                <p className="text-xs text-zinc-400 mb-2.5">¿Qué hacemos con ella?</p>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSend("sacale el fondo y dejá solo el sujeto principal")}
+                    className="rounded-full bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 text-xs font-medium transition"
+                  >
+                    🎯 Solo el sujeto (sacar fondo)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend("usá esta imagen tal cual, no le cambies nada")}
+                    className="rounded-full border border-zinc-700 hover:border-violet-500 text-zinc-200 px-3 py-1.5 text-xs transition"
+                  >
+                    🖼️ Foto entera
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSend("convertilo a estilo ilustración línea limpia, fondo transparente")}
+                    className="rounded-full border border-zinc-700 hover:border-violet-500 text-zinc-200 px-3 py-1.5 text-xs transition"
+                  >
+                    ✏️ Convertir a dibujo
+                  </button>
+                </div>
+                <p className="text-xs text-zinc-600 mt-2">O escribí abajo qué querés cambiar.</p>
+              </div>
             </div>
-            <span className="text-xs text-zinc-400 flex-1">Imagen adjuntada como referencia</span>
-            <button
-              className="text-zinc-500 hover:text-zinc-200 text-xs"
-              onClick={() => setPendingAttachment(null)}
-            >
-              Quitar
-            </button>
           </div>
         )}
 
@@ -629,7 +652,7 @@ export function DesignChat({
               aria-label="Enviar prompt"
               data-testid="send-prompt"
               className="bg-violet-600 hover:bg-violet-500 h-[58px] w-[58px] shrink-0"
-              onClick={handleSend}
+              onClick={() => handleSend()}
               disabled={loading || !input.trim()}
             >
               {loading ? (
