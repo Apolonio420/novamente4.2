@@ -20,7 +20,8 @@
 | 8 | AUTOFEED-20260518-4 | tsc: route.ts:37 | 1 | sí | DONE |
 | 9 | AUTOFEED-20260518-5 | tsc: route.ts:40 | 1 | sí | DONE |
 | 10 | TASK-007 | Soporte sidebar: quitar candado para Starter (consistencia con TASK-002) | 1 | sí | DONE |
-| 11 | TASK-008 | Storefront Falco roto: logo + banner no cargan en /p/falco | 1 | sí (con auditoría DB) | PENDING |
+| 11 | TASK-008 | Storefront Falco roto: logo + banner no cargan en /p/falco | 1 | sí (migración SQL lista, correr en Supabase) | NEEDS_MANUAL |
+| 12 | TASK-009 | Design engine: garment mismatch + controles de placement y tamaño de estampa | 3 | sí (con auditoría componente) | PENDING |
 
 ---
 
@@ -242,6 +243,53 @@
 - NO ejecutar la migración en Supabase (solo crear el .sql)
 - NO subir imágenes nuevas — usar las que ya están en `public/falco/`
 - NO modificar `src/data/partners.ts` (esa estructura es legacy, ya no se usa en /p/[slug])
+
+**Estado:** Migración SQL pre-emptiva creada en [migrations/fix_falco_assets.sql](migrations/fix_falco_assets.sql) cubriendo la causa más probable (logo_url/banner_url null o mal seteados en la fila `tenants WHERE slug='falco'`). El humano la corre manualmente en Supabase Studio. Si después de aplicarla los assets siguen rotos, escalar a investigar el componente `app/p/[slug]/page.tsx`.
+
+---
+
+### TASK-009 — Design engine: garment mismatch + controles de placement y tamaño de estampa
+
+**Por qué:** Tres bugs/gaps observados en `/workspace/design-engine`:
+
+1. **Garment mismatch (BUG):** el usuario selecciona "Remera Aldea Classic Fit" en el dropdown del input pero el preview muestra el mockup en `buzo-cuello-redondo · white · back`. El sistema está usando una prenda distinta a la elegida en el form.
+2. **Sin control de cara (FEATURE):** no hay UI para elegir si la estampa va al frente o atrás de la prenda. El sistema parece elegirla solo (en el ejemplo eligió `back`).
+3. **Sin control de tamaño/modo (FEATURE):** no hay UI para elegir el tamaño de la estampa ni si va en modo "logo" (chico en pecho/manga) o estampa grande.
+
+**Alcance:**
+
+**Bug-fix (prioridad 1):**
+- Auditar [app/workspace/design-engine/page.tsx](app/workspace/design-engine/page.tsx) y `lib/partners/design-engine.ts`: detectar dónde se cruzan la `selectedGarment` del dropdown y la prenda que termina en el render del mockup.
+- Asegurar que `applyToGarment(designUrl, garmentKey, ...)` reciba la `garmentKey` realmente seleccionada por el usuario, no la default ni la última cliqueada en el panel "Prendas Base".
+- Test manual: seleccionar Aldea Classic Fit en el dropdown, generar diseño → el mockup debe ser `aldea-classic-tshirt`, no buzo.
+
+**Features (prioridad 2):**
+- Agregar selector de cara: dos botones `Frente / Espalda` debajo del preview (o cerca del botón "Aplicar a prenda"). Default: Frente.
+- Agregar selector de modo de estampa: 3 opciones radio/segmented:
+  - `Estampa grande` (≈30×30 cm centrada en pecho/espalda)
+  - `Logo pecho` (≈10×10 cm, lado izquierdo arriba)
+  - `Logo manga` (≈8×8 cm en manga, si la prenda lo soporta)
+- Persistir `placement` y `stampMode` en la `DesignSession` (probable interfaz en `lib/partners/design-engine.ts`).
+- Pasar esos parámetros a `lifestyle-mockup.ts` / pipeline de Gemini que genera el mockup final, ajustando el tamaño y posición del overlay.
+
+**Archivos esperados:**
+- `app/workspace/design-engine/page.tsx` (UI controles + state)
+- `lib/partners/design-engine.ts` o `lib/partners/lifestyle-mockup.ts` (lógica placement/size)
+- Tipos en `lib/partners/types.ts` si la sesión persiste estos campos
+
+**Criterio DONE:**
+- [ ] Repro confirmada: con Aldea Classic Fit seleccionada, el mockup sale en Aldea (no en buzo)
+- [ ] Toggle Frente/Espalda funciona y se respeta en el mockup
+- [ ] Selector de modo (Grande / Logo pecho / Logo manga) funciona
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit `[AP-v4.2 TASK-009]`
+
+**NO hacer:**
+- NO rediseñar el panel de "Prendas Base" del lado derecho — solo el flujo de input → preview.
+- NO agregar opciones nuevas de prendas; las 8 actuales son la única lista.
+- NO tocar lógica de cobro / pricing.
+
+**Sprints estimados:** 3 (1 fix bug + 2 features de UI/lógica de placement).
 
 ---
 
