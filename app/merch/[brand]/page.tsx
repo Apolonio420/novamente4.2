@@ -15,6 +15,7 @@ import { FaqSection } from "@/components/partners/faq-section"
 import ChatWidget from "@/components/partners/chat-widget"
 import { dbProductToProduct } from "@/lib/partners/product-metadata"
 import { ProductCard } from "./ProductCard"
+import { BrandLandingPixel } from "./BrandLandingPixel"
 
 interface BrandPageProps {
   params: Promise<{ brand: string }>
@@ -139,6 +140,13 @@ export default async function BrandPage(props: BrandPageProps) {
             </div>
           )}
         </div>
+
+        {/* Pixel · dispara ViewContent al cargar la landing de marca */}
+        <BrandLandingPixel
+          brandId={params.brand}
+          brandName={storefront.name}
+          productCount={products.length}
+        />
 
         {/* Products Grid — uses ProductCard with carousel, same as static */}
         <div className="mb-8">
@@ -275,6 +283,13 @@ export default async function BrandPage(props: BrandPageProps) {
           </div>
         </div>
       </div>
+
+      {/* Pixel · dispara ViewContent al cargar la landing de marca (static brand) */}
+      <BrandLandingPixel
+        brandId={brandInfo.id}
+        brandName={brandInfo.name}
+        productCount={products.length}
+      />
 
       {/* Products Grid */}
       <div className="mb-8">
