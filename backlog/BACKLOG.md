@@ -13,7 +13,7 @@
 | 1 | TASK-001 | CBU + alias de depósito en /workspace/settings | 1 | sí | DONE |
 | 2 | TASK-002 | Tickets disponibles para todos los tiers | 1 | sí | DONE |
 | 3 | TASK-003 | Auditar tracking de ventas (research, no code) | 1 | sí | DONE |
-| 4 | TASK-004 | Auditar + regenerar con Gemini imágenes de marketing baja calidad (full-auto) | 2 | no (`node` requiere aprobación manual) | BLOCKED → movido a BACKLOG FUTURO |
+| 4 | TASK-004 | Auditar + regenerar con Gemini imágenes de marketing baja calidad (full-auto) | 2 | sí (con `node` aprobado manualmente) | DONE — 5 de 5 regeneradas |
 | 5 | AUTOFEED-20260518-1 | tsc: rag-sources.test.ts:36 | 1 | sí | DONE |
 | 6 | AUTOFEED-20260518-2 | tsc: rag-sources.test.ts:101 | 1 | sí | DONE |
 | 7 | AUTOFEED-20260518-3 | tsc: generate-stamp.test.ts:105 | 1 | sí | DONE |
