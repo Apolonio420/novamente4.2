@@ -19,6 +19,8 @@
 | 7 | AUTOFEED-20260518-3 | tsc: generate-stamp.test.ts:105 | 1 | sí | DONE |
 | 8 | AUTOFEED-20260518-4 | tsc: route.ts:37 | 1 | sí | DONE |
 | 9 | AUTOFEED-20260518-5 | tsc: route.ts:40 | 1 | sí | DONE |
+| 10 | TASK-007 | Soporte sidebar: quitar candado para Starter (consistencia con TASK-002) | 1 | sí | DONE |
+| 11 | TASK-008 | Storefront Falco roto: logo + banner no cargan en /p/falco | 1 | sí (con auditoría DB) | PENDING |
 
 ---
 
@@ -190,6 +192,56 @@
 **Por qué:** `orders30d` usa ventana rolling de 30 días, `leadsThisMonth` usa mes calendario. El rate es inconsistente.
 
 **Alcance:** En `lib/partners/dashboard-kpis.ts`, usar la misma ventana rolling de 30 días para contar leads (`gte created_at, t30d`).
+
+---
+
+### TASK-007 — Soporte sidebar: quitar candado para Starter
+
+**Por qué:** TASK-002 democratizó tickets pero el sidebar de `/workspace/*` seguía mostrando el ítem **Soporte** con candado (ícono `Lock`) y opacidad reducida para partners Starter. El gate visual contradice la decisión comercial.
+
+**Alcance:** En [app/workspace/layout.tsx:79](app/workspace/layout.tsx#L79) quitar el `requiredPlan: 'growth'` del ítem Soporte. Resto de los ítems (Chatbot, Meta Business, Meta Ads, Feeds, Analytics, Billing) mantienen su gating original.
+
+**Criterio DONE:**
+- [x] Partner Starter ve "Soporte" sin candado y con opacidad completa
+- [x] Chatbot sigue con candado para Starter
+- [x] Commit `[AP-v4.2 TASK-007]`
+
+**Estado:** DONE en commit posterior.
+
+---
+
+### TASK-008 — Storefront Falco roto: logo + banner no cargan en /p/falco
+
+**Por qué:** Visitando https://novamente.ar/p/falco el logo del halcón y el banner no renderizan (broken image). El asset existe en `public/falco/halcon-negro.png` y responde HTTP 200, pero la fila `tenants` de Falco en Supabase probablemente tiene `logo_url`/`banner_url` con valor incorrecto (null, path equivocado, o URL externa rota). Mismo síntoma en la card del directorio /marcas.
+
+**Alcance:**
+1. **Auditoría DB (read-only):** consultar Supabase tabla `tenants` donde `slug='falco'` y reportar valores actuales de `logo_url`, `banner_url`, `hero_url`, `card_image`. Documentar en `backlog/UPDATES.md`.
+2. **Fix:** si los valores no apuntan a los paths correctos según [migrations/seed_existing_partners.sql](migrations/seed_existing_partners.sql), generar migración SQL nueva en `migrations/fix_falco_assets.sql` con:
+   ```sql
+   UPDATE tenants
+   SET logo_url = '/falco/halcon-negro.png',
+       banner_url = '/falco/anclas-watermark.png'
+   WHERE slug = 'falco';
+   ```
+3. **NO ejecutar la migración** — el humano la corre en Supabase Studio manualmente.
+4. **Verificar app:** después de que el humano corra la migración, abrir https://novamente.ar/p/falco y confirmar que ambos assets renderizan. Tomar screenshot para `backlog/UPDATES.md`.
+5. Si la causa NO es la DB sino código (ej. el componente de /p/[slug] tiene un bug con paths que arrancan con `/`), fixearlo en `app/p/[slug]/page.tsx`.
+
+**Archivos esperados:**
+- `migrations/fix_falco_assets.sql` (crear si la DB tiene valores incorrectos)
+- `backlog/UPDATES.md` (append diagnóstico)
+- Posibles cambios en `app/p/[slug]/page.tsx` si el bug es código
+
+**Criterio DONE:**
+- [ ] Reporte de los valores actuales de Falco en `tenants` documentado
+- [ ] Migración SQL creada (si aplica)
+- [ ] Si código bug → fix aplicado y `tsc --noEmit` verde
+- [ ] Commit `[AP-v4.2 TASK-008]`
+
+**NO hacer:**
+- NO ejecutar la migración en Supabase (solo crear el .sql)
+- NO subir imágenes nuevas — usar las que ya están en `public/falco/`
+- NO modificar `src/data/partners.ts` (esa estructura es legacy, ya no se usa en /p/[slug])
 
 ---
 
