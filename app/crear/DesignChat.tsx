@@ -142,9 +142,8 @@ export function DesignChat({
     setMessages((prev) => [...prev, userMsg])
     setInput("")
     setPendingAttachment(null)
-    // Operation-specific loading label
-    const willRemoveBg =
-      /\b(sac[áa]r?\s+(el\s+)?fondo|sin\s+fondo|quit[áa]r?\s+(el\s+)?fondo|remov[ée]r?\s+(el\s+)?fondo|remove\s+(the\s+)?background|background\s+removal|transparent\s+background|fondo\s+transparente|no\s+background)\b/i.test(text)
+    // Operation-specific loading label (mismo regex que el routing block)
+    const willRemoveBg = /\b(sin\s+fondo|fondo\s+transparente|transparente|(sa(c|qu)[a-zíéáóú]*|quit[a-zíéáóú]*|remov[a-zíéáóú]*)\b.{0,20}\bfondo|remove\s+(the\s+)?background|no\s+background|background\s+removal|transparent\s+background)\b/i.test(text)
     const hadAttachmentLocal = !!pendingAttachment
     const hadPreviousDesignLocal = !!session.currentDesignUrl
     if (willRemoveBg && (hadAttachmentLocal || hadPreviousDesignLocal)) {
@@ -167,8 +166,12 @@ export function DesignChat({
       const hasAttachment = !!pendingAttachment
       const hasPreviousDesign = !!session.currentDesignUrl
 
-      const removeBgPattern =
-        /\b(sac[áa]r?\s+(el\s+)?fondo|sin\s+fondo|quit[áa]r?\s+(el\s+)?fondo|remov[ée]r?\s+(el\s+)?fondo|remove\s+(the\s+)?background|background\s+removal|transparent\s+background|fondo\s+transparente|no\s+background)\b/i
+      // Detecta intent de bg removal. Cubre variantes coloquiales en español:
+      //   "sacar el fondo" / "sácale" / "sacalo" / "sacale el fondo"
+      //   "quitar" / "quitale" / "remover" / "removelo"
+      //   "sin fondo" / "fondo transparente" / "transparente"
+      //   English: "remove background" / "no background" / "transparent"
+      const removeBgPattern = /\b(sin\s+fondo|fondo\s+transparente|transparente|(sa(c|qu)[a-zíéáóú]*|quit[a-zíéáóú]*|remov[a-zíéáóú]*)\b.{0,20}\bfondo|remove\s+(the\s+)?background|no\s+background|background\s+removal|transparent\s+background)\b/i
       const isRemoveBgIntent = removeBgPattern.test(text) && (hasAttachment || hasPreviousDesign)
 
       let endpoint: string
