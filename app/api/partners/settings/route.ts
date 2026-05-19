@@ -10,6 +10,7 @@ const SETTINGS_FIELDS = [
   'max_products', 'max_leads_per_month',
   'seo_indexable', 'seo_title', 'seo_description',
   'custom_faqs',
+  'bank_cbu', 'bank_alias',
 ] as const
 
 const WRITABLE_FIELDS = [
@@ -18,6 +19,7 @@ const WRITABLE_FIELDS = [
   'commerce_mode', 'storefront_published',
   'seo_title', 'seo_description',
   'custom_faqs',
+  'bank_cbu', 'bank_alias',
 ] as const
 
 export async function GET(request: NextRequest) {
@@ -88,6 +90,28 @@ export async function PUT(request: NextRequest) {
     }
     if (typeof updates.seo_description === 'string') {
       updates.seo_description = updates.seo_description.slice(0, 160)
+    }
+
+    // Validate bank_cbu: exactly 22 numeric digits or null
+    if ('bank_cbu' in updates) {
+      if (updates.bank_cbu === null || updates.bank_cbu === '') {
+        updates.bank_cbu = null
+      } else if (typeof updates.bank_cbu === 'string' && /^\d{22}$/.test(updates.bank_cbu)) {
+        // valid
+      } else {
+        return NextResponse.json({ error: 'CBU inválido: debe tener exactamente 22 dígitos numéricos' }, { status: 400 })
+      }
+    }
+
+    // Validate bank_alias: letters, numbers, dot, hyphen
+    if ('bank_alias' in updates) {
+      if (updates.bank_alias === null || updates.bank_alias === '') {
+        updates.bank_alias = null
+      } else if (typeof updates.bank_alias === 'string' && /^[a-zA-Z0-9.\-]{1,50}$/.test(updates.bank_alias)) {
+        // valid
+      } else {
+        return NextResponse.json({ error: 'Alias inválido: solo letras, números, punto y guion (máx 50 caracteres)' }, { status: 400 })
+      }
     }
 
     // Validate custom_faqs (max 10 entries, Pro only)

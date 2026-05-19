@@ -50,6 +50,8 @@ interface SettingsData {
   seo_description: string
   seo_indexable: boolean
   custom_faqs: { question: string; answer: string }[] | null
+  bank_cbu: string | null
+  bank_alias: string | null
 }
 
 interface Toast {
@@ -119,6 +121,7 @@ export default function SettingsPage() {
   const [toast, setToast] = useState<Toast | null>(null)
   const [confirmingStatusChange, setConfirmingStatusChange] = useState(false)
   const [statusChanging, setStatusChanging] = useState(false)
+  const [cbuError, setCbuError] = useState<string | null>(null)
 
   const initialRef = useRef<SettingsData | null>(null)
 
@@ -152,6 +155,7 @@ export default function SettingsPage() {
       'name', 'email', 'phone', 'website', 'instagram',
       'industry', 'country', 'currency', 'commerce_mode', 'storefront_published',
       'seo_title', 'seo_description',
+      'bank_cbu', 'bank_alias',
     ]
     if (editable.some((key) => settings[key] !== initialRef.current![key])) return true
     // Deep compare custom_faqs
@@ -165,6 +169,15 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     if (!settings || !isDirty()) return
+
+    // Client-side CBU validation
+    const cbu = settings.bank_cbu?.trim() || ''
+    if (cbu && !/^\d{22}$/.test(cbu)) {
+      setCbuError('El CBU debe tener exactamente 22 dígitos numéricos.')
+      return
+    }
+    setCbuError(null)
+
     setSaving(true)
     try {
       const res = await authFetch('/api/partners/settings', {
@@ -184,6 +197,8 @@ export default function SettingsPage() {
           seo_title: settings.seo_title,
           seo_description: settings.seo_description,
           custom_faqs: settings.custom_faqs,
+          bank_cbu: cbu || null,
+          bank_alias: settings.bank_alias?.trim() || null,
         }),
       })
       if (!res.ok) throw new Error('Error guardando')
@@ -730,6 +745,54 @@ export default function SettingsPage() {
                 <span className="text-sm text-zinc-300">Ver planes y facturacion</span>
                 <ArrowRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
               </a>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="border-b border-zinc-800 my-8" />
+
+      {/* ── Datos bancarios ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <CreditCard className="h-4 w-4 text-zinc-500" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Datos bancarios</h2>
+        </div>
+        <Card className="bg-zinc-900/60 border-zinc-800">
+          <CardContent className="pt-6 space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="bank_cbu" className="text-zinc-300">CBU</Label>
+              <Input
+                id="bank_cbu"
+                value={settings.bank_cbu || ''}
+                onChange={(e) => {
+                  updateField('bank_cbu', e.target.value || null)
+                  if (cbuError) setCbuError(null)
+                }}
+                placeholder="0000000000000000000000"
+                maxLength={22}
+                className={`bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 font-mono ${cbuError ? 'border-red-500' : ''}`}
+              />
+              {cbuError ? (
+                <p className="text-xs text-red-400">{cbuError}</p>
+              ) : (
+                <p className="text-xs text-zinc-500">
+                  Tu CBU es donde recibirás los pagos de ventas. Debe tener exactamente 22 dígitos.
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bank_alias" className="text-zinc-300">Alias bancario <span className="text-zinc-500 font-normal">(opcional)</span></Label>
+              <Input
+                id="bank_alias"
+                value={settings.bank_alias || ''}
+                onChange={(e) => updateField('bank_alias', e.target.value || null)}
+                placeholder="mi.alias.banco"
+                className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+              />
+              <p className="text-xs text-zinc-500">
+                Letras, números, punto y guion. Máximo 50 caracteres.
+              </p>
             </div>
           </CardContent>
         </Card>

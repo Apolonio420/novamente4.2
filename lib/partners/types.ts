@@ -60,6 +60,10 @@ export interface Tenant {
   last_payment_at: string | null
   payment_failures: number
 
+  // Bank info
+  bank_cbu: string | null
+  bank_alias: string | null
+
   // Chatbot
   catalog_pdf_url: string | null
 
