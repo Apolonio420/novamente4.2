@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
         const msgType = messageEntry.type
 
         // 1. Log User Message to DB
-        await supabaseAdmin.from('whatsapp_chats').insert({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabaseAdmin as any).from('whatsapp_chats').insert({
             role: 'user',
             content: msgBody || `[${msgType}]`,
             media_type: msgType,
@@ -79,7 +80,8 @@ export async function POST(request: NextRequest) {
             await whatsAppClient.sendText(from, responseText)
 
             // Log Assistant Response
-            await supabaseAdmin.from('whatsapp_chats').insert({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabaseAdmin as any).from('whatsapp_chats').insert({
                 role: 'assistant',
                 content: responseText,
                 intent: intent
