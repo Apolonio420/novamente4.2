@@ -39,11 +39,14 @@ export async function POST(req: NextRequest) {
       previousImageUrl: string
       instruction: string
       mode?: "photo" | "illustration"
+      raw?: boolean
     }
     const { previousImageUrl, instruction } = body
     // 'photo' = user-uploaded photo (preserva personas/fondo real)
-    // 'illustration' = iterar sobre un design generado (textile/vectorial constraints)
+    // 'illustration' = iterar sobre un design generado
+    // raw=true → no aplica optimizer en illustration mode (prompt as-is)
     const mode = body.mode ?? "illustration"
+    const rawMode = body.raw === true || mode === "photo"
 
     if (!previousImageUrl || !instruction?.trim()) {
       return ok({ error: "Se requieren previousImageUrl e instruction" }, 400)
@@ -68,6 +71,14 @@ export async function POST(req: NextRequest) {
         "Only apply the requested modification (e.g. remove background, change color, add element). Do NOT replace the subjects with something else.",
         "If the user asks to 'remove background' or 'sin fondo', output a transparent PNG with only the main subject isolated, clean alpha edges, no halo.",
         "If the user asks to make it suitable for a textile print/stamp, keep the subject realistic but simplify shadows and ensure clean edges.",
+        "Respond ONLY with an image (inlineData). No text.",
+      ].join(" ")
+    } else if (rawMode) {
+      // Raw illustration: respect user prompt as-is, no style forcing
+      editInstruction = [
+        `Edit this image with the following instruction: ${instruction.trim()}.`,
+        "Apply the change while preserving the overall composition. Keep the user's creative direction — do not force vectorial style unless they ask for it.",
+        "PROHIBIDO devolver prendas/remeras/buzos/hoodies/mockups/fotografía de producto. Devolvé SOLO la imagen del diseño.",
         "Respond ONLY with an image (inlineData). No text.",
       ].join(" ")
     } else {

@@ -160,12 +160,15 @@ export function DesignChat({
           previousImageUrl: hasAttachment ? pendingAttachment : session.currentDesignUrl,
           instruction: text,
           // photo: user subio su propia foto (preservar personas/pet/fondo)
-          // illustration: iterar sobre un design generado (constraints textile)
+          // illustration: iterar sobre un design generado
           mode: hasAttachment ? "photo" : "illustration",
+          // raw=true → no forzar estilo vectorial. El user controla el estilo
+          // con su propio prompt en lugar de que el optimizer le imponga textile.
+          raw: true,
         }
       } else {
         endpoint = "/api/generate-image"
-        body = { prompt: text }
+        body = { prompt: text, raw: true }
       }
 
       const res = await fetch(endpoint, {

@@ -94,17 +94,25 @@ export async function POST(req: NextRequest) {
       console.log("GEN-IMG aspect ratio:", { width: size.width, height: size.height, hint: aspectRatioHint })
     }
 
-    // 3) Optimizar prompt con el Novamente Designer Optimizer
-    //    - Auto-detecta estilo, aplica keywords textiles, fuerza vectorial,
-    //      prohíbe prendas/mockups, limita a 400 chars.
+    // 3) Optimizar prompt — opcional via flag `raw`
+    //    - raw=true: usa el prompt del user TAL CUAL + guard minimo anti-prenda
+    //    - raw=false (default): pasa por optimizer que fuerza estilo vectorial textile
     const { styleId, colorway, printArea } = body as OptimizerOptions
-    const optimized = optimizeDesignPrompt(basePrompt, styleId, {
-      colorway,
-      printArea,
-    })
-    const hardGuard =
-      "SOLO una ilustración aislada. PROHIBIDO: prendas, remeras, buzos, hoodies, sweaters, ropa, personas, mockups, fotografía de producto, escenas, marcos, texto superpuesto."
-    const finalPrompt = `${optimized.optimizedPrompt}. ${hardGuard}${aspectRatioHint}`.trim()
+    const rawMode = (body as { raw?: boolean }).raw === true
+
+    let finalPrompt: string
+    let optimized = { optimizedPrompt: "", styleApplied: null as string | null, variants: [] as string[] }
+    const minimalGuard =
+      "PROHIBIDO devolver prendas/remeras/buzos/hoodies/mockups/fotografía de producto. Devolvé SOLO la imagen del diseño solicitado, aislada, lista para estampar."
+
+    if (rawMode) {
+      finalPrompt = `${basePrompt}. ${minimalGuard}${aspectRatioHint}`.trim()
+    } else {
+      optimized = optimizeDesignPrompt(basePrompt, styleId, { colorway, printArea })
+      const hardGuard =
+        "SOLO una ilustración aislada. PROHIBIDO: prendas, remeras, buzos, hoodies, sweaters, ropa, personas, mockups, fotografía de producto, escenas, marcos, texto superpuesto."
+      finalPrompt = `${optimized.optimizedPrompt}. ${hardGuard}${aspectRatioHint}`.trim()
+    }
 
     console.log("GEN-IMG optimizer", {
       styleApplied: optimized.styleApplied,
