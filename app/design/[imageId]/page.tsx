@@ -2,9 +2,9 @@ import { Suspense } from "react"
 import { DesignPageClient } from "./DesignPageClient"
 
 interface PageProps {
-  params: {
+  params: Promise<{
     imageId: string
-  }
+  }>
 }
 
 export default async function DesignPage({ params }: PageProps) {
