@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { uploadFile } from "@/lib/cloudflare-r2"
 import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
+import { resolveAbsoluteUrl } from "@/lib/absolute-url"
 
 export const runtime = "nodejs"
 
@@ -55,8 +56,8 @@ export async function POST(req: NextRequest) {
 
     // Download both images
     const [selfieRes, mockupRes] = await Promise.all([
-      fetch(body.selfieUrl),
-      fetch(body.mockupUrl),
+      fetch(resolveAbsoluteUrl(body.selfieUrl, req)),
+      fetch(resolveAbsoluteUrl(body.mockupUrl, req)),
     ])
 
     if (!selfieRes.ok) return ok({ error: "Failed to fetch selfieUrl" }, 400)

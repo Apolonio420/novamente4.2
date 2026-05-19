@@ -63,7 +63,8 @@ export async function POST(req: NextRequest) {
         : ALL_SCENARIOS[Math.floor(Math.random() * ALL_SCENARIOS.length)]
 
     // Download mockup image and convert to base64
-    const mockupRes = await fetch(body.mockupUrl)
+    const { resolveAbsoluteUrl } = await import("@/lib/absolute-url")
+    const mockupRes = await fetch(resolveAbsoluteUrl(body.mockupUrl, req))
     if (!mockupRes.ok) return ok({ error: "Failed to fetch mockupUrl" }, 400)
     const mockupBuffer = Buffer.from(await mockupRes.arrayBuffer())
     const mockupBase64 = mockupBuffer.toString("base64")

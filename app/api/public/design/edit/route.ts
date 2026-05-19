@@ -52,10 +52,13 @@ export async function POST(req: NextRequest) {
       return ok({ error: "Se requieren previousImageUrl e instruction" }, 400)
     }
 
-    // Download previous image from R2/URL
-    const imgRes = await fetch(previousImageUrl)
+    // Download previous image from R2/URL. El upload endpoint devuelve URLs
+    // relativas (/api/proxy-image?key=...) — las resolvemos a absolutas.
+    const { resolveAbsoluteUrl } = await import("@/lib/absolute-url")
+    const resolvedImageUrl = resolveAbsoluteUrl(previousImageUrl, req)
+    const imgRes = await fetch(resolvedImageUrl)
     if (!imgRes.ok) {
-      return ok({ error: "No se pudo descargar la imagen anterior" }, 400)
+      return ok({ error: `No se pudo descargar la imagen anterior (${imgRes.status})` }, 400)
     }
     const imgBuffer = Buffer.from(await imgRes.arrayBuffer())
     const contentType = imgRes.headers.get("content-type") || "image/png"
