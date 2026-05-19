@@ -4,7 +4,8 @@ import { useState } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Sparkles, Pencil, User, Camera, ArrowLeft } from "lucide-react"
+import { Sparkles, Pencil, User, Camera, ArrowLeft, ShoppingCart } from "lucide-react"
+import { useCart } from "@/lib/cartStore"
 
 // Client-side only — Konva no funciona en SSR
 const DesignChat = dynamic(() => import("./DesignChat").then(m => m.DesignChat), { ssr: false })
@@ -34,6 +35,7 @@ export default function CrearPage() {
     side: "front",
   })
   const [tryOnOpen, setTryOnOpen] = useState(false)
+  const cartCount = useCart((s) => s.items.length)
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -44,15 +46,29 @@ export default function CrearPage() {
             <ArrowLeft className="h-4 w-4" /> Volver
           </Link>
           <h1 className="text-base font-semibold tracking-tight">Diseñá tu prenda</h1>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setTryOnOpen(true)}
-            disabled={!session.currentMockupUrl}
-            className="border-zinc-700"
-          >
-            <Camera className="mr-2 h-3.5 w-3.5" /> Try-on
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/cart"
+              aria-label="Carrito"
+              className="relative inline-flex items-center justify-center rounded-md p-2 text-zinc-300 hover:text-white hover:bg-zinc-800"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-600 px-1 text-[10px] font-semibold text-white">
+                  {cartCount}
+                </span>
+              )}
+            </Link>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setTryOnOpen(true)}
+              disabled={!session.currentMockupUrl}
+              className="border-zinc-700"
+            >
+              <Camera className="mr-2 h-3.5 w-3.5" /> Try-on
+            </Button>
+          </div>
         </div>
 
         {/* Mode tabs */}

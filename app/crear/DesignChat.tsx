@@ -401,6 +401,8 @@ export function DesignChat({
             {/* Send button */}
             <Button
               size="icon"
+              aria-label="Enviar prompt"
+              data-testid="send-prompt"
               className="bg-violet-600 hover:bg-violet-500 h-[58px] w-[58px] shrink-0"
               onClick={handleSend}
               disabled={loading || !input.trim()}

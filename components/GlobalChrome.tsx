@@ -21,6 +21,16 @@ export function GlobalChrome({ children }: { children: React.ReactNode }) {
   // para que el carrito siga accesible.
   const isCrear = pathname?.startsWith("/crear") ?? false
 
+  if (isCrear) {
+    // Full-screen design tool — sin navbar global, sin footer, sin flotantes.
+    // /crear tiene su propio top bar con back + cart + try-on.
+    return (
+      <div className="min-h-screen">
+        <main id="main-content">{children}</main>
+      </div>
+    )
+  }
+
   if (isWorkspace) {
     // En workspace mantenemos el Navbar global (para que el partner pueda volver
     // al sitio público con un click) pero ocultamos Footer + flotantes que
