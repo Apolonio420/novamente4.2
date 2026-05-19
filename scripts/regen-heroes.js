@@ -94,9 +94,21 @@ async function processImage(genAI, sharp, imageName) {
 
   console.log(`\n[${imageName}] ${kbBefore} KB`);
 
-  // 1. Backup
-  fs.copyFileSync(imagePath, backupPath);
-  console.log(`  backup OK`);
+  // 1. Backup (idempotent — never overwrite an existing original backup)
+  if (fs.existsSync(backupPath)) {
+    console.log(`  backup already exists — leaving original untouched`);
+  } else {
+    fs.copyFileSync(imagePath, backupPath);
+    console.log(`  backup OK`);
+  }
+
+  // 1b. Skip if current file already meets thresholds (already regenerated OK)
+  const meta0 = await sharp(imagePath).metadata().catch(() => null);
+  const maxDim0 = Math.max(meta0?.width || 0, meta0?.height || 0);
+  if (statBefore.size >= MIN_SIZE_BYTES && maxDim0 >= MIN_DIMENSION) {
+    console.log(`  SKIP — already meets thresholds (${kbBefore}KB / ${maxDim0}px)`);
+    return { file: imageName, status: 'SKIP', reason: 'Already regenerated', kbBefore, kbAfter: kbBefore, dimensions: `${meta0?.width}x${meta0?.height}`, prompt: '' };
+  }
 
   // 2. Read current image
   const imageBuffer = fs.readFileSync(imagePath);
@@ -139,14 +151,18 @@ async function processImage(genAI, sharp, imageName) {
     return { file: imageName, status: 'SKIP', reason: 'No image data in Gemini response', kbBefore, kbAfter: kbBefore, dimensions: 'n/a', prompt: analysis.prompt };
   }
 
-  // 5. Convert to WebP at 1920x1080 quality 85
+  // 5. Convert to WebP at 1920x1080. Quality ramp 92→95→98 hasta cumplir MIN_SIZE_BYTES.
   console.log(`  converting to WebP...`);
   let webpBuffer;
   try {
-    webpBuffer = await sharp(imageData.data)
-      .resize(1920, 1080, { fit: 'cover', position: 'centre' })
-      .webp({ quality: 85 })
-      .toBuffer();
+    for (const q of [92, 95, 98]) {
+      webpBuffer = await sharp(imageData.data)
+        .resize(1920, 1080, { fit: 'cover', position: 'centre' })
+        .webp({ quality: q })
+        .toBuffer();
+      if (webpBuffer.length >= MIN_SIZE_BYTES) break;
+      console.log(`    q=${q} → ${Math.round(webpBuffer.length / 1024)} KB, intentando mayor calidad`);
+    }
   } catch (err) {
     console.error(`  sharp failed: ${err.message}`);
     fs.copyFileSync(backupPath, imagePath);

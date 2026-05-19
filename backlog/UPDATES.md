@@ -100,3 +100,13 @@ node --env-file .env.local scripts/regen-heroes.js
 **Decisión:** Crear sistema nuevo bajo `backlog/` + `scripts/autopilot-v2.sh` sin tocar lo existente (opción COEXISTIR).
 **Alternativas rechazadas:** (b) extender `.planning/` con Phase 9 — invasivo, rompe convención GSD. (c) híbrido — complejidad innecesaria.
 **Impacto:** `backlog/`, `scripts/autopilot-v2.sh`, `scripts/autopilot-loop.sh`, `scripts/backlog-auto-feeder.sh`, `.gitignore` (append).
+
+## Regeneracion imagenes hero Gemini — 2026-05-19
+
+| archivo | KB antes | KB despues | dimensiones | prompt usado | resultado |
+|---------|----------|------------|-------------|--------------|----------|
+| home-carousel-2.webp | 38 KB | 113 KB | 1920x1080 | Asian woman in black hoodie with graphic mask, rooftop, city... | FAIL — Too small: 113KB / 1920px |
+| hero-otono-streetwear.webp | 46 KB | 114 KB | 1920x1080 | Young man on rooftop at dusk, hoodie, phone, city lights ref... | FAIL — Too small: 114KB / 1920px |
+| hero-azotea-blue-hour.webp | 47 KB | 166 KB | 1920x1080 | Young man in beige graphic hoodie on rooftop at dusk, lookin... | OK |
+| hero-regalo-pareja.webp | 47 KB | 183 KB | 1920x1080 | A couple hugging, woman wearing a t-shirt with a heart desig... | OK |
+| hero-lanza-tu-marca.webp | 48 KB | 206 KB | 1920x1080 | woman in graphic tee, black cargo pants, rooftop at dusk, ci... | OK |
