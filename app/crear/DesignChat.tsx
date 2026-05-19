@@ -96,6 +96,7 @@ export function DesignChat({
   ])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
+  const [loadingLabel, setLoadingLabel] = useState<string>("Generando diseño...")
   const [mockupLoading, setMockupLoading] = useState(false)
   const [pendingAttachment, setPendingAttachment] = useState<string | null>(null)
   const [selectedSize, setSelectedSize] = useState("M")
@@ -141,6 +142,20 @@ export function DesignChat({
     setMessages((prev) => [...prev, userMsg])
     setInput("")
     setPendingAttachment(null)
+    // Operation-specific loading label
+    const willRemoveBg =
+      /\b(sac[áa]r?\s+(el\s+)?fondo|sin\s+fondo|quit[áa]r?\s+(el\s+)?fondo|remov[ée]r?\s+(el\s+)?fondo|remove\s+(the\s+)?background|background\s+removal|transparent\s+background|fondo\s+transparente|no\s+background)\b/i.test(text)
+    const hadAttachmentLocal = !!pendingAttachment
+    const hadPreviousDesignLocal = !!session.currentDesignUrl
+    if (willRemoveBg && (hadAttachmentLocal || hadPreviousDesignLocal)) {
+      setLoadingLabel("Removiendo fondo... (la primera vez tarda ~30s, después es instantáneo)")
+    } else if (hadAttachmentLocal) {
+      setLoadingLabel("Procesando tu imagen...")
+    } else if (hadPreviousDesignLocal) {
+      setLoadingLabel("Aplicando cambios...")
+    } else {
+      setLoadingLabel("Generando diseño...")
+    }
     setLoading(true)
 
     try {
@@ -374,13 +389,69 @@ export function DesignChat({
               </div>
               <div className="bg-zinc-800 rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-2 text-sm text-zinc-300">
                 <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
-                Generando diseño...
+                {loadingLabel}
               </div>
             </div>
           )}
 
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Quick action chips — solo cuando hay 1 mensaje (el welcome) */}
+        {messages.length === 1 && !loading && (
+          <div className="px-4 pt-1 pb-3 flex gap-2 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-200 hover:border-violet-500 hover:text-white transition"
+            >
+              📸 Subir mi foto + sacar fondo
+            </button>
+            <button
+              type="button"
+              onClick={() => setInput("tigre psicodélico estilo años 70, colores vibrantes")}
+              className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-200 hover:border-violet-500 hover:text-white transition"
+            >
+              🎨 Generar diseño con IA
+            </button>
+            <button
+              type="button"
+              onClick={() => setInput("dragón japonés estilo ukiyo-e, negro y rojo")}
+              className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-200 hover:border-violet-500 hover:text-white transition"
+            >
+              🐉 Dragón ukiyo-e
+            </button>
+            <button
+              type="button"
+              onClick={() => setInput("frase tipográfica brutalista en español, alto contraste")}
+              className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-200 hover:border-violet-500 hover:text-white transition"
+            >
+              ✏️ Tipografía
+            </button>
+          </div>
+        )}
+
+        {/* Smart suggestions — debajo del último mensaje del bot con imagen */}
+        {!loading && session.currentDesignUrl && (
+          <div className="px-4 pt-1 pb-3 flex gap-2 overflow-x-auto border-t border-zinc-800">
+            {[
+              { label: "Sin fondo", value: "sacale el fondo" },
+              { label: "Más oscuro", value: "hacelo más oscuro y dramático" },
+              { label: "Más colores", value: "más vibrante y con más colores" },
+              { label: "Estilo línea", value: "convertilo a estilo line-art minimalista" },
+              { label: "Más detalles", value: "agregale más detalles intrincados" },
+            ].map((s) => (
+              <button
+                key={s.label}
+                type="button"
+                onClick={() => setInput(s.value)}
+                className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-300 hover:border-violet-500 hover:text-white transition"
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Pending attachment preview */}
         {pendingAttachment && (
