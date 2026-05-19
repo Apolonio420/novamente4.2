@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestTenant } from '@/lib/partners/auth'
 import { createTicket, getTickets } from '@/lib/partners/support'
-import { getPlanFeatures } from '@/lib/partners/plans'
-import type { Plan } from '@/lib/partners/types'
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,15 +25,6 @@ export async function POST(request: NextRequest) {
     const result = await getRequestTenant(request)
     if (!result) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    // Validate plan allows support
-    const features = getPlanFeatures(result.tenant.plan as Plan)
-    if (features.supportLevel === 'none') {
-      return NextResponse.json(
-        { error: 'Tu plan no incluye soporte. Actualiza a Growth para acceder.' },
-        { status: 403 }
-      )
     }
 
     const body = await request.json()
