@@ -34,41 +34,19 @@ type Msg = {
 // Constants
 // ============================================================
 
-const GARMENT_OPTIONS = [
-  { value: "aldea_classic_fit", label: "Remera Clásica" },
-  { value: "aura_oversized", label: "Remera Oversize" },
-  { value: "boston_hoodie", label: "Buzo Hoodie" },
-  { value: "buzo_cuello_redondo", label: "Buzo Cuello Redondo" },
-  { value: "musculosa_bali", label: "Musculosa Bali" },
-  { value: "astra_crop", label: "Remera Crop" },
-]
+import { CATALOG_PRODUCTS, getCatalogProduct, getCatalogProductColor } from "@/lib/catalog/products"
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"]
 
-const PRICES: Record<string, number> = {
-  aldea_classic_fit: 28600,
-  aura_oversized: 31000,
-  boston_hoodie: 52000,
-  buzo_cuello_redondo: 43000,
-  musculosa_bali: 21800,
-  astra_crop: 23500,
+// Helpers usando el catalog como fuente de verdad
+function garmentLabel(key: string) {
+  return getCatalogProduct(key)?.name ?? key
 }
-
-// ============================================================
-// Helpers
-// ============================================================
-
-function garmentLabel(g: string) {
-  return GARMENT_OPTIONS.find((o) => o.value === g)?.label ?? g
+function colorLabel(productKey: string, colorKey: string) {
+  return getCatalogProductColor(productKey, colorKey)?.name ?? colorKey
 }
-
-const COLOR_LABELS: Record<string, string> = {
-  negro: "Negro", blanco: "Blanco", stone_wash: "Stone Wash",
-  gris: "Gris", crema: "Crema", marron: "Marrón", caramel: "Caramel",
-}
-
-function colorLabel(c: string) {
-  return COLOR_LABELS[c] ?? c
+function getPrice(key: string) {
+  return getCatalogProduct(key)?.retailARS ?? 35000
 }
 
 // ============================================================
@@ -368,7 +346,7 @@ export function DesignChat({
       color: session.garmentColor,
       garmentColor: session.garmentColor,
       size: selectedSize,
-      price: PRICES[session.garmentType] ?? 35000,
+      price: getPrice(session.garmentType),
       quantity: 1,
       image: session.currentMockupUrl,
       mockupUrl: session.currentMockupUrl,
@@ -774,10 +752,10 @@ export function DesignChat({
             {/* Price */}
             <div className="flex justify-between items-center text-sm">
               <span className="text-zinc-400">
-                {garmentLabel(session.garmentType)} · {colorLabel(session.garmentColor)}
+                {garmentLabel(session.garmentType)} · {colorLabel(session.garmentType, session.garmentColor)}
               </span>
               <span className="text-white font-semibold">
-                ${(PRICES[session.garmentType] ?? 35000).toLocaleString("es-AR")}
+                ${(getPrice(session.garmentType)).toLocaleString("es-AR")}
               </span>
             </div>
 

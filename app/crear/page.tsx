@@ -30,8 +30,8 @@ export default function CrearPage() {
     sessionId: null,
     currentDesignUrl: null,
     currentMockupUrl: null,
-    garmentType: "aldea_classic_fit",
-    garmentColor: "negro",
+    garmentType: "aldea-classic-tshirt",
+    garmentColor: "black",
     side: "front",
   })
   const [tryOnOpen, setTryOnOpen] = useState(false)
