@@ -14,9 +14,9 @@
 | 2 | TASK-002 | Tickets disponibles para todos los tiers | 1 | sí | DONE |
 | 3 | TASK-003 | Auditar tracking de ventas (research, no code) | 1 | sí | DONE |
 | 4 | TASK-004 | Auditar + regenerar con Gemini imágenes de marketing baja calidad (full-auto) | 2 | no (`node` requiere aprobación manual) | BLOCKED → movido a BACKLOG FUTURO |
-| 5 | AUTOFEED-20260518-1 | tsc: rag-sources.test.ts:36 | 1 | sí | PENDING |
-| 6 | AUTOFEED-20260518-2 | tsc: rag-sources.test.ts:101 | 1 | sí | PENDING |
-| 7 | AUTOFEED-20260518-3 | tsc: generate-stamp.test.ts:105 | 1 | sí | PENDING |
+| 5 | AUTOFEED-20260518-1 | tsc: rag-sources.test.ts:36 | 1 | sí | DONE |
+| 6 | AUTOFEED-20260518-2 | tsc: rag-sources.test.ts:101 | 1 | sí | DONE |
+| 7 | AUTOFEED-20260518-3 | tsc: generate-stamp.test.ts:105 | 1 | sí | DONE |
 | 8 | AUTOFEED-20260518-4 | tsc: route.ts:37 | 1 | sí | PENDING |
 | 9 | AUTOFEED-20260518-5 | tsc: route.ts:40 | 1 | sí | PENDING |
 
