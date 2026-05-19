@@ -121,7 +121,10 @@ export function DesignChat({
       const data = await res.json()
       if (!res.ok || !data.url) throw new Error(data.error ?? "Error subiendo imagen")
       setPendingAttachment(data.url)
-      toast({ title: "Imagen adjuntada", description: "Se usará como referencia." })
+      toast({
+        title: "Imagen adjuntada",
+        description: "Decime qué hacer: 'usala tal cual', 'sacale el fondo', o cualquier otra modificación.",
+      })
     } catch (e: any) {
       toast({ title: "Error al adjuntar", description: e.message, variant: "destructive" })
     }
@@ -172,8 +175,56 @@ export function DesignChat({
       const removeBgPattern = /\b(sin\s+fondo|fondo\s+transparente|transparente|(sa(c|qu)[a-zíéáóú]*|quit[a-zíéáóú]*|remov[a-zíéáóú]*)\b.{0,20}\bfondo|remove\s+(the\s+)?background|no\s+background|background\s+removal|transparent\s+background)\b/i
       const isRemoveBgIntent = removeBgPattern.test(text) && (hasAttachment || hasPreviousDesign)
 
+      // Intent: "usá la imagen tal cual" — saltea Gemini, usa el upload directo
+      const useAsIsPattern =
+        /\b(tal\s+cual|tal\s+como\s+est[aá]|como\s+est[aá]|sin\s+cambi(o|os|arl[aoe]|arl)|no\s+(la\s+)?cambies|us[aá]la?\s+as[ií]|as?\s+is|como\s+viene|sin\s+modificar|no\s+modifiques)\b/i
+      const isUseAsIsIntent = useAsIsPattern.test(text) && hasAttachment
+
       let endpoint: string
       let body: Record<string, unknown>
+
+      if (isUseAsIsIntent) {
+        // User explicitamente pidio usar la imagen tal cual — usamos el upload
+        // directo como design SIN pasar por Gemini (mas rapido + cero modificacion).
+        const directUrl = pendingAttachment!
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: "Listo, uso tu foto tal cual como diseño. Generando mockup en la prenda...",
+            imageUrl: directUrl,
+          },
+        ])
+        setSession((prev) => ({ ...prev, currentDesignUrl: directUrl, currentMockupUrl: null }))
+        lastPromptRef.current = text
+        setLoading(false)
+        // Trigger mockup automaticamente — el user ya dijo que era lo que queria
+        setTimeout(() => {
+          setMockupLoading(true)
+          fetch("/api/generate-mockup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              designImageUrl: directUrl,
+              garmentType: session.garmentType,
+              garmentColor: session.garmentColor,
+              side: session.side,
+            }),
+          })
+            .then((r) => r.json())
+            .then((d) => {
+              if (d.mockupUrl) {
+                setSession((prev) => ({ ...prev, currentMockupUrl: d.mockupUrl }))
+                toast({ title: "Mockup listo", description: "Tu foto en la prenda 👇" })
+              }
+            })
+            .catch(() => {
+              toast({ title: "No se pudo generar el mockup", description: "Tocá 'Probar en prenda' para reintentar", variant: "destructive" })
+            })
+            .finally(() => setMockupLoading(false))
+        }, 100)
+        return
+      }
 
       if (isRemoveBgIntent) {
         // Server-side bg removal con Gemini Nano Banana 2 + prompt quirúrgico.
@@ -414,7 +465,17 @@ export function DesignChat({
               onClick={() => fileInputRef.current?.click()}
               className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-200 hover:border-violet-500 hover:text-white transition"
             >
-              📸 Subir mi foto + sacar fondo
+              📸 Subir foto + sacar fondo
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                fileInputRef.current?.click()
+                setInput("usá esta imagen tal cual, no le cambies nada")
+              }}
+              className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-200 hover:border-violet-500 hover:text-white transition"
+            >
+              🖼️ Subir foto y usar tal cual
             </button>
             <button
               type="button"
@@ -527,8 +588,12 @@ export function DesignChat({
               }}
               placeholder={
                 session.currentDesignUrl
-                  ? "Sugerí un cambio: \"hacelo más oscuro\", \"agregá detalles en dorado\"..."
-                  : "Describí tu diseño: \"lobo en acuarela, fondo transparente\"..."
+                  ? pendingAttachment
+                    ? "¿Qué hago con tu imagen? \"usala tal cual\", \"sacale el fondo\", \"hacela tipo dibujo\"..."
+                    : "Sugerí un cambio: \"hacelo más oscuro\", \"agregá detalles en dorado\"..."
+                  : pendingAttachment
+                    ? "¿Qué hago con tu imagen? \"usala tal cual\", \"sacale el fondo\", \"hacela tipo dibujo\"..."
+                    : "Describí tu diseño: \"lobo en acuarela, fondo transparente\"..."
               }
               rows={2}
               className="flex-1 resize-none bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus-visible:ring-violet-500"
