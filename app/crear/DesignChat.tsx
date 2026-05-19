@@ -145,31 +145,69 @@ export function DesignChat({
 
     try {
       // Decision tree:
-      // 1) User subio una imagen como referencia → image-to-image edit con su foto
-      // 2) Ya hay un design previo → iterar sobre el con image-to-image edit
+      // 0) Intent: REMOVE BG — modelo dedicado @imgly (mucho mejor que Gemini)
+      // 1) User subio imagen como referencia → image-to-image edit
+      // 2) Ya hay un design previo → iterar con image-to-image edit
       // 3) Sino → generar desde texto
       const hasAttachment = !!pendingAttachment
       const hasPreviousDesign = !!session.currentDesignUrl
-      const useEdit = hasAttachment || hasPreviousDesign
+
+      const removeBgPattern =
+        /\b(sac[áa]r?\s+(el\s+)?fondo|sin\s+fondo|quit[áa]r?\s+(el\s+)?fondo|remov[ée]r?\s+(el\s+)?fondo|remove\s+(the\s+)?background|background\s+removal|transparent\s+background|fondo\s+transparente|no\s+background)\b/i
+      const isRemoveBgIntent = removeBgPattern.test(text) && (hasAttachment || hasPreviousDesign)
 
       let endpoint: string
       let body: Record<string, unknown>
-      if (useEdit) {
+
+      if (isRemoveBgIntent) {
+        // Client-side bg removal con @imgly/background-removal (WASM, gratis,
+        // privacy-friendly). Mucho mejor que Gemini para esta tarea.
+        const srcUrl = hasAttachment ? pendingAttachment! : session.currentDesignUrl!
+        const { removeBackground } = await import("@imgly/background-removal")
+        // Resolver URL relativa (proxy-image) a absoluta antes de fetch
+        const absoluteSrc = srcUrl.startsWith("/") ? `${window.location.origin}${srcUrl}` : srcUrl
+        const sourceBlob = await fetch(absoluteSrc).then((r) => r.blob())
+        const cleanBlob = await removeBackground(sourceBlob, {
+          output: { format: "image/png", quality: 0.95 },
+        })
+
+        // Subir el resultado a R2
+        const fd = new FormData()
+        fd.append("file", cleanBlob, `no-bg-${Date.now()}.png`)
+        const uploadRes = await fetch("/api/public/design/remove-bg", { method: "POST", body: fd })
+        const uploadData = await uploadRes.json()
+        if (!uploadRes.ok || !uploadData.images?.[0]?.url) {
+          throw new Error(uploadData.error ?? "No se pudo subir la imagen sin fondo")
+        }
+        const cleanUrl: string = uploadData.images[0].url
+
+        // Append directly to messages + update session (skip the generic POST flow)
+        const assistantMsg: Msg = {
+          role: "assistant",
+          text: "Listo, te lo dejé con fondo transparente:",
+          imageUrl: cleanUrl,
+        }
+        setMessages((prev) => [...prev, assistantMsg])
+        setSession((prev) => ({ ...prev, currentDesignUrl: cleanUrl, currentMockupUrl: null }))
+        lastPromptRef.current = text
+        setLoading(false)
+        return
+      }
+
+      if (hasAttachment || hasPreviousDesign) {
         endpoint = "/api/public/design/edit"
         body = {
           previousImageUrl: hasAttachment ? pendingAttachment : session.currentDesignUrl,
           instruction: text,
-          // photo: user subio su propia foto (preservar personas/pet/fondo)
-          // illustration: iterar sobre un design generado
           mode: hasAttachment ? "photo" : "illustration",
-          // raw=true → no forzar estilo vectorial. El user controla el estilo
-          // con su propio prompt en lugar de que el optimizer le imponga textile.
           raw: true,
         }
       } else {
         endpoint = "/api/generate-image"
         body = { prompt: text, raw: true }
       }
+
+      const useEdit = endpoint !== "/api/generate-image"
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -188,11 +226,13 @@ export function DesignChat({
 
       const assistantMsg: Msg = {
         role: "assistant",
-        text: useEdit
-          ? hasAttachment
-            ? "Listo, esto es lo que conseguí con tu foto:"
-            : "Acá va la versión actualizada:"
-          : "Acá está tu diseño:",
+        text: isRemoveBgIntent
+          ? "Listo, te lo dejé con fondo transparente:"
+          : useEdit
+            ? hasAttachment
+              ? "Listo, esto es lo que conseguí con tu foto:"
+              : "Acá va la versión actualizada:"
+            : "Acá está tu diseño:",
         imageUrl,
         prompt: promptUsed,
       }
