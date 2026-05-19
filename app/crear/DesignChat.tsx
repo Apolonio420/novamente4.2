@@ -178,34 +178,28 @@ export function DesignChat({
       let body: Record<string, unknown>
 
       if (isRemoveBgIntent) {
-        // Client-side bg removal con @imgly/background-removal (WASM, gratis,
-        // privacy-friendly). Mucho mejor que Gemini para esta tarea.
+        // Server-side bg removal con Gemini Nano Banana 2 + prompt quirúrgico.
+        // Mucho más confiable que @imgly client-side (CSP/WASM issues en prod).
         const srcUrl = hasAttachment ? pendingAttachment! : session.currentDesignUrl!
-        const { removeBackground } = await import("@imgly/background-removal")
-        // Resolver URL relativa (proxy-image) a absoluta antes de fetch
-        const absoluteSrc = srcUrl.startsWith("/") ? `${window.location.origin}${srcUrl}` : srcUrl
-        const sourceBlob = await fetch(absoluteSrc).then((r) => r.blob())
-        const cleanBlob = await removeBackground(sourceBlob, {
-          output: { format: "image/png", quality: 0.95 },
+        const removeRes = await fetch("/api/public/design/remove-bg", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageUrl: srcUrl }),
         })
-
-        // Subir el resultado a R2
-        const fd = new FormData()
-        fd.append("file", cleanBlob, `no-bg-${Date.now()}.png`)
-        const uploadRes = await fetch("/api/public/design/remove-bg", { method: "POST", body: fd })
-        const uploadData = await uploadRes.json()
-        if (!uploadRes.ok || !uploadData.images?.[0]?.url) {
-          throw new Error(uploadData.error ?? "No se pudo subir la imagen sin fondo")
+        const removeData = await removeRes.json()
+        if (!removeRes.ok || !removeData.images?.[0]?.url) {
+          throw new Error(removeData.error ?? "No se pudo remover el fondo")
         }
-        const cleanUrl: string = uploadData.images[0].url
+        const cleanUrl: string = removeData.images[0].url
 
-        // Append directly to messages + update session (skip the generic POST flow)
-        const assistantMsg: Msg = {
-          role: "assistant",
-          text: "Listo, te lo dejé con fondo transparente:",
-          imageUrl: cleanUrl,
-        }
-        setMessages((prev) => [...prev, assistantMsg])
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: "Listo, te lo dejé con fondo transparente:",
+            imageUrl: cleanUrl,
+          },
+        ])
         setSession((prev) => ({ ...prev, currentDesignUrl: cleanUrl, currentMockupUrl: null }))
         lastPromptRef.current = text
         setLoading(false)
