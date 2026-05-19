@@ -75,6 +75,7 @@
     "mercadopago": "latest",
     "next": "^15.2.6",
     "next-themes": "latest",
+    "onnxruntime-web": "^1.26.0",
     "path": "latest",
     "pdfkit": "^0.17.2",
     "react": "^19",
