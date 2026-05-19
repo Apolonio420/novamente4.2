@@ -2,7 +2,7 @@
 /**
  * Tests for RAG knowledge base sources — verifies all public docs exist and contain expected content.
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 
