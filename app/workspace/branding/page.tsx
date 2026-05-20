@@ -372,49 +372,51 @@ export default function BrandingPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-6">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Branding</h1>
-          <p className="text-zinc-400 mt-1">
-            Configura la identidad visual de tu marca para tu tienda y materiales.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {isDirty && (
-            <span className="text-xs text-amber-400/80 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              Cambios sin guardar
-            </span>
-          )}
-          {tenantSlug && (
-            <Link
-              href={`/merch/${tenantSlug}`}
-              target="_blank"
-              className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-zinc-100"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Ver mi storefront</span>
-              <span className="sm:hidden">Ver tienda</span>
-            </Link>
-          )}
-          <Button
-            onClick={handleSave}
-            disabled={!isDirty || saving}
-            className="min-w-[140px] bg-violet-600 hover:bg-violet-500 text-white disabled:bg-zinc-800 disabled:text-zinc-500"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Guardando...
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Guardar
-              </>
+      {/* Header — sticky para que el botón Guardar siempre esté accesible en mobile */}
+      <div className="sticky top-0 z-20 -mx-4 md:-mx-6 px-4 md:px-6 py-3 md:py-4 mb-6 md:mb-8 bg-zinc-950/85 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/70 border-b border-zinc-900">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-xl md:text-2xl font-bold text-zinc-100">Branding</h1>
+            <p className="hidden sm:block text-zinc-400 text-sm mt-1">
+              Configura la identidad visual de tu marca para tu tienda y materiales.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            {isDirty && (
+              <span className="text-xs text-amber-400/80 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                Sin guardar
+              </span>
             )}
-          </Button>
+            {tenantSlug && (
+              <Link
+                href={`/merch/${tenantSlug}`}
+                target="_blank"
+                className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-zinc-100"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Ver mi storefront</span>
+                <span className="sm:hidden">Ver tienda</span>
+              </Link>
+            )}
+            <Button
+              onClick={handleSave}
+              disabled={!isDirty || saving}
+              className="min-w-[120px] sm:min-w-[140px] bg-violet-600 hover:bg-violet-500 text-white disabled:bg-zinc-800 disabled:text-zinc-500"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Guardar
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 

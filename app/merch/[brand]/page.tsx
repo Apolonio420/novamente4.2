@@ -105,9 +105,9 @@ export default async function BrandPage(props: BrandPageProps) {
         {/* Brand Header — identical to static path */}
         <div className="mb-12">
           <div className="relative min-h-[200px] md:min-h-64 rounded-xl overflow-hidden mb-8 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
-            {storefront.banner && (
+            {(storefront.hero || storefront.banner) && (
               <>
-                <Image src={storefront.banner} alt={`${storefront.name} banner`} fill className="object-cover opacity-25" />
+                <Image src={(storefront.hero || storefront.banner) as string} alt={`${storefront.name} banner`} fill className="object-cover opacity-25" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/40" />
               </>
             )}
@@ -126,17 +126,28 @@ export default async function BrandPage(props: BrandPageProps) {
             </div>
           </div>
 
-          {/* Brand Story — 3 paragraphs like static */}
+          {/* Brand Story — partner-edited (DB path uses description; static path may also fill `values`). */}
           {(storefront.description || storefront.values) && (
             <div className="bg-secondary/20 rounded-xl p-6 md:p-8 mb-8">
               <h2 className="text-2xl font-bold mb-4">La Historia de {storefront.name}</h2>
               <div className="space-y-4 text-muted-foreground">
-                {storefront.description && <p className="leading-relaxed">{storefront.description}</p>}
-                {storefront.values && <p className="leading-relaxed">{storefront.values}</p>}
+                {storefront.description && (
+                  <p className="leading-relaxed whitespace-pre-line">{storefront.description}</p>
+                )}
+                {storefront.values && (
+                  <p className="leading-relaxed whitespace-pre-line">{storefront.values}</p>
+                )}
                 {storefront.slogan && (
                   <p className="leading-relaxed font-medium text-foreground">{storefront.slogan}</p>
                 )}
               </div>
+              {storefront.ctaText && storefront.ctaUrl && (
+                <div className="mt-6">
+                  <Link href={storefront.ctaUrl} target={storefront.ctaUrl.startsWith('http') ? '_blank' : undefined} rel="noreferrer">
+                    <Button>{storefront.ctaText}</Button>
+                  </Link>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -193,9 +204,15 @@ export default async function BrandPage(props: BrandPageProps) {
                     <Button variant="outline">Seguir a {storefront.name}</Button>
                   </Link>
                 )}
-                <Link href="https://wa.me/5492235169720?text=Hola!%20Estoy%20comprando%20en%20una%20tienda%20partner%20de%20Novamente%20y%20quiero%20contactarlos.%20(ref%20%C2%B7%20NV-MERCH)" target="_blank">
-                  <Button>Consultá por WhatsApp</Button>
-                </Link>
+                {storefront.ctaUrl ? (
+                  <Link href={storefront.ctaUrl} target={storefront.ctaUrl.startsWith('http') ? '_blank' : undefined} rel="noreferrer">
+                    <Button>{storefront.ctaText || 'Contactar'}</Button>
+                  </Link>
+                ) : (
+                  <Link href="https://wa.me/5492235169720?text=Hola!%20Estoy%20comprando%20en%20una%20tienda%20partner%20de%20Novamente%20y%20quiero%20contactarlos.%20(ref%20%C2%B7%20NV-MERCH)" target="_blank">
+                    <Button>Consultá por WhatsApp</Button>
+                  </Link>
+                )}
               </div>
             </div>
           </div>

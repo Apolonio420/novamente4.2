@@ -65,6 +65,9 @@ export interface StorefrontData {
   mission: string | null
   logo: string | null
   banner: string | null
+  hero: string | null
+  ctaText: string | null
+  ctaUrl: string | null
   instagram: string | null
   primaryColor: string
   products: PartnerProduct[]
@@ -128,15 +131,23 @@ export async function getStorefrontBySlug(slug: string): Promise<StorefrontData 
   const tenant = await getTenantBySlug(slug)
   if (tenant && tenant.status === 'active' && tenant.storefront_published) {
     const products = await getPublishedProducts(tenant.id)
+    // Prefer the partner-edited `about_text` (workspace /branding). Fall back to
+    // the legacy seed `description` so older tenants that never edited still render.
+    const editedAbout = tenant.about_text?.trim() || null
+    const legacyDescription = tenant.description?.trim() || null
+
     return {
       slug: tenant.slug,
       name: tenant.name,
       slogan: tenant.tagline,
-      description: tenant.description,
-      values: tenant.about_text,
+      description: editedAbout || legacyDescription,
+      values: null,
       mission: null,
       logo: LOGO_OVERRIDES[tenant.slug] || tenant.logo_url,
       banner: tenant.banner_url,
+      hero: tenant.hero_url,
+      ctaText: tenant.cta_text?.trim() || null,
+      ctaUrl: tenant.cta_url?.trim() || null,
       instagram: tenant.instagram,
       primaryColor: tenant.primary_color,
       products,
@@ -159,6 +170,9 @@ export async function getStorefrontBySlug(slug: string): Promise<StorefrontData 
     mission: staticPartner.mission,
     logo: staticPartner.logo,
     banner: staticPartner.banner,
+    hero: null,
+    ctaText: null,
+    ctaUrl: null,
     instagram: staticPartner.instagramUrl || null,
     primaryColor: '#000000',
     products: [],
