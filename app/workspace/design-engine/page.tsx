@@ -984,6 +984,18 @@ export default function DesignStudioPage() {
 
         {/* Input area */}
         <div className="p-4 border-t border-zinc-800 bg-zinc-900/50">
+          {usage && usage.used >= usage.limit && (
+            <div className="mb-3 text-sm text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 flex items-start gap-2">
+              <span className="shrink-0 mt-0.5">⚠️</span>
+              <div>
+                <p className="font-medium">Llegaste al límite semanal ({usage.used}/{usage.limit} generaciones)</p>
+                <p className="text-xs text-amber-300/80 mt-0.5">
+                  {usage.resetLabel}.{' '}
+                  <a href="/workspace/billing" className="underline hover:text-amber-200">Pasá a Growth para 25/semana.</a>
+                </p>
+              </div>
+            </div>
+          )}
           {error && (
             <div className="mb-3 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
               {error}
@@ -1057,7 +1069,7 @@ export default function DesignStudioPage() {
             />
             <button
               onClick={handleGenerate}
-              disabled={!prompt.trim() || generating}
+              disabled={!prompt.trim() || generating || (!!usage && usage.used >= usage.limit)}
               className="p-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {generating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
@@ -1495,6 +1507,9 @@ export default function DesignStudioPage() {
                   maxLength={120}
                   autoFocus
                 />
+                {!catalogProductName.trim() && (
+                  <p className="text-[11px] text-amber-400/90 mt-1">Ingresá el nombre para poder crear el producto.</p>
+                )}
               </div>
               <div>
                 <label className="text-xs uppercase tracking-widest text-zinc-500 mb-1.5 block">Precio de venta (ARS)</label>

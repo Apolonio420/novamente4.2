@@ -170,6 +170,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               banner: tenant.banner_url || '',
             }}
             brandSlug={brand}
+            tenantId={tenant.id}
           />
         </>
       )

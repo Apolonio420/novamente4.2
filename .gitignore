@@ -25,3 +25,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.env*.local
+
+# autopilot v4.2
+autopilot-loop-*.log
+scripts/.autopilot-state.json

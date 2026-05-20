@@ -171,6 +171,9 @@ export default function CheckoutPage() {
           totalCalculated: total,
         })
 
+        // Extraer tenantId del carrito (primer item con tenantId válido)
+        const tenantId = items.find((i) => i.tenantId)?.tenantId ?? null
+
         const requestBody = {
           items: checkoutItems,
           customer: customerInfo,
@@ -179,6 +182,7 @@ export default function CheckoutPage() {
           subtotal: subtotal,
           shippingCost: shippingCost,
           shippingZone: shippingZone, // 'BA' | 'RESTO'
+          tenantId: tenantId,
         }
 
         console.log("📤 Request body:", JSON.stringify(requestBody, null, 2))

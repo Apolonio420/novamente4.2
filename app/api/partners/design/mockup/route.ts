@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { designImageUrl, garmentType, garmentColor, side, sessionId } = body
+    const { designImageUrl, garmentType, garmentColor, side, stampMode, sessionId } = body
 
     if (!designImageUrl) {
       return NextResponse.json({ error: 'Se requiere designImageUrl' }, { status: 400 })
@@ -159,15 +159,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Build prompt for Gemini mockup composition
-    const placement = sideChoice === 'back'
-      ? 'Coloca el diseno en la espalda de la prenda, centrado'
-      : 'Coloca el diseno en el frente de la prenda, centrado'
+    const sideLabel = sideChoice === 'back' ? 'espalda' : 'frente'
+    const stampModeChoice = (stampMode || 'large') as 'large' | 'chest-logo' | 'sleeve-logo'
+
+    const stampPlacement =
+      stampModeChoice === 'chest-logo'
+        ? `Logo pequeño (~10×10 cm) en el pecho izquierdo del ${sideLabel}, discreto y bien proporcionado`
+        : stampModeChoice === 'sleeve-logo'
+          ? `Logo pequeño (~8×8 cm) en la manga de la prenda, bien centrado en el ancho de la manga`
+          : `Estampa grande (~30×30 cm) centrada en el ${sideLabel} de la prenda`
 
     const promptText = `Aplica este diseno a la prenda siguiendo estas instrucciones:
-- ${placement}
-- Tamano mediano-grande del diseno
+- ${stampPlacement}
 - Manten la forma y proporciones originales de la prenda
-- El diseno debe verse natural y bien integrado
+- El diseno debe verse natural y bien integrado, con los colores del diseno respetados
 - Devuelve solo la imagen final de la prenda con el diseno aplicado`
 
     // Mockup composite SOLO usa gemini-2.5-flash-image (sin -preview, ya en GA).

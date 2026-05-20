@@ -32,6 +32,7 @@ export interface CartItem {
     scale: number
     side: "front" | "back"
   }
+  tenantId?: string
 }
 
 interface CartStore {
