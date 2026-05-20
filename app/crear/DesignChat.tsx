@@ -181,7 +181,7 @@ export function DesignChat({
         // Trigger mockup automaticamente — el user ya dijo que era lo que queria
         setTimeout(() => {
           setMockupLoading(true)
-          fetch("/api/generate-mockup", {
+          fetch("/api/public/design/mockup-lifestyle", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -311,12 +311,15 @@ export function DesignChat({
     }
   }, [input, loading, pendingAttachment, session.currentDesignUrl, setSession, toast])
 
-  // ---- Generate mockup ----
+  // ---- Generate mockup LIFESTYLE ----
+  // Usa Gemini para generar foto realista de persona con la prenda. Reemplaza
+  // el compositor canvas estático que tenía problemas de transparencia
+  // (checker pattern visible sobre la prenda).
   const handleMockup = useCallback(async () => {
     if (!session.currentDesignUrl || mockupLoading) return
     setMockupLoading(true)
     try {
-      const res = await fetch("/api/generate-mockup", {
+      const res = await fetch("/api/public/design/mockup-lifestyle", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -327,11 +330,10 @@ export function DesignChat({
         }),
       })
       const data = await res.json()
-      // El endpoint devuelve publicUrl (no mockupUrl) — fallback por compat
       const mockupUrl = data.publicUrl ?? data.mockupUrl
       if (!res.ok || !mockupUrl) throw new Error(data.error ?? "Error generando mockup")
       setSession((prev) => ({ ...prev, currentMockupUrl: mockupUrl }))
-      toast({ title: "Mockup listo", description: "Tu diseño en la prenda ya está." })
+      toast({ title: "Mockup listo", description: "Tu prenda en una foto lifestyle 👇" })
     } catch (e: any) {
       toast({ title: "Error en mockup", description: e.message, variant: "destructive" })
     } finally {
