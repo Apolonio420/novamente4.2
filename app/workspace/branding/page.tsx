@@ -781,21 +781,31 @@ export default function BrandingPage() {
                       </Label>
                       <Input
                         id="cta_text"
-                        placeholder="Ej: Comprar ahora"
+                        placeholder="Ej: Escribinos por WhatsApp"
                         value={branding.cta_text}
                         onChange={(e) => updateField('cta_text', e.target.value)}
                         className="bg-zinc-800/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
                       />
+                      <p className="text-[11px] text-zinc-500">El texto del botón que ve el visitante en tu tienda.</p>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="cta_url" className="text-zinc-300">URL del CTA</Label>
                       <Input
                         id="cta_url"
-                        placeholder="https://tu-tienda.com/productos"
+                        placeholder="https://wa.me/549... o https://instagram.com/tumarca"
                         value={branding.cta_url}
                         onChange={(e) => updateField('cta_url', e.target.value)}
                         className="bg-zinc-800/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
                       />
+                      <p className="text-[11px] text-zinc-500 leading-relaxed">
+                        A dónde llevás al visitante que aprieta el botón. Ej: tu WhatsApp
+                        (<span className="text-zinc-400">wa.me/549…</span>), tu Instagram, un formulario.
+                        {tenantSlug && branding.cta_url && branding.cta_url.toLowerCase().includes(`/merch/${tenantSlug}`) && (
+                          <span className="block mt-1 text-amber-400">
+                            ⚠️ Esta URL apunta a tu propia tienda. El botón llevaría al visitante a la misma página — usá algo externo (WhatsApp, IG, formulario).
+                          </span>
+                        )}
+                      </p>
                     </div>
                   </div>
                 </CardContent>

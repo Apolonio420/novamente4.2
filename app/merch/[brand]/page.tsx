@@ -88,6 +88,19 @@ export default async function BrandPage(props: BrandPageProps) {
     // Transform DB products → static Product interface for ProductCard
     const products = storefront.products.map((p) => dbProductToProduct(p, tenant))
 
+    // Ignore CTAs that point back to this same storefront (some partners paste
+    // their own URL by mistake — a button that reloads the current page is worse
+    // than no button at all, so we fall through to the WhatsApp fallback below).
+    const ctaUrlNormalized = storefront.ctaUrl?.toLowerCase().replace(/\/+$/, '') ?? ''
+    const selfPath = `/merch/${storefront.slug}`
+    const ctaIsSelf =
+      ctaUrlNormalized.endsWith(selfPath) ||
+      ctaUrlNormalized === selfPath.slice(1) ||
+      ctaUrlNormalized === `https://www.novamente.ar${selfPath}` ||
+      ctaUrlNormalized === `https://novamente.ar${selfPath}`
+    const partnerCtaUrl = storefront.ctaUrl && !ctaIsSelf ? storefront.ctaUrl : null
+    const partnerCtaText = storefront.ctaText?.trim() || 'Contactar'
+
     return (
       <div className="container mx-auto px-4 py-8">
         <JsonLd data={orgSchema} />
@@ -141,10 +154,10 @@ export default async function BrandPage(props: BrandPageProps) {
                   <p className="leading-relaxed font-medium text-foreground">{storefront.slogan}</p>
                 )}
               </div>
-              {storefront.ctaText && storefront.ctaUrl && (
+              {partnerCtaUrl && (
                 <div className="mt-6">
-                  <Link href={storefront.ctaUrl} target={storefront.ctaUrl.startsWith('http') ? '_blank' : undefined} rel="noreferrer">
-                    <Button>{storefront.ctaText}</Button>
+                  <Link href={partnerCtaUrl} target={partnerCtaUrl.startsWith('http') ? '_blank' : undefined} rel="noreferrer">
+                    <Button>{partnerCtaText}</Button>
                   </Link>
                 </div>
               )}
@@ -204,9 +217,9 @@ export default async function BrandPage(props: BrandPageProps) {
                     <Button variant="outline">Seguir a {storefront.name}</Button>
                   </Link>
                 )}
-                {storefront.ctaUrl ? (
-                  <Link href={storefront.ctaUrl} target={storefront.ctaUrl.startsWith('http') ? '_blank' : undefined} rel="noreferrer">
-                    <Button>{storefront.ctaText || 'Contactar'}</Button>
+                {partnerCtaUrl ? (
+                  <Link href={partnerCtaUrl} target={partnerCtaUrl.startsWith('http') ? '_blank' : undefined} rel="noreferrer">
+                    <Button>{partnerCtaText}</Button>
                   </Link>
                 ) : (
                   <Link href="https://wa.me/5492235169720?text=Hola!%20Estoy%20comprando%20en%20una%20tienda%20partner%20de%20Novamente%20y%20quiero%20contactarlos.%20(ref%20%C2%B7%20NV-MERCH)" target="_blank">
