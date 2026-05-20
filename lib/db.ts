@@ -843,6 +843,7 @@ export interface Order {
   id?: string
   order_number: string
   user_id?: string | null
+  tenant_id?: string | null
   customer_email: string
   customer_first_name: string
   customer_last_name: string
@@ -918,6 +919,7 @@ export async function createOrder(orderData: Omit<Order, 'id' | 'order_number'>)
     const orderInsert = {
       order_number: orderNumber,
       user_id: userId,
+      tenant_id: orderData.tenant_id || null,
       customer_email: orderData.customer_email,
       customer_first_name: orderData.customer_first_name,
       customer_last_name: orderData.customer_last_name,

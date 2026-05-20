@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getOrderByExternalReference, updateOrder } from "@/lib/db"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 import { MercadoPagoConfig, Payment } from "mercadopago"
 
 const client = new MercadoPagoConfig({
@@ -171,6 +172,46 @@ export async function POST(request: NextRequest) {
 
       if (paymentStatus === "approved" && orderStatus === "confirmed") {
         console.log("🎉 Pago aprobado! Orden confirmada:", order.order_number)
+
+        // Bridgear a partner_orders si la orden viene de un storefront partner
+        const tenantId = (order as any).tenant_id
+        if (tenantId) {
+          try {
+            const partnerOrderPayload = {
+              tenant_id: tenantId,
+              customer_name: `${(order as any).customer_first_name || ''} ${(order as any).customer_last_name || ''}`.trim() || null,
+              customer_email: order.customer_email || null,
+              customer_phone: (order as any).customer_phone || null,
+              items: order.items || [],
+              total: order.total || 0,
+              currency: (order as any).currency || 'ARS',
+              status: 'confirmed',
+              payment_id: String(paymentId),
+              payment_status: 'approved',
+              shipping_info: {
+                address: (order as any).shipping_address || null,
+                city: (order as any).shipping_city || null,
+                postal_code: (order as any).shipping_postal_code || null,
+                cost: (order as any).shipping_cost || 0,
+              },
+            }
+
+            const { error: partnerOrderError } = await (supabaseAdmin as any)
+              .from('partner_orders')
+              .upsert(
+                { ...partnerOrderPayload, updated_at: new Date().toISOString() },
+                { onConflict: 'payment_id' }
+              )
+
+            if (partnerOrderError) {
+              console.error("❌ Error bridgeando a partner_orders:", partnerOrderError.message)
+            } else {
+              console.log("✅ Venta bridgeada a partner_orders para tenant:", tenantId)
+            }
+          } catch (bridgeErr: any) {
+            console.error("❌ Exception bridgeando partner_orders:", bridgeErr.message)
+          }
+        }
 
         try {
           const { notifySale } = await import("@/lib/notifications")

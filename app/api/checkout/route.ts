@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { items, customer, total, cartItems, subtotal, shippingCost, shippingZone } = await request.json()
+    const { items, customer, total, cartItems, subtotal, shippingCost, shippingZone, tenantId } = await request.json()
 
     console.log("🛒 Checkout API received:", {
       itemsCount: items?.length || 0,
@@ -123,6 +123,10 @@ export async function POST(request: NextRequest) {
     // Crear el pedido en la base de datos ANTES de crear la preferencia
     const externalReference = `order_${Date.now()}`
 
+    // Validar que tenantId sea un UUID antes de persistirlo
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    const validTenantId = typeof tenantId === 'string' && UUID_RE.test(tenantId) ? tenantId : null
+
     // Express checkout: address/city pueden venir vacíos · se completan post-pago en /checkout/success
     const newOrder = await createOrder({
       customer_email: customer.email,
@@ -141,6 +145,7 @@ export async function POST(request: NextRequest) {
       total: finalTotal,
       currency: 'ARS',
       status: 'pending',
+      tenant_id: validTenantId,
       items: orderItems,
     })
 
