@@ -27,7 +27,6 @@ export async function getDashboardKPIs(tenantId: string): Promise<DashboardKPIs>
   const now = new Date()
   const t30d = new Date(now.getTime() - 30 * MS_DAY).toISOString()
   const t60d = new Date(now.getTime() - 60 * MS_DAY).toISOString()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 
   // Ordenes ultimos 60 dias
   const { data: ordersRaw } = await db()
@@ -70,12 +69,12 @@ export async function getDashboardKPIs(tenantId: string): Promise<DashboardKPIs>
   }
   const topProduct = Array.from(productMap.values()).sort((a, b) => b.revenue - a.revenue)[0] || null
 
-  // Leads del mes
+  // Leads ultimos 30 dias (ventana rolling, consistente con orders30d)
   const { count: leadsCount } = await db()
     .from('partner_leads')
     .select('id', { count: 'exact', head: true })
     .eq('tenant_id', tenantId)
-    .gte('created_at', startOfMonth)
+    .gte('created_at', t30d)
   const leadsThisMonth = leadsCount || 0
 
   const conversionRate = leadsThisMonth > 0
