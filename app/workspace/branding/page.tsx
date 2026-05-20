@@ -305,15 +305,22 @@ export default function BrandingPage() {
       }
 
       const updated = await res.json()
+      // El endpoint devuelve { branding: {...}, auto_published?: bool, storefront_published?: bool }
+      const brandingPayload = (updated.branding ?? updated) as Record<string, unknown>
       const merged: BrandingData = { ...EMPTY_BRANDING }
       for (const key of Object.keys(EMPTY_BRANDING) as (keyof BrandingData)[]) {
-        if (updated[key] !== undefined && updated[key] !== null) {
-          merged[key] = updated[key]
+        const v = brandingPayload[key as string]
+        if (v !== undefined && v !== null) {
+          merged[key] = v as BrandingData[typeof key]
         }
       }
       setBranding(merged)
       setOriginal(merged)
-      showToast('Branding actualizado correctamente', 'success')
+      if (updated.auto_published === true) {
+        showToast('🎉 ¡Listo! Tu storefront ya está publicado y visible en novamente.ar', 'success')
+      } else {
+        showToast('Branding actualizado correctamente', 'success')
+      }
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Error al guardar cambios', 'error')
     } finally {

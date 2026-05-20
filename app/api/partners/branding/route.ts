@@ -33,6 +33,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       plan: tenant.plan,
+      storefront_published: tenant.storefront_published,
+      status: tenant.status,
       branding: {
         name: tenant.name,
         slug: tenant.slug,
@@ -88,6 +90,18 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // AUTO-PUBLISH: si el partner ya tiene branding minimo cargado (logo
+    // + tagline o banner) y todavia esta en 'onboarding'/sin publicar, lo
+    // activamos automaticamente. Sino se queda atascado sin storefront
+    // visible aunque haya cargado todo el branding (caso DUB SHIRTS).
+    const merged = { ...tenant, ...updates } as typeof tenant
+    const hasMinimumBranding =
+      !!merged.logo_url && (!!merged.banner_url || !!merged.tagline || !!merged.about_text)
+    if (hasMinimumBranding && (!tenant.storefront_published || tenant.status !== 'active')) {
+      updates.storefront_published = true
+      if (tenant.status === 'onboarding') updates.status = 'active'
+    }
+
     const updated = await updateTenant(tenant.id, updates)
 
     if (!updated) {
@@ -97,7 +111,14 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    const didAutoPublish =
+      updates.storefront_published === true && !tenant.storefront_published
+
     return NextResponse.json({
+      // Top-level flags para que el UI sepa que el storefront se publico
+      storefront_published: updated.storefront_published,
+      status: updated.status,
+      auto_published: didAutoPublish,
       branding: {
         name: updated.name,
         slug: updated.slug,
