@@ -193,8 +193,10 @@ export function DesignChat({
           })
             .then((r) => r.json())
             .then((d) => {
-              if (d.mockupUrl) {
-                setSession((prev) => ({ ...prev, currentMockupUrl: d.mockupUrl }))
+              // El endpoint devuelve publicUrl (no mockupUrl) — fallback por compat
+              const mockupUrl = d.publicUrl ?? d.mockupUrl
+              if (mockupUrl) {
+                setSession((prev) => ({ ...prev, currentMockupUrl: mockupUrl }))
                 toast({ title: "Mockup listo", description: "Tu foto en la prenda 👇" })
               }
             })
@@ -325,8 +327,10 @@ export function DesignChat({
         }),
       })
       const data = await res.json()
-      if (!res.ok || !data.mockupUrl) throw new Error(data.error ?? "Error generando mockup")
-      setSession((prev) => ({ ...prev, currentMockupUrl: data.mockupUrl }))
+      // El endpoint devuelve publicUrl (no mockupUrl) — fallback por compat
+      const mockupUrl = data.publicUrl ?? data.mockupUrl
+      if (!res.ok || !mockupUrl) throw new Error(data.error ?? "Error generando mockup")
+      setSession((prev) => ({ ...prev, currentMockupUrl: mockupUrl }))
       toast({ title: "Mockup listo", description: "Tu diseño en la prenda ya está." })
     } catch (e: any) {
       toast({ title: "Error en mockup", description: e.message, variant: "destructive" })
