@@ -20,10 +20,12 @@
 | 8 | AUTOFEED-20260518-4 | tsc: route.ts:37 | 1 | sí | DONE |
 | 9 | AUTOFEED-20260518-5 | tsc: route.ts:40 | 1 | sí | DONE |
 | 10 | TASK-007 | Soporte sidebar: quitar candado para Starter (consistencia con TASK-002) | 1 | sí | DONE |
-| 11 | TASK-008 | Storefront Falco roto: logo + banner no cargan en /p/falco | 1 | sí (migración SQL lista, correr en Supabase) | NEEDS_MANUAL |
+| 11 | TASK-008 | Storefront Falco roto: logo + banner no cargan en /p/falco | 1 | sí (migración SQL corrida en Supabase 2026-05-19) | DONE |
 | 12 | TASK-009 | Design engine: garment mismatch + controles de placement y tamaño de estampa | 3 | sí (con auditoría componente) | DONE |
 | 13 | TASK-010 | Unificar todos los WhatsApp (bubbles + links + tel) a +54 9 2235 16-9720 | 1 | sí | DONE |
-| 14 | TASK-011 | Mobile UX Design Engine + claridad de límites (drawer X + banner + límite semanal) | 1 | sí | PARTIAL — fix drawer + banner DONE, mensaje límite PENDING |
+| 14 | TASK-011 | Mobile UX Design Engine + claridad de límites (drawer X + banner + límite semanal) | 1 | sí | DONE |
+| 15 | TASK-006 | Corregir ventana temporal de conversionRate (BUG-2, ventana rolling 30d para leads) | 1 | sí | DONE |
+| 16 | TASK-005 | Bridgear ventas B2C → partner_orders (BUG-1 crítico: tenant_id en orders + webhook MP) | 2 | sí (con migración SQL nueva) | DONE |
 
 ---
 

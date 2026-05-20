@@ -16,6 +16,38 @@ Formato:
 
 ---
 
+## Sprint 023 — 2026-05-20
+**Model:** sonnet
+**Tasks DONE:**
+- TASK-005 — feat(orders): bridge B2C sales to partner_orders via tenant_id (commit 632b7a4)
+  - checkout/route.ts: ya tenía tenant_id, código estaba listo
+  - mercadopago webhook: bridge a partner_orders en payment approved
+  - migrations/add_tenant_id_to_orders.sql: ALTER TABLE + idx (NO ejecutada — pendiente humano)
+  - lib/db.ts: Order interface con tenant_id
+**Tasks BLOCKED:** ninguna
+**tsc:** PASS
+**build:** SKIPPED
+**Notas:**
+- El humano debe correr `migrations/add_tenant_id_to_orders.sql` en Supabase Studio antes de que el bridge funcione en producción
+- Una vez aplicada la migración, las ventas de storefronts partner se reflejarán en partner_orders y el dashboard mostrará revenue real
+
+---
+
+## Sprint 022 — 2026-05-19
+**Model:** sonnet
+**Tasks DONE:**
+- TASK-011 — fix(design-engine): mensaje límite semanal explícito + helper text en modal catálogo (design-engine/page.tsx)
+**Tasks BLOCKED:** ninguna
+**tsc:** PASS
+**build:** SKIPPED
+**Notas:**
+- Cuando `usage.used >= usage.limit`: banner ámbar sobre el input con conteo N/N y link a /workspace/billing
+- Botón Send deshabilitado mientras se alcanza el límite (no solo el API rechaza)
+- Modal "Agregar al catálogo": helper text ámbar bajo campo nombre cuando está vacío
+- Requiere verificación visual en mobile (Chrome Android)
+
+---
+
 ## Sprint 021 — 2026-05-19
 **Model:** sonnet
 **Tasks DONE:**
