@@ -767,8 +767,8 @@ export function DesignChat({
               <div className="flex gap-3 items-start">
                 <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">3</div>
                 <div className="text-sm text-zinc-300">
-                  <strong>Comprala</strong> con 3 cuotas sin interés.<br />
-                  <span className="text-xs text-zinc-500">Si no te gusta el resultado impreso, te la rehacemos gratis.</span>
+                  <strong>Comprala</strong> con Mercado Pago.<br />
+                  <span className="text-xs text-zinc-500">Producción a pedido en Argentina · envío a todo el país.</span>
                 </div>
               </div>
             </div>
@@ -1609,10 +1609,6 @@ export function DesignChat({
                 </div>
               </details>
             </div>
-            <div className="text-[11px] text-emerald-400/90 -mt-1.5">
-              o 3 cuotas de ${Math.round(getPrice(session.garmentType) / 3).toLocaleString("es-AR")} sin interés
-            </div>
-
             {/* Price comparison vs competidor — para mostrar valor */}
             {(() => {
               const ours = getPrice(session.garmentType)
@@ -1648,9 +1644,9 @@ export function DesignChat({
               Agregar al carrito
             </Button>
 
-            {/* Microcopy de garantía debajo del CTA */}
+            {/* Microcopy debajo del CTA */}
             <p className="text-[10px] text-zinc-500 text-center leading-tight">
-              Si no te gusta el diseño impreso, te lo rehacemos gratis
+              Producción a pedido en Argentina · Envío a todo el país
             </p>
           </div>
         )}

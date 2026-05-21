@@ -126,11 +126,11 @@ export default function CrearPage() {
         </div>
       </div>
 
-      {/* Trust signals bar — conversion booster: garantía + envío + cuotas + ARG */}
+      {/* Trust signals bar — solo claims reales (sin cuotas ni rehacemos) */}
       <div className="border-b border-zinc-800 bg-zinc-950">
         <div className="mx-auto max-w-7xl px-4 py-2 flex items-center gap-3 overflow-x-auto text-[11px] text-zinc-400">
           <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
-            <span className="text-green-400">✓</span> Si no te gusta, te lo rehacemos gratis
+            🇦🇷 100% argentino · Producción a pedido
           </span>
           <span className="text-zinc-700">·</span>
           <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
@@ -138,11 +138,7 @@ export default function CrearPage() {
           </span>
           <span className="text-zinc-700">·</span>
           <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
-            💳 3 cuotas sin interés con Mercado Pago
-          </span>
-          <span className="text-zinc-700">·</span>
-          <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
-            🇦🇷 100% argentino · Producción a pedido
+            💳 Pagás con Mercado Pago
           </span>
           {/* Social proof real — solo mostrar si hay actividad relevante */}
           {socialProof && socialProof.designsLast24h >= 5 && (

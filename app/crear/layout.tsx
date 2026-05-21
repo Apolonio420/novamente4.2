@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 export const metadata: Metadata = {
   title: "Diseñá tu prenda con IA · Novamente",
   description:
-    "Creá remeras, buzos y hoodies únicos con inteligencia artificial. Diseño en segundos, producción a pedido en Argentina, envío a todo el país. Hasta 3 cuotas sin interés.",
+    "Creá remeras, buzos y hoodies únicos con inteligencia artificial. Diseño en segundos, producción a pedido en Argentina, envío a todo el país.",
   keywords: [
     "diseño remera IA",
     "diseñar remera",
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     url: "https://www.novamente.ar/crear",
     title: "Diseñá tu prenda con IA · Novamente",
     description:
-      "Creá remeras y buzos únicos con IA en minutos. Producción a pedido, envío a todo el país, 3 cuotas sin interés.",
+      "Creá remeras y buzos únicos con IA en minutos. Producción a pedido, envío a todo el país.",
     siteName: "Novamente",
     locale: "es_AR",
     images: [
