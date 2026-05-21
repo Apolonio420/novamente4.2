@@ -60,7 +60,7 @@ const navSections: NavSection[] = [
       { label: 'Branding', href: '/workspace/branding', icon: Palette },
       { label: 'Catalogo', href: '/workspace/catalog', icon: Package },
       { label: 'Studio', href: '/workspace/design-engine', icon: Sparkles },
-      { label: 'Biblioteca de disenos', href: '/workspace/design-library', icon: ImageIcon },
+      { label: 'Biblioteca de diseños', href: '/workspace/design-library', icon: ImageIcon },
     ],
   },
   {
@@ -109,7 +109,7 @@ const pageTitles: Record<string, string> = {
   '/workspace/leads': 'Leads',
   '/workspace/orders': 'Pedidos',
   '/workspace/design-engine': 'Design Engine',
-  '/workspace/design-library': 'Biblioteca de disenos',
+  '/workspace/design-library': 'Biblioteca de diseños',
   '/workspace/discounts': 'Descuentos',
   '/workspace/chatbot': 'Chatbot',
   '/workspace/support': 'Soporte',
