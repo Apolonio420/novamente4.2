@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -51,6 +51,18 @@ export default function CrearPage() {
   })
   const [tryOnOpen, setTryOnOpen] = useState(false)
   const cartCount = useCart((s) => s.items.length)
+  const [socialProof, setSocialProof] = useState<{
+    designsLast24h: number
+    totalOrders: number
+  } | null>(null)
+
+  // Cargar social proof una vez al montar (cacheado 5min server-side)
+  useEffect(() => {
+    fetch("/api/public/social-proof")
+      .then((r) => r.json())
+      .then((d) => setSocialProof({ designsLast24h: d.designsLast24h ?? 0, totalOrders: d.totalOrders ?? 0 }))
+      .catch(() => {})
+  }, [])
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -128,6 +140,27 @@ export default function CrearPage() {
           <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
             🇦🇷 100% argentino · Producción a pedido
           </span>
+          {/* Social proof real — solo mostrar si hay actividad relevante */}
+          {socialProof && socialProof.designsLast24h >= 5 && (
+            <>
+              <span className="text-zinc-700">·</span>
+              <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap text-emerald-400">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                </span>
+                {socialProof.designsLast24h} diseños creados últimas 24h
+              </span>
+            </>
+          )}
+          {socialProof && socialProof.totalOrders >= 10 && (
+            <>
+              <span className="text-zinc-700">·</span>
+              <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
+                ⭐ +{socialProof.totalOrders} personas ya tienen su Novamente
+              </span>
+            </>
+          )}
         </div>
       </div>
 

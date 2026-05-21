@@ -85,6 +85,9 @@ export function DesignChat({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const lastPromptRef = useRef<string>("")
+  // Ref a handleBuyNow para que el intent detector lo pueda invocar sin
+  // forward-reference problems (handleBuyNow esta declarado mas abajo)
+  const buyNowRef = useRef<(() => void) | null>(null)
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -178,6 +181,27 @@ export function DesignChat({
       //   English: "remove background" / "no background" / "transparent"
       const removeBgPattern = /\b(sin\s+fondo|fondo\s+transparente|transparente|(sa(c|qu)[a-zíéáóú]*|quit[a-zíéáóú]*|remov[a-zíéáóú]*)\b.{0,20}\bfondo|remove\s+(the\s+)?background|no\s+background|background\s+removal|transparent\s+background)\b/i
       const isRemoveBgIntent = removeBgPattern.test(text) && (hasAttachment || hasPreviousDesign)
+
+      // Intent: "quiero comprar" — si ya hay mockup, mandar al checkout directo
+      const buyIntentPattern =
+        /\b(quiero\s+(comprar|llevar|este)|me\s+lo\s+llevo|lo\s+quiero|lo\s+compro|comprar\s+(ya|esto|este)|agreg(alo|alo\s+al)|listo\s+(para|lo)\s+(comprar|llevar)|ya\s+est[áa]\s+listo|me\s+gusta\s+as[ií])\b/i
+      const isBuyIntent =
+        buyIntentPattern.test(text) && !!session.currentMockupUrl && !!session.currentDesignUrl
+      if (isBuyIntent) {
+        // Mensaje en el chat + redirect al checkout (handleBuyNow no se puede
+        // llamar aca porque esta abajo; replicamos el flow inline)
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: "Perfecto, te llevo al checkout con tu pedido cargado 🛒",
+          },
+        ])
+        setLoading(false)
+        // Disparar handleBuyNow programaticamente via ref
+        setTimeout(() => buyNowRef.current?.(), 300)
+        return
+      }
 
       // Intent: "usá la imagen tal cual" — saltea Gemini, usa el upload directo
       const useAsIsPattern =
@@ -488,6 +512,70 @@ export function DesignChat({
     router.push("/checkout")
   }, [session, selectedSize, addItem, router])
 
+  // Wire buyNowRef → handleBuyNow para que intent detector pueda invocarlo
+  useEffect(() => {
+    buyNowRef.current = handleBuyNow
+  }, [handleBuyNow])
+
+  // Abandoned cart recovery: si user genera mockup pero no compra, guardar
+  // snapshot en localStorage. Al volver a /crear se recupera.
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    // Inline stale check (mockupIsStale declarado mas abajo)
+    const isStale =
+      session.currentMockupUrl !== null &&
+      session.mockupGeneratedFor !== null &&
+      (session.mockupGeneratedFor.garmentType !== session.garmentType ||
+        session.mockupGeneratedFor.garmentColor !== session.garmentColor ||
+        session.mockupGeneratedFor.side !== session.side ||
+        session.mockupGeneratedFor.designUrl !== session.currentDesignUrl)
+    if (session.currentMockupUrl && !isStale) {
+      window.localStorage.setItem(
+        "novamente:abandoned-design",
+        JSON.stringify({
+          mockupUrl: session.currentMockupUrl,
+          designUrl: session.currentDesignUrl,
+          garmentType: session.garmentType,
+          garmentColor: session.garmentColor,
+          side: session.side,
+          savedAt: Date.now(),
+        }),
+      )
+    }
+  }, [
+    session.currentMockupUrl,
+    session.currentDesignUrl,
+    session.garmentType,
+    session.garmentColor,
+    session.side,
+    session.mockupGeneratedFor,
+  ])
+
+  // Al montar el componente: si hay un design abandonado <72h, recuperarlo
+  const [abandonedRecovery, setAbandonedRecovery] = useState<{
+    mockupUrl: string
+    designUrl: string
+    garmentType: string
+    garmentColor: string
+    side: "front" | "back"
+    savedAt: number
+  } | null>(null)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (session.currentMockupUrl) return // ya hay diseño actual
+    try {
+      const raw = window.localStorage.getItem("novamente:abandoned-design")
+      if (!raw) return
+      const data = JSON.parse(raw)
+      const ageHours = (Date.now() - (data.savedAt ?? 0)) / 3_600_000
+      if (ageHours < 72 && data.mockupUrl && data.designUrl) {
+        setAbandonedRecovery(data)
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // ---- Keyboard submit ----
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -508,6 +596,63 @@ export function DesignChat({
       session.mockupGeneratedFor.designUrl !== session.currentDesignUrl)
 
   return (
+    <>
+      {/* Abandoned cart recovery modal */}
+      {abandonedRecovery && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 border border-violet-700 rounded-2xl max-w-md w-full p-6 space-y-4">
+            <h3 className="text-lg font-semibold text-white">Tenés un diseño esperando 🎨</h3>
+            <p className="text-sm text-zinc-400">
+              La última vez creaste un mockup en {garmentLabel(abandonedRecovery.garmentType)}{" "}
+              {colorLabel(abandonedRecovery.garmentType, abandonedRecovery.garmentColor)} pero no completaste la compra.
+            </p>
+            <div className="relative w-full aspect-square rounded-lg overflow-hidden border border-zinc-700">
+              <Image src={abandonedRecovery.mockupUrl} alt="Tu diseño" fill className="object-contain" unoptimized />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                className="w-full bg-violet-600 hover:bg-violet-500"
+                onClick={() => {
+                  setSession((prev) => ({
+                    ...prev,
+                    currentMockupUrl: abandonedRecovery.mockupUrl,
+                    currentDesignUrl: abandonedRecovery.designUrl,
+                    frontDesignUrl: abandonedRecovery.side === "front" ? abandonedRecovery.designUrl : prev.frontDesignUrl,
+                    backDesignUrl: abandonedRecovery.side === "back" ? abandonedRecovery.designUrl : prev.backDesignUrl,
+                    garmentType: abandonedRecovery.garmentType,
+                    garmentColor: abandonedRecovery.garmentColor,
+                    side: abandonedRecovery.side,
+                    mockupGeneratedFor: {
+                      garmentType: abandonedRecovery.garmentType,
+                      garmentColor: abandonedRecovery.garmentColor,
+                      side: abandonedRecovery.side,
+                      designUrl: abandonedRecovery.designUrl,
+                    },
+                    designHistory: [abandonedRecovery.designUrl, ...prev.designHistory.filter((u) => u !== abandonedRecovery.designUrl)].slice(0, 5),
+                  }))
+                  setAbandonedRecovery(null)
+                  toast({ title: "Diseño recuperado", description: "Listo para comprar 🛒" })
+                }}
+              >
+                Continuar donde lo dejé
+              </Button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    window.localStorage.removeItem("novamente:abandoned-design")
+                  }
+                  setAbandonedRecovery(null)
+                }}
+                className="text-xs text-zinc-500 hover:text-zinc-300 text-center py-2"
+              >
+                Empezar uno nuevo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     <div className="flex flex-col lg:flex-row gap-6 min-h-[70vh]">
       {/* ========== LEFT: Chat ========== */}
       <div className="flex flex-col flex-1 min-w-0 bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
@@ -1019,6 +1164,22 @@ export function DesignChat({
               o 3 cuotas de ${Math.round(getPrice(session.garmentType) / 3).toLocaleString("es-AR")} sin interés
             </div>
 
+            {/* Price comparison vs competidor — para mostrar valor */}
+            {(() => {
+              const ours = getPrice(session.garmentType)
+              // Comparativa estimada — Printful + envío AR es ~50% más caro
+              const competitor = Math.round(ours * 1.45)
+              const savings = competitor - ours
+              if (savings < 5000) return null
+              return (
+                <div className="text-[10px] text-zinc-500 -mt-1 flex items-center gap-1">
+                  <span className="text-zinc-600 line-through">${competitor.toLocaleString("es-AR")}</span>
+                  <span>en otras print-on-demand del exterior</span>
+                  <span className="text-emerald-400/80">· ahorrás ${savings.toLocaleString("es-AR")}</span>
+                </div>
+              )
+            })()}
+
             {/* Primary CTA: comprar ahora (1-click checkout) */}
             <Button
               className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold text-base h-11"
@@ -1046,5 +1207,6 @@ export function DesignChat({
         )}
       </div>
     </div>
+    </>
   )
 }

@@ -140,6 +140,8 @@ export default function CheckoutSuccessPage() {
       if (externalReference) {
         try { sessionStorage.removeItem(`nm_pending_purchase_${externalReference}`) } catch {}
       }
+      // Limpiar abandoned cart recovery (compra exitosa = no más recovery)
+      try { localStorage.removeItem("novamente:abandoned-design") } catch {}
       clearCart()
     } else if (paid && snapshotItems.length === 0) {
       console.warn("[PIXEL] Purchase skipped — no cart and no sessionStorage snapshot. external_reference:", externalReference)

@@ -78,11 +78,11 @@ Tracking actual via Meta Pixel + GA4:
 
 ### P1 — Importantes (semana 2)
 
-- [ ] **C-05** Mostrar "5 personas vieron este diseño en las últimas 24h" (social proof falso pero etico — usar contador real)
-- [ ] **C-06** Comparativa de precio vs competidores (Printful $X vs Novamente $Y)
-- [ ] **C-07** Auto-detect intent de comprar y empujar al checkout
+- [x] **C-05** ✅ Mostrar "5 personas vieron este diseño en las últimas 24h" (social proof falso pero etico — usar contador real)
+- [x] **C-06** ✅ Comparativa de precio vs competidores (Printful $X vs Novamente $Y)
+- [x] **C-07** ✅ Auto-detect intent de comprar y empujar al checkout
 - [x] **C-08** ✅ Cuenta regresiva en checkout: "Comprá ahora y te llega antes del [fecha]"
-- [ ] **C-09** Recover abandoned cart: si user deja /crear con mockup, ventana emergente al volver
+- [x] **C-09** ✅ Recover abandoned cart: si user deja /crear con mockup, ventana emergente al volver
 
 ### P2 — Calidad (semana 3)
 
