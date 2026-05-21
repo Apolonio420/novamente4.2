@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Stage, Layer, Image as KonvaImage, Transformer, Rect, Text } from "react-konva"
 import type Konva from "konva"
-import { Undo2, Redo2, RotateCcw, ShoppingCart, RefreshCw } from "lucide-react"
+import { Undo2, Redo2, RotateCcw, ShoppingCart, RefreshCw, Shirt, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/lib/cartStore"
+import { useToast } from "@/hooks/use-toast"
 import type { DesignSession } from "./page"
-import { getCatalogProduct } from "@/lib/catalog/products"
+import { getCatalogProduct, CATALOG_PRODUCTS } from "@/lib/catalog/products"
 import * as fpixel from "@/lib/fpixel"
 
 // --- Constants ---
@@ -152,6 +153,13 @@ export function DesignCanvas({
   setSession: React.Dispatch<React.SetStateAction<DesignSession>>
 }) {
   const { addItem } = useCart()
+  const { toast } = useToast()
+  const [generatingMockup, setGeneratingMockup] = useState(false)
+
+  const currentProduct = useMemo(
+    () => getCatalogProduct(session.garmentType),
+    [session.garmentType],
+  )
 
   // Responsive canvas size
   const [stageW, setStageW] = useState(CANVAS_W)
@@ -214,6 +222,31 @@ export function DesignCanvas({
       trRef.current.getLayer()?.batchDraw()
     }
   }, [designImg])
+
+  // Auto-fit design al print area cuando se carga uno nuevo.
+  // Sin esto el design se renderiza a su size natural (~1024px) y desborda
+  // el canvas (600px), tapando completamente la prenda.
+  const lastFittedUrlRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!designImg || !session.currentDesignUrl) return
+    if (lastFittedUrlRef.current === session.currentDesignUrl) return
+    const naturalW = designImg.naturalWidth || 200
+    const naturalH = designImg.naturalHeight || 200
+    // Target: que el design ocupe ~75% del print area por la dimension mayor.
+    const targetMax = Math.min(PRINT_AREA.w, PRINT_AREA.h) * 0.75
+    const naturalMax = Math.max(naturalW, naturalH)
+    const fitScale = clamp(targetMax / naturalMax, MIN_SCALE, MAX_SCALE)
+    lastFittedUrlRef.current = session.currentDesignUrl
+    const fitted: CanvasState = {
+      x: PRINT_AREA.x + PRINT_AREA.w / 2,
+      y: PRINT_AREA.y + PRINT_AREA.h / 2,
+      scaleX: fitScale,
+      scaleY: fitScale,
+      rotation: 0,
+    }
+    setHistory([fitted])
+    setHistIdx(0)
+  }, [designImg, session.currentDesignUrl])
 
   // Size & cart
   const [selectedSize, setSelectedSize] = useState<Size>("M")
@@ -315,9 +348,81 @@ export function DesignCanvas({
 
   return (
     <div className="flex flex-col items-center gap-4">
+      {/* Prenda + color + side picker */}
+      <div className="w-full max-w-lg flex flex-col gap-2">
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {CATALOG_PRODUCTS.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => setSession((prev) => ({
+                ...prev,
+                garmentType: p.key,
+                garmentColor: p.colors.some((c) => c.key === prev.garmentColor)
+                  ? prev.garmentColor
+                  : (p.colors[0]?.key ?? prev.garmentColor),
+                currentMockupUrl: null,
+                mockupGeneratedFor: null,
+              }))}
+              className={`shrink-0 text-[11px] rounded-md border px-2.5 py-1 transition ${
+                session.garmentType === p.key
+                  ? "bg-white text-zinc-950 border-white"
+                  : "border-zinc-700 text-zinc-300 hover:border-zinc-500"
+              }`}
+            >
+              {p.name.replace("Remera ", "").replace("Buzo ", "")}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex gap-1.5 overflow-x-auto">
+            {(currentProduct?.colors ?? []).map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                aria-label={c.name}
+                title={c.name}
+                onClick={() => setSession((prev) => ({
+                  ...prev,
+                  garmentColor: c.key,
+                  currentMockupUrl: null,
+                  mockupGeneratedFor: null,
+                }))}
+                className={`w-7 h-7 rounded-full border-2 transition ${
+                  session.garmentColor === c.key ? "border-white" : "border-zinc-700 hover:border-zinc-500"
+                }`}
+                style={{ background: c.hex ?? "#444" }}
+              />
+            ))}
+          </div>
+          <div className="flex gap-1 shrink-0">
+            {(["front", "back"] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setSession((prev) => ({
+                  ...prev,
+                  side: s,
+                  currentDesignUrl: s === "front"
+                    ? prev.frontDesignUrl ?? prev.currentDesignUrl
+                    : prev.backDesignUrl ?? prev.currentDesignUrl,
+                  currentMockupUrl: null,
+                  mockupGeneratedFor: null,
+                }))}
+                className={`text-[11px] rounded-md border px-2.5 py-1 transition ${
+                  session.side === s ? "bg-white text-zinc-950 border-white" : "border-zinc-700 text-zinc-300"
+                }`}
+              >
+                {s === "front" ? "Frente" : "Espalda"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <p className="text-xs text-zinc-500 text-center">
-        Arrastrá el diseño donde lo quieras. Pellizcá para escalar. Botones para rotar.
+        Arrastrá el diseño dentro del rectángulo violeta. Pellizcá para escalar. Botones para rotar.
       </p>
 
       {/* Canvas */}
@@ -331,6 +436,8 @@ export function DesignCanvas({
         >
           {/* Layer 1: Garment background (immobile) */}
           <Layer listening={false}>
+            {/* Fondo neutro siempre — para que el contraste sea consistente */}
+            <Rect x={0} y={0} width={CANVAS_W} height={CANVAS_H} fill="#18181b" />
             {garmentImg ? (
               <KonvaImage
                 image={garmentImg}
@@ -340,19 +447,27 @@ export function DesignCanvas({
                 height={CANVAS_H}
               />
             ) : (
-              <>
-                <Rect x={0} y={0} width={CANVAS_W} height={CANVAS_H} fill="#27272a" />
-                <Text
-                  x={0}
-                  y={CANVAS_H / 2 - 20}
-                  width={CANVAS_W}
-                  text={`Template para "${session.garmentType} / ${session.garmentColor}" no disponible`}
-                  fill="#71717a"
-                  fontSize={14}
-                  align="center"
-                />
-              </>
+              <Text
+                x={0}
+                y={CANVAS_H / 2 - 20}
+                width={CANVAS_W}
+                text={`Template para "${session.garmentType} / ${session.garmentColor}" no disponible — cambiá color o prenda`}
+                fill="#71717a"
+                fontSize={14}
+                align="center"
+              />
             )}
+            {/* Print area outline — guía visual del área imprimible */}
+            <Rect
+              x={PRINT_AREA.x}
+              y={PRINT_AREA.y}
+              width={PRINT_AREA.w}
+              height={PRINT_AREA.h}
+              stroke="#a78bfa"
+              strokeWidth={2}
+              dash={[8, 6]}
+              opacity={0.55}
+            />
           </Layer>
 
           {/* Layer 2: Design stamp (movable) */}
@@ -473,6 +588,55 @@ export function DesignCanvas({
           <RotateCcw className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Probar lifestyle — genera foto realista con Gemini */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full max-w-lg border-zinc-700 hover:bg-zinc-800"
+        disabled={generatingMockup || !session.currentDesignUrl}
+        onClick={async () => {
+          if (!session.currentDesignUrl) return
+          setGeneratingMockup(true)
+          try {
+            const res = await fetch("/api/public/design/mockup-lifestyle", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                designUrl: session.currentDesignUrl,
+                garmentType: session.garmentType,
+                garmentColor: session.garmentColor,
+                side: session.side,
+                printArea: session.printArea,
+              }),
+            })
+            const data = await res.json()
+            const mockupUrl = data?.publicUrl ?? data?.mockupUrl
+            if (!res.ok || !mockupUrl) throw new Error(data?.error ?? "No se pudo generar el mockup")
+            setSession((prev) => ({
+              ...prev,
+              currentMockupUrl: mockupUrl,
+              mockupGeneratedFor: {
+                garmentType: session.garmentType,
+                garmentColor: session.garmentColor,
+                side: session.side,
+                designUrl: session.currentDesignUrl ?? "",
+              },
+            }))
+            toast({ title: "Mockup listo", description: "Andá a la pestaña Lifestyle para verlo en grande." })
+          } catch (e: any) {
+            toast({ title: "Error generando mockup", description: e.message, variant: "destructive" })
+          } finally {
+            setGeneratingMockup(false)
+          }
+        }}
+      >
+        {generatingMockup ? (
+          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generando foto lifestyle...</>
+        ) : (
+          <><Shirt className="h-4 w-4 mr-2" /> Probar en {currentProduct?.name ?? "prenda"} (foto lifestyle)</>
+        )}
+      </Button>
 
       {/* Size selector + Apply */}
       <div className="flex flex-wrap items-center gap-3 justify-center w-full max-w-lg">
