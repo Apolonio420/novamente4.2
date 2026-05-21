@@ -65,13 +65,13 @@ Tracking actual via Meta Pixel + GA4:
 
 ### P0 — Críticos (semana 1)
 
-- [ ] **C-01** Trust signals visibles en /crear: "100% argentino · Envío todo el país · 30 días para cambios"
+- [x] **C-01** ✅ Trust signals visibles en /crear: "100% argentino · Envío todo el país · 30 días para cambios"
   - **Hipótesis**: usuarios abandonan porque no confían que sea real / legítimo
   - **Test**: snippet de testimonios + badges visibles
-- [ ] **C-02** ViewContent + InitiateCheckout pixel events en `/crear` flow
+- [x] **C-02** ✅ ViewContent + InitiateCheckout pixel events en `/crear` flow
   - **Por qué**: sin esto Meta optimiza ciego, perdemos plata en ads
   - **Test**: Meta Pixel Helper extension validar 4 eventos
-- [ ] **C-03** Loading state que NO se sienta lento (~30s Gemini)
+- [x] **C-03** ✅ Loading state que NO se sienta lento (~30s Gemini)
   - **Hipótesis**: user abandona si no ve progreso. Necesita skeleton con micro-mensajes ("Aplicando colores...", "Optimizando para estampa...")
 - [ ] **C-04** CTA "Comprar ahora" prominente (no solo "Agregar al carrito")
   - **Hipótesis**: 1-click checkout convierte más que carrito intermedio
