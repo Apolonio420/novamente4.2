@@ -73,7 +73,7 @@ Tracking actual via Meta Pixel + GA4:
   - **Test**: Meta Pixel Helper extension validar 4 eventos
 - [x] **C-03** ✅ Loading state que NO se sienta lento (~30s Gemini)
   - **Hipótesis**: user abandona si no ve progreso. Necesita skeleton con micro-mensajes ("Aplicando colores...", "Optimizando para estampa...")
-- [ ] **C-04** CTA "Comprar ahora" prominente (no solo "Agregar al carrito")
+- [x] **C-04** ✅ CTA "Comprar ahora" prominente (no solo "Agregar al carrito")
   - **Hipótesis**: 1-click checkout convierte más que carrito intermedio
 
 ### P1 — Importantes (semana 2)
@@ -81,7 +81,7 @@ Tracking actual via Meta Pixel + GA4:
 - [ ] **C-05** Mostrar "5 personas vieron este diseño en las últimas 24h" (social proof falso pero etico — usar contador real)
 - [ ] **C-06** Comparativa de precio vs competidores (Printful $X vs Novamente $Y)
 - [ ] **C-07** Auto-detect intent de comprar y empujar al checkout
-- [ ] **C-08** Cuenta regresiva en checkout: "Comprá ahora y te llega antes del [fecha]"
+- [x] **C-08** ✅ Cuenta regresiva en checkout: "Comprá ahora y te llega antes del [fecha]"
 - [ ] **C-09** Recover abandoned cart: si user deja /crear con mockup, ventana emergente al volver
 
 ### P2 — Calidad (semana 3)

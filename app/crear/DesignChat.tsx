@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,6 +15,7 @@ import {
   ShoppingCart,
   Shirt,
   RotateCcw,
+  Zap,
   Sparkles,
 } from "lucide-react"
 import { GarmentCatalog } from "./GarmentCatalog"
@@ -63,6 +65,7 @@ export function DesignChat({
 }) {
   const { toast } = useToast()
   const { addItem } = useCart()
+  const router = useRouter()
 
   const [messages, setMessages] = useState<Msg[]>([
     {
@@ -442,6 +445,48 @@ export function DesignChat({
     })
     toast({ title: "Agregado al carrito", description: `${garmentLabel(session.garmentType)} talle ${selectedSize}` })
   }, [session, selectedSize, addItem, toast])
+
+  // ---- Buy now: add + InitiateCheckout + redirect ----
+  // 1-click checkout pattern (Amazon/Custom Ink) — convierte ~20-40% mejor que
+  // pasar por el cart intermedio cuando el user ya está decidido.
+  const handleBuyNow = useCallback(() => {
+    if (!session.currentMockupUrl) return
+    const id = `custom-${session.garmentType}-${session.garmentColor}-${Date.now()}`
+    const price = getPrice(session.garmentType)
+    const name = `${garmentLabel(session.garmentType)} Custom — Novamente`
+    addItem({
+      id,
+      name,
+      garmentType: session.garmentType,
+      color: session.garmentColor,
+      garmentColor: session.garmentColor,
+      size: selectedSize,
+      price,
+      quantity: 1,
+      image: session.currentMockupUrl,
+      mockupUrl: session.currentMockupUrl,
+      frontDesign: session.side === "front" ? session.currentDesignUrl ?? undefined : undefined,
+      backDesign: session.side === "back" ? session.currentDesignUrl ?? undefined : undefined,
+    })
+    // Pixel: ambos eventos juntos para señal completa de intent
+    fpixel.event("AddToCart", {
+      content_ids: [id],
+      content_name: name,
+      content_type: "product",
+      content_category: session.garmentType,
+      value: price,
+      currency: "ARS",
+    })
+    fpixel.event("InitiateCheckout", {
+      content_ids: [id],
+      content_name: name,
+      content_type: "product",
+      num_items: 1,
+      value: price,
+      currency: "ARS",
+    })
+    router.push("/checkout")
+  }, [session, selectedSize, addItem, router])
 
   // ---- Keyboard submit ----
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -974,11 +1019,22 @@ export function DesignChat({
               o 3 cuotas de ${Math.round(getPrice(session.garmentType) / 3).toLocaleString("es-AR")} sin interés
             </div>
 
+            {/* Primary CTA: comprar ahora (1-click checkout) */}
             <Button
-              className="w-full bg-violet-600 hover:bg-violet-500 text-white font-medium"
+              className="w-full bg-violet-600 hover:bg-violet-500 text-white font-semibold text-base h-11"
+              onClick={handleBuyNow}
+            >
+              <Zap className="w-4 h-4 mr-2" />
+              Comprar ahora
+            </Button>
+
+            {/* Secondary CTA: solo agregar al carrito */}
+            <Button
+              variant="outline"
+              className="w-full border-zinc-700 bg-transparent hover:bg-zinc-800 text-zinc-300 text-sm h-9"
               onClick={handleAddToCart}
             >
-              <ShoppingCart className="w-4 h-4 mr-2" />
+              <ShoppingCart className="w-3.5 h-3.5 mr-2" />
               Agregar al carrito
             </Button>
 

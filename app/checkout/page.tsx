@@ -59,6 +59,26 @@ export default function CheckoutPage() {
   const baseShippingByZone = shippingZone === 'BA' ? 7000 : 9000
   const shippingCost = subtotal >= shippingThreshold ? 0 : baseShippingByZone
 
+  // Estimación llegada — días hábiles desde hoy: BA 3-5, Resto 5-7
+  // (incluye producción on-demand DTG ~2 días + envío)
+  const estimatedDelivery = (() => {
+    const now = new Date()
+    const min = shippingZone === 'BA' ? 5 : 7
+    const max = shippingZone === 'BA' ? 7 : 10
+    const addBusinessDays = (start: Date, days: number) => {
+      const d = new Date(start)
+      let added = 0
+      while (added < days) {
+        d.setDate(d.getDate() + 1)
+        const dow = d.getDay() // 0 = sun, 6 = sat
+        if (dow !== 0 && dow !== 6) added++
+      }
+      return d
+    }
+    const fmt = (d: Date) => d.toLocaleDateString("es-AR", { day: "numeric", month: "short" })
+    return `${fmt(addBusinessDays(now, min))} – ${fmt(addBusinessDays(now, max))}`
+  })()
+
   // Discount code aplicado (estado en cliente — se valida via /api/discounts/validate)
   const [appliedDiscount, setAppliedDiscount] = useState<{
     code: string
@@ -392,6 +412,14 @@ export default function CheckoutPage() {
               <CardTitle>Envío</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Urgency badge: fecha estimada de llegada */}
+              <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-900 flex items-center gap-2">
+                <Truck className="w-4 h-4" />
+                <span>
+                  Comprando ahora <strong>te llega entre el {estimatedDelivery}</strong>
+                </span>
+              </div>
+
               {/* Selector de zona — tipo botón grande */}
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -408,7 +436,7 @@ export default function CheckoutPage() {
                   <div className="text-sm text-muted-foreground">
                     {subtotal >= shippingThreshold ? 'Gratis' : '$7.000'}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">CABA + GBA</div>
+                  <div className="text-xs text-muted-foreground mt-1">CABA + GBA · llega en 3-5 días hábiles</div>
                 </button>
                 <button
                   type="button"
@@ -424,7 +452,7 @@ export default function CheckoutPage() {
                   <div className="text-sm text-muted-foreground">
                     {subtotal >= shippingThreshold ? 'Gratis' : '$9.000'}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">Interior</div>
+                  <div className="text-xs text-muted-foreground mt-1">Interior · llega en 5-7 días hábiles</div>
                 </button>
               </div>
 
