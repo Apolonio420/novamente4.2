@@ -149,3 +149,12 @@ Pendiente investigar:
 - [x] **P4-05** ✅ Shareable link de mockup (URL params recover/design/g/c/s para que el receptor vea y compre)
 - [x] **P4-06** ✅ Onboarding modal first-visit (3 pasos explicados, localStorage gate)
 
+---
+
+## P5 — Hardening & monitoring (semana 6) ✅ completado
+
+- [x] **P5-01** ✅ Daily cron health-check (RemoteTrigger) — chequea `/crear`, `/api/public/social-proof`, `/api/generate-image`, `/api/public/design/mockup-lifestyle` y alerta a Telegram si algo falla
+- [x] **P5-02** ✅ Pricing breakdown disclosure (`<details>`) — usuario ve cómo se compone el precio (prenda 65% / estampa 25% / margen 10%)
+- [x] **P5-03** ✅ A11y baseline — `aria-current`, `aria-label` en clip attach, focus-visible rings en tabs
+- [x] **P5-04** ✅ Regression e2e suite (`e2e/conversion-flow.spec.ts`) — desktop + iPhone mobile cubre todo el funnel hasta /checkout
+
