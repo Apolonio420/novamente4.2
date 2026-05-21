@@ -174,12 +174,28 @@ export async function POST(request: NextRequest) {
       switch (placementChoice) {
         case 'left-chest':
           return `Posicionada en el pecho izquierdo del ${sideLabel} (sobre el corazón)`
+        case 'right-chest':
+          return `Posicionada en el pecho derecho del ${sideLabel}, espejada respecto del pecho izquierdo`
         case 'center-high':
           return `Centrada horizontalmente en el ${sideLabel} y ubicada en la zona alta de la prenda (no centro absoluto, anclada hacia arriba)`
         case 'upper-center':
           return `Centrada horizontalmente en la espalda, justo debajo del cuello / nuca`
+        case 'upper-left':
+          return `En la espalda, cerca del hombro izquierdo`
+        case 'upper-right':
+          return `En la espalda, cerca del hombro derecho`
         case 'pocket':
           return `Si la prenda tiene bolsillo en el ${sideLabel}, aplicala sobre o junto al bolsillo respetando su forma. Si no tiene bolsillo, posicionala en el pecho izquierdo como fallback`
+        case 'hem-left':
+          return `Como detalle chico en el dobladillo (base) del ${sideLabel}, lado izquierdo de la prenda`
+        case 'hem-right':
+          return `Como detalle chico en el dobladillo (base) del ${sideLabel}, lado derecho de la prenda`
+        case 'hem-center':
+          return `Como detalle chico centrado en el dobladillo (base) de la espalda`
+        case 'chest-wide':
+          return `Centrada horizontalmente en el pecho, ocupando el ancho del pecho de hombro a hombro`
+        case 'shoulder-blades':
+          return `Centrada en la zona alta de la espalda, entre los omóplatos`
         case 'center':
         default:
           return `Centrada en el ${sideLabel} de la prenda`

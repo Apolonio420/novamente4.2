@@ -1137,16 +1137,22 @@ export default function CatalogPage() {
                 <div className="space-y-2">
                   <Label className="text-zinc-300 text-sm font-medium">Talles</Label>
                   <div className="flex flex-wrap gap-2">
-                    {['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XS', '2XL'].map((size) => {
-                      const active = formSizes.includes(size)
+                    {['2XS', 'XS', 'S', 'M', 'L', 'XL', '2XL'].map((size) => {
+                      // XXL legacy se trata como 2XL para que productos viejos sigan marcados
+                      const active = formSizes.includes(size) || (size === '2XL' && formSizes.includes('XXL'))
                       return (
                         <button
                           key={size}
                           type="button"
                           onClick={() => {
-                            setFormSizes((prev) =>
-                              active ? prev.filter((s) => s !== size) : [...prev, size]
-                            )
+                            setFormSizes((prev) => {
+                              if (size === '2XL') {
+                                // Toggle ambos para mantener compat con productos legacy guardados con XXL
+                                const withoutBoth = prev.filter((s) => s !== '2XL' && s !== 'XXL')
+                                return active ? withoutBoth : [...withoutBoth, '2XL']
+                              }
+                              return active ? prev.filter((s) => s !== size) : [...prev, size]
+                            })
                           }}
                           className={`px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${
                             active

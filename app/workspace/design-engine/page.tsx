@@ -93,26 +93,40 @@ function getPlacementOptions(
 ): PlacementOption[] {
   if (mode === 'chest-logo' && side === 'front') {
     return [
-      { key: 'left-chest', label: 'Sobre el corazón', hint: 'Logo pequeño en el pecho izquierdo (~10×10 cm)' },
-      { key: 'center-high', label: 'Centro alto', hint: 'Logo centrado a la altura del esternón' },
+      { key: 'left-chest',  label: 'Sobre el corazón',  hint: 'Logo pequeño en el pecho izquierdo (~10×10 cm)' },
+      { key: 'right-chest', label: 'Pecho derecho',     hint: 'Logo pequeño en el lado derecho del pecho, espejado al corazón' },
+      { key: 'center-high', label: 'Centro alto',       hint: 'Logo centrado a la altura del esternón' },
       { key: 'pocket',      label: 'Sobre el bolsillo', hint: 'Si la prenda tiene bolsillo, aplicalo encima (si no, fallback a pecho izquierdo)' },
+      { key: 'hem-left',    label: 'Dobladillo izq.',   hint: 'Detalle chico en la base de la prenda, lado izquierdo' },
+      { key: 'hem-right',   label: 'Dobladillo der.',   hint: 'Detalle chico en la base de la prenda, lado derecho' },
     ]
   }
   if (mode === 'chest-logo' && side === 'back') {
     return [
-      { key: 'upper-center', label: 'Nuca / cuello', hint: 'Logo pequeño centrado debajo del cuello' },
-      { key: 'center-high',  label: 'Centro alto', hint: 'Logo centrado en la zona alta de la espalda' },
+      { key: 'upper-center', label: 'Nuca / cuello',   hint: 'Logo pequeño centrado debajo del cuello' },
+      { key: 'upper-left',   label: 'Hombro izq.',     hint: 'Logo chico cerca del hombro izquierdo' },
+      { key: 'upper-right',  label: 'Hombro der.',     hint: 'Logo chico cerca del hombro derecho' },
+      { key: 'center-high',  label: 'Centro alto',     hint: 'Logo centrado en la zona alta de la espalda' },
+      { key: 'hem-center',   label: 'Dobladillo',      hint: 'Detalle chico centrado en la base de la espalda' },
     ]
   }
-  if (mode === 'medium') {
+  if (mode === 'medium' && side === 'front') {
     return [
-      { key: 'center',      label: 'Centro', hint: 'Estampa mediana centrada' },
-      { key: 'center-high', label: 'Centro alto', hint: 'Estampa mediana ligeramente arriba del centro' },
+      { key: 'center',      label: 'Centro',       hint: 'Estampa mediana (~20×25 cm) centrada en el pecho' },
+      { key: 'center-high', label: 'Centro alto',  hint: 'Estampa mediana anclada hacia arriba (zona pectoral)' },
+      { key: 'chest-wide',  label: 'Pecho amplio', hint: 'Estampa mediana ocupando el ancho del pecho, de hombro a hombro' },
     ]
   }
-  // large — ocupa casi toda el área imprimible, no tiene sentido ofrecer variantes
+  if (mode === 'medium' && side === 'back') {
+    return [
+      { key: 'center',          label: 'Centro',           hint: 'Estampa mediana (~20×25 cm) centrada en la espalda' },
+      { key: 'center-high',     label: 'Centro alto',      hint: 'Estampa mediana anclada hacia arriba, debajo del cuello' },
+      { key: 'shoulder-blades', label: 'Entre omóplatos',  hint: 'Centrada en la zona alta de la espalda, entre los omóplatos' },
+    ]
+  }
+  // large — ocupa casi toda el área imprimible (35×40 cm), una sola opción
   return [
-    { key: 'center', label: 'Centro (35×40 cm)', hint: 'Estampa grande centrada que ocupa casi toda el área imprimible' },
+    { key: 'center', label: 'Centro (35×40 cm)', hint: 'Estampa grande que ocupa casi toda el área imprimible disponible' },
   ]
 }
 
@@ -731,9 +745,9 @@ export default function DesignStudioPage() {
       {/* ---- Sidebar ---- */}
       <div className={`
         fixed inset-y-0 left-0 z-40 w-72 bg-zinc-900/95 backdrop-blur border-r border-zinc-800
-        transform transition-transform duration-200
+        transform transition-all duration-200 overflow-hidden
         lg:relative lg:flex-shrink-0
-        ${sidebarOpen ? 'translate-x-0 lg:w-72' : '-translate-x-full lg:w-0 lg:-ml-px lg:border-r-0'}
+        ${sidebarOpen ? 'translate-x-0 lg:w-72' : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-r-0'}
       `}>
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-4 border-b border-zinc-800">
@@ -1032,8 +1046,8 @@ export default function DesignStudioPage() {
                 {placementMenuOpen && (
                   <>
                     <div className="fixed inset-0 z-30" onClick={() => setPlacementMenuOpen(false)} />
-                    <div className="absolute left-0 mt-1.5 w-64 rounded-xl border border-zinc-700/80 bg-zinc-900/95 backdrop-blur shadow-2xl z-40 overflow-hidden">
-                      <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-zinc-500 border-b border-zinc-800">
+                    <div className="absolute left-0 bottom-full mb-1.5 w-64 max-h-72 overflow-y-auto rounded-xl border border-zinc-700/80 bg-zinc-900/95 backdrop-blur shadow-2xl z-40">
+                      <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-zinc-500 border-b border-zinc-800 sticky top-0 bg-zinc-900/95 backdrop-blur">
                         Dónde aplicar la estampa
                       </div>
                       {placementOpts.map(opt => (
