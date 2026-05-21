@@ -158,3 +158,11 @@ Pendiente investigar:
 - [x] **P5-03** ✅ A11y baseline — `aria-current`, `aria-label` en clip attach, focus-visible rings en tabs
 - [x] **P5-04** ✅ Regression e2e suite (`e2e/conversion-flow.spec.ts`) — desktop + iPhone mobile cubre todo el funnel hasta /checkout
 
+---
+
+## P6 — Conversion micro-levers (semana 7) ✅ completado
+
+- [x] **P6-01** ✅ "Probar otra variante" — botón que regenera el mismo concepto con nudge aleatorio (3 variantes). Captura users que casi gustan el resultado pero quieren probar otra interpretación.
+- [x] **P6-02** ✅ `router.prefetch("/checkout")` cuando hay mockup listo → reduce perceived latency en el Buy Now click.
+- [x] **P6-03** ✅ Email capture suave: si user idlea 90s con mockup listo, modal "¿Te guardo el diseño?" → POST `/api/public/save-design` → Telegram OPS para follow-up manual.
+

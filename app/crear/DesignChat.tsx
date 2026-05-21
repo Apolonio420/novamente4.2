@@ -56,6 +56,8 @@ function getPrice(key: string) {
   return getCatalogProduct(key)?.retailARS ?? 35000
 }
 
+const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 // ============================================================
 // Component
 // ============================================================
@@ -82,9 +84,32 @@ export function DesignChat({
   const [loadingLabel, setLoadingLabel] = useState<string>("Generando diseño...")
   const [loadingSubtext, setLoadingSubtext] = useState<string>("Esto puede tardar unos segundos...")
   const [mockupLoading, setMockupLoading] = useState(false)
+
+  // P6-02: Prefetch /checkout para reducir perceived latency en Buy Now.
+  // Solo cuando hay mockup listo (usuario probablemente cerca de comprar).
+  useEffect(() => {
+    if (session.currentMockupUrl) {
+      router.prefetch("/checkout")
+    }
+  }, [session.currentMockupUrl, router])
   const [pendingAttachment, setPendingAttachment] = useState<string | null>(null)
   const [selectedSize, setSelectedSize] = useState("M")
   const [orientation, setOrientation] = useState<"vertical" | "horizontal" | "cuadrado">("cuadrado")
+
+  // P6-03: Email capture cuando user tiene mockup listo pero idlea sin comprar.
+  // Una sola vez por sesion. Lead suave para recuperar despues por email.
+  const [emailCaptureOpen, setEmailCaptureOpen] = useState(false)
+  const [emailCaptureShown, setEmailCaptureShown] = useState(false)
+  const [emailInput, setEmailInput] = useState("")
+  const [emailSubmitting, setEmailSubmitting] = useState(false)
+  useEffect(() => {
+    if (!session.currentMockupUrl || emailCaptureShown) return
+    const t = setTimeout(() => {
+      setEmailCaptureOpen(true)
+      setEmailCaptureShown(true)
+    }, 90_000)
+    return () => clearTimeout(t)
+  }, [session.currentMockupUrl, emailCaptureShown])
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -142,6 +167,66 @@ export function DesignChat({
   // ---- Generate design ----
   // `overridePrompt` permite que botones inline disparen sin pasar por
   // el state de `input` (evita closure issues con useCallback deps).
+  // P6-01: regenera el mismo prompt con un nudge para obtener una variante
+  // fresca (no edit-iteration). Bypassa toda la logica de iteration porque
+  // queremos una imagen NUEVA, no un edit de la actual.
+  const handleVariant = useCallback(async () => {
+    const basePrompt = lastPromptRef.current.trim()
+    if (!basePrompt || loading) return
+    const nudges = [
+      "varia la composicion manteniendo el concepto",
+      "diferente angulo y paleta, mismo concepto",
+      "otra interpretacion del mismo tema",
+    ]
+    const nudge = nudges[Math.floor(Math.random() * nudges.length)]
+    const variantPrompt = `${basePrompt}. ${nudge}`
+    setMessages((prev) => [...prev, { role: "user", text: "Probar otra variante" }])
+    setLoading(true)
+    setLoadingLabel("Generando variante...")
+    try {
+      const res = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: variantPrompt,
+          raw: true,
+          garmentColor: session.garmentColor,
+          printArea: session.printArea,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.images?.[0]?.url) {
+        throw new Error(data.error ?? "No se pudo generar la variante")
+      }
+      const imageUrl: string = data.images[0].url
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: "Otra variante del mismo concepto:", imageUrl, prompt: variantPrompt },
+      ])
+      setSession((prev) => ({
+        ...prev,
+        currentDesignUrl: imageUrl,
+        frontDesignUrl: prev.side === "front" ? imageUrl : prev.frontDesignUrl,
+        backDesignUrl: prev.side === "back" ? imageUrl : prev.backDesignUrl,
+        currentMockupUrl: null,
+        mockupGeneratedFor: null,
+        designHistory: [imageUrl, ...prev.designHistory.filter((u) => u !== imageUrl)].slice(0, 5),
+      }))
+      fpixel.event("ViewContent", {
+        content_ids: [imageUrl],
+        content_name: `Variante AI — ${session.garmentType}`,
+        content_type: "product",
+        content_category: session.garmentType,
+        value: getPrice(session.garmentType),
+        currency: "ARS",
+      })
+    } catch (e: any) {
+      toast({ title: "Error generando variante", description: e.message, variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
+  }, [loading, session.garmentColor, session.garmentType, session.printArea, setSession, toast])
+
   const handleSend = useCallback(async (overridePrompt?: string) => {
     const text = (overridePrompt ?? input).trim()
     if (!text || loading) return
@@ -758,6 +843,95 @@ export function DesignChat({
         </div>
       )}
 
+      {/* P6-03: Email capture cuando user idlea con mockup listo */}
+      {emailCaptureOpen && session.currentMockupUrl && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="email-capture-title"
+          onClick={() => setEmailCaptureOpen(false)}
+        >
+          <div
+            className="bg-zinc-900 rounded-2xl border border-zinc-700 w-full max-w-md p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 id="email-capture-title" className="text-base font-semibold">¿Te guardo el diseño?</h3>
+                <p className="text-xs text-zinc-400 mt-1">
+                  Te mando el mockup por mail así no lo perdés. Sin spam.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Cerrar"
+                onClick={() => setEmailCaptureOpen(false)}
+                className="text-zinc-500 hover:text-white text-xl leading-none -mt-1"
+              >
+                ×
+              </button>
+            </div>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                if (!EMAIL_RX.test(emailInput) || emailSubmitting) return
+                setEmailSubmitting(true)
+                try {
+                  const r = await fetch("/api/public/save-design", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      email: emailInput.trim(),
+                      designUrl: session.currentDesignUrl,
+                      mockupUrl: session.currentMockupUrl,
+                      garmentType: session.garmentType,
+                      garmentColor: session.garmentColor,
+                    }),
+                  })
+                  if (r.ok) {
+                    toast({ title: "Listo", description: "Te lo mandamos por mail en breve 📧" })
+                    setEmailCaptureOpen(false)
+                    setEmailInput("")
+                  } else {
+                    const d = await r.json().catch(() => ({}))
+                    toast({ title: "No se pudo guardar", description: d.error ?? "Intentalo de nuevo", variant: "destructive" })
+                  }
+                } finally {
+                  setEmailSubmitting(false)
+                }
+              }}
+              className="flex flex-col gap-2"
+            >
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                placeholder="tu@email.com"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-sm text-white focus:outline-none focus:border-violet-500"
+              />
+              <Button
+                type="submit"
+                disabled={!EMAIL_RX.test(emailInput) || emailSubmitting}
+                className="bg-violet-600 hover:bg-violet-500 text-white"
+              >
+                {emailSubmitting ? "Guardando..." : "Guardar diseño"}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setEmailCaptureOpen(false)}
+                className="text-[11px] text-zinc-500 hover:text-zinc-300 text-center mt-1"
+              >
+                No, gracias
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
     <div className="flex flex-col lg:flex-row gap-6 min-h-[70vh]">
       {/* ========== LEFT: Chat ========== */}
       <div className="flex flex-col flex-1 min-w-0 bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
@@ -1198,6 +1372,26 @@ export function DesignChat({
               ))}
             </div>
           </div>
+
+          {/* P6-01: Probar otra variante — para users que casi gustan el resultado */}
+          {session.currentDesignUrl && lastPromptRef.current && (
+            <Button
+              variant="outline"
+              className="w-full border-violet-700/40 text-violet-300 hover:bg-violet-600/10 hover:text-white text-sm mt-3"
+              onClick={handleVariant}
+              disabled={loading || mockupLoading}
+              title="Genera otra interpretación del mismo concepto"
+            >
+              {loading && loadingLabel === "Generando variante..." ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generando variante...
+                </>
+              ) : (
+                <>✨ Probar otra variante</>
+              )}
+            </Button>
+          )}
 
           {/* Mockup button */}
           <Button
