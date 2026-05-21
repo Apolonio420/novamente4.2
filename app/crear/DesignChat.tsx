@@ -35,6 +35,7 @@ type Msg = {
 // ============================================================
 
 import { CATALOG_PRODUCTS, getCatalogProduct, getCatalogProductColor } from "@/lib/catalog/products"
+import * as fpixel from "@/lib/fpixel"
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"]
 
@@ -72,6 +73,7 @@ export function DesignChat({
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
   const [loadingLabel, setLoadingLabel] = useState<string>("Generando diseño...")
+  const [loadingSubtext, setLoadingSubtext] = useState<string>("Esto puede tardar unos segundos...")
   const [mockupLoading, setMockupLoading] = useState(false)
   const [pendingAttachment, setPendingAttachment] = useState<string | null>(null)
   const [selectedSize, setSelectedSize] = useState("M")
@@ -85,6 +87,25 @@ export function DesignChat({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  // Rotating subtext durante el loading — 30s se sienten como 3s con feedback
+  useEffect(() => {
+    if (!loading) return
+    const messages = [
+      "Esto puede tardar unos segundos...",
+      "Optimizando trazo vectorial...",
+      "Aplicando reglas de impresión textil...",
+      "Verificando contraste sobre la prenda...",
+      "Casi listo, dando los toques finales...",
+    ]
+    let idx = 0
+    setLoadingSubtext(messages[0])
+    const interval = setInterval(() => {
+      idx = Math.min(idx + 1, messages.length - 1)
+      setLoadingSubtext(messages[idx])
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [loading])
 
   // ---- Upload attachment ----
   const handleAttach = useCallback(async (file: File) => {
@@ -330,6 +351,16 @@ export function DesignChat({
         mockupGeneratedFor: null,
         designHistory: [imageUrl, ...prev.designHistory.filter((u) => u !== imageUrl)].slice(0, 5),
       }))
+      // ViewContent → señal a Meta de "el user vio un producto/diseño". Sin
+      // esto Meta no puede optimizar audiencias.
+      fpixel.event("ViewContent", {
+        content_ids: [imageUrl],
+        content_name: `Diseño AI — ${session.garmentType}`,
+        content_type: "product",
+        content_category: session.garmentType,
+        value: getPrice(session.garmentType),
+        currency: "ARS",
+      })
     } catch (e: any) {
       toast({ title: "Error generando diseño", description: e.message, variant: "destructive" })
       setMessages((prev) => [
@@ -384,19 +415,30 @@ export function DesignChat({
   const handleAddToCart = useCallback(() => {
     if (!session.currentMockupUrl) return
     const id = `custom-${session.garmentType}-${session.garmentColor}-${Date.now()}`
+    const price = getPrice(session.garmentType)
+    const name = `${garmentLabel(session.garmentType)} Custom — Novamente`
     addItem({
       id,
-      name: `${garmentLabel(session.garmentType)} Custom — Novamente`,
+      name,
       garmentType: session.garmentType,
       color: session.garmentColor,
       garmentColor: session.garmentColor,
       size: selectedSize,
-      price: getPrice(session.garmentType),
+      price,
       quantity: 1,
       image: session.currentMockupUrl,
       mockupUrl: session.currentMockupUrl,
       frontDesign: session.side === "front" ? session.currentDesignUrl ?? undefined : undefined,
       backDesign: session.side === "back" ? session.currentDesignUrl ?? undefined : undefined,
+    })
+    // Pixel events para que Meta+Google puedan optimizar el funnel
+    fpixel.event("AddToCart", {
+      content_ids: [id],
+      content_name: name,
+      content_type: "product",
+      content_category: session.garmentType,
+      value: price,
+      currency: "ARS",
     })
     toast({ title: "Agregado al carrito", description: `${garmentLabel(session.garmentType)} talle ${selectedSize}` })
   }, [session, selectedSize, addItem, toast])
@@ -481,9 +523,14 @@ export function DesignChat({
               <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center shrink-0 mt-1">
                 <Sparkles className="w-3.5 h-3.5 text-white" />
               </div>
-              <div className="bg-zinc-800 rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-2 text-sm text-zinc-300">
-                <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
-                {loadingLabel}
+              <div className="bg-zinc-800 rounded-2xl rounded-bl-sm px-4 py-3 text-sm text-zinc-300 min-w-[240px]">
+                <div className="flex items-center gap-2 font-medium">
+                  <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
+                  {loadingLabel}
+                </div>
+                <div className="text-xs text-zinc-500 mt-1 transition-opacity duration-300">
+                  {loadingSubtext}
+                </div>
               </div>
             </div>
           )}
@@ -923,6 +970,9 @@ export function DesignChat({
                 ${(getPrice(session.garmentType)).toLocaleString("es-AR")}
               </span>
             </div>
+            <div className="text-[11px] text-emerald-400/90 -mt-1.5">
+              o 3 cuotas de ${Math.round(getPrice(session.garmentType) / 3).toLocaleString("es-AR")} sin interés
+            </div>
 
             <Button
               className="w-full bg-violet-600 hover:bg-violet-500 text-white font-medium"
@@ -931,6 +981,11 @@ export function DesignChat({
               <ShoppingCart className="w-4 h-4 mr-2" />
               Agregar al carrito
             </Button>
+
+            {/* Microcopy de garantía debajo del CTA */}
+            <p className="text-[10px] text-zinc-500 text-center leading-tight">
+              Si no te gusta el diseño impreso, te lo rehacemos gratis
+            </p>
           </div>
         )}
       </div>

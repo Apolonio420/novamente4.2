@@ -110,6 +110,27 @@ export default function CrearPage() {
         </div>
       </div>
 
+      {/* Trust signals bar — conversion booster: garantía + envío + cuotas + ARG */}
+      <div className="border-b border-zinc-800 bg-zinc-950">
+        <div className="mx-auto max-w-7xl px-4 py-2 flex items-center gap-3 overflow-x-auto text-[11px] text-zinc-400">
+          <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
+            <span className="text-green-400">✓</span> Si no te gusta, te lo rehacemos gratis
+          </span>
+          <span className="text-zinc-700">·</span>
+          <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
+            🚚 Envío BA $7.000 · Resto $9.000
+          </span>
+          <span className="text-zinc-700">·</span>
+          <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
+            💳 3 cuotas sin interés con Mercado Pago
+          </span>
+          <span className="text-zinc-700">·</span>
+          <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
+            🇦🇷 100% argentino · Producción a pedido
+          </span>
+        </div>
+      </div>
+
       {/* Mode content */}
       <main className="mx-auto max-w-7xl px-4 py-6">
         {mode === "chat" && <DesignChat session={session} setSession={setSession} />}
