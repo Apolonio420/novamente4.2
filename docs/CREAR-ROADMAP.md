@@ -6,6 +6,14 @@
 
 ---
 
+## ⚠️ Claims permitidos — leer SIEMPRE antes de tocar copy
+
+Antes de agregar cualquier texto de venta, leer `CLAIMS-PERMITIDOS.md` en la raíz del repo.
+**NUNCA decir:** "3 cuotas sin interés", "te lo rehacemos gratis", "frisa interior densa", "costuras reforzadas", gramajes que no sean 300 (buzos), 250 (remeras), 150 (crops/musculosas), "los buzos llevan cordones".
+**SÍ se puede decir:** producción a pedido, 100% argentino, envío a todo el país, pagás con Mercado Pago, gramajes confirmados.
+
+---
+
 ## ⚙️ Sistema operativo
 
 - **Owner del desarrollo**: Claude (autonomous)
