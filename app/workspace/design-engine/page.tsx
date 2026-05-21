@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Sparkles, Loader2, ImageIcon, Shirt, X, ZoomIn, Send, Plus, Menu, Trash2,
   Download, ArrowUp, Clock, Palette, ChevronDown, Upload as UploadIcon, ExternalLink,
@@ -159,6 +160,17 @@ export default function DesignStudioPage() {
   const [selectedStampMode, setSelectedStampMode] = useState<'large' | 'medium' | 'chest-logo'>('large')
   const [selectedPlacement, setSelectedPlacement] = useState<string>('center')
   const [placementMenuOpen, setPlacementMenuOpen] = useState(false)
+  const [placementMenuPos, setPlacementMenuPos] = useState<{ left: number; bottom: number } | null>(null)
+  const placementBtnRef = useRef<HTMLButtonElement | null>(null)
+
+  const openPlacementMenu = useCallback(() => {
+    const rect = placementBtnRef.current?.getBoundingClientRect()
+    if (rect) {
+      const viewportH = typeof window !== 'undefined' ? window.innerHeight : 0
+      setPlacementMenuPos({ left: rect.left, bottom: viewportH - rect.top + 6 })
+    }
+    setPlacementMenuOpen(true)
+  }, [])
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [styleModalOpen, setStyleModalOpen] = useState(false)
   // Default OFF: la "esencia de marca" influia demasiado en el prompt. El partner
@@ -1035,7 +1047,8 @@ export default function DesignStudioPage() {
             return (
               <div className="relative">
                 <button
-                  onClick={() => setPlacementMenuOpen(v => !v)}
+                  ref={placementBtnRef}
+                  onClick={() => (placementMenuOpen ? setPlacementMenuOpen(false) : openPlacementMenu())}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-800 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors whitespace-nowrap"
                   title={current?.hint}
                 >
@@ -1043,10 +1056,13 @@ export default function DesignStudioPage() {
                   {current?.label || 'Ubicación'}
                   <ChevronDown className={`h-3 w-3 transition-transform ${placementMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
-                {placementMenuOpen && (
+                {placementMenuOpen && placementMenuPos && typeof document !== 'undefined' && createPortal(
                   <>
-                    <div className="fixed inset-0 z-30" onClick={() => setPlacementMenuOpen(false)} />
-                    <div className="absolute left-0 bottom-full mb-1.5 w-64 max-h-72 overflow-y-auto rounded-xl border border-zinc-700/80 bg-zinc-900/95 backdrop-blur shadow-2xl z-40">
+                    <div className="fixed inset-0 z-[60]" onClick={() => setPlacementMenuOpen(false)} />
+                    <div
+                      className="fixed w-64 max-h-72 overflow-y-auto rounded-xl border border-zinc-700/80 bg-zinc-900/95 backdrop-blur shadow-2xl z-[61]"
+                      style={{ left: placementMenuPos.left, bottom: placementMenuPos.bottom }}
+                    >
                       <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-zinc-500 border-b border-zinc-800 sticky top-0 bg-zinc-900/95 backdrop-blur">
                         Dónde aplicar la estampa
                       </div>
@@ -1066,7 +1082,8 @@ export default function DesignStudioPage() {
                         </button>
                       ))}
                     </div>
-                  </>
+                  </>,
+                  document.body
                 )}
               </div>
             )
