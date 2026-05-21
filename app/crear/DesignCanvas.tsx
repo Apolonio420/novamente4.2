@@ -7,6 +7,8 @@ import { Undo2, Redo2, RotateCcw, ShoppingCart, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/lib/cartStore"
 import type { DesignSession } from "./page"
+import { getCatalogProduct } from "@/lib/catalog/products"
+import * as fpixel from "@/lib/fpixel"
 
 // --- Constants ---
 
@@ -85,30 +87,54 @@ function resolveGarmentTemplate(garmentType: string, color: string, side: "front
   const c = mappedColor.toLowerCase().replace(/\s+/g, "-")
   const s = side
 
-  // Map garmentType to likely filename prefixes
+  // Map catalog key (hyphenated) to el filename prefix correcto.
+  // Antes el codigo usaba includes() amplios que clashaban (buzo-cuello-redondo
+  // caia en el branch de hoodie). Ahora es exact match por catalog key.
   const candidates: string[] = []
-
-  if (garmentType.includes("hoodie") || garmentType.includes("buzo")) {
-    candidates.push(
-      `/garments/buzo-hoodie-unisex-${c}-${s}.png`,
-      `/garments/buzo-hoodie-unisex-${c}-${s}.jpeg`,
-      `/garments/hoodie-${c}-${s}.jpeg`,
-      `/garments/hoodie-${c}-${s}.png`,
-      `/garments/buzo-cuello-redondo-${c}-${s}.png`,
-    )
-  } else if (garmentType.includes("crop") || garmentType.includes("musculosa")) {
-    candidates.push(
-      `/garments/musculosa-bali-${c}-${s}.png`,
-      `/garments/remera-crop-mujer-${c}-${s}.png`,
-    )
-  } else {
-    // Default: remera / classic fit
-    candidates.push(
-      `/garments/tshirt-${c}-classic-${s}.jpeg`,
-      `/garments/tshirt-${c}-classic-${s}.png`,
-      `/garments/remera-clasica-mujer-${c}-${s}.png`,
-      `/garments/tshirt-${c}-oversize-${s}.jpeg`,
-    )
+  switch (garmentType) {
+    case "aldea-classic-tshirt":
+      candidates.push(
+        `/garments/tshirt-${c}-classic-${s}.jpeg`,
+        `/garments/tshirt-${c}-classic-${s}.png`,
+      )
+      break
+    case "aura-oversize-tshirt":
+      candidates.push(
+        `/garments/tshirt-${c}-oversize-${s}.jpeg`,
+        `/garments/tshirt-${c}-oversize-${s}.png`,
+      )
+      break
+    case "remera-clasica-mujer":
+      candidates.push(`/garments/remera-clasica-mujer-${c}-${s}.png`)
+      break
+    case "remera-crop-mujer":
+      candidates.push(`/garments/remera-crop-mujer-${c}-${s}.png`)
+      break
+    case "musculosa-bali":
+      candidates.push(`/garments/musculosa-bali-${c}-${s}.png`)
+      break
+    case "buzo-cuello-redondo":
+      candidates.push(`/garments/buzo-cuello-redondo-${c}-${s}.png`)
+      break
+    case "buzo-hoodie-unisex":
+      candidates.push(
+        `/garments/buzo-hoodie-unisex-${c}-${s}.png`,
+        `/garments/buzo-hoodie-unisex-${c}-${s}.jpeg`,
+      )
+      break
+    default:
+      // Fallback heuristico para keys nuevos no listados
+      if (garmentType.includes("hoodie")) {
+        candidates.push(`/garments/buzo-hoodie-unisex-${c}-${s}.png`)
+      } else if (garmentType.includes("buzo")) {
+        candidates.push(`/garments/buzo-cuello-redondo-${c}-${s}.png`)
+      } else if (garmentType.includes("crop")) {
+        candidates.push(`/garments/remera-crop-mujer-${c}-${s}.png`)
+      } else if (garmentType.includes("musculosa")) {
+        candidates.push(`/garments/musculosa-bali-${c}-${s}.png`)
+      } else {
+        candidates.push(`/garments/tshirt-${c}-classic-${s}.jpeg`)
+      }
   }
 
   // Return first candidate - we can't check file existence at runtime on the client
@@ -233,15 +259,19 @@ export function DesignCanvas({
       setSession((prev) => ({ ...prev, currentMockupUrl: mockupUrl }))
 
       const sideKey = session.side === "front" ? "frontDesign" : "backDesign"
+      const product = getCatalogProduct(session.garmentType)
+      const price = product?.retailARS ?? 35000
+      const productName = `${product?.name ?? "Remera"} Custom — Novamente`
+      const itemId = `custom-canvas-${Date.now()}`
 
       addItem({
-        id: `custom-${Date.now()}`,
-        name: "Remera Custom — Novamente",
+        id: itemId,
+        name: productName,
         garmentType: session.garmentType,
         color: session.garmentColor,
         garmentColor: session.garmentColor,
         size: selectedSize,
-        price: 35000,
+        price,
         quantity: 1,
         image: mockupUrl,
         mockupUrl,
@@ -254,6 +284,16 @@ export function DesignCanvas({
               side: session.side,
             }
           : undefined,
+      })
+
+      // Pixel events para el funnel (estaban faltando en el canvas path)
+      fpixel.event("AddToCart", {
+        content_ids: [itemId],
+        content_name: productName,
+        content_type: "product",
+        content_category: session.garmentType,
+        value: price,
+        currency: "ARS",
       })
     } catch (err) {
       console.error("DesignCanvas: apply failed", err)

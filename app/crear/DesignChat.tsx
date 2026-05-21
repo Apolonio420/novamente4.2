@@ -245,6 +245,7 @@ export function DesignChat({
               garmentType: session.garmentType,
               garmentColor: session.garmentColor,
               side: session.side,
+              printArea: session.printArea,
             }),
           })
             .then((r) => r.json())
@@ -334,6 +335,7 @@ export function DesignChat({
           raw: true,
           size: aspectSize,
           garmentColor: session.garmentColor,
+          printArea: session.printArea,
         }
       }
 
@@ -415,6 +417,7 @@ export function DesignChat({
           garmentType: session.garmentType,
           garmentColor: session.garmentColor,
           side: session.side,
+          printArea: session.printArea,
         }),
       })
       const data = await res.json()
@@ -1022,6 +1025,35 @@ export function DesignChat({
             }
           />
 
+          {/* Print area selector — tamaño de la estampa sobre la prenda */}
+          <div className="mt-4 space-y-1.5">
+            <label className="text-xs text-zinc-500 uppercase tracking-wider">Tamaño de estampa</label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {([
+                { key: "R1", label: "Chico", desc: "10×10 cm · logo en pecho" },
+                { key: "R2", label: "Mediano", desc: "20×20 cm · pecho completo" },
+                { key: "R3", label: "Grande", desc: "35×40 cm · espalda completa" },
+              ] as const).map((pa) => (
+                <button
+                  key={pa.key}
+                  type="button"
+                  onClick={() =>
+                    setSession((prev) => ({ ...prev, printArea: pa.key, currentMockupUrl: prev.mockupGeneratedFor?.designUrl === prev.currentDesignUrl ? prev.currentMockupUrl : prev.currentMockupUrl }))
+                  }
+                  title={pa.desc}
+                  className={`text-xs rounded border py-1.5 px-1 transition flex flex-col items-center ${
+                    session.printArea === pa.key
+                      ? "border-violet-500 bg-violet-600/15 text-white"
+                      : "border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
+                  }`}
+                >
+                  <span className="font-semibold">{pa.key}</span>
+                  <span className="text-[10px] mt-0.5 leading-none">{pa.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Size selector — siempre visible para que el user lo elija desde temprano */}
           <div className="mt-4 space-y-1.5">
             <label className="text-xs text-zinc-500 uppercase tracking-wider">Talle</label>
@@ -1045,6 +1077,7 @@ export function DesignChat({
 
           {/* Mockup button */}
           <Button
+            data-mockup-trigger="true"
             className="w-full bg-zinc-700 hover:bg-zinc-600 text-white text-sm mt-4"
             onClick={handleMockup}
             disabled={!session.currentDesignUrl || mockupLoading}
@@ -1093,6 +1126,49 @@ export function DesignChat({
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Multi-garment preview — opcional, 1 extra mockup en otra prenda */}
+        {session.currentMockupUrl && !mockupIsStale && session.currentDesignUrl && (
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-3">
+            <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-2">
+              También probalo en otra prenda
+            </p>
+            <div className="flex gap-1.5 flex-wrap">
+              {CATALOG_PRODUCTS.filter((p) => p.key !== session.garmentType)
+                .slice(0, 4)
+                .map((p) => (
+                  <button
+                    key={p.key}
+                    type="button"
+                    disabled={mockupLoading}
+                    onClick={() => {
+                      // Cambiar de prenda + dispara mockup automaticamente
+                      setSession((prev) => ({
+                        ...prev,
+                        garmentType: p.key,
+                        garmentColor: p.colors[0]?.key ?? prev.garmentColor,
+                      }))
+                      // El boton "Probar en ..." se va a actualizar y user lo
+                      // clickea, pero auto-disparamos para ahorrarle el step
+                      setTimeout(() => {
+                        const btn = document.querySelector<HTMLButtonElement>(
+                          'button[data-mockup-trigger="true"]',
+                        )
+                        btn?.click()
+                      }, 100)
+                    }}
+                    className="text-[11px] rounded border border-zinc-700 hover:border-violet-500 bg-zinc-800/50 hover:bg-violet-600/10 text-zinc-300 hover:text-white px-2 py-1 transition"
+                    title={`Generar mockup en ${p.name}`}
+                  >
+                    {p.name.replace("Remera ", "").replace("Buzo ", "")}
+                  </button>
+                ))}
+            </div>
+            <p className="text-[10px] text-zinc-600 mt-1.5">
+              Genera 1 mockup más (no afecta el actual)
+            </p>
           </div>
         )}
 

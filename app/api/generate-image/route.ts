@@ -168,6 +168,40 @@ export async function POST(req: NextRequest) {
       console.log("GEN-IMG retry", { ms: tGen3 - tGen2, gotImages: !!imagesBase64.length })
     }
 
+    // 5b) Quality check — si Gemini devolvió una imagen muy plana (mostly
+    // one color = washed-out o casi vacía) reintentamos con prompt reforzado.
+    // Solo aplicamos en raw mode (sin optimizer textile que ya constrains).
+    if (rawMode && imagesBase64.length && imagesBase64[0]) {
+      try {
+        const sharp = (await import("sharp")).default
+        const buf = Buffer.from(imagesBase64[0], "base64")
+        const stats = await sharp(buf).stats()
+        // stdev promedio across channels. Si < 18 = imagen muy plana.
+        const avgStdev =
+          stats.channels.reduce((acc, c) => acc + c.stdev, 0) / Math.max(1, stats.channels.length)
+        console.log("GEN-IMG quality check stdev:", avgStdev.toFixed(1))
+        if (avgStdev < 18) {
+          console.warn("GEN-IMG low quality detected (flat image) — retrying")
+          const stronger =
+            finalPrompt +
+            " The design MUST have rich contrast, multiple visual elements, and clear silhouettes — do NOT return a blank, washed-out or single-color image."
+          const retry2 = await runOnce(stronger)
+          if (retry2.imagesBase64.length) {
+            const buf2 = Buffer.from(retry2.imagesBase64[0]!, "base64")
+            const stats2 = await sharp(buf2).stats()
+            const avg2 =
+              stats2.channels.reduce((acc, c) => acc + c.stdev, 0) /
+              Math.max(1, stats2.channels.length)
+            console.log("GEN-IMG retry stdev:", avg2.toFixed(1))
+            // Solo reemplaza si el retry es mejor
+            if (avg2 > avgStdev) imagesBase64 = retry2.imagesBase64
+          }
+        }
+      } catch (e) {
+        console.warn("GEN-IMG quality check failed:", (e as Error).message)
+      }
+    }
+
     if (!imagesBase64.length) {
       return ok(
         {

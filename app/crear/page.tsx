@@ -31,6 +31,9 @@ export type DesignSession = {
   garmentType: string
   garmentColor: string
   side: "front" | "back"
+  // Tamaño de la estampa sobre la prenda: R1 (chico/pecho), R2 (mediano),
+  // R3 (grande/espalda completa). Afecta el prompt + el mockup.
+  printArea: "R1" | "R2" | "R3"
 }
 
 export type Mode = "chat" | "canvas" | "lifestyle"
@@ -48,6 +51,7 @@ export default function CrearPage() {
     garmentType: "aldea-classic-tshirt",
     garmentColor: "black",
     side: "front",
+    printArea: "R2",
   })
   const [tryOnOpen, setTryOnOpen] = useState(false)
   const cartCount = useCart((s) => s.items.length)

@@ -86,16 +86,16 @@ Tracking actual via Meta Pixel + GA4:
 
 ### P2 — Calidad (semana 3)
 
-- [ ] **Q-01** Print-ready prompt cubre todos los casos edge (caligrafía fina, tipografías exóticas)
-- [ ] **Q-02** Mockup variations: opcional generar 2da escena cuando primera no convence
-- [ ] **Q-03** Selector de tamaño de estampa (R1 pecho chico / R2 pecho completo / R3 espalda completa)
-- [ ] **Q-04** Detección de baja calidad: si Gemini devuelve algo malo, retry automático
+- [x] **Q-01** ✅ (cubierto en print-ready prompt) Print-ready prompt cubre todos los casos edge (caligrafía fina, tipografías exóticas)
+- [x] **Q-02** ✅ Mockup variations: opcional generar 2da escena cuando primera no convence
+- [x] **Q-03** ✅ Selector de tamaño de estampa (R1 pecho chico / R2 pecho completo / R3 espalda completa)
+- [x] **Q-04** ✅ Detección de baja calidad: si Gemini devuelve algo malo, retry automático
 
 ### P3 — Wow features (semana 4)
 
-- [ ] **W-01** Canvas mode: drag&drop del diseño sobre la prenda (react-konva ya está instalado)
+- [x] **W-01** ✅ Canvas mode: drag&drop del diseño sobre la prenda (react-konva ya está instalado)
 - [ ] **W-02** Try-on AR mobile usando getUserMedia + Gemini composing
-- [ ] **W-03** Multi-design: hacer remera + buzo + crop con el mismo diseño en un solo flow
+- [x] **W-03** ✅ Multi-design: hacer remera + buzo + crop con el mismo diseño en un solo flow
 
 ---
 

@@ -99,6 +99,7 @@ export async function POST(req: NextRequest) {
       garmentColor: string
       side?: "front" | "back"
       scenario?: number
+      printArea?: "R1" | "R2" | "R3"
     }
 
     if (!body.designImageUrl || !body.garmentType || !body.garmentColor) {
@@ -118,7 +119,21 @@ export async function POST(req: NextRequest) {
     const colorName = getCatalogProductColor(body.garmentType, body.garmentColor)?.name || body.garmentColor
     const colorNatural = COLOR_NATURAL[body.garmentColor] || colorName.toLowerCase()
     const side = body.side ?? "front"
-    const sideText = side === "front" ? "front chest area" : "back of the garment"
+    const printArea = body.printArea ?? "R2"
+    // Descripción del tamaño + ubicación del print area para Gemini
+    const printAreaDesc =
+      printArea === "R1"
+        ? side === "front"
+          ? "small chest pocket area (10×10 cm), positioned over the left chest like a logo placement"
+          : "small upper-back area (10×10 cm), positioned at the nape between shoulder blades"
+        : printArea === "R3"
+          ? side === "front"
+            ? "large full-front print (35×40 cm), covering most of the chest area from collar down"
+            : "large full-back print (35×40 cm), covering most of the back from shoulders to waist"
+          : side === "front"
+            ? "medium centered chest print (20×20 cm), positioned on the upper-mid chest"
+            : "medium centered back print (20×20 cm), positioned on the upper-mid back"
+    const sideText = printAreaDesc
     const scenarioIdx =
       typeof body.scenario === "number" ? body.scenario % SCENARIOS.length : Math.floor(Math.random() * SCENARIOS.length)
     const scenario = SCENARIOS[scenarioIdx]
