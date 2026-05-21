@@ -137,3 +137,15 @@ Pendiente investigar:
 ## ❓ Preguntas pendientes al user
 
 (vacío — preguntar solo cuando hay decisión real)
+
+---
+
+## P4 — Polish (semana 5) ✅ todo completado
+
+- [x] **P4-01** ✅ Mobile sticky bottom CTA (barra fija con precio + Buy Now al scrollear)
+- [x] **P4-02** ✅ Error states con retry button (no se pierde el prompt al fallar)
+- [x] **P4-03** ✅ SEO + Open Graph meta tags en /crear (app/crear/layout.tsx)
+- [x] **P4-04** ✅ Templates de inicio rápido (8 estilos: Ukiyo-e, Psicodélico 70s, Gótico, Tipografía, Botánico, Pixel art, Streetwear, Minimalista)
+- [x] **P4-05** ✅ Shareable link de mockup (URL params recover/design/g/c/s para que el receptor vea y compre)
+- [x] **P4-06** ✅ Onboarding modal first-visit (3 pasos explicados, localStorage gate)
+

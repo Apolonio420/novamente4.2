@@ -30,6 +30,10 @@ type Msg = {
   imageUrl?: string
   attachmentUrl?: string
   prompt?: string
+  // Si el mensaje es un error, retryPrompt guarda el prompt original que fallo
+  // para que el user pueda reintentar sin re-escribir.
+  retryPrompt?: string
+  retryAttachment?: string | null
 }
 
 // ============================================================
@@ -394,7 +398,12 @@ export function DesignChat({
       toast({ title: "Error generando diseño", description: e.message, variant: "destructive" })
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", text: `Lo siento, hubo un error: ${e.message}` },
+        {
+          role: "assistant",
+          text: `Lo siento, hubo un error: ${e.message}`,
+          retryPrompt: text,
+          retryAttachment: pendingAttachment ?? null,
+        },
       ])
     } finally {
       setLoading(false)
@@ -555,6 +564,16 @@ export function DesignChat({
   ])
 
   // Al montar el componente: si hay un design abandonado <72h, recuperarlo
+  // Onboarding modal — solo se muestra la primera visita (no localStorage flag)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (window.localStorage.getItem("novamente:onboarding-seen") === "1") return
+    // Solo mostrar si no hay recovery ni mockup actual (no interferir con flows activos)
+    if (!session.currentMockupUrl) setShowOnboarding(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const [abandonedRecovery, setAbandonedRecovery] = useState<{
     mockupUrl: string
     designUrl: string
@@ -567,6 +586,42 @@ export function DesignChat({
   useEffect(() => {
     if (typeof window === "undefined") return
     if (session.currentMockupUrl) return // ya hay diseño actual
+
+    // 1) Si la URL trae ?recover=<URL-mockup>, restaurar directo (shareable link)
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const recoverUrl = params.get("recover")
+      const recoverDesign = params.get("design")
+      const recoverGarment = params.get("g")
+      const recoverColor = params.get("c")
+      const recoverSide = params.get("s") as "front" | "back" | null
+      if (recoverUrl && recoverDesign) {
+        const decodedMockup = decodeURIComponent(recoverUrl)
+        const decodedDesign = decodeURIComponent(recoverDesign)
+        setSession((prev) => ({
+          ...prev,
+          currentMockupUrl: decodedMockup,
+          currentDesignUrl: decodedDesign,
+          garmentType: recoverGarment ?? prev.garmentType,
+          garmentColor: recoverColor ?? prev.garmentColor,
+          side: recoverSide ?? "front",
+          frontDesignUrl: (recoverSide ?? "front") === "front" ? decodedDesign : prev.frontDesignUrl,
+          backDesignUrl: (recoverSide ?? "front") === "back" ? decodedDesign : prev.backDesignUrl,
+          mockupGeneratedFor: {
+            garmentType: recoverGarment ?? prev.garmentType,
+            garmentColor: recoverColor ?? prev.garmentColor,
+            side: recoverSide ?? "front",
+            designUrl: decodedDesign,
+          },
+        }))
+        // Limpiar query string para que no quede en la url
+        window.history.replaceState({}, "", window.location.pathname)
+        toast({ title: "Diseño cargado", description: "Listo para comprar — alguien te lo compartió 🎨" })
+        return
+      }
+    } catch {}
+
+    // 2) Sino, intentar restaurar el abandoned cart
     try {
       const raw = window.localStorage.getItem("novamente:abandoned-design")
       if (!raw) return
@@ -600,6 +655,53 @@ export function DesignChat({
 
   return (
     <>
+      {/* Onboarding tour — primera visita */}
+      {showOnboarding && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 border border-violet-700 rounded-2xl max-w-md w-full p-6 space-y-5">
+            <div className="text-center space-y-1">
+              <div className="text-3xl">✨</div>
+              <h3 className="text-lg font-semibold text-white">Diseñá tu prenda en 3 pasos</h3>
+              <p className="text-xs text-zinc-500">La primera vez te muestro cómo va</p>
+            </div>
+            <div className="space-y-3">
+              <div className="flex gap-3 items-start">
+                <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">1</div>
+                <div className="text-sm text-zinc-300">
+                  <strong>Describí tu diseño</strong> o subí una foto.<br />
+                  <span className="text-xs text-zinc-500">Probá templates como "Ukiyo-e", "Tipografía", "Streetwear"...</span>
+                </div>
+              </div>
+              <div className="flex gap-3 items-start">
+                <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">2</div>
+                <div className="text-sm text-zinc-300">
+                  <strong>Elegí tu prenda</strong> (remera, buzo, hoodie, crop) y color.<br />
+                  <span className="text-xs text-zinc-500">Después tocá "Probar en prenda" y la IA te muestra la foto lifestyle.</span>
+                </div>
+              </div>
+              <div className="flex gap-3 items-start">
+                <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">3</div>
+                <div className="text-sm text-zinc-300">
+                  <strong>Comprala</strong> con 3 cuotas sin interés.<br />
+                  <span className="text-xs text-zinc-500">Si no te gusta el resultado impreso, te la rehacemos gratis.</span>
+                </div>
+              </div>
+            </div>
+            <Button
+              className="w-full bg-violet-600 hover:bg-violet-500"
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  window.localStorage.setItem("novamente:onboarding-seen", "1")
+                }
+                setShowOnboarding(false)
+              }}
+            >
+              Empezar a diseñar 🎨
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Abandoned cart recovery modal */}
       {abandonedRecovery && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -706,6 +808,20 @@ export function DesignChat({
                     />
                   </div>
                 )}
+                {/* Retry button cuando el mensaje es un error con prompt guardado */}
+                {msg.retryPrompt && !loading && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (msg.retryAttachment) setPendingAttachment(msg.retryAttachment)
+                      handleSend(msg.retryPrompt!)
+                    }}
+                    className="mt-2 inline-flex items-center gap-1.5 text-xs bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-1.5 rounded-md transition"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Reintentar
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -731,37 +847,44 @@ export function DesignChat({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick action chips — solo cuando hay 1 mensaje (el welcome) */}
+        {/* Quick action chips + templates — solo cuando hay 1 mensaje (welcome) */}
         {messages.length === 1 && !loading && (
-          <div className="px-4 pt-1 pb-3 flex gap-2 overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-200 hover:border-violet-500 hover:text-white transition"
-            >
-              📸 Subir mi foto
-            </button>
-            <button
-              type="button"
-              onClick={() => setInput("tigre psicodélico estilo años 70, colores vibrantes")}
-              className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-200 hover:border-violet-500 hover:text-white transition"
-            >
-              🎨 Generar diseño con IA
-            </button>
-            <button
-              type="button"
-              onClick={() => setInput("dragón japonés estilo ukiyo-e, negro y rojo")}
-              className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-200 hover:border-violet-500 hover:text-white transition"
-            >
-              🐉 Dragón ukiyo-e
-            </button>
-            <button
-              type="button"
-              onClick={() => setInput("frase tipográfica brutalista en español, alto contraste")}
-              className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-200 hover:border-violet-500 hover:text-white transition"
-            >
-              ✏️ Tipografía
-            </button>
+          <div className="px-4 pt-1 pb-3 space-y-2">
+            {/* Acción upload */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="shrink-0 rounded-full bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 text-xs font-medium transition"
+              >
+                📸 Subir mi foto
+              </button>
+            </div>
+            {/* Templates — 8 estilos populares */}
+            <div className="space-y-1">
+              <p className="text-[10px] text-zinc-500 uppercase tracking-wider">O probá un estilo:</p>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {[
+                  { emoji: "🐉", label: "Ukiyo-e", value: "dragón japonés estilo ukiyo-e, negro y rojo con olas y flores de cerezo" },
+                  { emoji: "🔥", label: "Psicodélico 70s", value: "tigre psicodélico estilo años 70 con colores vibrantes y formas onduladas" },
+                  { emoji: "💀", label: "Gótico/Noir", value: "calavera gótica con flores oscuras, rim lighting cremoso, estilo tattoo noir" },
+                  { emoji: "✏️", label: "Tipografía", value: "frase tipográfica brutalista 'NO PASARÁN' en español, alto contraste, estilo poster activista" },
+                  { emoji: "🌸", label: "Botánico", value: "ramo de flores silvestres argentinas con mariposas, estilo acuarela vintage" },
+                  { emoji: "🎮", label: "Pixel art", value: "personaje pixel art retro estilo 16-bit, paleta vibrante, fondo transparente" },
+                  { emoji: "⚡", label: "Streetwear", value: "diseño streetwear con tipografía urbana y elementos gráficos angulares, estilo Tokyo" },
+                  { emoji: "🏔️", label: "Minimalista", value: "paisaje patagónico minimalista line-art, una sola línea continua, negro sobre transparente" },
+                ].map((tpl) => (
+                  <button
+                    key={tpl.label}
+                    type="button"
+                    onClick={() => setInput(tpl.value)}
+                    className="shrink-0 rounded-full border border-zinc-700 bg-zinc-800/80 px-3 py-1.5 text-xs text-zinc-200 hover:border-violet-500 hover:text-white transition"
+                  >
+                    {tpl.emoji} {tpl.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -1182,33 +1305,54 @@ export function DesignChat({
               <button
                 type="button"
                 onClick={async () => {
-                  const url = session.currentMockupUrl!
-                  const absolute = url.startsWith("http") ? url : `${window.location.origin}${url}`
+                  // Construir shareable link → al abrir restaura el mockup
+                  const params = new URLSearchParams({
+                    recover: session.currentMockupUrl!,
+                    design: session.currentDesignUrl ?? "",
+                    g: session.garmentType,
+                    c: session.garmentColor,
+                    s: session.side,
+                  })
+                  const shareUrl = `${window.location.origin}/crear?${params.toString()}`
                   if (navigator.share) {
                     try {
                       await navigator.share({
                         title: `Mi diseño en Novamente · ${garmentLabel(session.garmentType)}`,
                         text: "Mirá lo que diseñé en novamente.ar 🔥",
-                        url: absolute,
+                        url: shareUrl,
                       })
                     } catch {}
                   } else {
-                    await navigator.clipboard.writeText(absolute)
-                    toast({ title: "Link copiado", description: "Pegalo donde quieras compartirlo" })
+                    await navigator.clipboard.writeText(shareUrl)
+                    toast({ title: "Link copiado", description: "Quien lo abra ve tu diseño y puede comprarlo" })
                   }
                 }}
                 className="flex-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs py-2 px-3 transition flex items-center justify-center gap-1.5"
               >
                 📤 Compartir
               </button>
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(`Mirá lo que diseñé en Novamente: ${session.currentMockupUrl?.startsWith("http") ? session.currentMockupUrl : ""}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 rounded-md bg-green-700 hover:bg-green-600 text-white text-xs py-2 px-3 transition flex items-center justify-center gap-1.5"
-              >
-                💬 WhatsApp
-              </a>
+              {(() => {
+                const params = new URLSearchParams({
+                  recover: session.currentMockupUrl ?? "",
+                  design: session.currentDesignUrl ?? "",
+                  g: session.garmentType,
+                  c: session.garmentColor,
+                  s: session.side,
+                })
+                const shareUrl = typeof window !== "undefined"
+                  ? `${window.location.origin}/crear?${params.toString()}`
+                  : "https://novamente.ar/crear"
+                return (
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`Mirá lo que diseñé en Novamente 🔥 — podés verlo y comprarlo acá: ${shareUrl}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 rounded-md bg-green-700 hover:bg-green-600 text-white text-xs py-2 px-3 transition flex items-center justify-center gap-1.5"
+                  >
+                    💬 WhatsApp
+                  </a>
+                )
+              })()}
               <a
                 href={session.currentMockupUrl?.startsWith("http") ? session.currentMockupUrl : (typeof window !== "undefined" ? `${window.location.origin}${session.currentMockupUrl}` : "#")}
                 download={`novamente-mockup-${Date.now()}.png`}
@@ -1283,6 +1427,31 @@ export function DesignChat({
         )}
       </div>
     </div>
+
+      {/* Mobile sticky bottom CTA — solo visible cuando hay mockup fresh.
+          En desktop se oculta porque el sidebar ya tiene los CTAs visibles. */}
+      {session.currentMockupUrl && !mockupIsStale && (
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-zinc-950/95 backdrop-blur border-t border-zinc-800 px-3 py-3 flex items-center gap-2 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] text-zinc-500 truncate">
+              {garmentLabel(session.garmentType)} · {colorLabel(session.garmentType, session.garmentColor)} · Talle {selectedSize}
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-white font-semibold text-base">
+                ${getPrice(session.garmentType).toLocaleString("es-AR")}
+              </span>
+              <span className="text-[10px] text-emerald-400">o 3x ${Math.round(getPrice(session.garmentType) / 3).toLocaleString("es-AR")}</span>
+            </div>
+          </div>
+          <Button
+            className="shrink-0 bg-violet-600 hover:bg-violet-500 text-white font-semibold px-4 h-11"
+            onClick={handleBuyNow}
+          >
+            <Zap className="w-4 h-4 mr-1.5" />
+            Comprar ya
+          </Button>
+        </div>
+      )}
     </>
   )
 }
