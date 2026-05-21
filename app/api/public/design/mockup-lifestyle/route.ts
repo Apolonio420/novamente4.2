@@ -32,15 +32,35 @@ export async function OPTIONS() {
   return ok({ ok: true })
 }
 
-// Descripción natural por tipo de prenda — Gemini la usa para entender qué dibujar
+// Descripción natural por tipo de prenda — Gemini la usa para entender qué dibujar.
+// IMPORTANTE: cada combinación garmentType+fit del catalog debe estar mapeada
+// para que el mockup respete la prenda seleccionada. Faltaba sweatshirt (buzo
+// cuello redondo) y classic-women — ambos caían al default 't-shirt' y Gemini
+// generaba remera aunque el user eligiera buzo.
 function getGarmentDescription(garmentKey: string): string {
   const p = getCatalogProduct(garmentKey)
   if (!p) return "oversized t-shirt"
-  // Mapeo amistoso para Gemini
-  if (p.garmentType === "hoodie") return "premium oversized pullover hoodie (no zipper, NO drawstrings on the hood)"
-  if (p.garmentType === "tank") return "tank top / sleeveless musculosa"
-  if (p.fit === "crop") return "cropped fitted t-shirt for women"
-  if (p.fit === "oversize") return "oversized boxy unisex t-shirt"
+
+  // hoodie con capucha (Boston Hoodie)
+  if (p.garmentType === "hoodie") {
+    return "premium oversized PULLOVER HOODIE (with hood up at the back, NO zipper, NO drawstrings on the hood, dropped shoulders)"
+  }
+
+  // sweatshirt = buzo cuello redondo (CREWNECK, NO HOOD)
+  if (p.garmentType === "sweatshirt") {
+    return "oversize crewneck pullover sweatshirt (ribbed crew neckline, NO HOOD, NO zipper, dropped shoulders, long sleeves with ribbed cuffs) — buzo cuello redondo argentino"
+  }
+
+  // tank = musculosa sin mangas
+  if (p.garmentType === "tank") {
+    return "sleeveless tank top (musculosa) with wide armholes, ribbed scoop neckline"
+  }
+
+  // tshirt variants
+  if (p.fit === "crop") return "cropped fitted women's t-shirt (short length, exposes midriff slightly, fitted silhouette)"
+  if (p.fit === "classic-women") return "fitted classic t-shirt for women (feminine cut, slightly tailored at the waist)"
+  if (p.fit === "oversize") return "oversized boxy unisex t-shirt (dropped shoulders, wider fit, longer hem)"
+
   return "classic fit unisex t-shirt"
 }
 

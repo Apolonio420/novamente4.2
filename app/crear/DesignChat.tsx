@@ -719,12 +719,12 @@ export function DesignChat({
             {mockupLoading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Probando en prenda...
+                Generando foto en {garmentLabel(session.garmentType).toLowerCase()} {colorLabel(session.garmentType, session.garmentColor).toLowerCase()}...
               </>
             ) : (
               <>
                 <Shirt className="w-4 h-4 mr-2" />
-                Probar en prenda
+                Probar en {garmentLabel(session.garmentType)} {colorLabel(session.garmentType, session.garmentColor)}
               </>
             )}
           </Button>
