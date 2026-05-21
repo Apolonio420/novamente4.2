@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { designImageUrl, garmentType, garmentColor, side, stampMode, sessionId } = body
+    const { designImageUrl, garmentType, garmentColor, side, stampMode, placement, sessionId } = body
 
     if (!designImageUrl) {
       return NextResponse.json({ error: 'Se requiere designImageUrl' }, { status: 400 })
@@ -160,14 +160,33 @@ export async function POST(request: NextRequest) {
 
     // Build prompt for Gemini mockup composition
     const sideLabel = sideChoice === 'back' ? 'espalda' : 'frente'
-    const stampModeChoice = (stampMode || 'large') as 'large' | 'chest-logo' | 'sleeve-logo'
+    const stampModeChoice = (stampMode || 'large') as 'large' | 'medium' | 'chest-logo'
+    const placementChoice = (placement || '') as string
 
-    const stampPlacement =
+    const sizeLine =
       stampModeChoice === 'chest-logo'
-        ? `Logo pequeño (~10×10 cm) en el pecho izquierdo del ${sideLabel}, discreto y bien proporcionado`
-        : stampModeChoice === 'sleeve-logo'
-          ? `Logo pequeño (~8×8 cm) en la manga de la prenda, bien centrado en el ancho de la manga`
-          : `Estampa grande (~30×30 cm) centrada en el ${sideLabel} de la prenda`
+        ? 'Logo pequeño (~10×10 cm), discreto y bien proporcionado'
+        : stampModeChoice === 'medium'
+          ? 'Estampa mediana (~20×25 cm)'
+          : 'Estampa grande que debe ocupar casi toda el área imprimible disponible, aproximándose a 35×40 cm (sin exceder ese máximo). No la achiques: maximiza la presencia del diseño en la prenda'
+
+    const positionLine = (() => {
+      switch (placementChoice) {
+        case 'left-chest':
+          return `Posicionada en el pecho izquierdo del ${sideLabel} (sobre el corazón)`
+        case 'center-high':
+          return `Centrada horizontalmente en el ${sideLabel} y ubicada en la zona alta de la prenda (no centro absoluto, anclada hacia arriba)`
+        case 'upper-center':
+          return `Centrada horizontalmente en la espalda, justo debajo del cuello / nuca`
+        case 'pocket':
+          return `Si la prenda tiene bolsillo en el ${sideLabel}, aplicala sobre o junto al bolsillo respetando su forma. Si no tiene bolsillo, posicionala en el pecho izquierdo como fallback`
+        case 'center':
+        default:
+          return `Centrada en el ${sideLabel} de la prenda`
+      }
+    })()
+
+    const stampPlacement = `${sizeLine}. ${positionLine}. La composición debe verse estéticamente equilibrada y profesional.`
 
     const promptText = `Aplica este diseno a la prenda siguiendo estas instrucciones:
 - ${stampPlacement}

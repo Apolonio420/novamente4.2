@@ -82,6 +82,41 @@ const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = Object.fromEn
 )
 
 // ---------------------------------------------------------------------------
+// Placement options per stamp mode + side
+// ---------------------------------------------------------------------------
+
+interface PlacementOption { key: string; label: string; hint: string }
+
+function getPlacementOptions(
+  mode: 'large' | 'medium' | 'chest-logo',
+  side: 'front' | 'back'
+): PlacementOption[] {
+  if (mode === 'chest-logo' && side === 'front') {
+    return [
+      { key: 'left-chest', label: 'Sobre el corazón', hint: 'Logo pequeño en el pecho izquierdo (~10×10 cm)' },
+      { key: 'center-high', label: 'Centro alto', hint: 'Logo centrado a la altura del esternón' },
+      { key: 'pocket',      label: 'Sobre el bolsillo', hint: 'Si la prenda tiene bolsillo, aplicalo encima (si no, fallback a pecho izquierdo)' },
+    ]
+  }
+  if (mode === 'chest-logo' && side === 'back') {
+    return [
+      { key: 'upper-center', label: 'Nuca / cuello', hint: 'Logo pequeño centrado debajo del cuello' },
+      { key: 'center-high',  label: 'Centro alto', hint: 'Logo centrado en la zona alta de la espalda' },
+    ]
+  }
+  if (mode === 'medium') {
+    return [
+      { key: 'center',      label: 'Centro', hint: 'Estampa mediana centrada' },
+      { key: 'center-high', label: 'Centro alto', hint: 'Estampa mediana ligeramente arriba del centro' },
+    ]
+  }
+  // large — ocupa casi toda el área imprimible, no tiene sentido ofrecer variantes
+  return [
+    { key: 'center', label: 'Centro (35×40 cm)', hint: 'Estampa grande centrada que ocupa casi toda el área imprimible' },
+  ]
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -107,7 +142,9 @@ export default function DesignStudioPage() {
   const [selectedGarment, setSelectedGarment] = useState(GARMENT_OPTIONS[0].key)
   const [selectedColor, setSelectedColor] = useState('black')
   const [selectedSide, setSelectedSide] = useState<'front' | 'back'>('front')
-  const [selectedStampMode, setSelectedStampMode] = useState<'large' | 'chest-logo' | 'sleeve-logo'>('large')
+  const [selectedStampMode, setSelectedStampMode] = useState<'large' | 'medium' | 'chest-logo'>('large')
+  const [selectedPlacement, setSelectedPlacement] = useState<string>('center')
+  const [placementMenuOpen, setPlacementMenuOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [styleModalOpen, setStyleModalOpen] = useState(false)
   // Default OFF: la "esencia de marca" influia demasiado en el prompt. El partner
@@ -229,6 +266,15 @@ export default function DesignStudioPage() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [session.messages])
+
+  // Reset placement to first valid option when stamp mode or side changes
+  useEffect(() => {
+    const opts = getPlacementOptions(selectedStampMode, selectedSide)
+    if (!opts.some(o => o.key === selectedPlacement)) {
+      setSelectedPlacement(opts[0]?.key || 'center')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedStampMode, selectedSide])
 
   // ---------------------------------------------------------------------------
   // Session management
@@ -392,6 +438,7 @@ export default function DesignStudioPage() {
           garmentColor: selectedColor,
           side: selectedSide,
           stampMode: selectedStampMode,
+          placement: selectedPlacement,
           sessionId,
         }),
       })
@@ -685,8 +732,8 @@ export default function DesignStudioPage() {
       <div className={`
         fixed inset-y-0 left-0 z-40 w-72 bg-zinc-900/95 backdrop-blur border-r border-zinc-800
         transform transition-transform duration-200
-        lg:relative lg:translate-x-0
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:relative lg:flex-shrink-0
+        ${sidebarOpen ? 'translate-x-0 lg:w-72' : '-translate-x-full lg:w-0 lg:-ml-px lg:border-r-0'}
       `}>
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-4 border-b border-zinc-800">
@@ -695,7 +742,7 @@ export default function DesignStudioPage() {
               <button onClick={handleNewConversation} className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors" title="Nueva sesion">
                 <Plus className="h-4 w-4" />
               </button>
-              <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 lg:hidden">
+              <button onClick={() => setSidebarOpen(false)} className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400" title="Cerrar panel de sesiones">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -752,7 +799,11 @@ export default function DesignStudioPage() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800 bg-zinc-900/50">
-          <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 lg:hidden">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400"
+            title={sidebarOpen ? 'Ocultar panel de sesiones' : 'Mostrar panel de sesiones'}
+          >
             <Menu className="h-5 w-5" />
           </button>
           <Sparkles className="h-5 w-5 text-violet-400" />
@@ -941,27 +992,71 @@ export default function DesignStudioPage() {
           {/* Stamp mode selector */}
           <div className="flex items-center bg-zinc-800 rounded-lg overflow-hidden text-xs">
             <button
+              onClick={() => setSelectedStampMode('chest-logo')}
+              className={`px-2.5 py-1.5 ${selectedStampMode === 'chest-logo' ? 'bg-violet-600 text-white' : 'text-zinc-400'}`}
+              title="Logo pequeño en pecho o espalda (~10×10 cm)"
+            >
+              Chico / Logo
+            </button>
+            <button
+              onClick={() => setSelectedStampMode('medium')}
+              className={`px-2.5 py-1.5 ${selectedStampMode === 'medium' ? 'bg-violet-600 text-white' : 'text-zinc-400'}`}
+              title="Estampa mediana (~20×25 cm)"
+            >
+              Mediano
+            </button>
+            <button
               onClick={() => setSelectedStampMode('large')}
               className={`px-2.5 py-1.5 ${selectedStampMode === 'large' ? 'bg-violet-600 text-white' : 'text-zinc-400'}`}
-              title="Estampa grande centrada (~30×30 cm)"
+              title="Estampa grande, hasta 35×40 cm de área"
             >
               Grande
             </button>
-            <button
-              onClick={() => setSelectedStampMode('chest-logo')}
-              className={`px-2.5 py-1.5 ${selectedStampMode === 'chest-logo' ? 'bg-violet-600 text-white' : 'text-zinc-400'}`}
-              title="Logo pequeño en pecho izquierdo (~10×10 cm)"
-            >
-              Logo pecho
-            </button>
-            <button
-              onClick={() => setSelectedStampMode('sleeve-logo')}
-              className={`px-2.5 py-1.5 ${selectedStampMode === 'sleeve-logo' ? 'bg-violet-600 text-white' : 'text-zinc-400'}`}
-              title="Logo en manga (~8×8 cm)"
-            >
-              Logo manga
-            </button>
           </div>
+
+          {/* Placement dropdown — depende de stampMode + side */}
+          {(() => {
+            const placementOpts = getPlacementOptions(selectedStampMode, selectedSide)
+            const current = placementOpts.find(o => o.key === selectedPlacement) || placementOpts[0]
+            return (
+              <div className="relative">
+                <button
+                  onClick={() => setPlacementMenuOpen(v => !v)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-800 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors whitespace-nowrap"
+                  title={current?.hint}
+                >
+                  <Pin className="h-3 w-3 text-violet-400" />
+                  {current?.label || 'Ubicación'}
+                  <ChevronDown className={`h-3 w-3 transition-transform ${placementMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {placementMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-30" onClick={() => setPlacementMenuOpen(false)} />
+                    <div className="absolute left-0 mt-1.5 w-64 rounded-xl border border-zinc-700/80 bg-zinc-900/95 backdrop-blur shadow-2xl z-40 overflow-hidden">
+                      <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-zinc-500 border-b border-zinc-800">
+                        Dónde aplicar la estampa
+                      </div>
+                      {placementOpts.map(opt => (
+                        <button
+                          key={opt.key}
+                          onClick={() => { setSelectedPlacement(opt.key); setPlacementMenuOpen(false) }}
+                          className={`w-full text-left px-3 py-2.5 text-xs transition-colors flex items-start gap-2 ${
+                            opt.key === selectedPlacement ? 'bg-violet-600/15 text-violet-200' : 'text-zinc-300 hover:bg-zinc-800/80'
+                          }`}
+                        >
+                          <Check className={`h-3.5 w-3.5 mt-0.5 flex-shrink-0 ${opt.key === selectedPlacement ? 'text-violet-400' : 'opacity-0'}`} />
+                          <div className="min-w-0">
+                            <p className="font-medium leading-tight">{opt.label}</p>
+                            <p className="text-[11px] text-zinc-500 leading-snug mt-0.5">{opt.hint}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )
+          })()}
 
           <div className="ml-auto" />
 
