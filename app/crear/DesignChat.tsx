@@ -175,7 +175,15 @@ export function DesignChat({
             imageUrl: directUrl,
           },
         ])
-        setSession((prev) => ({ ...prev, currentDesignUrl: directUrl, currentMockupUrl: null }))
+        setSession((prev) => ({
+          ...prev,
+          currentDesignUrl: directUrl,
+          frontDesignUrl: prev.side === "front" ? directUrl : prev.frontDesignUrl,
+          backDesignUrl: prev.side === "back" ? directUrl : prev.backDesignUrl,
+          currentMockupUrl: null,
+          mockupGeneratedFor: null,
+          designHistory: [directUrl, ...prev.designHistory.filter((u) => u !== directUrl)].slice(0, 5),
+        }))
         lastPromptRef.current = text
         setLoading(false)
         // Trigger mockup automaticamente — el user ya dijo que era lo que queria
@@ -196,7 +204,16 @@ export function DesignChat({
               // El endpoint devuelve publicUrl (no mockupUrl) — fallback por compat
               const mockupUrl = d.publicUrl ?? d.mockupUrl
               if (mockupUrl) {
-                setSession((prev) => ({ ...prev, currentMockupUrl: mockupUrl }))
+                setSession((prev) => ({
+                  ...prev,
+                  currentMockupUrl: mockupUrl,
+                  mockupGeneratedFor: {
+                    garmentType: prev.garmentType,
+                    garmentColor: prev.garmentColor,
+                    side: prev.side,
+                    designUrl: prev.currentDesignUrl ?? "",
+                  },
+                }))
                 toast({ title: "Mockup listo", description: "Tu foto en la prenda 👇" })
               }
             })
@@ -231,7 +248,15 @@ export function DesignChat({
             imageUrl: cleanUrl,
           },
         ])
-        setSession((prev) => ({ ...prev, currentDesignUrl: cleanUrl, currentMockupUrl: null }))
+        setSession((prev) => ({
+          ...prev,
+          currentDesignUrl: cleanUrl,
+          frontDesignUrl: prev.side === "front" ? cleanUrl : prev.frontDesignUrl,
+          backDesignUrl: prev.side === "back" ? cleanUrl : prev.backDesignUrl,
+          currentMockupUrl: null,
+          mockupGeneratedFor: null,
+          designHistory: [cleanUrl, ...prev.designHistory.filter((u) => u !== cleanUrl)].slice(0, 5),
+        }))
         lastPromptRef.current = text
         setLoading(false)
         return
@@ -298,7 +323,12 @@ export function DesignChat({
       setSession((prev) => ({
         ...prev,
         currentDesignUrl: imageUrl,
+        // Guardamos el design en el slot del lado actual (front o back)
+        frontDesignUrl: prev.side === "front" ? imageUrl : prev.frontDesignUrl,
+        backDesignUrl: prev.side === "back" ? imageUrl : prev.backDesignUrl,
         currentMockupUrl: null, // reset mockup on new design
+        mockupGeneratedFor: null,
+        designHistory: [imageUrl, ...prev.designHistory.filter((u) => u !== imageUrl)].slice(0, 5),
       }))
     } catch (e: any) {
       toast({ title: "Error generando diseño", description: e.message, variant: "destructive" })
@@ -332,7 +362,16 @@ export function DesignChat({
       const data = await res.json()
       const mockupUrl = data.publicUrl ?? data.mockupUrl
       if (!res.ok || !mockupUrl) throw new Error(data.error ?? "Error generando mockup")
-      setSession((prev) => ({ ...prev, currentMockupUrl: mockupUrl }))
+      setSession((prev) => ({
+        ...prev,
+        currentMockupUrl: mockupUrl,
+        mockupGeneratedFor: {
+          garmentType: prev.garmentType,
+          garmentColor: prev.garmentColor,
+          side: prev.side,
+          designUrl: prev.currentDesignUrl ?? "",
+        },
+      }))
       toast({ title: "Mockup listo", description: "Tu prenda en una foto lifestyle 👇" })
     } catch (e: any) {
       toast({ title: "Error en mockup", description: e.message, variant: "destructive" })
@@ -371,6 +410,15 @@ export function DesignChat({
   }
 
   const previewUrl = session.currentMockupUrl ?? session.currentDesignUrl
+
+  // Stale: el mockup actual fue generado para otra prenda/color/lado/diseño
+  const mockupIsStale =
+    session.currentMockupUrl !== null &&
+    session.mockupGeneratedFor !== null &&
+    (session.mockupGeneratedFor.garmentType !== session.garmentType ||
+      session.mockupGeneratedFor.garmentColor !== session.garmentColor ||
+      session.mockupGeneratedFor.side !== session.side ||
+      session.mockupGeneratedFor.designUrl !== session.currentDesignUrl)
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 min-h-[70vh]">
@@ -657,11 +705,21 @@ export function DesignChat({
       <div className="w-full lg:w-80 xl:w-96 shrink-0 flex flex-col gap-4">
         {/* Preview card */}
         <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
-          <div className="p-3 border-b border-zinc-800">
+          <div className="p-3 border-b border-zinc-800 flex items-center justify-between gap-2">
             <p className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
               {session.currentMockupUrl ? "Mockup en prenda" : session.currentDesignUrl ? "Diseño generado" : "Preview"}
             </p>
+            {mockupIsStale && (
+              <span className="text-[10px] font-medium text-amber-400 bg-amber-950/40 border border-amber-800/40 rounded-full px-2 py-0.5">
+                Mockup desactualizado
+              </span>
+            )}
           </div>
+          {mockupIsStale && (
+            <div className="px-3 py-2 bg-amber-950/20 border-b border-amber-800/30 text-[11px] text-amber-300 leading-snug">
+              Cambiaste de prenda/color desde el último mockup. Tocá "Probar en {garmentLabel(session.garmentType)} {colorLabel(session.garmentType, session.garmentColor)}" para regenerar.
+            </div>
+          )}
 
           <div className="aspect-square bg-zinc-950 flex items-center justify-center">
             {previewUrl ? (
@@ -706,9 +764,47 @@ export function DesignChat({
             garmentColor={session.garmentColor}
             side={session.side}
             onChange={({ garmentType, garmentColor, side }) =>
-              setSession((prev) => ({ ...prev, garmentType, garmentColor, side, currentMockupUrl: null }))
+              setSession((prev) => {
+                // Al cambiar side, currentDesignUrl pasa al diseño del nuevo lado
+                // (si hay) o queda en el del lado anterior si el nuevo no tiene.
+                const sideChanged = side !== prev.side
+                const nextDesignForSide =
+                  side === "front" ? prev.frontDesignUrl : prev.backDesignUrl
+                return {
+                  ...prev,
+                  garmentType,
+                  garmentColor,
+                  side,
+                  currentDesignUrl: sideChanged
+                    ? nextDesignForSide ?? prev.currentDesignUrl
+                    : prev.currentDesignUrl,
+                  // NO reseteamos mockup aca — el stale indicator se encarga
+                  // de mostrar si esta desactualizado.
+                }
+              })
             }
           />
+
+          {/* Size selector — siempre visible para que el user lo elija desde temprano */}
+          <div className="mt-4 space-y-1.5">
+            <label className="text-xs text-zinc-500 uppercase tracking-wider">Talle</label>
+            <div className="flex gap-1.5 flex-wrap">
+              {SIZE_OPTIONS.map((sz) => (
+                <button
+                  key={sz}
+                  type="button"
+                  onClick={() => setSelectedSize(sz)}
+                  className={`min-w-[36px] px-2.5 py-1 rounded text-xs font-medium transition ${
+                    selectedSize === sz
+                      ? "bg-violet-600 text-white"
+                      : "bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700"
+                  }`}
+                >
+                  {sz}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Mockup button */}
           <Button
@@ -730,30 +826,93 @@ export function DesignChat({
           </Button>
         </div>
 
-        {/* Cart controls — only when mockup exists */}
-        {session.currentMockupUrl && (
-          <div className="bg-zinc-900 rounded-2xl border border-violet-800/40 p-4 space-y-3">
-            <p className="text-xs font-medium text-violet-400 uppercase tracking-wider">Agregar al carrito</p>
-
-            {/* Size selector */}
-            <div className="space-y-1.5">
-              <label className="text-xs text-zinc-500">Talle</label>
-              <div className="flex gap-1.5 flex-wrap">
-                {SIZE_OPTIONS.map((sz) => (
-                  <button
-                    key={sz}
-                    onClick={() => setSelectedSize(sz)}
-                    className={`px-3 py-1 rounded text-xs font-medium transition ${
-                      selectedSize === sz
-                        ? "bg-violet-600 text-white"
-                        : "bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-700"
-                    }`}
-                  >
-                    {sz}
-                  </button>
-                ))}
-              </div>
+        {/* Design history — últimos 5 diseños generados, click para volver a usar */}
+        {session.designHistory.length > 1 && (
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-3">
+            <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-2">
+              Tus diseños recientes ({session.designHistory.length})
+            </p>
+            <div className="flex gap-2 overflow-x-auto">
+              {session.designHistory.map((url) => (
+                <button
+                  key={url}
+                  type="button"
+                  onClick={() => {
+                    setSession((prev) => ({
+                      ...prev,
+                      currentDesignUrl: url,
+                      frontDesignUrl: prev.side === "front" ? url : prev.frontDesignUrl,
+                      backDesignUrl: prev.side === "back" ? url : prev.backDesignUrl,
+                    }))
+                  }}
+                  className={`relative w-14 h-14 shrink-0 rounded-md overflow-hidden border-2 transition ${
+                    session.currentDesignUrl === url
+                      ? "border-violet-500"
+                      : "border-zinc-700 hover:border-zinc-500"
+                  }`}
+                  title="Usar este diseño"
+                >
+                  <Image src={url} alt="Diseño" fill className="object-cover" unoptimized />
+                </button>
+              ))}
             </div>
+          </div>
+        )}
+
+        {/* Social share — when mockup ready */}
+        {session.currentMockupUrl && !mockupIsStale && (
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-3">
+            <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-2">
+              Compartir
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  const url = session.currentMockupUrl!
+                  const absolute = url.startsWith("http") ? url : `${window.location.origin}${url}`
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({
+                        title: `Mi diseño en Novamente · ${garmentLabel(session.garmentType)}`,
+                        text: "Mirá lo que diseñé en novamente.ar 🔥",
+                        url: absolute,
+                      })
+                    } catch {}
+                  } else {
+                    await navigator.clipboard.writeText(absolute)
+                    toast({ title: "Link copiado", description: "Pegalo donde quieras compartirlo" })
+                  }
+                }}
+                className="flex-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs py-2 px-3 transition flex items-center justify-center gap-1.5"
+              >
+                📤 Compartir
+              </button>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Mirá lo que diseñé en Novamente: ${session.currentMockupUrl?.startsWith("http") ? session.currentMockupUrl : ""}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 rounded-md bg-green-700 hover:bg-green-600 text-white text-xs py-2 px-3 transition flex items-center justify-center gap-1.5"
+              >
+                💬 WhatsApp
+              </a>
+              <a
+                href={session.currentMockupUrl?.startsWith("http") ? session.currentMockupUrl : (typeof window !== "undefined" ? `${window.location.origin}${session.currentMockupUrl}` : "#")}
+                download={`novamente-mockup-${Date.now()}.png`}
+                className="flex-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs py-2 px-3 transition flex items-center justify-center gap-1.5"
+              >
+                ⬇️ Descargar
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* Cart controls — only when mockup exists AND is fresh */}
+        {session.currentMockupUrl && !mockupIsStale && (
+          <div className="bg-zinc-900 rounded-2xl border border-violet-800/40 p-4 space-y-3">
+            <p className="text-xs font-medium text-violet-400 uppercase tracking-wider">
+              Agregar al carrito · Talle {selectedSize}
+            </p>
 
             {/* Price */}
             <div className="flex justify-between items-center text-sm">

@@ -16,7 +16,18 @@ const TryOnModal = dynamic(() => import("./TryOnModal").then(m => m.TryOnModal),
 export type DesignSession = {
   sessionId: string | null
   currentDesignUrl: string | null
+  frontDesignUrl: string | null
+  backDesignUrl: string | null
   currentMockupUrl: string | null
+  // Snapshot del context cuando se generó el mockup actual.
+  // Si garment/color/side actuales no coinciden, mostramos "stale".
+  mockupGeneratedFor: {
+    garmentType: string
+    garmentColor: string
+    side: "front" | "back"
+    designUrl: string
+  } | null
+  designHistory: string[] // últimos 5 design URLs generados
   garmentType: string
   garmentColor: string
   side: "front" | "back"
@@ -29,7 +40,11 @@ export default function CrearPage() {
   const [session, setSession] = useState<DesignSession>({
     sessionId: null,
     currentDesignUrl: null,
+    frontDesignUrl: null,
+    backDesignUrl: null,
     currentMockupUrl: null,
+    mockupGeneratedFor: null,
+    designHistory: [],
     garmentType: "aldea-classic-tshirt",
     garmentColor: "black",
     side: "front",
