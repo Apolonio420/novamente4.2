@@ -1037,8 +1037,9 @@ export function DesignChat({
               onClick={() => fileInputRef.current?.click()}
               disabled={loading}
               title="Adjuntar imagen de referencia"
+              aria-label="Adjuntar imagen de referencia"
             >
-              <Paperclip className="w-4 h-4 text-zinc-400" />
+              <Paperclip className="w-4 h-4 text-zinc-400" aria-hidden="true" />
             </Button>
 
             {/* Send button */}
@@ -1376,9 +1377,43 @@ export function DesignChat({
               <span className="text-zinc-400">
                 {garmentLabel(session.garmentType)} · {colorLabel(session.garmentType, session.garmentColor)}
               </span>
-              <span className="text-white font-semibold">
-                ${(getPrice(session.garmentType)).toLocaleString("es-AR")}
-              </span>
+              <details className="group">
+                <summary className="cursor-pointer list-none text-white font-semibold flex items-center gap-1 hover:text-violet-300 transition">
+                  ${(getPrice(session.garmentType)).toLocaleString("es-AR")}
+                  <span className="text-[10px] text-zinc-500 group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                <div className="absolute right-3 mt-1 z-10 bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-xs space-y-1.5 shadow-xl min-w-[220px]">
+                  <p className="text-zinc-400 text-[10px] uppercase tracking-wider mb-1">Desglose</p>
+                  {(() => {
+                    const total = getPrice(session.garmentType)
+                    // Estimacion: 65% prenda + 25% estampa DTG + 10% margen
+                    const prenda = Math.round(total * 0.65)
+                    const estampa = Math.round(total * 0.25)
+                    const margen = total - prenda - estampa
+                    return (
+                      <>
+                        <div className="flex justify-between text-zinc-300">
+                          <span>Prenda algodón premium</span>
+                          <span>${prenda.toLocaleString("es-AR")}</span>
+                        </div>
+                        <div className="flex justify-between text-zinc-300">
+                          <span>Estampa DTG full color</span>
+                          <span>${estampa.toLocaleString("es-AR")}</span>
+                        </div>
+                        <div className="flex justify-between text-zinc-300">
+                          <span>Producción + atención</span>
+                          <span>${margen.toLocaleString("es-AR")}</span>
+                        </div>
+                        <div className="border-t border-zinc-700 pt-1 flex justify-between font-semibold text-white">
+                          <span>Total</span>
+                          <span>${total.toLocaleString("es-AR")}</span>
+                        </div>
+                        <p className="text-[9px] text-zinc-500 pt-1">Envío aparte. Sin costos ocultos.</p>
+                      </>
+                    )
+                  })()}
+                </div>
+              </details>
             </div>
             <div className="text-[11px] text-emerald-400/90 -mt-1.5">
               o 3 cuotas de ${Math.round(getPrice(session.garmentType) / 3).toLocaleString("es-AR")} sin interés

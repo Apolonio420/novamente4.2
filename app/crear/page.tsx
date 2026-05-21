@@ -200,7 +200,8 @@ function ModeTab({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition disabled:opacity-30 disabled:cursor-not-allowed ${
+      aria-current={active ? "page" : undefined}
+      className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
         active
           ? "border-white bg-white text-zinc-950"
           : "border-zinc-700 bg-transparent text-zinc-300 hover:border-zinc-500"

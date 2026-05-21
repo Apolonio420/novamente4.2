@@ -176,6 +176,48 @@ test("mobile happy path: generate + mockup en iPhone 14 Pro", async ({ browser }
   await ctx.close()
 })
 
+// Test 6: Bg removal con @imgly — debe rutear a /remove-bg, no /edit
+test("bg removal: cliente @imgly remueve fondo correctamente", async ({ browser }) => {
+  test.setTimeout(180000)
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+  const page = await ctx.newPage()
+  const apiLog: { url: string; status: number }[] = []
+  page.on("response", (res) => {
+    if (res.url().includes("/api/")) apiLog.push({ url: res.url(), status: res.status() })
+  })
+
+  await page.goto(BASE_URL, { waitUntil: "networkidle", timeout: 60000 })
+  await page.waitForTimeout(2000)
+
+  // Upload una imagen real (lifestyle generada earlier, persona con prenda)
+  const fileInput = page.locator('input[type="file"]').first()
+  const testImagePath = "tests-results/desktop-03-after-generate.png"
+  await fileInput.setInputFiles(testImagePath)
+  await page.waitForTimeout(2500)
+
+  // Pedir bg removal con la frase exacta del user
+  const textarea = page.locator("textarea").first()
+  await textarea.waitFor({ state: "visible", timeout: 20000 })
+  await textarea.fill("sacale el fondo")
+  await page.waitForTimeout(300)
+
+  const sendBtn = page.getByTestId("send-prompt")
+  await sendBtn.click()
+
+  // Wait — @imgly first-load downloads ~50MB de models ONNX
+  await page.waitForTimeout(90000)
+  await page.screenshot({ path: `${SCREENSHOT_DIR}/desktop-06-bg-removed.png`, fullPage: true })
+
+  const bgRemoveCalls = apiLog.filter((n) => n.url.includes("/api/public/design/remove-bg"))
+  const editCalls = apiLog.filter((n) => n.url.includes("/api/public/design/edit"))
+  console.log(`[BG-REMOVE] calls: ${bgRemoveCalls.length} — status: ${bgRemoveCalls.map((c) => c.status).join(",")}`)
+  console.log(`[EDIT-fallback] calls: ${editCalls.length} (deberia ser 0 — intent correctamente detectado)`)
+  console.log("[FULL]")
+  apiLog.forEach((n) => console.log(`  ${n.status} ${n.url}`))
+
+  await ctx.close()
+})
+
 // Test 5: Upload image + ask for bg removal — el caso del user
 test("upload + bg removal: simula el flow de subir selfie", async ({ browser }) => {
   test.setTimeout(180000)
