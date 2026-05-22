@@ -20,6 +20,13 @@ interface TikTokTokenResponse {
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url)
+
+  // PLATFORM ADMIN OAUTH: state sin prefijo "tenantId:" significa que el OAuth
+  // lo inicio admin.novamente.ar (no un partner). Forward al callback del platform.
+  const stateParam = url.searchParams.get('state')
+  if (stateParam && !stateParam.includes(':')) {
+    return NextResponse.redirect(`https://admin.novamente.ar${url.pathname}${url.search}`)
+  }
   const code = url.searchParams.get('code')
   const state = url.searchParams.get('state')
   const error = url.searchParams.get('error')
