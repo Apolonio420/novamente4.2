@@ -30,3 +30,13 @@ next-env.d.ts
 # autopilot v4.2
 autopilot-loop-*.log
 scripts/.autopilot-state.json
+
+# playwright + test artifacts
+/.playwright-mcp/
+/test-results/
+/playwright-report/
+
+# local tool artifacts (no aportan al repo)
+/.ralphy/
+/claude-talk-to-figma-mcp/
+autopilot-session-*.log

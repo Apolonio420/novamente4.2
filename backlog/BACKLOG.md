@@ -360,11 +360,7 @@ Después del cambio, **el único número que debe aparecer es `5492235169720`** 
 
 Mover items acá cuando aparecen ideas pero no están listas para sprint.
 
-- **Excel `1.5.26 | Precios Nuevos Productos - dreamful - Update.xlsx`** — agregar dos tabs nuevas con la info de Plan Growth (sin tocar precios B2C existentes):
-  - Tab `Plan_Growth`: una fila por producto con `Producto`, `Costo (peor color, Cost_2_Print)`, `Precio Plan Growth` (= Costo + $2.000), `Diferencia vs tier Partner 1u`, `Diferencia vs tier Bulk 100u`, `% ahorro vs Partner 1u`.
-  - Tab `Summary_Planes`: tabla compacta con `Producto`, `B2C web`, `Partner gratis (Starter)`, `Plan Growth`, `Margen partner vendiendo a B2C` (= B2C − Growth).
-  - NO recalcular ni modificar la columna B2C en otras hojas ni los tiers Partner/Starter/Pro/Drop/Bulk.
-  - Ejecutarlo desde la extensión Claude Code del Excel (ver prompt guardado en chat de Sambu del 2026-05-18).
+_(vacío al 2026-05-22)_
 
 
 ## AUTO-FEEDER — 2026-05-18
@@ -466,67 +462,7 @@ TS2769: No overload matches this call.
 
 ---
 
-## AUTO-FEEDER — 2026-05-18
-
-Detectados por `scripts/backlog-auto-feeder.sh`. Mover a SPRINT ACTUAL si se quieren correr.
-
-### AUTOFEED-20260518-1 — tsc: page.ts:34
-
-**Por qué:** Detectado por auto-feeder (tsc).
-
-**Archivos:**
-- `.next/types/app/design/[imageId]/page.ts` línea 34
-
-**Error:**
-```
-TS2344: Type 'PageProps' does not satisfy the constraint 'import("/Users/sambujuan/novamente/dev/novamente4.2-main 2/.next/types/app/design/[imageId]/page").PageProps'.
-```
-
-**Criterio DONE:**
-- [ ] Error resuelto
-- [ ] `npx tsc --noEmit` verde
-- [ ] Commit con tag `[AP-v4.2 AUTOFEED-20260518-1]`
-
----
-
-## AUTO-FEEDER — 2026-05-19
-
-Detectados por `scripts/backlog-auto-feeder.sh`. Mover a SPRINT ACTUAL si se quieren correr.
-
-### AUTOFEED-20260519-1 — tsc: DesignCanvas.tsx:4
-
-**Por qué:** Detectado por auto-feeder (tsc).
-
-**Archivos:**
-- `app/crear/DesignCanvas.tsx` línea 4
-
-**Error:**
-```
-TS2307: Cannot find module 'react-konva' or its corresponding type declarations.
-```
-
-**Criterio DONE:**
-- [ ] Error resuelto
-- [ ] `npx tsc --noEmit` verde
-- [ ] Commit con tag `[AP-v4.2 AUTOFEED-20260519-1]`
-
----
-
-### AUTOFEED-20260519-2 — tsc: DesignCanvas.tsx:5
-
-**Por qué:** Detectado por auto-feeder (tsc).
-
-**Archivos:**
-- `app/crear/DesignCanvas.tsx` línea 5
-
-**Error:**
-```
-TS2307: Cannot find module 'konva' or its corresponding type declarations.
-```
-
-**Criterio DONE:**
-- [ ] Error resuelto
-- [ ] `npx tsc --noEmit` verde
-- [ ] Commit con tag `[AP-v4.2 AUTOFEED-20260519-2]`
-
----
+<!-- Auto-feeder entries del 2026-05-18 (page.ts:34) y 2026-05-19
+     (DesignCanvas.tsx react-konva / konva) verificadas como obsoletas
+     al 2026-05-22: tsc --noEmit pasa limpio. Resueltas en commits posteriores
+     que no actualizaron el backlog. Eliminadas para no falsear pendientes. -->
