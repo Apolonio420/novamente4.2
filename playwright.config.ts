@@ -1,4 +1,9 @@
 import { defineConfig } from '@playwright/test'
+import { config as loadEnv } from 'dotenv'
+
+// Cargar .env.local para que los tests E2E vean las creds (Supabase, etc.)
+loadEnv({ path: '.env.local' })
+loadEnv({ path: '.env.test', override: false })
 
 export default defineConfig({
   testDir: './e2e',

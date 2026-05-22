@@ -64,13 +64,23 @@ export async function PUT(
         .replace(/^-|-$/g, '')
     }
 
-    // Policy: si el partner edita name/description/category, revalidar contra la
-    // politica de productos. Bloquea que muten un producto valido a uno prohibido.
-    if (updates.name !== undefined || updates.description !== undefined || updates.category !== undefined) {
+    // Policy: revalidar SOLO los campos que el partner esta modificando, no los
+    // valores legacy ya guardados. Esto permite que productos legacy (que no
+    // pasarian la policy hoy) puedan editar otros campos o bajar de visibilidad
+    // sin quedar bloqueados para siempre.
+    // Ademas, si el unico cambio es bajar el status a hidden/draft/archived,
+    // siempre permitirlo — un partner siempre debe poder ocultar su producto.
+    const loweringVisibility = typeof updates.status === 'string'
+      && ['hidden', 'draft', 'archived'].includes(updates.status as string)
+    const touchesPolicyFields = updates.name !== undefined
+      || updates.description !== undefined
+      || updates.category !== undefined
+
+    if (touchesPolicyFields && !loweringVisibility) {
       const policy = validatePartnerProductForCreation({
-        name: (updates.name as string | undefined) ?? existing.name,
-        description: (updates.description as string | undefined) ?? existing.description ?? undefined,
-        category: (updates.category as string | undefined) ?? existing.category ?? undefined,
+        name: (updates.name as string | undefined) ?? '',
+        description: (updates.description as string | undefined) ?? '',
+        category: (updates.category as string | undefined) ?? '',
       })
       if (!policy.ok) {
         return NextResponse.json({ error: policy.reason }, { status: 422 })

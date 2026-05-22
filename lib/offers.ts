@@ -34,7 +34,7 @@ export const HOT_SALE_OFFERS: Offer[] = [
     priceOriginal: 44500,
     campaign: "Hot Sale",
     startsAt: "2026-05-11T00:00:00-03:00",
-    endsAt: "2026-05-18T23:59:59-03:00",
+    endsAt: "2026-05-31T23:59:59-03:00",
     shortDescription: "Doble estampa frente + espalda, collage premium de la cultura argentina del fútbol.",
     badge: "Doble estampa",
   },
@@ -48,7 +48,7 @@ export const HOT_SALE_OFFERS: Offer[] = [
     priceOriginal: 39800,
     campaign: "Hot Sale",
     startsAt: "2026-05-11T00:00:00-03:00",
-    endsAt: "2026-05-18T23:59:59-03:00",
+    endsAt: "2026-05-31T23:59:59-03:00",
     shortDescription: "Maradona y Messi entre nubes con la copa del mundo — estampa frontal.",
     badge: "Top vendido",
   },
@@ -62,7 +62,7 @@ export const HOT_SALE_OFFERS: Offer[] = [
     priceOriginal: 41000,
     campaign: "Hot Sale",
     startsAt: "2026-05-11T00:00:00-03:00",
-    endsAt: "2026-05-18T23:59:59-03:00",
+    endsAt: "2026-05-31T23:59:59-03:00",
     shortDescription: "Lineart minimalista de Maradona y Messi con la bandera argentina — estampa en espalda.",
     badge: "Diseño exclusivo",
   },
@@ -76,7 +76,7 @@ export const HOT_SALE_OFFERS: Offer[] = [
     priceOriginal: 40000,
     campaign: "Hot Sale",
     startsAt: "2026-05-11T00:00:00-03:00",
-    endsAt: "2026-05-18T23:59:59-03:00",
+    endsAt: "2026-05-31T23:59:59-03:00",
     shortDescription: "Messi levantando la copa, ilustración épica frontal.",
   },
   {
@@ -89,7 +89,7 @@ export const HOT_SALE_OFFERS: Offer[] = [
     priceOriginal: 44500,
     campaign: "Hot Sale",
     startsAt: "2026-05-11T00:00:00-03:00",
-    endsAt: "2026-05-18T23:59:59-03:00",
+    endsAt: "2026-05-31T23:59:59-03:00",
     shortDescription: "Crest circular Campeón del Mundo 2022 — doble estampa frente y espalda.",
     badge: "Doble estampa",
   },
@@ -116,4 +116,30 @@ export function formatARS(amount: number): string {
 export function getDiscountPercent(offer: Offer): number {
   if (offer.priceOriginal === 0) return 0
   return Math.round(((offer.priceOriginal - offer.priceCurrent) / offer.priceOriginal) * 100)
+}
+
+/**
+ * Devuelve la oferta activa asociada a un producto de partner si existe.
+ * Matchea por la URL del offer (ultimo segmento) y por tenant slug en la URL.
+ * Usado por la pagina del producto para aplicar tratamiento visual Hot Sale.
+ */
+export function getActiveOfferForProduct(
+  tenantSlug: string,
+  productSlug: string,
+  now: Date = new Date(),
+): Offer | null {
+  const active = getActiveOffers(now)
+  for (const offer of active) {
+    try {
+      const u = new URL(offer.url)
+      const parts = u.pathname.split("/").filter(Boolean)
+      // pathname esperado: /p/<tenantSlug>/<productSlug>
+      if (parts[0] === "p" && parts[1] === tenantSlug && parts[parts.length - 1] === productSlug) {
+        return offer
+      }
+    } catch {
+      // url invalida, ignorar
+    }
+  }
+  return null
 }

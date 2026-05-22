@@ -16,6 +16,8 @@ import {
 } from '@/lib/partners/seo'
 import { StorefrontTracker } from '@/components/partners/storefront-tracker'
 import { AddToCartButtons } from './AddToCartButtons'
+import { Flame } from 'lucide-react'
+import { getActiveOfferForProduct, getDiscountPercent } from '@/lib/offers'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -104,6 +106,18 @@ export default async function ProductDetailPage({ params }: PageProps) {
   if (!product || product.status !== 'published') {
     notFound()
   }
+
+  // Hot Sale: si el producto coincide con una oferta activa de lib/offers.ts,
+  // aplicamos tratamiento visual (badge sobre imagen + cinta naranja en precio).
+  // Cuando la campania expira, getActiveOfferForProduct devuelve null y el look
+  // vuelve solo al normal — sin tocar codigo.
+  const hotSaleOffer = getActiveOfferForProduct(tenant.slug, product.slug)
+  const hotSaleEndsAt = hotSaleOffer
+    ? new Date(hotSaleOffer.endsAt).toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+      })
+    : null
 
   // Related products: same category, excluding current, max 4
   const allProducts = await getPublishedProducts(tenant.id)
@@ -195,7 +209,20 @@ export default async function ProductDetailPage({ params }: PageProps) {
       <section className="mx-auto max-w-7xl px-6 pb-16 pt-4">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
           {/* Image Gallery */}
-          <ImageGallery product={product} />
+          <div className="relative">
+            <ImageGallery product={product} />
+            {hotSaleOffer && (
+              <div className="pointer-events-none absolute left-4 top-4 z-10 flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-orange-500 to-red-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-orange-500/30">
+                  <Flame className="h-3.5 w-3.5" />
+                  Hot Sale
+                </span>
+                <span className="inline-flex items-center rounded-md bg-black/60 px-2.5 py-1.5 text-xs font-bold text-orange-400 backdrop-blur-sm">
+                  -{getDiscountPercent(hotSaleOffer)}%
+                </span>
+              </div>
+            )}
+          </div>
 
           {/* Product Info */}
           <div className="flex flex-col gap-6">
@@ -212,30 +239,61 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
             {/* Price */}
             {product.price != null && (
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-bold text-white">
-                  {formatPrice(product.price, product.currency || tenant.currency)}
-                </span>
-                {product.compare_at_price != null &&
-                  product.compare_at_price > product.price && (
-                    <>
-                      <span className="text-lg text-zinc-500 line-through">
-                        {formatPrice(
-                          product.compare_at_price,
-                          product.currency || tenant.currency
-                        )}
-                      </span>
-                      <Badge className="bg-red-600 text-white">
-                        -
-                        {Math.round(
-                          ((product.compare_at_price - product.price) /
-                            product.compare_at_price) *
-                            100
-                        )}
-                        %
-                      </Badge>
-                    </>
-                  )}
+              <div
+                className={
+                  hotSaleOffer
+                    ? 'rounded-xl border border-orange-500/40 bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent p-4'
+                    : ''
+                }
+              >
+                {hotSaleOffer && (
+                  <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-orange-400">
+                    <Flame className="h-3.5 w-3.5" />
+                    Precio Hot Sale
+                  </div>
+                )}
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <span
+                    className={
+                      hotSaleOffer
+                        ? 'text-3xl font-bold text-orange-400 md:text-4xl'
+                        : 'text-3xl font-bold text-white'
+                    }
+                  >
+                    {formatPrice(product.price, product.currency || tenant.currency)}
+                  </span>
+                  {product.compare_at_price != null &&
+                    product.compare_at_price > product.price && (
+                      <>
+                        <span className="text-lg text-zinc-500 line-through">
+                          {formatPrice(
+                            product.compare_at_price,
+                            product.currency || tenant.currency
+                          )}
+                        </span>
+                        <Badge
+                          className={
+                            hotSaleOffer
+                              ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white border-0'
+                              : 'bg-red-600 text-white'
+                          }
+                        >
+                          -
+                          {Math.round(
+                            ((product.compare_at_price - product.price) /
+                              product.compare_at_price) *
+                              100
+                          )}
+                          %
+                        </Badge>
+                      </>
+                    )}
+                </div>
+                {hotSaleOffer && hotSaleEndsAt && (
+                  <p className="mt-2 text-xs text-zinc-400">
+                    Promo por tiempo limitado — vigente hasta el {hotSaleEndsAt}.
+                  </p>
+                )}
               </div>
             )}
 
