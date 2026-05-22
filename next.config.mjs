@@ -144,6 +144,14 @@ const nextConfig = {
         source: '/openai-products.jsonl',
         destination: '/api/openai-feed',
       },
+      {
+        // OAuth de TikTok: el handler vive en admin.novamente.ar pero TikTok
+        // aprobo la app con redirect URI en www.novamente.ar/api/auth/tiktok/callback.
+        // Vercel rewrite reenvia server-to-server con headers+cookies+querystring.
+        // Cookie de state se setea con domain=.novamente.ar (en repo platform).
+        source: '/api/auth/tiktok/:path*',
+        destination: 'https://admin.novamente.ar/api/auth/tiktok/:path*',
+      },
     ];
   },
   async redirects() {
