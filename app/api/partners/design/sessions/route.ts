@@ -70,6 +70,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Error creando sesion' }, { status: 500 })
     }
 
+    // Fire-and-forget: set first_design_at once
+    db()
+      .from('tenants')
+      .update({ first_design_at: new Date().toISOString() })
+      .eq('id', tenant.id)
+      .is('first_design_at', null)
+
     return NextResponse.json({ id: data.id })
   } catch (err: any) {
     console.error('[studio sessions] POST error:', err)

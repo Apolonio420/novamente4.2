@@ -31,6 +31,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import { KpiOverview } from '@/components/workspace/KpiOverview'
+import { BusinessModelBanner } from '@/components/workspace/BusinessModelBanner'
+import { QuickStartCard } from '@/components/workspace/QuickStartCard'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -41,6 +43,7 @@ interface DashboardData {
   leads: number
   orders: number
   score: number
+  designs: number
   trends?: {
     products: number[]
     leads: number[]
@@ -61,6 +64,7 @@ interface DashboardData {
     industry: string | null
     storefront_published: boolean
     onboarding_completed: boolean
+    onboarding_dismissed_business_model: boolean
   }
 }
 
@@ -307,7 +311,7 @@ function buildChecklist(data: DashboardData): ChecklistItem[] {
     },
     {
       label: 'Generar tu primer diseno con IA',
-      done: false, // TODO: track from design assets
+      done: data.designs > 0,
       href: '/workspace/design-engine',
     },
     {
@@ -772,9 +776,9 @@ export default function WorkspaceDashboard() {
                     </button>
                     {showScoreTooltip && m.key === 'score' && (
                       <div className="absolute left-0 top-full mt-2 w-64 p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 shadow-xl z-50">
-                        <p className="font-medium text-zinc-100 mb-1.5">Que es el Storefront Score?</p>
+                        <p className="font-medium text-zinc-100 mb-1.5">¿Cómo subir tu Storefront Score?</p>
                         <p className="text-zinc-400 leading-relaxed">
-                          Es un puntaje que mide que tan completa esta tu storefront. Se calcula en base a: logo, banner, descripcion, colores, productos, tagline e industria. Cuanto mas alto, mas profesional se ve tu tienda.
+                          Tu Storefront Score mide qué tan completa está tu tienda. Sube al completar: logo, banner, descripción, tagline, colores personalizados, CTA, industria, redes sociales y SEO. Score 100% = tu tienda está lista para vender.
                         </p>
                       </div>
                     )}
@@ -818,6 +822,23 @@ export default function WorkspaceDashboard() {
           )
         })}
       </div>
+
+      {/* ================================================================= */}
+      {/* BUSINESS MODEL BANNER (descartable)                               */}
+      {/* ================================================================= */}
+      {!data.tenant.onboarding_dismissed_business_model && (
+        <BusinessModelBanner tenantId={data.tenant.id} />
+      )}
+
+      {/* ================================================================= */}
+      {/* QUICK-START CARD (solo cuando products === 0)                     */}
+      {/* ================================================================= */}
+      {data.products === 0 && (
+        <QuickStartCard
+          logoUploaded={!!data.tenant.logo_url}
+          hasDesign={data.designs > 0}
+        />
+      )}
 
       {/* ================================================================= */}
       {/* BOTTOM ROW: ONBOARDING + ACTIVITY                                 */}

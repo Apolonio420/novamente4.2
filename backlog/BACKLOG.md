@@ -36,11 +36,11 @@
 | 24 | TASK-019 | Desglose costo/PVP/ganancia en formulario de producto (P7) | 2 | sí | DONE |
 | 25 | TASK-020 | "Subí tu diseño" como acción primaria del workspace (P8) | 3 | sí | BLOCKED — criterio DONE y archivos TBD, necesita refinamiento |
 | 26 | TASK-021 | RESEARCH: ¿el campo `partner_type` del wizard se respeta en UI o quedó dato muerto? | 1 | sí (research, no code) | DONE — dato muerto, ver PROGRESS.md Sprint 026 |
-| 27 | TASK-022 | Storefront Score: tooltip "cómo subir tu score" + explicación del cálculo | 1 | sí | PENDING |
-| 28 | TASK-023 | RESEARCH: cuantificar impacto del localStorage device-switch en wizard | 1 | sí (research) | PENDING |
+| 27 | TASK-022 | Storefront Score: tooltip "cómo subir tu score" + explicación del cálculo | 1 | sí | DONE |
+| 28 | TASK-023 | RESEARCH: cuantificar impacto del localStorage device-switch en wizard | 1 | sí (research) | BLOCKED — necesita 2-3 semanas de data de TASK-016 |
 | 29 | TASK-024 | Acortar wizard de alta (7 pasos → versión express + el resto al workspace) | 3 | sí | BLOCKED — necesita data de TASK-016 |
 | 30 | TASK-025 | FAQ content para /workspace/support — CANCELADA (Juan decidió 2026-05-26 no hacerla) | — | — | CANCELLED |
-| 31 | TASK-026 | Navbar: dropdown "Soy Cliente / Soy Partner" antes del popup de auth | 1 | sí | PENDING |
+| 31 | TASK-026 | Navbar: dropdown "Soy Cliente / Soy Partner" antes del popup de auth | 1 | sí | DONE |
 
 ---
 

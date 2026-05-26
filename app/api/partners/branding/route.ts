@@ -3,6 +3,7 @@ import { getRequestTenant } from '@/lib/partners/auth'
 import { updateTenant } from '@/lib/partners/tenant'
 import { getPlanFeatures } from '@/lib/partners/plans'
 import type { Plan } from '@/lib/partners/types'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 const BRANDING_FIELDS = [
   'logo_url',
@@ -113,6 +114,24 @@ export async function PUT(request: NextRequest) {
 
     const didAutoPublish =
       updates.storefront_published === true && !tenant.storefront_published
+
+    // Fire-and-forget: set funnel timestamps once
+    const now = new Date().toISOString()
+    const hasBrandingField = BRANDING_FIELDS.some((f) => f in updates)
+    if (hasBrandingField && !tenant.first_branding_save_at) {
+      ;(supabaseAdmin as any)
+        .from('tenants')
+        .update({ first_branding_save_at: now })
+        .eq('id', tenant.id)
+        .is('first_branding_save_at', null)
+    }
+    if (didAutoPublish) {
+      ;(supabaseAdmin as any)
+        .from('tenants')
+        .update({ storefront_published_at: now })
+        .eq('id', tenant.id)
+        .is('storefront_published_at', null)
+    }
 
     return NextResponse.json({
       // Top-level flags para que el UI sepa que el storefront se publico

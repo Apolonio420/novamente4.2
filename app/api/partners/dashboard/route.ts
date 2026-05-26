@@ -5,6 +5,7 @@ import { countProducts } from '@/lib/partners/catalog'
 import { countLeadsThisMonth } from '@/lib/partners/leads'
 import { countOrdersByTenant } from '@/lib/partners/orders'
 import { getDashboardTrends } from '@/lib/partners/analytics'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,20 +21,36 @@ export async function GET(request: NextRequest) {
     const { tenant } = result
 
     // Fetch metrics and trends in parallel
-    const [products, leads, orders, trends] = await Promise.all([
+    const [products, leads, orders, trends, designsResult] = await Promise.all([
       countProducts(tenant.id),
       countLeadsThisMonth(tenant.id),
       countOrdersByTenant(tenant.id),
       getDashboardTrends(tenant.id),
+      (supabaseAdmin as any)
+        .from('partner_design_sessions')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenant.id),
     ])
 
+    const designs: number = designsResult?.count ?? 0
+
     const score = calculateCompletenessScore(tenant)
+
+    // Fire-and-forget: set first_login_at once
+    if (!tenant.first_login_at) {
+      ;(supabaseAdmin as any)
+        .from('tenants')
+        .update({ first_login_at: new Date().toISOString() })
+        .eq('id', tenant.id)
+        .is('first_login_at', null)
+    }
 
     return NextResponse.json({
       products,
       leads,
       orders,
       score,
+      designs,
       trends,
       tenant: {
         id: tenant.id,
@@ -49,6 +66,7 @@ export async function GET(request: NextRequest) {
         industry: tenant.industry,
         storefront_published: tenant.storefront_published,
         onboarding_completed: tenant.onboarding_completed,
+        onboarding_dismissed_business_model: tenant.onboarding_dismissed_business_model ?? false,
       },
     })
   } catch (error) {

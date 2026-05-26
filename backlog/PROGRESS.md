@@ -16,6 +16,25 @@ Formato:
 
 ---
 
+## Sprint 027 — 2026-05-26
+**Model:** sonnet
+**Tasks DONE:**
+- TASK-022 — feat(workspace): tooltip Storefront Score actualizado con cálculo real
+  - app/workspace/page.tsx: título → "¿Cómo subir tu Storefront Score?", body con factores exactos (logo, banner, desc, tagline, colores, CTA, industria, redes, SEO)
+  - Nota: score NO deriva del checklist de productos — se verifica en lib/partners/tenant.ts:calculateCompletenessScore
+- TASK-026 — feat(navbar): dropdown "Soy Cliente / Soy Partner" ante del AuthModal
+  - components/Navbar.tsx: botón → DropdownMenu con 2 ítems, íconos ShoppingBag/Store, subtítulos descriptivos
+  - "Soy Cliente" → abre AuthModal (comportamiento anterior), "Soy Partner" → /partners/login
+**Tasks BLOCKED:**
+- TASK-023 — necesita 2-3 semanas de data de TASK-016 (first_login_at / funnel timestamps). Re-evaluar ~2026-06-15.
+**tsc:** PASS
+**build:** SKIPPED
+**Notas:**
+- TASK-022: requiere verificación visual — abrir dashboard workspace y hacer hover en el icono ? del Storefront Score
+- TASK-026: requiere verificación visual — abrir navbar en incógnito y verificar dropdown + ambas opciones
+
+---
+
 ## Sprint 026 — 2026-05-26
 **Model:** sonnet
 **Tasks DONE:**

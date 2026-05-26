@@ -11,6 +11,7 @@ const SETTINGS_FIELDS = [
   'seo_indexable', 'seo_title', 'seo_description',
   'custom_faqs',
   'bank_cbu', 'bank_alias',
+  'onboarding_dismissed_business_model',
 ] as const
 
 const WRITABLE_FIELDS = [
@@ -20,6 +21,7 @@ const WRITABLE_FIELDS = [
   'seo_title', 'seo_description',
   'custom_faqs',
   'bank_cbu', 'bank_alias',
+  'onboarding_dismissed_business_model',
 ] as const
 
 export async function GET(request: NextRequest) {

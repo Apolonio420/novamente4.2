@@ -71,9 +71,18 @@ export interface Tenant {
   completeness_score: number
   onboarding_step: number
   onboarding_completed: boolean
+  onboarding_dismissed_business_model: boolean
 
   // Free-form integration data (TikTok tokens, Meta tokens, etc.)
   metadata?: Record<string, unknown>
+
+  // Funnel timestamps (set once, WHERE field IS NULL)
+  first_login_at: string | null
+  first_branding_save_at: string | null
+  first_design_at: string | null
+  first_product_draft_at: string | null
+  first_product_published_at: string | null
+  storefront_published_at: string | null
 
   created_at: string
   updated_at: string

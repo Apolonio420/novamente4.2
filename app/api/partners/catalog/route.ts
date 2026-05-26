@@ -3,6 +3,7 @@ import { getRequestTenant } from '@/lib/partners/auth'
 import { getAllProducts, createProduct, countProducts } from '@/lib/partners/catalog'
 import { canAddProduct } from '@/lib/partners/plans'
 import { validatePartnerProductForCreation } from '@/lib/partners/product-policy'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET(request: NextRequest) {
   try {
@@ -76,6 +77,13 @@ export async function POST(request: NextRequest) {
     if (!product) {
       return NextResponse.json({ error: 'No se pudo crear el producto' }, { status: 500 })
     }
+
+    // Fire-and-forget: set first_product_draft_at once
+    ;(supabaseAdmin as any)
+      .from('tenants')
+      .update({ first_product_draft_at: new Date().toISOString() })
+      .eq('id', tenant.id)
+      .is('first_product_draft_at', null)
 
     return NextResponse.json({ product }, { status: 201 })
   } catch (error) {

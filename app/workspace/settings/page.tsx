@@ -761,7 +761,7 @@ export default function SettingsPage() {
         <Card className="bg-zinc-900/60 border-zinc-800">
           <CardContent className="pt-6 space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="bank_cbu" className="text-zinc-300">CBU</Label>
+              <Label htmlFor="bank_cbu" className="text-zinc-300">CBU / CVU para recibir tus liquidaciones</Label>
               <Input
                 id="bank_cbu"
                 value={settings.bank_cbu || ''}
@@ -769,7 +769,7 @@ export default function SettingsPage() {
                   updateField('bank_cbu', e.target.value || null)
                   if (cbuError) setCbuError(null)
                 }}
-                placeholder="0000000000000000000000"
+                placeholder="22 dígitos numéricos"
                 maxLength={22}
                 className={`bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 font-mono ${cbuError ? 'border-red-500' : ''}`}
               />
@@ -777,7 +777,7 @@ export default function SettingsPage() {
                 <p className="text-xs text-red-400">{cbuError}</p>
               ) : (
                 <p className="text-xs text-zinc-500">
-                  Tu CBU es donde recibirás los pagos de ventas. Debe tener exactamente 22 dígitos.
+                  Acá te depositamos tu ganancia <strong className="text-zinc-400">en el momento</strong> cada vez que vendés. No necesitás conectar MercadoPago ni ninguna pasarela — el cliente le paga a Novamente y nosotros te liquidamos directo a esta cuenta.
                 </p>
               )}
             </div>

@@ -64,6 +64,17 @@ export async function PUT(
         .replace(/^-|-$/g, '')
     }
 
+    // Price required when publishing
+    if (updates.status === 'published') {
+      const resolvedPrice = updates.price !== undefined ? updates.price : existing.price
+      if (!resolvedPrice || Number(resolvedPrice) <= 0) {
+        return NextResponse.json(
+          { error: 'Necesitás definir un precio antes de publicar este producto.' },
+          { status: 400 },
+        )
+      }
+    }
+
     // Policy: revalidar SOLO los campos que el partner esta modificando, no los
     // valores legacy ya guardados. Esto permite que productos legacy (que no
     // pasarian la policy hoy) puedan editar otros campos o bajar de visibilidad
@@ -91,6 +102,15 @@ export async function PUT(
 
     if (!product) {
       return NextResponse.json({ error: 'No se pudo actualizar el producto' }, { status: 500 })
+    }
+
+    // Fire-and-forget: set first_product_published_at once
+    if (updates.status === 'published') {
+      ;(supabaseAdmin as any)
+        .from('tenants')
+        .update({ first_product_published_at: new Date().toISOString() })
+        .eq('id', result.tenant.id)
+        .is('first_product_published_at', null)
     }
 
     return NextResponse.json({ product })

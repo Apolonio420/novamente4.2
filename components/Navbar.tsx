@@ -8,7 +8,7 @@ import { useState } from "react"
 import { AuthModal } from "@/components/AuthModal"
 import { useEffect } from "react"
 import { getClientSupabase } from "@/lib/auth-client"
-import { User, LogOut, Menu } from "lucide-react"
+import { User, LogOut, Menu, ShoppingBag, Store } from "lucide-react"
 import { Logo } from "./Logo"
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { scrollToGenerator } from "@/lib/scrollToGenerator"
@@ -192,19 +192,44 @@ export function Navbar() {
               </Button>
             </div>
           ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-1 rounded-full bg-transparent"
-              onClick={() => {
-                setAuthTab("signup")
-                setShowAuthModal(true)
-              }}
-            >
-              <User className="h-4 w-4 mr-1" />
-              <span className="hidden sm:inline">Iniciar sesión o registrarse</span>
-              <span className="sm:hidden">Cuenta</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1 rounded-full bg-transparent"
+                >
+                  <User className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Iniciar sesión o registrarse</span>
+                  <span className="sm:hidden">Cuenta</span>
+                  <ChevronDown className="h-3 w-3 ml-0.5 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem
+                  className="flex items-start gap-3 py-2.5 cursor-pointer"
+                  onClick={() => {
+                    setAuthTab("signup")
+                    setShowAuthModal(true)
+                  }}
+                >
+                  <ShoppingBag className="h-4 w-4 mt-0.5 shrink-0 text-zinc-400" />
+                  <div>
+                    <p className="font-medium text-sm">Soy Cliente</p>
+                    <p className="text-xs text-zinc-500">Comprá remeras y buzos personalizados</p>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="flex items-start gap-3 py-2.5 cursor-pointer">
+                  <Link href="/partners/login">
+                    <Store className="h-4 w-4 mt-0.5 shrink-0 text-zinc-400" />
+                    <div>
+                      <p className="font-medium text-sm">Soy Partner</p>
+                      <p className="text-xs text-zinc-500">Accedé a tu workspace de marca</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
 
           <CartBadge />
