@@ -16,6 +16,124 @@ Formato:
 
 ---
 
+## Sprint 026 — 2026-05-26
+**Model:** sonnet
+**Tasks DONE:**
+- TASK-018 — feat(nova): bienvenida proactiva al primer login del workspace (commit e2d86cf)
+  - components/PublicAssistant.tsx: useEffect + welcomeInjectedRef + localStorage flag
+  - Solo para mode=partner en /workspace/*, sin DB ni migración
+- TASK-019 — feat(catalog): desglose costo/PVP/ganancia en formulario de producto (commit eeaaa2a)
+  - components/workspace/MarginBreakdown.tsx: creado
+  - app/workspace/catalog/page.tsx: formGarmentKey state + selector prenda + MarginBreakdown
+- TASK-021 — RESEARCH: partner_type del wizard (ver reporte abajo)
+**Tasks BLOCKED:**
+- TASK-020 — criterio DONE y archivos esperados están como TBD en el backlog. Necesita que Juan defina el alcance antes de ejecutar.
+**tsc:** PASS
+**build:** SKIPPED
+**Notas:**
+- TASK-018: requiere verificación visual — abrir workspace en un tenant nuevo/sin flag y confirmar que Nova se abre con el mensaje de bienvenida
+- TASK-019: requiere verificación visual — abrir modal de catálogo, seleccionar prenda base, cambiar precio y ver breakdown actualizar en vivo
+
+---
+
+### TASK-021 — Reporte: partner_type del wizard (2026-05-26)
+
+**Pregunta:** ¿el campo `partner_type` del wizard (step 3) se respeta en la UI del workspace o quedó dato muerto?
+
+**Hallazgo: DATO MUERTO**
+
+El campo `partnerType` existe en el estado del wizard (`WizardData.partnerType`, `app/partners/join/page.tsx:78`) con 3 valores:
+- `catalog_only` → label "Solo catálogo fijo"
+- `catalog_mockups` → label "Catálogo + Mockups"
+- `catalog_design_engine` → label "Catálogo + Design Engine completo"
+
+El mapeo `PARTNER_TYPE_TO_ENGINE` (línea 1854) convierte esos valores a `design_engine_mode` de la DB:
+- `catalog_only` → `'disabled'`
+- `catalog_mockups` → `'mockups_only'`
+- `catalog_design_engine` → `'full_brand_fit'`
+
+**Problema:** `PARTNER_TYPE_TO_ENGINE` está definido pero **nunca se llama/usa**. Grep en todo el codebase no encuentra ninguna referencia de uso. La función `buildStepPayload` (línea 1867) tampoco envía `partnerType` a la API en ningún step.
+
+**Cómo se setea `design_engine_mode` HOY:**
+- Scripts manuales: `create-partner.ts:378` lo deriva del plan (pro → full_brand_fit, growth → presets, starter → disabled)
+- Cambio de plan: `billing/route.ts:90` lo actualiza cuando el partner cambia de tier
+- Scripts de migración: `fix-tenant-design-mode.ts`, `create-sm-partner.ts` lo setean directo
+
+**`design_engine_mode` SÍ se usa activamente:**
+- `app/api/partners/design/generate/route.ts:32` — gatea acceso a generación IA
+- `app/api/partners/design/config/route.ts:25` — gatea acceso a config del engine
+- `app/api/partners/design/mockup/route.ts:33` — gatea acceso a mockups
+
+**Recomendación:** Dado que TASK-024 quiere acortar el wizard (ya BLOCKED), el step 3 con `partnerType` es candidato para eliminación. El `design_engine_mode` real lo controla el plan (billing), no la elección del wizard. Si Juan quiere que la elección del wizard tenga efecto, hay que conectar `PARTNER_TYPE_TO_ENGINE` en `buildStepPayload` (step 3 → API con `design_engine_mode`). Abrir una TASK explícita para decidir.
+
+---
+
+## Sprint 025 — 2026-05-26
+**Model:** sonnet
+**Tasks DONE:**
+- TASK-015 — feat(catalog): validar precio obligatorio antes de publicar
+  - app/workspace/catalog/page.tsx: bloqueo en handleSave + mensaje inline ámbar
+  - app/api/partners/catalog/[id]/route.ts: validación 400 si published && price null/0
+- TASK-016 — feat(onboarding): métricas de funnel — timestamps por hito
+  - migrations/onboarding_funnel_timestamps.sql: creado (NO ejecutado — pendiente humano)
+  - lib/partners/types.ts: 6 nuevos campos de timestamp en Tenant
+  - app/api/partners/dashboard/route.ts: set first_login_at (fire-and-forget)
+  - app/api/partners/branding/route.ts: set first_branding_save_at + storefront_published_at
+  - app/api/partners/design/sessions/route.ts: set first_design_at
+  - app/api/partners/catalog/route.ts: set first_product_draft_at
+  - app/api/partners/catalog/[id]/route.ts: set first_product_published_at
+- TASK-017 — feat(workspace): QuickStartCard "tu primer producto en 3 pasos"
+  - components/workspace/QuickStartCard.tsx: creado (3 pasos, done states, responsive)
+  - app/workspace/page.tsx: renderizado cuando data.products === 0
+**Tasks BLOCKED:** ninguna
+**tsc:** PASS
+**build:** SKIPPED
+**Notas:**
+- TASK-016: el humano debe correr migrations/onboarding_funnel_timestamps.sql en Supabase Studio
+- TASK-016: todos los timestamps son fire-and-forget (no bloquean la respuesta)
+- TASK-016: query SQL de inspección del funnel incluida como comentario en el .sql
+- TASK-017: la card desaparece automáticamente cuando products >= 1 (sin dismiss explícito)
+- TASK-017: requiere verificación visual — especialmente layout responsive en mobile
+
+**Cómo consultar el funnel (query SQL de ejemplo):**
+```sql
+SELECT
+  COUNT(*) FILTER (WHERE first_login_at IS NOT NULL) AS logged_in,
+  COUNT(*) FILTER (WHERE first_branding_save_at IS NOT NULL) AS saved_branding,
+  COUNT(*) FILTER (WHERE first_design_at IS NOT NULL) AS created_design,
+  COUNT(*) FILTER (WHERE first_product_draft_at IS NOT NULL) AS created_draft,
+  COUNT(*) FILTER (WHERE first_product_published_at IS NOT NULL) AS published_product
+FROM tenants
+WHERE status NOT IN ('suspended') AND created_at >= NOW() - INTERVAL '90 days';
+```
+
+---
+
+## Sprint 024 — 2026-05-26
+**Model:** sonnet
+**Tasks DONE:**
+- TASK-012 — feat(settings): actualizar copy del hint CBU — modelo liquidación inmediata
+  - app/workspace/settings/page.tsx: label, placeholder y hint actualizados
+- TASK-013 — feat(workspace): banner explicativo del modelo de negocio descartable
+  - components/workspace/BusinessModelBanner.tsx: creado (3 bullets, dismiss persiste)
+  - app/workspace/page.tsx: renderizado sobre el checklist (condicional al flag)
+  - app/api/partners/dashboard/route.ts: expone onboarding_dismissed_business_model
+  - app/api/partners/settings/route.ts: acepta onboarding_dismissed_business_model en PUT
+  - lib/partners/types.ts: campo agregado a Tenant
+  - migrations/onboarding_dismiss_flags.sql: creado (NO ejecutado — pendiente humano)
+- TASK-014 — fix(workspace): checklist "Generar diseño IA" deja de ser hardcoded false
+  - app/api/partners/dashboard/route.ts: cuenta partner_design_sessions, expone `designs`
+  - app/workspace/page.tsx: DashboardData.designs + done: data.designs > 0
+**Tasks BLOCKED:** ninguna
+**tsc:** PASS
+**build:** SKIPPED
+**Notas:**
+- TASK-013: el humano debe correr migrations/onboarding_dismiss_flags.sql en Supabase Studio
+- TASK-013: mientras no se corra la migración, el banner siempre se muestra (columna inexistente devuelve null → false por default con `?? false`)
+- TASK-014: requiere verificación — seleccionar un partner con sesiones existentes, confirmar que el ítem del checklist se marca como done
+
+---
+
 ## Sprint 023 — 2026-05-20
 **Model:** sonnet
 **Tasks DONE:**

@@ -26,6 +26,21 @@
 | 14 | TASK-011 | Mobile UX Design Engine + claridad de límites (drawer X + banner + límite semanal) | 1 | sí | DONE |
 | 15 | TASK-006 | Corregir ventana temporal de conversionRate (BUG-2, ventana rolling 30d para leads) | 1 | sí | DONE |
 | 16 | TASK-005 | Bridgear ventas B2C → partner_orders (BUG-1 crítico: tenant_id en orders + webhook MP) | 2 | sí (con migración SQL nueva) | DONE |
+| 17 | TASK-012 | Actualizar copy del hint del campo CBU (modelo "liquidación en el momento") | 1 | sí | DONE |
+| 18 | TASK-013 | Banner explicativo del modelo de negocio en /workspace (dashboard) | 1 | sí | DONE |
+| 19 | TASK-014 | Fix bug checklist: "Generar primer diseño IA" tiene `done:false` hardcodeado | 1 | sí | DONE |
+| 20 | TASK-015 | Validar precio obligatorio antes de publicar producto en catálogo | 1 | sí | DONE |
+| 21 | TASK-016 | Métricas mínimas de onboarding: timestamps por hito del funnel | 1 | sí (con migración SQL nueva) | DONE |
+| 22 | TASK-017 | Quick-start "tu primer producto en 3 pasos" en dashboard (P6) | 2 | sí | DONE |
+| 23 | TASK-018 | Nova proactivo: bienvenida automática al primer login (P9) | 2 | sí | DONE |
+| 24 | TASK-019 | Desglose costo/PVP/ganancia en formulario de producto (P7) | 2 | sí | DONE |
+| 25 | TASK-020 | "Subí tu diseño" como acción primaria del workspace (P8) | 3 | sí | BLOCKED — criterio DONE y archivos TBD, necesita refinamiento |
+| 26 | TASK-021 | RESEARCH: ¿el campo `partner_type` del wizard se respeta en UI o quedó dato muerto? | 1 | sí (research, no code) | DONE — dato muerto, ver PROGRESS.md Sprint 026 |
+| 27 | TASK-022 | Storefront Score: tooltip "cómo subir tu score" + explicación del cálculo | 1 | sí | PENDING |
+| 28 | TASK-023 | RESEARCH: cuantificar impacto del localStorage device-switch en wizard | 1 | sí (research) | PENDING |
+| 29 | TASK-024 | Acortar wizard de alta (7 pasos → versión express + el resto al workspace) | 3 | sí | BLOCKED — necesita data de TASK-016 |
+| 30 | TASK-025 | FAQ content para /workspace/support — CANCELADA (Juan decidió 2026-05-26 no hacerla) | — | — | CANCELLED |
+| 31 | TASK-026 | Navbar: dropdown "Soy Cliente / Soy Partner" antes del popup de auth | 1 | sí | PENDING |
 
 ---
 
@@ -466,3 +481,372 @@ TS2769: No overload matches this call.
      (DesignCanvas.tsx react-konva / konva) verificadas como obsoletas
      al 2026-05-22: tsc --noEmit pasa limpio. Resueltas en commits posteriores
      que no actualizaron el backlog. Eliminadas para no falsear pendientes. -->
+
+---
+
+# Sprint Onboarding (2026-05-26) — derivado de [docs/onboarding-audit-2026-05.md](../docs/onboarding-audit-2026-05.md)
+
+Casos disparadores: Elyar, Gabriel, Karina, Daniel (mails 23-25/05).
+
+---
+
+### TASK-012 — Actualizar copy del hint del campo CBU
+
+**Por qué:** El campo `bank_cbu` ya existe en [app/workspace/settings/page.tsx:764](app/workspace/settings/page.tsx#L764) con el hint actual "Tu CBU es donde recibirás los pagos de ventas. Debe tener exactamente 22 dígitos." Es correcto pero no comunica (a) que la liquidación es **inmediata**, (b) que **no hace falta conectar pasarela** (Gabriel se confundió con esto).
+
+**Alcance:**
+- Cambiar el texto del hint debajo del campo CBU en [app/workspace/settings/page.tsx](app/workspace/settings/page.tsx) (línea ~780) por:
+  > "Acá te depositamos tu ganancia **en el momento** cada vez que vendés. No necesitás conectar MercadoPago ni ninguna pasarela — el cliente le paga a Novamente y nosotros te liquidamos directo a esta cuenta."
+- Mantener la validación de 22 dígitos.
+- Cambiar el label del campo de "CBU" a "CBU / CVU para recibir tus liquidaciones".
+- El hint sobre "22 dígitos" pasar a `placeholder` del input para no duplicar la palabra "dígitos".
+
+**Archivos:**
+- `app/workspace/settings/page.tsx` (modificar líneas ~764-780)
+
+**Criterio DONE:**
+- [ ] Label y hint actualizados según copy de arriba
+- [ ] Validación 22 dígitos sigue funcionando
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 TASK-012]`
+
+**NO hacer:** mover el campo a otra página/sección todavía (eso vendría con TASK-024).
+
+---
+
+### TASK-013 — Banner explicativo del modelo de negocio en /workspace
+
+**Por qué:** El partner que llega al workspace no encuentra en NINGÚN lado copy que explique cómo funciona el flujo de plata. Gabriel asumió que tenía que conectar MercadoPago. Daniel no entendía cuál era su ganancia. Necesitamos un mensaje claro arriba del checklist del dashboard.
+
+**Alcance:**
+- Crear componente `<BusinessModelBanner />` en `components/workspace/`.
+- Renderizarlo en [app/workspace/page.tsx](app/workspace/page.tsx) **arriba del checklist** (antes del bloque que arranca en la línea ~600 donde aparece Recent Activity/Checklist).
+- Contenido (3 bullets):
+  - "El cliente le paga directo a Novamente — no necesitás pasarela."
+  - "Producimos y enviamos en 24-48hs cuando hay venta."
+  - "Te liquidamos tu ganancia (PVP − costo Novamente) **en el momento** a tu CBU/alias."
+- Card descartable: agregar columna `onboarding_dismissed_business_model BOOLEAN DEFAULT FALSE` a tabla `tenants` (migración nueva).
+- Click en "Entendido" (X) hace PATCH al setting y oculta la card.
+- Mientras `onboarding_dismissed_business_model === false`, se muestra; si es `true`, no renderiza.
+- Estilos: card con icono `Sparkles` o `Info`, fondo suave (emerald/amber sutil), no robar protagonismo a los KPIs.
+
+**Archivos:**
+- `components/workspace/BusinessModelBanner.tsx` (crear)
+- `app/workspace/page.tsx` (modificar — importar y renderizar)
+- `app/api/partners/settings/route.ts` o equivalente (extender PATCH para aceptar el nuevo flag — buscar si existe ya)
+- `migrations/<próximo-número>_onboarding_dismiss_flags.sql` (crear, NO ejecutar)
+
+**Criterio DONE:**
+- [ ] Banner visible al primer login con los 3 bullets exactos
+- [ ] Botón cerrar persiste el dismiss (refresh no lo revive)
+- [ ] Migración SQL creada (NO ejecutada — Juan la corre en Supabase)
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 TASK-013]`
+
+---
+
+### TASK-014 — Fix bug checklist: "Generar primer diseño IA" hardcodeado
+
+**Por qué:** En [app/workspace/page.tsx:310](app/workspace/page.tsx#L310) el ítem del checklist "Generar tu primer diseño con IA" tiene `done: false` con un comentario `// TODO: track from design assets`. Nunca se marca como hecho aunque el partner haya generado 10 diseños. Es percepción de plataforma rota.
+
+**Alcance:**
+- Buscar la tabla/colección donde se almacenan las generaciones del Studio (probablemente `design_assets`, `design_sessions` o algo en `lib/design-engine/`). Grep recomendado: `design_asset`, `design_session`, `studio_generation`.
+- Extender el endpoint que provee la data del dashboard (probablemente `app/api/partners/dashboard/route.ts` o `app/api/partners/stats/route.ts`) para incluir `design_count: number`.
+- En [app/workspace/page.tsx:308-312](app/workspace/page.tsx#L308-L312) reemplazar `done: false` por `done: data.designs > 0` (o el nombre que se decida).
+- Actualizar el type `DashboardData` (línea 39) con el nuevo campo.
+
+**Archivos:**
+- `app/workspace/page.tsx` (modificar)
+- `app/api/partners/dashboard/route.ts` o equivalente (extender)
+
+**Criterio DONE:**
+- [ ] Ítem se marca como done cuando hay ≥1 diseño generado por ese tenant
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 TASK-014]`
+
+**NO hacer:** rediseñar el checklist completo, eso es parte de TASK-017.
+
+---
+
+### TASK-015 — Validar precio obligatorio antes de publicar producto
+
+**Por qué:** Hoy en [app/workspace/catalog/page.tsx:52](app/workspace/catalog/page.tsx#L52) el precio es `price: number | null`. Un partner puede publicar un producto sin precio. Eso rompe el storefront y confunde al cliente final.
+
+**Alcance:**
+- En el modal/form de catálogo, cuando el partner cambia el `status` a `published` o hace click en "Publicar":
+  - Si `price === null || price <= 0`, bloquear la acción y mostrar mensaje inline: "Necesitás definir un precio antes de publicar este producto."
+  - Mantener "Guardar como borrador" sin esa restricción.
+- También bloquear en el backend (PATCH del producto): si `status === 'published'` y `price` es nulo/cero, devolver 400.
+
+**Archivos:**
+- `app/workspace/catalog/page.tsx` (modificar)
+- `app/api/partners/catalog/[id]/route.ts` o equivalente (revisar y agregar validación backend)
+
+**Criterio DONE:**
+- [ ] No se puede publicar un producto sin precio (UI bloquea + backend rechaza)
+- [ ] Mensaje de error visible y claro
+- [ ] Borrador sigue funcionando sin precio
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 TASK-015]`
+
+---
+
+### TASK-016 — Métricas mínimas de onboarding (funnel timestamps)
+
+**Por qué:** Sin data no podemos medir el impacto de TASK-012/013/014/015 ni decidir qué pasos del wizard sacar (TASK-024). Necesitamos los timestamps básicos del funnel ya.
+
+**Alcance:**
+- Migración SQL nueva: agregar a tabla `tenants` (o tabla aparte `tenant_funnel` si se considera más prolijo):
+  - `created_at` (ya existe seguramente)
+  - `first_login_at TIMESTAMPTZ NULL`
+  - `first_branding_save_at TIMESTAMPTZ NULL`
+  - `first_design_at TIMESTAMPTZ NULL` (al generar primer diseño en Studio)
+  - `first_product_draft_at TIMESTAMPTZ NULL`
+  - `first_product_published_at TIMESTAMPTZ NULL`
+  - `storefront_published_at TIMESTAMPTZ NULL` (si no está ya)
+- Disparar cada timestamp **solo la primera vez** (UPDATE ... WHERE field IS NULL):
+  - `first_login_at`: en `/api/auth/set-session` o donde se setea la cookie post-login.
+  - `first_branding_save_at`: en el PATCH de branding/settings cuando `logo_url || banner_url || tagline` se completan.
+  - `first_design_at`: en el endpoint del Studio que persiste un diseño.
+  - `first_product_draft_at`: en el POST de creación de producto.
+  - `first_product_published_at`: en el PATCH cuando `status: 'published'` y la columna sigue NULL.
+- No hacer dashboard de visualización — los datos quedan en DB para queries manuales en Supabase.
+
+**Archivos:**
+- `migrations/<próximo-número>_onboarding_funnel_timestamps.sql` (crear)
+- Identificar y modificar los endpoints listados arriba (research previo necesario)
+
+**Criterio DONE:**
+- [ ] Migración SQL creada
+- [ ] Cada timestamp se setea correctamente la primera vez y no se sobreescribe
+- [ ] Documentar en `backlog/PROGRESS.md` cómo consultar el funnel (query SQL ejemplo)
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 TASK-016]`
+
+**NO hacer:** dashboards, gráficos, ni eventos PostHog/Mixpanel. Solo timestamps en DB.
+
+---
+
+### TASK-017 — Quick-start "tu primer producto en 3 pasos" (P6)
+
+**Por qué:** El checklist de 10 ítems no guía al partner nuevo. Karina ("¿y ahora qué?") es el caso. Necesitamos una versión condensada que solo aparezca para tenants con 0 productos. Implementación conservadora — **no remueve ni modifica el checklist actual**, solo agrega una card visual arriba que desaparece cuando ya no aplica.
+
+**Alcance:**
+- Crear componente `components/workspace/QuickStartCard.tsx`.
+- Renderizar en [app/workspace/page.tsx](app/workspace/page.tsx) **debajo del banner de TASK-013 y arriba del checklist actual**, solo si `data.products === 0`.
+- Cuando `data.products >= 1`, el componente retorna `null` y el partner ve el checklist completo de siempre.
+- Estructura visual: card con título "Tu primer producto en 3 pasos" y 3 sub-cards horizontales (stack vertical en mobile), cada una con:
+  1. **"Subí tu logo"** → CTA "Configurar branding" → `/workspace/branding`. Done si `tenant.logo_url !== null`.
+  2. **"Generá o subí tu primer diseño"** → CTA "Ir al Studio" → `/workspace/design-engine`. Done si la nueva columna del dashboard (TASK-014) reporta `data.designs > 0`. Si TASK-014 todavía no está mergeada, usar `false` y aceptar el detalle estético.
+  3. **"Publicá tu primer producto"** → CTA "Crear producto" → `/workspace/catalog`. Done si `data.products > 0` (en ese caso ya no se muestra el componente entero, pero por completitud).
+- Cada sub-card muestra `CheckCircle2` verde si done, `Circle` gris si pendiente. Misma estética que el checklist actual.
+- Borde sutil violeta/emerald, fondo `bg-zinc-900/60` para combinar con el resto del dashboard.
+
+**Archivos:**
+- `components/workspace/QuickStartCard.tsx` (crear)
+- `app/workspace/page.tsx` (importar y renderizar condicionalmente)
+
+**Criterio DONE:**
+- [ ] Card visible solo cuando `data.products === 0`
+- [ ] Los 3 pasos linkean correctamente
+- [ ] Estados done/pendiente reflejan la realidad del tenant
+- [ ] El checklist completo de 10 ítems sigue intacto debajo (NO se elimina ni modifica)
+- [ ] Responsive (stack en mobile, row en desktop)
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 TASK-017]`
+
+**NO hacer:** modificar el checklist actual de 10 ítems, ni cambiar el cálculo del Storefront Score, ni tocar el `KpiOverview`. Es un componente nuevo y aditivo.
+
+---
+
+### TASK-018 — Nova proactivo: bienvenida al primer login (P9)
+
+**Por qué:** Nova ya existe como FAB en workspace (commit 5c73c9a). Falta que se abra proactivamente la primera vez con un mensaje de bienvenida y opciones rápidas. Implementación conservadora — **no modifica la lógica de chat existente de Nova, solo agrega un mensaje inicial inyectado bajo cierta condición**.
+
+**Alcance:**
+- En [components/PublicAssistant.tsx](components/PublicAssistant.tsx), al inicializar el componente:
+  - Si `mode === 'partner'` && `pageContext` es del workspace && el partner cumple condición de "primer login" (ver abajo) → abrir el panel automáticamente con un mensaje precargado en la lista de mensajes.
+- **Condición de primer login (conservadora, sin tocar DB):** usar `localStorage` con key `nv_nova_welcome_shown_<tenantId>`. Si no existe → mostrar welcome y setear flag. Si existe → comportamiento normal (Nova queda como FAB cerrado).
+  - **Por qué localStorage y no DB:** evita migración, evita endpoints nuevos, no rompe nada. Trade-off conocido: si el partner limpia storage o cambia dispositivo lo verá de nuevo (aceptable para un mensaje de bienvenida).
+- Mensaje inicial (rol `assistant`, prepended a la conversación):
+  > "¡Bienvenido a Novamente! 👋 Soy Nova, tu asistente. Estoy acá para ayudarte a arrancar. ¿Por dónde querés empezar?"
+- Quick replies (botones bajo el mensaje, reusar la UI de quick replies existente):
+  - "¿Cómo funciona el modelo?" → envía el texto literal al chat (ya existe la infra de quick replies)
+  - "Ayudame a subir mi primer diseño"
+  - "Mostrame cómo configurar mi tienda"
+- Si el partner cierra el panel sin interactuar, igual marcamos el flag (`nv_nova_welcome_shown_<tenantId> = true`) — no insistimos.
+
+**Archivos:**
+- `components/PublicAssistant.tsx` (modificar — agregar `useEffect` que dispara welcome)
+- `lib/hooks/useAssistantAuth.ts` o similar — leer `tenantId` del response del `/api/assistant/identify` (ya existe)
+
+**Criterio DONE:**
+- [ ] Partner logueado con tenant nuevo ve el panel abierto con mensaje + 3 quick replies en el primer ingreso al workspace
+- [ ] Refresh inmediato NO vuelve a abrir el panel (flag localStorage seteado)
+- [ ] Quick replies envían el mensaje al chat existente correctamente
+- [ ] Visitante público (`mode === 'visitor'`) y admin NO ven el welcome
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 TASK-018]`
+
+**NO hacer:** modificar el endpoint `/api/assistant/chat`, ni tocar la lógica de role detection, ni crear tablas nuevas. Esta tarea es 100% client-side encima de la infra de Nova que ya funciona.
+
+---
+
+### TASK-019 — Desglose costo/PVP/ganancia en formulario de producto (P7)
+
+**Por qué:** Daniel preguntó "¿cuál sería mi ganancia?". El catálogo solo muestra `price`. Necesitamos breakdown "costo: X / PVP: Y / ganancia: Z" al lado del campo precio. **Verificado 2026-05-26:** la lógica de planes ya está integrada en [lib/partners/garment-pricing.ts:50-75](lib/partners/garment-pricing.ts#L50-L75) — existen las funciones `getPartnerPlanPrice(garmentKey, plan)` y `getPartnerPlanMargin(garmentKey, plan)` con los 3 planes (`starter`/`growth`/`pro`). Sin dependencia bloqueante.
+
+**Alcance:**
+- En el formulario/modal de producto en [app/workspace/catalog/page.tsx](app/workspace/catalog/page.tsx), debajo del input de `price`:
+  - Componente nuevo `<MarginBreakdown />` que toma `(price, garmentKey, plan)`.
+  - Renderiza solo si el producto tiene `garmentKey` mapeable (si no, mostrar nota "Asociá una prenda para ver tu margen").
+  - Lee el `plan` actual del tenant desde el contexto/dashboard data (ya disponible en `data.tenant.plan`).
+- Layout (3 filas, alineadas tabla):
+  ```
+  Tu PVP:           $15.000
+  Costo Novamente:  $7.500    (tu plan: Growth)
+  Tu ganancia:      $7.500    (50%)
+  ```
+- Recalcular en vivo al editar el precio (efecto sobre el state del modal).
+- Si `getPartnerPlanPrice` devuelve `null` (prenda no encontrada en el mapa), ocultar el desglose silenciosamente.
+- Color: ganancia en verde si margen >0%, ámbar si <20%, rojo si negativo. (Si margen negativo, agregar warning: "Estás vendiendo por debajo del costo.")
+
+**Archivos:**
+- `components/workspace/MarginBreakdown.tsx` (crear)
+- `app/workspace/catalog/page.tsx` (importar y renderizar dentro del modal)
+- `lib/partners/garment-pricing.ts` (solo lectura, no modificar)
+
+**Criterio DONE:**
+- [ ] Desglose visible al lado del precio en el modal del catálogo
+- [ ] Recalcula en vivo al editar el precio
+- [ ] Refleja el plan del tenant correctamente
+- [ ] Warning visible si margen es negativo
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 TASK-019]`
+
+**NO hacer:** modificar `garment-pricing.ts` ni cambiar el modelo de planes. Solo consumir lo que ya existe.
+
+---
+
+### TASK-020 — "Subí tu diseño" como acción primaria (P8)
+
+**Por qué:** Elyar dijo "tengo diseños propios pero tampoco puedo subir mi archivo". Hoy el upload de PNG está mezclado en (a) imágenes de producto en catálogo (máx 5) y (b) input para mockup IA en Studio. No hay una acción primaria "subí tu diseño y lo aplicamos a la remera".
+
+**Alcance:**
+- Agregar card prominente en `/workspace` (dashboard) y en `/workspace/design-library` con CTA "Subí tu diseño".
+- Click abre un componente drop-zone con:
+  - Aceptar PNG/SVG con fondo transparente (validar `image/png` con canal alpha — opcional, warn si no transparente).
+  - Validar resolución mínima recomendada (≥1500px lado largo o ≥300 DPI).
+  - Preview inmediato.
+- Después del upload, ofrecer:
+  - Aplicar a mockup (link al Studio precargado con el PNG)
+  - Guardar en Biblioteca
+  - Publicar como producto (link a catálogo precargado)
+- Persistir el PNG en R2 (reutilizar infra existente de uploads).
+
+**Archivos:** TBD (probablemente nuevo componente `components/workspace/QuickDesignUpload.tsx` + endpoint reutilizado).
+
+**Criterio DONE:** TBD.
+
+---
+
+### TASK-021 — RESEARCH: ¿`partner_type` del wizard se respeta en UI?
+
+**Por qué:** En el paso 3 del wizard de alta ([app/partners/join/page.tsx:78](app/partners/join/page.tsx#L78)) el partner elige entre `catalog_only | catalog_mockups | catalog_design_engine`. Hay que confirmar si esa decisión modifica la UI del workspace o quedó como dato muerto.
+
+**Alcance (research, no code):**
+- Grep en codebase: `partner_type`, `catalog_only`, `catalog_mockups`, `catalog_design_engine`.
+- Identificar todos los puntos donde se lee el campo.
+- Reportar en `backlog/PROGRESS.md`:
+  - Dónde se lee.
+  - Qué cambia en la UI según el valor.
+  - Si es dato muerto: recomendar activarlo o sacarlo del wizard.
+
+**Criterio DONE:**
+- [ ] Reporte agregado a `PROGRESS.md`
+- [ ] Si es dato muerto, abrir TASK siguiente para decidir activar/quitar
+- [ ] Commit con tag `[AP-v4.2 TASK-021]` (aunque sea solo cambio en PROGRESS.md)
+
+---
+
+### TASK-022 — Storefront Score: tooltip explicativo
+
+**Por qué:** El dashboard muestra un "Storefront Score" como ring de progreso pero no explica cómo se calcula. El partner ve "30%" y no sabe qué hacer.
+
+**Alcance:**
+- En el componente que renderiza el score (probablemente dentro de `KpiOverview` o en `app/workspace/page.tsx`), agregar un tooltip (shadcn `Tooltip` ya está disponible) con icono `?` al lado del título "Storefront Score".
+- Contenido del tooltip:
+  > "Tu Storefront Score mide qué tan completa está tu tienda. Sube a medida que completás los pasos del checklist: branding, productos, primer diseño y publicación. Score 100% = tu tienda está lista para vender."
+- Si el cálculo del score es derivado del checklist (probable), confirmar en el código y mencionarlo en el tooltip.
+
+**Archivos:**
+- `app/workspace/page.tsx` o `components/workspace/KpiOverview.tsx`
+
+**Criterio DONE:**
+- [ ] Tooltip visible al hover sobre el icono `?` junto al título
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 TASK-022]`
+
+---
+
+### TASK-023 — RESEARCH: impacto de localStorage device-switch en wizard
+
+**Por qué:** El wizard de alta guarda progreso en `localStorage` ([app/partners/join/page.tsx:326](app/partners/join/page.tsx#L326), key `novamente_onboarding_progress`). Si el partner empieza en mobile y termina en desktop (o limpia cookies), pierde el progreso. ¿Qué tan grave es esto?
+
+**Alcance (research):**
+- Una vez TASK-016 tenga unas semanas de datos, query a la tabla `tenants`:
+  - ¿Cuántos partners crearon registro en step 1 pero nunca completaron step 7?
+  - ¿Cuántos volvieron a empezar el wizard desde cero (mismo email)?
+- Reportar en `PROGRESS.md` con números.
+- Si el impacto es >10% de signups, abrir TASK para migrar el storage a server-side (`tenant_onboarding_progress` tabla).
+
+**Estado:** TODO (depende de TASK-016 + 2-3 semanas de data).
+
+---
+
+### TASK-024 — Acortar wizard de alta (BLOCKED)
+
+**Estado:** BLOCKED hasta tener data de TASK-016 sobre dónde abandonan.
+
+**Por qué:** El wizard tiene 7 pasos (Datos básicos → Identidad visual → Tipo partner → Estilo visual → Catálogo → Comercialización → Plan → Preview). Es demasiado largo para un partner que solo quiere probar. Versión express probable: 2 pasos (email + business name) + el resto al workspace.
+
+**Decisión pendiente:** qué pasos sacar/mover. Se decide después de ver data de TASK-016.
+
+---
+
+### TASK-025 — FAQ content para /workspace/support — CANCELLED
+
+**Estado:** CANCELLED por decisión de Juan el 2026-05-26. No se va a hacer por ahora. El form de tickets en `/workspace/support` sigue funcionando como hoy (TASK-002 + TASK-007 DONE).
+
+---
+
+### TASK-026 — Navbar: dropdown "Soy Cliente / Soy Partner"
+
+**Por qué:** Hoy el botón "Iniciar sesión o registrarse" del navbar abre directamente el `AuthModal` (popup de email/contraseña). Pero ese popup es solo para clientes B2C — los partners deberían loguearse en `/partners/login`. Hace falta un dropdown intermedio que segmente.
+
+**Alcance:**
+- En [components/Navbar.tsx:200-201](components/Navbar.tsx#L200-L201) reemplazar el `onClick` que abre directo el modal por un dropdown (usar `DropdownMenu` de shadcn — ya está en el proyecto).
+- El dropdown tiene 2 opciones:
+  1. **"Soy Cliente"** — abre el `AuthModal` actual (`setAuthTab('signup')` + `setShowAuthModal(true)`, comportamiento idéntico al de hoy).
+  2. **"Soy Partner"** — navega a `/partners/login` (usar `<Link href="/partners/login">` o `router.push`).
+- El trigger del dropdown sigue diciendo "Iniciar sesión o registrarse" (mantener el mismo texto y estilo del botón actual).
+- Ítems del dropdown con iconos:
+  - "Soy Cliente" → icono `ShoppingBag` o `User`
+  - "Soy Partner" → icono `Store` o `Briefcase`
+- Subtítulo opcional debajo de cada ítem (texto chico, gris):
+  - "Soy Cliente" → "Comprá remeras y buzos personalizados"
+  - "Soy Partner" → "Accedé a tu workspace de marca"
+- Aplicar tanto en desktop como en mobile (el navbar tiene versión sm: oculta para el texto, mantener consistencia).
+
+**Archivos:**
+- `components/Navbar.tsx` (modificar líneas ~195-210)
+
+**Criterio DONE:**
+- [ ] Click en "Iniciar sesión o registrarse" abre dropdown (no modal directo)
+- [ ] "Soy Cliente" abre el AuthModal igual que antes
+- [ ] "Soy Partner" navega a `/partners/login`
+- [ ] Funciona en desktop y mobile
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 TASK-026]`
+
+**NO hacer:** cambiar el AuthModal en sí (sigue siendo solo para clientes B2C). Ni tocar `/partners/login`.
