@@ -145,6 +145,7 @@ function AssistantInner({
   const sendRef = useRef<(text?: string) => void>(() => {})
   const lastDesignUrlRef = useRef<string | null>(null)
   const lastMockupUrlRef = useRef<string | null>(null)
+  const welcomeInjectedRef = useRef(false)
 
   // Per-account storage key (different history per user)
   const storageKey = auth.email ? `${STORAGE_KEY}-${auth.email}` : STORAGE_KEY
@@ -197,6 +198,33 @@ function AssistantInner({
     window.addEventListener("keydown", handleEsc)
     return () => window.removeEventListener("keydown", handleEsc)
   }, [open, fullScreen])
+
+  // Nova proactivo: bienvenida al primer login del workspace
+  useEffect(() => {
+    const tenantKey = auth.tenantId || auth.tenantSlug
+    if (auth.loading || auth.mode !== 'partner' || !pathname.startsWith('/workspace') || !tenantKey) return
+    if (welcomeInjectedRef.current) return
+    const flagKey = `nv_nova_welcome_shown_${tenantKey}`
+    try {
+      if (localStorage.getItem(flagKey)) return
+    } catch { return }
+    // Delay 150ms para que el efecto de carga de mensajes corra primero
+    const timer = setTimeout(() => {
+      if (welcomeInjectedRef.current) return
+      welcomeInjectedRef.current = true
+      const welcomeMsg: Message = {
+        id: `welcome-${Date.now()}`,
+        role: 'model',
+        text: '¡Bienvenido a Novamente! 👋 Soy Nova, tu asistente. Estoy acá para ayudarte a arrancar. ¿Por dónde querés empezar?',
+        suggestions: ['¿Cómo funciona el modelo?', 'Ayudame a subir mi primer diseño', 'Mostrame cómo configurar mi tienda'],
+        timestamp: Date.now(),
+      }
+      setMessages(prev => [welcomeMsg, ...prev])
+      setOpen(true)
+      try { localStorage.setItem(flagKey, '1') } catch { /* ignore */ }
+    }, 150)
+    return () => clearTimeout(timer)
+  }, [auth.loading, auth.mode, auth.tenantId, auth.tenantSlug, pathname])
 
   // Auto-resize textarea
   const autoResize = useCallback(() => {
