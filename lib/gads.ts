@@ -4,6 +4,7 @@ export const GOOGLE_ADS_ID = "AW-18028033546"
 // Path: Google Ads → Goals → Conversions → Purchase → edit → "Value" section.
 // Without this, Smart Bidding ignores the dynamic value passed here and ROAS breaks.
 export const GOOGLE_ADS_PURCHASE_LABEL = "mzyTCK-Z36AcEIrst5RD"
+export const GOOGLE_ADS_PARTNER_LEAD_LABEL = "ZmzbCID34qgcEIrst5RD"
 
 type GtagFn = (...args: unknown[]) => void
 
@@ -24,5 +25,13 @@ export const trackPurchase = (
     value,
     currency,
     transaction_id: transactionId ?? "",
+  })
+}
+
+export const trackPartnerLead = () => {
+  const gtag = getGtag()
+  if (!gtag) return
+  gtag("event", "conversion", {
+    send_to: `${GOOGLE_ADS_ID}/${GOOGLE_ADS_PARTNER_LEAD_LABEL}`,
   })
 }

@@ -40,6 +40,8 @@ export const trackBeginCheckout = (items: Item[]) =>
     items,
   })
 
+import { trackPartnerLead } from "./gads"
+
 export const trackGenerateLead = (
   leadType:
     | "partner_signup_started"
@@ -56,6 +58,9 @@ export const trackGenerateLead = (
       value: 0,
     },
   })
+  if (leadType === "partner_signup_completed") {
+    trackPartnerLead()
+  }
 }
 
 export const trackPurchase = (params: {
