@@ -30,6 +30,7 @@ import {
   ALL_GARMENT_PRICING,
   formatPrice as formatGarmentPrice,
 } from '@/lib/partners/garment-pricing'
+import { MarginBreakdown } from '@/components/workspace/MarginBreakdown'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -170,6 +171,9 @@ export default function CatalogPage() {
   const [formCardDesc, setFormCardDesc] = useState('')
   const [formBrandValues, setFormBrandValues] = useState('')
 
+  // Garment key for margin calculation
+  const [formGarmentKey, setFormGarmentKey] = useState('')
+
   // AI copywriting state
   const [aiIdea, setAiIdea] = useState('')
   const [aiTone, setAiTone] = useState<'urban' | 'minimal' | 'fun' | 'premium' | 'sport' | 'romantic'>('urban')
@@ -289,6 +293,7 @@ export default function CatalogPage() {
     setFormDetailedDesc('')
     setFormCardDesc('')
     setFormBrandValues('')
+    setFormGarmentKey('')
     setEditingProduct(null)
     setConfirmDelete(false)
   }
@@ -325,6 +330,7 @@ export default function CatalogPage() {
     setFormDetailedDesc((m.detailedDescription as string) || '')
     setFormCardDesc((m.cardDescription as string) || '')
     setFormBrandValues((m.brandValues as string) || '')
+    setFormGarmentKey((m.garmentKey as string) || '')
 
     setEditingProduct(product)
     setConfirmDelete(false)
@@ -362,6 +368,11 @@ export default function CatalogPage() {
       return
     }
 
+    if (formStatus === 'published' && (!formPrice || Number(formPrice) <= 0)) {
+      showToast('Necesitás definir un precio antes de publicar este producto.', 'error')
+      return
+    }
+
     setSaving(true)
     try {
       const images = formImages.filter((u): u is string => u !== null)
@@ -381,6 +392,7 @@ export default function CatalogPage() {
       if (formDetailedDesc.trim()) metadata.detailedDescription = formDetailedDesc.trim()
       if (formCardDesc.trim()) metadata.cardDescription = formCardDesc.trim()
       if (formBrandValues.trim()) metadata.brandValues = formBrandValues.trim()
+      if (formGarmentKey.trim()) metadata.garmentKey = formGarmentKey.trim()
 
       const body: Record<string, unknown> = {
         name: formName.trim(),
@@ -984,6 +996,32 @@ export default function CatalogPage() {
                 </div>
               </div>
 
+              {/* Garment key + Margin breakdown */}
+              <div className="space-y-2">
+                <Label className="text-zinc-300 text-sm font-medium">
+                  Prenda base{' '}
+                  <span className="text-zinc-600 font-normal text-xs">(opcional, para calcular tu margen)</span>
+                </Label>
+                <div className="relative">
+                  <select
+                    value={formGarmentKey}
+                    onChange={(e) => setFormGarmentKey(e.target.value)}
+                    className="appearance-none w-full h-11 rounded-md border border-zinc-800 bg-zinc-900/60 px-3 pr-9 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50"
+                  >
+                    <option value="">Sin prenda base</option>
+                    {Object.values(ALL_GARMENT_PRICING).map((gp) => (
+                      <option key={gp.key} value={gp.key}>{gp.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                </div>
+                <MarginBreakdown
+                  price={formPrice ? Number(formPrice) : null}
+                  garmentKey={formGarmentKey || null}
+                  plan={planInfo?.plan || 'starter'}
+                />
+              </div>
+
               {/* Status */}
               <div className="space-y-2">
                 <Label htmlFor="product-status" className="text-zinc-300 text-sm font-medium">
@@ -1005,6 +1043,11 @@ export default function CatalogPage() {
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
                 </div>
+                {formStatus === 'published' && (!formPrice || Number(formPrice) <= 0) && (
+                  <p className="text-xs text-amber-400 mt-1">
+                    Necesitás definir un precio antes de publicar este producto.
+                  </p>
+                )}
               </div>
 
               {/* Images */}
