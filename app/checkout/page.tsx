@@ -11,7 +11,7 @@ import * as fpixel from "@/lib/fpixel"
 import { setPixelUser } from "@/lib/pixel-user"
 import { trackBeginCheckout } from "@/lib/analytics"
 import { formatCurrency } from "@/lib/utils"
-import { Loader2, ArrowLeft, CreditCard, Smartphone, Building2, Shield, Truck, Clock } from "lucide-react"
+import { Loader2, ArrowLeft, CreditCard, Smartphone, Building2, Shield, Truck, Clock, X, Shirt, Image as ImageIcon, Camera } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Separator } from "@/components/ui/separator"
@@ -28,7 +28,7 @@ interface CustomerData {
 }
 
 export default function CheckoutPage() {
-  const { items, getTotalPrice, getTotalItems, clearCart } = useCart()
+  const { items, getTotalPrice, getTotalItems, clearCart, removeItem } = useCart()
   const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<'mercadopago' | 'transferencia'>('mercadopago')
@@ -36,13 +36,34 @@ export default function CheckoutPage() {
   // Estado para previsualización
   const [selectedItemIndex, setSelectedItemIndex] = useState(0)
   const selectedItem = items[selectedItemIndex] || items[0]
-  const availablePreviews = [
-    selectedItem?.mockupUrl,
-    selectedItem?.frontMockup,
-    selectedItem?.backMockup,
-    selectedItem?.image,
-  ].filter(Boolean) as string[]
-  const [selectedPreviewUrl, setSelectedPreviewUrl] = useState<string | null>(availablePreviews[0] || null)
+
+  // Construir lista de previews con label + icono. Orden: lifestyle/mockup primero,
+  // despues mockup clean front/back, despues los diseños puros (sin prenda).
+  type PreviewKind = 'lifestyle' | 'mockup-front' | 'mockup-back' | 'design-front' | 'design-back'
+  const buildPreviews = (item: typeof selectedItem | undefined) => {
+    if (!item) return [] as { url: string; label: string; kind: PreviewKind }[]
+    const out: { url: string; label: string; kind: PreviewKind }[] = []
+    if (item.mockupUrl) out.push({ url: item.mockupUrl, label: 'Lifestyle', kind: 'lifestyle' })
+    if (item.frontMockup && item.frontMockup !== item.mockupUrl) {
+      out.push({ url: item.frontMockup, label: 'Frente', kind: 'mockup-front' })
+    }
+    if (item.backMockup && item.backMockup !== item.mockupUrl) {
+      out.push({ url: item.backMockup, label: 'Espalda', kind: 'mockup-back' })
+    }
+    if (item.frontDesign) {
+      out.push({ url: item.frontDesign, label: 'Diseño frente', kind: 'design-front' })
+    }
+    if (item.backDesign) {
+      out.push({ url: item.backDesign, label: 'Diseño espalda', kind: 'design-back' })
+    }
+    // Fallback: si no hay nada, intentar usar item.image
+    if (out.length === 0 && item.image) {
+      out.push({ url: item.image, label: 'Producto', kind: 'lifestyle' })
+    }
+    return out
+  }
+  const availablePreviews = buildPreviews(selectedItem)
+  const [selectedPreviewUrl, setSelectedPreviewUrl] = useState<string | null>(availablePreviews[0]?.url || null)
   const [customerInfo, setCustomerInfo] = useState<CustomerData>({
     email: "",
     firstName: "",
@@ -112,13 +133,9 @@ export default function CheckoutPage() {
 
   // Sincronizar preview cuando cambia el item seleccionado o el carrito
   useEffect(() => {
-    const previews = [
-      items[selectedItemIndex]?.mockupUrl,
-      items[selectedItemIndex]?.frontMockup,
-      items[selectedItemIndex]?.backMockup,
-      items[selectedItemIndex]?.image,
-    ].filter(Boolean) as string[]
-    setSelectedPreviewUrl(previews[0] || null)
+    const previews = buildPreviews(items[selectedItemIndex])
+    setSelectedPreviewUrl(previews[0]?.url || null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, selectedItemIndex])
 
   const handleInputChange = (field: string, value: string) => {
@@ -567,15 +584,22 @@ export default function CheckoutPage() {
           {/* Imagen grande de las prendas */}
           {items.length > 0 && selectedItem && (
             <Card>
-              <CardHeader>
-                <CardTitle>Vista Previa de tu Pedido</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center justify-between">
+                  <span>Vista Previa de tu Pedido</span>
+                  {availablePreviews.length > 0 && (
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {availablePreviews.findIndex(p => p.url === selectedPreviewUrl) + 1} / {availablePreviews.length}
+                    </span>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="relative w-full h-96 rounded-lg overflow-hidden bg-gray-100">
-                  <Image 
-                    src={selectedPreviewUrl || "/placeholder.svg"} 
-                    alt={selectedItem.name} 
-                    fill 
+                <div className="relative w-full aspect-square sm:h-96 sm:aspect-auto rounded-xl overflow-hidden bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 border border-zinc-200/40 dark:border-zinc-800/60">
+                  <Image
+                    src={selectedPreviewUrl || "/placeholder.svg"}
+                    alt={selectedItem.name}
+                    fill
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-contain"
                     onError={(e) => {
@@ -584,33 +608,59 @@ export default function CheckoutPage() {
                     }}
                     unoptimized={(selectedPreviewUrl || "").startsWith('/api/')}
                   />
+                  {/* Badge del tipo de preview en esquina */}
+                  {(() => {
+                    const current = availablePreviews.find(p => p.url === selectedPreviewUrl)
+                    if (!current) return null
+                    return (
+                      <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-black/70 backdrop-blur-sm px-2.5 py-1 text-[11px] font-medium text-white">
+                        {current.kind === 'lifestyle' && <Camera className="w-3 h-3" />}
+                        {(current.kind === 'mockup-front' || current.kind === 'mockup-back') && <Shirt className="w-3 h-3" />}
+                        {(current.kind === 'design-front' || current.kind === 'design-back') && <ImageIcon className="w-3 h-3" />}
+                        {current.label}
+                      </div>
+                    )
+                  })()}
                 </div>
+
                 <p className="text-base font-medium mt-3 text-center">
-                  {selectedItem.name} - {selectedItem.color} - Talle {selectedItem.size}
+                  {selectedItem.name} <span className="text-muted-foreground">·</span> {selectedItem.color} <span className="text-muted-foreground">·</span> Talle {selectedItem.size}
                 </p>
 
-                {/* Thumbnails de la prenda seleccionada */}
+                {/* Tabs/thumbnails con label — incluye diseño puro, no solo lifestyle */}
                 {availablePreviews.length > 1 && (
-                  <div className="mt-4 flex items-center justify-center gap-3">
-                    {availablePreviews.map((src, idx) => (
+                  <div className="mt-4 grid grid-cols-3 sm:grid-cols-5 gap-2">
+                    {availablePreviews.map((p, idx) => (
                       <button
                         key={idx}
-                        onClick={() => setSelectedPreviewUrl(src)}
-                        className={`relative w-16 h-16 rounded-md overflow-hidden border ${selectedPreviewUrl === src ? 'border-primary' : 'border-transparent'} hover:border-primary/60`}
-                        aria-label={`Vista ${idx + 1}`}
+                        onClick={() => setSelectedPreviewUrl(p.url)}
+                        className={`group relative rounded-lg overflow-hidden border-2 transition-all ${
+                          selectedPreviewUrl === p.url
+                            ? 'border-primary shadow-md'
+                            : 'border-transparent hover:border-primary/40 opacity-75 hover:opacity-100'
+                        }`}
+                        aria-label={p.label}
+                        title={p.label}
                       >
-                        <Image
-                          src={src}
-                          alt={`Miniatura ${idx + 1}`}
-                          fill
-                          sizes="64px"
-                          className="object-cover"
-                          unoptimized={src.startsWith('/api/')}
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement
-                            target.src = "/placeholder.svg"
-                          }}
-                        />
+                        <div className="relative aspect-square">
+                          <Image
+                            src={p.url}
+                            alt={p.label}
+                            fill
+                            sizes="80px"
+                            className="object-cover"
+                            unoptimized={p.url.startsWith('/api/')}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.src = "/placeholder.svg"
+                            }}
+                          />
+                        </div>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1 py-1">
+                          <span className="block text-[9px] sm:text-[10px] font-medium text-white text-center truncate leading-tight">
+                            {p.label}
+                          </span>
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -628,45 +678,65 @@ export default function CheckoutPage() {
                 {items.map((item, idx) => (
                   <div
                     key={item.id}
-                    className={`flex gap-4 cursor-pointer rounded-md p-2 ${idx === selectedItemIndex ? 'bg-muted/30 ring-1 ring-primary/30' : 'hover:bg-muted/20'}`}
+                    className={`group relative flex gap-3 cursor-pointer rounded-lg p-2.5 transition-all ${
+                      idx === selectedItemIndex
+                        ? 'bg-primary/5 ring-1 ring-primary/40'
+                        : 'hover:bg-muted/30 ring-1 ring-transparent'
+                    }`}
                     onClick={() => setSelectedItemIndex(idx)}
                   >
-                    <div className="w-16 h-16 relative rounded overflow-hidden flex-shrink-0">
-                      <Image 
-                        src={item.mockupUrl || item.frontMockup || item.backMockup || item.image || "/placeholder.svg"} 
-                        alt={item.name} 
-                        fill 
-                        sizes="64px" 
+                    <div className="w-16 h-16 relative rounded-md overflow-hidden flex-shrink-0 bg-zinc-100 dark:bg-zinc-900">
+                      <Image
+                        src={item.mockupUrl || item.frontMockup || item.backMockup || item.frontDesign || item.image || "/placeholder.svg"}
+                        alt={item.name}
+                        fill
+                        sizes="64px"
                         className="object-cover"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement
                           target.src = "/placeholder.svg"
                         }}
-                        unoptimized={(item.mockupUrl || item.frontMockup || item.backMockup || item.image || "").startsWith('/api/')}
+                        unoptimized={(item.mockupUrl || item.frontMockup || item.backMockup || item.frontDesign || item.image || "").startsWith('/api/')}
                       />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-sm">{item.name}</h3>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm truncate pr-7">{item.name}</h3>
                       <p className="text-xs text-muted-foreground">
-                        {item.garmentType} - {item.color} - Talle {item.size}
+                        {item.color} · Talle {item.size}
                       </p>
                       {item.frontStampSize && (
                         <p className="text-xs text-muted-foreground">
-                          Estampado: {item.frontStampSize} {item.frontStampPosition && `(${item.frontStampPosition === 'center' ? 'Centro' : 'Izquierda'})`}
+                          Estampa: {item.frontStampSize}{item.frontStampPosition && ` · ${item.frontStampPosition === 'center' ? 'Centro' : 'Izquierda'}`}
                         </p>
                       )}
                       {item.backStampSize && (
                         <p className="text-xs text-muted-foreground">
-                          Estampado trasero: {item.backStampSize} {item.backStampPosition && `(${item.backStampPosition === 'center' ? 'Centro' : 'Izquierda'})`}
+                          Espalda: {item.backStampSize}{item.backStampPosition && ` · ${item.backStampPosition === 'center' ? 'Centro' : 'Izquierda'}`}
                         </p>
                       )}
-                      {item.backDesign && !item.backStampSize && <p className="text-xs text-green-600">✓ Con estampado trasero</p>}
+                      {item.backDesign && !item.backStampSize && <p className="text-xs text-emerald-600">✓ Con estampado trasero</p>}
                       <p className="text-xs text-muted-foreground">Cantidad: {item.quantity}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold">{formatCurrency(item.price * item.quantity)}</p>
-                      <p className="text-xs text-muted-foreground">{formatCurrency(item.price)} c/u</p>
+                    <div className="text-right pr-7">
+                      <p className="font-semibold text-sm">{formatCurrency(item.price * item.quantity)}</p>
+                      <p className="text-[10px] text-muted-foreground">{formatCurrency(item.price)} c/u</p>
                     </div>
+                    {/* Delete button — siempre visible en mobile, hover en desktop */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (confirm(`¿Eliminar ${item.name} del carrito?`)) {
+                          removeItem(item.id)
+                          // Si era el item seleccionado, resetear al primero
+                          if (idx === selectedItemIndex) setSelectedItemIndex(0)
+                        }
+                      }}
+                      aria-label={`Eliminar ${item.name}`}
+                      className="absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-full text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 transition-colors sm:opacity-60 sm:group-hover:opacity-100"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 ))}
               </div>
