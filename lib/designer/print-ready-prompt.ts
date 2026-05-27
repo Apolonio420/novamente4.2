@@ -39,6 +39,45 @@ const TYPOGRAPHY_RULES = `Typography must be clean, readable, centered and corre
 
 const NEGATIVE_RULES = `Negative rules: No mockup. No garment. No hoodie. No t-shirt. No model wearing the design. No hanger. No black rectangle. No white rectangle. No poster background. No textured background that needs to be removed. No pure black silhouette without outline. No white letters without outline on light garments. No black letters without outline on dark garments. No tiny unreadable typography. No watermark. No extra logos.`
 
+// Regla anti-split-canvas: el modelo a veces divide la imagen en dos paneles
+// (design isolated + design on hoodie) cuando el user prompt menciona la
+// prenda. Va al final para maximo peso por recency bias.
+const SINGLE_PANEL_RULE = `CRITICAL OUTPUT FORMAT: Output ONE single artwork only. Do NOT split the image into multiple panels, side-by-side comparisons, before/after layouts, diptychs or grids. Do NOT show the artwork twice (once isolated, once on a garment). Do NOT include any garment (hoodie, t-shirt, sweatshirt, buzo, remera, crop, tank, vest, hanger) anywhere in the output, even as a secondary element or thumbnail. The output must be a single isolated graphic. If the user prompt mentions a garment ("para buzo", "para remera", "for a hoodie", "on a t-shirt", "para hoodie"), treat that as TARGET INTENT only — generate ONLY the standalone artwork suitable for printing on that garment, never the garment itself.`
+
+// ============================================================
+// sanitizeUserPrompt
+// Quita frases del prompt del usuario que el modelo suele interpretar
+// literalmente como "agrega la prenda al output". Conserva el contenido
+// creativo pero elimina referencias directas a "para buzo negro", "para
+// remera blanca", "en hoodie", etc.
+// ============================================================
+export function sanitizeUserPrompt(prompt: string): string {
+  if (!prompt) return prompt
+  let cleaned = prompt
+  // Patron: "para <prenda> [color]" / "en <prenda> [color]" / "sobre <prenda>"
+  const garmentWord =
+    "(buzo|remera|hoodie|t-?shirt|tee|sweat(shirt)?|crewneck|crop(\\s+top)?|musculosa|tank(\\s+top)?|camiseta|playera|chomba|chompa|sudadera|camisa)"
+  const colorWord =
+    "(?:\\s+(negro|negra|blanco|blanca|gris|crema|stone[-\\s]?wash|caramel|caramelo|marron|marrón|rojo|roja|azul|verde|amarillo))?"
+  // "para buzo negro" / "en hoodie" / "sobre remera blanca"
+  const patterns = [
+    new RegExp(`\\b(para|en|sobre|en\\s+una|para\\s+un|para\\s+una|en\\s+un)\\s+${garmentWord}${colorWord}\\b`, "gi"),
+    new RegExp(`\\b(for|on)\\s+(a\\s+|an\\s+|the\\s+)?${garmentWord}${colorWord}\\b`, "gi"),
+    // "composicion para buzo" / "diseño para hoodie"
+    new RegExp(`\\b(composici[oó]n|dise[ñn]o|estampa|artwork|design)\\s+(para|for)\\s+${garmentWord}${colorWord}\\b`, "gi"),
+  ]
+  for (const re of patterns) cleaned = cleaned.replace(re, "").trim()
+  // Limpiar comas/puntos sueltos que quedan tras la remocion
+  cleaned = cleaned
+    .replace(/\s*,\s*,/g, ",")
+    .replace(/\s+,/g, ",")
+    .replace(/,\s*\./g, ".")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[\s,;.]+/, "")
+    .replace(/[\s,;]+$/, "")
+  return cleaned
+}
+
 // Estilos oscuros — refuerzan reglas anti-disappearing-on-dark
 const DARK_STYLE_REGEX =
   /\b(mafia|noir|dark|black|gothic|grunge|metal|horror|skull|skulls|smoke|shadow|gangster|vintage)\b/i
@@ -64,8 +103,12 @@ export function buildPrintReadyPrompt(
 
   const blocks: string[] = []
 
-  // 1) prompt del user — primero, para que sea el núcleo creativo
-  blocks.push(userPrompt.trim())
+  // 0) sanitizar — quitar "para buzo negro" y similares que el modelo
+  //    interpreta literal y termina renderizando la prenda en el output.
+  const sanitized = sanitizeUserPrompt(userPrompt)
+
+  // 1) prompt del user (limpio) — primero, para que sea el núcleo creativo
+  blocks.push(sanitized.trim())
 
   // 2) reglas base obligatorias
   blocks.push(BASE_RULES)
@@ -87,8 +130,12 @@ export function buildPrintReadyPrompt(
     (options.reinforceDarkStyles ?? true) && DARK_STYLE_REGEX.test(userPrompt)
   if (isDarkStylePrompt) blocks.push(DARK_STYLE_BOOST)
 
-  // 6) reglas negativas — al final
+  // 6) reglas negativas
   blocks.push(NEGATIVE_RULES)
+
+  // 7) regla critica de output format (single panel, no garment) — al final
+  //    para maximo peso por recency bias del modelo
+  blocks.push(SINGLE_PANEL_RULE)
 
   return blocks.join("\n\n")
 }
