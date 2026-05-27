@@ -33,6 +33,7 @@ import { authFetch } from '@/lib/partners/auth-fetch'
 import { KpiOverview } from '@/components/workspace/KpiOverview'
 import { BusinessModelBanner } from '@/components/workspace/BusinessModelBanner'
 import { QuickStartCard } from '@/components/workspace/QuickStartCard'
+import { QuickDesignUpload } from '@/components/workspace/QuickDesignUpload'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -529,6 +530,7 @@ export default function WorkspaceDashboard() {
   const [checklistOpen, setChecklistOpen] = useState(true)
   const [welcomeDismissed, setWelcomeDismissed] = useState(false)
   const [showScoreTooltip, setShowScoreTooltip] = useState(false)
+  const [showUploadCard, setShowUploadCard] = useState(true)
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -828,6 +830,13 @@ export default function WorkspaceDashboard() {
       {/* ================================================================= */}
       {!data.tenant.onboarding_dismissed_business_model && (
         <BusinessModelBanner tenantId={data.tenant.id} />
+      )}
+
+      {/* ================================================================= */}
+      {/* QUICK DESIGN UPLOAD CARD                                         */}
+      {/* ================================================================= */}
+      {showUploadCard && (
+        <QuickDesignUpload onClose={() => setShowUploadCard(false)} />
       )}
 
       {/* ================================================================= */}

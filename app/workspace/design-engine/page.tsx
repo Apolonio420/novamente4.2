@@ -8,6 +8,7 @@ import {
   ChevronRight, TrendingUp, Info, Pin, Check,
 } from 'lucide-react'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { QuickDesignUpload } from '@/components/workspace/QuickDesignUpload'
 import type { StudioMessage, StudioSession, UsageInfo } from '@/lib/partners/studio/types'
 import { createStudioMessage, createStudioSession } from '@/lib/partners/studio/types'
 import {
@@ -136,6 +137,16 @@ function getPlacementOptions(
 // ---------------------------------------------------------------------------
 
 export default function DesignStudioPage() {
+  // Studio mode: 'ai' = generate with AI, 'upload' = upload your own design
+  const [studioMode, setStudioMode] = useState<'ai' | 'upload'>(() => {
+    // If arriving with an uploaded design URL, default to upload tab
+    if (typeof window !== 'undefined') {
+      const sp = new URLSearchParams(window.location.search)
+      if (sp.get('uploadedDesignUrl')) return 'upload'
+    }
+    return 'ai'
+  })
+
   // Config/access state
   const [loading, setLoading] = useState(true)
   const [plan, setPlan] = useState('')
@@ -836,6 +847,32 @@ export default function DesignStudioPage() {
           <h2 className="font-semibold text-sm">Studio de Diseño</h2>
           <span className="text-xs text-zinc-500 uppercase">{plan}</span>
 
+          {/* Mode tabs */}
+          <div className="flex items-center gap-1 ml-2 p-1 rounded-lg bg-zinc-800/60">
+            <button
+              onClick={() => setStudioMode('ai')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                studioMode === 'ai'
+                  ? 'bg-zinc-700 text-zinc-100'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <Sparkles className="h-3 w-3" />
+              Generar con IA
+            </button>
+            <button
+              onClick={() => setStudioMode('upload')}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                studioMode === 'upload'
+                  ? 'bg-zinc-700 text-zinc-100'
+                  : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <UploadIcon className="h-3 w-3" />
+              Subir mi PNG
+            </button>
+          </div>
+
           {/* Usage meter */}
           {usage && (
             <div className="ml-auto flex items-center gap-2">
@@ -868,8 +905,15 @@ export default function DesignStudioPage() {
           </button>
         </div>
 
+        {/* Upload panel (when studioMode === 'upload') */}
+        {studioMode === 'upload' && (
+          <div className="flex-1 overflow-y-auto px-4 py-6">
+            <QuickDesignUpload onClose={() => setStudioMode('ai')} />
+          </div>
+        )}
+
         {/* Chat messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        <div className={`flex-1 overflow-y-auto px-4 py-4 space-y-4 ${studioMode === 'upload' ? 'hidden' : ''}`}>
           {session.messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mb-4">
@@ -979,7 +1023,7 @@ export default function DesignStudioPage() {
         )}
 
         {/* Compact controls bar: style + side */}
-        <div className="flex items-center gap-2 px-4 py-2 border-t border-zinc-800/50 bg-zinc-900/30 overflow-x-auto">
+        <div className={`flex items-center gap-2 px-4 py-2 border-t border-zinc-800/50 bg-zinc-900/30 overflow-x-auto ${studioMode === 'upload' ? 'hidden' : ''}`}>
           {/* Style selector */}
           <button
             onClick={() => setStyleModalOpen(true)}
@@ -1109,7 +1153,7 @@ export default function DesignStudioPage() {
         </div>
 
         {/* Input area */}
-        <div className="p-4 border-t border-zinc-800 bg-zinc-900/50">
+        <div className={`p-4 border-t border-zinc-800 bg-zinc-900/50 ${studioMode === 'upload' ? 'hidden' : ''}`}>
           {usage && usage.used >= usage.limit && (
             <div className="mb-3 text-sm text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 flex items-start gap-2">
               <span className="shrink-0 mt-0.5">⚠️</span>

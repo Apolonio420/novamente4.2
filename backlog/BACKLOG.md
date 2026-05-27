@@ -34,7 +34,7 @@
 | 22 | TASK-017 | Quick-start "tu primer producto en 3 pasos" en dashboard (P6) | 2 | sí | DONE |
 | 23 | TASK-018 | Nova proactivo: bienvenida automática al primer login (P9) | 2 | sí | DONE |
 | 24 | TASK-019 | Desglose costo/PVP/ganancia en formulario de producto (P7) | 2 | sí | DONE |
-| 25 | TASK-020 | "Subí tu diseño" como acción primaria del workspace (P8) | 3 | sí | BLOCKED — criterio DONE y archivos TBD, necesita refinamiento |
+| 25 | TASK-020 | "Subí tu diseño" como acción primaria del workspace (P8) | 3 | sí | DONE |
 | 26 | TASK-021 | RESEARCH: ¿el campo `partner_type` del wizard se respeta en UI o quedó dato muerto? | 1 | sí (research, no code) | DONE — dato muerto, ver PROGRESS.md Sprint 026 |
 | 27 | TASK-022 | Storefront Score: tooltip "cómo subir tu score" + explicación del cálculo | 1 | sí | DONE |
 | 28 | TASK-023 | RESEARCH: cuantificar impacto del localStorage device-switch en wizard | 1 | sí (research) | BLOCKED — necesita 2-3 semanas de data de TASK-016 |
@@ -730,23 +730,71 @@ Casos disparadores: Elyar, Gabriel, Karina, Daniel (mails 23-25/05).
 
 ### TASK-020 — "Subí tu diseño" como acción primaria (P8)
 
-**Por qué:** Elyar dijo "tengo diseños propios pero tampoco puedo subir mi archivo". Hoy el upload de PNG está mezclado en (a) imágenes de producto en catálogo (máx 5) y (b) input para mockup IA en Studio. No hay una acción primaria "subí tu diseño y lo aplicamos a la remera".
+**Por qué:** Elyar dijo "tengo diseños propios pero tampoco puedo subir mi archivo". Hoy el upload de PNG está mezclado en (a) imágenes de producto en catálogo (máx 5) y (b) input para mockup IA en Studio. No hay una acción primaria "subí tu diseño" obvia para un partner que llega con sus PNGs ya hechos.
 
 **Alcance:**
-- Agregar card prominente en `/workspace` (dashboard) y en `/workspace/design-library` con CTA "Subí tu diseño".
-- Click abre un componente drop-zone con:
-  - Aceptar PNG/SVG con fondo transparente (validar `image/png` con canal alpha — opcional, warn si no transparente).
-  - Validar resolución mínima recomendada (≥1500px lado largo o ≥300 DPI).
-  - Preview inmediato.
-- Después del upload, ofrecer:
-  - Aplicar a mockup (link al Studio precargado con el PNG)
-  - Guardar en Biblioteca
-  - Publicar como producto (link a catálogo precargado)
-- Persistir el PNG en R2 (reutilizar infra existente de uploads).
 
-**Archivos:** TBD (probablemente nuevo componente `components/workspace/QuickDesignUpload.tsx` + endpoint reutilizado).
+**1) Ubicaciones del CTA (decisión Juan: opción D — ambas):**
+- Card prominente en el dashboard `/workspace` (entre el `BusinessModelBanner` y el `QuickStartCard`/checklist) con título "Subí tu propio diseño" + botón.
+- Card o tab paralelo dentro de `/workspace/design-engine` que ofrezca "subir mi PNG" como camino alternativo a "generar con IA".
+- En ambos lugares el CTA abre el mismo componente `<QuickDesignUpload />`.
 
-**Criterio DONE:** TBD.
+**2) Componente `<QuickDesignUpload />`** (crear en `components/workspace/QuickDesignUpload.tsx`):
+- Drop-zone + botón "elegir archivo".
+- Validaciones (decisión Juan: validar todo pero sin ser tedioso):
+  - **Formato** → enforce: aceptar solo `image/png` y `image/svg+xml`. Otros formatos = rechazo con mensaje claro "Solo PNG o SVG".
+  - **Peso máximo** → enforce: 10 MB. Si excede, rechazar con mensaje "Tu archivo pesa X MB, el máximo es 10 MB".
+  - **Transparencia** (solo PNG) → warn no bloqueante: si el PNG no tiene canal alfa o tiene fondo opaco, mostrar mensaje en amarillo "Tu diseño no tiene fondo transparente, va a verse con el fondo blanco/del color del archivo sobre la prenda". El partner puede continuar igual.
+  - **Resolución** → warn no bloqueante: si el lado largo es <1500px, mostrar "Tu diseño tiene baja resolución (XXXpx). Para mejor calidad de impresión recomendamos 1500px o más en el lado largo". Permitir continuar.
+  - **Ratio área de estampa (35x40 cm)** → NO validar (sería tedioso, Juan dijo libre).
+- Preview inmediato del PNG/SVG.
+
+**3) Flujo post-upload (decisión Juan: opción D — mostrar 3 botones):**
+Una vez subido y validado, mostrar 3 botones de acción:
+- **"Aplicar a mockup"** → navega a `/workspace/design-engine?designId=<uuid>` (el Studio carga el diseño y permite elegir prenda/color/posición).
+- **"Guardar en Biblioteca"** → cierra el modal, el diseño queda en `/workspace/design-library` (visible para reutilizar).
+- **"Publicar como producto"** → navega a `/workspace/catalog?prefilledDesignId=<uuid>` (el modal de crear producto se abre con el diseño ya cargado como imagen principal).
+
+En los 3 casos el PNG/SVG se persiste en R2 (reutilizar el endpoint existente, probablemente `/api/partners/upload` que ya acepta image/png + image/svg+xml según [app/api/partners/upload/route.ts](app/api/partners/upload/route.ts)).
+
+**4) Límite de diseños subidos por plan (decisión Juan):**
+- **Starter:** 20 diseños subidos máximo en Biblioteca.
+- **Growth:** 100 diseños (5x del Starter).
+- **Pro:** ilimitado.
+- Definir constantes en `lib/partners/plan-limits.ts` o donde ya estén las constantes de plan (revisar `lib/partners/garment-pricing.ts` y archivos similares — si existe módulo de planes, agregar ahí).
+- Al intentar subir un diseño excediendo el límite, mostrar mensaje claro: "Llegaste al límite de tu plan (20 diseños en Starter). Eliminá uno o subí a Growth para hasta 100." con link al upgrade.
+- Solo cuenta diseños subidos por el partner — los diseños generados con IA NO entran en este contador (siguen con su cuota actual de Studio).
+
+**5) Conteo backend:**
+- Asumir que existe tabla `design_assets` o similar con `tenant_id` y `source` (uploaded vs ai_generated). Si no existe `source`, agregar columna por migración (`ALTER TABLE design_assets ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'ai_generated' CHECK (source IN ('ai_generated', 'uploaded'))`).
+- Endpoint de upload debe rechazar si `SELECT COUNT(*) FROM design_assets WHERE tenant_id = $1 AND source = 'uploaded' >= límite_del_plan`.
+
+**Archivos esperados:**
+- `components/workspace/QuickDesignUpload.tsx` (crear)
+- `app/workspace/page.tsx` (importar y renderizar la card)
+- `app/workspace/design-engine/page.tsx` (agregar tab/card alternativa)
+- `app/workspace/catalog/page.tsx` (leer query param `prefilledDesignId` y precargar imagen)
+- `app/api/partners/upload/route.ts` o `app/api/partners/design/upload/route.ts` (modificar/crear — agregar gate por plan + persistir con `source='uploaded'`)
+- `lib/partners/plan-limits.ts` (modificar o crear — agregar `DESIGN_UPLOAD_LIMIT_BY_PLAN`)
+- `migrations/<próximo-número>_design_source_column.sql` (crear si la columna no existe)
+
+**Criterio DONE:**
+- [ ] Card "Subí tu propio diseño" visible en dashboard y en design-engine
+- [ ] Drop-zone acepta PNG/SVG, rechaza otros formatos con mensaje claro
+- [ ] Archivos >10MB rechazados con mensaje claro
+- [ ] Warning amarillo si PNG sin transparencia (no bloqueante)
+- [ ] Warning amarillo si resolución <1500px lado largo (no bloqueante)
+- [ ] Después del upload aparecen 3 botones (Mockup / Biblioteca / Publicar como producto) y los 3 navegan correctamente
+- [ ] Límite de plan se enforca: Starter=20, Growth=100, Pro=ilimitado, mensaje claro al excederlo
+- [ ] El diseño aparece en `/workspace/design-library` con etiqueta visible de "subido por mí" (vs "generado con IA")
+- [ ] Migración SQL creada si fue necesaria (NO ejecutada — Juan la corre en Supabase)
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 TASK-020]`
+
+**NO hacer:**
+- NO tocar la cuota de generación con IA (Studio) — es otra dimensión.
+- NO cambiar el upload de imágenes de producto en catálogo (máx 5 imágenes por producto sigue igual).
+- NO agregar editor de imagen (recortar, rotar, etc.) — es solo upload + preview + acción.
 
 ---
 

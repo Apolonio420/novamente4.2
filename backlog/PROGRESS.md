@@ -3,6 +3,30 @@
 Reverse-chronological. Cada sprint appendea su entrada al tope.
 
 Formato:
+
+---
+
+## Sprint 028 — 2026-05-27
+**Model:** sonnet
+**Tasks DONE:**
+- TASK-020 — feat(design): "Subí tu diseño" como acción primaria del workspace (P8)
+  - `lib/partners/plan-limits.ts` — creado con `DESIGN_UPLOAD_LIMIT_BY_PLAN` (Starter=20, Growth=100, Pro=∞)
+  - `migrations/design_source_column.sql` — ADD COLUMN source TEXT en partner_assets (NO ejecutada — Juan la corre en Supabase)
+  - `app/api/partners/upload/route.ts` — gate de plan para design uploads + campo `source='uploaded'` + `status='active'` para que aparezcan en biblioteca
+  - `components/workspace/QuickDesignUpload.tsx` — nuevo componente: dropzone PNG/SVG, validaciones, warnings no-bloqueantes (transparencia + resolución), preview, 3 botones post-upload (Mockup / Biblioteca / Publicar)
+  - `app/workspace/page.tsx` — card "Subí tu propio diseño" entre BusinessModelBanner y QuickStartCard (descartable con X)
+  - `app/workspace/design-engine/page.tsx` — tabs "Generar con IA / Subir mi PNG" en header del Studio; panel QuickDesignUpload en modo upload
+  - `app/workspace/catalog/page.tsx` — lee `?prefilledDesignUrl=` y abre el modal de crear producto con la imagen precargada
+**Tasks BLOCKED:**
+- (ninguna)
+**tsc:** PASS
+**build:** SKIPPED
+**Notas:**
+- TASK-020: requiere verificación visual — (a) abrir dashboard y verificar card upload; (b) abrir design-engine y verificar tab "Subir mi PNG"; (c) subir un PNG y verificar los 3 botones post-upload
+- Migración `migrations/design_source_column.sql` pendiente de correr en Supabase Studio antes de que los uploads se guarden con source correctamente
+- La card de upload en dashboard es siempre visible (no tiene estado persistente de dismiss — KISS por ahora)
+
+---
 ```
 ## Sprint NNN — YYYY-MM-DD HH:MM
 **Model:** sonnet|haiku|opus

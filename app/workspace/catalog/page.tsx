@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   Plus,
@@ -139,6 +140,8 @@ function formatPrice(price: number | null) {
 // ---------------------------------------------------------------------------
 
 export default function CatalogPage() {
+  const searchParams = useSearchParams()
+
   // Data
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -279,6 +282,17 @@ export default function CatalogPage() {
   useEffect(() => {
     fetchProducts()
   }, [fetchProducts])
+
+  // Open create modal with prefilled image when arriving from QuickDesignUpload
+  useEffect(() => {
+    const prefilledUrl = searchParams.get('prefilledDesignUrl')
+    if (prefilledUrl && !loading) {
+      resetForm()
+      setFormImages([prefilledUrl, null])
+      setFormMode('create')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, loading])
 
   const resetForm = () => {
     setFormName('')
