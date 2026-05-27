@@ -44,6 +44,16 @@ const NEGATIVE_RULES = `Negative rules: No mockup. No garment. No hoodie. No t-s
 // prenda. Va al final para maximo peso por recency bias.
 const SINGLE_PANEL_RULE = `CRITICAL OUTPUT FORMAT: Output ONE single artwork only. Do NOT split the image into multiple panels, side-by-side comparisons, before/after layouts, diptychs or grids. Do NOT show the artwork twice (once isolated, once on a garment). Do NOT include any garment (hoodie, t-shirt, sweatshirt, buzo, remera, crop, tank, vest, hanger) anywhere in the output, even as a secondary element or thumbnail. The output must be a single isolated graphic. If the user prompt mentions a garment ("para buzo", "para remera", "for a hoodie", "on a t-shirt", "para hoodie"), treat that as TARGET INTENT only — generate ONLY the standalone artwork suitable for printing on that garment, never the garment itself.`
 
+// Regla dura anti-texto: Gemini agrega texto literal cuando el prompt
+// describe estilos como "estetica lujo salvaje 2026", "vibe noir 80s", etc.
+// Lo interpreta como TEXTO a estampar. Bloqueamos a menos que el user
+// pida texto explicitamente.
+const NO_TEXT_RULE = `CRITICAL: Do NOT include any text, words, letters, typography, numbers, dates, brand names, slogans, titles, captions or written language anywhere in the artwork. No fake brands, no "EST 2026", no taglines. The user did not request text. Style/aesthetic descriptors in the prompt (like "luxury 2026", "noir 80s", "vintage", "estetica X") describe the VISUAL MOOD ONLY and must NEVER appear as written text in the output. Output a purely visual / pictorial illustration with zero readable characters.`
+
+// Cues que indican que el user SI quiere texto en el diseño
+const TEXT_INTENT_RX =
+  /\b(con\s+texto|que\s+diga|que\s+ponga|tipografi[aá]|tipografia|letras?|letrero|frase|palabra|texto\s+que\s+diga|que\s+lea|lettering|typography|text\s+that\s+says|word\s+that\s+says|slogan|tag\s*line|titulo|t[ií]tulo|escrito|leyenda|caption|cita|quote|name|nombre|firma|signature|escribir|escribilo|escribime)\b/i
+
 // ============================================================
 // sanitizeUserPrompt
 // Quita frases del prompt del usuario que el modelo suele interpretar
@@ -133,7 +143,14 @@ export function buildPrintReadyPrompt(
   // 6) reglas negativas
   blocks.push(NEGATIVE_RULES)
 
-  // 7) regla critica de output format (single panel, no garment) — al final
+  // 7) Si el user NO pidio texto explicito, agregar regla dura anti-texto.
+  //    Si pidio texto, dejamos las TYPOGRAPHY_RULES manejar el caso.
+  const userWantsText = TEXT_INTENT_RX.test(sanitized) || TEXT_INTENT_RX.test(userPrompt)
+  if (!userWantsText) {
+    blocks.push(NO_TEXT_RULE)
+  }
+
+  // 8) regla critica de output format (single panel, no garment) — al final
   //    para maximo peso por recency bias del modelo
   blocks.push(SINGLE_PANEL_RULE)
 
