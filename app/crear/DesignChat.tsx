@@ -59,6 +59,57 @@ function getPrice(key: string) {
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // ============================================================
+// Heuristic: detectar si un prompt es ITERACION del diseño actual o
+// CONCEPTO NUEVO. Si es nuevo, hay que mandar text-to-image, no edit.
+//
+// Reglas:
+// 1. Si contiene cues claros de iteracion ("mas X", "cambialo", "sacale Y",
+//    "hacelo", "convertilo", etc.) → es iteracion.
+// 2. Si es un prompt corto (<8 palabras) sin cues de iteracion pero el
+//    usuario tenia algo, asumimos iteracion conservadora.
+// 3. Si es largo y comparte <15% de palabras significativas con el prompt
+//    anterior, es concepto nuevo.
+// ============================================================
+const ITERATION_CUES = /\b(m[aá]s|menos|cambi[aá]|cambial[oae]|cambies|agreg[aá]|agregale|agregalo|sac[aá]|sacale|sacalo|saquele|hac[eé]l[oae]|hacelo|hacela|convert[íi]l[oae]|convertilo|pon[eé]le|ponele|quit[aá]le|quitale|remov[eé]l[oae]|removelo|igual\s|mismo\s|este\s+pero|esto\s+pero|ahora.*pero|otro\s+color|otro\s+fondo|sin\s+fondo|fondo\s+transparente|trasparente|m[aá]s\s+oscur|m[aá]s\s+clar|m[aá]s\s+colores|menos\s+colores|m[aá]s\s+detall|menos\s+detall|tipo\s+dibuj|estilo\s+\w|en\s+blanco\s+y\s+negro|invert[íi]|girá|rotá|achicá|agrandá|escala|m[aá]s\s+grande|m[aá]s\s+chico)\b/i
+
+const STOPWORDS_ES = new Set([
+  "para", "desde", "hasta", "sobre", "entre", "mientras", "aunque", "porque",
+  "cuando", "donde", "como", "esto", "esta", "estos", "estas", "este", "aquel",
+  "aquella", "aquellos", "aquellas", "tambien", "tambien", "también", "pero",
+  "siempre", "nunca", "siempre", "tipo", "asi", "así", "muy", "mucho",
+])
+
+function significantTokens(text: string): Set<string> {
+  return new Set(
+    text
+      .toLowerCase()
+      // normalizar tildes basicas para mejor matching
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .split(/[^a-zñ0-9]+/i)
+      .filter((w) => w.length >= 5 && !STOPWORDS_ES.has(w)),
+  )
+}
+
+function isLikelyNewConcept(prompt: string, lastPrompt: string): boolean {
+  if (!lastPrompt) return true
+  if (ITERATION_CUES.test(prompt)) return false
+  const words = prompt.split(/\s+/).filter(Boolean).length
+  // Prompts cortos sin cues — conservador, asumir iteracion
+  if (words < 8) return false
+  // Comparar tokens significativos
+  const curr = significantTokens(prompt)
+  const prev = significantTokens(lastPrompt)
+  if (curr.size === 0) return false
+  let overlap = 0
+  for (const w of curr) if (prev.has(w)) overlap++
+  const ratio = overlap / curr.size
+  // Si comparte menos del 20% de las palabras significativas con el prompt
+  // anterior, es muy probable que sea un concepto distinto.
+  return ratio < 0.2
+}
+
+// ============================================================
 // Component
 // ============================================================
 
@@ -468,7 +519,17 @@ export function DesignChat({
             ? { width: 1024, height: 768 }
             : { width: 1024, height: 1024 } // cuadrado
 
-      if (hasAttachment || hasPreviousDesign) {
+      // Detectar si el user esta pidiendo un CONCEPTO COMPLETAMENTE NUEVO
+      // (no una iteracion del diseno actual). Si lo es, generar text-to-image
+      // desde cero en vez de mandar al endpoint de edit que itera la imagen
+      // anterior. Solo aplica cuando NO hay attachment (porque attachment
+      // siempre va por edit).
+      const isNewConcept =
+        hasPreviousDesign &&
+        !hasAttachment &&
+        isLikelyNewConcept(text, lastPromptRef.current)
+
+      if (hasAttachment || (hasPreviousDesign && !isNewConcept)) {
         endpoint = "/api/public/design/edit"
         body = {
           previousImageUrl: hasAttachment ? pendingAttachment : session.currentDesignUrl,
@@ -478,6 +539,7 @@ export function DesignChat({
           garmentColor: session.garmentColor,
         }
       } else {
+        // Concepto nuevo (o sin imagen previa) → text-to-image
         endpoint = "/api/generate-image"
         body = {
           prompt: text,
@@ -489,6 +551,7 @@ export function DesignChat({
       }
 
       const useEdit = endpoint !== "/api/generate-image"
+      const wasNewConcept = isNewConcept
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -513,7 +576,9 @@ export function DesignChat({
             ? hasAttachment
               ? "Listo, esto es lo que conseguí con tu foto:"
               : "Acá va la versión actualizada:"
-            : "Acá está tu diseño:",
+            : wasNewConcept
+              ? "Vi que pediste algo distinto — generé un diseño nuevo desde cero:"
+              : "Acá está tu diseño:",
         imageUrl,
         prompt: promptUsed,
       }
@@ -1125,6 +1190,26 @@ export function DesignChat({
         {/* Smart suggestions — debajo del último mensaje del bot con imagen */}
         {!loading && session.currentDesignUrl && (
           <div className="px-4 pt-1 pb-3 flex gap-2 overflow-x-auto border-t border-zinc-800">
+            {/* Chip especial: empezar de cero — limpia el design previo y proxima
+                generacion sera text-to-image, no iteracion */}
+            <button
+              type="button"
+              onClick={() => {
+                setSession((prev) => ({
+                  ...prev,
+                  currentDesignUrl: null,
+                  frontDesignUrl: prev.side === "front" ? null : prev.frontDesignUrl,
+                  backDesignUrl: prev.side === "back" ? null : prev.backDesignUrl,
+                  currentMockupUrl: null,
+                  mockupGeneratedFor: null,
+                }))
+                lastPromptRef.current = ""
+                toast({ title: "Diseño limpio", description: "Lo próximo que pidas se genera desde cero" })
+              }}
+              className="shrink-0 rounded-full border border-violet-600/60 bg-violet-600/15 px-3 py-1.5 text-xs text-violet-300 hover:bg-violet-600/25 hover:text-white transition flex items-center gap-1"
+            >
+              ✨ Empezar de cero
+            </button>
             {[
               { label: "Sin fondo", value: "sacale el fondo" },
               { label: "Más oscuro", value: "hacelo más oscuro y dramático" },
