@@ -3,7 +3,31 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Stage, Layer, Image as KonvaImage, Transformer, Rect, Text } from "react-konva"
 import type Konva from "konva"
-import { Undo2, Redo2, RotateCcw, ShoppingCart, RefreshCw, Shirt, Loader2 } from "lucide-react"
+import {
+  Undo2,
+  Redo2,
+  RotateCcw,
+  ShoppingCart,
+  RefreshCw,
+  Shirt,
+  Loader2,
+  Type,
+  Trash2,
+  Copy,
+  Eye,
+  EyeOff,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Bold,
+  Italic,
+  Image as ImageIcon,
+  Layers,
+  ChevronUp,
+  ChevronDown,
+  Lock,
+  Unlock,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/lib/cartStore"
 import { useToast } from "@/hooks/use-toast"
@@ -17,34 +41,70 @@ const CANVAS_W = 600
 const CANVAS_H = 800
 const CANVAS_ASPECT = CANVAS_W / CANVAS_H // 0.75
 
-// Print area bounding box (torso zone on 600x800 canvas)
+// Print area bounding box (torso zone on 600x800 canvas) — used como guia opcional
 const PRINT_AREA = { x: 100, y: 150, w: 400, h: 400 }
 
-const MAX_HISTORY = 20
-const MIN_SCALE = 0.3
-const MAX_SCALE = 2.0
+const MAX_HISTORY = 30
+const MIN_SCALE = 0.05 // ahora se puede achicar mucho
+const MAX_SCALE = 4.0  // y agrandar mas
 
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const
 type Size = (typeof SIZES)[number]
 
+// Fuentes curadas — Google Fonts populares para apparel
+const FONT_OPTIONS = [
+  { key: "Inter", label: "Inter (default)", weight: "400" },
+  { key: "Bebas Neue", label: "Bebas Neue", weight: "400" },
+  { key: "Anton", label: "Anton (bold)", weight: "400" },
+  { key: "Playfair Display", label: "Playfair", weight: "700" },
+  { key: "Permanent Marker", label: "Marker", weight: "400" },
+  { key: "Press Start 2P", label: "Pixel 8-bit", weight: "400" },
+  { key: "Caveat", label: "Caveat (script)", weight: "700" },
+  { key: "Bungee", label: "Bungee", weight: "400" },
+  { key: "Archivo Black", label: "Archivo Black", weight: "900" },
+  { key: "Major Mono Display", label: "Mono", weight: "400" },
+  { key: "Rubik Mono One", label: "Rubik Mono", weight: "400" },
+  { key: "Special Elite", label: "Typewriter", weight: "400" },
+] as const
+
+const TEXT_COLORS = [
+  "#ffffff", "#000000", "#ef4444", "#f97316", "#eab308",
+  "#22c55e", "#06b6d4", "#3b82f6", "#a855f7", "#ec4899",
+  "#fbbf24", "#dc2626", "#1e293b", "#94a3b8",
+]
+
 // --- Types ---
 
-interface CanvasState {
+type LayerKind = "image" | "text"
+
+interface CanvasLayer {
+  id: string
+  kind: LayerKind
   x: number
   y: number
   scaleX: number
   scaleY: number
   rotation: number
+  opacity: number
+  locked?: boolean
+  // image-specific
+  imageUrl?: string
+  // text-specific
+  text?: string
+  fontFamily?: string
+  fontSize?: number
+  fill?: string
+  fontStyle?: string // "normal" | "bold" | "italic" | "bold italic"
+  align?: "left" | "center" | "right"
 }
 
-function defaultState(): CanvasState {
-  return {
-    x: PRINT_AREA.x + PRINT_AREA.w / 2,
-    y: PRINT_AREA.y + PRINT_AREA.h / 2,
-    scaleX: 1,
-    scaleY: 1,
-    rotation: 0,
-  }
+interface CanvasSnapshot {
+  layers: CanvasLayer[]
+  activeId: string | null
+}
+
+function emptySnapshot(): CanvasSnapshot {
+  return { layers: [], activeId: null }
 }
 
 // --- Helpers ---
@@ -53,7 +113,11 @@ function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v))
 }
 
-function useKonvaImage(url: string | null): HTMLImageElement | null {
+function uid() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+function useKonvaImage(url: string | null | undefined): HTMLImageElement | null {
   const [img, setImg] = useState<HTMLImageElement | null>(null)
   useEffect(() => {
     if (!url) { setImg(null); return }
@@ -62,12 +126,12 @@ function useKonvaImage(url: string | null): HTMLImageElement | null {
     el.onload = () => setImg(el)
     el.onerror = () => setImg(null)
     el.src = url
+    return () => { el.onload = null; el.onerror = null }
   }, [url])
   return img
 }
 
 // --- Garment template resolver ---
-// Map Spanish color keys (usados en la UI) → English filename keys (en /public/garments/)
 const COLOR_MAP: Record<string, string> = {
   negro: "black",
   blanco: "white",
@@ -83,27 +147,17 @@ const COLOR_MAP: Record<string, string> = {
 }
 
 function resolveGarmentTemplate(garmentType: string, color: string, side: "front" | "back"): string | null {
-  // Map Spanish/internal color keys to English filename keys, then normalize
   const mappedColor = COLOR_MAP[color.toLowerCase()] ?? color
   const c = mappedColor.toLowerCase().replace(/\s+/g, "-")
   const s = side
 
-  // Map catalog key (hyphenated) to el filename prefix correcto.
-  // Antes el codigo usaba includes() amplios que clashaban (buzo-cuello-redondo
-  // caia en el branch de hoodie). Ahora es exact match por catalog key.
   const candidates: string[] = []
   switch (garmentType) {
     case "aldea-classic-tshirt":
-      candidates.push(
-        `/garments/tshirt-${c}-classic-${s}.jpeg`,
-        `/garments/tshirt-${c}-classic-${s}.png`,
-      )
+      candidates.push(`/garments/tshirt-${c}-classic-${s}.jpeg`, `/garments/tshirt-${c}-classic-${s}.png`)
       break
     case "aura-oversize-tshirt":
-      candidates.push(
-        `/garments/tshirt-${c}-oversize-${s}.jpeg`,
-        `/garments/tshirt-${c}-oversize-${s}.png`,
-      )
+      candidates.push(`/garments/tshirt-${c}-oversize-${s}.jpeg`, `/garments/tshirt-${c}-oversize-${s}.png`)
       break
     case "remera-clasica-mujer":
       candidates.push(`/garments/remera-clasica-mujer-${c}-${s}.png`)
@@ -118,29 +172,175 @@ function resolveGarmentTemplate(garmentType: string, color: string, side: "front
       candidates.push(`/garments/buzo-cuello-redondo-${c}-${s}.png`)
       break
     case "buzo-hoodie-unisex":
-      candidates.push(
-        `/garments/buzo-hoodie-unisex-${c}-${s}.png`,
-        `/garments/buzo-hoodie-unisex-${c}-${s}.jpeg`,
-      )
+      candidates.push(`/garments/buzo-hoodie-unisex-${c}-${s}.png`, `/garments/buzo-hoodie-unisex-${c}-${s}.jpeg`)
       break
     default:
-      // Fallback heuristico para keys nuevos no listados
-      if (garmentType.includes("hoodie")) {
-        candidates.push(`/garments/buzo-hoodie-unisex-${c}-${s}.png`)
-      } else if (garmentType.includes("buzo")) {
-        candidates.push(`/garments/buzo-cuello-redondo-${c}-${s}.png`)
-      } else if (garmentType.includes("crop")) {
-        candidates.push(`/garments/remera-crop-mujer-${c}-${s}.png`)
-      } else if (garmentType.includes("musculosa")) {
-        candidates.push(`/garments/musculosa-bali-${c}-${s}.png`)
-      } else {
-        candidates.push(`/garments/tshirt-${c}-classic-${s}.jpeg`)
-      }
+      if (garmentType.includes("hoodie")) candidates.push(`/garments/buzo-hoodie-unisex-${c}-${s}.png`)
+      else if (garmentType.includes("buzo")) candidates.push(`/garments/buzo-cuello-redondo-${c}-${s}.png`)
+      else if (garmentType.includes("crop")) candidates.push(`/garments/remera-crop-mujer-${c}-${s}.png`)
+      else if (garmentType.includes("musculosa")) candidates.push(`/garments/musculosa-bali-${c}-${s}.png`)
+      else candidates.push(`/garments/tshirt-${c}-classic-${s}.jpeg`)
   }
-
-  // Return first candidate - we can't check file existence at runtime on the client
-  // so return the first one; if it fails, fallback logic in the component handles it
   return candidates[0] ?? null
+}
+
+// --- Google Fonts loader ---
+// Inyecta <link> al <head> una sola vez con todas las fuentes que usamos.
+function useGoogleFonts() {
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    if (document.getElementById("nm-canvas-fonts")) return
+    const families = FONT_OPTIONS.filter(f => f.key !== "Inter")
+      .map(f => `family=${encodeURIComponent(f.key)}:wght@${f.weight}`)
+      .join("&")
+    const link = document.createElement("link")
+    link.id = "nm-canvas-fonts"
+    link.rel = "stylesheet"
+    link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`
+    document.head.appendChild(link)
+  }, [])
+}
+
+// --- KonvaImageLayer ---
+// Componente helper que carga la imagen del layer (cada layer image puede tener su propia url)
+function ImageLayerNode({
+  layer,
+  onSelect,
+  onChange,
+  onChangeCommit,
+  registerRef,
+  selected,
+}: {
+  layer: CanvasLayer
+  onSelect: () => void
+  onChange: (patch: Partial<CanvasLayer>) => void
+  onChangeCommit: (patch: Partial<CanvasLayer>) => void
+  registerRef: (node: Konva.Node | null) => void
+  selected: boolean
+}) {
+  const img = useKonvaImage(layer.imageUrl ?? null)
+  const ref = useRef<Konva.Image>(null)
+
+  useEffect(() => {
+    registerRef(ref.current)
+    return () => registerRef(null)
+  }, [img, registerRef])
+
+  if (!img) return null
+
+  const w = img.naturalWidth || 200
+  const h = img.naturalHeight || 200
+
+  return (
+    <KonvaImage
+      ref={ref}
+      image={img}
+      x={layer.x}
+      y={layer.y}
+      width={w}
+      height={h}
+      offsetX={w / 2}
+      offsetY={h / 2}
+      scaleX={layer.scaleX}
+      scaleY={layer.scaleY}
+      rotation={layer.rotation}
+      opacity={layer.opacity}
+      draggable={!layer.locked}
+      listening
+      onClick={onSelect}
+      onTap={onSelect}
+      onMouseDown={onSelect}
+      onTouchStart={onSelect}
+      onDragMove={(e) => onChange({ x: e.target.x(), y: e.target.y() })}
+      onDragEnd={(e) => onChangeCommit({ x: e.target.x(), y: e.target.y() })}
+      onTransformEnd={(e) => {
+        const node = e.target
+        const sx = clamp(node.scaleX(), MIN_SCALE, MAX_SCALE)
+        const sy = clamp(node.scaleY(), MIN_SCALE, MAX_SCALE)
+        node.scaleX(sx)
+        node.scaleY(sy)
+        onChangeCommit({
+          x: node.x(),
+          y: node.y(),
+          scaleX: sx,
+          scaleY: sy,
+          rotation: node.rotation(),
+        })
+      }}
+    />
+  )
+}
+
+function TextLayerNode({
+  layer,
+  onSelect,
+  onChange,
+  onChangeCommit,
+  registerRef,
+}: {
+  layer: CanvasLayer
+  onSelect: () => void
+  onChange: (patch: Partial<CanvasLayer>) => void
+  onChangeCommit: (patch: Partial<CanvasLayer>) => void
+  registerRef: (node: Konva.Node | null) => void
+}) {
+  const ref = useRef<Konva.Text>(null)
+
+  useEffect(() => {
+    registerRef(ref.current)
+    return () => registerRef(null)
+  }, [registerRef])
+
+  // Recalcular offset cuando cambia el texto/fuente para que el rotate/scale sea desde el centro
+  useEffect(() => {
+    const node = ref.current
+    if (!node) return
+    const w = node.width()
+    const h = node.height()
+    node.offsetX(w / 2)
+    node.offsetY(h / 2)
+    node.getLayer()?.batchDraw()
+  }, [layer.text, layer.fontFamily, layer.fontSize, layer.fontStyle, layer.align])
+
+  return (
+    <Text
+      ref={ref}
+      x={layer.x}
+      y={layer.y}
+      text={layer.text || ""}
+      fontFamily={layer.fontFamily || "Inter"}
+      fontSize={layer.fontSize || 48}
+      fontStyle={layer.fontStyle || "normal"}
+      align={layer.align || "center"}
+      fill={layer.fill || "#ffffff"}
+      scaleX={layer.scaleX}
+      scaleY={layer.scaleY}
+      rotation={layer.rotation}
+      opacity={layer.opacity}
+      draggable={!layer.locked}
+      listening
+      onClick={onSelect}
+      onTap={onSelect}
+      onMouseDown={onSelect}
+      onTouchStart={onSelect}
+      onDragMove={(e) => onChange({ x: e.target.x(), y: e.target.y() })}
+      onDragEnd={(e) => onChangeCommit({ x: e.target.x(), y: e.target.y() })}
+      onTransformEnd={(e) => {
+        const node = e.target
+        const sx = clamp(node.scaleX(), MIN_SCALE, MAX_SCALE)
+        const sy = clamp(node.scaleY(), MIN_SCALE, MAX_SCALE)
+        node.scaleX(sx)
+        node.scaleY(sy)
+        onChangeCommit({
+          x: node.x(),
+          y: node.y(),
+          scaleX: sx,
+          scaleY: sy,
+          rotation: node.rotation(),
+        })
+      }}
+    />
+  )
 }
 
 // --- Main Component ---
@@ -152,6 +352,7 @@ export function DesignCanvas({
   session: DesignSession
   setSession: React.Dispatch<React.SetStateAction<DesignSession>>
 }) {
+  useGoogleFonts()
   const { addItem } = useCart()
   const { toast } = useToast()
   const [generatingMockup, setGeneratingMockup] = useState(false)
@@ -164,7 +365,7 @@ export function DesignCanvas({
   // Responsive canvas size
   const [stageW, setStageW] = useState(CANVAS_W)
   const stageH = Math.round(stageW / CANVAS_ASPECT)
-  const scale = stageW / CANVAS_W // factor to map 600x800 coords → actual px
+  const scale = stageW / CANVAS_W
 
   useEffect(() => {
     function handleResize() {
@@ -176,36 +377,54 @@ export function DesignCanvas({
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  // History
-  const [history, setHistory] = useState<CanvasState[]>([defaultState()])
+  // --- History (snapshots completos) ---
+  const [history, setHistory] = useState<CanvasSnapshot[]>([emptySnapshot()])
   const [histIdx, setHistIdx] = useState(0)
+  const snap = history[histIdx]
+  const layers = snap.layers
+  const activeId = snap.activeId
+  const activeLayer = layers.find(l => l.id === activeId) ?? null
 
-  const state = history[histIdx]
+  // Ajustes ephemeros (durante drag, antes de commit) — no van al history
+  const [ephemeral, setEphemeral] = useState<Record<string, Partial<CanvasLayer>>>({})
 
-  const pushState = useCallback(
-    (next: CanvasState) => {
-      setHistory((prev) => {
-        const trimmed = prev.slice(0, histIdx + 1)
-        const clamped = trimmed.length >= MAX_HISTORY ? trimmed.slice(1) : trimmed
-        return [...clamped, next]
-      })
-      setHistIdx((i) => Math.min(i + 1, MAX_HISTORY - 1))
-    },
-    [histIdx],
-  )
+  const commitSnapshot = useCallback((mutator: (current: CanvasSnapshot) => CanvasSnapshot) => {
+    setHistory((prev) => {
+      const current = prev[histIdx] ?? emptySnapshot()
+      const next = mutator(current)
+      const trimmed = prev.slice(0, histIdx + 1)
+      const withNext = [...trimmed, next]
+      const clamped = withNext.length > MAX_HISTORY ? withNext.slice(withNext.length - MAX_HISTORY) : withNext
+      return clamped
+    })
+    setHistIdx((i) => Math.min(i + 1, MAX_HISTORY - 1))
+    setEphemeral({})
+  }, [histIdx])
 
-  const undo = () => setHistIdx((i) => Math.max(0, i - 1))
-  const redo = () => setHistIdx((i) => Math.min(history.length - 1, i + 1))
+  const undo = () => { setHistIdx(i => Math.max(0, i - 1)); setEphemeral({}) }
+  const redo = () => { setHistIdx(i => Math.min(history.length - 1, i + 1)); setEphemeral({}) }
   const reset = () => {
-    const s = defaultState()
-    setHistory([s])
+    setHistory([emptySnapshot()])
     setHistIdx(0)
+    setEphemeral({})
   }
 
   // Konva refs
   const stageRef = useRef<Konva.Stage>(null)
-  const imgRef = useRef<Konva.Image>(null)
   const trRef = useRef<Konva.Transformer>(null)
+  const nodeRefs = useRef<Map<string, Konva.Node>>(new Map())
+
+  // Attach transformer to active layer
+  useEffect(() => {
+    if (!trRef.current) return
+    const node = activeId ? nodeRefs.current.get(activeId) : null
+    if (node) {
+      trRef.current.nodes([node])
+    } else {
+      trRef.current.nodes([])
+    }
+    trRef.current.getLayer()?.batchDraw()
+  }, [activeId, layers])
 
   // Images
   const garmentUrl = useMemo(
@@ -213,77 +432,205 @@ export function DesignCanvas({
     [session.garmentType, session.garmentColor, session.side],
   )
   const garmentImg = useKonvaImage(garmentUrl)
-  const designImg = useKonvaImage(session.currentDesignUrl)
 
-  // Attach transformer when design image loads
+  // Auto-add design from chat as image layer when first loaded
+  const initializedDesignRef = useRef<string | null>(null)
   useEffect(() => {
-    if (imgRef.current && trRef.current) {
-      trRef.current.nodes([imgRef.current])
-      trRef.current.getLayer()?.batchDraw()
-    }
-  }, [designImg])
+    if (!session.currentDesignUrl) return
+    if (initializedDesignRef.current === session.currentDesignUrl) return
+    initializedDesignRef.current = session.currentDesignUrl
 
-  // Auto-fit design al print area cuando se carga uno nuevo.
-  // Sin esto el design se renderiza a su size natural (~1024px) y desborda
-  // el canvas (600px), tapando completamente la prenda.
-  const lastFittedUrlRef = useRef<string | null>(null)
-  useEffect(() => {
-    if (!designImg || !session.currentDesignUrl) return
-    if (lastFittedUrlRef.current === session.currentDesignUrl) return
-    const naturalW = designImg.naturalWidth || 200
-    const naturalH = designImg.naturalHeight || 200
-    // Target: que el design ocupe ~75% del print area por la dimension mayor.
-    const targetMax = Math.min(PRINT_AREA.w, PRINT_AREA.h) * 0.75
-    const naturalMax = Math.max(naturalW, naturalH)
-    const fitScale = clamp(targetMax / naturalMax, MIN_SCALE, MAX_SCALE)
-    lastFittedUrlRef.current = session.currentDesignUrl
-    const fitted: CanvasState = {
+    // Si ya hay un image layer con este url, no agregar de nuevo
+    const existing = layers.find(l => l.kind === "image" && l.imageUrl === session.currentDesignUrl)
+    if (existing) return
+
+    // Crear layer image centrado en print area, escalado para entrar
+    const newId = uid()
+    const newLayer: CanvasLayer = {
+      id: newId,
+      kind: "image",
+      imageUrl: session.currentDesignUrl,
       x: PRINT_AREA.x + PRINT_AREA.w / 2,
       y: PRINT_AREA.y + PRINT_AREA.h / 2,
-      scaleX: fitScale,
-      scaleY: fitScale,
+      scaleX: 0.3,
+      scaleY: 0.3,
       rotation: 0,
+      opacity: 1,
     }
-    setHistory([fitted])
-    setHistIdx(0)
-  }, [designImg, session.currentDesignUrl])
+    // Auto-fit despues — esperamos a que cargue la imagen para conocer su size
+    const probe = new window.Image()
+    probe.crossOrigin = "anonymous"
+    probe.onload = () => {
+      const w = probe.naturalWidth || 200
+      const h = probe.naturalHeight || 200
+      const targetMax = Math.min(PRINT_AREA.w, PRINT_AREA.h) * 0.7
+      const fit = clamp(targetMax / Math.max(w, h), MIN_SCALE, MAX_SCALE)
+      commitSnapshot((current) => ({
+        layers: [...current.layers, { ...newLayer, scaleX: fit, scaleY: fit }],
+        activeId: newId,
+      }))
+    }
+    probe.onerror = () => {
+      commitSnapshot((current) => ({
+        layers: [...current.layers, newLayer],
+        activeId: newId,
+      }))
+    }
+    probe.src = session.currentDesignUrl
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.currentDesignUrl])
 
   // Size & cart
   const [selectedSize, setSelectedSize] = useState<Size>("M")
   const [applying, setApplying] = useState(false)
 
-  // --- Constraint helpers ---
-  function constrainPosition(x: number, y: number, sX: number, sY: number, rotation: number, imgW: number, imgH: number) {
-    // Clamp the center of the image within print area with some tolerance
-    const cx = clamp(x, PRINT_AREA.x, PRINT_AREA.x + PRINT_AREA.w)
-    const cy = clamp(y, PRINT_AREA.y, PRINT_AREA.y + PRINT_AREA.h)
-    return { x: cx, y: cy }
-  }
+  // UI state
+  const [showGuides, setShowGuides] = useState(false) // WYSIWYG by default
+  const [textPanelOpen, setTextPanelOpen] = useState(false)
+
+  // --- Layer operations ---
+  const selectLayer = useCallback((id: string | null) => {
+    setHistory((prev) => {
+      const trimmed = prev.slice(0, histIdx + 1)
+      const current = trimmed[trimmed.length - 1]
+      if (!current) return prev
+      const updated: CanvasSnapshot = { ...current, activeId: id }
+      return [...trimmed.slice(0, -1), updated]
+    })
+  }, [histIdx])
+
+  const updateLayerEphemeral = useCallback((id: string, patch: Partial<CanvasLayer>) => {
+    setEphemeral((prev) => ({ ...prev, [id]: { ...prev[id], ...patch } }))
+  }, [])
+
+  const updateLayerCommit = useCallback((id: string, patch: Partial<CanvasLayer>) => {
+    commitSnapshot((current) => ({
+      ...current,
+      layers: current.layers.map(l => l.id === id ? { ...l, ...patch } : l),
+    }))
+  }, [commitSnapshot])
+
+  const deleteLayer = useCallback((id: string) => {
+    commitSnapshot((current) => ({
+      layers: current.layers.filter(l => l.id !== id),
+      activeId: current.activeId === id ? null : current.activeId,
+    }))
+  }, [commitSnapshot])
+
+  const duplicateLayer = useCallback((id: string) => {
+    const layer = layers.find(l => l.id === id)
+    if (!layer) return
+    const newId = uid()
+    const duped = { ...layer, id: newId, x: layer.x + 20, y: layer.y + 20 }
+    commitSnapshot((current) => ({
+      layers: [...current.layers, duped],
+      activeId: newId,
+    }))
+  }, [layers, commitSnapshot])
+
+  const moveLayer = useCallback((id: string, dir: "up" | "down") => {
+    commitSnapshot((current) => {
+      const idx = current.layers.findIndex(l => l.id === id)
+      if (idx < 0) return current
+      const swap = dir === "up" ? idx + 1 : idx - 1
+      if (swap < 0 || swap >= current.layers.length) return current
+      const next = [...current.layers]
+      ;[next[idx], next[swap]] = [next[swap], next[idx]]
+      return { ...current, layers: next }
+    })
+  }, [commitSnapshot])
+
+  const toggleLock = useCallback((id: string) => {
+    commitSnapshot((current) => ({
+      ...current,
+      layers: current.layers.map(l => l.id === id ? { ...l, locked: !l.locked } : l),
+    }))
+  }, [commitSnapshot])
+
+  const addTextLayer = useCallback(() => {
+    const id = uid()
+    const newLayer: CanvasLayer = {
+      id,
+      kind: "text",
+      text: "Tu texto",
+      fontFamily: "Bebas Neue",
+      fontSize: 72,
+      fontStyle: "normal",
+      fill: "#ffffff",
+      align: "center",
+      x: PRINT_AREA.x + PRINT_AREA.w / 2,
+      y: PRINT_AREA.y + PRINT_AREA.h / 2,
+      scaleX: 1,
+      scaleY: 1,
+      rotation: 0,
+      opacity: 1,
+    }
+    commitSnapshot((current) => ({
+      layers: [...current.layers, newLayer],
+      activeId: id,
+    }))
+    setTextPanelOpen(true)
+  }, [commitSnapshot])
+
+  // Click on empty area deselects
+  const handleStageClick = useCallback((e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+    // Si el click fue en el Stage mismo (no en un nodo hijo), deseleccionar
+    if (e.target === e.target.getStage()) {
+      selectLayer(null)
+    }
+  }, [selectLayer])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key === "z" && !e.shiftKey) { e.preventDefault(); undo() }
+        if (e.key === "z" && e.shiftKey) { e.preventDefault(); redo() }
+        if (e.key === "y") { e.preventDefault(); redo() }
+        if (e.key === "d" && activeId) { e.preventDefault(); duplicateLayer(activeId) }
+      } else {
+        if ((e.key === "Delete" || e.key === "Backspace") && activeId) {
+          // Solo si no estamos en un input
+          const tag = (e.target as HTMLElement)?.tagName?.toLowerCase()
+          if (tag !== "input" && tag !== "textarea") {
+            e.preventDefault()
+            deleteLayer(activeId)
+          }
+        }
+        if (e.key === "Escape") selectLayer(null)
+      }
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [activeId, duplicateLayer, deleteLayer, selectLayer])
+
+  // --- Render layers con merge ephemeral ---
+  const renderedLayers = layers.map(l => ({ ...l, ...(ephemeral[l.id] ?? {}) }))
 
   // --- Apply & Add to Cart ---
   const handleApply = async () => {
     if (!stageRef.current) return
     setApplying(true)
     try {
-      // Export canvas at 2x resolution
+      // Antes de exportar, ocultar transformer + guías para que no salgan en el PNG
+      selectLayer(null)
+      setShowGuides(false)
+      await new Promise(r => setTimeout(r, 60))
+
       const dataUrl = stageRef.current.toDataURL({ pixelRatio: 2 })
 
-      // Convert to Blob and upload
       const res = await fetch(dataUrl)
       const blob = await res.blob()
-
       const formData = new FormData()
       formData.append("file", blob, `canvas-${Date.now()}.png`)
       formData.append("folder", "canvas-exports")
 
-      // Public upload endpoint (creado en Fase 1)
       const uploadRes = await fetch("/api/public/design/upload", {
         method: "POST",
         body: formData,
       })
 
-      let mockupUrl: string = dataUrl // fallback to data URL if upload fails
-
+      let mockupUrl: string = dataUrl
       if (uploadRes.ok) {
         const json = await uploadRes.json()
         mockupUrl = json.url ?? dataUrl
@@ -309,17 +656,8 @@ export function DesignCanvas({
         image: mockupUrl,
         mockupUrl,
         [sideKey]: session.currentDesignUrl ?? undefined,
-        customDesign: session.currentDesignUrl
-          ? {
-              image: session.currentDesignUrl,
-              position: { x: state.x, y: state.y },
-              scale: state.scaleX,
-              side: session.side,
-            }
-          : undefined,
       })
 
-      // Pixel events para el funnel (estaban faltando en el canvas path)
       fpixel.event("AddToCart", {
         content_ids: [itemId],
         content_name: productName,
@@ -328,26 +666,33 @@ export function DesignCanvas({
         value: price,
         currency: "ARS",
       })
+
+      toast({ title: "Agregado al carrito", description: `${product?.name} talle ${selectedSize}` })
     } catch (err) {
       console.error("DesignCanvas: apply failed", err)
+      toast({ title: "Error", description: "No se pudo agregar al carrito", variant: "destructive" })
     } finally {
       setApplying(false)
     }
   }
 
-  // --- Render ---
-  if (!session.currentDesignUrl) {
+  // --- Empty state ---
+  if (!session.currentDesignUrl && layers.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900 p-10 text-center">
-        <p className="text-zinc-400 text-sm">
-          Primero generá un diseño en el modo <strong className="text-white">Chat con IA</strong>.
+      <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-8 text-center">
+        <Layers className="w-10 h-10 text-zinc-700" />
+        <p className="text-zinc-400 text-sm max-w-xs">
+          Primero generá un diseño en <strong className="text-white">Chat con IA</strong>, o agregá texto acá:
         </p>
+        <Button onClick={addTextLayer} className="bg-violet-600 hover:bg-violet-500 text-white">
+          <Type className="w-4 h-4 mr-2" /> Agregar texto
+        </Button>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-3">
       {/* Prenda + color + side picker */}
       <div className="w-full max-w-lg flex flex-col gap-2">
         <div className="flex gap-1.5 overflow-x-auto pb-1">
@@ -420,183 +765,384 @@ export function DesignCanvas({
         </div>
       </div>
 
-      {/* Header */}
-      <p className="text-xs text-zinc-500 text-center">
-        Arrastrá el diseño dentro del rectángulo violeta. Pellizcá para escalar. Botones para rotar.
-      </p>
+      {/* Toolbar superior — herramientas de creacion */}
+      <div className="w-full max-w-lg flex items-center justify-between gap-2 bg-zinc-900/60 rounded-xl border border-zinc-800 px-2 py-1.5">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={addTextLayer}
+            className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium bg-violet-600 hover:bg-violet-500 text-white transition"
+            title="Agregar texto"
+          >
+            <Type className="w-3.5 h-3.5" />
+            Texto
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowGuides(v => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium border transition ${
+              showGuides
+                ? "bg-zinc-800 border-zinc-600 text-white"
+                : "bg-transparent border-zinc-700 text-zinc-400 hover:text-zinc-200"
+            }`}
+            title="Mostrar / ocultar guías"
+          >
+            {showGuides ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+            Guías
+          </button>
+        </div>
+
+        <div className="flex items-center gap-0.5">
+          <Button variant="ghost" size="sm" onClick={undo} disabled={histIdx === 0} title="Deshacer (Ctrl+Z)" className="h-8 w-8 p-0 text-zinc-300 hover:text-white">
+            <Undo2 className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={redo} disabled={histIdx === history.length - 1} title="Rehacer (Ctrl+Shift+Z)" className="h-8 w-8 p-0 text-zinc-300 hover:text-white">
+            <Redo2 className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={reset} title="Resetear todo" className="h-8 w-8 p-0 text-zinc-300 hover:text-white">
+            <RefreshCw className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Hint contextual — solo si hay layer activa y guias off */}
+      {!showGuides && activeLayer && (
+        <p className="text-[10px] text-zinc-500 text-center -mb-1">
+          {activeLayer.kind === "text" ? "Tocá fuera para deseleccionar · doble click no editable acá (usá el panel)" : "Pellizcá o arrastrá las esquinas para escalar · arrastrá el centro para mover"}
+        </p>
+      )}
 
       {/* Canvas */}
-      <div className="rounded-xl overflow-hidden border border-zinc-800 shadow-xl">
+      <div className="relative rounded-xl overflow-hidden border border-zinc-800 shadow-xl bg-white">
         <Stage
           ref={stageRef}
           width={stageW}
           height={stageH}
           scaleX={scale}
           scaleY={scale}
+          onMouseDown={handleStageClick}
+          onTouchStart={handleStageClick}
         >
-          {/* Layer 1: Garment background (immobile) */}
+          {/* Layer 1: Garment */}
           <Layer listening={false}>
-            {/* Fondo neutro siempre — para que el contraste sea consistente */}
-            <Rect x={0} y={0} width={CANVAS_W} height={CANVAS_H} fill="#18181b" />
+            <Rect x={0} y={0} width={CANVAS_W} height={CANVAS_H} fill="#f4f4f5" />
             {garmentImg ? (
-              <KonvaImage
-                image={garmentImg}
-                x={0}
-                y={0}
-                width={CANVAS_W}
-                height={CANVAS_H}
-              />
+              <KonvaImage image={garmentImg} x={0} y={0} width={CANVAS_W} height={CANVAS_H} />
             ) : (
               <Text
                 x={0}
                 y={CANVAS_H / 2 - 20}
                 width={CANVAS_W}
-                text={`Template para "${session.garmentType} / ${session.garmentColor}" no disponible — cambiá color o prenda`}
+                text={`Template para "${session.garmentType} / ${session.garmentColor}" no disponible`}
                 fill="#71717a"
                 fontSize={14}
                 align="center"
               />
             )}
-            {/* Print area outline — guía visual del área imprimible */}
-            <Rect
-              x={PRINT_AREA.x}
-              y={PRINT_AREA.y}
-              width={PRINT_AREA.w}
-              height={PRINT_AREA.h}
-              stroke="#a78bfa"
-              strokeWidth={2}
-              dash={[8, 6]}
-              opacity={0.55}
-            />
           </Layer>
 
-          {/* Layer 2: Design stamp (movable) */}
+          {/* Layer 2: Guides — solo si showGuides */}
+          {showGuides && (
+            <Layer listening={false}>
+              <Rect
+                x={PRINT_AREA.x}
+                y={PRINT_AREA.y}
+                width={PRINT_AREA.w}
+                height={PRINT_AREA.h}
+                stroke="#a78bfa"
+                strokeWidth={2}
+                dash={[8, 6]}
+                opacity={0.7}
+              />
+            </Layer>
+          )}
+
+          {/* Layer 3: User layers (designs + texts) */}
           <Layer>
-            {designImg && (
-              <>
-                <KonvaImage
-                  ref={imgRef}
-                  image={designImg}
-                  x={state.x}
-                  y={state.y}
-                  width={designImg.naturalWidth || 200}
-                  height={designImg.naturalHeight || 200}
-                  offsetX={(designImg.naturalWidth || 200) / 2}
-                  offsetY={(designImg.naturalHeight || 200) / 2}
-                  scaleX={state.scaleX}
-                  scaleY={state.scaleY}
-                  rotation={state.rotation}
-                  draggable
-                  dragBoundFunc={(pos) => {
-                    // pos is in stage coords (already scaled), convert to logical
-                    const lx = pos.x / scale
-                    const ly = pos.y / scale
-                    const clamped = constrainPosition(lx, ly, state.scaleX, state.scaleY, state.rotation, designImg.naturalWidth || 200, designImg.naturalHeight || 200)
-                    return { x: clamped.x * scale, y: clamped.y * scale }
+            {renderedLayers.map((layer) => {
+              const isActive = layer.id === activeId
+              if (layer.kind === "image") {
+                return (
+                  <ImageLayerNode
+                    key={layer.id}
+                    layer={layer}
+                    selected={isActive}
+                    registerRef={(n) => {
+                      if (n) nodeRefs.current.set(layer.id, n)
+                      else nodeRefs.current.delete(layer.id)
+                    }}
+                    onSelect={() => selectLayer(layer.id)}
+                    onChange={(patch) => updateLayerEphemeral(layer.id, patch)}
+                    onChangeCommit={(patch) => updateLayerCommit(layer.id, patch)}
+                  />
+                )
+              }
+              return (
+                <TextLayerNode
+                  key={layer.id}
+                  layer={layer}
+                  registerRef={(n) => {
+                    if (n) nodeRefs.current.set(layer.id, n)
+                    else nodeRefs.current.delete(layer.id)
                   }}
-                  onDragEnd={(e) => {
-                    const node = e.target
-                    const lx = node.x()
-                    const ly = node.y()
-                    pushState({ ...state, x: lx, y: ly })
-                  }}
-                  onTransformEnd={(e) => {
-                    const node = e.target
-                    const newScaleX = clamp(node.scaleX(), MIN_SCALE, MAX_SCALE)
-                    const newScaleY = clamp(node.scaleY(), MIN_SCALE, MAX_SCALE)
-                    node.scaleX(newScaleX)
-                    node.scaleY(newScaleY)
-                    pushState({
-                      x: node.x(),
-                      y: node.y(),
-                      scaleX: newScaleX,
-                      scaleY: newScaleY,
-                      rotation: node.rotation(),
-                    })
-                  }}
+                  onSelect={() => selectLayer(layer.id)}
+                  onChange={(patch) => updateLayerEphemeral(layer.id, patch)}
+                  onChangeCommit={(patch) => updateLayerCommit(layer.id, patch)}
                 />
-                <Transformer
-                  ref={trRef}
-                  keepRatio
-                  rotateEnabled
-                  boundBoxFunc={(oldBox, newBox) => {
-                    // Prevent scaling too small
-                    if (Math.abs(newBox.width) < 20 || Math.abs(newBox.height) < 20) {
-                      return oldBox
-                    }
-                    return newBox
-                  }}
-                />
-              </>
-            )}
+              )
+            })}
+
+            {/* Transformer — solo visible cuando hay activeId */}
+            <Transformer
+              ref={trRef}
+              keepRatio={false}
+              rotateEnabled
+              enabledAnchors={[
+                "top-left", "top-right", "bottom-left", "bottom-right",
+                "middle-left", "middle-right", "top-center", "bottom-center",
+              ]}
+              anchorSize={12}
+              anchorCornerRadius={6}
+              anchorStroke="#a78bfa"
+              anchorFill="#ffffff"
+              borderStroke="#a78bfa"
+              borderStrokeWidth={1.5}
+              borderDash={[4, 4]}
+              padding={4}
+              rotateAnchorOffset={26}
+              boundBoxFunc={(oldBox, newBox) => {
+                if (Math.abs(newBox.width) < 8 || Math.abs(newBox.height) < 8) return oldBox
+                return newBox
+              }}
+            />
           </Layer>
         </Stage>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-lg">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={undo}
-          disabled={histIdx === 0}
-          className="border-zinc-700"
-          title="Deshacer"
-        >
-          <Undo2 className="h-4 w-4" />
-        </Button>
+      {/* Panel de propiedades de la layer activa */}
+      {activeLayer && (
+        <div className="w-full max-w-lg rounded-xl border border-violet-700/40 bg-zinc-900/80 p-3 space-y-3 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-violet-300 uppercase tracking-wider flex items-center gap-1.5">
+              {activeLayer.kind === "text" ? <Type className="w-3 h-3" /> : <ImageIcon className="w-3 h-3" />}
+              {activeLayer.kind === "text" ? "Texto" : "Imagen"}
+            </span>
+            <div className="flex items-center gap-0.5">
+              <Button variant="ghost" size="sm" onClick={() => moveLayer(activeLayer.id, "down")} title="Bajar" className="h-7 w-7 p-0 text-zinc-400 hover:text-white">
+                <ChevronDown className="w-3.5 h-3.5" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => moveLayer(activeLayer.id, "up")} title="Subir" className="h-7 w-7 p-0 text-zinc-400 hover:text-white">
+                <ChevronUp className="w-3.5 h-3.5" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => toggleLock(activeLayer.id)} title={activeLayer.locked ? "Desbloquear" : "Bloquear"} className="h-7 w-7 p-0 text-zinc-400 hover:text-white">
+                {activeLayer.locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => duplicateLayer(activeLayer.id)} title="Duplicar (Ctrl+D)" className="h-7 w-7 p-0 text-zinc-400 hover:text-white">
+                <Copy className="w-3.5 h-3.5" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => deleteLayer(activeLayer.id)} title="Eliminar (Del)" className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-950/30">
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={redo}
-          disabled={histIdx === history.length - 1}
-          className="border-zinc-700"
-          title="Rehacer"
-        >
-          <Redo2 className="h-4 w-4" />
-        </Button>
+          {/* Quick rotate */}
+          <div className="flex items-center justify-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => updateLayerCommit(activeLayer.id, { rotation: (activeLayer.rotation || 0) - 15 })}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+              title="Rotar -15°"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[11px] text-zinc-500 font-mono w-12 text-center">{Math.round(activeLayer.rotation || 0)}°</span>
+            <button
+              type="button"
+              onClick={() => updateLayerCommit(activeLayer.id, { rotation: (activeLayer.rotation || 0) + 15 })}
+              className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300 scale-x-[-1]"
+              title="Rotar +15°"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={reset}
-          className="border-zinc-700"
-          title="Resetear posición"
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+          {/* Slider escala */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-zinc-500 w-10">Tamaño</span>
+            <input
+              type="range"
+              min={MIN_SCALE}
+              max={MAX_SCALE}
+              step={0.01}
+              value={activeLayer.scaleX}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value)
+                updateLayerEphemeral(activeLayer.id, { scaleX: v, scaleY: v })
+              }}
+              onMouseUp={(e) => updateLayerCommit(activeLayer.id, { scaleX: parseFloat((e.target as HTMLInputElement).value), scaleY: parseFloat((e.target as HTMLInputElement).value) })}
+              onTouchEnd={(e) => updateLayerCommit(activeLayer.id, { scaleX: parseFloat((e.target as HTMLInputElement).value), scaleY: parseFloat((e.target as HTMLInputElement).value) })}
+              className="flex-1 accent-violet-500"
+            />
+            <span className="text-[10px] text-zinc-500 font-mono w-10 text-right">{Math.round(activeLayer.scaleX * 100)}%</span>
+          </div>
 
-        {/* Rotate buttons */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => pushState({ ...state, rotation: state.rotation - 15 })}
-          className="border-zinc-700"
-          title="Rotar -15°"
-        >
-          <RotateCcw className="h-4 w-4" />
-        </Button>
+          {/* Slider opacidad */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-zinc-500 w-10">Opacid.</span>
+            <input
+              type="range"
+              min={0.1}
+              max={1}
+              step={0.05}
+              value={activeLayer.opacity}
+              onChange={(e) => updateLayerEphemeral(activeLayer.id, { opacity: parseFloat(e.target.value) })}
+              onMouseUp={(e) => updateLayerCommit(activeLayer.id, { opacity: parseFloat((e.target as HTMLInputElement).value) })}
+              onTouchEnd={(e) => updateLayerCommit(activeLayer.id, { opacity: parseFloat((e.target as HTMLInputElement).value) })}
+              className="flex-1 accent-violet-500"
+            />
+            <span className="text-[10px] text-zinc-500 font-mono w-10 text-right">{Math.round(activeLayer.opacity * 100)}%</span>
+          </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => pushState({ ...state, rotation: state.rotation + 15 })}
-          className="border-zinc-700 scale-x-[-1]"
-          title="Rotar +15°"
-        >
-          <RotateCcw className="h-4 w-4" />
-        </Button>
-      </div>
+          {/* Text-specific controls */}
+          {activeLayer.kind === "text" && (
+            <div className="space-y-2 pt-2 border-t border-zinc-800">
+              <textarea
+                value={activeLayer.text || ""}
+                onChange={(e) => updateLayerCommit(activeLayer.id, { text: e.target.value })}
+                placeholder="Escribí tu texto"
+                rows={2}
+                className="w-full rounded-md bg-zinc-800 border border-zinc-700 px-2 py-1.5 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+              />
 
-      {/* Probar lifestyle — genera foto realista con Gemini */}
+              {/* Fuente */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-zinc-500 w-10">Fuente</span>
+                <select
+                  value={activeLayer.fontFamily || "Inter"}
+                  onChange={(e) => updateLayerCommit(activeLayer.id, { fontFamily: e.target.value })}
+                  className="flex-1 rounded-md bg-zinc-800 border border-zinc-700 px-2 py-1.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  style={{ fontFamily: activeLayer.fontFamily }}
+                >
+                  {FONT_OPTIONS.map(f => (
+                    <option key={f.key} value={f.key} style={{ fontFamily: f.key }}>{f.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Size text */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-zinc-500 w-10">Px</span>
+                <input
+                  type="range"
+                  min={12}
+                  max={200}
+                  step={1}
+                  value={activeLayer.fontSize || 48}
+                  onChange={(e) => updateLayerCommit(activeLayer.id, { fontSize: parseInt(e.target.value, 10) })}
+                  className="flex-1 accent-violet-500"
+                />
+                <span className="text-[10px] text-zinc-500 font-mono w-10 text-right">{activeLayer.fontSize}</span>
+              </div>
+
+              {/* Style + align */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cur = (activeLayer.fontStyle || "normal").split(" ")
+                    const has = cur.includes("bold")
+                    const next = has ? cur.filter(x => x !== "bold") : [...cur.filter(x => x !== "normal"), "bold"]
+                    updateLayerCommit(activeLayer.id, { fontStyle: next.length ? next.join(" ") : "normal" })
+                  }}
+                  className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition ${
+                    (activeLayer.fontStyle || "").includes("bold")
+                      ? "bg-violet-600 text-white"
+                      : "bg-zinc-800 text-zinc-400 hover:text-white"
+                  }`}
+                  title="Negrita"
+                >
+                  <Bold className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cur = (activeLayer.fontStyle || "normal").split(" ")
+                    const has = cur.includes("italic")
+                    const next = has ? cur.filter(x => x !== "italic") : [...cur.filter(x => x !== "normal"), "italic"]
+                    updateLayerCommit(activeLayer.id, { fontStyle: next.length ? next.join(" ") : "normal" })
+                  }}
+                  className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition ${
+                    (activeLayer.fontStyle || "").includes("italic")
+                      ? "bg-violet-600 text-white"
+                      : "bg-zinc-800 text-zinc-400 hover:text-white"
+                  }`}
+                  title="Cursiva"
+                >
+                  <Italic className="w-3.5 h-3.5" />
+                </button>
+                <div className="w-px h-6 bg-zinc-800 mx-1" />
+                {(["left", "center", "right"] as const).map(a => {
+                  const Icon = a === "left" ? AlignLeft : a === "center" ? AlignCenter : AlignRight
+                  return (
+                    <button
+                      key={a}
+                      type="button"
+                      onClick={() => updateLayerCommit(activeLayer.id, { align: a })}
+                      className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition ${
+                        activeLayer.align === a
+                          ? "bg-violet-600 text-white"
+                          : "bg-zinc-800 text-zinc-400 hover:text-white"
+                      }`}
+                      title={`Alinear ${a}`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Color swatches */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-zinc-500 w-10">Color</span>
+                <div className="flex-1 flex items-center flex-wrap gap-1">
+                  {TEXT_COLORS.map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => updateLayerCommit(activeLayer.id, { fill: c })}
+                      className={`w-6 h-6 rounded-full border-2 transition ${
+                        activeLayer.fill === c ? "border-violet-400 scale-110" : "border-zinc-700 hover:border-zinc-500"
+                      }`}
+                      style={{ background: c }}
+                      aria-label={`Color ${c}`}
+                    />
+                  ))}
+                  <input
+                    type="color"
+                    value={activeLayer.fill || "#ffffff"}
+                    onChange={(e) => updateLayerCommit(activeLayer.id, { fill: e.target.value })}
+                    className="w-6 h-6 rounded-full overflow-hidden cursor-pointer border-2 border-zinc-700"
+                    title="Color personalizado"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Probar lifestyle */}
       <Button
         variant="outline"
         size="sm"
         className="w-full max-w-lg border-zinc-700 hover:bg-zinc-800"
-        disabled={generatingMockup || !session.currentDesignUrl}
+        disabled={generatingMockup || (!session.currentDesignUrl && layers.length === 0)}
         onClick={async () => {
-          if (!session.currentDesignUrl) return
+          if (!session.currentDesignUrl) {
+            toast({ title: "Tip", description: "Para foto lifestyle necesitás un diseño base. Aplica el canvas primero o usá Chat IA.", variant: "destructive" })
+            return
+          }
           setGeneratingMockup(true)
           try {
             const res = await fetch("/api/public/design/mockup-lifestyle", {
@@ -623,7 +1169,7 @@ export function DesignCanvas({
                 designUrl: session.currentDesignUrl ?? "",
               },
             }))
-            toast({ title: "Mockup listo", description: "Andá a la pestaña Lifestyle para verlo en grande." })
+            toast({ title: "Mockup listo", description: "Andá a la pestaña Lifestyle para verlo." })
           } catch (e: any) {
             toast({ title: "Error generando mockup", description: e.message, variant: "destructive" })
           } finally {
@@ -658,8 +1204,8 @@ export function DesignCanvas({
 
         <Button
           onClick={handleApply}
-          disabled={applying}
-          className="bg-white text-zinc-950 hover:bg-zinc-100 flex items-center gap-2"
+          disabled={applying || layers.length === 0}
+          className="bg-violet-600 hover:bg-violet-500 text-white flex items-center gap-2 shadow-lg shadow-violet-600/20 h-11 px-6 flex-1 sm:flex-initial"
         >
           <ShoppingCart className="h-4 w-4" />
           {applying ? "Aplicando..." : "Aplicar y agregar al carrito"}
