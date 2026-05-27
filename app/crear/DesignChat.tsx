@@ -111,6 +111,66 @@ export function DesignChat({
     return () => clearTimeout(t)
   }, [session.currentMockupUrl, emailCaptureShown])
 
+  // Coachmark hints — small contextual popups
+  const [showInputHint, setShowInputHint] = useState(false)
+  const [showGarmentHint, setShowGarmentHint] = useState(false)
+  const [showMockupHint, setShowMockupHint] = useState(false)
+  const [hintsSeen, setHintsSeen] = useState<{ input: boolean; garment: boolean }>({ input: false, garment: false })
+
+  // Load seen hints from localStorage on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    try {
+      const raw = window.localStorage.getItem("novamente:hints-seen")
+      const seen = raw ? JSON.parse(raw) : { input: false, garment: false }
+      setHintsSeen(seen)
+      // Show input hint on first visit, after a small delay (avoid colliding with onboarding modal)
+      if (!seen.input) {
+        const t = setTimeout(() => setShowInputHint(true), 1200)
+        return () => clearTimeout(t)
+      }
+    } catch {}
+  }, [])
+
+  const markHintSeen = useCallback((key: "input" | "garment") => {
+    setHintsSeen((prev) => {
+      const next = { ...prev, [key]: true }
+      try {
+        window.localStorage.setItem("novamente:hints-seen", JSON.stringify(next))
+      } catch {}
+      return next
+    })
+  }, [])
+
+  // Show mockup hint EVERY time a new design is generated (until they generate the mockup).
+  // Also auto-hide after 12s so it doesn't stay on screen forever.
+  useEffect(() => {
+    if (session.currentDesignUrl && !session.currentMockupUrl) {
+      setShowMockupHint(true)
+      // Also show garment hint first time around
+      if (!hintsSeen.garment) {
+        setShowGarmentHint(true)
+      }
+      // Hide input hint once they generated something
+      setShowInputHint(false)
+      if (!hintsSeen.input) markHintSeen("input")
+      const t = setTimeout(() => setShowMockupHint(false), 12_000)
+      return () => clearTimeout(t)
+    } else {
+      setShowMockupHint(false)
+    }
+  }, [session.currentDesignUrl, session.currentMockupUrl, hintsSeen.garment, hintsSeen.input, markHintSeen])
+
+  // Auto-dismiss garment hint after 10s
+  useEffect(() => {
+    if (!showGarmentHint) return
+    const t = setTimeout(() => {
+      setShowGarmentHint(false)
+      markHintSeen("garment")
+    }, 10_000)
+    return () => clearTimeout(t)
+  }, [showGarmentHint, markHintSeen])
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const lastPromptRef = useRef<string>("")
@@ -1159,7 +1219,21 @@ export function DesignChat({
         )}
 
         {/* Input area */}
-        <div className="border-t border-zinc-800 p-4">
+        <div className="relative border-t border-zinc-800 p-4">
+          {/* Coachmark: describir tu diseno — primera visita */}
+          {showInputHint && !session.currentDesignUrl && (
+            <div className="absolute -top-3 right-4 z-10 animate-in fade-in slide-in-from-bottom-1 duration-300">
+              <button
+                type="button"
+                onClick={() => { setShowInputHint(false); markHintSeen("input") }}
+                className="relative inline-flex items-center gap-1.5 rounded-full bg-violet-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-lg shadow-violet-600/40 whitespace-nowrap hover:bg-violet-500 transition"
+              >
+                ✨ Describí tu diseño acá
+                <span className="text-white/70 ml-0.5">×</span>
+                <span className="absolute -bottom-1 right-6 h-2 w-2 rotate-45 bg-violet-600" />
+              </button>
+            </div>
+          )}
           <div className="flex gap-2 items-end">
             <Textarea
               value={input}
@@ -1296,7 +1370,21 @@ export function DesignChat({
         </div>
 
         {/* Garment catalog */}
-        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-4">
+        <div className="relative bg-zinc-900 rounded-2xl border border-zinc-800 p-4">
+          {/* Coachmark: elegir prenda — primera vez que se genera un diseno */}
+          {showGarmentHint && (
+            <div className="absolute -top-3 left-4 z-10 animate-in fade-in slide-in-from-bottom-1 duration-300">
+              <button
+                type="button"
+                onClick={() => { setShowGarmentHint(false); markHintSeen("garment") }}
+                className="relative inline-flex items-center gap-1.5 rounded-full bg-fuchsia-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-lg shadow-fuchsia-600/40 whitespace-nowrap hover:bg-fuchsia-500 transition"
+              >
+                👕 Elegí prenda y color
+                <span className="text-white/70 ml-0.5">×</span>
+                <span className="absolute -bottom-1 left-6 h-2 w-2 rotate-45 bg-fuchsia-600" />
+              </button>
+            </div>
+          )}
           <GarmentCatalog
             garmentType={session.garmentType}
             garmentColor={session.garmentColor}
@@ -1393,25 +1481,40 @@ export function DesignChat({
             </Button>
           )}
 
-          {/* Mockup button */}
-          <Button
-            data-mockup-trigger="true"
-            className="w-full bg-zinc-700 hover:bg-zinc-600 text-white text-sm mt-4"
-            onClick={handleMockup}
-            disabled={!session.currentDesignUrl || mockupLoading}
-          >
-            {mockupLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generando foto en {garmentLabel(session.garmentType).toLowerCase()} {colorLabel(session.garmentType, session.garmentColor).toLowerCase()}...
-              </>
-            ) : (
-              <>
-                <Shirt className="w-4 h-4 mr-2" />
-                Probar en {garmentLabel(session.garmentType)} {colorLabel(session.garmentType, session.garmentColor)}
-              </>
+          {/* Mockup button — prominent CTA with pulsing hint */}
+          <div className="relative mt-4">
+            {/* Hint chip — visible cada vez que hay un diseno nuevo sin mockup */}
+            {showMockupHint && session.currentDesignUrl && !session.currentMockupUrl && !mockupLoading && (
+              <div className="absolute -top-7 left-1/2 -translate-x-1/2 z-10 pointer-events-none animate-in fade-in slide-in-from-bottom-1 duration-300">
+                <div className="relative inline-flex items-center gap-1 rounded-full bg-violet-600 px-2.5 py-0.5 text-[10px] font-semibold text-white shadow-lg shadow-violet-600/40 whitespace-nowrap">
+                  👇 Probalo en la prenda
+                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-2 w-2 rotate-45 bg-violet-600" />
+                </div>
+              </div>
             )}
-          </Button>
+            <Button
+              data-mockup-trigger="true"
+              className={`w-full font-semibold text-sm h-11 shadow-lg transition-all ${
+                session.currentDesignUrl && !session.currentMockupUrl
+                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-violet-600/30 ring-2 ring-violet-500/40"
+                  : "bg-zinc-700 hover:bg-zinc-600 text-white shadow-black/20"
+              }`}
+              onClick={() => { setShowMockupHint(false); handleMockup() }}
+              disabled={!session.currentDesignUrl || mockupLoading}
+            >
+              {mockupLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generando foto en {garmentLabel(session.garmentType).toLowerCase()} {colorLabel(session.garmentType, session.garmentColor).toLowerCase()}...
+                </>
+              ) : (
+                <>
+                  <Shirt className="w-4 h-4 mr-2" />
+                  Probar en {garmentLabel(session.garmentType)} {colorLabel(session.garmentType, session.garmentColor)}
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Design history — últimos 5 diseños generados, click para volver a usar */}
