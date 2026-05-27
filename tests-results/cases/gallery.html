@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Novamente · Galería de tests /crear</title>
+<style>
+  :root { color-scheme: dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0a0a0f; color: #eee; margin: 0; padding: 24px; }
+  h1 { font-size: 24px; margin: 0 0 8px; }
+  p.subtitle { color: #888; margin: 0 0 32px; font-size: 14px; }
+  section { background: #15151c; border: 1px solid #2a2a35; border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+  h2 { font-size: 18px; margin: 0 0 4px; color: #c4b5fd; }
+  .meta { color: #888; font-size: 13px; margin: 0 0 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .img-card { background: #0a0a0f; border-radius: 8px; padding: 8px; }
+  .img-card img { width: 100%; height: 240px; object-fit: contain; border-radius: 6px; background: #1a1a25; display: block; }
+  .img-card .label { font-size: 12px; color: #aaa; margin-top: 8px; text-align: center; }
+  .status { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px; }
+  .ok { background: #16a34a33; color: #4ade80; }
+  .warn { background: #ca8a0433; color: #fbbf24; }
+  .fail { background: #dc262633; color: #f87171; }
+</style>
+</head>
+<body>
+<h1>🎨 Galería tests /crear · Novamente</h1>
+<p class="subtitle">Imágenes generadas por Playwright tests del 19-may-2026 cubriendo 12 escenarios de uso del generador.</p>
+
+<section style="border: 2px solid #c4b5fd;">
+  <h2>🔥 LIFESTYLE MOCKUPS (nuevo) — reemplazo del canvas estático <span class="status ok">FIX</span></h2>
+  <p class="meta">Antes el mockup mostraba un checker pattern. Ahora Gemini genera foto real de persona usando la prenda en escenario argentino.</p>
+  <div class="grid">
+    <div class="img-card"><img src="L01-calavera-mexicana-aldea-black.png" alt=""><div class="label">L01 — Calavera mexicana → remera negra en café Palermo</div></div>
+    <div class="img-card"><img src="L02-nunca-mas-aldea-white.png" alt=""><div class="label">L02 — "NUNCA MAS" → remera crema en calle Palermo atardecer</div></div>
+    <div class="img-card"><img src="L03-leon-hoodie-black.png" alt=""><div class="label">L03 — León "REY LEÓN" → hoodie negro en café BA</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>C01 · Calavera mexicana → Remera Aldea Classic Fit NEGRO <span class="status ok">OK</span></h2>
+  <p class="meta">Print-ready DARK rules: rim lighting cremoso en bordes oscuros, "DIA DE LOS MUERTOS" en blanco con outline</p>
+  <div class="grid">
+    <div class="img-card"><img src="C01-design.png" alt=""><div class="label">Diseño generado</div></div>
+    <div class="img-card"><img src="C01-mockup.png" alt=""><div class="label">Mockup en remera</div></div>
+    <div class="img-card"><img src="C01-page.png" alt=""><div class="label">Pantalla completa</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>C02 · Tipografía "NUNCA MAS" → Remera blanca <span class="status ok">OK</span></h2>
+  <p class="meta">Print-ready LIGHT rules: outlines oscuros forzados sobre letras claras, texturas industriales</p>
+  <div class="grid">
+    <div class="img-card"><img src="C02-design.png" alt=""><div class="label">Diseño generado</div></div>
+    <div class="img-card"><img src="C02-mockup.png" alt=""><div class="label">Mockup en remera blanca</div></div>
+    <div class="img-card"><img src="C02-page.png" alt=""><div class="label">Pantalla completa</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>C03 · Lobo gothic noir <span class="status ok">OK</span></h2>
+  <p class="meta">DARK_STYLE_BOOST automático: detectó "gothic/noir" en el prompt y reforzó rim lighting + ivory contours</p>
+  <div class="grid">
+    <div class="img-card"><img src="C03-design.png" alt=""><div class="label">Diseño generado</div></div>
+    <div class="img-card"><img src="C03-page.png" alt=""><div class="label">Pantalla completa</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>C04 · Iteración "más colorido" <span class="status ok">OK</span></h2>
+  <p class="meta">Image-to-image edit: el dragón es el MISMO pero olas vibrantes y flores más saturadas</p>
+  <div class="grid">
+    <div class="img-card"><img src="C04-design-base.png" alt=""><div class="label">Diseño base (antes)</div></div>
+    <div class="img-card"><img src="C04-design-iterated.png" alt=""><div class="label">Iteración (después)</div></div>
+    <div class="img-card"><img src="C04-page.png" alt=""><div class="label">Pantalla completa</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>C05 · Orientación VERTICAL (768×1024) <span class="status ok">OK</span></h2>
+  <p class="meta">Aspect ratio respetado, llamas verticales saliendo del mástil</p>
+  <div class="grid">
+    <div class="img-card"><img src="C05-design.png" alt=""><div class="label">Diseño vertical</div></div>
+    <div class="img-card"><img src="C05-page.png" alt=""><div class="label">Pantalla completa</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>C06 · Orientación HORIZONTAL (1024×768) <span class="status warn">capture incompleto</span></h2>
+  <p class="meta">El test corrió pero la imagen no se capturó por timing. El page screenshot muestra la UI con "Horizontal" seleccionado.</p>
+  <div class="grid">
+    <div class="img-card"><img src="C06-page.png" alt=""><div class="label">Pantalla completa</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>C07 · Upload + "Solo el sujeto" (bg removal) <span class="status ok">OK</span></h2>
+  <p class="meta">Gemini removió el fondo dejando solo "Cosmic Voyage" con PNG transparente</p>
+  <div class="grid">
+    <div class="img-card"><img src="C07-upload-original.png" alt=""><div class="label">Original subido</div></div>
+    <div class="img-card"><img src="C07-bg-removed.png" alt=""><div class="label">Sin fondo (transparente)</div></div>
+    <div class="img-card"><img src="C07-page.png" alt=""><div class="label">Pantalla completa</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>C08 · Upload + "Foto entera" <span class="status warn">page only</span></h2>
+  <p class="meta">Intent "tal cual" saltea Gemini y usa el upload directo</p>
+  <div class="grid">
+    <div class="img-card"><img src="C08-page.png" alt=""><div class="label">Pantalla completa</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>C10 · Diseño → cambiar a Buzo Hoodie negro <span class="status ok">OK</span></h2>
+  <p class="meta">León emblema "Rey de la Selva" + cambio de prenda + mockup correcto en hoodie</p>
+  <div class="grid">
+    <div class="img-card"><img src="C10-design.png" alt=""><div class="label">Diseño aislado</div></div>
+    <div class="img-card"><img src="C10-mockup.png" alt=""><div class="label">Mockup en hoodie negro</div></div>
+    <div class="img-card"><img src="C10-page.png" alt=""><div class="label">Pantalla completa</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>C11 · Doble estampa (front + back distintos) <span class="status ok">OK</span></h2>
+  <p class="meta">Frente: flor de loto. Espalda: paisaje montañoso line-art. Ambos con DARK rules</p>
+  <div class="grid">
+    <div class="img-card"><img src="C11-front-design.png" alt=""><div class="label">Estampa frente</div></div>
+    <div class="img-card"><img src="C11-back-design.png" alt=""><div class="label">Estampa espalda</div></div>
+    <div class="img-card"><img src="C11-page.png" alt=""><div class="label">Pantalla completa</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>C12 · Mobile iPhone 14 Pro · Zorro origami <span class="status ok">OK</span></h2>
+  <p class="meta">UNIVERSAL PRINT SAFETY: sticker contour blanco closed badge, sirve en cualquier color de prenda</p>
+  <div class="grid">
+    <div class="img-card"><img src="C12-design-mobile.png" alt=""><div class="label">Diseño mobile</div></div>
+    <div class="img-card"><img src="C12-page.png" alt=""><div class="label">Pantalla mobile</div></div>
+  </div>
+</section>
+
+</body>
+</html>

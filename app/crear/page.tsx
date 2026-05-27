@@ -19,20 +19,16 @@ export type DesignSession = {
   frontDesignUrl: string | null
   backDesignUrl: string | null
   currentMockupUrl: string | null
-  // Snapshot del context cuando se generó el mockup actual.
-  // Si garment/color/side actuales no coinciden, mostramos "stale".
   mockupGeneratedFor: {
     garmentType: string
     garmentColor: string
     side: "front" | "back"
     designUrl: string
   } | null
-  designHistory: string[] // últimos 5 design URLs generados
+  designHistory: string[]
   garmentType: string
   garmentColor: string
   side: "front" | "back"
-  // Tamaño de la estampa sobre la prenda: R1 (chico/pecho), R2 (mediano),
-  // R3 (grande/espalda completa). Afecta el prompt + el mockup.
   printArea: "R1" | "R2" | "R3"
 }
 
@@ -60,7 +56,6 @@ export default function CrearPage() {
     totalOrders: number
   } | null>(null)
 
-  // Cargar social proof una vez al montar (cacheado 5min server-side)
   useEffect(() => {
     fetch("/api/public/social-proof")
       .then((r) => r.json())
@@ -70,102 +65,123 @@ export default function CrearPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      {/* Top bar */}
-      <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur sticky top-0 z-30">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white">
-            <ArrowLeft className="h-4 w-4" /> Volver
-          </Link>
-          <h1 className="text-base font-semibold tracking-tight">Diseñá tu prenda</h1>
-          <div className="flex items-center gap-2">
+      {/* ============================================================ */}
+      {/* Top bar — modern, slim, gradient                              */}
+      {/* ============================================================ */}
+      <header className="sticky top-0 z-30 border-b border-white/5 bg-zinc-950/80 backdrop-blur-xl">
+        {/* Subtle gradient overlay for modern feel */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-violet-600/[0.06] to-transparent" aria-hidden />
+
+        <div className="relative mx-auto max-w-7xl px-3 sm:px-4">
+          {/* Row 1: nav + title + actions */}
+          <div className="flex h-12 sm:h-14 items-center justify-between gap-2">
             <Link
-              href="/cart"
-              aria-label="Carrito"
-              className="relative inline-flex items-center justify-center rounded-md p-2 text-zinc-300 hover:text-white hover:bg-zinc-800"
+              href="/"
+              aria-label="Volver al inicio"
+              className="inline-flex items-center justify-center rounded-full p-2 -ml-2 text-zinc-400 hover:text-white hover:bg-white/5 transition active:scale-95"
             >
-              <ShoppingCart className="h-4 w-4" />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-600 px-1 text-[10px] font-semibold text-white">
-                  {cartCount}
-                </span>
-              )}
+              <ArrowLeft className="h-5 w-5" />
             </Link>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setTryOnOpen(true)}
-              disabled={!session.currentMockupUrl}
-              className="border-zinc-700"
+
+            <div className="flex-1 min-w-0 text-center">
+              <h1 className="text-sm sm:text-base font-semibold tracking-tight truncate">
+                Diseñá tu prenda
+              </h1>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <Link
+                href="/cart"
+                aria-label="Carrito"
+                className="relative inline-flex items-center justify-center rounded-full p-2 text-zinc-300 hover:text-white hover:bg-white/5 transition active:scale-95"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-600 px-1 text-[10px] font-semibold text-white ring-2 ring-zinc-950">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+              <button
+                type="button"
+                aria-label="Try-on"
+                onClick={() => setTryOnOpen(true)}
+                disabled={!session.currentMockupUrl}
+                className="inline-flex items-center justify-center rounded-full p-2 -mr-2 text-zinc-300 hover:text-white hover:bg-white/5 transition active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <Camera className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Row 2: segmented control */}
+          <div className="pb-2.5">
+            <div
+              role="tablist"
+              aria-label="Modo de diseño"
+              className="relative grid grid-cols-3 gap-1 rounded-full bg-zinc-900/80 ring-1 ring-white/5 p-1"
             >
-              <Camera className="mr-2 h-3.5 w-3.5" /> Try-on
-            </Button>
+              <SegTab
+                active={mode === "chat"}
+                onClick={() => setMode("chat")}
+                icon={<Sparkles className="h-3.5 w-3.5" />}
+                label="Chat IA"
+              />
+              <SegTab
+                active={mode === "canvas"}
+                onClick={() => setMode("canvas")}
+                icon={<Pencil className="h-3.5 w-3.5" />}
+                label="Canvas"
+                disabled={!session.currentDesignUrl}
+              />
+              <SegTab
+                active={mode === "lifestyle"}
+                onClick={() => setMode("lifestyle")}
+                icon={<User className="h-3.5 w-3.5" />}
+                label="Lifestyle"
+                disabled={!session.currentMockupUrl}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Mode tabs */}
-        <div className="mx-auto max-w-7xl px-4 pb-3 flex gap-2 overflow-x-auto">
-          <ModeTab active={mode === "chat"} onClick={() => setMode("chat")} icon={<Sparkles className="h-4 w-4" />}>
-            Chat con IA
-          </ModeTab>
-          <ModeTab
-            active={mode === "canvas"}
-            onClick={() => setMode("canvas")}
-            icon={<Pencil className="h-4 w-4" />}
-            disabled={!session.currentDesignUrl}
-          >
-            Canvas
-          </ModeTab>
-          <ModeTab
-            active={mode === "lifestyle"}
-            onClick={() => setMode("lifestyle")}
-            icon={<User className="h-4 w-4" />}
-            disabled={!session.currentMockupUrl}
-          >
-            Lifestyle
-          </ModeTab>
-        </div>
-      </div>
-
-      {/* Trust signals bar — solo claims reales (sin cuotas ni rehacemos) */}
-      <div className="border-b border-zinc-800 bg-zinc-950">
-        <div className="mx-auto max-w-7xl px-4 py-2 flex items-center gap-3 overflow-x-auto text-[11px] text-zinc-400">
-          <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
-            🇦🇷 100% argentino · Producción a pedido
-          </span>
-          <span className="text-zinc-700">·</span>
-          <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
-            🚚 Envío BA $7.000 · Resto $9.000
-          </span>
-          <span className="text-zinc-700">·</span>
-          <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
-            💳 Pagás con Mercado Pago
-          </span>
-          {/* Social proof real — solo mostrar si hay actividad relevante */}
-          {socialProof && socialProof.designsLast24h >= 5 && (
-            <>
-              <span className="text-zinc-700">·</span>
-              <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap text-emerald-400">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+        {/* Trust signals — single compact row, scrollable on mobile */}
+        <div className="border-t border-white/5 bg-zinc-950/60">
+          <div className="mx-auto max-w-7xl">
+            <div
+              className="flex items-center gap-4 overflow-x-auto px-3 sm:px-4 py-1.5 text-[10.5px] text-zinc-500 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              role="list"
+            >
+              <span className="shrink-0 whitespace-nowrap" role="listitem">
+                🇦🇷 100% argentino
+              </span>
+              <span className="shrink-0 whitespace-nowrap" role="listitem">
+                🚚 Envío BA $7.000 · Resto $9.000
+              </span>
+              <span className="shrink-0 whitespace-nowrap" role="listitem">
+                💳 Mercado Pago
+              </span>
+              {socialProof && socialProof.designsLast24h >= 5 && (
+                <span className="shrink-0 inline-flex items-center gap-1.5 whitespace-nowrap text-emerald-400" role="listitem">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  </span>
+                  {socialProof.designsLast24h} diseños · 24h
                 </span>
-                {socialProof.designsLast24h} diseños creados últimas 24h
-              </span>
-            </>
-          )}
-          {socialProof && socialProof.totalOrders >= 10 && (
-            <>
-              <span className="text-zinc-700">·</span>
-              <span className="shrink-0 inline-flex items-center gap-1 whitespace-nowrap">
-                ⭐ +{socialProof.totalOrders} personas ya tienen su Novamente
-              </span>
-            </>
-          )}
+              )}
+              {socialProof && socialProof.totalOrders >= 10 && (
+                <span className="shrink-0 whitespace-nowrap" role="listitem">
+                  ⭐ +{socialProof.totalOrders} clientes
+                </span>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Mode content */}
-      <main className="mx-auto max-w-7xl px-4 py-6">
+      <main className="mx-auto max-w-7xl px-3 sm:px-4 py-4 sm:py-6">
         {mode === "chat" && <DesignChat session={session} setSession={setSession} />}
         {mode === "canvas" && <DesignCanvas session={session} setSession={setSession} />}
         {mode === "lifestyle" && <LifestylePanel session={session} />}
@@ -179,32 +195,38 @@ export default function CrearPage() {
   )
 }
 
-function ModeTab({
+// ============================================================
+// Segmented tab — modern pill inside container
+// ============================================================
+function SegTab({
   active,
   onClick,
   icon,
-  children,
+  label,
   disabled,
 }: {
   active: boolean
   onClick: () => void
   icon: React.ReactNode
-  children: React.ReactNode
+  label: string
   disabled?: boolean
 }) {
   return (
     <button
+      type="button"
+      role="tab"
       onClick={onClick}
       disabled={disabled}
+      aria-selected={active}
       aria-current={active ? "page" : undefined}
-      className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
+      className={`relative flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs sm:text-sm font-medium transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 ${
         active
-          ? "border-white bg-white text-zinc-950"
-          : "border-zinc-700 bg-transparent text-zinc-300 hover:border-zinc-500"
+          ? "bg-white text-zinc-950 shadow-lg shadow-black/20"
+          : "text-zinc-400 hover:text-zinc-100 active:scale-[0.97]"
       }`}
     >
-      {icon}
-      {children}
+      <span className={active ? "text-zinc-950" : "text-zinc-500"}>{icon}</span>
+      <span className="truncate">{label}</span>
     </button>
   )
 }
