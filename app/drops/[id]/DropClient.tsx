@@ -389,6 +389,15 @@ export default function DropClient({ drop }: { drop: Drop }) {
               <p className="mt-3 text-xs text-zinc-500">
                 * Las medidas pueden variar ±1 cm. Si dudás entre dos talles, elegí el más grande.
               </p>
+              <a
+                href="/guia-de-talles-novamente.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-violet-400 hover:text-violet-300 transition-colors"
+              >
+                <Ruler className="w-4 h-4" />
+                Descargar guía de talles completa (PDF)
+              </a>
             </div>
 
             <Link

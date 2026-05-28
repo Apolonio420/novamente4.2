@@ -55,6 +55,21 @@ When you receive a prompt starting with `[WATCHDOG`, you are being invoked by an
 - `docs/rag/` — Knowledge base markdown files
 - `scripts/watchdog.ps1` — Auto-fix watchdog script
 
+## Product Pages — Size Guide PDF (MANDATORY)
+
+Toda página de producto (incluyendo `app/products/[id]`, `app/drops/[id]`, `app/merch/[brand]/[product]`, storefronts de partners y cualquier nueva ruta que muestre una prenda con talles) **debe** incluir un link visible al PDF unificado de medidas:
+
+- **Ruta del PDF**: `/guia-de-talles-novamente.pdf` (sirve desde `public/`)
+- **Source de verdad**: `scripts/generate-size-guide-pdf.ts` — contiene la tabla de medidas de TODAS las prendas (Hoodies, Crewneck, Aura T-Shirt, Aldea T-Shirt, Remera Crop, Musculosa Bali, Remera mujer clásica).
+- **Cómo regenerar el PDF**: `npx tsx scripts/generate-size-guide-pdf.ts` (lo escribe en `public/guia-de-talles-novamente.pdf`).
+- **Sincronización**: el script y los tableros `SIZE_CHARTS` en `app/products/[id]/page.tsx` y `app/drops/[id]/DropClient.tsx` deben mantenerse iguales. Si cambia una medida en uno, actualizar los tres y regenerar el PDF.
+
+### Reglas al crear una nueva página de producto
+1. Agregar el componente de tabla de talles inline (como en `app/products/[id]/page.tsx`).
+2. Debajo de la tabla, agregar un `<a href="/guia-de-talles-novamente.pdf" target="_blank" rel="noopener noreferrer">` con el ícono `Ruler` de lucide y el texto "Descargar guía de talles completa (PDF)".
+3. Si la prenda es **nueva** y no está en el PDF: agregar su entrada en `SIZE_CHARTS` dentro de `scripts/generate-size-guide-pdf.ts`, regenerar el PDF y commitearlo.
+4. Nunca linkear a un PDF externo, siempre al archivo estático en `public/`.
+
 ## Auth
 
 Supabase Auth with cookie-based tokens. Pattern: `sb-*-auth-token` cookie → `supabaseAdmin.auth.getUser(token)`.

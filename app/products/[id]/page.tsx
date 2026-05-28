@@ -412,6 +412,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 <p className="text-xs text-muted-foreground mt-3">
                   * Las medidas pueden variar +/- 1cm. Si estas entre dos talles, te recomendamos elegir el mas grande.
                 </p>
+                <a
+                  href="/guia-de-talles-novamente.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 mt-4 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  <Ruler className="w-4 h-4" />
+                  Descargar guía de talles completa (PDF)
+                </a>
               </div>
 
               {/* Measurements Image */}
