@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { getClientSupabase } from "@/lib/auth-client"
-import { Loader, Mail, Lock, ChromeIcon as Google, ArrowRight } from "lucide-react"
+import { Loader, Mail, Lock, ChromeIcon as Google, ArrowRight, Eye, EyeOff } from "lucide-react"
 
 interface AuthModalProps {
   isOpen: boolean
@@ -21,6 +21,8 @@ export function AuthModal({ isOpen, onOpenChange, defaultTab = "signin", message
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [showSigninPassword, setShowSigninPassword] = useState(false)
+  const [showSignupPassword, setShowSignupPassword] = useState(false)
   const [activeTab, setActiveTab] = useState<"signin" | "signup">(defaultTab)
   const { toast } = useToast()
   const supabase = getClientSupabase()
@@ -187,11 +189,19 @@ export function AuthModal({ isOpen, onOpenChange, defaultTab = "signin", message
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password-signin"
-                    type="password"
-                    className="pl-10"
+                    type={showSigninPassword ? "text" : "password"}
+                    className="pl-10 pr-10"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowSigninPassword((v) => !v)}
+                    aria-label={showSigninPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showSigninPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -254,11 +264,19 @@ export function AuthModal({ isOpen, onOpenChange, defaultTab = "signin", message
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password-signup"
-                    type="password"
-                    className="pl-10"
+                    type={showSignupPassword ? "text" : "password"}
+                    className="pl-10 pr-10"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowSignupPassword((v) => !v)}
+                    aria-label={showSignupPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 
