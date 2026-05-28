@@ -188,7 +188,7 @@ SPRINT_OK=0
 while (( RETRIES < MAX_RATE_LIMIT_RETRIES )); do
   log "Ejecutando claude -p --model $CHOSEN_MODEL (intento $((RETRIES+1)))"
   claude_log="$(mktemp)"
-  if claude -p "$(cat "$PROMPT_FILE")" --model "$CHOSEN_MODEL" --permission-mode acceptEdits 2>&1 | tee "$claude_log"; then
+  if claude -p "$(cat "$PROMPT_FILE")" --model "$CHOSEN_MODEL" --permission-mode bypassPermissions 2>&1 | tee "$claude_log"; then
     SPRINT_OK=1
     break
   fi
