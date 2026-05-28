@@ -40,3 +40,4 @@ scripts/.autopilot-state.json
 /.ralphy/
 /claude-talk-to-figma-mcp/
 autopilot-session-*.log
+.claude/settings.local.json

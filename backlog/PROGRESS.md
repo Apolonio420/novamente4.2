@@ -6,6 +6,22 @@ Formato:
 
 ---
 
+## Sprint 029 — 2026-05-27
+**Model:** sonnet
+**Tasks DONE:**
+- TASK-027 — feat(wizard): eliminar step 3 partner_type (dato muerto)
+  - `app/partners/join/page.tsx`: eliminado `StepTipoPartner` (componente muerto), `PARTNER_TYPES`, `PARTNER_TYPE_TO_ENGINE`, campo `partnerType` de `WizardData`, valor `partnerType` de `DEFAULT_DATA`, import `RadioGroup/RadioGroupItem`
+  - El wizard ya era de 5 pasos en el render (`steps` array) — esta tarea eliminó el código dead que quedaba de la refactorización previa
+  - La columna `partner_type` en la tabla `tenants` se mantiene intacta (tenants viejos con valor siguen sin romperse)
+**Tasks BLOCKED:**
+- (ninguna)
+**tsc:** PASS
+**build:** SKIPPED
+**Notas:**
+- TASK-027: no requiere verificación visual — el wizard ya no tenía el step 3 visible, solo se eliminó código muerto
+
+---
+
 ## Sprint 028 — 2026-05-27
 **Model:** sonnet
 **Tasks DONE:**

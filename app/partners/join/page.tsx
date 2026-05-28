@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -74,9 +73,6 @@ interface WizardData {
   extractUrl: string
   inspirationUrl: string
   brandKit: BrandKit | null
-  // Step 3
-  partnerType: 'catalog_only' | 'catalog_mockups' | 'catalog_design_engine'
-  // Step 4
   visualStyle: string
   // Step 5
   catalogMode: 'later' | 'manual' | 'csv'
@@ -117,23 +113,6 @@ const STEP_TITLES = [
 
 const STEP_ICONS = [Store, Palette, CreditCard, Layers, Eye]
 
-const PARTNER_TYPES = [
-  {
-    value: 'catalog_only' as const,
-    label: 'Solo catalogo fijo',
-    description: 'Tus productos con fotos y precios. Sin generacion de disenos.',
-  },
-  {
-    value: 'catalog_mockups' as const,
-    label: 'Catalogo + Mockups',
-    description: 'Catalogo con mockups automaticos de tus disenos sobre las prendas.',
-  },
-  {
-    value: 'catalog_design_engine' as const,
-    label: 'Catalogo + Design Engine completo',
-    description: 'Todo incluido: catalogo, mockups y generacion de disenos con IA.',
-  },
-]
 
 const VISUAL_STYLES = [
   { id: 'minimal', name: 'Minimal', description: 'Limpio, espacioso, tipografia fina' },
@@ -179,7 +158,6 @@ const DEFAULT_DATA: WizardData = {
   extractUrl: '',
   inspirationUrl: '',
   brandKit: null,
-  partnerType: 'catalog_mockups',
   visualStyle: 'minimal',
   catalogMode: 'later',
   manualProduct: { name: '', description: '', price: '', imageUrl: '' },
@@ -968,46 +946,6 @@ function StepIdentidadVisual({
   )
 }
 
-function StepTipoPartner({
-  data,
-  update,
-}: {
-  data: WizardData
-  update: (patch: Partial<WizardData>) => void
-}) {
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-zinc-400 mb-2">
-        Selecciona el tipo de storefront que mejor se adapte a tu marca.
-      </p>
-      <RadioGroup
-        value={data.partnerType}
-        onValueChange={(v) => update({ partnerType: v as WizardData['partnerType'] })}
-        className="grid gap-4"
-      >
-        {PARTNER_TYPES.map((pt) => {
-          const selected = data.partnerType === pt.value
-          return (
-            <label
-              key={pt.value}
-              className={`flex items-start gap-4 p-5 rounded-xl border cursor-pointer transition-all ${
-                selected
-                  ? 'border-purple-500 bg-purple-500/5 shadow-lg shadow-purple-500/5'
-                  : 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900'
-              }`}
-            >
-              <RadioGroupItem value={pt.value} className="mt-0.5" />
-              <div>
-                <span className="font-semibold text-zinc-100">{pt.label}</span>
-                <p className="text-sm text-zinc-400 mt-1">{pt.description}</p>
-              </div>
-            </label>
-          )
-        })}
-      </RadioGroup>
-    </div>
-  )
-}
 
 function StepEstiloVisual({
   data,
@@ -1851,11 +1789,6 @@ function StepPreview({ data }: { data: WizardData }) {
 // Onboarding API helpers
 // ---------------------------------------------------------------------------
 
-const PARTNER_TYPE_TO_ENGINE: Record<WizardData['partnerType'], string> = {
-  catalog_only: 'disabled',
-  catalog_mockups: 'mockups_only',
-  catalog_design_engine: 'full_brand_fit',
-}
 
 function resolveCommerceMode(channels: WizardData['channels']): string {
   if (channels.whatsapp) return 'whatsapp'

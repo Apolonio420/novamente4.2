@@ -41,6 +41,7 @@
 | 29 | TASK-024 | Acortar wizard de alta (7 pasos → versión express + el resto al workspace) | 3 | sí | BLOCKED — necesita data de TASK-016 |
 | 30 | TASK-025 | FAQ content para /workspace/support — CANCELADA (Juan decidió 2026-05-26 no hacerla) | — | — | CANCELLED |
 | 31 | TASK-026 | Navbar: dropdown "Soy Cliente / Soy Partner" antes del popup de auth | 1 | sí | DONE |
+| 32 | TASK-027 | Eliminar step 3 (partner_type) del wizard de alta — es dato muerto | 1 | sí | DONE |
 
 ---
 
@@ -898,3 +899,42 @@ En los 3 casos el PNG/SVG se persiste en R2 (reutilizar el endpoint existente, p
 - [ ] Commit con tag `[AP-v4.2 TASK-026]`
 
 **NO hacer:** cambiar el AuthModal en sí (sigue siendo solo para clientes B2C). Ni tocar `/partners/login`.
+
+---
+
+### TASK-027 — Eliminar step 3 (partner_type) del wizard de alta
+
+**Por qué:** TASK-021 verificó que `partner_type` (`catalog_only` / `catalog_mockups` / `catalog_design_engine`) es **dato muerto**: el partner lo elige durante el alta pero la UI del workspace no lo respeta — todos ven Studio + Catálogo + Biblioteca completos. Juan decidió 2026-05-27 eliminar el step en vez de implementar la segmentación. Acorta el wizard de 7 → 6 pasos.
+
+**Alcance:**
+
+- En [app/partners/join/page.tsx](app/partners/join/page.tsx):
+  - Eliminar el componente `StepTipoPartner` (líneas ~971-1010).
+  - Eliminar la constante `PARTNER_TYPES` (líneas 120-136).
+  - Eliminar el campo `partnerType` de la interface `WizardData` (línea 78).
+  - Eliminar `partnerType: 'catalog_mockups'` del estado inicial (línea ~182).
+  - Eliminar el mapeo `PARTNER_TYPE_TO_ENGINE` (líneas ~1854-1858).
+  - Eliminar cualquier referencia al step 3 en el array de pasos / función `buildStepPayload` / navegación del wizard.
+  - Renumerar los steps siguientes (estilo visual pasa a ser step 3, catálogo a step 4, etc.).
+  - Actualizar `STEP_ICONS` si tiene un ícono extra para el step que sacamos.
+  - Asegurar que `STORAGE_KEY` localStorage progress siga siendo compatible (si el partner tenía un wizard a medias con el step 3, se salta limpio).
+
+- En el backend (endpoint `/api/partners/onboarding/*`):
+  - Buscar dónde se persiste `partner_type` en la tabla `tenants` o similar y **dejar la columna en DB** (no la borramos por ahora, por si hay tenants viejos con valor). Solo dejar de mandarla desde el wizard.
+  - Si el endpoint valida que `partner_type` venga obligatorio, remové esa validación.
+
+**Archivos esperados:**
+- `app/partners/join/page.tsx` (modificar — eliminar componente, constantes, campo, mapeo)
+- `app/api/partners/onboarding/*` (revisar y quitar validación si existe)
+
+**Criterio DONE:**
+- [ ] El wizard tiene 6 steps en lugar de 7 (visible en `StepIndicator`)
+- [ ] No hay referencias a `partnerType`, `PARTNER_TYPES`, `PARTNER_TYPE_TO_ENGINE` en el código
+- [ ] El alta funciona end-to-end con los 6 steps (probar el flujo completo si es posible)
+- [ ] Tenants existentes con `partner_type` en DB no se rompen (la columna sigue ahí, solo no se setea para nuevos)
+- [ ] `npx tsc --noEmit` verde
+- [ ] Commit con tag `[AP-v4.2 TASK-027]`
+
+**NO hacer:**
+- NO borrar la columna `partner_type` de la tabla `tenants` (riesgo de romper tenants viejos).
+- NO tocar el workspace ni cambiar la lógica de qué módulos se muestran (todos siguen viendo todo, que es lo que ya pasaba de facto).
