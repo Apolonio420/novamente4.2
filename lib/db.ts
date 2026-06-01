@@ -848,6 +848,8 @@ export interface Order {
   customer_first_name: string
   customer_last_name: string
   customer_phone?: string | null
+  customer_dni?: string | null
+  customer_dni_type?: string | null
   shipping_address?: string | null
   shipping_city?: string | null
   shipping_postal_code?: string | null

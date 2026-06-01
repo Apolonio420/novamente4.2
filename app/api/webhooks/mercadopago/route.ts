@@ -159,13 +159,38 @@ export async function POST(request: NextRequest) {
       },
     }
 
+    // PASO 5.5: Extraer DNI/CUIT del pagador desde MP (si esta disponible).
+    // MP siempre captura la identificacion en pagos con tarjeta. Lo guardamos
+    // en orders.customer_dni para facturacion AFIP y entrega Andreani.
+    // Prioridad: card.cardholder.identification (titular real) > payer.identification.
+    let extractedDni: string | null = null
+    let extractedDniType: string | null = null
+    try {
+      const cardId = (paymentDetails as any)?.card?.cardholder?.identification
+      const payerId = (paymentDetails as any)?.payer?.identification
+      const chosen = cardId?.number ? cardId : (payerId?.number ? payerId : null)
+      if (chosen) {
+        extractedDni = String(chosen.number).trim()
+        extractedDniType = String(chosen.type || "").trim().toUpperCase() || "DNI"
+        console.log("🪪 DNI extraido de MP:", extractedDniType, extractedDni)
+      }
+    } catch (dniErr: any) {
+      console.warn("⚠️ No se pudo extraer DNI:", dniErr.message)
+    }
+
     // PASO 6: Actualizar orden en Supabase
-    const updated = await updateOrder(order.id!, {
+    const orderUpdates: any = {
       payment_id: String(paymentId),
       payment_status: paymentStatus,
       status: orderStatus,
       metadata: newMetadata,
-    })
+    }
+    // Solo escribir DNI si lo conseguimos Y la orden no lo tenia ya
+    if (extractedDni && !(order as any).customer_dni) {
+      orderUpdates.customer_dni = extractedDni
+      orderUpdates.customer_dni_type = extractedDniType
+    }
+    const updated = await updateOrder(order.id!, orderUpdates)
 
     if (updated) {
       console.log("✅ Orden actualizada:", order.id, "→ status:", orderStatus)
