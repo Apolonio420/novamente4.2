@@ -4,29 +4,18 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Sparkles } from "lucide-react"
 import { MODELS, TIERS } from "./data"
-import { getPartnerPlanPrice } from "@/lib/partners/garment-pricing"
-
-const MODEL_TO_GARMENT_KEY: Record<string, string> = {
-  berlin: "buzo-cuello-redondo",
-  boston: "buzo-hoodie-unisex",
-  aura: "aura-oversize-tshirt",
-  aldea: "aldea-classic-tshirt",
-  "buenos-aires": "remera-clasica-mujer",
-  bahamas: "remera-crop-mujer",
-  bali: "musculosa-bali",
-}
-
-function getGrowthPrice(modelId: string): number | null {
-  const key = MODEL_TO_GARMENT_KEY[modelId]
-  if (!key) return null
-  return getPartnerPlanPrice(key, "growth")
-}
 
 function formatPrice(value: number) {
   return `$${value.toLocaleString("es-AR")}`
 }
 
-export default function UnifiedPriceTable() {
+// growthByModel llega ya calculado desde el server (page.tsx) con el precio Growth
+// "desde (1u)". El cliente nunca recibe el costo del que se deriva.
+export default function UnifiedPriceTable({
+  growthByModel,
+}: {
+  growthByModel: Record<string, number | null>
+}) {
   const [showGrowth, setShowGrowth] = useState(false)
 
   return (
@@ -71,7 +60,7 @@ export default function UnifiedPriceTable() {
           </thead>
           <tbody>
             {MODELS.map(p => {
-              const growthPrice = getGrowthPrice(p.id)
+              const growthPrice = growthByModel[p.id] ?? null
               const savings = growthPrice != null ? p.prices.partner - growthPrice : 0
               const savingsPct = growthPrice != null && p.prices.partner > 0
                 ? Math.round((savings / p.prices.partner) * 100)
@@ -112,8 +101,9 @@ export default function UnifiedPriceTable() {
 
       {showGrowth && (
         <p className="text-xs text-muted-foreground text-center mt-3">
-          Plan Studio Growth: USD$50/mes (−15% en plan anual). El beneficio es mayor para Partner (1u);
-          en Drop y Bulk la diferencia se reduce porque ya hay descuentos por volumen.
+          Plan Studio Growth: USD$50/mes (−15% en plan anual). El beneficio es mayor en los tiers de
+          menor volumen; en Drop y Bulk la diferencia se reduce porque el precio Starter ya tiene
+          descuentos por volumen.
         </p>
       )}
     </section>

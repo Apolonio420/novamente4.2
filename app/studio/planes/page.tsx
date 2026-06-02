@@ -96,7 +96,7 @@ const faqSchema = {
       name: "¿Cómo se comparan los precios entre planes?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Los partners Starter pagan el precio publicado en /b2b-precios-2026 (por ejemplo, una remera Aldea $25.700 en lugar de $28.600 retail). Los partners Growth y Pro acceden a un precio aún más competitivo (Aldea $21.696, Buzo Hoodie $30.170) que multiplica el margen al vender a retail web. Mismo precio para todos los colores dentro de cada familia.",
+        text: "Los partners Starter pagan el precio publicado en /b2b-precios-2026 (por ejemplo, una remera Aldea $25.700 en lugar de $28.600 retail). Los partners Growth y Pro acceden a un precio aún más competitivo (Aldea $23.670, Buzo Hoodie $31.170) que multiplica el margen al vender a retail web. Mismo precio para todos los colores dentro de cada familia.",
       },
     },
     {
@@ -151,7 +151,7 @@ const howToSchema = {
       "@type": "HowToStep",
       position: 2,
       name: "Upgradeá a Growth cuando empieces a vender",
-      text: "Cuando estés haciendo 10+ ventas/mes, el plan Growth (USD$50/mes) se paga solo: el precio por prenda baja respecto al tier Starter y tu margen por unidad sube entre $2.000 y $9.000 adicionales según producto. También sumás SEO, analytics y branding avanzado.",
+      text: "Cuando estés haciendo 10+ ventas/mes, el plan Growth (USD$50/mes) se paga solo: pagás cada prenda más cerca del costo que en Starter, así que tu margen vendiendo a retail web sube. También sumás SEO, analytics y branding avanzado.",
     },
     {
       "@type": "HowToStep",

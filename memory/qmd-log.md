@@ -1,5 +1,17 @@
 # QMD Log - novamente4.2
 
+### [2026-06-02] Actualización costos Dreamful + precios B2B/Partner + tier Growth
+**Goal**: Reflejar nuevos costos de proveedor (Dreamful), reajustar precios partner con margen negativo y agregar el nuevo nivel de precio Partners Growth (suscriptores plan growth). Sin tocar B2C.
+**Done**:
+- `lib/partners/garment-pricing.ts`: nuevos `cost` (peor color por familia) y precios partner de las 7 prendas; agregado campo `b2b_bulk`. Reemplazado modelo Growth flat (`PLAN_GROWTH_PRO_MARGIN_ARS=2000`, cost+2000) por `GROWTH_TIER_DELTA_ARS = {partner:1000,starter:800,pro:600,drop:400,bulk:200}` + `getGrowthPrice(key, tier)`. `getPartnerPlanPrice`/`getPlanMargin` ahora aceptan `tier` opcional (default 'partner'). `b2c_suggested` SIN cambios.
+- `app/b2b-precios-2026/data.ts`: precios MODELS al color caro (máx por tier). Cambian Aura (drop/bulk 24400), Aldea/Mujer (bulk 23600), Crop (drop/bulk 18800), Musculosa (reprecio completo 19500/19400/19200/19000/18800). Berlin/Boston sin cambio. Movido `MODEL_TO_GARMENT_KEY` acá.
+- `app/b2b-precios-2026/page.tsx` (server): deriva `growthByModel` con `getGrowthPrice(...,'partner')` y lo pasa como prop. `B2BCatalog.tsx`/`UnifiedPriceTable.tsx` dejan de importar garment-pricing → el costo de producción ya NO viaja al bundle cliente (regla innegociable). Growth se muestra "desde 1u" + nota volumen.
+- `app/studio/planes/page.tsx`: tabla dinámica auto-actualiza (cost+1000). Corregidos números Growth hardcodeados en FAQ JSON-LD: Aldea 21.696→23.670, Hoodie 30.170→31.170; rango margen Starter→Growth "$2.000-$9.000" → "hasta ~$7.500".
+- `lib/catalog/products.ts`: Musculosa `costARS` 17400→19500 (= Partner 1u). Resto sin cambio.
+**Decisions**: Precio por FAMILIA (no per-color) usando peor color; Growth en web = solo "desde 1u". B2C intocable (decisión de Juan). Test garment-mappings no asserta precios → sin cambio.
+**Verify**: tsc OK, next build OK. Prerender b2b: 0 hits de valores de costo (no leak); precios nuevos y growth presentes. studio/planes sin números viejos.
+**Blockers/Pending**: Sin push (pendiente revisión humana). Copy "hasta ~$7.500" marcado para revisión de Juan. Follow-up no bloqueante: superficies autenticadas (workspace/design-engine/MarginBreakdown/storefront-designer) aún embeben `cost` en bundle cliente (preexistente, auth-gated) — a futuro separar módulo server-only de costos.
+
 ### [2026-03-27] Universal Nova Assistant Upgrade
 **Goal**: Upgrade PublicAssistant to detect auth state (visitor/partner/admin) and support ticket submission from any page with page context
 **Done**:

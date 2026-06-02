@@ -220,7 +220,7 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     fit: 'regular',
     fabric: 'morley premium',
     weightGsm: 150,
-    costARS: 17400,
+    costARS: 19500,
     retailARS: 21800,
     sizes: ['S', 'M', 'L', 'XL', '2XL'],
     measurementsImage: '/products/musculosa-bali-blanca/Medidas3.png',

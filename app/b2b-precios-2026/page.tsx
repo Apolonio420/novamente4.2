@@ -3,7 +3,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import B2BCatalog from "./B2BCatalog"
 import UnifiedPriceTable from "./UnifiedPriceTable"
-import { TIERS } from "./data"
+import { TIERS, MODELS, MODEL_TO_GARMENT_KEY } from "./data"
+import { getGrowthPrice } from "@/lib/partners/garment-pricing"
 
 export const metadata: Metadata = {
   title: "Catalogo B2B Novamente — Tarifas Exclusivas 2026",
@@ -18,6 +19,12 @@ export const metadata: Metadata = {
 }
 
 export default function B2BPricesPage() {
+  // Precio Growth "desde (1u)" derivado en el server: al cliente solo le llega el
+  // precio final, nunca el costo de produccion del que se deriva (regla innegociable).
+  const growthByModel: Record<string, number | null> = Object.fromEntries(
+    MODELS.map((m) => [m.id, getGrowthPrice(MODEL_TO_GARMENT_KEY[m.id], "partner")])
+  )
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-6xl">
       <div className="text-center mb-12">
@@ -54,9 +61,9 @@ export default function B2BPricesPage() {
         </div>
       </section>
 
-      <B2BCatalog />
+      <B2BCatalog growthByModel={growthByModel} />
 
-      <UnifiedPriceTable />
+      <UnifiedPriceTable growthByModel={growthByModel} />
 
       <section className="mb-14">
         <h2 className="novamente-heading text-2xl text-center mb-6">

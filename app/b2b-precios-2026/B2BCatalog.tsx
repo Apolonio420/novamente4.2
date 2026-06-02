@@ -7,31 +7,19 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { Button } from "@/components/ui/button"
 import { ZoomIn, Ruler, Sparkles, TrendingUp } from "lucide-react"
 import { MODELS, TIERS, type B2BModel } from "./data"
-import { getPartnerPlanPrice } from "@/lib/partners/garment-pricing"
 
 function formatPrice(value: number) {
   return `$${value.toLocaleString("es-AR")}`
 }
 
-// Mapeo b2b-precios-2026 model.id  ->  key del catalogo partner (garment-pricing.ts)
-// Permite leer el precio Growth (cost + $2.000) sin duplicar datos.
-const MODEL_TO_GARMENT_KEY: Record<string, string> = {
-  berlin: "buzo-cuello-redondo",
-  boston: "buzo-hoodie-unisex",
-  aura: "aura-oversize-tshirt",
-  aldea: "aldea-classic-tshirt",
-  "buenos-aires": "remera-clasica-mujer",
-  bahamas: "remera-crop-mujer",
-  bali: "musculosa-bali",
-}
-
-function getGrowthPrice(modelId: string): number | null {
-  const key = MODEL_TO_GARMENT_KEY[modelId]
-  if (!key) return null
-  return getPartnerPlanPrice(key, "growth")
-}
-
-export default function B2BCatalog() {
+// growthByModel llega ya calculado desde el server (page.tsx): el precio Growth
+// "desde (1u)" final, sin el costo del que se deriva (regla innegociable).
+export default function B2BCatalog({
+  growthByModel,
+}: {
+  growthByModel: Record<string, number | null>
+}) {
+  const getGrowthPrice = (modelId: string): number | null => growthByModel[modelId] ?? null
   const [openModel, setOpenModel] = useState<B2BModel | null>(null)
   const [colorIdx, setColorIdx] = useState(0)
   const [imgIdx, setImgIdx] = useState(0)
@@ -340,7 +328,7 @@ export default function B2BCatalog() {
                       <div className="flex items-baseline justify-between mb-2">
                         <div className="text-sm">
                           <p className="font-semibold">Tu precio con plan Growth</p>
-                          <p className="text-xs text-muted-foreground">USD$50/mes · cualquier cantidad</p>
+                          <p className="text-xs text-muted-foreground">USD$50/mes</p>
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold tabular-nums text-primary">
