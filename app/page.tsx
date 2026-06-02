@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowRight, Zap, Shirt, Star, Sparkles, Palette, Wand2, Quote, Users, TrendingUp, ShieldCheck, Globe, Store, Eye, Flame } from "lucide-react"
-import { HOT_SALE_OFFERS, formatARS, getDiscountPercent } from "@/lib/offers"
+import { getActiveOffers, formatARS, getDiscountPercent } from "@/lib/offers"
 import Link from "next/link"
 import Image from "next/image"
 // Image history now fetches via /api/images/history (session-based)
@@ -37,6 +37,10 @@ export const metadata = {
 }
 
 export default function Home() {
+  // Ofertas activas — respeta startsAt/endsAt definido en lib/offers.ts.
+  // Si no hay activas, la seccion completa de Hot Sale no se renderiza.
+  const activeOffers = getActiveOffers()
+
   // MerchantReturnPolicy JSON-LD
   const returnPolicyJsonLd = {
     "@context": "https://schema.org",
@@ -371,7 +375,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Hot Sale — ofertas activas */}
+      {/* Hot Sale — ofertas activas. Si no hay campania vigente, la seccion no aparece. */}
+      {activeOffers.length > 0 && (
       <section className="py-16 md:py-20 border-t border-orange-500/20 bg-gradient-to-b from-orange-500/[0.04] via-transparent to-transparent">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10">
@@ -381,12 +386,12 @@ export default function Home() {
             </Badge>
             <h2 className="novamente-heading text-3xl md:text-4xl mb-3">OFERTAS DE LA SEMANA</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-base md:text-lg">
-              5 remeras oversize del mundial argentino con hasta 30% OFF — stock limitado.
+              {activeOffers.length} {activeOffers.length === 1 ? "oferta" : "ofertas"} con descuento — stock limitado.
             </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-5 mb-8">
-            {HOT_SALE_OFFERS.map((offer, i) => {
+            {activeOffers.map((offer, i) => {
               const discount = getDiscountPercent(offer)
               return (
                 <a
@@ -435,6 +440,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Cómo Funciona - de v88 */}
       <section className="py-16 md:py-24">

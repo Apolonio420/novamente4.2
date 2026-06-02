@@ -4,7 +4,7 @@ import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Flame, Clock, MessageCircle } from "lucide-react"
-import { HOT_SALE_OFFERS, formatARS, getDiscountPercent, type Offer } from "@/lib/offers"
+import { getActiveOffers, formatARS, getDiscountPercent, type Offer } from "@/lib/offers"
 
 export const revalidate = 1800 // ISR: 30 min
 
@@ -81,7 +81,31 @@ function buildOffersSchema(offers: Offer[]) {
 }
 
 export default function OfertasPage() {
-  const offers = HOT_SALE_OFFERS
+  const offers = getActiveOffers()
+
+  if (offers.length === 0) {
+    return (
+      <div className="container mx-auto px-4 py-20 md:py-32 text-center">
+        <Badge className="mb-4 bg-zinc-500/15 text-zinc-400 border-zinc-500/40 text-xs tracking-widest uppercase">
+          <Clock className="w-3 h-3 mr-1.5" />
+          Sin ofertas activas
+        </Badge>
+        <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">
+          No hay ofertas activas
+        </h1>
+        <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed mb-8">
+          Por ahora no hay promociones vigentes. Pronto vamos a tener nuevas ofertas — mientras
+          tanto podés ver todo nuestro catálogo.
+        </p>
+        <Link href="/">
+          <Button size="lg" variant="outline">
+            Volver al inicio
+          </Button>
+        </Link>
+      </div>
+    )
+  }
+
   const { itemList, breadcrumb } = buildOffersSchema(offers)
   const endsAt = offers[0]?.endsAt
   const endDate = endsAt ? new Date(endsAt) : null
@@ -101,8 +125,8 @@ export default function OfertasPage() {
           Ofertas Hot Sale
         </h1>
         <p className="text-muted-foreground text-lg max-w-3xl mx-auto leading-relaxed" data-speakable>
-          5 remeras oversize con hasta 30% OFF. Diseños exclusivos del mundial argentino, estampado DTG premium y stock
-          limitado. Envíos a todo el país.
+          {offers.length} {offers.length === 1 ? "remera oversize con descuento" : "remeras oversize con descuento"}.
+          Diseños exclusivos, estampado DTG premium y stock limitado. Envíos a todo el país.
         </p>
         {endDate && (
           <div className="inline-flex items-center gap-2 mt-6 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/30 text-sm text-orange-300">
