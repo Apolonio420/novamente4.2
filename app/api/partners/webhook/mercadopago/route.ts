@@ -173,6 +173,34 @@ export async function POST(request: NextRequest) {
         } catch (e) {
           console.error('Telegram notification failed:', e)
         }
+
+        // ── Meta CAPI — Purchase event para subscription de Partner ──
+        // event_id = externalReference para dedup con Pixel cliente si ya existe.
+        try {
+          const { sendCapiPurchase } = await import('@/lib/meta/capi')
+          const capiResult = await sendCapiPurchase(
+            {
+              orderId: String(externalReference || paymentDetails.id),
+              value: Number(paymentDetails.transaction_amount) || 0,
+              currency: paymentDetails.currency_id || 'ARS',
+              actionSource: 'website',
+              eventSourceUrl: `https://novamente.ar/workspace?tenant=${tenant.slug}`,
+            },
+            {
+              email: tenant.email || undefined,
+              externalId: String(tenantId),
+            }
+          )
+          if (capiResult.ok) {
+            console.log('✅ Meta CAPI Partner Purchase enviado:', tenant.name, '→ value:', paymentDetails.transaction_amount)
+          } else if (capiResult.skipped === 'not_configured') {
+            console.warn('⚠️ Meta CAPI no configurado — agregar META_PIXEL_ID y META_CAPI_ACCESS_TOKEN en Vercel')
+          } else {
+            console.error('❌ Meta CAPI falló (partner):', capiResult.error)
+          }
+        } catch (capiErr: any) {
+          console.error('❌ Exception Meta CAPI (partner):', capiErr.message)
+        }
       } else {
         console.error('Failed to activate tenant:', tenantId)
       }

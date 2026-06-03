@@ -256,6 +256,44 @@ export async function POST(request: NextRequest) {
         } catch (notifErr: any) {
           console.error("❌ Error enviando notificación de venta:", notifErr.message)
         }
+
+        // ── Meta Conversions API (CAPI) — server-side Purchase event ──
+        // Usa transaction_amount real de MP (no del cart cliente que puede estar vacío/stale).
+        // Dedup con event_id = order.id contra el Pixel browser-side.
+        // Si las env vars META_PIXEL_ID / META_CAPI_ACCESS_TOKEN faltan, no rompe el pago.
+        try {
+          const { sendCapiPurchase } = await import("@/lib/meta/capi")
+          const capiResult = await sendCapiPurchase(
+            {
+              orderId: String(order.id),
+              value: Number(paymentDetails.transaction_amount) || Number(order.total) || 0,
+              currency: paymentDetails.currency_id || (order as any).currency || "ARS",
+              items: (order.items || []).map((item: any) => ({
+                id: item.product_id || item.item_id || undefined,
+                quantity: item.quantity || 1,
+                price: item.unit_price || undefined,
+              })),
+              actionSource: "website",
+              eventSourceUrl: "https://novamente.ar/checkout/success",
+            },
+            {
+              email: order.customer_email || undefined,
+              phone: (order as any).customer_phone || undefined,
+              firstName: (order as any).customer_first_name || undefined,
+              lastName: (order as any).customer_last_name || undefined,
+              externalId: String(order.id),
+            }
+          )
+          if (capiResult.ok) {
+            console.log("✅ Meta CAPI Purchase enviado:", order.order_number, "→ value:", paymentDetails.transaction_amount)
+          } else if (capiResult.skipped === "not_configured") {
+            console.warn("⚠️ Meta CAPI no configurado — agregar META_PIXEL_ID y META_CAPI_ACCESS_TOKEN en Vercel")
+          } else {
+            console.error("❌ Meta CAPI falló:", capiResult.error)
+          }
+        } catch (capiErr: any) {
+          console.error("❌ Exception Meta CAPI:", capiErr.message)
+        }
       }
     } else {
       console.error("❌ Falló la actualización de la orden:", order.id)

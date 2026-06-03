@@ -114,7 +114,12 @@ export default function CheckoutSuccessPage() {
       }
     }
 
-    if (paid && snapshotItems.length > 0 && !purchaseTrackedRef.current) {
+    // GUARD (2026-06-03): solo disparar Purchase cliente si tenemos value > 0.
+    // Esto evita el bug "todos los Purchase mandan el mismo value" que Meta detectó
+    // (cart vacío post-pago → value=0 → Meta atribuye ROAS plano).
+    // El CAPI server-side en /api/webhooks/mercadopago cubre el caso con value=0
+    // disparando el Purchase con transaction_amount real de MP (dedup por event_id=orderId).
+    if (paid && snapshotItems.length > 0 && snapshotValue > 0 && !purchaseTrackedRef.current) {
       purchaseTrackedRef.current = true
       const orderId = externalReference || merchantOrderId || paymentId || undefined
       console.log(`[PIXEL] Purchase dispatching (source=${snapshotSource}, value=${snapshotValue}, items=${snapshotItems.length})`)
