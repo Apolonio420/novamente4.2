@@ -96,7 +96,7 @@ const faqSchema = {
       name: "¿Cómo se comparan los precios entre planes?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Los partners Starter pagan el precio publicado en /b2b-precios-2026 (por ejemplo, una remera Aldea $25.700 en lugar de $28.600 retail). Los partners Growth y Pro acceden a un precio aún más competitivo (Aldea $23.670, Buzo Hoodie $31.170) que multiplica el margen al vender a retail web. Mismo precio para todos los colores dentro de cada familia.",
+        text: "Los partners Starter pagan el precio publicado en /b2b-precios-2026 (por ejemplo, una remera Aldea $25.800 en lugar de $28.600 retail). Los partners Growth y Pro acceden a un precio aún más competitivo (Aldea $23.670, Buzo Hoodie $31.170) que multiplica el margen al vender a retail web. Mismo precio para todos los colores dentro de cada familia.",
       },
     },
     {

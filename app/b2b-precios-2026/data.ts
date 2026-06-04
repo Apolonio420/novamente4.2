@@ -130,7 +130,7 @@ export const MODELS: B2BModel[] = [
     fabric: "Algodon peinado 100% premium, fibra larga",
     sizes: ["2XS", "XS", "S", "M", "L", "XL", "2XL"],
     measurementsChart: "/products/size-charts/over.png",
-    prices: { partner: 25400, starter: 24700, pro: 24000, drop: 24400, bulk: 24400 },
+    prices: { partner: 26600, starter: 25900, pro: 25100, drop: 24300, bulk: 23600 },
     colors: [
       {
         name: "Blanco",
@@ -170,7 +170,7 @@ export const MODELS: B2BModel[] = [
     fabric: "Algodon 100% de alta densidad, calce regular",
     sizes: ["S", "M", "L", "XL", "XXL"],
     measurementsChart: "/products/tshirt-aldea-negro-medidas.png",
-    prices: { partner: 25700, starter: 24700, pro: 23700, drop: 22700, bulk: 23600 },
+    prices: { partner: 25800, starter: 25100, pro: 24400, drop: 23800, bulk: 23600 },
     colors: [
       {
         name: "Negro",
@@ -200,7 +200,7 @@ export const MODELS: B2BModel[] = [
     fabric: "Algodon suave premium, corte femenino",
     sizes: ["S", "M", "L", "XL", "2XL"],
     measurementsChart: "/products/remera-clasica-woman-blanca/Medidas2.png",
-    prices: { partner: 25700, starter: 24700, pro: 23700, drop: 22700, bulk: 23600 },
+    prices: { partner: 25800, starter: 25100, pro: 24400, drop: 23800, bulk: 23600 },
     colors: [
       {
         name: "Blanca",
@@ -230,7 +230,7 @@ export const MODELS: B2BModel[] = [
     fabric: "Algodon suave, calce relajado y moderno",
     sizes: ["S", "M", "L", "XL", "2XL"],
     measurementsChart: "/products/remera-crop-de-mujer-negra/Medidas1.png",
-    prices: { partner: 19300, starter: 18800, pro: 18200, drop: 18800, bulk: 18800 },
+    prices: { partner: 20800, starter: 20300, pro: 19800, drop: 19300, bulk: 18900 },
     colors: [
       {
         name: "Negra",
@@ -282,7 +282,7 @@ export const MODELS: B2BModel[] = [
     fabric: "Morley premium elastico, ideal para verano",
     sizes: ["S", "M", "L", "XL", "2XL"],
     measurementsChart: "/products/musculosa-bali-blanca/Medidas3.png",
-    prices: { partner: 19500, starter: 19400, pro: 19200, drop: 19000, bulk: 18800 },
+    prices: { partner: 20800, starter: 20700, pro: 20500, drop: 20300, bulk: 20100 },
     colors: [
       {
         name: "Blanca",

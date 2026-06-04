@@ -61,6 +61,12 @@ export const GROWTH_TIER_DELTA_ARS = {
   bulk: 200,
 } as const
 
+// REGLA DEL 8% (mantener al cambiar costos/precios): pasarse a Growth debe ahorrar
+// al menos 8% en el tier de entrada (Partner 1u). Es decir:
+//   on_demand (Partner normal) >= getGrowthPrice(key,'partner') / 0.92  (redondeado hacia arriba a la centena)
+// Al actualizar costos: recalcular Growth (cost + delta) y, si algun on_demand no
+// cumple, subirlo al minimo que la satisface. Fuente: Excel 'Plan_Precios_Futuro'.
+
 export type GrowthTier = keyof typeof GROWTH_TIER_DELTA_ARS
 
 /** Campo de precio por volumen (plan starter) asociado a cada GrowthTier. */
@@ -121,10 +127,10 @@ export const GARMENT_PRICING: Record<string, GarmentPricing> = {
     key: 'aldea-classic-tshirt',
     name: 'Aldea Classic Fit T-Shirt',
     cost: 22670,
-    on_demand: 25700,
-    b2b_starter: 24700,
-    b2b_pro: 23700,
-    b2b_drop: 22700,
+    on_demand: 25800,
+    b2b_starter: 25100,
+    b2b_pro: 24400,
+    b2b_drop: 23800,
     b2b_bulk: 23600,
     b2c_suggested: 28600,
   },
@@ -132,11 +138,11 @@ export const GARMENT_PRICING: Record<string, GarmentPricing> = {
     key: 'aura-oversize-tshirt',
     name: 'Aura Oversize T-Shirt',
     cost: 23470,
-    on_demand: 25400,
-    b2b_starter: 24700,
-    b2b_pro: 24000,
-    b2b_drop: 24400,
-    b2b_bulk: 24400,
+    on_demand: 26600,
+    b2b_starter: 25900,
+    b2b_pro: 25100,
+    b2b_drop: 24300,
+    b2b_bulk: 23600,
     b2c_suggested: 31000,
   },
   // Lienzo (Canvas) discontinuado del catalogo partner el 2026-05-18.
@@ -149,10 +155,10 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
     key: 'remera-clasica-mujer',
     name: 'Remera Clásica Mujer',
     cost: 22670,
-    on_demand: 25700,
-    b2b_starter: 24700,
-    b2b_pro: 23700,
-    b2b_drop: 22700,
+    on_demand: 25800,
+    b2b_starter: 25100,
+    b2b_pro: 24400,
+    b2b_drop: 23800,
     b2b_bulk: 23600,
     b2c_suggested: 28600,
   },
@@ -160,11 +166,11 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
     key: 'remera-crop-mujer',
     name: 'Remera Crop Mujer',
     cost: 18100,
-    on_demand: 19300,
-    b2b_starter: 18800,
-    b2b_pro: 18200,
-    b2b_drop: 18800,
-    b2b_bulk: 18800,
+    on_demand: 20800,
+    b2b_starter: 20300,
+    b2b_pro: 19800,
+    b2b_drop: 19300,
+    b2b_bulk: 18900,
     b2c_suggested: 23500,
   },
   'buzo-cuello-redondo': {
@@ -193,11 +199,11 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
     key: 'musculosa-bali',
     name: 'Musculosa Bali',
     cost: 18100,
-    on_demand: 19500,
-    b2b_starter: 19400,
-    b2b_pro: 19200,
-    b2b_drop: 19000,
-    b2b_bulk: 18800,
+    on_demand: 20800,
+    b2b_starter: 20700,
+    b2b_pro: 20500,
+    b2b_drop: 20300,
+    b2b_bulk: 20100,
     b2c_suggested: 21800,
   },
 }

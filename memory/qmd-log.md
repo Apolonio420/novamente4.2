@@ -1,5 +1,16 @@
 # QMD Log - novamente4.2
 
+### [2026-06-02b] Ronda 2 — Suba precios venta partner + Growth único por producto
+**Goal**: Subir precios de venta a partners (no toca costos) y confirmar Growth único por producto (ya no varía por color). Fuente: Excel pestaña 'Plan_Precios_Futuro'.
+**Done**:
+- `lib/partners/garment-pricing.ts`: nuevos precios partner (on_demand/starter/pro/drop/bulk) para Aura (26600/25900/25100/24300/23600), Aldea y Mujer (25800/25100/24400/23800/23600), Crop (20800/20300/19800/19300/18900), Musculosa (20800/20700/20500/20300/20100). Crewneck/Hoodie sin cambio. **Costos sin cambio** → Growth (cost+delta) idéntico a la tabla del Excel, no se tocó código de Growth. Agregada nota de la REGLA DEL 8% (on_demand >= growthPartner/0.92, redondeo centena).
+- `app/b2b-precios-2026/data.ts`: MODELS prices para aura/aldea/buenos-aires/bahamas/bali.
+- `lib/catalog/products.ts`: costARS (=Partner 1u) aura 25400→26600, aldea/mujer 25700→25800, crop 19300→20800, musculosa 19500→20800.
+- `app/studio/planes/page.tsx`: corregido ejemplo Starter hardcodeado Aldea 25.700→25.800 (tabla dinámica y Growth FAQ ya estaban OK).
+**Decisions**: Growth = único por producto (= cost peor color + delta tier); como cost no cambió, no se regeneró nada. B2C intocable. Regla 8% verificada para los 7 productos (todos cumplen).
+**Verify**: tsc OK, next build OK (203 pág). Prerender b2b: precios nuevos presentes, 0 hits de costo (no leak), growth props intactos. studio/planes sin 25.700 viejo.
+**Pending**: commit+push (en curso). Excel .xlsx no versionado (costos/márgenes internos).
+
 ### [2026-06-02] Actualización costos Dreamful + precios B2B/Partner + tier Growth
 **Goal**: Reflejar nuevos costos de proveedor (Dreamful), reajustar precios partner con margen negativo y agregar el nuevo nivel de precio Partners Growth (suscriptores plan growth). Sin tocar B2C.
 **Done**:

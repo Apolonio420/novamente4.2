@@ -2,8 +2,9 @@
 
 **Project**: novamente4.2 (partner storefront platform)
 **Branch**: main
-**Last action**: Actualización costos Dreamful + precios partner/B2B + nuevo tier Growth (2026-06-02).
-**State**: tsc PASS, next build PASS. Sin commit/push (pendiente revisión humana de Juan).
+**Last action**: Ronda 2 — suba precios venta partner + Growth único por producto (2026-06-02b). Antes: costos Dreamful + tier Growth (2026-06-02).
+**State**: tsc PASS, next build PASS (203 pág).
+**Regla 8%**: on_demand >= getGrowthPrice(key,'partner')/0.92 (centena). Recalcular al cambiar costos (ver garment-pricing.ts).
 **Blockers**: ninguno técnico.
 
 ## Completado esta sesión (precios Dreamful 2026-06)
