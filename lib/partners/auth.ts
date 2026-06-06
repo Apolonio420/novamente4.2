@@ -3,12 +3,48 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getTenantByUserId, getTenantById } from './tenant'
 import type { Tenant } from './types'
 
-const ADMIN_EMAILS = [
+export const ADMIN_EMAILS = [
   'apolonio@novamente.ar',
   'sambu@novamente.ar',
   'moishe@novamente.ar',
   'izzaga@novamente.ar',
 ]
+
+/**
+ * Resolve the authenticated user from a request and assert they are an admin.
+ * Returns the userId + email when admin, or null otherwise.
+ * Same token extraction as getRequestTenant (Authorization header → sb cookie).
+ */
+export async function getAdminUser(
+  request: NextRequest,
+): Promise<{ userId: string; email: string } | null> {
+  const authHeader = request.headers.get('authorization')
+  let token: string | null = authHeader?.replace('Bearer ', '') ?? null
+
+  if (!token) {
+    for (const cookie of request.cookies.getAll()) {
+      if (cookie.name.startsWith('sb-') && cookie.name.endsWith('-auth-token')) {
+        try {
+          const parsed = JSON.parse(cookie.value)
+          token = Array.isArray(parsed) ? parsed[0] : parsed
+        } catch {
+          token = cookie.value
+        }
+        break
+      }
+    }
+  }
+
+  if (!token) return null
+
+  const { data: userData, error } = await supabaseAdmin.auth.getUser(token)
+  if (error || !userData?.user) return null
+
+  const email = userData.user.email?.toLowerCase() || ''
+  if (!ADMIN_EMAILS.includes(email)) return null
+
+  return { userId: userData.user.id, email }
+}
 
 /**
  * Extract the authenticated user + their tenant from a request.
