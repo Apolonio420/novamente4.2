@@ -156,7 +156,8 @@ export default function CatalogPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  // Producto pendiente de confirmar borrado (abre el modal de confirmacion)
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null)
 
   // Form fields
   const [formName, setFormName] = useState('')
@@ -309,7 +310,6 @@ export default function CatalogPage() {
     setFormBrandValues('')
     setFormGarmentKey('')
     setEditingProduct(null)
-    setConfirmDelete(false)
   }
 
   const openCreateForm = () => {
@@ -347,7 +347,6 @@ export default function CatalogPage() {
     setFormGarmentKey((m.garmentKey as string) || '')
 
     setEditingProduct(product)
-    setConfirmDelete(false)
     setFormMode('edit')
   }
 
@@ -452,16 +451,12 @@ export default function CatalogPage() {
     }
   }
 
-  const handleDelete = async () => {
-    if (!editingProduct) return
-    if (!confirmDelete) {
-      setConfirmDelete(true)
-      return
-    }
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return
 
     setDeleting(true)
     try {
-      const res = await authFetch(`/api/partners/catalog/${editingProduct.id}`, {
+      const res = await authFetch(`/api/partners/catalog/${deleteTarget.id}`, {
         method: 'DELETE',
       })
       if (!res.ok) {
@@ -469,14 +464,15 @@ export default function CatalogPage() {
         throw new Error(data.error || 'Error al eliminar producto')
       }
       showToast('Producto eliminado', 'success')
-      closeForm()
+      // Si estabamos editando justo ese producto, cerramos el panel
+      if (editingProduct?.id === deleteTarget.id) closeForm()
+      setDeleteTarget(null)
       await fetchProducts()
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Error inesperado'
       showToast(message, 'error')
     } finally {
       setDeleting(false)
-      setConfirmDelete(false)
     }
   }
 
@@ -740,6 +736,20 @@ export default function CatalogPage() {
               <div className="absolute top-3 right-3 z-10">
                 <div className={`w-2.5 h-2.5 rounded-full ${STATUS_DOT[product.status] || STATUS_DOT.draft} ring-2 ring-zinc-900/80`} />
               </div>
+
+              {/* Delete button (aparece al hover, arriba a la izquierda) */}
+              <button
+                type="button"
+                aria-label={`Eliminar ${product.name}`}
+                title="Eliminar producto"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setDeleteTarget(product)
+                }}
+                className="absolute top-3 left-3 z-20 w-8 h-8 rounded-lg bg-zinc-950/70 backdrop-blur-sm border border-zinc-700/60 flex items-center justify-center text-zinc-300 opacity-0 group-hover:opacity-100 hover:bg-red-950/80 hover:text-red-400 hover:border-red-700/60 transition-all"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
 
               {/* Image area */}
               <div className="h-[200px] relative overflow-hidden">
@@ -1302,24 +1312,16 @@ export default function CatalogPage() {
 
             {/* Panel footer */}
             <div className="sticky bottom-0 border-t border-zinc-800/80 bg-zinc-950/95 backdrop-blur-sm px-6 py-4">
-              {formMode === 'edit' && (
+              {formMode === 'edit' && editingProduct && (
                 <div className="mb-4 pb-4 border-b border-zinc-800/50">
                   <Button
                     variant="outline"
-                    onClick={handleDelete}
+                    onClick={() => setDeleteTarget(editingProduct)}
                     disabled={deleting}
-                    className={`w-full justify-center ${
-                      confirmDelete
-                        ? 'border-red-600 bg-red-950/50 text-red-400 hover:bg-red-950'
-                        : 'border-zinc-800 text-zinc-500 hover:bg-zinc-900 hover:text-red-400 hover:border-red-800/50'
-                    }`}
+                    className="w-full justify-center border-red-900/50 bg-red-950/20 text-red-400 hover:bg-red-950/50 hover:text-red-300 hover:border-red-700/60"
                   >
-                    {deleting ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    ) : (
-                      <Trash2 className="w-4 h-4 mr-2" />
-                    )}
-                    {confirmDelete ? 'Confirmar eliminacion' : 'Eliminar producto'}
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Eliminar producto
                   </Button>
                 </div>
               )}
@@ -1477,6 +1479,55 @@ export default function CatalogPage() {
               >
                 {bulkSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Aplicar a todos
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ============================================================== */}
+      {/* Delete confirmation modal                                       */}
+      {/* ============================================================== */}
+      {deleteTarget && (
+        <>
+          <div
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => !deleting && setDeleteTarget(null)}
+          />
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[61] w-full max-w-sm bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-950/60 border border-red-900/50 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-zinc-100">Eliminar producto</h3>
+                  <p className="text-sm text-zinc-400 mt-1 leading-relaxed">
+                    Vas a eliminar <span className="font-semibold text-zinc-200">{deleteTarget.name}</span>. Esta accion no se puede deshacer.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-zinc-800/80 px-6 py-4 flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="flex-1 border-zinc-800 text-zinc-300 hover:bg-zinc-900 h-11"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                className="flex-1 bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/20 h-11 disabled:opacity-40"
+              >
+                {deleting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4 mr-2" />
+                )}
+                Eliminar
               </Button>
             </div>
           </div>
