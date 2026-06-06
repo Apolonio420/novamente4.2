@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { buildAuthRedirect } from '@/lib/auth-redirect'
 import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react'
 
 export default function PartnerLoginPage() {
@@ -72,7 +73,7 @@ function LoginForm() {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`,
+          redirectTo: buildAuthRedirect(`/auth/callback?next=${encodeURIComponent(redirectTo)}`),
         },
       })
       if (oauthError) {
@@ -94,7 +95,7 @@ function LoginForm() {
 
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/workspace/settings`,
+        redirectTo: buildAuthRedirect('/partners/reset-password'),
       })
 
       if (resetError) {

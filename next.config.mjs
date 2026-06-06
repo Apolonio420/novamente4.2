@@ -156,6 +156,17 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // Canonicalización de dominio: apex (sin www) → www.
+      // www es el host canónico en todo el stack: metadataBase/canonical (app/layout.tsx),
+      // Site URL + allowlist de Supabase Auth, y el redirect URI aprobado de TikTok.
+      // Match de host EXACTO 'novamente.ar' → no toca www. / admin. / cdn. / localhost,
+      // por lo que no hay riesgo de loop. Preserva path y querystring.
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'novamente.ar' }],
+        destination: 'https://www.novamente.ar/:path*',
+        permanent: true,
+      },
       {
         source: '/meta/catalog.tsv',
         destination: '/meta/catalog',

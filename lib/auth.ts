@@ -1,4 +1,5 @@
 import { supabase } from "./supabase"
+import { buildAuthRedirect } from "./auth-redirect"
 
 export interface User {
   id: string
@@ -41,7 +42,7 @@ export async function signInWithGoogle() {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: buildAuthRedirect("/auth/callback"),
       },
     })
 

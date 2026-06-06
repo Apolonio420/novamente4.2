@@ -20,6 +20,9 @@ import {
   ArrowRight,
   Download,
   Trash2,
+  Lock,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +30,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { supabase } from '@/lib/supabase'
 
 // --- Types ---
 
@@ -122,6 +126,11 @@ export default function SettingsPage() {
   const [confirmingStatusChange, setConfirmingStatusChange] = useState(false)
   const [statusChanging, setStatusChanging] = useState(false)
   const [cbuError, setCbuError] = useState<string | null>(null)
+  // Cambio de contraseña
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
 
   const initialRef = useRef<SettingsData | null>(null)
 
@@ -129,6 +138,32 @@ export default function SettingsPage() {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3500)
   }, [])
+
+  const handleChangePassword = useCallback(async () => {
+    if (newPassword.length < 8) {
+      showToast('La contraseña debe tener al menos 8 caracteres', 'error')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      showToast('Las contraseñas no coinciden', 'error')
+      return
+    }
+    setChangingPassword(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) {
+        showToast(error.message, 'error')
+        return
+      }
+      showToast('Contraseña actualizada', 'success')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch {
+      showToast('Error al actualizar la contraseña', 'error')
+    } finally {
+      setChangingPassword(false)
+    }
+  }, [newPassword, confirmPassword, showToast])
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -794,6 +829,68 @@ export default function SettingsPage() {
                 Letras, números, punto y guion. Máximo 50 caracteres.
               </p>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="border-b border-zinc-800 my-8" />
+
+      {/* ── Seguridad / Contraseña ── */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Lock className="h-4 w-4 text-zinc-500" />
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">Seguridad</h2>
+        </div>
+        <Card className="bg-zinc-900/60 border-zinc-800">
+          <CardContent className="pt-6 space-y-5">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-zinc-200">Cambiar contraseña</p>
+              <p className="text-xs text-zinc-500">
+                Elegí una contraseña nueva para tu cuenta. Mínimo 8 caracteres.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new_password" className="text-zinc-300">Nueva contraseña</Label>
+              <div className="relative">
+                <Input
+                  id="new_password"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
+                  autoComplete="new-password"
+                  className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword((v) => !v)}
+                  aria-label={showNewPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm_password" className="text-zinc-300">Repetir contraseña</Label>
+              <Input
+                id="confirm_password"
+                type={showNewPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repetí la contraseña"
+                autoComplete="new-password"
+                className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+              />
+            </div>
+            <Button
+              onClick={handleChangePassword}
+              disabled={changingPassword || !newPassword || !confirmPassword}
+              className="bg-violet-600 hover:bg-violet-500 text-white gap-2 disabled:opacity-40"
+            >
+              {changingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+              Actualizar contraseña
+            </Button>
           </CardContent>
         </Card>
       </div>
