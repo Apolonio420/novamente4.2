@@ -1022,8 +1022,10 @@ export default function DesignStudioPage() {
           </div>
         )}
 
-        {/* Compact controls bar: style + side */}
-        <div className={`flex items-center gap-2 px-4 py-2 border-t border-zinc-800/50 bg-zinc-900/30 overflow-x-auto ${studioMode === 'upload' ? 'hidden' : ''}`}>
+        {/* Compact controls bar: style + side.
+            Mobile: flex-wrap para que TODOS los controles (incl. Frente/Espalda)
+            sean visibles sin scroll horizontal oculto. Desktop: single-row scroll. */}
+        <div className={`flex flex-wrap items-center gap-2 px-4 py-2 border-t border-zinc-800/50 bg-zinc-900/30 lg:flex-nowrap lg:overflow-x-auto ${studioMode === 'upload' ? 'hidden' : ''}`}>
           {/* Style selector */}
           <button
             onClick={() => setStyleModalOpen(true)}
@@ -1033,13 +1035,21 @@ export default function DesignStudioPage() {
             {styles.find(s => s.key === selectedStyle)?.name || 'Sin estilo'}
           </button>
 
-          {/* Current garment indicator (click opens right panel on mobile) */}
+          {/* Current garment + color indicator (click opens right panel on mobile).
+              Muestra el color actual (dot + nombre) para que el partner descubra
+              que prenda Y color se eligen acá — antes "stone wash" quedaba escondido. */}
           <button
             onClick={() => setRightPanelOpen(!rightPanelOpen)}
+            aria-label="Elegir prenda y color"
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-800 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors whitespace-nowrap lg:hidden"
           >
             <Shirt className="h-3 w-3" />
-            {garments.find(g => g.key === selectedGarment)?.name || 'Prenda'}
+            <span>{garments.find(g => g.key === selectedGarment)?.name || 'Prenda'}</span>
+            <span
+              className="w-2.5 h-2.5 rounded-full border border-zinc-500 flex-shrink-0"
+              style={{ backgroundColor: COLOR_MAP[selectedColor] || selectedColor }}
+            />
+            <span className="text-zinc-400">{COLOR_LABELS[selectedColor] || selectedColor}</span>
             <ChevronRight className={`h-3 w-3 transition-transform ${rightPanelOpen ? 'rotate-90' : ''}`} />
           </button>
 
@@ -1251,6 +1261,16 @@ export default function DesignStudioPage() {
           </p>
         </div>
       </div>
+
+      {/* Backdrop del drawer en mobile — al abrirse oscurece el fondo y permite
+          cerrar tocando afuera (affordance de que se abrió un panel). */}
+      {rightPanelOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm lg:hidden"
+          onClick={() => setRightPanelOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       {/* ---- Right Panel: Garments + Pricing ---- */}
       <div className={`
