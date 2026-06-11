@@ -5,6 +5,7 @@ import { getTenantBySlug } from "@/lib/partners/tenant"
 import { getProductBySlug } from "@/lib/partners/catalog"
 import { dbProductToProduct } from "@/lib/partners/product-metadata"
 import { ProductDetail } from "./ProductDetail"
+import { ProductReviews } from "@/components/partners/product-reviews"
 import type { Product } from "@/src/data/partners"
 
 interface ProductPageProps {
@@ -174,6 +175,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
             brandLogo={tenant.logo_url}
             brandColor={tenant.primary_color}
           />
+          <div className="container mx-auto px-4 pb-12">
+            <ProductReviews tenantSlug={brand} productId={dbProduct.id} />
+          </div>
         </>
       )
     }

@@ -70,6 +70,7 @@ const navSections: NavSection[] = [
       { label: 'Leads', href: '/workspace/leads', icon: Users },
       { label: 'Pedidos', href: '/workspace/orders', icon: ShoppingBag },
       { label: 'Finanzas', href: '/workspace/finanzas', icon: Wallet },
+      { label: 'Reseñas', href: '/workspace/reviews', icon: MessageSquare },
       { label: 'Descuentos', href: '/workspace/discounts', icon: Tag },
       { label: 'Analytics', href: '/workspace/analytics', icon: BarChart3, requiredPlan: 'growth' },
     ],
