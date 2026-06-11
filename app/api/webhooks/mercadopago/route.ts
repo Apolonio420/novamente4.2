@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getOrderByExternalReference, updateOrder } from "@/lib/db"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { MercadoPagoConfig, Payment } from "mercadopago"
+import { creditOrderMargin } from "@/lib/partners/ledger"
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -233,6 +234,14 @@ export async function POST(request: NextRequest) {
             } else {
               console.log("✅ Venta bridgeada a partner_orders para tenant:", tenantId)
             }
+
+            // Ledger: acreditar el margen del partner por esta venta (idempotente)
+            await creditOrderMargin({
+              id: order.id as string,
+              tenant_id: tenantId,
+              order_number: order.order_number,
+              items: order.items as any[],
+            })
           } catch (bridgeErr: any) {
             console.error("❌ Exception bridgeando partner_orders:", bridgeErr.message)
           }

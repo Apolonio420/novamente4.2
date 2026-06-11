@@ -33,6 +33,7 @@ import {
   Check,
   Shield,
   Video,
+  Wallet,
 } from 'lucide-react'
 import { AssistantProvider } from '@/lib/assistant/assistant-context'
 import type { LucideIcon } from 'lucide-react'
@@ -68,6 +69,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Leads', href: '/workspace/leads', icon: Users },
       { label: 'Pedidos', href: '/workspace/orders', icon: ShoppingBag },
+      { label: 'Finanzas', href: '/workspace/finanzas', icon: Wallet },
       { label: 'Descuentos', href: '/workspace/discounts', icon: Tag },
       { label: 'Analytics', href: '/workspace/analytics', icon: BarChart3, requiredPlan: 'growth' },
     ],
