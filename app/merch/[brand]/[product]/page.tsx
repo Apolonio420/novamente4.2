@@ -171,6 +171,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
             }}
             brandSlug={brand}
             tenantId={tenant.id}
+            brandLogo={tenant.logo_url}
+            brandColor={tenant.primary_color}
           />
         </>
       )

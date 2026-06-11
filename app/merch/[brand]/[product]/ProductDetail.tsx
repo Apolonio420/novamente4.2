@@ -29,9 +29,11 @@ interface ProductDetailProps {
   partner: PartnerInfo
   brandSlug: string
   tenantId?: string
+  brandLogo?: string | null
+  brandColor?: string
 }
 
-export function ProductDetail({ product, partner, brandSlug, tenantId }: ProductDetailProps) {
+export function ProductDetail({ product, partner, brandSlug, tenantId, brandLogo, brandColor }: ProductDetailProps) {
   const [selectedColor, setSelectedColor] = useState(product.colors[0]?.value ?? "")
   const [selectedSize, setSelectedSize] = useState(product.sizes[0] ?? "")
   const [quantity, setQuantity] = useState(1)
@@ -104,6 +106,10 @@ export function ProductDetail({ product, partner, brandSlug, tenantId }: Product
       quantity: quantity,
       image: selectedColorData?.images.front || '',
       tenantId: tenantId,
+      brandSlug,
+      brandName: partner.name,
+      brandLogo,
+      brandColor,
     })
 
     fpixel.event("AddToCart", {
@@ -141,6 +147,10 @@ export function ProductDetail({ product, partner, brandSlug, tenantId }: Product
       quantity: quantity,
       image: selectedColorData?.images.front || '',
       tenantId: tenantId,
+      brandSlug,
+      brandName: partner.name,
+      brandLogo,
+      brandColor,
     })
 
     fpixel.event("AddToCart", {

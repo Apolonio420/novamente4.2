@@ -16,6 +16,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { Separator } from "@/components/ui/separator"
 import { DiscountInput } from "@/components/checkout/DiscountInput"
+import { SHIPPING, shippingCostFor } from "@/lib/shipping-config"
+import { StoreBrandBar } from "@/components/checkout/StoreBrandBar"
 
 interface CustomerData {
   email: string
@@ -76,9 +78,8 @@ export default function CheckoutPage() {
 
   // Calcular totales usando exactamente los precios del carrito
   const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0)
-  const shippingThreshold = 85000
-  const baseShippingByZone = shippingZone === 'BA' ? 7000 : 9000
-  const shippingCost = subtotal >= shippingThreshold ? 0 : baseShippingByZone
+  const shippingThreshold = SHIPPING.FREE_THRESHOLD
+  const shippingCost = shippingCostFor(subtotal, shippingZone)
 
   // Estimación llegada — días hábiles desde hoy: BA 3-5, Resto 5-7
   // (incluye producción on-demand DTG ~2 días + envío)
@@ -369,6 +370,8 @@ export default function CheckoutPage() {
         </Link>
         <h1 className="text-3xl font-bold">Checkout</h1>
       </div>
+
+      <StoreBrandBar />
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Información del cliente */}

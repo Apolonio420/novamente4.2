@@ -33,6 +33,11 @@ export interface CartItem {
     side: "front" | "back"
   }
   tenantId?: string
+  // Branding de la tienda partner de origen (para carrito/checkout brandeados)
+  brandSlug?: string
+  brandName?: string
+  brandLogo?: string | null
+  brandColor?: string
 }
 
 interface CartStore {

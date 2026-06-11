@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { formatCurrency } from "@/lib/utils"
+import { SHIPPING } from "@/lib/shipping-config"
+import { StoreBrandBar } from "@/components/checkout/StoreBrandBar"
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, Loader2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -130,6 +132,8 @@ export default function CartPage() {
           {getTotalItems()} {getTotalItems() === 1 ? "producto" : "productos"}
         </Badge>
       </div>
+
+      <StoreBrandBar />
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Visor grande */}
@@ -370,16 +374,18 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>Envio</span>
-                  <span className="text-green-600">{getTotalPrice() >= 100000 ? "Gratis" : formatCurrency(5000)}</span>
+                  <span className="text-green-600">
+                    {getTotalPrice() >= SHIPPING.FREE_THRESHOLD ? "Gratis" : `desde ${formatCurrency(SHIPPING.BA)}`}
+                  </span>
                 </div>
-                {getTotalPrice() >= 100000 && (
+                {getTotalPrice() >= SHIPPING.FREE_THRESHOLD && (
                   <div className="text-sm text-green-600">
-                    Envio gratis por compras mayores a {formatCurrency(100000)}!
+                    Envio gratis por compras mayores a {formatCurrency(SHIPPING.FREE_THRESHOLD)}!
                   </div>
                 )}
-                {getTotalPrice() < 100000 && (
+                {getTotalPrice() < SHIPPING.FREE_THRESHOLD && (
                   <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                    Agrega {formatCurrency(100000 - getTotalPrice())} mas para envio gratuito
+                    Agrega {formatCurrency(SHIPPING.FREE_THRESHOLD - getTotalPrice())} mas para envio gratuito
                   </div>
                 )}
               </div>
@@ -388,7 +394,7 @@ export default function CartPage() {
 
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span>{formatCurrency(getTotalPrice() + (getTotalPrice() >= 100000 ? 0 : 5000))}</span>
+                <span>{formatCurrency(getTotalPrice() + (getTotalPrice() >= SHIPPING.FREE_THRESHOLD ? 0 : SHIPPING.BA))}</span>
               </div>
 
               <div className="space-y-3 pt-4">
