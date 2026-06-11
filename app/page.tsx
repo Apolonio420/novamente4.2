@@ -6,8 +6,8 @@ import { ImageHistory } from "@/components/ImageHistory"
 const StyleGallery = dynamic(() => import("@/components/StyleGallery").then(m => m.StyleGallery), {
   loading: () => <div className="h-96 animate-pulse bg-zinc-900 rounded-2xl" />,
 })
-const HomeGeneratorWrapper = dynamic(() => import("@/components/HomeGeneratorWrapper").then(m => m.HomeGeneratorWrapper), {
-  loading: () => <div className="h-[500px] animate-pulse bg-zinc-900 rounded-2xl" />,
+const CrearLauncher = dynamic(() => import("@/components/CrearLauncher").then(m => m.CrearLauncher), {
+  loading: () => <div className="h-[340px] animate-pulse bg-zinc-900 rounded-2xl" />,
 })
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -492,20 +492,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Generador de Imágenes */}
+      {/* Generador de Diseños — launcher hacia /crear (el flujo completo vive ahí) */}
       <section id="generator-section" className="scroll-mt-24 py-8 md:py-10">
         <div className="container mx-auto">
-          <h2 className="mb-4 text-center text-base md:text-lg font-medium tracking-tight text-zinc-100">
-            GENERADOR DE DISEÑOS
-          </h2>
-          <p className="mb-6 text-center text-sm text-zinc-400">
-            Elegí tamaño, estilo y generá con IA.
-          </p>
-          <div className="bg-card/50 backdrop-blur-sm rounded-xl p-6 md:p-8 shadow-lg border border-white/10">
-            <Suspense fallback={<div className="h-96 w-full bg-muted/30 animate-pulse rounded-lg"></div>}>
-              <HomeGeneratorWrapper />
-            </Suspense>
-          </div>
+          <CrearLauncher />
         </div>
       </section>
 

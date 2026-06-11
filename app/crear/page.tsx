@@ -55,12 +55,19 @@ export default function CrearPage() {
     designsLast24h: number
     totalOrders: number
   } | null>(null)
+  // Prompt precargado desde la landing (?prompt=...) — leído de window para
+  // evitar el requisito de Suspense de useSearchParams
+  const [initialPrompt, setInitialPrompt] = useState<string | null>(null)
 
   useEffect(() => {
     fetch("/api/public/social-proof")
       .then((r) => r.json())
       .then((d) => setSocialProof({ designsLast24h: d.designsLast24h ?? 0, totalOrders: d.totalOrders ?? 0 }))
       .catch(() => {})
+    try {
+      const p = new URLSearchParams(window.location.search).get("prompt")
+      if (p && p.trim().length >= 3) setInitialPrompt(p.trim().slice(0, 500))
+    } catch { /* noop */ }
   }, [])
 
   return (
@@ -182,7 +189,7 @@ export default function CrearPage() {
 
       {/* Mode content */}
       <main className="mx-auto max-w-7xl px-3 sm:px-4 py-4 sm:py-6">
-        {mode === "chat" && <DesignChat session={session} setSession={setSession} />}
+        {mode === "chat" && <DesignChat session={session} setSession={setSession} initialPrompt={initialPrompt} />}
         {mode === "canvas" && <DesignCanvas session={session} setSession={setSession} />}
         {mode === "lifestyle" && <LifestylePanel session={session} />}
       </main>

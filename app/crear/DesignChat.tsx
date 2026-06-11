@@ -116,9 +116,12 @@ function isLikelyNewConcept(prompt: string, lastPrompt: string): boolean {
 export function DesignChat({
   session,
   setSession,
+  initialPrompt,
 }: {
   session: DesignSession
   setSession: React.Dispatch<React.SetStateAction<DesignSession>>
+  /** Prompt que viene de la landing (?prompt=) — auto-genera al montar */
+  initialPrompt?: string | null
 }) {
   const { toast } = useToast()
   const { addItem } = useCart()
@@ -145,6 +148,30 @@ export function DesignChat({
   }, [session.currentMockupUrl, router])
   const [pendingAttachment, setPendingAttachment] = useState<string | null>(null)
   const [selectedSize, setSelectedSize] = useState("M")
+  // "Mis diseños": generaciones previas de esta sesión (cookie) para retomar
+  const [myDesigns, setMyDesigns] = useState<Array<{ id: string; url: string; prompt: string | null }>>([])
+  useEffect(() => {
+    fetch("/api/public/design/mine")
+      .then((r) => r.json())
+      .then((d) => setMyDesigns(d.designs || []))
+      .catch(() => {})
+  }, [])
+  const restoreDesign = useCallback((d: { url: string; prompt: string | null }) => {
+    setSession((prev) => ({
+      ...prev,
+      currentDesignUrl: d.url,
+      designHistory: [...prev.designHistory, d.url],
+    }))
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        text: "Recuperé tu diseño anterior 👇 ¿Lo seguimos ajustando o generamos el mockup en la prenda?",
+        imageUrl: d.url,
+        prompt: d.prompt || undefined,
+      },
+    ])
+  }, [setSession])
   const [orientation, setOrientation] = useState<"vertical" | "horizontal" | "cuadrado">("cuadrado")
 
   // P6-03: Email capture cuando user tiene mockup listo pero idlea sin comprar.
@@ -620,6 +647,16 @@ export function DesignChat({
     }
   }, [input, loading, pendingAttachment, session.currentDesignUrl, setSession, toast])
 
+  // ---- Auto-generar si viene prompt desde la landing (?prompt=) ----
+  const initialFiredRef = useRef(false)
+  useEffect(() => {
+    if (!initialPrompt || initialFiredRef.current || loading || session.currentDesignUrl) return
+    initialFiredRef.current = true
+    setInput(initialPrompt)
+    handleSend(initialPrompt)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPrompt])
+
   // ---- Generate mockup LIFESTYLE ----
   // Usa Gemini para generar foto realista de persona con la prenda. Reemplaza
   // el compositor canvas estático que tenía problemas de transparencia
@@ -779,7 +816,13 @@ export function DesignChat({
   useEffect(() => {
     if (typeof window === "undefined") return
     if (window.localStorage.getItem("novamente:onboarding-seen") === "1") return
-    // Solo mostrar si no hay recovery ni mockup actual (no interferir con flows activos)
+    // No interferir con flows activos: mockup en curso, recovery, o usuario que
+    // YA expresó su idea en la landing (?prompt=) — taparle la generación con
+    // un tour mata el momento mágico
+    if (initialPrompt) {
+      window.localStorage.setItem("novamente:onboarding-seen", "1")
+      return
+    }
     if (!session.currentMockupUrl) setShowOnboarding(true)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -1149,6 +1192,35 @@ export function DesignChat({
         {/* Quick action chips + templates — solo cuando hay 1 mensaje (welcome) */}
         {messages.length === 1 && !loading && (
           <div className="px-4 pt-1 pb-3 space-y-2">
+            {/* Mis diseños — retomar trabajo previo de esta sesión */}
+            {myDesigns.length > 0 && !session.currentDesignUrl && (
+              <div className="space-y-1">
+                <p className="text-[10px] text-zinc-500 uppercase tracking-wider">⏪ Retomá donde dejaste:</p>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {myDesigns.slice(0, 12).map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => restoreDesign(d)}
+                      title={d.prompt || "Diseño anterior"}
+                      className="shrink-0 h-16 w-16 rounded-lg overflow-hidden border border-white/10 hover:border-violet-500/60 transition"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={d.url}
+                        alt={d.prompt || "Diseño"}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          // objeto borrado de R2 → ocultar el thumb muerto
+                          (e.currentTarget.closest("button") as HTMLElement | null)?.style.setProperty("display", "none")
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {/* Acción upload */}
             <div className="flex gap-2">
               <button

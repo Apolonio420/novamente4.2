@@ -152,6 +152,13 @@ export async function deleteFromR2(key: string): Promise<void> {
   await r2Client.send(command)
 }
 
+/** Lista objetos bajo un prefijo (máx 1000) con su fecha de modificación. */
+export async function listR2Objects(prefix: string): Promise<Array<{ key: string; lastModified: Date | null }>> {
+  const { ListObjectsV2Command } = await import('@aws-sdk/client-s3')
+  const out = await r2Client.send(new ListObjectsV2Command({ Bucket: BUCKET_NAME, Prefix: prefix, MaxKeys: 1000 }))
+  return (out.Contents ?? []).map((o) => ({ key: o.Key as string, lastModified: o.LastModified ?? null }))
+}
+
 /**
  * Genera un nombre de archivo consistente y limpio
  */

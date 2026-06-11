@@ -485,7 +485,9 @@ export function DesignCanvas({
   const [applying, setApplying] = useState(false)
 
   // UI state
-  const [showGuides, setShowGuides] = useState(false) // WYSIWYG by default
+  // Guías ON por default: el usuario tiene que VER dónde se imprime su diseño
+  // (antes arrancaba oculto y la gente posicionaba a ciegas fuera del área)
+  const [showGuides, setShowGuides] = useState(true)
   const [textPanelOpen, setTextPanelOpen] = useState(false)
 
   // --- Layer operations ---
