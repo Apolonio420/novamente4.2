@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/images/cleanup", "schedule": "0 5 * * *" },
-    { "path": "/api/cron/crear-healthcheck", "schedule": "0 14 * * *" }
+    { "path": "/api/cron/crear-healthcheck", "schedule": "0 14 * * *" },
+    { "path": "/api/cron/abandoned-checkout", "schedule": "0 13 * * *" }
   ]
 }
