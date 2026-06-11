@@ -2,9 +2,47 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// Subdominios que NUNCA son tiendas de partner
+const RESERVED_SUBDOMAINS = new Set([
+  'www', 'api', 'app', 'admin', 'cdn', 'mail', 'shop', 'platform',
+  'dashboard', 'staging', 'dev', 'test', 'preview', 'assets', 'static',
+])
+
+// Rutas compartidas de la app que deben servirse tal cual bajo un subdominio
+// (carrito/checkout son globales; el branding por tenant lo resuelve la página)
+const SHARED_PATH_PREFIXES = [
+  '/cart', '/checkout', '/api', '/_next', '/merch', '/marcas', '/design',
+  '/crear', '/partners', '/workspace', '/pedido', '/terminos', '/privacidad',
+  '/faq', '/favicon', '/logo', '/robots', '/sitemap', '/manifest', '/opengraph',
+]
+
+/** Si el host es <slug>.novamente.ar (no reservado), devuelve el slug del tenant. */
+function tenantSlugFromHost(host: string | null): string | null {
+  if (!host) return null
+  const hostname = host.split(':')[0].toLowerCase()
+  if (!hostname.endsWith('.novamente.ar')) return null
+  const labels = hostname.split('.')
+  // slug.novamente.ar → 3 labels exactos (evita a.b.novamente.ar)
+  if (labels.length !== 3) return null
+  const slug = labels[0]
+  if (RESERVED_SUBDOMAINS.has(slug)) return null
+  if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(slug)) return null
+  return slug
+}
+
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next()
   const { pathname } = request.nextUrl
+
+  // --- Tiendas por subdominio: tu-marca.novamente.ar → /merch/tu-marca ---
+  let response = NextResponse.next()
+  const tenantSlug = tenantSlugFromHost(request.headers.get('host'))
+  if (tenantSlug && !SHARED_PATH_PREFIXES.some((p) => pathname.startsWith(p))) {
+    const url = request.nextUrl.clone()
+    // raíz → tienda · /<producto> → página de producto de la marca
+    url.pathname = pathname === '/' ? `/merch/${tenantSlug}` : `/merch/${tenantSlug}${pathname}`
+    response = NextResponse.rewrite(url)
+    response.headers.set('x-tenant-slug', tenantSlug)
+  }
 
   // Skip security headers for static assets
   if (pathname.startsWith('/_next/')) {

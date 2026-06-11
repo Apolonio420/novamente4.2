@@ -20,6 +20,18 @@ export function GlobalChrome({ children }: { children: React.ReactNode }) {
   // publico, email capture) para no competir con la UI. Mantenemos Navbar
   // para que el carrito siga accesible.
   const isCrear = pathname?.startsWith("/crear") ?? false
+  // /merch/<marca> es la TIENDA del partner: tiene header+footer propios
+  // (StoreHeader/StoreFooter) y no debe mostrar el chrome de Novamente para
+  // que se sienta una tienda independiente. /merch raíz (directorio) sí lo usa.
+  const isPartnerStore = /^\/merch\/[^/]+/.test(pathname ?? "")
+
+  if (isPartnerStore) {
+    return (
+      <div className="min-h-screen">
+        <main id="main-content">{children}</main>
+      </div>
+    )
+  }
 
   if (isCrear) {
     // Full-screen design tool — sin navbar global, sin footer, sin flotantes.

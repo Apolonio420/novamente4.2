@@ -16,6 +16,9 @@ import ChatWidget from "@/components/partners/chat-widget"
 import { dbProductToProduct } from "@/lib/partners/product-metadata"
 import { ProductCard } from "./ProductCard"
 import { BrandLandingPixel } from "./BrandLandingPixel"
+import { StoreHeader } from "@/components/partners/storefront/StoreHeader"
+import { StoreFooter } from "@/components/partners/storefront/StoreFooter"
+import { getStorefrontTheme, brandCssVars } from "@/lib/partners/storefront-theme"
 
 interface BrandPageProps {
   params: Promise<{ brand: string }>
@@ -101,136 +104,189 @@ export default async function BrandPage(props: BrandPageProps) {
     const partnerCtaUrl = storefront.ctaUrl && !ctaIsSelf ? storefront.ctaUrl : null
     const partnerCtaText = storefront.ctaText?.trim() || 'Contactar'
 
+    // ── Tienda 2.0: tema real por visual_style + chrome propio ──
+    const theme = getStorefrontTheme(tenant.visual_style)
+    const cssVars = brandCssVars(tenant) as React.CSSProperties
+    const heroImage = storefront.hero || storefront.banner
+    // gallery_images existe en DB; el tipo local puede no declararla aún
+    const tenantRaw = tenant as unknown as Record<string, unknown>
+    const gallery: string[] = Array.isArray(tenantRaw.gallery_images)
+      ? (tenantRaw.gallery_images as string[]).filter(Boolean).slice(0, 8)
+      : []
+    const featured = products.length > 4 ? products.slice(0, 3) : []
+
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div style={cssVars} className="bg-white text-neutral-900 min-h-screen">
         <JsonLd data={orgSchema} />
         <JsonLd data={breadcrumbSchema} />
         <JsonLd data={faqSchema} />
-        <div className="mb-6">
-          <Link href="/merch">
-            <Button variant="ghost" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Volver al catálogo de marcas
-            </Button>
-          </Link>
-        </div>
 
-        {/* Brand Header — identical to static path */}
-        <div className="mb-12">
-          <div className="relative min-h-[200px] md:min-h-64 rounded-xl overflow-hidden mb-8 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900">
-            {(storefront.hero || storefront.banner) && (
-              <>
-                <Image src={(storefront.hero || storefront.banner) as string} alt={`${storefront.name} banner`} fill className="object-cover opacity-25" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/40" />
-              </>
+        <StoreHeader
+          name={storefront.name}
+          slug={storefront.slug}
+          logo={storefront.logo}
+          instagram={storefront.instagram}
+        />
+
+        {/* HERO full-bleed */}
+        <section className={`relative ${theme.heroHeight} flex items-end md:items-center overflow-hidden bg-neutral-950 -mt-14`}>
+          {heroImage ? (
+            <Image
+              src={heroImage}
+              alt={`${storefront.name}`}
+              fill
+              priority
+              className="object-cover"
+              sizes="100vw"
+            />
+          ) : (
+            <div
+              className="absolute inset-0"
+              style={{ background: `linear-gradient(135deg, var(--store-secondary), var(--store-primary))` }}
+            />
+          )}
+          <div className={`absolute inset-0 ${theme.heroOverlay}`} />
+          <div className="relative z-10 w-full mx-auto max-w-6xl px-4 pb-12 pt-28 md:py-24 text-white">
+            {storefront.logo && (
+              <Image
+                src={storefront.logo}
+                alt={`${storefront.name} logo`}
+                width={72}
+                height={72}
+                className="object-contain mb-5 drop-shadow-lg"
+              />
             )}
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center py-8">
-              <div className="text-center text-white w-full">
-                {storefront.logo && (
-                  <div className="flex items-center justify-center mb-4">
-                    <Image src={storefront.logo} alt={`${storefront.name} Logo`} width={80} height={80} className="object-contain" />
-                  </div>
-                )}
-                <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-wider mb-2 px-4">{storefront.name}</h1>
-                {storefront.slogan && (
-                  <p className="text-sm sm:text-lg md:text-xl opacity-90 font-medium tracking-wide px-4">{storefront.slogan}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Brand Story — partner-edited (DB path uses description; static path may also fill `values`). */}
-          {(storefront.description || storefront.values) && (
-            <div className="bg-secondary/20 rounded-xl p-6 md:p-8 mb-8">
-              <h2 className="text-2xl font-bold mb-4">La Historia de {storefront.name}</h2>
-              <div className="space-y-4 text-muted-foreground">
-                {storefront.description && (
-                  <p className="leading-relaxed whitespace-pre-line">{storefront.description}</p>
-                )}
-                {storefront.values && (
-                  <p className="leading-relaxed whitespace-pre-line">{storefront.values}</p>
-                )}
-                {storefront.slogan && (
-                  <p className="leading-relaxed font-medium text-foreground">{storefront.slogan}</p>
-                )}
-              </div>
+            <h1 className={`${theme.heroTitle} text-4xl sm:text-5xl md:text-7xl leading-none mb-3`}>
+              {storefront.name}
+            </h1>
+            {storefront.slogan && (
+              <p className={`${theme.heroTagline} text-white/85 max-w-xl`}>{storefront.slogan}</p>
+            )}
+            <div className="flex flex-wrap gap-3 mt-7">
+              <a
+                href="#productos"
+                className={`${theme.buttonPrimary} inline-flex items-center px-7 py-3 text-white text-sm transition-transform active:scale-95`}
+                style={{ backgroundColor: "var(--store-primary)" }}
+              >
+                Ver productos
+              </a>
               {partnerCtaUrl && (
-                <div className="mt-6">
-                  <Link href={partnerCtaUrl} target={partnerCtaUrl.startsWith('http') ? '_blank' : undefined} rel="noreferrer">
-                    <Button>{partnerCtaText}</Button>
-                  </Link>
-                </div>
+                <Link
+                  href={partnerCtaUrl}
+                  target={partnerCtaUrl.startsWith("http") ? "_blank" : undefined}
+                  rel="noreferrer"
+                  className={`${theme.buttonPrimary} inline-flex items-center px-7 py-3 text-sm border border-white/40 text-white hover:bg-white/10 transition-colors`}
+                >
+                  {partnerCtaText}
+                </Link>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        </section>
 
-        {/* Pixel · dispara ViewContent al cargar la landing de marca */}
+        {/* Pixel · ViewContent al cargar la landing */}
         <BrandLandingPixel
           brandId={params.brand}
           brandName={storefront.name}
           productCount={products.length}
         />
 
-        {/* Products Grid — uses ProductCard with carousel, same as static */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-6">Productos Disponibles</h2>
+        {/* DESTACADOS — scroll horizontal en mobile (solo si hay catálogo grande) */}
+        {featured.length > 0 && (
+          <section className="mx-auto max-w-6xl px-4 pt-12">
+            <h2 className={`${theme.sectionTitle} mb-6`}>Destacados</h2>
+            <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 -mx-4 px-4 md:grid md:grid-cols-3 md:overflow-visible md:mx-0 md:px-0">
+              {featured.map((product) => (
+                <div key={product.id} className="min-w-[78%] sm:min-w-[320px] md:min-w-0 snap-start">
+                  <ProductCard brandId={params.brand} product={product} />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* CATÁLOGO completo */}
+        <section id="productos" className="mx-auto max-w-6xl px-4 pt-12 scroll-mt-20">
+          <h2 className={`${theme.sectionTitle} mb-6`}>
+            {featured.length > 0 ? "Todo el catálogo" : "Productos"}
+          </h2>
           {products.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {products.map((product) => (
                 <ProductCard key={product.id} brandId={params.brand} product={product} />
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 text-muted-foreground">
+            <div className="text-center py-16 text-neutral-500">
               <p className="text-lg">Esta marca aún no tiene productos publicados.</p>
               <p className="text-sm mt-2">Volvé pronto para ver las novedades.</p>
             </div>
           )}
-        </div>
+        </section>
 
-        {/* FAQ Section */}
-        <div className="mt-16 mb-16">
-          <FaqSection faqs={faqs} />
-        </div>
-
-        {/* Brand Values Footer — identical to static path */}
-        <div className="mt-16 text-center">
-          <div className="bg-secondary/30 rounded-xl p-8">
-            <div className="relative z-10">
-              {storefront.logo && (
-                <div className="flex items-center justify-center mb-4">
-                  <Image src={storefront.logo} alt={`${storefront.name} Logo`} width={100} height={100} className="object-contain" />
-                </div>
-              )}
-              <h3 className="text-2xl font-bold mb-2">{storefront.name}</h3>
-              {storefront.slogan && (
-                <p className="text-primary font-medium mb-4 uppercase tracking-wide">{storefront.slogan}</p>
-              )}
-              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                Cada producto de {storefront.name} está pensado para reflejar su identidad única.{" "}
-                {storefront.description}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                {storefront.instagram && (
-                  <Link href={storefront.instagram.startsWith('http') ? storefront.instagram : `https://instagram.com/${storefront.instagram.replace('@', '')}`} target="_blank" rel="noreferrer">
-                    <Button variant="outline">Seguir a {storefront.name}</Button>
-                  </Link>
+        {/* HISTORIA de la marca */}
+        {(storefront.description || storefront.values) && (
+          <section className="mx-auto max-w-6xl px-4 pt-16">
+            <div className={`${theme.radius} bg-neutral-50 border border-neutral-200 p-6 md:p-10`}>
+              <h2 className={`${theme.sectionTitle} mb-4`}>La historia de {storefront.name}</h2>
+              <div className="space-y-4 text-neutral-600 max-w-3xl">
+                {storefront.description && (
+                  <p className="leading-relaxed whitespace-pre-line">{storefront.description}</p>
                 )}
-                {partnerCtaUrl ? (
-                  <Link href={partnerCtaUrl} target={partnerCtaUrl.startsWith('http') ? '_blank' : undefined} rel="noreferrer">
-                    <Button>{partnerCtaText}</Button>
-                  </Link>
-                ) : (
-                  <Link href="https://wa.me/5492235169720?text=Hola!%20Estoy%20comprando%20en%20una%20tienda%20partner%20de%20Novamente%20y%20quiero%20contactarlos.%20(ref%20%C2%B7%20NV-MERCH)" target="_blank">
-                    <Button>Consultá por WhatsApp</Button>
-                  </Link>
+                {storefront.values && (
+                  <p className="leading-relaxed whitespace-pre-line">{storefront.values}</p>
                 )}
               </div>
+              {partnerCtaUrl && (
+                <Link
+                  href={partnerCtaUrl}
+                  target={partnerCtaUrl.startsWith("http") ? "_blank" : undefined}
+                  rel="noreferrer"
+                  className={`${theme.buttonPrimary} inline-flex items-center px-6 py-2.5 mt-6 text-white text-sm`}
+                  style={{ backgroundColor: "var(--store-primary)" }}
+                >
+                  {partnerCtaText}
+                </Link>
+              )}
             </div>
-          </div>
-        </div>
-        {/* Chat Widget for Pro plan */}
+          </section>
+        )}
+
+        {/* GALERÍA / lookbook */}
+        {gallery.length > 0 && (
+          <section className="mx-auto max-w-6xl px-4 pt-16">
+            <h2 className={`${theme.sectionTitle} mb-6`}>Galería</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+              {gallery.map((src, i) => (
+                <div key={i} className={`relative aspect-square overflow-hidden ${theme.radius} bg-neutral-100`}>
+                  <Image
+                    src={src}
+                    alt={`${storefront.name} galería ${i + 1}`}
+                    fill
+                    className="object-cover hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* FAQ — banda oscura (el componente está diseñado dark) */}
+        <section className="mt-16 bg-neutral-950">
+          <FaqSection faqs={faqs} primaryColor={tenant.primary_color} />
+        </section>
+
+        <StoreFooter
+          name={storefront.name}
+          slug={storefront.slug}
+          logo={storefront.logo}
+          slogan={storefront.slogan}
+          instagram={storefront.instagram}
+          website={tenant.website}
+        />
+
+        {/* Chat Widget para plan Pro */}
         {storefront.plan === 'pro' && (
           <ChatWidget
             tenantSlug={storefront.slug}
