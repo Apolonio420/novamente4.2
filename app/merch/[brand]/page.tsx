@@ -124,10 +124,18 @@ export default async function BrandPage(props: BrandPageProps) {
     const featured = products.length > 4 ? products.slice(0, 3) : []
 
     return (
-      <div style={cssVars} className="bg-white text-neutral-900 min-h-screen">
+      <div style={cssVars} className="bg-neutral-950 text-white min-h-screen">
         <JsonLd data={orgSchema} />
         <JsonLd data={breadcrumbSchema} />
         <JsonLd data={faqSchema} />
+
+        {/* Referencia Novamente — strip sutil arriba del header de la tienda */}
+        <Link
+          href="https://www.novamente.ar"
+          className="block bg-black text-center text-[11px] tracking-wide text-white/50 hover:text-white/80 transition-colors py-1.5 px-3 relative z-50"
+        >
+          Tienda oficial en <span className="font-semibold text-white/70">Novamente</span> · producción y envíos en 24-48h ↗
+        </Link>
 
         <StoreHeader
           name={storefront.name}
@@ -225,7 +233,7 @@ export default async function BrandPage(props: BrandPageProps) {
               ))}
             </div>
           ) : (
-            <div className="text-center py-16 text-neutral-500">
+            <div className="text-center py-16 text-neutral-400">
               <p className="text-lg">Esta marca aún no tiene productos publicados.</p>
               <p className="text-sm mt-2">Volvé pronto para ver las novedades.</p>
             </div>
@@ -235,9 +243,9 @@ export default async function BrandPage(props: BrandPageProps) {
         {/* HISTORIA de la marca */}
         {(storefront.description || storefront.values) && (
           <section className="mx-auto max-w-6xl px-4 pt-16">
-            <div className={`${theme.radius} bg-neutral-50 border border-neutral-200 p-6 md:p-10`}>
+            <div className={`${theme.radius} bg-neutral-900 border border-neutral-800 p-6 md:p-10`}>
               <h2 className={`${theme.sectionTitle} mb-4`}>La historia de {storefront.name}</h2>
-              <div className="space-y-4 text-neutral-600 max-w-3xl">
+              <div className="space-y-4 text-neutral-300 max-w-3xl">
                 {storefront.description && (
                   <p className="leading-relaxed whitespace-pre-line">{storefront.description}</p>
                 )}
@@ -266,7 +274,7 @@ export default async function BrandPage(props: BrandPageProps) {
             <h2 className={`${theme.sectionTitle} mb-6`}>Galería</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
               {gallery.map((src, i) => (
-                <div key={i} className={`relative aspect-square overflow-hidden ${theme.radius} bg-neutral-100`}>
+                <div key={i} className={`relative aspect-square overflow-hidden ${theme.radius} bg-neutral-900`}>
                   <Image
                     src={src}
                     alt={`${storefront.name} galería ${i + 1}`}
@@ -281,7 +289,7 @@ export default async function BrandPage(props: BrandPageProps) {
         )}
 
         {/* FAQ — banda oscura (el componente está diseñado dark) */}
-        <section className="mt-16 bg-neutral-950">
+        <section className="mt-16 border-t border-white/10">
           <FaqSection faqs={faqs} primaryColor={tenant.primary_color} />
         </section>
 

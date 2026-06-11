@@ -94,15 +94,44 @@ export function getStorefrontTheme(style: string | null | undefined): Storefront
   return THEMES[(style as VisualStyle) || 'minimal'] ?? THEMES.minimal
 }
 
+/** Convierte #rrggbb → "H S% L%" (formato de los tokens shadcn en globals.css). */
+function hexToHslTriplet(hex: string): string | null {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
+  if (!m) return null
+  const n = parseInt(m[1], 16)
+  const r = ((n >> 16) & 255) / 255
+  const g = ((n >> 8) & 255) / 255
+  const b = (n & 255) / 255
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const l = (max + min) / 2
+  let h = 0
+  let s = 0
+  if (max !== min) {
+    const d = max - min
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6
+    else if (max === g) h = ((b - r) / d + 2) / 6
+    else h = ((r - g) / d + 4) / 6
+  }
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`
+}
+
 /** Vars CSS de marca para inyectar en el wrapper de la tienda. */
 export function brandCssVars(tenant: {
   primary_color?: string | null
   secondary_color?: string | null
   accent_color?: string | null
 }): Record<string, string> {
-  return {
-    '--store-primary': tenant.primary_color || '#6366f1',
+  const primary = tenant.primary_color || '#6366f1'
+  const vars: Record<string, string> = {
+    '--store-primary': primary,
     '--store-secondary': tenant.secondary_color || '#111827',
-    '--store-accent': tenant.accent_color || tenant.primary_color || '#6366f1',
+    '--store-accent': tenant.accent_color || primary,
   }
+  // Pisar el token --primary de shadcn dentro de la tienda: precios, botones
+  // y rings de ProductCard adoptan el color de la MARCA (no el violeta Novamente)
+  const triplet = hexToHslTriplet(primary)
+  if (triplet) vars['--primary'] = triplet
+  return vars
 }
