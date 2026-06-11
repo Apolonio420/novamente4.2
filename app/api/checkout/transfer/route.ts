@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createOrder } from "@/lib/db"
 import { toPublicR2Url } from "@/lib/r2"
+import { shippingCostFor } from "@/lib/shipping-config"
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,9 +26,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid total amount" }, { status: 400 })
     }
 
-    // Calcular subtotal y shipping si no vienen
+    // Calcular subtotal y shipping si no vienen (fallback zona BA — fuente de verdad compartida)
     const finalSubtotal = subtotal || items.reduce((sum: number, item: any) => sum + (item.price || 0) * (item.quantity || 1), 0)
-    const finalShippingCost = shippingCost || (finalSubtotal >= 85000 ? 0 : 6500)
+    const finalShippingCost = shippingCost ?? shippingCostFor(finalSubtotal, 'BA')
     const finalTotal = finalSubtotal + finalShippingCost
 
     // Preparar items del pedido desde items del carrito
@@ -61,7 +62,11 @@ export async function POST(request: NextRequest) {
     // Crear el pedido en la base de datos
     const externalReference = `order_transfer_${Date.now()}`
 
+    // Si todos los items vienen de una tienda partner, vincular el pedido al tenant
+    const tenantId = items.find((i: any) => i.tenantId)?.tenantId ?? null
+
     const newOrder = await createOrder({
+      tenant_id: tenantId,
       customer_email: customer.email,
       customer_first_name: customer.firstName,
       customer_last_name: customer.lastName,

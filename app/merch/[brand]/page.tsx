@@ -32,10 +32,18 @@ export async function generateMetadata({ params }: BrandPageProps): Promise<Meta
     return { title: 'Marca no encontrada' }
   }
 
-  const title = `${storefront.name} — Merch oficial en Novamente`
+  const title = `${storefront.name} · Tienda Oficial`
   const description = storefront.description
     || storefront.slogan
     || `Descubrí el merchandising oficial de ${storefront.name}. Productos únicos y diseños exclusivos.`
+
+  // OG: banner/hero apaisado (card grande en WhatsApp/redes) > logo cuadrado
+  const ogImage = storefront.hero || storefront.banner
+  const ogImages = ogImage
+    ? [{ url: ogImage, width: 1200, height: 630, alt: storefront.name }]
+    : storefront.logo
+      ? [{ url: storefront.logo, width: 400, height: 400, alt: storefront.name }]
+      : undefined
 
   return {
     title,
@@ -45,15 +53,15 @@ export async function generateMetadata({ params }: BrandPageProps): Promise<Meta
       url: `https://www.novamente.ar/merch/${storefront.slug}`,
       title,
       description,
-      ...(storefront.logo && { images: [{ url: storefront.logo, width: 400, height: 400, alt: storefront.name }] }),
-      siteName: 'Novamente',
+      ...(ogImages && { images: ogImages }),
+      siteName: storefront.name,
       locale: 'es_AR',
     },
     twitter: {
-      card: 'summary',
+      card: ogImage ? 'summary_large_image' : 'summary',
       title,
       description,
-      ...(storefront.logo && { images: [storefront.logo] }),
+      ...(ogImages && { images: [ogImages[0].url] }),
     },
     alternates: {
       canonical: `https://www.novamente.ar/merch/${storefront.slug}`,
