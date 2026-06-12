@@ -75,7 +75,7 @@ export const PRODUCTS: Product[] = [
     name: 'Musculosa Bali',
     garmentType: 'musculosa-bali',
     price: 21800,
-    colors: ['blanca', 'negra', 'gris'],
+    colors: ['blanca', 'gris'],
     image: '/products/musculosa-bali-front.jpeg',
     category: 'musculosa',
   },

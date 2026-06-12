@@ -36,4 +36,25 @@ test.describe('Productos nuevos 2026-06', () => {
     await expect(page.getByText('Bambino').first()).toBeVisible()
     await page.screenshot({ path: 'e2e/screenshots/b2b-precios.png', fullPage: true })
   })
+
+  test('PDP Bambino muestra la tabla de talles infantil', async ({ page }) => {
+    await page.goto('/products/bambino-tshirt-celeste')
+    await expect(page.getByText('Guia de Talles').first()).toBeVisible()
+    // Fila del talle 4: pecho 38 · largo 53
+    await expect(page.getByRole('cell', { name: '38' }).first()).toBeVisible()
+    await expect(page.getByRole('cell', { name: '53' }).first()).toBeVisible()
+    await page.screenshot({ path: 'e2e/screenshots/bambino-talles.png', fullPage: true })
+  })
+
+  test('Musculosa Bali: gris y blanca con bases nuevas, negra fuera de catálogo', async ({ page }) => {
+    await page.goto('/products/musculosa-bali-gris')
+    await expect(page.getByText('Musculosa Bali - Gris').first()).toBeVisible()
+    await page.screenshot({ path: 'e2e/screenshots/musculosa-gris.png', fullPage: false })
+
+    await page.goto('/products/musculosa-bali-blanca')
+    await expect(page.getByText('Musculosa Bali - Blanca').first()).toBeVisible()
+
+    await page.goto('/products/musculosa-bali-negra')
+    await expect(page).toHaveTitle(/Producto no encontrado|404/)
+  })
 })

@@ -144,8 +144,8 @@ export const PRODUCTS: Product[] = [
         price: "$21.800",
         description: "Musculosa de morley premium en color blanco. Confección suave y fresca, ideal para estampar tu diseño personalizado y lucirlo este verano. Corte moderno que se adapta a tu estilo.",
         images: {
-            main: "/products/musculosa-bali-blanca/Musculosa_Rib_Blanca.png",
-            lifestyle: ["/products/musculosa-bali-blanca/Musculosa_Rib_Blanca_Lifestyle.png", "/products/musculosa-bali-blanca/Musculosa_Urban.png"],
+            main: "/products/musculosa-bali-blanca/front.png",
+            lifestyle: ["/products/musculosa-bali-blanca/back.png", "/products/musculosa-bali-blanca/Musculosa_Rib_Blanca_Lifestyle.png"],
             measurements: "/products/musculosa-bali-blanca/Medidas3.png"
         },
         category: "Musculosas",
@@ -164,7 +164,8 @@ export const PRODUCTS: Product[] = [
         },
         category: "Musculosas",
         color: "Negro",
-        available: true
+        // Bali solo viene en blanca y gris.
+        available: false
     },
     {
         id: "musculosa-bali-gris",
@@ -172,8 +173,8 @@ export const PRODUCTS: Product[] = [
         price: "$21.800",
         description: "Musculosa de morley premium en color gris. Un tono neutro y versátil que combina con todo. Textura suave y calce perfecto.",
         images: {
-            main: "/products/musculosa-bali-gris/Musculosa_Rib_Gris.png",
-            lifestyle: ["/products/musculosa-bali-gris/Musculosa_Rib_Blanca_Lifestyle.png", "/products/musculosa-bali-gris/Musculosa_Urban.png"],
+            main: "/products/musculosa-bali-gris/front.png",
+            lifestyle: ["/products/musculosa-bali-gris/back.png", "/products/musculosa-bali-gris/Musculosa_Rib_Blanca_Lifestyle.png"],
             measurements: "/products/musculosa-bali-gris/Medidas3.png"
         },
         category: "Musculosas",
@@ -413,7 +414,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/remera-infantil-blanco/front.jpg",
             lifestyle: ["/products/remera-infantil-blanco/back.jpg"],
-            measurements: ""
+            measurements: "/products/remera-infantil-medidas.png"
         },
         category: "Remeras Infantiles",
         color: "Blanco",
@@ -427,7 +428,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/remera-infantil-negro/front.jpg",
             lifestyle: ["/products/remera-infantil-negro/back.jpg"],
-            measurements: ""
+            measurements: "/products/remera-infantil-medidas.png"
         },
         category: "Remeras Infantiles",
         color: "Negro",
@@ -441,7 +442,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/remera-infantil-gris/front.jpg",
             lifestyle: ["/products/remera-infantil-gris/back.jpg"],
-            measurements: ""
+            measurements: "/products/remera-infantil-medidas.png"
         },
         category: "Remeras Infantiles",
         color: "Gris",
@@ -455,7 +456,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/remera-infantil-amarillo/front.jpg",
             lifestyle: ["/products/remera-infantil-amarillo/back.jpg"],
-            measurements: ""
+            measurements: "/products/remera-infantil-medidas.png"
         },
         category: "Remeras Infantiles",
         color: "Amarillo",
@@ -469,7 +470,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/remera-infantil-celeste/front.jpg",
             lifestyle: ["/products/remera-infantil-celeste/back.jpg"],
-            measurements: ""
+            measurements: "/products/remera-infantil-medidas.png"
         },
         category: "Remeras Infantiles",
         color: "Celeste",
@@ -483,7 +484,7 @@ export const PRODUCTS: Product[] = [
         images: {
             main: "/products/remera-infantil-rosa/front.jpg",
             lifestyle: ["/products/remera-infantil-rosa/back.jpg"],
-            measurements: ""
+            measurements: "/products/remera-infantil-medidas.png"
         },
         category: "Remeras Infantiles",
         color: "Rosa",

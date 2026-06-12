@@ -288,7 +288,7 @@ export const MODELS: B2BModel[] = [
     category: "Remeras Infantiles",
     fabric: "Algodon peinado premium, calce unisex para chicos",
     sizes: ["4", "6", "8", "10", "12", "14", "16"],
-    measurementsChart: "",
+    measurementsChart: "/products/remera-infantil-medidas.png",
     prices: { partner: 20800, starter: 20300, pro: 19800, drop: 19300, bulk: 18900 },
     colors: [
       {
@@ -337,27 +337,18 @@ export const MODELS: B2BModel[] = [
         name: "Blanca",
         swatch: "#f5f5f0",
         images: [
-          "/products/musculosa-bali-blanca/Musculosa_Rib_Blanca.png",
+          "/products/musculosa-bali-blanca/front.png",
+          "/products/musculosa-bali-blanca/back.png",
           "/products/musculosa-bali-blanca/Musculosa_Rib_Blanca_Lifestyle.png",
-          "/products/musculosa-bali-blanca/Musculosa_Urban.png",
-        ],
-      },
-      {
-        name: "Negra",
-        swatch: "#111111",
-        images: [
-          "/products/musculosa-bali-negra/Musculosa_Rib_Negra.png",
-          "/products/musculosa-bali-negra/Musculosa_Rib_Blanca_Lifestyle.png",
-          "/products/musculosa-bali-negra/Musculosa_Urban.png",
         ],
       },
       {
         name: "Gris",
         swatch: "#9a9a9a",
         images: [
-          "/products/musculosa-bali-gris/Musculosa_Rib_Gris.png",
+          "/products/musculosa-bali-gris/front.png",
+          "/products/musculosa-bali-gris/back.png",
           "/products/musculosa-bali-gris/Musculosa_Rib_Blanca_Lifestyle.png",
-          "/products/musculosa-bali-gris/Musculosa_Urban.png",
         ],
       },
     ],

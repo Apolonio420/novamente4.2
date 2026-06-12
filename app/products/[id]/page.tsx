@@ -51,6 +51,11 @@ const SIZE_CHARTS: Record<string, SizeChart> = {
     width: ["47", "49", "51", "53", "55"],
     length: ["61", "63", "65", "67", "69"],
   },
+  "Remeras Infantiles": {
+    sizes: ["4", "6", "8", "10", "12", "14", "16"],
+    width: ["38", "40", "42", "44", "46", "48", "50"],
+    length: ["53", "55", "57", "59", "61", "63", "66"],
+  },
 }
 
 function getSizeChartKey(productId: string, category: string): string {
