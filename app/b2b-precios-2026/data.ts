@@ -40,6 +40,7 @@ export const MODEL_TO_GARMENT_KEY: Record<string, string> = {
   aldea: "aldea-classic-tshirt",
   "buenos-aires": "remera-clasica-mujer",
   bahamas: "remera-crop-mujer",
+  bambino: "remera-infantil",
   bali: "musculosa-bali",
 }
 
@@ -190,6 +191,14 @@ export const MODELS: B2BModel[] = [
           "/products/tshirt-aldea-blanco-lifestyle-2.jpeg",
         ],
       },
+      {
+        name: "Beige",
+        swatch: "#d9c7a8",
+        images: [
+          "/products/tshirt-aldea-beige-front.jpeg",
+          "/products/tshirt-aldea-beige-back.jpeg",
+        ],
+      },
     ],
   },
   {
@@ -229,17 +238,15 @@ export const MODELS: B2BModel[] = [
     category: "Remeras Crop",
     fabric: "Algodon suave, calce relajado y moderno",
     sizes: ["S", "M", "L", "XL", "2XL"],
-    measurementsChart: "/products/remera-crop-de-mujer-negra/Medidas1.png",
+    measurementsChart: "/products/remera-crop-de-mujer-chocolate/Medidas1.png",
     prices: { partner: 20800, starter: 20300, pro: 19800, drop: 19300, bulk: 18900 },
     colors: [
       {
-        name: "Negra",
-        swatch: "#111111",
+        name: "Visón",
+        swatch: "#8b7a6a",
         images: [
-          "/products/remera-crop-de-mujer-negra/mockups nuevos productos-4.png",
-          "/products/remera-crop-de-mujer-negra/back.jpeg",
-          "/products/remera-crop-de-mujer-negra/crop-lifestyle.png",
-          "/products/remera-crop-de-mujer-negra/crop-urban.png",
+          "/products/remera-crop-de-mujer-vison/front.png",
+          "/products/remera-crop-de-mujer-vison/back.png",
         ],
       },
       {
@@ -271,6 +278,48 @@ export const MODELS: B2BModel[] = [
           "/products/remera-crop-de-mujer-amarillo/crop-lifestyle.png",
           "/products/remera-crop-de-mujer-amarillo/crop-urban.png",
         ],
+      },
+    ],
+  },
+  {
+    id: "bambino",
+    name: "Bambino",
+    subtitle: "Remera Infantil Unisex",
+    category: "Remeras Infantiles",
+    fabric: "Algodon peinado premium, calce unisex para chicos",
+    sizes: ["4", "6", "8", "10", "12", "14", "16"],
+    measurementsChart: "",
+    prices: { partner: 20800, starter: 20300, pro: 19800, drop: 19300, bulk: 18900 },
+    colors: [
+      {
+        name: "Blanco",
+        swatch: "#f5f5f5",
+        images: ["/products/remera-infantil-blanco/front.jpg", "/products/remera-infantil-blanco/back.jpg"],
+      },
+      {
+        name: "Negro",
+        swatch: "#1a1a1a",
+        images: ["/products/remera-infantil-negro/front.jpg", "/products/remera-infantil-negro/back.jpg"],
+      },
+      {
+        name: "Gris",
+        swatch: "#9a9a9a",
+        images: ["/products/remera-infantil-gris/front.jpg", "/products/remera-infantil-gris/back.jpg"],
+      },
+      {
+        name: "Amarillo",
+        swatch: "#f3d34a",
+        images: ["/products/remera-infantil-amarillo/front.jpg", "/products/remera-infantil-amarillo/back.jpg"],
+      },
+      {
+        name: "Celeste",
+        swatch: "#a5c9e8",
+        images: ["/products/remera-infantil-celeste/front.jpg", "/products/remera-infantil-celeste/back.jpg"],
+      },
+      {
+        name: "Rosa",
+        swatch: "#f4b8c5",
+        images: ["/products/remera-infantil-rosa/front.jpg", "/products/remera-infantil-rosa/back.jpg"],
       },
     ],
   },

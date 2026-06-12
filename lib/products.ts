@@ -109,6 +109,21 @@ export const PRODUCTS: Product[] = [
         available: true,
     },
     {
+        id: "aldea-tshirt-beige",
+        name: "Aldea Classic Fit T-Shirt - Beige",
+        price: "$28.600",
+        description:
+            "Remera clásica beige en algodón 100% peinado premium. Un tono cálido y versátil que combina con todo, con la misma base optimizada para estampado DTG de la línea Aldea. Corte regular atemporal para que tu diseño se luzca con un estilo relajado y elegante.",
+        images: {
+            main: "/products/tshirt-aldea-beige-front.jpeg",
+            lifestyle: ["/products/tshirt-aldea-beige-back.jpeg"],
+            measurements: "/products/tshirt-aldea-blanco-medidas.png",
+        },
+        category: "T-Shirts",
+        color: "Beige",
+        available: true,
+    },
+    {
         id: "lienzo",
         name: "Lienzo",
         price: "$59.900",
@@ -261,7 +276,8 @@ export const PRODUCTS: Product[] = [
         },
         category: "Remeras Crop",
         color: "Negro",
-        available: true
+        // La crop NO viene en negro — colores reales: amarillo, chocolate, gris melange, visón.
+        available: false
     },
     {
         id: "remera-crop-chocolate",
@@ -303,6 +319,20 @@ export const PRODUCTS: Product[] = [
         },
         category: "Remeras Crop",
         color: "Amarillo",
+        available: true
+    },
+    {
+        id: "remera-crop-vison",
+        name: "Remera Crop Mujer - Visón",
+        price: "$23.500",
+        description: "Remera crop en visón, un tostado claro elegante y atemporal. Algodón suave con calce relajado.",
+        images: {
+            main: "/products/remera-crop-de-mujer-vison/front.png",
+            lifestyle: ["/products/remera-crop-de-mujer-vison/back.png"],
+            measurements: "/products/remera-crop-de-mujer-vison/Medidas1.png"
+        },
+        category: "Remeras Crop",
+        color: "Visón",
         available: true
     },
     {
@@ -373,6 +403,90 @@ export const PRODUCTS: Product[] = [
         },
         category: "Remeras Mujer",
         color: "Negra",
+        available: true
+    },
+    {
+        id: "bambino-tshirt-blanco",
+        name: "Bambino Remera Infantil - Blanco",
+        price: "$23.500",
+        description: "Remera infantil unisex en blanco, algodón peinado premium. Talles del 4 al 16, lista para estampar con el diseño que más le guste. La misma calidad Novamente, en versión kids.",
+        images: {
+            main: "/products/remera-infantil-blanco/front.jpg",
+            lifestyle: ["/products/remera-infantil-blanco/back.jpg"],
+            measurements: ""
+        },
+        category: "Remeras Infantiles",
+        color: "Blanco",
+        available: true
+    },
+    {
+        id: "bambino-tshirt-negro",
+        name: "Bambino Remera Infantil - Negro",
+        price: "$23.500",
+        description: "Remera infantil unisex en negro, algodón peinado premium. Talles del 4 al 16. Base oscura que hace resaltar los diseños a todo color.",
+        images: {
+            main: "/products/remera-infantil-negro/front.jpg",
+            lifestyle: ["/products/remera-infantil-negro/back.jpg"],
+            measurements: ""
+        },
+        category: "Remeras Infantiles",
+        color: "Negro",
+        available: true
+    },
+    {
+        id: "bambino-tshirt-gris",
+        name: "Bambino Remera Infantil - Gris",
+        price: "$23.500",
+        description: "Remera infantil unisex en gris melange, algodón peinado premium. Talles del 4 al 16. El básico cómodo para todos los días.",
+        images: {
+            main: "/products/remera-infantil-gris/front.jpg",
+            lifestyle: ["/products/remera-infantil-gris/back.jpg"],
+            measurements: ""
+        },
+        category: "Remeras Infantiles",
+        color: "Gris",
+        available: true
+    },
+    {
+        id: "bambino-tshirt-amarillo",
+        name: "Bambino Remera Infantil - Amarillo",
+        price: "$23.500",
+        description: "Remera infantil unisex en amarillo vibrante, algodón peinado premium. Talles del 4 al 16. Color con energía para los más chicos.",
+        images: {
+            main: "/products/remera-infantil-amarillo/front.jpg",
+            lifestyle: ["/products/remera-infantil-amarillo/back.jpg"],
+            measurements: ""
+        },
+        category: "Remeras Infantiles",
+        color: "Amarillo",
+        available: true
+    },
+    {
+        id: "bambino-tshirt-celeste",
+        name: "Bambino Remera Infantil - Celeste",
+        price: "$23.500",
+        description: "Remera infantil unisex en celeste, algodón peinado premium. Talles del 4 al 16. Un tono suave que queda bien con cualquier estampa.",
+        images: {
+            main: "/products/remera-infantil-celeste/front.jpg",
+            lifestyle: ["/products/remera-infantil-celeste/back.jpg"],
+            measurements: ""
+        },
+        category: "Remeras Infantiles",
+        color: "Celeste",
+        available: true
+    },
+    {
+        id: "bambino-tshirt-rosa",
+        name: "Bambino Remera Infantil - Rosa",
+        price: "$23.500",
+        description: "Remera infantil unisex en rosa, algodón peinado premium. Talles del 4 al 16. Suave, cómoda y lista para personalizar.",
+        images: {
+            main: "/products/remera-infantil-rosa/front.jpg",
+            lifestyle: ["/products/remera-infantil-rosa/back.jpg"],
+            measurements: ""
+        },
+        category: "Remeras Infantiles",
+        color: "Rosa",
         available: true
     }
 ]

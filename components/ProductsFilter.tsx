@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCart } from "@/lib/cartStore"
 import type { Product } from "@/lib/products"
 
-const CATEGORIES = ["Todos", "Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Mujer", "Arte"] as const
+const CATEGORIES = ["Todos", "Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Mujer", "Remeras Infantiles", "Arte"] as const
 
 const PRICE_RANGES = [
   { label: "Todos", min: 0, max: Infinity },
@@ -21,6 +21,7 @@ const PRICE_RANGES = [
 ] as const
 
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const
+const KIDS_SIZES = ["4", "6", "8", "10", "12", "14", "16"] as const
 
 function parsePrice(priceStr: string): number {
   return parseInt(priceStr.replace(/[$.]/g, ""), 10)
@@ -65,7 +66,7 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
       setTimeout(() => setAddedId(null), 2000)
     } else {
       setQuickAddId(product.id)
-      setSelectedSize("M")
+      setSelectedSize(product.category === "Remeras Infantiles" ? "8" : "M")
     }
   }
 
@@ -74,7 +75,7 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
     if (activeCategory !== "Todos") {
       return [{ name: activeCategory, items: filtered }]
     }
-    const cats = ["Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Mujer", "Arte"]
+    const cats = ["Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Mujer", "Remeras Infantiles", "Arte"]
     return cats.map(c => ({ name: c, items: filtered.filter(p => p.category === c) })).filter(g => g.items.length > 0)
   }, [filtered, activeCategory])
 
@@ -198,7 +199,7 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
                         {/* Quick-add size selector */}
                         {quickAddId === product.id && product.category !== "Arte" && (
                           <div className="flex gap-1 mb-2 flex-wrap">
-                            {SIZES.map(size => (
+                            {(product.category === "Remeras Infantiles" ? KIDS_SIZES : SIZES).map(size => (
                               <button
                                 key={size}
                                 onClick={() => setSelectedSize(size)}

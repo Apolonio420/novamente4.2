@@ -96,7 +96,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params
   const product = PRODUCTS.find((p) => p.id === id)
-  if (!product) return { title: "Producto no encontrado" }
+  if (!product || !product.available) return { title: "Producto no encontrado" }
 
   const numericPrice = parseInt(product.price.replace(/[$.]/g, ""), 10)
   const baseUrl = "https://www.novamente.ar"
@@ -131,7 +131,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const product = PRODUCTS.find((p) => p.id === id)
-  if (!product) notFound()
+  if (!product || !product.available) notFound()
 
   const numericPrice = parseInt(product.price.replace(/[$.]/g, ""), 10)
   const baseUrl = "https://www.novamente.ar"
@@ -342,7 +342,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Ruler className="w-4 h-4 text-orange-500" />
-                <span>Talles S a {product.category === "Remeras Crop" || product.category === "Musculosas" || product.category === "Remeras Mujer" ? "XL" : "XXL"}</span>
+                <span>{product.category === "Remeras Infantiles" ? "Talles 4 a 16" : `Talles S a ${product.category === "Remeras Crop" || product.category === "Musculosas" || product.category === "Remeras Mujer" ? "XL" : "XXL"}`}</span>
               </div>
             </div>
 

@@ -256,13 +256,15 @@ export default function B2BCatalog({
                     <p className="text-xs uppercase tracking-wider text-muted-foreground">
                       Talles disponibles
                     </p>
-                    <button
-                      onClick={() => setShowChart((s) => !s)}
-                      className="text-xs flex items-center gap-1 text-primary hover:underline"
-                    >
-                      <Ruler className="w-3 h-3" />
-                      {showChart ? "Ocultar guia" : "Ver guia de talles"}
-                    </button>
+                    {openModel.measurementsChart && (
+                      <button
+                        onClick={() => setShowChart((s) => !s)}
+                        className="text-xs flex items-center gap-1 text-primary hover:underline"
+                      >
+                        <Ruler className="w-3 h-3" />
+                        {showChart ? "Ocultar guia" : "Ver guia de talles"}
+                      </button>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {openModel.sizes.map((s) => (

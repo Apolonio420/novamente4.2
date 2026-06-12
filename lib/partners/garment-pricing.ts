@@ -173,6 +173,17 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
     b2b_bulk: 18900,
     b2c_suggested: 23500,
   },
+  'remera-infantil': {
+    key: 'remera-infantil',
+    name: 'Bambino Remera Infantil',
+    cost: 18100,
+    on_demand: 20800,
+    b2b_starter: 20300,
+    b2b_pro: 19800,
+    b2b_drop: 19300,
+    b2b_bulk: 18900,
+    b2c_suggested: 23500,
+  },
   'buzo-cuello-redondo': {
     key: 'buzo-cuello-redondo',
     name: 'Buzo Cuello Redondo',
