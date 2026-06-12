@@ -244,3 +244,55 @@
   content-visibility: auto;
   contain-intrinsic-size: auto 600px;
 }
+
+/* ============================================================
+   Workspace product tour (driver.js) — tema oscuro zinc/violet
+   ============================================================ */
+.nv-tour-popover.driver-popover {
+  background-color: #18181b; /* zinc-900 */
+  color: #e4e4e7;            /* zinc-200 */
+  border: 1px solid #27272a; /* zinc-800 */
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6);
+  max-width: 320px;
+}
+.nv-tour-popover .driver-popover-title {
+  color: #fafafa;            /* zinc-50 */
+  font-size: 1rem;
+  font-weight: 600;
+}
+.nv-tour-popover .driver-popover-description {
+  color: #a1a1aa;            /* zinc-400 */
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.nv-tour-popover .driver-popover-progress-text {
+  color: #71717a;            /* zinc-500 */
+  font-size: 0.75rem;
+}
+.nv-tour-popover .driver-popover-footer button {
+  background-color: #27272a; /* zinc-800 */
+  color: #e4e4e7;
+  border: 1px solid #3f3f46; /* zinc-700 */
+  border-radius: 0.5rem;
+  text-shadow: none;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8125rem;
+}
+.nv-tour-popover .driver-popover-footer button:hover {
+  background-color: #3f3f46;
+}
+.nv-tour-popover .driver-popover-next-btn {
+  background-color: #7c3aed !important; /* violet-600 */
+  border-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+.nv-tour-popover .driver-popover-next-btn:hover {
+  background-color: #8b5cf6 !important; /* violet-500 */
+}
+.nv-tour-popover .driver-popover-close-btn {
+  color: #a1a1aa;
+}
+.nv-tour-popover .driver-popover-arrow {
+  border-color: #18181b;
+}

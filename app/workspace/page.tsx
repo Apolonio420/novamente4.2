@@ -750,6 +750,7 @@ export default function WorkspaceDashboard() {
           return (
             <div
               key={m.key}
+              data-tour={m.key === 'score' ? 'score-card' : undefined}
               className={`group relative rounded-xl border p-5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-black/20 cursor-default ${METRIC_GRADIENTS[m.key]}`}
             >
               <div className="flex items-center justify-between mb-3">
@@ -856,7 +857,7 @@ export default function WorkspaceDashboard() {
         {/* -------------------------------------------------------------- */}
         {/* ONBOARDING CHECKLIST                                            */}
         {/* -------------------------------------------------------------- */}
-        <div className="rounded-xl border border-zinc-800/50 bg-zinc-900/40 overflow-hidden">
+        <div data-tour="onboarding-checklist" className="rounded-xl border border-zinc-800/50 bg-zinc-900/40 overflow-hidden">
           <button
             onClick={() => setChecklistOpen(!checklistOpen)}
             className="w-full flex items-center justify-between p-5 text-left hover:bg-zinc-800/20 transition-colors"

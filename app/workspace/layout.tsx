@@ -34,8 +34,10 @@ import {
   Shield,
   Video,
   Wallet,
+  HelpCircle,
 } from 'lucide-react'
 import { AssistantProvider } from '@/lib/assistant/assistant-context'
+import WorkspaceTour, { START_TOUR_EVENT, OPEN_SIDEBAR_EVENT, CLOSE_SIDEBAR_EVENT } from '@/components/workspace/WorkspaceTour'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authFetch } from '@/lib/partners/auth-fetch'
@@ -46,6 +48,7 @@ interface NavItem {
   href: string
   icon: LucideIcon
   requiredPlan?: 'growth' | 'pro'
+  tourId?: string
 }
 
 interface NavSection {
@@ -58,8 +61,8 @@ const navSections: NavSection[] = [
     title: 'Tu Marca',
     items: [
       { label: 'Dashboard', href: '/workspace', icon: LayoutDashboard },
-      { label: 'Branding', href: '/workspace/branding', icon: Palette },
-      { label: 'Catalogo', href: '/workspace/catalog', icon: Package },
+      { label: 'Branding', href: '/workspace/branding', icon: Palette, tourId: 'branding' },
+      { label: 'Catalogo', href: '/workspace/catalog', icon: Package, tourId: 'catalog' },
       { label: 'Studio', href: '/workspace/design-engine', icon: Sparkles },
       { label: 'Biblioteca de diseños', href: '/workspace/design-library', icon: ImageIcon },
     ],
@@ -67,7 +70,7 @@ const navSections: NavSection[] = [
   {
     title: 'Ventas',
     items: [
-      { label: 'Leads', href: '/workspace/leads', icon: Users },
+      { label: 'Leads', href: '/workspace/leads', icon: Users, tourId: 'leads' },
       { label: 'Pedidos', href: '/workspace/orders', icon: ShoppingBag },
       { label: 'Finanzas', href: '/workspace/finanzas', icon: Wallet },
       { label: 'Reseñas', href: '/workspace/reviews', icon: MessageSquare },
@@ -231,6 +234,18 @@ export default function WorkspaceLayout({
         t.email.toLowerCase().includes(tenantSearch.toLowerCase())
       )
     : allTenants
+
+  // El product tour controla el drawer del sidebar en mobile (pasos 1-3).
+  useEffect(() => {
+    const open = () => setSidebarOpen(true)
+    const close = () => setSidebarOpen(false)
+    window.addEventListener(OPEN_SIDEBAR_EVENT, open)
+    window.addEventListener(CLOSE_SIDEBAR_EVENT, close)
+    return () => {
+      window.removeEventListener(OPEN_SIDEBAR_EVENT, open)
+      window.removeEventListener(CLOSE_SIDEBAR_EVENT, close)
+    }
+  }, [])
 
   // Close menus on outside click
   useEffect(() => {
@@ -405,6 +420,7 @@ export default function WorkspaceLayout({
                   <Link
                     key={item.href}
                     href={item.href}
+                    data-tour={item.tourId}
                     onClick={() => setSidebarOpen(false)}
                     title={sidebarCollapsed ? item.label : undefined}
                     className={cn(
@@ -550,6 +566,7 @@ export default function WorkspaceLayout({
             {/* User avatar with menu */}
             <div className="relative">
               <button
+                data-tour="account-menu"
                 onClick={(e) => {
                   e.stopPropagation()
                   setShowUserMenu(!showUserMenu)
@@ -598,6 +615,16 @@ export default function WorkspaceLayout({
                     </Link>
                   )}
                   <button
+                    onClick={() => {
+                      setShowUserMenu(false)
+                      window.dispatchEvent(new Event(START_TOUR_EVENT))
+                    }}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors border-t border-zinc-800"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" />
+                    Ver tour de nuevo
+                  </button>
+                  <button
                     onClick={handleSignOut}
                     className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-zinc-800 transition-colors"
                   >
@@ -621,6 +648,7 @@ export default function WorkspaceLayout({
         </main>
       </div>
 
+      <WorkspaceTour />
     </div>
     </AssistantProvider>
   )
