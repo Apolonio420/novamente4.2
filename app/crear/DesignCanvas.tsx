@@ -37,12 +37,46 @@ import * as fpixel from "@/lib/fpixel"
 
 // --- Constants ---
 
+// Canvas CUADRADO: todos los templates de prenda son 1:1 (600x600/4000x4000).
+// Antes era 600x800 y la prenda se estiraba 33% en vertical.
 const CANVAS_W = 600
-const CANVAS_H = 800
-const CANVAS_ASPECT = CANVAS_W / CANVAS_H // 0.75
+const CANVAS_H = 600
+const CANVAS_ASPECT = CANVAS_W / CANVAS_H // 1
 
-// Print area bounding box (torso zone on 600x800 canvas) — used como guia opcional
-const PRINT_AREA = { x: 100, y: 150, w: 400, h: 400 }
+type PrintBox = { x: number; y: number; w: number; h: number }
+
+// Áreas de impresión REALES por prenda+lado (calibradas visualmente contra
+// cada template 600x600 — ver scripts/_print-areas-proof.mjs). El hoodie
+// frente termina JUSTO arriba del bolsillo y no toca mangas/capucha.
+const PRINT_AREAS: Record<string, { front: PrintBox; back?: PrintBox }> = {
+  tshirt:    { front: { x: 185, y: 170, w: 230, h: 270 }, back: { x: 180, y: 150, w: 240, h: 290 } },
+  hoodie:    { front: { x: 200, y: 205, w: 200, h: 150 }, back: { x: 185, y: 250, w: 230, h: 210 } },
+  crew:      { front: { x: 195, y: 195, w: 210, h: 240 } },
+  clasica:   { front: { x: 195, y: 195, w: 210, h: 230 } },
+  crop:      { front: { x: 195, y: 185, w: 210, h: 200 } },
+  musculosa: { front: { x: 220, y: 230, w: 160, h: 210 } },
+}
+
+function garmentKind(garmentType: string): keyof typeof PRINT_AREAS {
+  const g = garmentType.toLowerCase()
+  if (g.includes("hoodie")) return "hoodie"
+  if (g.includes("cuello-redondo") || g.includes("crew")) return "crew"
+  if (g.includes("crop")) return "crop"
+  if (g.includes("musculosa") || g.includes("bali")) return "musculosa"
+  if (g.includes("clasica-mujer")) return "clasica"
+  return "tshirt"
+}
+
+/** Área de impresión para la prenda+lado actual (fallback al frente). */
+function getPrintArea(garmentType: string, side: "front" | "back"): PrintBox {
+  const areas = PRINT_AREAS[garmentKind(garmentType)]
+  return (side === "back" ? areas.back : areas.front) ?? areas.front
+}
+
+/** Prendas que tienen template de espalda disponible. */
+function hasBackTemplate(garmentType: string): boolean {
+  return PRINT_AREAS[garmentKind(garmentType)].back != null
+}
 
 const MAX_HISTORY = 30
 const MIN_SCALE = 0.05 // ahora se puede achicar mucho
@@ -117,6 +151,27 @@ function uid() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+/** Prueba una lista de URLs en orden y devuelve la primera imagen que carga. */
+function useKonvaImageFallback(urls: string[]): HTMLImageElement | null {
+  const [img, setImg] = useState<HTMLImageElement | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    setImg(null)
+    const tryAt = (i: number) => {
+      if (cancelled || i >= urls.length) return
+      const el = new window.Image()
+      el.crossOrigin = "anonymous"
+      el.onload = () => { if (!cancelled) setImg(el) }
+      el.onerror = () => tryAt(i + 1)
+      el.src = urls[i]
+    }
+    tryAt(0)
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urls.join("|")])
+  return img
+}
+
 function useKonvaImage(url: string | null | undefined): HTMLImageElement | null {
   const [img, setImg] = useState<HTMLImageElement | null>(null)
   useEffect(() => {
@@ -146,7 +201,7 @@ const COLOR_MAP: Record<string, string> = {
   white: "white",
 }
 
-function resolveGarmentTemplate(garmentType: string, color: string, side: "front" | "back"): string | null {
+function resolveGarmentTemplate(garmentType: string, color: string, side: "front" | "back"): string[] {
   const mappedColor = COLOR_MAP[color.toLowerCase()] ?? color
   const c = mappedColor.toLowerCase().replace(/\s+/g, "-")
   const s = side
@@ -181,7 +236,7 @@ function resolveGarmentTemplate(garmentType: string, color: string, side: "front
       else if (garmentType.includes("musculosa")) candidates.push(`/garments/musculosa-bali-${c}-${s}.png`)
       else candidates.push(`/garments/tshirt-${c}-classic-${s}.jpeg`)
   }
-  return candidates[0] ?? null
+  return candidates
 }
 
 // --- Google Fonts loader ---
@@ -431,7 +486,7 @@ export function DesignCanvas({
     () => resolveGarmentTemplate(session.garmentType, session.garmentColor, session.side),
     [session.garmentType, session.garmentColor, session.side],
   )
-  const garmentImg = useKonvaImage(garmentUrl)
+  const garmentImg = useKonvaImageFallback(garmentUrl)
 
   // Auto-add design from chat as image layer when first loaded
   const initializedDesignRef = useRef<string | null>(null)
@@ -450,8 +505,8 @@ export function DesignCanvas({
       id: newId,
       kind: "image",
       imageUrl: session.currentDesignUrl,
-      x: PRINT_AREA.x + PRINT_AREA.w / 2,
-      y: PRINT_AREA.y + PRINT_AREA.h / 2,
+      x: getPrintArea(session.garmentType, session.side).x + getPrintArea(session.garmentType, session.side).w / 2,
+      y: getPrintArea(session.garmentType, session.side).y + getPrintArea(session.garmentType, session.side).h / 2,
       scaleX: 0.3,
       scaleY: 0.3,
       rotation: 0,
@@ -463,7 +518,8 @@ export function DesignCanvas({
     probe.onload = () => {
       const w = probe.naturalWidth || 200
       const h = probe.naturalHeight || 200
-      const targetMax = Math.min(PRINT_AREA.w, PRINT_AREA.h) * 0.7
+      const pa = getPrintArea(session.garmentType, session.side)
+      const targetMax = Math.min(pa.w, pa.h) * 0.7
       const fit = clamp(targetMax / Math.max(w, h), MIN_SCALE, MAX_SCALE)
       commitSnapshot((current) => ({
         layers: [...current.layers, { ...newLayer, scaleX: fit, scaleY: fit }],
@@ -560,8 +616,8 @@ export function DesignCanvas({
       fontStyle: "normal",
       fill: "#ffffff",
       align: "center",
-      x: PRINT_AREA.x + PRINT_AREA.w / 2,
-      y: PRINT_AREA.y + PRINT_AREA.h / 2,
+      x: getPrintArea(session.garmentType, session.side).x + getPrintArea(session.garmentType, session.side).w / 2,
+      y: getPrintArea(session.garmentType, session.side).y + getPrintArea(session.garmentType, session.side).h / 2,
       scaleX: 1,
       scaleY: 1,
       rotation: 0,
@@ -743,10 +799,14 @@ export function DesignCanvas({
             ))}
           </div>
           <div className="flex gap-1 shrink-0">
-            {(["front", "back"] as const).map((s) => (
+            {(["front", "back"] as const).map((s) => {
+              const backUnavailable = s === "back" && !hasBackTemplate(session.garmentType)
+              return (
               <button
                 key={s}
                 type="button"
+                disabled={backUnavailable}
+                title={backUnavailable ? "Espalda próximamente para esta prenda" : undefined}
                 onClick={() => setSession((prev) => ({
                   ...prev,
                   side: s,
@@ -756,13 +816,13 @@ export function DesignCanvas({
                   currentMockupUrl: null,
                   mockupGeneratedFor: null,
                 }))}
-                className={`text-[11px] rounded-md border px-2.5 py-1 transition ${
+                className={`text-[11px] rounded-md border px-2.5 py-1 transition disabled:opacity-30 disabled:cursor-not-allowed ${
                   session.side === s ? "bg-white text-zinc-950 border-white" : "border-zinc-700 text-zinc-300"
                 }`}
               >
                 {s === "front" ? "Frente" : "Espalda"}
               </button>
-            ))}
+            )})}
           </div>
         </div>
       </div>
@@ -847,10 +907,10 @@ export function DesignCanvas({
           {showGuides && (
             <Layer listening={false}>
               <Rect
-                x={PRINT_AREA.x}
-                y={PRINT_AREA.y}
-                width={PRINT_AREA.w}
-                height={PRINT_AREA.h}
+                x={getPrintArea(session.garmentType, session.side).x}
+                y={getPrintArea(session.garmentType, session.side).y}
+                width={getPrintArea(session.garmentType, session.side).w}
+                height={getPrintArea(session.garmentType, session.side).h}
                 stroke="#a78bfa"
                 strokeWidth={2}
                 dash={[8, 6]}

@@ -214,7 +214,23 @@ export async function POST(req: NextRequest) {
     }
 
     const out = await Promise.all(imagesBase64.map(async (b64) => {
-      const buffer = Buffer.from(b64, 'base64')
+      let buffer = Buffer.from(b64, 'base64')
+      // Transparencia REAL: el prompt pide fondo blanco sólido y acá lo
+      // removemos con flood-fill → PNG con alpha listo para canvas/estampa.
+      // (Gemini no genera alpha: si se le pide, pinta un cuadriculado falso.)
+      let bgRemoved = false
+      if (rawMode) {
+        try {
+          const { removeWhiteBackground } = await import("@/lib/designer/remove-white-bg")
+          const res = await removeWhiteBackground(buffer)
+          buffer = res.buffer as typeof buffer
+          bgRemoved = res.removed
+          if (bgRemoved) b64 = buffer.toString('base64')
+          console.log(`GEN-IMG white-bg removal: ${bgRemoved ? 'OK' : 'skipped (sin fondo blanco detectable)'}`)
+        } catch (e) {
+          console.warn("GEN-IMG white-bg removal failed:", (e as Error).message)
+        }
+      }
       const timestamp = Date.now()
       const storageKey = `v1/raw-designs/${timestamp}-${Math.random().toString(36).substring(2, 7)}.png`
 
@@ -224,7 +240,7 @@ export async function POST(req: NextRequest) {
         return {
           data: b64,
           url: publicUrl,
-          hasBgRemoved: false,
+          hasBgRemoved: bgRemoved,
           storageProvider: provider
         }
       } catch (err: any) {
@@ -232,7 +248,7 @@ export async function POST(req: NextRequest) {
         return {
           data: b64,
           url: `data:image/png;base64,${b64}`,
-          hasBgRemoved: false,
+          hasBgRemoved: bgRemoved,
           isFallback: true
         }
       }

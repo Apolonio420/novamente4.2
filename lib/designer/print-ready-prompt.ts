@@ -27,7 +27,11 @@ export function normalizeGarmentColor(color: string | undefined | null): PrintGa
   return COLOR_TO_PRINT_CATEGORY[k] ?? "auto"
 }
 
-const BASE_RULES = `This is a print-ready apparel graphic, not a mockup, not a poster, and not a garment photo. The artwork must be isolated and suitable for DTG/DTF printing. Do not show a hoodie, t-shirt, model, hanger, or mockup. Use transparent background whenever possible. If transparency is not supported, use a flat chroma background color such as #00FF00 or #FF00FF, and do not use that color anywhere inside the artwork. Do not rely on a black, white, or colored background for visibility. All important shapes, typography, smoke, shadows, clothing, hair, ornaments, and textures must remain visible on the intended garment color.`
+// NOTA: NO pedir "transparent background" — Gemini no genera alpha real y lo
+// FINGE pintando un patrón de cuadriculado gris como píxeles (quedaba impreso
+// en la prenda). Pedimos fondo BLANCO PURO sólido y lo removemos server-side
+// con flood-fill (ver removeWhiteBackground en /api/generate-image).
+const BASE_RULES = `This is a print-ready apparel graphic, not a mockup, not a poster, and not a garment photo. The artwork must be isolated and suitable for DTG/DTF printing. Do not show a hoodie, t-shirt, model, hanger, or mockup. ALWAYS place the isolated artwork on a plain SOLID PURE WHITE background (#FFFFFF). NEVER draw a checkerboard or transparency pattern — the background must be uniform flat white with no texture. Do not rely on the background for visibility. All important shapes, typography, smoke, shadows, clothing, hair, ornaments, and textures must remain visible on the intended garment color.`
 
 const DARK_RULES = `IMPORTANT FOR BLACK / DARK GARMENT PRINTING: The artwork is intended for a black or dark garment. Do not use a solid black background. Do not rely on black as the outer edge of important shapes. Dark elements such as black clothing, hats, hair, shadows, cars, buildings, smoke or typography must have visible separation using aged ivory, smoke gray, ash gray, off-white rim light, contour lines or subtle highlights. Black may only be used as internal shading, never as the only defining silhouette. The design must remain readable when placed on black fabric.`
 
