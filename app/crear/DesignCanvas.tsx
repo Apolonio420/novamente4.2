@@ -80,6 +80,51 @@ function hasBackTemplate(garmentType: string): boolean {
   return PRINT_AREAS[garmentKind(garmentType)].back != null
 }
 
+// --- Confinamiento al área de impresión ---
+// El diseño NO puede salirse del recuadro: lo que está afuera no se imprime.
+
+/** Bounding box del nodo en coords del canvas (el Stage escala, los hijos no). */
+function nodeRect(node: Konva.Node) {
+  const stage = node.getStage()
+  return node.getClientRect({ relativeTo: (stage ?? undefined) as never })
+}
+
+/** ¿El bounding box entra completo en el área? (tolerancia sub-píxel) */
+function rectInsideArea(r: { x: number; y: number; width: number; height: number }, area: PrintBox): boolean {
+  const t = 0.5
+  return (
+    r.x >= area.x - t &&
+    r.y >= area.y - t &&
+    r.x + r.width <= area.x + area.w + t &&
+    r.y + r.height <= area.y + area.h + t
+  )
+}
+
+/** Corrige la POSICIÓN del nodo para que su bounding box quede dentro del área. */
+function clampNodeToArea(node: Konva.Node, area: PrintBox) {
+  const r = nodeRect(node)
+  let dx = 0
+  let dy = 0
+  if (r.width <= area.w) {
+    if (r.x < area.x) dx = area.x - r.x
+    else if (r.x + r.width > area.x + area.w) dx = area.x + area.w - (r.x + r.width)
+  } else {
+    dx = area.x + area.w / 2 - (r.x + r.width / 2)
+  }
+  if (r.height <= area.h) {
+    if (r.y < area.y) dy = area.y - r.y
+    else if (r.y + r.height > area.y + area.h) dy = area.y + area.h - (r.y + r.height)
+  } else {
+    dy = area.y + area.h / 2 - (r.y + r.height / 2)
+  }
+  if (dx !== 0 || dy !== 0) node.position({ x: node.x() + dx, y: node.y() + dy })
+}
+
+type NodeAttrsSnapshot = { x: number; y: number; scaleX: number; scaleY: number; rotation: number }
+const snapshotAttrs = (node: Konva.Node): NodeAttrsSnapshot => ({
+  x: node.x(), y: node.y(), scaleX: node.scaleX(), scaleY: node.scaleY(), rotation: node.rotation(),
+})
+
 const MAX_HISTORY = 30
 const MIN_SCALE = 0.05 // ahora se puede achicar mucho
 const MAX_SCALE = 4.0  // y agrandar mas
@@ -267,6 +312,7 @@ function ImageLayerNode({
   onChangeCommit,
   registerRef,
   selected,
+  printArea,
 }: {
   layer: CanvasLayer
   onSelect: () => void
@@ -274,9 +320,11 @@ function ImageLayerNode({
   onChangeCommit: (patch: Partial<CanvasLayer>) => void
   registerRef: (node: Konva.Node | null) => void
   selected: boolean
+  printArea: PrintBox
 }) {
   const img = useKonvaImage(layer.imageUrl ?? null)
   const ref = useRef<Konva.Image>(null)
+  const lastGood = useRef<NodeAttrsSnapshot | null>(null)
 
   useEffect(() => {
     registerRef(ref.current)
@@ -308,19 +356,42 @@ function ImageLayerNode({
       onTap={onSelect}
       onMouseDown={onSelect}
       onTouchStart={onSelect}
-      onDragMove={(e) => onChange({ x: e.target.x(), y: e.target.y() })}
-      onDragEnd={(e) => onChangeCommit({ x: e.target.x(), y: e.target.y() })}
+      onDragMove={(e) => {
+        // confinado al área de impresión — lo de afuera no se imprime
+        clampNodeToArea(e.target, printArea)
+        onChange({ x: e.target.x(), y: e.target.y() })
+      }}
+      onDragEnd={(e) => {
+        clampNodeToArea(e.target, printArea)
+        onChangeCommit({ x: e.target.x(), y: e.target.y() })
+      }}
+      onTransformStart={(e) => {
+        lastGood.current = snapshotAttrs(e.target)
+      }}
+      onTransform={(e) => {
+        // si el resize/rotate saca el bbox del área → revertir al último válido
+        const node = e.target
+        if (rectInsideArea(nodeRect(node), printArea)) {
+          lastGood.current = snapshotAttrs(node)
+        } else if (lastGood.current) {
+          node.setAttrs(lastGood.current)
+        }
+      }}
       onTransformEnd={(e) => {
         const node = e.target
         const sx = clamp(node.scaleX(), MIN_SCALE, MAX_SCALE)
         const sy = clamp(node.scaleY(), MIN_SCALE, MAX_SCALE)
         node.scaleX(sx)
         node.scaleY(sy)
+        if (!rectInsideArea(nodeRect(node), printArea)) {
+          if (lastGood.current) node.setAttrs(lastGood.current)
+          clampNodeToArea(node, printArea)
+        }
         onChangeCommit({
           x: node.x(),
           y: node.y(),
-          scaleX: sx,
-          scaleY: sy,
+          scaleX: node.scaleX(),
+          scaleY: node.scaleY(),
           rotation: node.rotation(),
         })
       }}
@@ -334,14 +405,17 @@ function TextLayerNode({
   onChange,
   onChangeCommit,
   registerRef,
+  printArea,
 }: {
   layer: CanvasLayer
   onSelect: () => void
   onChange: (patch: Partial<CanvasLayer>) => void
   onChangeCommit: (patch: Partial<CanvasLayer>) => void
   registerRef: (node: Konva.Node | null) => void
+  printArea: PrintBox
 }) {
   const ref = useRef<Konva.Text>(null)
+  const lastGood = useRef<NodeAttrsSnapshot | null>(null)
 
   useEffect(() => {
     registerRef(ref.current)
@@ -380,19 +454,42 @@ function TextLayerNode({
       onTap={onSelect}
       onMouseDown={onSelect}
       onTouchStart={onSelect}
-      onDragMove={(e) => onChange({ x: e.target.x(), y: e.target.y() })}
-      onDragEnd={(e) => onChangeCommit({ x: e.target.x(), y: e.target.y() })}
+      onDragMove={(e) => {
+        // confinado al área de impresión — lo de afuera no se imprime
+        clampNodeToArea(e.target, printArea)
+        onChange({ x: e.target.x(), y: e.target.y() })
+      }}
+      onDragEnd={(e) => {
+        clampNodeToArea(e.target, printArea)
+        onChangeCommit({ x: e.target.x(), y: e.target.y() })
+      }}
+      onTransformStart={(e) => {
+        lastGood.current = snapshotAttrs(e.target)
+      }}
+      onTransform={(e) => {
+        // si el resize/rotate saca el bbox del área → revertir al último válido
+        const node = e.target
+        if (rectInsideArea(nodeRect(node), printArea)) {
+          lastGood.current = snapshotAttrs(node)
+        } else if (lastGood.current) {
+          node.setAttrs(lastGood.current)
+        }
+      }}
       onTransformEnd={(e) => {
         const node = e.target
         const sx = clamp(node.scaleX(), MIN_SCALE, MAX_SCALE)
         const sy = clamp(node.scaleY(), MIN_SCALE, MAX_SCALE)
         node.scaleX(sx)
         node.scaleY(sy)
+        if (!rectInsideArea(nodeRect(node), printArea)) {
+          if (lastGood.current) node.setAttrs(lastGood.current)
+          clampNodeToArea(node, printArea)
+        }
         onChangeCommit({
           x: node.x(),
           y: node.y(),
-          scaleX: sx,
-          scaleY: sy,
+          scaleX: node.scaleX(),
+          scaleY: node.scaleY(),
           rotation: node.rotation(),
         })
       }}
@@ -570,12 +667,50 @@ export function DesignCanvas({
     }))
   }, [commitSnapshot])
 
+  // Escala/rotación desde los CONTROLES del panel (slider, botones ±15°):
+  // mide sobre el nodo Konva real, reduce la escala si el bbox no entra en el
+  // área de impresión y corrige la posición. Mismo confinamiento que el drag.
+  const applyTransformClamped = useCallback((id: string, t: { scale?: number; rotation?: number }, commit: boolean) => {
+    const node = nodeRefs.current.get(id)
+    if (!node) return
+    const area = getPrintArea(session.garmentType, session.side)
+    if (t.scale != null) { node.scaleX(t.scale); node.scaleY(t.scale) }
+    if (t.rotation != null) node.rotation(t.rotation)
+    const r = nodeRect(node)
+    const f = Math.min(area.w / r.width, area.h / r.height, 1)
+    if (f < 1) {
+      const s = Math.max(MIN_SCALE, node.scaleX() * f)
+      node.scaleX(s)
+      node.scaleY(s)
+    }
+    clampNodeToArea(node, area)
+    const out = { x: node.x(), y: node.y(), scaleX: node.scaleX(), scaleY: node.scaleY(), rotation: node.rotation() }
+    if (commit) updateLayerCommit(id, out)
+    else updateLayerEphemeral(id, out)
+  }, [session.garmentType, session.side, updateLayerCommit, updateLayerEphemeral])
+
   const deleteLayer = useCallback((id: string) => {
     commitSnapshot((current) => ({
       layers: current.layers.filter(l => l.id !== id),
       activeId: current.activeId === id ? null : current.activeId,
     }))
   }, [commitSnapshot])
+
+  // Al cambiar prenda/lado el área de impresión cambia: re-encajar las capas
+  // que hayan quedado fuera del recuadro nuevo.
+  useEffect(() => {
+    const area = getPrintArea(session.garmentType, session.side)
+    // esperar un frame a que Konva re-renderice con la nueva prenda
+    const t = setTimeout(() => {
+      for (const [id, node] of nodeRefs.current.entries()) {
+        if (rectInsideArea(nodeRect(node), area)) continue
+        clampNodeToArea(node, area)
+        updateLayerCommit(id, { x: node.x(), y: node.y() })
+      }
+    }, 50)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.garmentType, session.side])
 
   const duplicateLayer = useCallback((id: string) => {
     const layer = layers.find(l => l.id === id)
@@ -931,6 +1066,7 @@ export function DesignCanvas({
                     key={layer.id}
                     layer={layer}
                     selected={isActive}
+                    printArea={getPrintArea(session.garmentType, session.side)}
                     registerRef={(n) => {
                       if (n) nodeRefs.current.set(layer.id, n)
                       else nodeRefs.current.delete(layer.id)
@@ -945,6 +1081,7 @@ export function DesignCanvas({
                 <TextLayerNode
                   key={layer.id}
                   layer={layer}
+                  printArea={getPrintArea(session.garmentType, session.side)}
                   registerRef={(n) => {
                     if (n) nodeRefs.current.set(layer.id, n)
                     else nodeRefs.current.delete(layer.id)
@@ -1014,7 +1151,7 @@ export function DesignCanvas({
           <div className="flex items-center justify-center gap-1.5">
             <button
               type="button"
-              onClick={() => updateLayerCommit(activeLayer.id, { rotation: (activeLayer.rotation || 0) - 15 })}
+              onClick={() => applyTransformClamped(activeLayer.id, { rotation: (activeLayer.rotation || 0) - 15 }, true)}
               className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
               title="Rotar -15°"
             >
@@ -1023,7 +1160,7 @@ export function DesignCanvas({
             <span className="text-[11px] text-zinc-500 font-mono w-12 text-center">{Math.round(activeLayer.rotation || 0)}°</span>
             <button
               type="button"
-              onClick={() => updateLayerCommit(activeLayer.id, { rotation: (activeLayer.rotation || 0) + 15 })}
+              onClick={() => applyTransformClamped(activeLayer.id, { rotation: (activeLayer.rotation || 0) + 15 }, true)}
               className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300 scale-x-[-1]"
               title="Rotar +15°"
             >
@@ -1040,12 +1177,9 @@ export function DesignCanvas({
               max={MAX_SCALE}
               step={0.01}
               value={activeLayer.scaleX}
-              onChange={(e) => {
-                const v = parseFloat(e.target.value)
-                updateLayerEphemeral(activeLayer.id, { scaleX: v, scaleY: v })
-              }}
-              onMouseUp={(e) => updateLayerCommit(activeLayer.id, { scaleX: parseFloat((e.target as HTMLInputElement).value), scaleY: parseFloat((e.target as HTMLInputElement).value) })}
-              onTouchEnd={(e) => updateLayerCommit(activeLayer.id, { scaleX: parseFloat((e.target as HTMLInputElement).value), scaleY: parseFloat((e.target as HTMLInputElement).value) })}
+              onChange={(e) => applyTransformClamped(activeLayer.id, { scale: parseFloat(e.target.value) }, false)}
+              onMouseUp={(e) => applyTransformClamped(activeLayer.id, { scale: parseFloat((e.target as HTMLInputElement).value) }, true)}
+              onTouchEnd={(e) => applyTransformClamped(activeLayer.id, { scale: parseFloat((e.target as HTMLInputElement).value) }, true)}
               className="flex-1 accent-violet-500"
             />
             <span className="text-[10px] text-zinc-500 font-mono w-10 text-right">{Math.round(activeLayer.scaleX * 100)}%</span>
