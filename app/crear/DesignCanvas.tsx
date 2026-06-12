@@ -198,6 +198,16 @@ function uid() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+/** dataURL → Blob sin fetch() — el CSP del sitio bloquea connect-src data:. */
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [head, b64] = dataUrl.split(",")
+  const mime = /data:([^;]+)/.exec(head)?.[1] ?? "image/png"
+  const bin = atob(b64)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
+}
+
 /** Prueba una lista de URLs en orden y devuelve la primera imagen que carga. */
 function useKonvaImageFallback(urls: string[]): HTMLImageElement | null {
   const [img, setImg] = useState<HTMLImageElement | null>(null)
@@ -814,8 +824,8 @@ export function DesignCanvas({
 
       const dataUrl = stageRef.current.toDataURL({ pixelRatio: 2 })
 
-      const res = await fetch(dataUrl)
-      const blob = await res.blob()
+      // dataURL→Blob directo (fetch(data:) está bloqueado por CSP)
+      const blob = dataUrlToBlob(dataUrl)
       const formData = new FormData()
       formData.append("file", blob, `canvas-${Date.now()}.png`)
       formData.append("folder", "canvas-exports")
@@ -1337,17 +1347,54 @@ export function DesignCanvas({
         className="w-full max-w-lg border-zinc-700 hover:bg-zinc-800"
         disabled={generatingMockup || (!session.currentDesignUrl && layers.length === 0)}
         onClick={async () => {
-          if (!session.currentDesignUrl) {
-            toast({ title: "Tip", description: "Para foto lifestyle necesitás un diseño base. Aplica el canvas primero o usá Chat IA.", variant: "destructive" })
+          if (!session.currentDesignUrl && layers.length === 0) {
+            toast({ title: "Tip", description: "Para foto lifestyle necesitás un diseño base. Generá uno en Chat IA o agregá una imagen/texto.", variant: "destructive" })
             return
           }
           setGeneratingMockup(true)
           try {
+            // Exportar la COMPOSICIÓN del canvas (capas del usuario tal cual
+            // las acomodó, SIN la prenda de fondo, recortada al área de
+            // impresión) — antes se mandaba el diseño crudo y se ignoraban
+            // los edits/textos del canvas.
+            let designImageUrl = session.currentDesignUrl
+            const stage = stageRef.current
+            if (stage && layers.length > 0) {
+              selectLayer(null)
+              const guidesWereOn = showGuides
+              setShowGuides(false)
+              await new Promise((r) => setTimeout(r, 60))
+              const garmentLayer = stage.getLayers()[0]
+              garmentLayer?.visible(false)
+              const area = getPrintArea(session.garmentType, session.side)
+              const dataUrl = stage.toDataURL({
+                x: area.x * scale,
+                y: area.y * scale,
+                width: area.w * scale,
+                height: area.h * scale,
+                pixelRatio: 2 / scale,
+              })
+              garmentLayer?.visible(true)
+              setShowGuides(guidesWereOn)
+              // subir a R2 para pasar una URL (la API descarga la imagen)
+              const blob = dataUrlToBlob(dataUrl)
+              const formData = new FormData()
+              formData.append("file", blob, `canvas-design-${Date.now()}.png`)
+              formData.append("folder", "canvas-exports")
+              const uploadRes = await fetch("/api/public/design/upload", { method: "POST", body: formData })
+              if (uploadRes.ok) {
+                const json = await uploadRes.json()
+                if (json.url) designImageUrl = json.url
+              }
+            }
+            if (!designImageUrl) throw new Error("No hay diseño para el mockup")
+
             const res = await fetch("/api/public/design/mockup-lifestyle", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                designUrl: session.currentDesignUrl,
+                // la API espera designImageUrl (antes se mandaba designUrl → 400 siempre)
+                designImageUrl,
                 garmentType: session.garmentType,
                 garmentColor: session.garmentColor,
                 side: session.side,
