@@ -17,6 +17,7 @@ import {
   RotateCcw,
   Zap,
   Sparkles,
+  X,
 } from "lucide-react"
 import { GarmentCatalog } from "./GarmentCatalog"
 
@@ -148,6 +149,15 @@ export function DesignChat({
   }, [session.currentMockupUrl, router])
   const [pendingAttachment, setPendingAttachment] = useState<string | null>(null)
   const [selectedSize, setSelectedSize] = useState("M")
+  // Lightbox de zoom: clickear el diseño del chat o el mockup lo abre full-screen
+  const [zoomUrl, setZoomUrl] = useState<string | null>(null)
+  useEffect(() => {
+    if (!zoomUrl) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setZoomUrl(null) }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [zoomUrl])
+
   // "Mis diseños": generaciones previas de esta sesión (cookie) para retomar
   const [myDesigns, setMyDesigns] = useState<Array<{ id: string; url: string; prompt: string | null }>>([])
   useEffect(() => {
@@ -908,6 +918,32 @@ export function DesignChat({
 
   return (
     <>
+      {/* Lightbox de zoom — diseño o mockup en grande */}
+      {zoomUrl && (
+        <div
+          role="dialog"
+          aria-label="Imagen ampliada"
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setZoomUrl(null)}
+        >
+          <button
+            type="button"
+            aria-label="Cerrar"
+            onClick={() => setZoomUrl(null)}
+            className="absolute top-4 right-4 z-10 rounded-full bg-white/10 hover:bg-white/20 p-2.5 text-white transition"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={zoomUrl}
+            alt="Imagen ampliada"
+            className="max-h-full max-w-full object-contain select-none"
+            draggable={false}
+          />
+        </div>
+      )}
+
       {/* Onboarding tour — primera visita */}
       {showOnboarding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
@@ -1138,9 +1174,14 @@ export function DesignChat({
 
                 <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
 
-                {/* Generated image thumbnail */}
+                {/* Generated image thumbnail — click para zoom */}
                 {msg.imageUrl && (
-                  <div className="mt-2 rounded-xl overflow-hidden border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setZoomUrl(msg.imageUrl!)}
+                    aria-label="Ver diseño en grande"
+                    className="mt-2 block rounded-xl overflow-hidden border border-white/10 cursor-zoom-in hover:border-violet-500/50 transition-colors"
+                  >
                     <Image
                       src={msg.imageUrl}
                       alt="Diseño generado"
@@ -1148,7 +1189,7 @@ export function DesignChat({
                       height={280}
                       className="object-contain bg-white/5"
                     />
-                  </div>
+                  </button>
                 )}
                 {/* Retry button cuando el mensaje es un error con prompt guardado */}
                 {msg.retryPrompt && !loading && (
@@ -1492,14 +1533,22 @@ export function DesignChat({
 
           <div className="aspect-square bg-zinc-950 flex items-center justify-center">
             {previewUrl ? (
-              <div className="relative w-full h-full">
+              <button
+                type="button"
+                onClick={() => setZoomUrl(previewUrl)}
+                aria-label="Ver en grande"
+                className="relative w-full h-full cursor-zoom-in group"
+              >
                 <Image
                   src={previewUrl}
                   alt={session.currentMockupUrl ? "Mockup" : "Diseño"}
                   fill
                   className="object-contain p-2"
                 />
-              </div>
+                <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-1 text-[10px] text-white/70 opacity-0 group-hover:opacity-100 transition-opacity">
+                  🔍 Ampliar
+                </span>
+              </button>
             ) : (
               <div className="flex flex-col items-center gap-3 text-zinc-700">
                 <Shirt className="w-12 h-12" />
