@@ -50,7 +50,9 @@ type PrintBox = { x: number; y: number; w: number; h: number }
 // frente termina JUSTO arriba del bolsillo y no toca mangas/capucha.
 const PRINT_AREAS: Record<string, { front: PrintBox; back?: PrintBox }> = {
   tshirt:    { front: { x: 185, y: 170, w: 230, h: 270 }, back: { x: 180, y: 150, w: 240, h: 290 } },
-  hoodie:    { front: { x: 200, y: 205, w: 200, h: 150 }, back: { x: 185, y: 250, w: 230, h: 210 } },
+  // hoodie front: del borde de la capucha al bolsillo justo, hombro a hombro
+  // sin mangas (medidas del dibujo del usuario 2026-06-12)
+  hoodie:    { front: { x: 160, y: 140, w: 280, h: 215 }, back: { x: 165, y: 245, w: 270, h: 215 } },
   crew:      { front: { x: 195, y: 195, w: 210, h: 240 } },
   clasica:   { front: { x: 195, y: 195, w: 210, h: 230 } },
   crop:      { front: { x: 195, y: 185, w: 210, h: 200 } },
