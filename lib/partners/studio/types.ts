@@ -56,10 +56,13 @@ export interface BrandEssence {
 }
 
 // Plan generation limits
+// starter usa ventana semanal (rolling 7 días); growth/pro usan mes calendario.
+// 20/semana en starter ≈ 86/mes, así que growth (100/mes) y pro (300/mes) quedan
+// por encima → el upsell "más diseños" es honesto.
 export const PLAN_GENERATION_LIMITS: Record<string, number> = {
-  starter: 5,
-  growth: 25,
-  pro: 150,
+  starter: 20,
+  growth: 100,
+  pro: 300,
 }
 
 // Starter uses rolling 7-day window, growth/pro use calendar month

@@ -42,10 +42,17 @@ export async function POST(request: NextRequest) {
     // Usage limit check
     const { allowed, usage } = await checkUsageLimit(tenant.id, tenant.plan)
     if (!allowed) {
+      const upsell =
+        tenant.plan === 'starter'
+          ? 'Subí a Growth (100 por mes) o suscribite a Pro (300 por mes) para generar muchas más 🚀'
+          : tenant.plan === 'growth'
+            ? 'Suscribite a Pro (300 por mes) para generar muchas más 🚀'
+            : 'Escribinos por WhatsApp y te ampliamos el límite.'
       return NextResponse.json(
         {
-          error: `Alcanzaste el límite de ${usage.limit} generaciones ${usage.resetLabel}. Upgrade tu plan para más.`,
+          error: `Llegaste al límite de ${usage.limit} generaciones ${usage.resetLabel}. ${upsell}`,
           usage,
+          upsell: tenant.plan === 'starter' ? 'growth' : tenant.plan === 'growth' ? 'pro' : null,
         },
         { status: 429 },
       )
