@@ -14,6 +14,14 @@ export async function checkUsageLimit(
   const limit = PLAN_GENERATION_LIMITS[plan] ?? 5
   const window = PLAN_USAGE_WINDOW[plan] ?? 'weekly'
 
+  // Planes pagos (growth/pro) = generaciones ILIMITADAS. No hay tope ni conteo.
+  if (!Number.isFinite(limit)) {
+    return {
+      allowed: true,
+      usage: { used: 0, limit: 0, resetLabel: 'sin límite', percentUsed: 0, unlimited: true },
+    }
+  }
+
   let dateFilter: string
   let resetLabel: string
 

@@ -439,7 +439,7 @@ export default function DesignStudioPage() {
 
       // Save assistant message + update usage
       if (sessionId) saveStudioMessage(sessionId, assistantMsg).catch(() => {})
-      if (data.usage) setUsage({ ...data.usage, percentUsed: Math.round((data.usage.used / data.usage.limit) * 100) })
+      if (data.usage) setUsage({ ...data.usage, percentUsed: data.usage.unlimited ? 0 : Math.round((data.usage.used / data.usage.limit) * 100) })
     } catch (err: any) {
       updateMessages(msgs =>
         msgs.map(m => m.id === placeholderId ? { ...m, isLoading: false, error: err.message } : m)
@@ -498,7 +498,7 @@ export default function DesignStudioPage() {
 
       updateMessages(msgs => msgs.map(m => m.id === placeholderId ? assistantMsg : m))
       if (sessionId) saveStudioMessage(sessionId, assistantMsg).catch(() => {})
-      if (data.usage) setUsage({ ...data.usage, percentUsed: Math.round((data.usage.used / data.usage.limit) * 100) })
+      if (data.usage) setUsage({ ...data.usage, percentUsed: data.usage.unlimited ? 0 : Math.round((data.usage.used / data.usage.limit) * 100) })
     } catch (err: any) {
       updateMessages(msgs =>
         msgs.map(m => m.id === placeholderId ? { ...m, isLoading: false, error: err.message } : m)
@@ -877,16 +877,18 @@ export default function DesignStudioPage() {
           {usage && (
             <div className="ml-auto flex items-center gap-2">
               <div className="flex items-center gap-1.5">
-                <div className="w-20 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      usage.percentUsed > 85 ? 'bg-red-500' : usage.percentUsed > 60 ? 'bg-yellow-500' : 'bg-violet-500'
-                    }`}
-                    style={{ width: `${Math.min(100, usage.percentUsed)}%` }}
-                  />
-                </div>
+                {!usage.unlimited && (
+                  <div className="w-20 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        usage.percentUsed > 85 ? 'bg-red-500' : usage.percentUsed > 60 ? 'bg-yellow-500' : 'bg-violet-500'
+                      }`}
+                      style={{ width: `${Math.min(100, usage.percentUsed)}%` }}
+                    />
+                  </div>
+                )}
                 <span className="text-xs text-zinc-400">
-                  {usage.used}/{usage.limit} {usage.resetLabel}
+                  {usage.unlimited ? 'Generaciones ilimitadas ✨' : `${usage.used}/${usage.limit} ${usage.resetLabel}`}
                 </span>
               </div>
             </div>
@@ -1164,14 +1166,14 @@ export default function DesignStudioPage() {
 
         {/* Input area */}
         <div className={`p-4 border-t border-zinc-800 bg-zinc-900/50 ${studioMode === 'upload' ? 'hidden' : ''}`}>
-          {usage && usage.used >= usage.limit && (
+          {usage && !usage.unlimited && usage.used >= usage.limit && (
             <div className="mb-3 text-sm text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 flex items-start gap-2">
               <span className="shrink-0 mt-0.5">⚠️</span>
               <div>
                 <p className="font-medium">Llegaste al límite semanal ({usage.used}/{usage.limit} generaciones)</p>
                 <p className="text-xs text-amber-300/80 mt-0.5">
                   {usage.resetLabel}.{' '}
-                  <a href="/workspace/billing" className="underline hover:text-amber-200">Pasá a Growth para 25/semana.</a>
+                  <a href="/workspace/billing" className="underline hover:text-amber-200">Pasá a Growth y generá sin límite.</a>
                 </p>
               </div>
             </div>
@@ -1249,7 +1251,7 @@ export default function DesignStudioPage() {
             />
             <button
               onClick={handleGenerate}
-              disabled={!prompt.trim() || generating || (!!usage && usage.used >= usage.limit)}
+              disabled={!prompt.trim() || generating || (!!usage && !usage.unlimited && usage.used >= usage.limit)}
               className="p-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {generating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}

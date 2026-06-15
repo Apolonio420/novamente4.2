@@ -44,15 +44,13 @@ export async function POST(request: NextRequest) {
     if (!allowed) {
       const upsell =
         tenant.plan === 'starter'
-          ? 'Subí a Growth (100 por mes) o suscribite a Pro (300 por mes) para generar muchas más 🚀'
-          : tenant.plan === 'growth'
-            ? 'Suscribite a Pro (300 por mes) para generar muchas más 🚀'
-            : 'Escribinos por WhatsApp y te ampliamos el límite.'
+          ? 'Subí a Growth y generá sin límite 🚀 (o pasá a Pro para el combo completo).'
+          : 'Escribinos por WhatsApp y te ampliamos el límite.'
       return NextResponse.json(
         {
           error: `Llegaste al límite de ${usage.limit} generaciones ${usage.resetLabel}. ${upsell}`,
           usage,
-          upsell: tenant.plan === 'starter' ? 'growth' : tenant.plan === 'growth' ? 'pro' : null,
+          upsell: tenant.plan === 'starter' ? 'growth' : null,
         },
         { status: 429 },
       )

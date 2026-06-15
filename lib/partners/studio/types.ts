@@ -37,6 +37,8 @@ export interface UsageInfo {
   limit: number
   resetLabel: string
   percentUsed: number
+  /** true en planes pagos (growth/pro) — generaciones sin tope */
+  unlimited?: boolean
 }
 
 export interface ModerationResult {
@@ -55,14 +57,13 @@ export interface BrandEssence {
   tone: string | null
 }
 
-// Plan generation limits
-// starter usa ventana semanal (rolling 7 días); growth/pro usan mes calendario.
-// 20/semana en starter ≈ 86/mes, así que growth (100/mes) y pro (300/mes) quedan
-// por encima → el upsell "más diseños" es honesto.
+// Plan generation limits.
+// starter: 20/semana (ventana rolling 7 días). growth/pro: ILIMITADO (Infinity) —
+// el tope de generaciones solo aplica al plan gratis; los planes pagos generan sin límite.
 export const PLAN_GENERATION_LIMITS: Record<string, number> = {
   starter: 20,
-  growth: 100,
-  pro: 300,
+  growth: Infinity,
+  pro: Infinity,
 }
 
 // Starter uses rolling 7-day window, growth/pro use calendar month
