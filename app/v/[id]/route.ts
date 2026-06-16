@@ -20,7 +20,9 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const ID_RE = /^[a-z0-9-]{20,40}$/i;
-const ALLOWED_UPSTREAM_RE = /^https:\/\/[a-z0-9-]+\.supabase\.co\//i;
+// Upstream permitido: Supabase Storage (legacy) + Cloudflare R2 (nuevo, egress
+// gratis). Los videos nuevos del pipeline ya se sirven desde R2.
+const ALLOWED_UPSTREAM_RE = /^https:\/\/([a-z0-9-]+\.supabase\.co|[a-z0-9-]+\.r2\.dev|[a-z0-9-]+\.r2\.cloudflarestorage\.com)\//i;
 
 const RATE_LIMIT = 60;
 const RATE_WINDOW_MS = 60_000;
