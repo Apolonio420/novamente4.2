@@ -884,6 +884,48 @@ function generateOrderNumber(): string {
 /**
  * Crea un nuevo pedido con todos sus items
  */
+/**
+ * Idempotencia anti doble-submit: busca un pedido PENDING reciente del mismo
+ * cliente con el mismo total (mismo carrito re-enviado por doble-click o por
+ * volver-atrás desde MercadoPago). Si existe, lo devolvemos para reusarlo en
+ * vez de crear un pedido duplicado. Solo matchea pendientes (nunca pagados),
+ * así nunca bloquea una compra legítima ni toca un pedido ya cobrado.
+ * Cualquier error → null (el checkout sigue creando el pedido normal).
+ */
+export async function findRecentDuplicateOrder(params: {
+  customer_email: string
+  total: number
+  windowMinutes?: number
+}): Promise<Order | null> {
+  try {
+    const { customer_email, total, windowMinutes = 30 } = params
+    if (!customer_email) return null
+    const since = new Date(Date.now() - windowMinutes * 60 * 1000).toISOString()
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .eq("customer_email", customer_email)
+      .eq("payment_status", "pending")
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(5)
+    if (error || !data) return null
+    // Solo reusamos pedidos MP que YA tienen external_reference, así el webhook
+    // de MercadoPago sigue matcheando esa misma orden sin tocar nada del flujo.
+    const match = data.find(
+      (o: any) =>
+        Math.round(Number(o.total) || 0) === Math.round(Number(total) || 0) &&
+        o.payment_method === "mercadopago" &&
+        !!o.external_reference,
+    )
+    if (match) console.log("♻️ Pedido pending reciente encontrado (idempotencia):", match.id, match.order_number)
+    return (match as Order) || null
+  } catch (e) {
+    console.error("findRecentDuplicateOrder error (se ignora, se creará pedido normal):", e)
+    return null
+  }
+}
+
 export async function createOrder(orderData: Omit<Order, 'id' | 'order_number'>): Promise<Order | null> {
   try {
     console.log("📦 Creating order with", orderData.items.length, "items")

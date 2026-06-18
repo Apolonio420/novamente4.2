@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { MercadoPagoConfig, Preference } from "mercadopago"
-import { createOrder } from "@/lib/db"
+import { createOrder, findRecentDuplicateOrder } from "@/lib/db"
 import { toPublicR2Url } from "@/lib/r2"
 
 const client = new MercadoPagoConfig({
@@ -120,34 +120,50 @@ export async function POST(request: NextRequest) {
       }))
     }
 
-    // Crear el pedido en la base de datos ANTES de crear la preferencia
-    const externalReference = `order_${Date.now()}`
-
     // Validar que tenantId sea un UUID antes de persistirlo
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     const validTenantId = typeof tenantId === 'string' && UUID_RE.test(tenantId) ? tenantId : null
 
-    // Express checkout: address/city pueden venir vacíos · se completan post-pago en /checkout/success
-    const newOrder = await createOrder({
+    // ── Idempotencia anti doble-submit ──────────────────────────────────────
+    // Si el cliente re-envía el MISMO carrito (doble-click o volver-atrás desde
+    // MP) reusamos el pedido pending reciente en vez de crear otro duplicado.
+    // El chequeo es defensivo: ante cualquier error cae a createOrder normal,
+    // así el checkout/MP nunca se rompe.
+    let newOrder = await findRecentDuplicateOrder({
       customer_email: customer.email,
-      customer_first_name: customer.firstName,
-      customer_last_name: customer.lastName,
-      customer_phone: customer.phone || null,
-      shipping_address: customer.address || null,
-      shipping_city: customer.city || null,
-      shipping_postal_code: customer.postalCode || null,
-      shipping_zone: shippingZone || null,
-      payment_method: 'mercadopago',
-      payment_status: 'pending',
-      external_reference: externalReference,
-      subtotal: finalSubtotal,
-      shipping_cost: finalShippingCost,
       total: finalTotal,
-      currency: 'ARS',
-      status: 'pending',
-      tenant_id: validTenantId,
-      items: orderItems,
     })
+
+    // Reusar el external_reference del pedido existente para que el webhook de
+    // MP siga matcheando contra esa única orden. Si no hay pedido previo (o no
+    // tiene external_reference) generamos uno nuevo.
+    const externalReference = newOrder?.external_reference || `order_${Date.now()}`
+
+    if (newOrder) {
+      console.log("♻️ Reusando pedido pending reciente (idempotencia):", newOrder.id, newOrder.order_number)
+    } else {
+      // Express checkout: address/city pueden venir vacíos · se completan post-pago en /checkout/success
+      newOrder = await createOrder({
+        customer_email: customer.email,
+        customer_first_name: customer.firstName,
+        customer_last_name: customer.lastName,
+        customer_phone: customer.phone || null,
+        shipping_address: customer.address || null,
+        shipping_city: customer.city || null,
+        shipping_postal_code: customer.postalCode || null,
+        shipping_zone: shippingZone || null,
+        payment_method: 'mercadopago',
+        payment_status: 'pending',
+        external_reference: externalReference,
+        subtotal: finalSubtotal,
+        shipping_cost: finalShippingCost,
+        total: finalTotal,
+        currency: 'ARS',
+        status: 'pending',
+        tenant_id: validTenantId,
+        items: orderItems,
+      })
+    }
 
     if (!newOrder) {
       console.error("❌ Failed to create order in database")
@@ -157,7 +173,7 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
-    console.log("✅ Order created in database:", newOrder.id, "Number:", newOrder.order_number)
+    console.log("✅ Order ready:", newOrder.id, "Number:", newOrder.order_number)
 
     // Crear preferencia de MercadoPago con precios exactos
     const preference = new Preference(client)
