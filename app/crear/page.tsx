@@ -58,6 +58,8 @@ export default function CrearPage() {
   // Prompt precargado desde la landing (?prompt=...) — leído de window para
   // evitar el requisito de Suspense de useSearchParams
   const [initialPrompt, setInitialPrompt] = useState<string | null>(null)
+  // Imagen propia precargada desde la landing (?image=...) — diseño directo
+  const [initialImage, setInitialImage] = useState<string | null>(null)
 
   useEffect(() => {
     fetch("/api/public/social-proof")
@@ -65,8 +67,12 @@ export default function CrearPage() {
       .then((d) => setSocialProof({ designsLast24h: d.designsLast24h ?? 0, totalOrders: d.totalOrders ?? 0 }))
       .catch(() => {})
     try {
-      const p = new URLSearchParams(window.location.search).get("prompt")
+      const sp = new URLSearchParams(window.location.search)
+      const p = sp.get("prompt")
       if (p && p.trim().length >= 3) setInitialPrompt(p.trim().slice(0, 500))
+      const img = sp.get("image")
+      // Solo aceptamos URLs http(s) de nuestro storage para evitar abuso
+      if (img && /^https?:\/\//i.test(img)) setInitialImage(img)
     } catch { /* noop */ }
   }, [])
 
@@ -189,7 +195,7 @@ export default function CrearPage() {
 
       {/* Mode content */}
       <main className="mx-auto max-w-7xl px-3 sm:px-4 py-4 sm:py-6">
-        {mode === "chat" && <DesignChat session={session} setSession={setSession} initialPrompt={initialPrompt} />}
+        {mode === "chat" && <DesignChat session={session} setSession={setSession} initialPrompt={initialPrompt} initialImage={initialImage} />}
         {mode === "canvas" && <DesignCanvas session={session} setSession={setSession} />}
         {mode === "lifestyle" && <LifestylePanel session={session} />}
       </main>

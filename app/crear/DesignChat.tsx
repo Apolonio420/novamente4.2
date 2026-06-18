@@ -118,11 +118,14 @@ export function DesignChat({
   session,
   setSession,
   initialPrompt,
+  initialImage,
 }: {
   session: DesignSession
   setSession: React.Dispatch<React.SetStateAction<DesignSession>>
   /** Prompt que viene de la landing (?prompt=) — auto-genera al montar */
   initialPrompt?: string | null
+  /** Imagen propia que viene de la landing (?image=) — se usa como diseño directo */
+  initialImage?: string | null
 }) {
   const { toast } = useToast()
   const { addItem } = useCart()
@@ -666,6 +669,29 @@ export function DesignChat({
     handleSend(initialPrompt)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPrompt])
+
+  // ---- Imagen propia desde la landing (?image=) — usar como diseño directo ----
+  const initialImageFiredRef = useRef(false)
+  useEffect(() => {
+    if (!initialImage || initialImageFiredRef.current || session.currentDesignUrl) return
+    initialImageFiredRef.current = true
+    setSession((prev) => ({
+      ...prev,
+      currentDesignUrl: initialImage,
+      frontDesignUrl: prev.side === "front" ? initialImage : prev.frontDesignUrl,
+      backDesignUrl: prev.side === "back" ? initialImage : prev.backDesignUrl,
+      designHistory: [...prev.designHistory, initialImage],
+    }))
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        text: "¡Listo! Tomé tu imagen 👇 Elegí la prenda y el color y te la muestro estampada al instante. Si querés, también puedo editarla (sacar fondo, cambiar colores, etc.) — pedímelo nomás.",
+        imageUrl: initialImage,
+      },
+    ])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialImage])
 
   // ---- Generate mockup LIFESTYLE ----
   // Usa Gemini para generar foto realista de persona con la prenda. Reemplaza

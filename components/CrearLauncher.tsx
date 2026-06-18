@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Sparkles, ArrowRight, Wand2 } from "lucide-react"
+import { Sparkles, ArrowRight, Wand2, Upload, ImagePlus } from "lucide-react"
 
 /**
  * Launcher del generador en la landing.
@@ -24,11 +24,41 @@ export function CrearLauncher() {
   const router = useRouter()
   const [prompt, setPrompt] = useState("")
   const [going, setGoing] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const launch = (text?: string) => {
     const p = (text ?? prompt).trim()
     setGoing(true)
     router.push(p.length >= 3 ? `/crear?prompt=${encodeURIComponent(p.slice(0, 500))}` : "/crear")
+  }
+
+  // Subir imagen propia → diseñar la prenda directo con esa imagen.
+  const handleFile = async (file: File) => {
+    setUploadError(null)
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Tiene que ser una imagen (JPG, PNG o WebP).")
+      return
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setUploadError("La imagen supera los 8 MB.")
+      return
+    }
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append("file", file)
+      const res = await fetch("/api/public/design/upload", { method: "POST", body: fd })
+      const data = await res.json()
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.error || "No se pudo subir la imagen")
+      }
+      router.push(`/crear?image=${encodeURIComponent(data.url)}`)
+    } catch (e) {
+      setUploading(false)
+      setUploadError(e instanceof Error ? e.message : "Error subiendo la imagen")
+    }
   }
 
   return (
@@ -73,6 +103,45 @@ export function CrearLauncher() {
             {going ? "Abriendo…" : "Crear gratis"} <ArrowRight className="h-4 w-4" />
           </button>
         </form>
+
+        {/* Separador "o" + subir imagen propia */}
+        <div className="mt-4 flex items-center gap-3">
+          <div className="h-px flex-1 bg-white/10" />
+          <span className="text-[11px] uppercase tracking-wider text-zinc-500">o ya tenés tu diseño</span>
+          <div className="h-px flex-1 bg-white/10" />
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) handleFile(f)
+            e.target.value = ""
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-6 py-3.5 text-sm font-semibold text-white transition hover:border-violet-500/50 hover:bg-white/10 active:scale-[0.98] disabled:opacity-60 sm:w-auto"
+          data-cta="landing-crear-upload"
+        >
+          {uploading ? (
+            <>
+              <Upload className="h-4 w-4 animate-pulse" /> Subiendo tu imagen…
+            </>
+          ) : (
+            <>
+              <ImagePlus className="h-4 w-4" /> Subí tu propia imagen y diseñá la prenda
+            </>
+          )}
+        </button>
+        {uploadError && (
+          <p className="mt-2 text-xs text-red-400">{uploadError}</p>
+        )}
 
         {/* Ideas para arrancar */}
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
