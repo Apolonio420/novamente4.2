@@ -207,7 +207,7 @@ export default function NovamenteVsFullprinted() {
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link
-                href="/design"
+                href="/crear"
                 className="nv-cta-primary"
               >
                 Disenar una prenda <ArrowRight className="h-4 w-4" />

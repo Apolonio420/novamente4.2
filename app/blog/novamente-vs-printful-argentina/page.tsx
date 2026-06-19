@@ -215,7 +215,7 @@ export default function NovamenteVsPrintfulArgentina() {
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link
-                href="/design"
+                href="/crear"
                 className="nv-cta-primary"
               >
                 Disenar con IA <ArrowRight className="h-4 w-4" />

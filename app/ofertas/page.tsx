@@ -223,7 +223,7 @@ export default function OfertasPage() {
             producimos bajo demanda.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/design">
+            <Link href="/crear">
               <Button size="lg">Diseñar con IA</Button>
             </Link>
             <Link href="/products">

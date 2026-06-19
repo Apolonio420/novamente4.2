@@ -252,7 +252,7 @@ export default function RegalosPersonalizados() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8">
                   <Button asChild size="lg" className="bg-rose-600 hover:bg-rose-500 text-white text-lg px-8 py-6">
-                    <Link href="/design">
+                    <Link href="/crear">
                       <Sparkles className="w-5 h-5 mr-2" /> Disena Tu Regalo con IA
                     </Link>
                   </Button>
@@ -470,7 +470,7 @@ export default function RegalosPersonalizados() {
           </div>
           <div className="text-center mt-8 space-y-3">
             <Button asChild size="lg" className="bg-rose-600 hover:bg-rose-500 text-white">
-              <Link href="/design">
+              <Link href="/crear">
                 <Gift className="w-5 h-5 mr-2" /> Personalizar regalo
               </Link>
             </Button>
@@ -632,7 +632,7 @@ export default function RegalosPersonalizados() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="bg-rose-600 hover:bg-rose-500 text-white text-lg px-8 py-6">
-                <Link href="/design">
+                <Link href="/crear">
                   <Sparkles className="w-5 h-5 mr-2" /> Diseña Tu Regalo Ahora
                 </Link>
               </Button>

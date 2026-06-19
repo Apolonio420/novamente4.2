@@ -282,7 +282,7 @@ export default function EstamparRemeras() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button asChild size="lg" className="bg-orange-600 hover:bg-orange-500 text-white text-lg px-8 py-6">
-                <Link href="/design">
+                <Link href="/crear">
                   <Sparkles className="w-5 h-5 mr-2" /> Estampa Tu Remera Ahora
                 </Link>
               </Button>
@@ -525,8 +525,8 @@ export default function EstamparRemeras() {
             </p>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[
-                { title: "Tu propio diseno", description: "Subi tu arte, logo o ilustracion. PNG, JPG o SVG.", link: "/design" },
-                { title: "Diseno con IA", description: "Describe tu idea en palabras y la IA crea el diseno.", link: "/design" },
+                { title: "Tu propio diseno", description: "Subi tu arte, logo o ilustracion. PNG, JPG o SVG.", link: "/crear" },
+                { title: "Diseno con IA", description: "Describe tu idea en palabras y la IA crea el diseno.", link: "/crear" },
                 { title: "Remeras para eventos", description: "Maratones, conferencias, festivales. 10-500+ un.", link: "/remeras-para-eventos" },
                 { title: "Merch para tu marca", description: "Lanza tu linea de ropa personalizada sin stock.", link: "/lanza-tu-marca" },
                 { title: "Regalos corporativos", description: "Merch empresarial con logo y branding.", link: "/regalos-empresariales" },
@@ -650,7 +650,7 @@ export default function EstamparRemeras() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="bg-orange-600 hover:bg-orange-500 text-white text-lg px-8 py-6">
-                <Link href="/design">
+                <Link href="/crear">
                   <Sparkles className="w-5 h-5 mr-2" /> Empeza a Estampar
                 </Link>
               </Button>

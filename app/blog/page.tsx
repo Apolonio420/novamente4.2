@@ -109,7 +109,7 @@ export default function BlogIndex() {
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
-                href="/design"
+                href="/crear"
                 className="nv-cta-primary"
               >
                 Diseñá la tuya con IA →

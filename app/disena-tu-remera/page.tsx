@@ -221,7 +221,7 @@ export default function DisenaTuRemera() {
 
               {/* CTA buttons */}
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Link href="/design" data-cta="hero-disena-remera">
+                <Link href="/crear" data-cta="hero-disena-remera">
                   <Button
                     size="lg"
                     className="w-full sm:w-auto bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-xl py-6 px-8 text-lg transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
@@ -366,7 +366,7 @@ export default function DisenaTuRemera() {
           </div>
 
           <div className="text-center mt-12">
-            <Link href="/design" data-cta="how-it-works-disena-remera">
+            <Link href="/crear" data-cta="how-it-works-disena-remera">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-xl py-6 px-10 text-lg transition-all"
@@ -420,7 +420,7 @@ export default function DisenaTuRemera() {
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Disponible en blanco y negro</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Talles S a XXL</li>
                 </ul>
-                <Link href="/design" data-cta="aldea-classic-disena-remera">
+                <Link href="/crear" data-cta="aldea-classic-disena-remera">
                   <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-xl py-3">
                     <Sparkles className="w-4 h-4 mr-2" />
                     Personalizar Aldea Classic
@@ -459,7 +459,7 @@ export default function DisenaTuRemera() {
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Disponible en blanco y negro</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Talles S a XXL</li>
                 </ul>
-                <Link href="/design" data-cta="aura-oversize-disena-remera">
+                <Link href="/crear" data-cta="aura-oversize-disena-remera">
                   <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-xl py-3">
                     <Sparkles className="w-4 h-4 mr-2" />
                     Personalizar Aura Oversize
@@ -649,7 +649,7 @@ export default function DisenaTuRemera() {
             Remeras desde $28.600 · Algodon 100% · Estampado DTG · Envios a todo el pais
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/design" data-cta="final-cta-disena-remera">
+            <Link href="/crear" data-cta="final-cta-disena-remera">
               <Button
                 size="lg"
                 className="w-full sm:w-auto bg-secondary hover:bg-secondary/90 text-secondary-foreground font-medium rounded-xl py-6 px-10 text-lg"

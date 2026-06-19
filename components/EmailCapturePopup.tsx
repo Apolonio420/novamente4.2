@@ -38,6 +38,7 @@ export function EmailCapturePopup() {
     // Don't interrupt the main conversion surfaces.
     if (
       window.location.pathname === "/" ||
+      window.location.pathname.startsWith("/crear") ||
       window.location.pathname.startsWith("/design") ||
       window.location.pathname.startsWith("/workspace") ||
       window.location.pathname.startsWith("/admin")

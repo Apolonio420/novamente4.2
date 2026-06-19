@@ -123,7 +123,7 @@ export default function CotizadorPage() {
         name: "Puedo ver un mockup antes de pedir?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Si! Podes usar nuestro disenador con IA en novamente.ar/design para crear tu diseno y verlo aplicado en la prenda antes de confirmar el pedido. Es gratis y sin compromiso.",
+          text: "Si! Podes usar nuestro disenador con IA en novamente.ar/crear para crear tu diseno y verlo aplicado en la prenda antes de confirmar el pedido. Es gratis y sin compromiso.",
         },
       },
     ],
@@ -406,7 +406,7 @@ export default function CotizadorPage() {
                 },
                 {
                   q: "Puedo ver un mockup antes de pedir?",
-                  a: "Si! Podes usar nuestro disenador con IA en novamente.ar/design para crear tu diseno y verlo aplicado en la prenda antes de confirmar el pedido. Es gratis y sin compromiso.",
+                  a: "Si! Podes usar nuestro disenador con IA en novamente.ar/crear para crear tu diseno y verlo aplicado en la prenda antes de confirmar el pedido. Es gratis y sin compromiso.",
                 },
               ].map((faq) => (
                 <Card key={faq.q} className="bg-zinc-800/50 border-zinc-700">
@@ -438,7 +438,7 @@ export default function CotizadorPage() {
                 size="lg"
                 className="bg-amber-500 hover:bg-amber-600 text-black text-base font-semibold h-14 px-8"
               >
-                <Link href="/design">
+                <Link href="/crear">
                   <Sparkles className="w-5 h-5 mr-2" />
                   Disenar con IA
                   <ArrowRight className="w-4 h-4 ml-2" />

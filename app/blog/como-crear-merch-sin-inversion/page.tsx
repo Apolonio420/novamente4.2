@@ -314,7 +314,7 @@ export default function BlogComoCrearMerch() {
                 <h3 className="text-xl font-semibold">Crea tus disenos con IA</h3>
               </div>
               <p className="text-zinc-300 leading-relaxed mb-3">
-                Entra al <Link href="/design" className="text-violet-400 hover:text-violet-300 underline">generador de disenos de Novamente</Link> y
+                Entra al <Link href="/crear" className="text-violet-400 hover:text-violet-300 underline">generador de disenos de Novamente</Link> y
                 empeza a experimentar. Proba diferentes estilos, combinaciones de colores y conceptos.
               </p>
               <ul className="space-y-2 text-zinc-300">
@@ -584,7 +584,7 @@ export default function BlogComoCrearMerch() {
               Crea tu primer diseno gratis con IA y ve como queda en una prenda real. Sin registro, sin compromiso.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/design">
+              <Link href="/crear">
                 <Button size="lg" className="bg-violet-600 hover:bg-violet-500 text-white gap-2">
                   <Sparkles className="w-4 h-4" />
                   Crear mi primer diseno
@@ -671,7 +671,7 @@ export default function BlogComoCrearMerch() {
               Solo tu creatividad y ganas de emprender. Novamente se encarga del resto.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/design">
+              <Link href="/crear">
                 <Button size="lg" className="bg-violet-600 hover:bg-violet-500 text-white gap-2 text-lg px-8 py-6">
                   <Sparkles className="w-5 h-5" />
                   Empezar a disenar gratis

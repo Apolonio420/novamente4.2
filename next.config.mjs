@@ -178,8 +178,16 @@ const nextConfig = {
         destination: '/merch/maldito-demonio',
         permanent: true,
       },
+      // Generador viejo → nuevo estudio. source EXACTO '/design' (NO matchea
+      // /design/[imageId]) → los permalinks de diseños compartidos siguen vivos.
+      // Preserva querystring (?style=…). 301 para consolidar SEO en /crear.
+      {
+        source: '/design',
+        destination: '/crear',
+        permanent: true,
+      },
       // NOTA: NO redirigir /disena-tu-remera, /quote ni /merchs — son
-      // landings SEO con keywords propios distintos a /design, /cotizador
+      // landings SEO con keywords propios distintos a /crear, /cotizador
       // y /merch. Cada una rankea queries específicas. Verificar antes en
       // Search Console si se las quiere consolidar.
     ];

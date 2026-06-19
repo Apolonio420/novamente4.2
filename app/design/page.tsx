@@ -21,14 +21,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Generador de Diseños con IA — Novamente",
     description: "Diseñá tu prenda personalizada en minutos con IA.",
-    url: "https://www.novamente.ar/design",
+    url: "https://www.novamente.ar/crear",
   },
   twitter: {
     card: "summary_large_image",
     title: "Generador de Diseños con IA — Novamente",
     description: "Diseñá tu prenda personalizada en minutos con IA.",
   },
-  alternates: { canonical: "https://www.novamente.ar/design" },
+  alternates: { canonical: "https://www.novamente.ar/crear" },
 }
 
 export default function DesignRootPage() {

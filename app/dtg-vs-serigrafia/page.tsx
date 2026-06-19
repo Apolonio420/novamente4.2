@@ -566,7 +566,7 @@ export default function DtgVsSerigrafia() {
                         <li>Sos emprendedor y no queres stockear</li>
                         <li>Necesitas produccion rapida (1-3 dias)</li>
                       </ul>
-                      <Link href="/design" className="inline-flex items-center gap-1 text-sm text-emerald-400 font-medium mt-3 hover:underline">
+                      <Link href="/crear" className="inline-flex items-center gap-1 text-sm text-emerald-400 font-medium mt-3 hover:underline">
                         Proba DTG gratis con tu diseno <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
@@ -682,7 +682,7 @@ export default function DtgVsSerigrafia() {
             Remeras desde $28.600 · Buzos desde $43.000 · Envios a todo el pais
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/design" data-cta="final-cta-dtg-comparison">
+            <Link href="/crear" data-cta="final-cta-dtg-comparison">
               <Button
                 size="lg"
                 className="w-full sm:w-auto bg-white hover:bg-white/90 text-emerald-700 font-semibold rounded-xl py-6 px-10 text-lg"

@@ -246,7 +246,7 @@ export default function RegalosDiaDelPadre() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button asChild size="lg" className="bg-amber-600 hover:bg-amber-500 text-white text-lg px-8 py-6">
-                <Link href="/design">
+                <Link href="/crear">
                   <Sparkles className="w-5 h-5 mr-2" /> Diseña el Regalo Ahora
                 </Link>
               </Button>
@@ -312,7 +312,7 @@ export default function RegalosDiaDelPadre() {
           </div>
           <div className="text-center mt-8">
             <Button asChild size="lg" className="bg-amber-600 hover:bg-amber-500 text-white">
-              <Link href="/design">
+              <Link href="/crear">
                 <Sparkles className="w-5 h-5 mr-2" /> Diseña el tuyo con IA
               </Link>
             </Button>
@@ -397,7 +397,7 @@ export default function RegalosDiaDelPadre() {
           </div>
           <div className="text-center mt-8">
             <Button asChild size="lg" className="bg-amber-600 hover:bg-amber-500 text-white">
-              <Link href="/design">
+              <Link href="/crear">
                 <Gift className="w-5 h-5 mr-2" /> Personalizar regalo
               </Link>
             </Button>
@@ -607,7 +607,7 @@ export default function RegalosDiaDelPadre() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="bg-amber-600 hover:bg-amber-500 text-white text-lg px-8 py-6">
-                <Link href="/design">
+                <Link href="/crear">
                   <Sparkles className="w-5 h-5 mr-2" /> Diseña el Regalo Ahora
                 </Link>
               </Button>

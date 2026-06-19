@@ -3,7 +3,7 @@ import { Instagram, Twitter, Facebook } from "lucide-react"
 
 const SOLUTIONS = {
   "Diseño & catálogo": [
-    { href: "/design", label: "Diseñá tu remera con IA" },
+    { href: "/crear", label: "Diseñá tu remera con IA" },
     { href: "/cotizador", label: "Cotizar producción" },
     { href: "/products", label: "Productos" },
     { href: "/styles", label: "37 estilos artísticos" },
@@ -60,7 +60,7 @@ export function Footer() {
 
             <div className="mt-6 flex flex-wrap gap-2">
               <Link
-                href="/design"
+                href="/crear"
                 className="inline-flex items-center rounded-full bg-white px-4 py-2 text-xs font-semibold text-zinc-950 transition hover:bg-zinc-200"
               >
                 Diseñá la tuya →

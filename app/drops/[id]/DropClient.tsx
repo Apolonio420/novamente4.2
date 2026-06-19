@@ -401,7 +401,7 @@ export default function DropClient({ drop }: { drop: Drop }) {
             </div>
 
             <Link
-              href="/design"
+              href="/crear"
               className="mt-4 text-center text-sm text-zinc-400 hover:text-zinc-200"
             >
               ¿Querés diseñar el tuyo desde cero? Probá el creador con IA →

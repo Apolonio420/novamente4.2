@@ -186,7 +186,7 @@ export default function BuzosPersonalizados() {
     { icon: PartyPopper, title: "Despedidas", description: "Grupo con diseno unico. Nombre de cada invitado.", link: "/despedidas-personalizadas" },
     { icon: Trophy, title: "Equipos deportivos", description: "Nombre, numero y escudo. Pedidos recurrentes.", link: "/indumentaria-deportiva" },
     { icon: Music, title: "Bandas y artistas", description: "Merch para shows, giras y fans.", link: "/merch-para-bandas" },
-    { icon: Heart, title: "Uso personal", description: "Tu diseno o el de nuestra IA. Pieza unica.", link: "/design" },
+    { icon: Heart, title: "Uso personal", description: "Tu diseno o el de nuestra IA. Pieza unica.", link: "/crear" },
     { icon: Users, title: "Creadores", description: "Merch on-demand para tu audiencia.", link: "/merch-para-creadores" },
     { icon: Shirt, title: "Tu propia marca", description: "Lanza tu linea de buzos sin inversion.", link: "/lanza-tu-marca" },
   ]
@@ -241,7 +241,7 @@ export default function BuzosPersonalizados() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button asChild size="lg" className="bg-indigo-600 hover:bg-indigo-500 text-white text-lg px-8 py-6">
-                <Link href="/design">
+                <Link href="/crear">
                   <Sparkles className="w-5 h-5 mr-2" /> Disena Tu Buzo Ahora
                 </Link>
               </Button>
@@ -326,7 +326,7 @@ export default function BuzosPersonalizados() {
           </div>
           <div className="text-center mt-8">
             <Button asChild size="lg" className="bg-indigo-600 hover:bg-indigo-500 text-white">
-              <Link href="/design">
+              <Link href="/crear">
                 <Paintbrush className="w-5 h-5 mr-2" /> Personalizar mi buzo
               </Link>
             </Button>
@@ -599,7 +599,7 @@ export default function BuzosPersonalizados() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="bg-indigo-600 hover:bg-indigo-500 text-white text-lg px-8 py-6">
-                <Link href="/design">
+                <Link href="/crear">
                   <Sparkles className="w-5 h-5 mr-2" /> Crear Mi Buzo
                 </Link>
               </Button>

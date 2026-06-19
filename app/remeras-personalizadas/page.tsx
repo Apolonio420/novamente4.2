@@ -356,7 +356,7 @@ export default function RemerasPersonalizadas() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button asChild size="lg" className="bg-violet-600 hover:bg-violet-500 text-white text-lg px-8 py-6">
-                <Link href="/design">
+                <Link href="/crear">
                   <Sparkles className="w-5 h-5 mr-2" /> Disena Tu Remera Ahora
                 </Link>
               </Button>
@@ -685,7 +685,7 @@ export default function RemerasPersonalizadas() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg" className="bg-violet-600 hover:bg-violet-500 text-white text-lg px-8 py-6">
-                <Link href="/design">
+                <Link href="/crear">
                   <Sparkles className="w-5 h-5 mr-2" /> Empeza a Disenar
                 </Link>
               </Button>

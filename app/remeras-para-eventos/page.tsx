@@ -330,7 +330,7 @@ export default function RemerasParaEventos() {
                   size="lg"
                   className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-lg px-8 py-6"
                 >
-                  <Link href="/design">
+                  <Link href="/crear">
                     Disenar con IA gratis
                   </Link>
                 </Button>
@@ -660,7 +660,7 @@ export default function RemerasParaEventos() {
                     size="lg"
                     className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-lg px-8 py-6"
                   >
-                    <Link href="/design">
+                    <Link href="/crear">
                       Probar el disenador IA
                     </Link>
                   </Button>

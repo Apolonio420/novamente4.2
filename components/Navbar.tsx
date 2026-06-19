@@ -87,10 +87,10 @@ export function Navbar() {
     },
     {
       label: "DISEÑÁ",
-      href: "/design",
+      href: "/crear",
       isDropdown: true,
       subItems: [
-        { label: "GENERADOR CON IA", href: "/design" },
+        { label: "GENERADOR CON IA", href: "/crear" },
         { label: "DISEÑÁ TU REMERA", href: "/disena-tu-remera" },
         { label: "ESTILOS ARTÍSTICOS", href: "/styles" },
         { label: "COMPARAR PRENDAS", href: "/comparar" },

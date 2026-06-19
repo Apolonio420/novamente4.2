@@ -652,7 +652,7 @@ export default function RegalosEmpresariales() {
                 Cotizar por WhatsApp
               </Button>
             </Link>
-            <Link href="/design">
+            <Link href="/crear">
               <Button
                 size="lg"
                 variant="outline"

@@ -52,7 +52,7 @@ const collectionJsonLd = {
       "@type": "ListItem",
       position: i + 1,
       name,
-      url: `https://www.novamente.ar/design?style=${encodeURIComponent(name.toLowerCase())}`,
+      url: `https://www.novamente.ar/crear?style=${encodeURIComponent(name.toLowerCase())}`,
     })),
   },
 }

@@ -233,7 +233,7 @@ export default function CotizadorCalculator() {
               size="lg"
               className="flex-1 bg-amber-500 hover:bg-amber-600 text-black text-base font-semibold h-14"
             >
-              <Link href="/design">
+              <Link href="/crear">
                 <Palette className="w-5 h-5 mr-2" />
                 Disenar Ahora
                 <ArrowRight className="w-4 h-4 ml-2" />

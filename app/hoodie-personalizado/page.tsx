@@ -227,7 +227,7 @@ export default function HoodiePersonalizado() {
 
               {/* CTA buttons */}
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Link href="/design" data-cta="hero-hoodie">
+                <Link href="/crear" data-cta="hero-hoodie">
                   <Button
                     size="lg"
                     className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-500/90 hover:to-red-600/90 text-white font-medium rounded-xl py-6 px-8 text-lg transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
@@ -372,7 +372,7 @@ export default function HoodiePersonalizado() {
           </div>
 
           <div className="text-center mt-12">
-            <Link href="/design" data-cta="how-it-works-hoodie">
+            <Link href="/crear" data-cta="how-it-works-hoodie">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-500/90 hover:to-red-600/90 text-white font-medium rounded-xl py-6 px-10 text-lg transition-all"
@@ -428,7 +428,7 @@ export default function HoodiePersonalizado() {
                 <p className="text-xs text-green-400 mb-4 font-medium">
                   Venta sugerida: $95.000-110.000 (+60% margen)
                 </p>
-                <Link href="/design" data-cta="buzo-hoodie">
+                <Link href="/crear" data-cta="buzo-hoodie">
                   <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-500/90 hover:to-red-600/90 text-white font-medium rounded-xl py-3">
                     <Sparkles className="w-4 h-4 mr-2" />
                     Personalizar Hoodie
@@ -469,7 +469,7 @@ export default function HoodiePersonalizado() {
                 <p className="text-xs text-green-400 mb-4 font-medium">
                   Venta sugerida: $85.000-95.000 (+60% margen)
                 </p>
-                <Link href="/design" data-cta="buzo-hoodie-marron">
+                <Link href="/crear" data-cta="buzo-hoodie-marron">
                   <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-500/90 hover:to-red-600/90 text-white font-medium rounded-xl py-3">
                     <Sparkles className="w-4 h-4 mr-2" />
                     Personalizar Hoodie
@@ -510,7 +510,7 @@ export default function HoodiePersonalizado() {
                 <p className="text-xs text-green-400 mb-4 font-medium">
                   Venta sugerida: $95.000-110.000 (+60% margen)
                 </p>
-                <Link href="/design" data-cta="buzo-hoodie-gris">
+                <Link href="/crear" data-cta="buzo-hoodie-gris">
                   <Button className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-500/90 hover:to-red-600/90 text-white font-medium rounded-xl py-3">
                     <Sparkles className="w-4 h-4 mr-2" />
                     Personalizar Hoodie
@@ -759,7 +759,7 @@ export default function HoodiePersonalizado() {
             Hoodies desde $55.000 · Algodon premium · Estampado DTG · Envios a todo el pais
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/design" data-cta="final-cta-hoodie">
+            <Link href="/crear" data-cta="final-cta-hoodie">
               <Button
                 size="lg"
                 className="w-full sm:w-auto bg-white hover:bg-white/90 text-orange-600 font-medium rounded-xl py-6 px-10 text-lg"
