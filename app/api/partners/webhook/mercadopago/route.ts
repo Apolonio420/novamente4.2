@@ -1,7 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { MercadoPagoConfig, Payment } from 'mercadopago'
+import { MercadoPagoConfig, Payment, PreApproval } from 'mercadopago'
 import { updateTenant, getTenantById } from '@/lib/partners/tenant'
 import { PLAN_FEATURES, PLAN_PRICING_USD } from '@/lib/partners/plans'
+import { activateRecurringTenant, registerRecurringCharge, getAuthorizedPayment } from '@/lib/partners/subscription'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 import type { Plan } from '@/lib/partners/types'
 
 const client = new MercadoPagoConfig({
@@ -60,6 +62,103 @@ function calculateNewExpiration(billingCycle: 'monthly' | 'annual'): string {
   return now.toISOString()
 }
 
+/** data.id de un evento de suscripción (body o querystring). */
+function resolveSubscriptionId(body: any, request: NextRequest): string | null {
+  const bodyId = body?.data?.id
+  if (bodyId) return String(bodyId)
+  const url = new URL(request.url)
+  return url.searchParams.get('data.id') || url.searchParams.get('id')
+}
+
+/**
+ * subscription_preapproval: alta / cambio de estado de la suscripción recurrente.
+ * status 'authorized' → activa el tenant (y prende el Studio). 'cancelled'/'paused'
+ * → marca metadata (el acceso sigue hasta subscription_expires_at; el cron decide).
+ */
+async function handlePreapprovalEvent(body: any, request: NextRequest) {
+  const id = resolveSubscriptionId(body, request)
+  if (!id) return NextResponse.json({ received: true })
+  try {
+    const preapproval: any = await new PreApproval(client).get({ id })
+    const status = preapproval?.status
+    const externalReference = preapproval?.external_reference || ''
+    console.log('Preapproval event:', { id, status, externalReference })
+
+    const tenantId = extractTenantId(externalReference)
+    if (!tenantId) {
+      console.warn('Preapproval sin tenantId en external_reference:', externalReference)
+      return NextResponse.json({ received: true })
+    }
+    const tenant = await getTenantById(tenantId)
+    if (!tenant) return NextResponse.json({ received: true })
+
+    const now = new Date().toISOString()
+
+    if (status === 'authorized') {
+      await activateRecurringTenant(tenant, id, now)
+      console.log('Suscripción recurrente ACTIVADA:', tenant.name)
+      try {
+        const { notifyPartnerSubscription } = await import('@/lib/notifications')
+        await notifyPartnerSubscription({
+          tenantName: tenant.name,
+          plan: ((tenant.metadata as any)?.pending_plan || tenant.plan) as Plan,
+          priceUsd: 0,
+          priceArs: preapproval?.auto_recurring?.transaction_amount || 0,
+          billingCycle: 'monthly',
+          tenantEmail: tenant.email,
+          tenantSlug: tenant.slug,
+        })
+      } catch (e) {
+        console.error('Telegram notification failed:', e)
+      }
+    } else if (status === 'cancelled' || status === 'paused') {
+      const meta = { ...((tenant.metadata as any) ?? {}), subscription_type: status }
+      await updateTenant(tenant.id, { metadata: meta } as any)
+      console.log(`Suscripción ${status} para`, tenant.name)
+    }
+    return NextResponse.json({ received: true })
+  } catch (error: any) {
+    console.error('Error handling preapproval:', error?.message || error)
+    return NextResponse.json({ received: true })
+  }
+}
+
+/**
+ * subscription_authorized_payment: cada cobro automático mensual de la suscripción.
+ * Aprobado → extiende +1 mes. Rechazado → suma una falla (el cron hace el dunning).
+ */
+async function handleAuthorizedPaymentEvent(body: any, request: NextRequest) {
+  const id = resolveSubscriptionId(body, request)
+  if (!id) return NextResponse.json({ received: true })
+  try {
+    const ap = await getAuthorizedPayment(id)
+    if (!ap?.preapprovalId) return NextResponse.json({ received: true })
+
+    const { data: tenant } = await (supabaseAdmin as any)
+      .from('tenants')
+      .select('*')
+      .eq('mp_subscription_id', ap.preapprovalId)
+      .single()
+    if (!tenant) {
+      console.warn('Authorized payment sin tenant para preapproval', ap.preapprovalId)
+      return NextResponse.json({ received: true })
+    }
+
+    const now = new Date().toISOString()
+    if (ap.approved) {
+      await registerRecurringCharge(tenant.id, now)
+      console.log('Cobro recurrente OK:', tenant.name)
+    } else {
+      await updateTenant(tenant.id, { payment_failures: (tenant.payment_failures || 0) + 1 } as any)
+      console.log('Cobro recurrente FALLÓ:', tenant.name, ap.status)
+    }
+    return NextResponse.json({ received: true })
+  } catch (error: any) {
+    console.error('Error handling authorized payment:', error?.message || error)
+    return NextResponse.json({ received: true })
+  }
+}
+
 export async function POST(request: NextRequest) {
   let body: any = {}
   try {
@@ -74,10 +173,20 @@ export async function POST(request: NextRequest) {
     data: body.data,
   })
 
-  const paymentId = resolvePaymentId(body, request)
-
   const url = new URL(request.url)
   const topic = url.searchParams.get('topic')
+  const eventType = body.type || topic || ''
+
+  // ── Suscripciones recurrentes (débito automático) ──
+  if (eventType === 'subscription_preapproval') {
+    return handlePreapprovalEvent(body, request)
+  }
+  if (eventType === 'subscription_authorized_payment') {
+    return handleAuthorizedPaymentEvent(body, request)
+  }
+
+  // ── Pago único (one-time / anual) ──
+  const paymentId = resolvePaymentId(body, request)
   const isPaymentEvent = body.type === 'payment' || topic === 'payment'
 
   if (!paymentId) {
@@ -146,6 +255,7 @@ export async function POST(request: NextRequest) {
         status: 'active',
         storefront_published: true,
         onboarding_completed: true,
+        design_engine_mode: features?.designEngine ?? 'disabled', // prende el Studio al pagar
         max_products: features?.maxProducts ?? 999999,
         max_leads_per_month: features?.maxLeadsPerMonth ?? 999999,
         seo_indexable: features?.seoIndexable ?? false,

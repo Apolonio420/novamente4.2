@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { updateTenant } from '@/lib/partners/tenant'
+import { bumpPromoToStandardIfDue } from '@/lib/partners/subscription'
 import { notifySubscriptionExpiring, notifySubscriptionSuspended } from '@/lib/notifications'
 
 const db = () => supabaseAdmin as any
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
     grace_period: 0,
     suspended: 0,
     dunning_sent: 0,
+    promo_bumped: 0,
     errors: [] as string[],
   }
 
@@ -111,6 +113,29 @@ export async function GET(request: NextRequest) {
         } catch (e: any) {
           console.error('Failed to send dunning notification:', e)
           results.errors.push(`Dunning ${tenant.id}: ${e.message}`)
+        }
+      }
+    }
+
+    // 3. Promo bump: suscripciones recurrentes cuya promo de 12 meses venció → subir a precio standard
+    const { data: recurringTenants, error: recurringError } = await db()
+      .from('tenants')
+      .select('*')
+      .eq('status', 'active')
+      .eq('metadata->>subscription_type', 'recurring')
+      .not('mp_subscription_id', 'is', null)
+
+    if (recurringError) {
+      results.errors.push(`Query recurring: ${recurringError.message}`)
+    }
+
+    if (recurringTenants && recurringTenants.length > 0) {
+      for (const tenant of recurringTenants) {
+        try {
+          const bumped = await bumpPromoToStandardIfDue(tenant, now)
+          if (bumped) results.promo_bumped++
+        } catch (e: any) {
+          results.errors.push(`Promo bump ${tenant.id}: ${e.message}`)
         }
       }
     }

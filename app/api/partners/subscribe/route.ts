@@ -3,6 +3,7 @@ import { MercadoPagoConfig, Preference } from 'mercadopago'
 import { updateTenant, getTenantById } from '@/lib/partners/tenant'
 import { PLAN_PRICING_USD, PLAN_PRICING_ANNUAL_USD, PLAN_NAMES } from '@/lib/partners/plans'
 import { getUsdToArs } from '@/lib/partners/currency'
+import { createRecurringSubscription } from '@/lib/partners/subscription'
 import type { Plan } from '@/lib/partners/types'
 
 const client = new MercadoPagoConfig({
@@ -53,6 +54,35 @@ export async function POST(request: NextRequest) {
         { error: 'Tenant no encontrado' },
         { status: 404 }
       )
+    }
+
+    // ── Mensual → suscripción recurrente (débito automático vía PreApproval) ──
+    // El plan NO se cambia acá: lo activa el webhook cuando MP confirma la
+    // autorización (subscription_preapproval authorized). Anual sigue abajo
+    // como pago único (Preference).
+    if (billingCycle === 'monthly') {
+      const result = await createRecurringSubscription({
+        tenantId,
+        tenantEmail: tenant.email,
+        plan: plan as 'growth' | 'pro',
+        baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
+        nowISO: new Date().toISOString(),
+      })
+      if (!result.ok) {
+        return NextResponse.json(
+          { error: 'Error al crear la suscripción', details: result.error },
+          { status: 500 },
+        )
+      }
+      return NextResponse.json({
+        init_point: result.init_point,
+        preapproval_id: result.preapproval_id,
+        price_ars: result.price_ars,
+        price_usd: result.price_usd,
+        billing_cycle: 'monthly',
+        recurring: true,
+        promo: result.promo,
+      })
     }
 
     // Calculate price based on billing cycle

@@ -12,7 +12,19 @@ interface UpgradeModalProps {
   onClose: () => void
 }
 
-const plans = [
+interface PlanCard {
+  id: string
+  name: string
+  priceMonthly: number
+  priceAnnualMonth: number
+  promoMonthly?: number // precio promo de lanzamiento (mensual)
+  icon: typeof Zap
+  popular?: boolean
+  features: string[]
+  notIncluded: string[]
+}
+
+const plans: PlanCard[] = [
   {
     id: 'starter',
     name: 'Starter',
@@ -36,8 +48,9 @@ const plans = [
   {
     id: 'growth',
     name: 'Growth',
-    priceMonthly: 25,
-    priceAnnualMonth: 21.25,
+    priceMonthly: 50,
+    priceAnnualMonth: 42.5,
+    promoMonthly: 25, // lanzamiento -50% (primeros 100 partners, 12 meses)
     icon: Sparkles,
     popular: true,
     features: [
@@ -78,11 +91,13 @@ const plans = [
 
 export function UpgradeModal({ currentPlan, tenantId, onClose }: UpgradeModalProps) {
   const [loading, setLoading] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
 
-  async function handleUpgrade(planId: string) {
-    if (planId === currentPlan || planId === 'starter') return
+  async function handleSubscribe(planId: string) {
+    if (planId === 'starter') return
     setLoading(planId)
+    setError(null)
 
     try {
       const res = await fetch('/api/partners/subscribe', {
@@ -91,14 +106,14 @@ export function UpgradeModal({ currentPlan, tenantId, onClose }: UpgradeModalPro
         body: JSON.stringify({ tenantId, plan: planId, billingCycle }),
       })
 
-      if (res.ok) {
-        const data = await res.json()
-        if (data.init_point) {
-          window.location.href = data.init_point
-        }
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.init_point) {
+        window.location.href = data.init_point
+        return
       }
+      setError(data?.details || data?.error || 'No pudimos generar el pago. Probá de nuevo en un momento.')
     } catch {
-      // Error handling
+      setError('Error de conexión. Probá de nuevo.')
     } finally {
       setLoading(null)
     }
@@ -120,7 +135,7 @@ export function UpgradeModal({ currentPlan, tenantId, onClose }: UpgradeModalPro
         </div>
 
         {/* Billing cycle toggle */}
-        <div className="flex items-center justify-center gap-3 mb-8">
+        <div className="flex items-center justify-center gap-3 mb-2">
           <button
             onClick={() => setBillingCycle('monthly')}
             className={cn(
@@ -147,13 +162,26 @@ export function UpgradeModal({ currentPlan, tenantId, onClose }: UpgradeModalPro
             </Badge>
           </button>
         </div>
+        <p className="text-center text-xs text-zinc-500 mb-6">
+          {billingCycle === 'monthly'
+            ? 'Renovación automática mensual — podés cancelar cuando quieras'
+            : 'Un pago por 12 meses'}
+        </p>
+
+        {error && (
+          <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {error}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {plans.map((plan) => {
             const Icon = plan.icon
             const isCurrent = plan.id === currentPlan
             const isUpgrade = plans.findIndex((p) => p.id === plan.id) > plans.findIndex((p) => p.id === currentPlan)
-            const price = billingCycle === 'annual' ? plan.priceAnnualMonth : plan.priceMonthly
+            const hasPromo = billingCycle === 'monthly' && !!plan.promoMonthly
+            const basePrice = billingCycle === 'annual' ? plan.priceAnnualMonth : plan.priceMonthly
+            const price = hasPromo ? plan.promoMonthly! : basePrice
 
             return (
               <div
@@ -182,17 +210,22 @@ export function UpgradeModal({ currentPlan, tenantId, onClose }: UpgradeModalPro
                     <p className="text-2xl font-bold text-zinc-100">Gratis</p>
                   ) : (
                     <>
-                      <p className="text-2xl font-bold text-zinc-100">
-                        US${price}<span className="text-sm font-normal text-zinc-400">/mes</span>
-                      </p>
-                      {billingCycle === 'annual' && (
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-2xl font-bold text-zinc-100">
+                          US${price}<span className="text-sm font-normal text-zinc-400">/mes</span>
+                        </p>
+                        {hasPromo && (
+                          <span className="text-sm text-zinc-500 line-through">US${plan.priceMonthly}</span>
+                        )}
+                      </div>
+                      {hasPromo && (
                         <p className="text-xs text-emerald-400 mt-1">
-                          US${Math.round(price * 12)}/año — ahorras US${Math.round(plan.priceMonthly * 12 - price * 12)}
+                          Promo lanzamiento -50% · 12 meses, luego US${plan.priceMonthly}/mes
                         </p>
                       )}
-                      {billingCycle === 'monthly' && plan.priceMonthly > 0 && (
-                        <p className="text-xs text-zinc-500 mt-1">
-                          o US${plan.priceAnnualMonth}/mes con plan anual
+                      {billingCycle === 'annual' && (
+                        <p className="text-xs text-emerald-400 mt-1">
+                          US${Math.round(price * 12)}/año — ahorrás 15%
                         </p>
                       )}
                     </>
@@ -214,17 +247,26 @@ export function UpgradeModal({ currentPlan, tenantId, onClose }: UpgradeModalPro
                   ))}
                 </ul>
 
-                {isCurrent ? (
-                  <Button disabled className="w-full bg-zinc-800 text-zinc-400">
-                    Plan actual
+                {plan.id === 'starter' ? (
+                  <Button disabled variant="outline" className="w-full border-zinc-700 text-zinc-500">
+                    {isCurrent ? 'Plan actual' : '—'}
+                  </Button>
+                ) : isCurrent ? (
+                  <Button
+                    onClick={() => handleSubscribe(plan.id)}
+                    disabled={!!loading}
+                    variant="outline"
+                    className="w-full border-violet-500/50 text-violet-300 hover:bg-violet-500/10"
+                  >
+                    {loading === plan.id ? 'Procesando...' : 'Renovar / Reactivar'}
                   </Button>
                 ) : isUpgrade ? (
                   <Button
-                    onClick={() => handleUpgrade(plan.id)}
+                    onClick={() => handleSubscribe(plan.id)}
                     disabled={!!loading}
                     className="w-full bg-violet-600 hover:bg-violet-500 text-white"
                   >
-                    {loading === plan.id ? 'Procesando...' : `Upgrade a ${plan.name}`}
+                    {loading === plan.id ? 'Procesando...' : `Pasar a ${plan.name}`}
                   </Button>
                 ) : (
                   <Button disabled variant="outline" className="w-full border-zinc-700 text-zinc-500">
