@@ -105,7 +105,16 @@ export async function createTenant(input: {
   return data as Tenant
 }
 
-export async function updateTenant(id: string, updates: Partial<Tenant>): Promise<Tenant | null> {
+/**
+ * Update a tenant and return BOTH the row and the DB error (if any).
+ * Use this when the caller needs to surface the real failure reason — e.g. a
+ * missing column (PostgREST PGRST204) that would otherwise be swallowed and show
+ * as an opaque "Error al guardar" to the partner (caso CORVUS / bank_cbu 2026-06).
+ */
+export async function updateTenantResult(
+  id: string,
+  updates: Partial<Tenant>,
+): Promise<{ data: Tenant | null; error: { message: string; code?: string } | null }> {
   const { data, error } = await db()
     .from('tenants')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -115,9 +124,20 @@ export async function updateTenant(id: string, updates: Partial<Tenant>): Promis
 
   if (error || !data) {
     console.error('[updateTenant] update failed', { error, tenantId: id, updateKeys: Object.keys(updates) })
-    return null
+    return {
+      data: null,
+      error: error
+        ? { message: error.message, code: (error as { code?: string }).code }
+        : { message: 'No rows returned' },
+    }
   }
-  return data as Tenant
+  return { data: data as Tenant, error: null }
+}
+
+// Backwards-compatible wrapper — keeps the Tenant | null contract for the ~12
+// existing callers that don't need the error.
+export async function updateTenant(id: string, updates: Partial<Tenant>): Promise<Tenant | null> {
+  return (await updateTenantResult(id, updates)).data
 }
 
 // --- Public visibility ---

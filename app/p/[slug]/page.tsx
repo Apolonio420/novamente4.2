@@ -21,6 +21,7 @@ import ContactForm from './contact-form'
 import ChatWidget from '@/components/partners/chat-widget'
 import { StorefrontTracker } from '@/components/partners/storefront-tracker'
 import { StorefrontDesigner } from '@/components/partners/storefront-designer'
+import { StoreWhatsAppButton } from '@/components/StoreWhatsAppButton'
 
 // ---------------------------------------------------------------------------
 // Metadata
@@ -191,6 +192,9 @@ export default async function PartnerStorefrontPage({ params, searchParams }: Pa
           primaryColor={tenant.primary_color}
         />
       )}
+
+      {/* ── WhatsApp flotante → número del partner ───────────── */}
+      <StoreWhatsAppButton phone={tenant.phone} storeName={tenant.name} />
     </main>
   )
 }
@@ -201,7 +205,9 @@ export default async function PartnerStorefrontPage({ params, searchParams }: Pa
 
 function HeroSection({ tenant }: { tenant: Tenant }) {
   const hasBanner = !!tenant.banner_url || !!tenant.hero_url
-  const bannerSrc = tenant.banner_url || tenant.hero_url
+  // Prioridad alineada con /merch/[brand] (hero || banner): el partner sube su
+  // portada como "Imagen hero" y debe verse igual en su panel y en el link público.
+  const bannerSrc = tenant.hero_url || tenant.banner_url
 
   return (
     <section className="relative w-full overflow-hidden">
@@ -238,9 +244,13 @@ function HeroSection({ tenant }: { tenant: Tenant }) {
           />
         )}
 
-        <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-white md:text-6xl">
-          {tenant.name}
-        </h1>
+        {/* Hide the big brand-name heading when the partner opts out
+            (metadata.hero_hide_name = true). Keeps the logo + tagline. */}
+        {(tenant.metadata as { hero_hide_name?: boolean } | null)?.hero_hide_name !== true && (
+          <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-white md:text-6xl">
+            {tenant.name}
+          </h1>
+        )}
 
         {tenant.tagline && (
           <p className="max-w-xl text-lg text-zinc-300 md:text-xl">
@@ -338,6 +348,7 @@ function ProductCard({
   currency: string
 }) {
   const image = product.images?.[0]
+  const comingSoon = (product.metadata as any)?.coming_soon === true
 
   return (
     <Link
@@ -360,6 +371,12 @@ function ProductCard({
               {product.name.charAt(0).toUpperCase()}
             </span>
           </div>
+        )}
+
+        {comingSoon && (
+          <Badge className="absolute left-3 top-3 bg-amber-500/90 text-black">
+            Próximamente
+          </Badge>
         )}
 
         {product.compare_at_price &&
@@ -405,7 +422,7 @@ function ProductCard({
           className="mt-3 inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-white transition"
           style={{ backgroundColor: 'var(--partner-primary)' }}
         >
-          Ver y comprar &rarr;
+          {comingSoon ? 'Próximamente' : 'Ver y comprar →'}
         </span>
       </div>
     </Link>

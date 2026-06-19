@@ -41,3 +41,8 @@ scripts/.autopilot-state.json
 /claude-talk-to-figma-mcp/
 autopilot-session-*.log
 .claude/settings.local.json
+
+# OS / screenshots / scripts con secretos (no van al repo)
+.DS_Store
+/e2e/screenshots/
+/scripts/diag-76-detalle.mjs

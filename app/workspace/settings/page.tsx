@@ -236,14 +236,24 @@ export default function SettingsPage() {
           bank_alias: settings.bank_alias?.trim() || null,
         }),
       })
-      if (!res.ok) throw new Error('Error guardando')
+      if (!res.ok) {
+        // Surface the real server reason (and log the detail) so a backend
+        // failure isn't an opaque toast. A missing column comes back with
+        // hint:'missing_column' — show a clear, actionable message.
+        const err = await res.json().catch(() => ({} as { error?: string; detail?: string; hint?: string }))
+        console.error('[settings] save failed', err)
+        if (err?.hint === 'missing_column') {
+          throw new Error('No se pudo guardar por un problema de nuestro sistema (ya estamos sobre eso). Probá de nuevo en unos minutos.')
+        }
+        throw new Error(err?.error || 'No se pudo guardar la configuración. Probá de nuevo.')
+      }
       const json = await res.json()
       const updated: SettingsData = json.settings || json
       setSettings(updated)
       initialRef.current = { ...updated }
       showToast('Configuracion guardada', 'success')
-    } catch {
-      showToast('Error al guardar configuracion', 'error')
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Error al guardar configuracion', 'error')
     } finally {
       setSaving(false)
     }

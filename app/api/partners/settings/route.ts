@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestTenant } from '@/lib/partners/auth'
-import { updateTenant } from '@/lib/partners/tenant'
+import { updateTenantResult } from '@/lib/partners/tenant'
 
 const SETTINGS_FIELDS = [
   'name', 'slug', 'email', 'phone', 'website', 'instagram',
@@ -136,11 +136,27 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ settings: tenant })
     }
 
-    const updated = await updateTenant(tenant.id, updates)
+    const { data: updated, error: updateError } = await updateTenantResult(tenant.id, updates)
 
     if (!updated) {
+      // Surface WHAT failed instead of an opaque 500 — a missing column shows up
+      // as PGRST204 / "...schema cache". Logged loudly so it never hides again.
+      const missingColumn =
+        updateError?.code === 'PGRST204' ||
+        /column .* (does not exist|schema cache)/i.test(updateError?.message || '')
+      console.error('[settings] PUT save failed', {
+        tenantId: tenant.id,
+        fields: Object.keys(updates),
+        code: updateError?.code,
+        message: updateError?.message,
+      })
       return NextResponse.json(
-        { error: 'No se pudieron guardar los cambios' },
+        {
+          error: 'No se pudieron guardar los cambios',
+          detail: updateError?.message,
+          code: updateError?.code,
+          ...(missingColumn && { hint: 'missing_column' }),
+        },
         { status: 500 },
       )
     }

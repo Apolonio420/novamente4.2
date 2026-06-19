@@ -32,6 +32,10 @@ export function GlobalChrome({ children }: { children: React.ReactNode }) {
       </div>
     )
   }
+  // /p/* son tiendas partner: el WhatsApp global iría al número de Novamente.
+  // Lo ocultamos acá y cada tienda monta su propio StoreWhatsAppButton apuntando
+  // al número del partner.
+  const isStore = pathname?.startsWith("/p/") ?? false
 
   if (isCrear) {
     // Full-screen design tool — sin navbar global, sin footer, sin flotantes.
@@ -67,7 +71,7 @@ export function GlobalChrome({ children }: { children: React.ReactNode }) {
       <Footer />
       {!isCrear && (
         <>
-          <WhatsAppButton />
+          {!isStore && <WhatsAppButton />}
           <PublicAssistantLoader />
           <EmailCaptureLoader />
         </>

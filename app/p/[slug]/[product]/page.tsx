@@ -15,6 +15,7 @@ import {
   generateBreadcrumbSchema,
 } from '@/lib/partners/seo'
 import { StorefrontTracker } from '@/components/partners/storefront-tracker'
+import { StoreWhatsAppButton } from '@/components/StoreWhatsAppButton'
 import { AddToCartButtons } from './AddToCartButtons'
 import { Flame } from 'lucide-react'
 import { getActiveOfferForProduct, getDiscountPercent } from '@/lib/offers'
@@ -136,6 +137,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
   // que identifica al partner + producto. Antes el boton desaparecia para partners
   // sin contacto cargado y los clientes no podian comprar.
   const NOVAMENTE_FALLBACK_WA = "5492235169720"
+  // Lienzos u otras piezas marcadas como "Próximamente": visibles pero no comprables.
+  const comingSoon = (product.metadata as any)?.coming_soon === true
   const productText = encodeURIComponent(`Hola! Me interesa "${product.name}" de la tienda ${tenant.name} en Novamente. Quiero info para comprar.`)
   const ctaHref =
     tenant.commerce_mode === 'whatsapp' && tenant.phone
@@ -302,16 +305,20 @@ export default async function ProductDetailPage({ params }: PageProps) {
               <Badge
                 variant="outline"
                 className={
-                  product.availability === 'out_of_stock'
-                    ? 'border-red-800 text-red-400'
-                    : 'border-green-800 text-green-400'
+                  comingSoon
+                    ? 'border-amber-700 text-amber-400'
+                    : product.availability === 'out_of_stock'
+                      ? 'border-red-800 text-red-400'
+                      : 'border-green-800 text-green-400'
                 }
               >
-                {product.availability === 'out_of_stock'
-                  ? 'Sin stock'
-                  : product.availability === 'preorder'
-                    ? 'Pre-orden'
-                    : 'Disponible'}
+                {comingSoon
+                  ? 'Próximamente'
+                  : product.availability === 'out_of_stock'
+                    ? 'Sin stock'
+                    : product.availability === 'preorder'
+                      ? 'Pre-orden'
+                      : 'Disponible'}
               </Badge>
             </div>
 
@@ -338,21 +345,31 @@ export default async function ProductDetailPage({ params }: PageProps) {
             )}
 
             {/* CTA — carrito + buy now (Novamente checkout). El WhatsApp queda como
-                fallback de consulta para clientes que prefieren ese canal. */}
-            <AddToCartButtons
-              productId={product.id}
-              productName={product.name}
-              brandName={tenant.name}
-              category={product.category ?? null}
-              price={product.price ?? 0}
-              imageUrl={product.images?.[0] ?? null}
-              sizes={Array.isArray((product.metadata as any)?.sizes) ? (product.metadata as any).sizes : undefined}
-              availableColors={Array.isArray((product.metadata as any)?.available_colors) ? (product.metadata as any).available_colors : undefined}
-              defaultColor={(product.metadata as any)?.color ?? undefined}
-              fallbackWhatsappUrl={ctaHref ?? undefined}
-              whatsappLabel={ctaUsesFallback ? "Consultar a Novamente por WhatsApp" : `Consultar a ${tenant.name} por WhatsApp`}
-              primaryColor={tenant.primary_color}
-            />
+                fallback de consulta para clientes que prefieren ese canal.
+                Para piezas "Próximamente" mostramos un aviso en vez del botón de compra. */}
+            {comingSoon ? (
+              <div className="rounded-lg border border-amber-700/50 bg-amber-950/20 px-4 py-4 text-center">
+                <p className="text-sm font-semibold text-amber-300">Próximamente</p>
+                <p className="mt-1 text-xs text-zinc-400">
+                  Esta pieza estará disponible muy pronto. Seguinos para enterarte del lanzamiento.
+                </p>
+              </div>
+            ) : (
+              <AddToCartButtons
+                productId={product.id}
+                productName={product.name}
+                brandName={tenant.name}
+                category={product.category ?? null}
+                price={product.price ?? 0}
+                imageUrl={product.images?.[0] ?? null}
+                sizes={Array.isArray((product.metadata as any)?.sizes) ? (product.metadata as any).sizes : undefined}
+                availableColors={Array.isArray((product.metadata as any)?.available_colors) ? (product.metadata as any).available_colors : undefined}
+                defaultColor={(product.metadata as any)?.color ?? undefined}
+                fallbackWhatsappUrl={ctaHref ?? undefined}
+                whatsappLabel={ctaUsesFallback ? "Consultar a Novamente por WhatsApp" : `Consultar a ${tenant.name} por WhatsApp`}
+                primaryColor={tenant.primary_color}
+              />
+            )}
 
             {/* Back to storefront */}
             <Link
@@ -398,6 +415,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
           </Link>
         </div>
       </footer>
+
+      {/* WhatsApp flotante → número del partner */}
+      <StoreWhatsAppButton phone={tenant.phone} storeName={tenant.name} />
     </main>
   )
 }

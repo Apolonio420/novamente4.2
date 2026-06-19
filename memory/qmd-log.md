@@ -1,5 +1,17 @@
 # QMD Log - novamente4.2
 
+### [2026-06-08] Provisión tienda Partner "Mala Conducta" (mala-conducta)
+**Goal**: Dejar online la tienda de la clienta Engels Carrasco ("Mala Conducta", streetwear) con sus productos hero del diseño "Stay Positive" y acceso confirmado.
+**Done**:
+- Descubierto que la clienta YA se auto-onboardeó (2026-06-04): tenant `6027047b-09c7-4bac-a633-096c784f938e` en status `onboarding`, auth user `229500b5-...` vía **Google OAuth** (no password), ya linkeada owner en `tenant_users`. NO se duplicó nada.
+- Cargados 3 `partner_products` (status published) con mockups reales del diseño Stay Positive (bucket public-assets/chat-images + images/whatsapp-mockups/manual): Berlin crewneck negro $32.200, Boston hoodie negro $38.700, Aura oversize negra $25.400. Metadata shape = patrón create-sm-partner.ts.
+- Activado tenant (patrón onboarding route step-8 + diego-cruz): status active, storefront_published true, storefront_published_at, onboarding_completed true, onboarding_step 8, seo_indexable true, design_engine_mode presets, tagline/seo_title/seo_description, completeness 40.
+- Verificado live: /p/mala-conducta HTTP 200 con 3 productos y precios; /partners/login 200; product page 200.
+**Decisions**: Acceso = solo Google OAuth (decisión de Juan), NO se generó password. commerce_mode dejado en 'leads' y phone SIN tocar por discrepancia: tenant.phone = +543794688821 (onboarding) ≠ WhatsApp del bot 5493884574242 → pendiente confirmar a qué número entran los pedidos antes de pasar a modo whatsapp.
+**Blockers/Pending**: Confirmar número WhatsApp de ventas (luego flip commerce_mode→whatsapp / set phone). Sin logo de marca subido (logo_url null) — opcional sumar. Hay 24 diseños más en images/customer-logos/5493884574242/ para más productos.
+**Next**: Que la clienta entre con Google y revise; sumar logo + más productos si quiere.
+
+
 ### [2026-06-02b] Ronda 2 — Suba precios venta partner + Growth único por producto
 **Goal**: Subir precios de venta a partners (no toca costos) y confirmar Growth único por producto (ya no varía por color). Fuente: Excel pestaña 'Plan_Precios_Futuro'.
 **Done**:
