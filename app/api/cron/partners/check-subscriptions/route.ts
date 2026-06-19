@@ -45,6 +45,12 @@ export async function GET(request: NextRequest) {
 
       for (const tenant of expiredTenants) {
         try {
+          // Las suscripciones recurrentes las gestiona MercadoPago (débito + reintentos).
+          // La baja llega por el webhook subscription_preapproval; no las suspendemos
+          // por vencimiento acá para no cortar a un partner que MP sigue cobrando.
+          if ((tenant.metadata as any)?.subscription_type === 'recurring') {
+            continue
+          }
           const currentFailures = tenant.payment_failures || 0
 
           if (currentFailures < 3) {
