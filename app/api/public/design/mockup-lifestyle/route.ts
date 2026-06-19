@@ -124,8 +124,8 @@ export async function POST(req: NextRequest) {
     const printAreaDesc =
       printArea === "R1"
         ? side === "front"
-          ? "small chest pocket area (10×10 cm), positioned over the left chest like a logo placement"
-          : "small upper-back area (10×10 cm), positioned at the nape between shoulder blades"
+          ? "small print (10×10 cm) on the left chest area"
+          : "small print (10×10 cm) at the upper back, between the shoulder blades"
         : printArea === "R3"
           ? side === "front"
             ? "large full-front print (35×40 cm), covering most of the chest area from collar down"
@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
       `The garment shows the EXACT design from the input image printed on the ${sideText}, with realistic DTG print quality (slight fabric texture, natural ink absorption, no shiny edges).`,
       `Setting: ${scenario}.`,
       "Composition: medium shot showing the upper body and the printed design clearly. Hyperrealistic, 4K, cinematic depth of field, natural skin tones.",
-      "CRITICAL: the design on the garment must match the input image exactly — same colors, same typography, same composition. Do not redesign, do not stylize.",
+      "CRITICAL: reproduce the FULL input image EXACTLY as the print — same colors, same composition, same content. If the input is a photo, print the WHOLE photo. Do NOT extract a single element from it, do NOT simplify it into a logo, icon or emblem, do NOT replace it with a generic mark. Do not redesign, do not stylize, do not crop.",
       "Do not add logos, watermarks, or extra text. Do not show a flat mockup, hanger or studio backdrop.",
       "Respond ONLY with the image (inlineData). No text.",
     ].join(" ")

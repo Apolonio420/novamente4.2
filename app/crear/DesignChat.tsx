@@ -18,6 +18,7 @@ import {
   Zap,
   Sparkles,
   X,
+  ChevronDown,
 } from "lucide-react"
 import { GarmentCatalog } from "./GarmentCatalog"
 
@@ -207,6 +208,21 @@ export function DesignChat({
   const [showGarmentHint, setShowGarmentHint] = useState(false)
   const [showMockupHint, setShowMockupHint] = useState(false)
   const [hintsSeen, setHintsSeen] = useState<{ input: boolean; garment: boolean }>({ input: false, garment: false })
+  // Tutorial de PRIMERA VEZ: aparece una sola vez cuando hay un diseño y todavía
+  // no se generó ningún mockup. Guía los 2 pasos (elegí prenda → generá mockup).
+  const [showMockupTutorial, setShowMockupTutorial] = useState(false)
+  const mockupTutorialSeenRef = useRef(false)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    try {
+      mockupTutorialSeenRef.current = window.localStorage.getItem("novamente:mockup-tutorial-seen") === "1"
+    } catch {}
+  }, [])
+  const dismissMockupTutorial = useCallback(() => {
+    setShowMockupTutorial(false)
+    mockupTutorialSeenRef.current = true
+    try { window.localStorage.setItem("novamente:mockup-tutorial-seen", "1") } catch {}
+  }, [])
 
   // Load seen hints from localStorage on mount
   useEffect(() => {
@@ -261,6 +277,18 @@ export function DesignChat({
     }, 10_000)
     return () => clearTimeout(t)
   }, [showGarmentHint, markHintSeen])
+
+  // Tutorial primera vez: cuando aparece el primer diseño sin mockup y nunca lo vio.
+  useEffect(() => {
+    if (
+      session.currentDesignUrl &&
+      !session.currentMockupUrl &&
+      !mockupTutorialSeenRef.current
+    ) {
+      const t = setTimeout(() => setShowMockupTutorial(true), 600)
+      return () => clearTimeout(t)
+    }
+  }, [session.currentDesignUrl, session.currentMockupUrl])
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -681,6 +709,9 @@ export function DesignChat({
       frontDesignUrl: prev.side === "front" ? initialImage : prev.frontDesignUrl,
       backDesignUrl: prev.side === "back" ? initialImage : prev.backDesignUrl,
       designHistory: [...prev.designHistory, initialImage],
+      // Foto propia → estampa GRANDE por default (R3). A tamaño chico Gemini
+      // tiende a abstraer la foto en un logo. Grande la reproduce fiel.
+      printArea: "R3",
     }))
     setMessages((prev) => [
       ...prev,
@@ -1604,7 +1635,7 @@ export function DesignChat({
         {/* Garment catalog */}
         <div className="relative bg-zinc-900 rounded-2xl border border-zinc-800 p-4">
           {/* Coachmark: elegir prenda — primera vez que se genera un diseno */}
-          {showGarmentHint && (
+          {showGarmentHint && !showMockupTutorial && (
             <div className="absolute -top-3 left-4 z-10 animate-in fade-in slide-in-from-bottom-1 duration-300">
               <button
                 type="button"
@@ -1615,6 +1646,22 @@ export function DesignChat({
                 <span className="text-white/70 ml-0.5">×</span>
                 <span className="absolute -bottom-1 left-6 h-2 w-2 rotate-45 bg-fuchsia-600" />
               </button>
+            </div>
+          )}
+
+          {/* TUTORIAL Paso 1 — primera vez: elegí la prenda */}
+          {showMockupTutorial && (
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-20 w-max max-w-[260px] animate-in fade-in zoom-in-95 duration-300">
+              <div className="relative rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3.5 py-2 text-center shadow-xl shadow-fuchsia-600/40 ring-1 ring-white/20">
+                <div className="flex items-center justify-center gap-1.5">
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-fuchsia-600">1</span>
+                  <p className="text-[12px] font-semibold text-white">Elegí la prenda y el color</p>
+                </div>
+                <p className="mt-0.5 text-[10px] text-white/80">Tocá la que querés ver con tu diseño</p>
+                {/* flecha titilante hacia las prendas */}
+                <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 h-3 w-3 rotate-45 bg-fuchsia-600" />
+              </div>
+              <ChevronDown className="mx-auto mt-0.5 h-5 w-5 text-fuchsia-400 animate-bounce" strokeWidth={3} />
             </div>
           )}
           <GarmentCatalog
@@ -1716,7 +1763,7 @@ export function DesignChat({
           {/* Mockup button — prominent CTA with pulsing hint */}
           <div className="relative mt-4">
             {/* Hint chip — visible cada vez que hay un diseno nuevo sin mockup */}
-            {showMockupHint && session.currentDesignUrl && !session.currentMockupUrl && !mockupLoading && (
+            {showMockupHint && !showMockupTutorial && session.currentDesignUrl && !session.currentMockupUrl && !mockupLoading && (
               <div className="absolute -top-7 left-1/2 -translate-x-1/2 z-10 pointer-events-none animate-in fade-in slide-in-from-bottom-1 duration-300">
                 <div className="relative inline-flex items-center gap-1 rounded-full bg-violet-600 px-2.5 py-0.5 text-[10px] font-semibold text-white shadow-lg shadow-violet-600/40 whitespace-nowrap">
                   👇 Probalo en la prenda
@@ -1724,14 +1771,37 @@ export function DesignChat({
                 </div>
               </div>
             )}
+
+            {/* TUTORIAL Paso 2 — primera vez: generá el mockup */}
+            {showMockupTutorial && session.currentDesignUrl && !session.currentMockupUrl && (
+              <div className="absolute -top-[68px] left-1/2 -translate-x-1/2 z-20 w-max max-w-[270px] animate-in fade-in zoom-in-95 duration-300">
+                <div className="relative rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3.5 py-2 text-center shadow-xl shadow-violet-600/40 ring-1 ring-white/20">
+                  <button
+                    type="button"
+                    onClick={dismissMockupTutorial}
+                    aria-label="Entendido"
+                    className="absolute -right-1.5 -top-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-[11px] text-white/80 ring-1 ring-white/20 hover:text-white"
+                  >
+                    ×
+                  </button>
+                  <div className="flex items-center justify-center gap-1.5">
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] font-bold text-violet-600">2</span>
+                    <p className="text-[12px] font-semibold text-white">Generá el mockup</p>
+                  </div>
+                  <p className="mt-0.5 text-[10px] text-white/80">Tocá acá y ves tu diseño en la prenda real</p>
+                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 h-3 w-3 rotate-45 bg-fuchsia-600" />
+                </div>
+                <ChevronDown className="mx-auto mt-0.5 h-5 w-5 text-violet-300 animate-bounce" strokeWidth={3} />
+              </div>
+            )}
             <Button
               data-mockup-trigger="true"
               className={`w-full font-semibold text-sm h-11 shadow-lg transition-all ${
                 session.currentDesignUrl && !session.currentMockupUrl
-                  ? "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-violet-600/30 ring-2 ring-violet-500/40"
+                  ? `bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-violet-600/30 ring-2 ring-violet-500/40 ${showMockupTutorial ? "animate-pulse" : ""}`
                   : "bg-zinc-700 hover:bg-zinc-600 text-white shadow-black/20"
               }`}
-              onClick={() => { setShowMockupHint(false); handleMockup() }}
+              onClick={() => { setShowMockupHint(false); dismissMockupTutorial(); handleMockup() }}
               disabled={!session.currentDesignUrl || mockupLoading}
             >
               {mockupLoading ? (
