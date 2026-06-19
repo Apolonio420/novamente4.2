@@ -296,6 +296,10 @@ export function DesignChat({
   // Ref a handleBuyNow para que el intent detector lo pueda invocar sin
   // forward-reference problems (handleBuyNow esta declarado mas abajo)
   const buyNowRef = useRef<(() => void) | null>(null)
+  // Ref a handleMockup (declarado mas abajo) para iteracion del mockup por chat
+  const mockupRef = useRef<((o?: { printArea?: "R1" | "R2" | "R3"; side?: "front" | "back"; scenario?: number }) => void) | null>(null)
+  // Rota escenarios cuando el user pide "cambiá el mockup / otra foto"
+  const scenarioRef = useRef<number>(0)
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -469,6 +473,69 @@ export function DesignChat({
         // Disparar handleBuyNow programaticamente via ref
         setTimeout(() => buyNowRef.current?.(), 300)
         return
+      }
+
+      // Intent: AJUSTAR EL MOCKUP por lenguaje natural — sin regenerar el diseño.
+      // "hacé la estampa más chica", "ponela en la espalda", "cambiá el mockup / otra foto".
+      // Requiere que ya haya un diseño cargado.
+      if (hasPreviousDesign && !isRemoveBgIntent) {
+        const t = text.toLowerCase()
+        const smaller = /(m[aá]s\s+(chic[ao]|peque[nñ][ao]|chiquit[ao])|achic[aá]\w*|reduc[ií]\w*|m[aá]s\s+chico|smaller)/.test(t)
+        const bigger = /(m[aá]s\s+grande|agrand[aá]\w*|ampli[aá]\w*|m[aá]s\s+gigante|bigger|grande\s+la\s+estampa)/.test(t)
+        const toBack = /((en|a|de|por)\s+(la\s+)?(espalda|dorso)|atr[aá]s|por\s+detr[aá]s)/.test(t)
+        const toFront = /((en|al|en\s+el)\s+(frente|pecho)|adelante|al\s+frente)/.test(t)
+        const changeScene = /(cambi[aá]\w*\s+(el\s+|la\s+)?(mockup|foto|modelo|escenario|fondo|persona|imagen|toma)|otr[ao]\s+(mockup|foto|modelo|escenario|fondo|persona|imagen|toma)|otra\s+toma|cambia\s+(el\s+)?modelo)/.test(t)
+        // Guard: la frase tiene que ser sobre la prenda/estampa/mockup (evita falsos positivos
+        // tipo "hacé el tigre más grande" que es un re-diseño, no un ajuste de mockup).
+        const aboutMockup = /(estampa|dise[nñ]o|mockup|prenda|remera|buzo|hoodie|musculosa|foto|imagen|modelo|escenario|tama[nñ]o|posici[oó]n|adelante|atr[aá]s|espalda|frente|pecho)/.test(t)
+        const wantsAdjust = (smaller || bigger || toBack || toFront || changeScene) && (aboutMockup || changeScene || toBack || toFront)
+        if (wantsAdjust) {
+          const order: Array<"R1" | "R2" | "R3"> = ["R1", "R2", "R3"]
+          const curIdx = order.indexOf(session.printArea)
+          let newArea = session.printArea
+          if (smaller) newArea = order[Math.max(0, curIdx - 1)]!
+          if (bigger) newArea = order[Math.min(2, curIdx + 1)]!
+          let newSide = session.side
+          if (toBack) newSide = "back"
+          if (toFront) newSide = "front"
+          const overrides: { printArea?: "R1" | "R2" | "R3"; side?: "front" | "back"; scenario?: number } = {}
+          if (newArea !== session.printArea) overrides.printArea = newArea
+          if (newSide !== session.side) overrides.side = newSide
+          if (changeScene) { scenarioRef.current = (scenarioRef.current + 1) % 6; overrides.scenario = scenarioRef.current }
+
+          // Nada cambió (ej. pidió "más chica" pero ya está en R1) → avisar, no regenerar.
+          if (Object.keys(overrides).length === 0) {
+            const atMin = smaller && curIdx === 0
+            const atMax = bigger && curIdx === 2
+            setMessages((prev) => [...prev, {
+              role: "assistant",
+              text: atMin ? "La estampa ya está en el tamaño más chico (R1). ¿Querés probarla en la espalda o cambiar la prenda?"
+                : atMax ? "La estampa ya está en el tamaño más grande (R3). ¿La querés en la espalda o con otra foto?"
+                : "¿Qué querés cambiar exactamente? Podés pedir: 'más chica', 'más grande', 'en la espalda', 'al frente' o 'cambiá la foto'.",
+            }])
+            setLoading(false)
+            return
+          }
+
+          const parts: string[] = []
+          if (overrides.printArea && smaller) parts.push("estampa más chica")
+          if (overrides.printArea && bigger) parts.push("estampa más grande")
+          if (overrides.side === "back") parts.push("en la espalda")
+          if (overrides.side === "front") parts.push("al frente")
+          if (changeScene) parts.push("otra foto")
+          const desc = parts.join(", ") || "ajustando el mockup"
+
+          // Update UI state (selector de prenda) y regenerar el mockup.
+          setSession((prev) => ({
+            ...prev,
+            ...(overrides.printArea ? { printArea: overrides.printArea } : {}),
+            ...(overrides.side ? { side: overrides.side } : {}),
+          }))
+          setMessages((prev) => [...prev, { role: "assistant", text: `Dale 👍 Regenerando el mockup: ${desc}…` }])
+          setLoading(false)
+          setTimeout(() => mockupRef.current?.(overrides), 100)
+          return
+        }
       }
 
       // Intent: "usá la imagen tal cual" — saltea Gemini, usa el upload directo
@@ -728,9 +795,15 @@ export function DesignChat({
   // Usa Gemini para generar foto realista de persona con la prenda. Reemplaza
   // el compositor canvas estático que tenía problemas de transparencia
   // (checker pattern visible sobre la prenda).
-  const handleMockup = useCallback(async () => {
+  const handleMockup = useCallback(async (overrides?: {
+    printArea?: "R1" | "R2" | "R3"
+    side?: "front" | "back"
+    scenario?: number
+  }) => {
     if (!session.currentDesignUrl || mockupLoading) return
     setMockupLoading(true)
+    const effSide = overrides?.side ?? session.side
+    const effPrintArea = overrides?.printArea ?? session.printArea
     try {
       const res = await fetch("/api/public/design/mockup-lifestyle", {
         method: "POST",
@@ -739,8 +812,9 @@ export function DesignChat({
           designImageUrl: session.currentDesignUrl,
           garmentType: session.garmentType,
           garmentColor: session.garmentColor,
-          side: session.side,
-          printArea: session.printArea,
+          side: effSide,
+          printArea: effPrintArea,
+          ...(typeof overrides?.scenario === "number" ? { scenario: overrides.scenario } : {}),
         }),
       })
       const data = await res.json()
@@ -748,11 +822,13 @@ export function DesignChat({
       if (!res.ok || !mockupUrl) throw new Error(data.error ?? "Error generando mockup")
       setSession((prev) => ({
         ...prev,
+        side: effSide,
+        printArea: effPrintArea,
         currentMockupUrl: mockupUrl,
         mockupGeneratedFor: {
           garmentType: prev.garmentType,
           garmentColor: prev.garmentColor,
-          side: prev.side,
+          side: effSide,
           designUrl: prev.currentDesignUrl ?? "",
         },
       }))
@@ -842,6 +918,11 @@ export function DesignChat({
   useEffect(() => {
     buyNowRef.current = handleBuyNow
   }, [handleBuyNow])
+
+  // Wire mockupRef → handleMockup para iteracion del mockup por chat
+  useEffect(() => {
+    mockupRef.current = handleMockup
+  }, [handleMockup])
 
   // Abandoned cart recovery: si user genera mockup pero no compra, guardar
   // snapshot en localStorage. Al volver a /crear se recupera.
@@ -1615,6 +1696,34 @@ export function DesignChat({
               </div>
             )}
           </div>
+
+          {/* Ajuste rápido del mockup — chips que disparan la iteración por chat */}
+          {session.currentMockupUrl && !mockupLoading && (
+            <div className="p-2.5 border-t border-zinc-800">
+              <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider mb-1.5">Ajustá el mockup</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: "🔽 Más chica", phrase: "hacé la estampa más chica" },
+                  { label: "🔼 Más grande", phrase: "hacé la estampa más grande" },
+                  session.side === "front"
+                    ? { label: "🔄 En la espalda", phrase: "ponela en la espalda" }
+                    : { label: "🔄 Al frente", phrase: "ponela al frente" },
+                  { label: "📷 Otra foto", phrase: "cambiá la foto del mockup" },
+                ].map((c) => (
+                  <button
+                    key={c.label}
+                    type="button"
+                    disabled={mockupLoading || loading}
+                    onClick={() => handleSend(c.phrase)}
+                    className="rounded-full border border-zinc-700 bg-zinc-800/60 px-2.5 py-1 text-[11px] text-zinc-300 transition hover:border-violet-500/50 hover:bg-violet-600/10 hover:text-white disabled:opacity-50"
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-[10px] text-zinc-600">O escribilo en el chat: «más chica», «en la espalda», «otra foto»…</p>
+            </div>
+          )}
 
           {/* Reset mockup button */}
           {session.currentMockupUrl && (
