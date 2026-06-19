@@ -71,8 +71,9 @@ export default function CrearPage() {
       const p = sp.get("prompt")
       if (p && p.trim().length >= 3) setInitialPrompt(p.trim().slice(0, 500))
       const img = sp.get("image")
-      // Solo aceptamos URLs http(s) de nuestro storage para evitar abuso
-      if (img && /^https?:\/\//i.test(img)) setInitialImage(img)
+      // Aceptamos URLs http(s) o rutas relativas same-origin (ej. /api/proxy-image?key=...)
+      // que es lo que devuelve /api/public/design/upload.
+      if (img && (/^https?:\/\//i.test(img) || img.startsWith("/"))) setInitialImage(img)
     } catch { /* noop */ }
   }, [])
 
