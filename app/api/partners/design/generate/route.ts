@@ -85,14 +85,14 @@ export async function POST(request: NextRequest) {
     console.log(`[design-engine] Generating for tenant ${tenant.slug}:`, optimizedPrompt.substring(0, 100))
 
     // Call Gemini with safety settings.
-    // Default a Nano Banana 2 (gemini-3.1-flash-image-preview) que es el modelo
+    // Default a Nano Banana 2 (gemini-3.1-flash-image) que es el modelo
     // de DISEÑO. El sufijo -preview en 2.5 fue retirado cuando paso a GA — usar
     // el preview del 3.1 (que sigue en preview) o setear GEMINI_DESIGN_MODEL
-    // explicito en env. Antes hardcodeaba gemini-2.5-flash-image-preview que ya
+    // explicito en env. Antes hardcodeaba gemini-2.5-flash-image que ya
     // no resuelve = causa del bug "no genera imagenes" reportado.
     const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_DESIGN_MODEL || process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image-preview',
+      model: process.env.GEMINI_DESIGN_MODEL || process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image',
       safetySettings: getGeminiSafetySettings() as any,
     })
 

@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     const gemini = getGeminiClient()
     const model = gemini.getGenerativeModel({
-      model: process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image-preview",
+      model: process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image",
     })
 
     const placement = body.placement || "Coloca el diseño en el centro de la prenda"

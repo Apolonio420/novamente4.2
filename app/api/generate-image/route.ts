@@ -11,7 +11,7 @@ export const runtime = "nodejs"
 const limiter = rateLimit({ limit: 10, windowSeconds: 60, prefix: 'gen-img' })
 
 // ==== Config ====
-const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image-preview"
+const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"
 const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-1.5-pro"
 const DEBUG = (process.env.DEBUG_GEMINI || "").toLowerCase() === "true"
 

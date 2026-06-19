@@ -13,7 +13,7 @@ export const maxDuration = 60
 
 const limiter = rateLimit({ limit: 5, windowSeconds: 60, prefix: "mockup-lifestyle" })
 
-const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image-preview"
+const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",

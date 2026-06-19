@@ -57,7 +57,7 @@ PROMPT: <english prompt>`;
 
 async function generateImage(genAI, textPrompt) {
   const model = genAI.getGenerativeModel({
-    model: process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image-preview',
+    model: process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image',
   });
 
   const fullPrompt = `Generate a high-quality professional lifestyle marketing photograph (1920x1080, photorealistic, editorial quality): ${textPrompt}`;

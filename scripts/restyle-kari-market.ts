@@ -22,7 +22,7 @@
  *   NEXT_PUBLIC_SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
  *   GEMINI_API_KEY
- *   GEMINI_IMAGE_MODEL (opcional, default: gemini-3-pro-image-preview)
+ *   GEMINI_IMAGE_MODEL (opcional, default: gemini-3-pro-image)
  */
 
 import { readFileSync, existsSync } from "fs"

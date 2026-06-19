@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
 
         // 2. Process with Gemini 3 Pro Image (Imagen 3)
         // This model excels at image editing and background removal
-        const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image-preview" })
+        const model = genAI.getGenerativeModel({ model: "gemini-3-pro-image" })
 
         const prompt = `Perform professional background removal and "Stamp-ify" this design.
 

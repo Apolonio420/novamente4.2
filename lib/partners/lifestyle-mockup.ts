@@ -188,7 +188,7 @@ export async function generateLifestyleMockup(params: LifestyleMockupParams): Pr
     // 3. Call Gemini with both images
     const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image-preview',
+      model: process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image',
     })
 
     const prompt = buildCompositePrompt(garmentType, isSmallLogo)

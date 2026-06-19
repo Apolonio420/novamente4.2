@@ -18,7 +18,7 @@ export async function generateImage(prompt: string, width = 1024, height = 1024)
 
     const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_IMAGE_MODEL || "gemini-3-pro-image-preview",
+      model: process.env.GEMINI_IMAGE_MODEL || "gemini-3-pro-image",
     })
 
     console.log("🔍 GEMINI PROMPT LENGTH:", prompt.length)

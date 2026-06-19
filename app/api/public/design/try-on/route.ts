@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     // Try primary model, fallback to secondary
     let imageBase64 =
       await attemptGeneration(
-        process.env.GEMINI_DESIGN_MODEL || "gemini-3.1-flash-image-preview"
+        process.env.GEMINI_DESIGN_MODEL || "gemini-3.1-flash-image"
       ).catch(() => null)
 
     if (!imageBase64) {

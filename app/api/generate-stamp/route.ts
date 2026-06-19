@@ -299,7 +299,7 @@ STRICT BOUNDARY ENFORCEMENT. DO NOT CROSS THE RED LINES.`
     let result
     try {
       result = await genAI.models.generateContent({
-        model: "gemini-3-pro-image-preview",
+        model: "gemini-3-pro-image",
         contents: [
           { text: stampPrompt },
           { inlineData: { data: designBase64, mimeType: "image/png" } },

@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
 
     // Mockup composite SOLO usa gemini-2.5-flash-image (sin -preview, ya en GA).
     // IMPORTANTE: NO usar GEMINI_IMAGE_MODEL como fallback porque ese env esta
-    // apuntando a gemini-3-pro-image-preview en Vercel — ese modelo es lento
+    // apuntando a gemini-3-pro-image en Vercel — ese modelo es lento
     // y devuelve 503 Service Unavailable / Deadline expired en composites
     // multimodales pesados. Solo aceptamos override explicito via
     // GEMINI_STAMP_MODEL para futuros tests.
