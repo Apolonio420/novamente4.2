@@ -14,6 +14,12 @@ export interface PartnerOrder {
     variant?: string
     quantity: number
     unit_price: number
+    // Campos partner-safe extra (carga manual). NUNCA costo del proveedor ni margen.
+    partner_price?: number       // lo que el partner nos transfiere (lo conoce)
+    color?: string
+    talle?: string
+    doble_estampa?: 'Si' | 'No' | 'Chica'
+    mockup_url?: string
   }>
   total: number | null
   currency: string
@@ -73,6 +79,7 @@ export async function createOrder(
     currency?: string
     payment_id?: string
     notes?: string
+    shipping_info?: Record<string, unknown>
   }
 ): Promise<PartnerOrder | null> {
   const { data, error } = await db()
@@ -87,6 +94,7 @@ export async function createOrder(
       currency: input.currency || 'ARS',
       payment_id: input.payment_id || null,
       notes: input.notes || null,
+      shipping_info: input.shipping_info || {},
     })
     .select()
     .single()

@@ -177,6 +177,9 @@ export default function CatalogPage() {
 
   // Garment key for margin calculation
   const [formGarmentKey, setFormGarmentKey] = useState('')
+  // Arte print-ready (para producción; no se muestra en la tienda)
+  const [formPrintReadyUrl, setFormPrintReadyUrl] = useState('')
+  const [formPrintSide, setFormPrintSide] = useState<'frente' | 'dorso' | 'ambos'>('frente')
 
   // AI copywriting state
   const [aiIdea, setAiIdea] = useState('')
@@ -309,6 +312,8 @@ export default function CatalogPage() {
     setFormCardDesc('')
     setFormBrandValues('')
     setFormGarmentKey('')
+    setFormPrintReadyUrl('')
+    setFormPrintSide('frente')
     setEditingProduct(null)
   }
 
@@ -345,6 +350,8 @@ export default function CatalogPage() {
     setFormCardDesc((m.cardDescription as string) || '')
     setFormBrandValues((m.brandValues as string) || '')
     setFormGarmentKey((m.garmentKey as string) || '')
+    setFormPrintReadyUrl((m.print_ready_url as string) || '')
+    setFormPrintSide(((m.print_side as 'frente' | 'dorso' | 'ambos') || 'frente'))
 
     setEditingProduct(product)
     setFormMode('edit')
@@ -406,6 +413,11 @@ export default function CatalogPage() {
       if (formCardDesc.trim()) metadata.cardDescription = formCardDesc.trim()
       if (formBrandValues.trim()) metadata.brandValues = formBrandValues.trim()
       if (formGarmentKey.trim()) metadata.garmentKey = formGarmentKey.trim()
+      // Arte print-ready (no se expone en la tienda — lo saca stripSensitiveMetadata)
+      if (formPrintReadyUrl.trim()) {
+        metadata.print_ready_url = formPrintReadyUrl.trim()
+        metadata.print_side = formPrintSide
+      }
 
       const body: Record<string, unknown> = {
         name: formName.trim(),
@@ -1115,6 +1127,49 @@ export default function CatalogPage() {
                       )}
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Arte print-ready (para producción) */}
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-zinc-300 text-sm font-medium">
+                    Arte para estampar (print-ready)
+                  </Label>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    Opcional. El PNG en alta (preferentemente con fondo transparente) que se usa para producir.
+                    No se muestra en tu tienda: solo se manda a producción cuando cargás una venta de este producto.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 sm:items-start">
+                  <div className="w-28 shrink-0">
+                    <ImageUpload
+                      value={formPrintReadyUrl || null}
+                      onChange={(u) => setFormPrintReadyUrl(u || '')}
+                      type="product"
+                      className="[&_div]:h-28 [&_img]:h-28"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      value={formPrintReadyUrl}
+                      onChange={(e) => setFormPrintReadyUrl(e.target.value)}
+                      placeholder="o pegá la URL del arte (PNG alta resolución)"
+                      className="bg-zinc-900/60 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-violet-500/50 focus-visible:border-violet-500/50 h-11"
+                    />
+                    <div className="relative w-full sm:w-48">
+                      <select
+                        value={formPrintSide}
+                        onChange={(e) => setFormPrintSide(e.target.value as 'frente' | 'dorso' | 'ambos')}
+                        className="appearance-none w-full h-11 rounded-md border border-zinc-800 bg-zinc-900/60 px-3 pr-9 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50"
+                      >
+                        <option value="frente">Estampa al frente</option>
+                        <option value="dorso">Estampa al dorso</option>
+                        <option value="ambos">Frente y dorso</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                    </div>
+                  </div>
                 </div>
               </div>
 

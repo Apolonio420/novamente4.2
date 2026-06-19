@@ -1,6 +1,8 @@
 /**
  * Utility for sending notifications via Telegram Bot API.
  */
+import { sendEmail } from './email';
+import type { Tenant } from './partners/types';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const SALES_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN_SALES || BOT_TOKEN;
@@ -229,4 +231,119 @@ ${lead.message ? `<b>Mensaje:</b> ${lead.message}` : ''}
   `.trim();
 
     return sendToTelegram(SALES_CHAT_ID, msg, SALES_BOT_TOKEN);
+}
+
+// ── Carga manual de pedidos por el partner ─────────────────────────────────
+//
+// REGLA DE FUGA: el partner solo ve PVP + su precio Partner. El costo del
+// proveedor y el margen NUNCA aparecen acá (viven solo en platform-master).
+
+export interface ManualOrderItemNotice {
+    name: string;
+    quantity: number;
+    color?: string;
+    talle?: string;
+    unit_price?: number;     // PVP unitario
+    partner_price?: number;  // precio partner unitario (lo conoce el partner)
+}
+
+export interface ManualOrderNotice {
+    customerName?: string | null;
+    items: ManualOrderItemNotice[];
+    pvpTotal: number;
+    partnerTotal: number;
+    produce: boolean;
+    pedidoNumero?: string;
+}
+
+function itemsLines(items: ManualOrderItemNotice[]): string {
+    return items
+        .map((i) => {
+            const variant = [i.color, i.talle].filter(Boolean).join(' · ');
+            return `• ${i.quantity}x <b>${i.name}</b>${variant ? ` (${variant})` : ''}`;
+        })
+        .join('\n');
+}
+
+function ars(n: number): string {
+    return `$${(n || 0).toLocaleString('es-AR')}`;
+}
+
+/**
+ * Avisa al EQUIPO (canal interno) que un partner cargó una venta.
+ * Solo para cargas que NO disparan producción — cuando sí producen, el aviso
+ * con economía completa (incluye costo proveedor) lo manda platform-master.
+ * Incluye PVP + precio partner; NUNCA costo del proveedor (este repo no lo tiene).
+ */
+export async function notifyTeamManualSale(tenantName: string, order: ManualOrderNotice) {
+    const message = `
+🧾 <b>VENTA CARGADA POR PARTNER</b>
+
+<b>Partner:</b> ${tenantName}
+<b>Cliente:</b> ${order.customerName || '—'}
+<b>Modo:</b> ${order.produce ? 'Producir con Novamente' : 'Solo registro'}
+
+<b>Items:</b>
+${itemsLines(order.items)}
+
+<b>PVP (cobra el partner):</b> ${ars(order.pvpTotal)}
+<b>Precio partner (nos transfiere):</b> ${ars(order.partnerTotal)}
+  `.trim();
+
+    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
+}
+
+/**
+ * Avisa al PARTNER (email + Telegram opcional) que se registró una venta.
+ * Partner-safe: producto, cantidad, cliente, PVP y su precio Partner.
+ * NUNCA incluye costo del proveedor ni margen de Novamente.
+ */
+export async function notifyPartnerOrder(
+    tenant: Pick<Tenant, 'name' | 'email' | 'metadata'>,
+    order: ManualOrderNotice,
+) {
+    const itemRows = order.items
+        .map((i) => {
+            const variant = [i.color, i.talle].filter(Boolean).join(' · ');
+            return `<tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee">${i.quantity}x ${i.name}${variant ? ` <span style="color:#888">(${variant})</span>` : ''}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right">${ars((i.unit_price || 0) * i.quantity)}</td>
+      </tr>`;
+        })
+        .join('');
+
+    const html = `
+    <div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
+      <h2 style="margin:0 0 4px">Nueva venta registrada ✅</h2>
+      <p style="color:#555;margin:0 0 16px">Se cargó un pedido en tu panel${order.produce ? ' y se envió a producción con Novamente' : ''}.</p>
+      ${order.customerName ? `<p style="margin:0 0 12px"><b>Cliente:</b> ${order.customerName}</p>` : ''}
+      <table style="width:100%;border-collapse:collapse;font-size:14px">${itemRows}</table>
+      <p style="margin:16px 0 4px"><b>Total al cliente (PVP):</b> ${ars(order.pvpTotal)}</p>
+      <p style="margin:0 0 4px"><b>Tu precio Novamente:</b> ${ars(order.partnerTotal)}</p>
+      ${order.pedidoNumero ? `<p style="margin:12px 0 0;color:#555">N° de pedido de producción: ${order.pedidoNumero}</p>` : ''}
+      <p style="margin:20px 0 0;color:#888;font-size:12px">Podés ver y gestionar este pedido en tu panel de Novamente.</p>
+    </div>`;
+
+    // Email (canal principal)
+    if (tenant.email) {
+        await sendEmail({
+            to: tenant.email,
+            subject: 'Nueva venta registrada en tu tienda',
+            html,
+        }).catch(() => null);
+    }
+
+    // Telegram al partner (opcional) si configuró su chat en metadata
+    const chatId = (tenant.metadata as Record<string, unknown> | undefined)?.['telegram_chat_id'];
+    if (typeof chatId === 'string' && chatId) {
+        const msg = `
+🧾 <b>Nueva venta registrada</b>
+
+${order.customerName ? `<b>Cliente:</b> ${order.customerName}\n` : ''}${itemsLines(order.items)}
+
+<b>Total al cliente:</b> ${ars(order.pvpTotal)}
+<b>Tu precio Novamente:</b> ${ars(order.partnerTotal)}
+    `.trim();
+        await sendToTelegram(chatId, msg, SALES_BOT_TOKEN);
+    }
 }

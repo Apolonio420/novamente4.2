@@ -18,10 +18,12 @@ import {
   Clock,
   StickyNote,
   ShoppingBag,
+  Plus,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import LoadOrderModal from './components/LoadOrderModal'
 
 // --- Types ---
 
@@ -480,6 +482,7 @@ export default function OrdersPage() {
   const [filter, setFilter] = useState('all')
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [showLoad, setShowLoad] = useState(false)
   const { show: showToast, ToastUI } = useToast()
 
   const fetchOrders = useCallback(async () => {
@@ -591,6 +594,13 @@ export default function OrdersPage() {
               </Badge>
             )}
           </div>
+          <button
+            onClick={() => setShowLoad(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Cargar venta
+          </button>
         </div>
 
         {/* Filter tabs */}
@@ -667,9 +677,16 @@ export default function OrdersPage() {
               <h3 className="text-lg font-semibold text-zinc-100 mb-2">
                 Pedidos de tu storefront
               </h3>
-              <p className="text-sm text-zinc-400 max-w-sm mb-8">
-                Cuando un cliente compra productos en tu storefront, los pedidos aparecen aca. Podes gestionar el estado de cada pedido desde la produccion hasta la entrega.
+              <p className="text-sm text-zinc-400 max-w-sm mb-5">
+                Cuando un cliente compra productos en tu storefront, los pedidos aparecen aca. Tambien podes cargar a mano las ventas que tuviste por fuera: pega el texto del pedido y la IA lo interpreta.
               </p>
+              <button
+                onClick={() => setShowLoad(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-semibold bg-violet-600 hover:bg-violet-500 text-white transition-colors mb-8"
+              >
+                <Plus className="w-4 h-4" />
+                Cargar venta
+              </button>
 
               {/* Order cycle */}
               <div className="w-full max-w-md text-left">
@@ -847,6 +864,17 @@ export default function OrdersPage() {
           isUpdating={updatingId === selectedOrder.id}
         />
       )}
+
+      {/* Cargar venta (manual + IA) */}
+      <LoadOrderModal
+        open={showLoad}
+        onClose={() => setShowLoad(false)}
+        onCreated={() => {
+          setShowLoad(false)
+          showToast('Venta cargada', 'success')
+          fetchOrders()
+        }}
+      />
 
       {/* Toast */}
       {ToastUI}

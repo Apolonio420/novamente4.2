@@ -3,6 +3,24 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 const db = () => supabaseAdmin as any
 import type { PartnerProduct } from './types'
 
+// Campos de metadata que NUNCA deben viajar al HTML público (costo/margen del
+// partner). Las páginas públicas usan select('*'), que serializa el metadata
+// entero al cliente; lo saneamos antes de devolverlo.
+// Incluye el arte print-ready (print_ready_url/print_side): es un asset de
+// producción / IP del partner que NO debe exponerse en el storefront público.
+const SENSITIVE_META = /cost|costo|margin|margen|wholesale|mayorista|print_ready|print_side|print_url|estampa/i
+
+export function stripSensitiveMetadata<T extends { metadata?: unknown }>(product: T): T {
+  const meta = product?.metadata
+  if (!meta || typeof meta !== 'object') return product
+  const clean: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(meta as Record<string, unknown>)) {
+    if (SENSITIVE_META.test(k)) continue
+    clean[k] = v
+  }
+  return { ...product, metadata: clean }
+}
+
 export async function getPublishedProducts(tenantId: string): Promise<PartnerProduct[]> {
   const { data, error } = await db()
     .from('partner_products')
@@ -12,7 +30,7 @@ export async function getPublishedProducts(tenantId: string): Promise<PartnerPro
     .order('sort_order')
 
   if (error || !data) return []
-  return data as PartnerProduct[]
+  return (data as PartnerProduct[]).map(stripSensitiveMetadata)
 }
 
 export async function getAllProducts(tenantId: string): Promise<PartnerProduct[]> {
@@ -35,7 +53,7 @@ export async function getProductBySlug(tenantId: string, slug: string): Promise<
     .single()
 
   if (error || !data) return null
-  return data as PartnerProduct
+  return stripSensitiveMetadata(data as PartnerProduct)
 }
 
 function slugify(name: string): string {
