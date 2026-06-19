@@ -485,9 +485,10 @@ export function DesignChat({
         const toBack = /((en|a|de|por)\s+(la\s+)?(espalda|dorso)|atr[aá]s|por\s+detr[aá]s)/.test(t)
         const toFront = /((en|al|en\s+el)\s+(frente|pecho)|adelante|al\s+frente)/.test(t)
         const changeScene = /(cambi[aá]\w*\s+(el\s+|la\s+)?(mockup|foto|modelo|escenario|fondo|persona|imagen|toma)|otr[ao]\s+(mockup|foto|modelo|escenario|fondo|persona|imagen|toma)|otra\s+toma|cambia\s+(el\s+)?modelo)/.test(t)
-        // Guard: la frase tiene que ser sobre la prenda/estampa/mockup (evita falsos positivos
-        // tipo "hacé el tigre más grande" que es un re-diseño, no un ajuste de mockup).
-        const aboutMockup = /(estampa|dise[nñ]o|mockup|prenda|remera|buzo|hoodie|musculosa|foto|imagen|modelo|escenario|tama[nñ]o|posici[oó]n|adelante|atr[aá]s|espalda|frente|pecho)/.test(t)
+        // Guard: la frase tiene que ser sobre la estampa/mockup/prenda (evita falsos positivos
+        // tipo "quiero un diseño más grande de un tigre" que es un re-diseño, no un ajuste).
+        // OJO: NO incluimos "diseño" acá a propósito — es demasiado ambiguo.
+        const aboutMockup = /(estampa|mockup|prenda|remera|buzo|hoodie|musculosa|tama[nñ]o|posici[oó]n|estampad|impres)/.test(t)
         const wantsAdjust = (smaller || bigger || toBack || toFront || changeScene) && (aboutMockup || changeScene || toBack || toFront)
         if (wantsAdjust) {
           const order: Array<"R1" | "R2" | "R3"> = ["R1", "R2", "R3"]
