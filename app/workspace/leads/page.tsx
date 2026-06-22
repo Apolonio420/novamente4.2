@@ -1,505 +1,250 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import {
-  Users,
-  Mail,
-  Phone,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  Inbox,
-  Share2,
-  ExternalLink,
-  Download,
-} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { CalendarClock, CheckCircle2, ChevronDown, CircleDot, Clock3, FileText, MessageCircle, Plus, UserRound } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { authFetch } from '@/lib/partners/auth-fetch'
 
-// --- Types ---
+type LeadStatus = 'new' | 'contacted' | 'qualified' | 'converted' | 'lost'
 
 interface Lead {
   id: string
-  tenant_id: string
   name: string | null
   email: string | null
   phone: string | null
   message: string | null
   source: string
   product_interest: string | null
-  status: string
+  status: LeadStatus
+  assigned_user_id: string | null
+  next_action_at: string | null
+  last_contacted_at: string | null
+  estimated_value_ars: number | null
+  lost_reason: string | null
+  created_at: string
+  updated_at: string
+}
+
+interface Activity {
+  id: string
+  type: string
+  body: string | null
   metadata: Record<string, unknown>
   created_at: string
 }
 
-type LeadStatus = 'new' | 'contacted' | 'qualified' | 'converted' | 'lost'
-
-// --- Constants ---
-
-const STATUS_CONFIG: Record<LeadStatus, { label: string; color: string; bg: string }> = {
-  new: { label: 'Nuevo', color: 'text-blue-400', bg: 'bg-blue-500/20 border-blue-500/30 text-blue-300' },
-  contacted: { label: 'Contactado', color: 'text-yellow-400', bg: 'bg-yellow-500/20 border-yellow-500/30 text-yellow-300' },
-  qualified: { label: 'Calificado', color: 'text-purple-400', bg: 'bg-purple-500/20 border-purple-500/30 text-purple-300' },
-  converted: { label: 'Convertido', color: 'text-green-400', bg: 'bg-green-500/20 border-green-500/30 text-green-300' },
-  lost: { label: 'Perdido', color: 'text-red-400', bg: 'bg-red-500/20 border-red-500/30 text-red-300' },
+const STATUS: Record<LeadStatus, { label: string; className: string }> = {
+  new: { label: 'Nuevo', className: 'border-blue-500/30 bg-blue-500/10 text-blue-300' },
+  contacted: { label: 'Contactado', className: 'border-amber-500/30 bg-amber-500/10 text-amber-300' },
+  qualified: { label: 'Calificado', className: 'border-violet-500/30 bg-violet-500/10 text-violet-300' },
+  converted: { label: 'Convertido', className: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' },
+  lost: { label: 'Perdido', className: 'border-red-500/30 bg-red-500/10 text-red-300' },
 }
 
-const FILTER_TABS: { value: string; label: string }[] = [
+const FILTERS: Array<{ value: 'all' | LeadStatus | 'attention'; label: string }> = [
+  { value: 'attention', label: 'Para hoy' },
   { value: 'all', label: 'Todos' },
-  { value: 'new', label: 'Nuevos' },
-  { value: 'contacted', label: 'Contactados' },
-  { value: 'qualified', label: 'Calificados' },
-  { value: 'converted', label: 'Convertidos' },
-  { value: 'lost', label: 'Perdidos' },
+  ...Object.entries(STATUS).map(([value, config]) => ({ value: value as LeadStatus, label: config.label })),
 ]
 
 const SOURCE_LABELS: Record<string, string> = {
-  storefront: 'Storefront',
-  whatsapp: 'WhatsApp',
-  instagram: 'Instagram',
-  manual: 'Manual',
-  referral: 'Referido',
+  storefront: 'Storefront', whatsapp: 'WhatsApp', instagram: 'Instagram', manual: 'Manual', referral: 'Referido', chatbot: 'Chatbot',
 }
 
-// --- Helpers ---
-
-function relativeDate(dateStr: string): string {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diffMs = now - then
-  const diffSec = Math.floor(diffMs / 1000)
-  const diffMin = Math.floor(diffSec / 60)
-  const diffHour = Math.floor(diffMin / 60)
-  const diffDay = Math.floor(diffHour / 24)
-
-  if (diffSec < 60) return 'ahora'
-  if (diffMin < 60) return `hace ${diffMin}m`
-  if (diffHour < 24) return `hace ${diffHour}h`
-  if (diffDay === 1) return 'ayer'
-  if (diffDay < 7) return `hace ${diffDay}d`
-  if (diffDay < 30) return `hace ${Math.floor(diffDay / 7)}sem`
-  return new Date(dateStr).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+function relativeDate(value: string) {
+  const elapsed = Date.now() - new Date(value).getTime()
+  const hours = Math.floor(elapsed / 3_600_000)
+  if (hours < 1) return 'recién'
+  if (hours < 24) return `hace ${hours} h`
+  const days = Math.floor(hours / 24)
+  return days === 1 ? 'ayer' : `hace ${days} d`
 }
 
-function truncate(text: string, max: number): string {
-  if (text.length <= max) return text
-  return text.slice(0, max) + '...'
+function toDateTimeInput(value: string | null) {
+  if (!value) return ''
+  const date = new Date(value)
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+  return local.toISOString().slice(0, 16)
 }
 
-// --- Skeleton ---
-
-function LeadRowSkeleton() {
-  return (
-    <div className="px-4 py-4 border-b border-zinc-800/50 animate-pulse">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-zinc-800" />
-        <div className="flex-1 min-w-0 space-y-2">
-          <div className="h-4 bg-zinc-800 rounded w-32" />
-          <div className="h-3 bg-zinc-800/60 rounded w-48" />
-        </div>
-        <div className="h-5 bg-zinc-800 rounded-full w-16" />
-      </div>
-    </div>
-  )
+function activityLabel(activity: Activity) {
+  if (activity.type === 'note') return 'Nota interna'
+  if (activity.type === 'status_changed') return `Estado: ${String(activity.metadata.from || '')} → ${String(activity.metadata.to || '')}`
+  if (activity.type === 'next_action_set') return 'Próxima acción actualizada'
+  if (activity.type === 'contacted') return 'Marcado como contactado'
+  if (activity.type === 'assignment_changed') return 'Responsable actualizado'
+  return 'Lead creado'
 }
 
-// --- Lead Row ---
-
-function LeadRow({
-  lead,
-  isExpanded,
-  onToggle,
-  onStatusChange,
-  isUpdating,
-}: {
-  lead: Lead
-  isExpanded: boolean
-  onToggle: () => void
-  onStatusChange: (leadId: string, status: LeadStatus) => void
-  isUpdating: boolean
-}) {
-  const status = (lead.status as LeadStatus) || 'new'
-  const config = STATUS_CONFIG[status] || STATUS_CONFIG.new
-  const displayName = lead.name || lead.email || lead.phone || 'Sin nombre'
-  const initial = displayName.charAt(0).toUpperCase()
-
-  return (
-    <div className={cn(
-      'border-b border-zinc-800/50 transition-colors',
-      isExpanded ? 'bg-zinc-900/50' : 'hover:bg-zinc-900/30',
-    )}>
-      {/* Row summary */}
-      <button
-        onClick={onToggle}
-        className="w-full px-4 py-3.5 flex items-center gap-3 text-left"
-      >
-        {/* Avatar */}
-        <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-semibold text-zinc-300 shrink-0">
-          {initial}
-        </div>
-
-        {/* Main info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-zinc-100 truncate">
-              {displayName}
-            </span>
-            <span className="text-xs text-zinc-500 shrink-0 hidden sm:inline">
-              {relativeDate(lead.created_at)}
-            </span>
-          </div>
-          {lead.message && (
-            <p className="text-xs text-zinc-400 truncate mt-0.5">
-              {truncate(lead.message, 80)}
-            </p>
-          )}
-        </div>
-
-        {/* Badges */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Badge className={cn('text-[10px] border', config.bg)}>
-            {config.label}
-          </Badge>
-          <span className="text-xs text-zinc-500 sm:hidden">
-            {relativeDate(lead.created_at)}
-          </span>
-          {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-zinc-500" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-zinc-500" />
-          )}
-        </div>
-      </button>
-
-      {/* Expanded detail */}
-      {isExpanded && (
-        <div className="px-4 pb-4 pt-1 space-y-4">
-          {/* Contact info */}
-          <div className="flex flex-wrap gap-3">
-            {lead.email && (
-              <a
-                href={`mailto:${lead.email}`}
-                className="flex items-center gap-1.5 text-sm text-violet-400 hover:text-violet-300 transition-colors"
-              >
-                <Mail className="w-3.5 h-3.5" />
-                {lead.email}
-              </a>
-            )}
-            {lead.phone && (
-              <a
-                href={`tel:${lead.phone}`}
-                className="flex items-center gap-1.5 text-sm text-violet-400 hover:text-violet-300 transition-colors"
-              >
-                <Phone className="w-3.5 h-3.5" />
-                {lead.phone}
-              </a>
-            )}
-          </div>
-
-          {/* Full message */}
-          {lead.message && (
-            <div className="bg-zinc-800/40 rounded-lg p-3">
-              <p className="text-xs text-zinc-500 mb-1 font-medium">Mensaje</p>
-              <p className="text-sm text-zinc-200 whitespace-pre-wrap">{lead.message}</p>
-            </div>
-          )}
-
-          {/* Meta info */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
-            {lead.product_interest && (
-              <span>Producto: <span className="text-zinc-300">{lead.product_interest}</span></span>
-            )}
-            <span>Fuente: <span className="text-zinc-300">{SOURCE_LABELS[lead.source] || lead.source}</span></span>
-            <span>
-              Fecha:{' '}
-              <span className="text-zinc-300">
-                {new Date(lead.created_at).toLocaleDateString('es-AR', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </span>
-            </span>
-          </div>
-
-          {/* Status pipeline */}
-          <div>
-            <p className="text-xs text-zinc-500 mb-2 font-medium">Cambiar estado</p>
-            <div className="flex flex-wrap gap-2">
-              {(Object.keys(STATUS_CONFIG) as LeadStatus[]).map((s) => {
-                const sc = STATUS_CONFIG[s]
-                const isCurrent = s === status
-                return (
-                  <button
-                    key={s}
-                    disabled={isCurrent || isUpdating}
-                    onClick={() => onStatusChange(lead.id, s)}
-                    className={cn(
-                      'px-3 py-1.5 rounded-md text-xs font-medium border transition-colors',
-                      isCurrent
-                        ? cn(sc.bg, 'cursor-default')
-                        : 'border-zinc-700 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200 disabled:opacity-50',
-                    )}
-                  >
-                    {isUpdating ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      sc.label
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
+function whatsappUrl(lead: Lead) {
+  const phone = (lead.phone || '').replace(/\D/g, '')
+  if (!phone) return null
+  const name = lead.name ? ` ${lead.name}` : ''
+  return `https://wa.me/${phone}?text=${encodeURIComponent(`Hola${name}, te escribimos desde nuestra tienda.`)}`
 }
-
-// --- Main Page ---
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([])
-  const [totalThisMonth, setTotalThisMonth] = useState(0)
-  const [maxPerMonth, setMaxPerMonth] = useState(0)
+  const [filter, setFilter] = useState<'all' | LeadStatus | 'attention'>('attention')
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all')
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [note, setNote] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
-  const fetchLeads = useCallback(async () => {
-    try {
-      const params = new URLSearchParams()
-      if (filter !== 'all') params.set('status', filter)
-      params.set('limit', '50')
+  const selected = useMemo(() => leads.find((lead) => lead.id === selectedId) || null, [leads, selectedId])
 
-      const res = await authFetch(`/api/partners/leads/list?${params.toString()}`)
-      if (!res.ok) return
-
-      const data = await res.json()
-      setLeads(data.leads || [])
-      setTotalThisMonth(data.totalThisMonth || 0)
-      setMaxPerMonth(data.maxPerMonth || 0)
-    } catch {
-      // Silent fail — keep stale data
-    }
+  const loadLeads = useCallback(async () => {
+    const params = new URLSearchParams({ limit: '80' })
+    if (filter === 'attention') params.set('attention', 'true')
+    else if (filter !== 'all') params.set('status', filter)
+    const response = await authFetch(`/api/partners/leads/list?${params}`)
+    if (!response.ok) throw new Error('No se pudieron cargar los leads')
+    const data = await response.json()
+    setLeads(data.leads || [])
   }, [filter])
 
-  // Initial fetch + filter change
   useEffect(() => {
     setLoading(true)
-    fetchLeads().finally(() => setLoading(false))
-  }, [fetchLeads])
+    loadLeads().catch((err) => setError(err.message)).finally(() => setLoading(false))
+  }, [loadLeads])
 
-  // Auto-refresh every 30 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchLeads()
-    }, 30_000)
-    return () => clearInterval(interval)
-  }, [fetchLeads])
-
-  const handleStatusChange = async (leadId: string, newStatus: LeadStatus) => {
-    setUpdatingId(leadId)
-    try {
-      const res = await authFetch(`/api/partners/leads/${leadId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+    if (!selectedId) return
+    setDetailLoading(true)
+    authFetch(`/api/partners/leads/${selectedId}`)
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Lead no disponible')))
+      .then((data) => {
+        setActivities(data.activities || [])
+        if (data.lead) setLeads((current) => current.map((lead) => lead.id === data.lead.id ? data.lead : lead))
       })
+      .catch((err) => setError(err.message))
+      .finally(() => setDetailLoading(false))
+  }, [selectedId])
 
-      if (res.ok) {
-        // Update locally
-        setLeads((prev) =>
-          prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l)),
-        )
-        // Re-count if filter active — the lead might need to disappear
-        if (filter !== 'all') {
-          setLeads((prev) => prev.filter((l) => l.status === filter))
-        }
-      }
-    } catch {
-      // Silent fail
+  const saveLead = async (updates: Record<string, unknown>) => {
+    if (!selected) return
+    setSaving(true)
+    setError(null)
+    try {
+      const response = await authFetch(`/api/partners/leads/${selected.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'No se pudo guardar el lead')
+      setLeads((current) => current.map((lead) => lead.id === selected.id ? data.lead : lead))
+      const detail = await authFetch(`/api/partners/leads/${selected.id}`)
+      if (detail.ok) setActivities((await detail.json()).activities || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar el lead')
     } finally {
-      setUpdatingId(null)
+      setSaving(false)
     }
   }
 
-  const usagePct = maxPerMonth > 0 ? Math.min((totalThisMonth / maxPerMonth) * 100, 100) : 0
-  const isUnlimited = maxPerMonth >= 999999
-  const isNearLimit = !isUnlimited && usagePct >= 80
+  const addNote = async () => {
+    if (!selected || !note.trim()) return
+    setSaving(true)
+    try {
+      const response = await authFetch(`/api/partners/leads/${selected.id}/notes`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ note }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'No se pudo guardar la nota')
+      setActivities((current) => [data.activity, ...current])
+      setNote('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar la nota')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold text-zinc-100">Leads</h1>
-            {!loading && (
-              <Badge className="bg-zinc-800 border-zinc-700 text-zinc-300 text-xs">
-                {leads.length}
-              </Badge>
-            )}
-          </div>
-
-          {/* Right side: export + month counter */}
-          {!loading && (
-            <div className="flex items-center gap-3">
-          {/* Export CSV */}
-          <button
-            onClick={() => {
-              if (!leads || leads.length === 0) return
-              const headers = ['Nombre', 'Email', 'Telefono', 'Mensaje', 'Estado', 'Fecha']
-              const rows = leads.map((l: Lead) => [
-                l.name || '',
-                l.email || '',
-                l.phone || '',
-                (l.message || '').replace(/"/g, '""'),
-                l.status || '',
-                l.created_at ? new Date(l.created_at).toLocaleDateString('es-AR') : '',
-              ])
-              const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n')
-              const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url
-              a.download = `leads-${new Date().toISOString().split('T')[0]}.csv`
-              a.click()
-              URL.revokeObjectURL(url)
-            }}
-            disabled={!leads || leads.length === 0}
-            className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-zinc-100 disabled:opacity-40 disabled:pointer-events-none"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Exportar CSV
-          </button>
-
-          {/* Month counter */}
-          <div className="flex items-center gap-2 text-sm">
-              {isUnlimited ? (
-                <span className="text-zinc-400">{totalThisMonth} este mes</span>
-              ) : (
-                <span className={cn(
-                  'font-medium',
-                  isNearLimit ? 'text-amber-400' : 'text-zinc-400',
-                )}>
-                  {totalThisMonth} / {maxPerMonth} este mes
-                </span>
-              )}
-            </div>
-            </div>
-          )}
+    <div className="max-w-6xl mx-auto space-y-5">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-100">Inbox de ventas</h1>
+          <p className="text-sm text-zinc-500 mt-1">Respondé, seguí y convertí cada oportunidad desde un solo lugar.</p>
         </div>
-
-        {/* Progress bar (only for limited plans near limit) */}
-        {!loading && !isUnlimited && (
-          <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-            <div
-              className={cn(
-                'h-full rounded-full transition-all duration-500',
-                isNearLimit ? 'bg-amber-500' : 'bg-violet-500',
-              )}
-              style={{ width: `${usagePct}%` }}
-            />
-          </div>
-        )}
-
-        {/* Filter tabs */}
-        <div className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
-          {FILTER_TABS.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setFilter(tab.value)}
-              className={cn(
-                'px-3 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors',
-                filter === tab.value
-                  ? 'bg-violet-600/20 text-violet-400'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60',
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <span className="rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2 text-sm text-zinc-400">{leads.length} visibles</span>
       </div>
 
-      {/* Lead list */}
-      <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl overflow-hidden">
-        {loading ? (
-          <>
-            <LeadRowSkeleton />
-            <LeadRowSkeleton />
-            <LeadRowSkeleton />
-            <LeadRowSkeleton />
-            <LeadRowSkeleton />
-          </>
-        ) : leads.length === 0 ? (
-          /* Empty state */
-          <div className="py-10 px-6 flex flex-col items-center text-center gap-6">
-            {/* Icon + title */}
-            <div className="flex flex-col items-center gap-4">
-              <div className="rounded-2xl bg-violet-500/10 p-5">
-                <Users className="w-10 h-10 text-violet-400" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-zinc-100 mb-1.5">
-                  Leads de tu storefront
-                </h3>
-                <p className="text-sm text-zinc-400 max-w-sm leading-relaxed">
-                  Los leads son consultas de clientes potenciales que llegan a traves de tu storefront.
-                  Cada vez que alguien completa el formulario de contacto o solicita informacion, aparece aca.
-                </p>
-              </div>
-            </div>
+      <div className="flex gap-1 overflow-x-auto pb-1">
+        {FILTERS.map((item) => (
+          <button key={item.value} onClick={() => setFilter(item.value)} className={cn('px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors', filter === item.value ? 'bg-violet-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200')}>
+            {item.label}
+          </button>
+        ))}
+      </div>
 
-            {/* Pipeline stages */}
-            <div className="rounded-lg border border-zinc-800 bg-zinc-800/30 p-5 w-full max-w-sm text-left">
-              <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">Pipeline de leads</p>
-              <ul className="space-y-2.5">
-                {[
-                  { status: 'Nuevo', desc: 'Acaba de llegar, sin contactar', color: 'bg-blue-500' },
-                  { status: 'Contactado', desc: 'Ya le respondiste', color: 'bg-yellow-500' },
-                  { status: 'Calificado', desc: 'Es un potencial cliente real', color: 'bg-purple-500' },
-                  { status: 'Convertido', desc: 'Se convirtio en venta', color: 'bg-green-500' },
-                  { status: 'Perdido', desc: 'No se concreto', color: 'bg-red-500' },
-                ].map(({ status, desc, color }) => (
-                  <li key={status} className="flex items-start gap-2.5">
-                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${color}`} />
-                    <div>
-                      <span className="text-xs font-medium text-zinc-200">{status}:</span>{' '}
-                      <span className="text-xs text-zinc-400">{desc}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+      {error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>}
 
-            {/* Tip */}
-            <div className="flex items-center gap-2 text-xs text-zinc-400 bg-zinc-800/40 rounded-lg px-4 py-2.5 border border-zinc-700/60">
-              <Share2 className="w-3.5 h-3.5 text-violet-400 shrink-0" />
-              <span>Comparte el link de tu storefront para empezar a recibir consultas</span>
-            </div>
-          </div>
-        ) : (
-          leads.map((lead) => (
-            <LeadRow
-              key={lead.id}
-              lead={lead}
-              isExpanded={expandedId === lead.id}
-              onToggle={() =>
-                setExpandedId(expandedId === lead.id ? null : lead.id)
-              }
-              onStatusChange={handleStatusChange}
-              isUpdating={updatingId === lead.id}
-            />
-          ))
-        )}
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_390px] gap-5 items-start">
+        <section className="rounded-xl border border-zinc-800 overflow-hidden bg-zinc-900/40">
+          {loading ? (
+            <div className="p-6 text-sm text-zinc-500">Cargando oportunidades…</div>
+          ) : leads.length === 0 ? (
+            <div className="p-10 text-center"><CheckCircle2 className="w-7 h-7 mx-auto text-emerald-400 mb-2" /><p className="text-sm text-zinc-300">No hay leads en esta vista.</p><p className="text-xs text-zinc-500 mt-1">Cuando entre una consulta aparecerá acá para que puedas seguirla.</p></div>
+          ) : leads.map((lead) => {
+            const config = STATUS[lead.status] || STATUS.new
+            const isSelected = lead.id === selectedId
+            const overdue = lead.next_action_at && new Date(lead.next_action_at).getTime() <= Date.now()
+            return (
+              <button key={lead.id} onClick={() => setSelectedId(lead.id)} className={cn('w-full text-left px-4 py-3.5 border-b border-zinc-800/70 last:border-b-0 transition-colors', isSelected ? 'bg-violet-500/10' : 'hover:bg-zinc-800/40')}>
+                <div className="flex gap-3 items-start">
+                  <div className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-semibold text-zinc-300 shrink-0">{(lead.name || lead.email || '?').charAt(0).toUpperCase()}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2"><span className="text-sm font-medium text-zinc-100 truncate">{lead.name || lead.email || lead.phone || 'Sin nombre'}</span><span className="text-xs text-zinc-600">{relativeDate(lead.created_at)}</span></div>
+                    <p className="text-xs text-zinc-500 truncate mt-0.5">{lead.message || lead.product_interest || SOURCE_LABELS[lead.source] || lead.source}</p>
+                    {lead.next_action_at && <p className={cn('text-xs mt-1 flex items-center gap-1', overdue ? 'text-amber-300' : 'text-zinc-500')}><CalendarClock className="w-3 h-3" />{overdue ? 'Seguimiento vencido' : `Próxima acción: ${new Date(lead.next_action_at).toLocaleDateString('es-AR')}`}</p>}
+                  </div>
+                  <Badge className={cn('text-[10px] border shrink-0', config.className)}>{config.label}</Badge>
+                  <ChevronDown className={cn('w-4 h-4 text-zinc-600 transition-transform', isSelected && 'rotate-180')} />
+                </div>
+              </button>
+            )
+          })}
+        </section>
+
+        <aside className="rounded-xl border border-zinc-800 bg-zinc-900/60 min-h-[420px] lg:sticky lg:top-4">
+          {!selected ? (
+            <div className="h-full min-h-[420px] flex flex-col items-center justify-center text-center p-8"><UserRound className="w-8 h-8 text-zinc-600 mb-3" /><p className="text-sm text-zinc-400">Elegí un lead para gestionarlo.</p></div>
+          ) : (
+            <LeadDetail lead={selected} activities={activities} loading={detailLoading} saving={saving} note={note} setNote={setNote} onSave={saveLead} onAddNote={addNote} />
+          )}
+        </aside>
       </div>
     </div>
   )
+}
+
+function LeadDetail({ lead, activities, loading, saving, note, setNote, onSave, onAddNote }: { lead: Lead; activities: Activity[]; loading: boolean; saving: boolean; note: string; setNote: (value: string) => void; onSave: (updates: Record<string, unknown>) => Promise<void>; onAddNote: () => Promise<void> }) {
+  const [nextAction, setNextAction] = useState(toDateTimeInput(lead.next_action_at))
+  const [value, setValue] = useState(lead.estimated_value_ars?.toString() || '')
+  const [lostReason, setLostReason] = useState(lead.lost_reason || '')
+
+  useEffect(() => {
+    setNextAction(toDateTimeInput(lead.next_action_at)); setValue(lead.estimated_value_ars?.toString() || ''); setLostReason(lead.lost_reason || '')
+  }, [lead.id, lead.next_action_at, lead.estimated_value_ars, lead.lost_reason])
+
+  const wa = whatsappUrl(lead)
+  return <div className="p-5 space-y-5">
+    <div><div className="flex gap-2 items-center"><h2 className="text-base font-semibold text-zinc-100">{lead.name || 'Lead sin nombre'}</h2><Badge className={cn('text-[10px] border', STATUS[lead.status].className)}>{STATUS[lead.status].label}</Badge></div><p className="text-xs text-zinc-500 mt-1">{SOURCE_LABELS[lead.source] || lead.source} · {relativeDate(lead.created_at)}</p></div>
+    <div className="flex flex-wrap gap-2">
+      {lead.email && <a className="text-xs text-violet-400 hover:text-violet-300" href={`mailto:${lead.email}`}>{lead.email}</a>}
+      {wa && <a className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-xs text-emerald-300 hover:bg-emerald-500/20" target="_blank" rel="noreferrer" href={wa}><MessageCircle className="w-3 h-3" />WhatsApp</a>}
+    </div>
+    {lead.message && <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 text-sm text-zinc-300 whitespace-pre-wrap">{lead.message}</div>}
+    <div className="space-y-2"><p className="text-xs uppercase tracking-wide text-zinc-500">Pipeline</p><div className="flex flex-wrap gap-1.5">{(Object.keys(STATUS) as LeadStatus[]).map((status) => <button key={status} disabled={saving || status === lead.status} onClick={() => onSave({ status })} className={cn('px-2 py-1 rounded-md border text-[11px] transition-colors disabled:opacity-100', status === lead.status ? STATUS[status].className : 'border-zinc-700 text-zinc-500 hover:text-zinc-200')}>{STATUS[status].label}</button>)}</div></div>
+    <div className="grid grid-cols-2 gap-2"><div><label className="text-xs text-zinc-500">Próxima acción</label><Input type="datetime-local" value={nextAction} onChange={(event) => setNextAction(event.target.value)} className="mt-1 bg-zinc-950 border-zinc-700 text-xs" /></div><div><label className="text-xs text-zinc-500">Valor estimado (ARS)</label><Input inputMode="numeric" value={value} onChange={(event) => setValue(event.target.value)} className="mt-1 bg-zinc-950 border-zinc-700 text-xs" placeholder="0" /></div></div>
+    {lead.status === 'lost' && <div><label className="text-xs text-zinc-500">Motivo de pérdida</label><Input value={lostReason} onChange={(event) => setLostReason(event.target.value)} className="mt-1 bg-zinc-950 border-zinc-700 text-xs" placeholder="Ej: presupuesto, timing…" /></div>}
+    <div className="flex gap-2"><Button size="sm" disabled={saving} onClick={() => onSave({ next_action_at: nextAction ? new Date(nextAction).toISOString() : null, estimated_value_ars: value ? Number(value) : null, lost_reason: lostReason || null })}>Guardar seguimiento</Button><Button size="sm" variant="outline" disabled={saving} className="border-zinc-700" onClick={() => onSave({ last_contacted_at: new Date().toISOString(), status: lead.status === 'new' ? 'contacted' : lead.status })}>Marcar contacto</Button></div>
+    <div className="border-t border-zinc-800 pt-4 space-y-2"><p className="text-xs uppercase tracking-wide text-zinc-500">Notas y actividad</p><div className="flex gap-2"><Input value={note} onChange={(event) => setNote(event.target.value)} className="bg-zinc-950 border-zinc-700 text-xs" placeholder="Agregar nota interna…" onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); onAddNote() } }} /><Button size="icon" variant="outline" disabled={saving || !note.trim()} className="border-zinc-700 shrink-0" onClick={onAddNote}><Plus className="w-4 h-4" /></Button></div>{loading ? <p className="text-xs text-zinc-600">Cargando actividad…</p> : <div className="space-y-2 max-h-56 overflow-y-auto pr-1">{activities.length === 0 ? <p className="text-xs text-zinc-600">Todavía no hay actividad.</p> : activities.map((activity) => <div key={activity.id} className="flex gap-2 text-xs"><CircleDot className="w-3.5 h-3.5 mt-0.5 text-violet-400 shrink-0" /><div><p className="text-zinc-300">{activityLabel(activity)}</p>{activity.body && <p className="text-zinc-500 mt-0.5 whitespace-pre-wrap">{activity.body}</p>}<p className="text-zinc-600 mt-0.5">{relativeDate(activity.created_at)}</p></div></div>)}</div>}</div>
+  </div>
 }

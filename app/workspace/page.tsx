@@ -34,6 +34,7 @@ import { KpiOverview } from '@/components/workspace/KpiOverview'
 import { BusinessModelBanner } from '@/components/workspace/BusinessModelBanner'
 import { QuickStartCard } from '@/components/workspace/QuickStartCard'
 import { QuickDesignUpload } from '@/components/workspace/QuickDesignUpload'
+import { DailyAttention } from '@/components/workspace/DailyAttention'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -740,6 +741,8 @@ export default function WorkspaceDashboard() {
       {/* KPI OVERVIEW — Performance ultimos 30 dias                        */}
       {/* ================================================================= */}
       <KpiOverview />
+
+      <DailyAttention />
 
       {/* ================================================================= */}
       {/* METRIC CARDS                                                      */}

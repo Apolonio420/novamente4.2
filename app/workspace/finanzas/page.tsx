@@ -83,12 +83,12 @@ export default function FinanzasPage() {
     try {
       const res = await authFetch('/api/partners/finanzas', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
         body: JSON.stringify({ amount: Number(amount), method }),
       })
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || 'Error al solicitar el retiro')
-      setOkMsg('Retiro solicitado. Te lo transferimos dentro de las próximas 48h hábiles.')
+      setOkMsg('Retiro solicitado. El equipo lo revisará y transferirá a tu alias o CBU en 24–48 h hábiles.')
       setAmount('')
       await load()
     } catch (e: any) {
@@ -109,7 +109,7 @@ export default function FinanzasPage() {
           <Wallet className="h-6 w-6" /> Finanzas
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Tu margen por cada venta se acredita acá automáticamente cuando el pago se confirma.
+          Tu margen se acredita cuando el pago se confirma. Desde acá podés ver qué está disponible, qué requiere revisión y el estado de cada liquidación.
         </p>
       </div>
 
@@ -117,7 +117,7 @@ export default function FinanzasPage() {
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="rounded-2xl border bg-gradient-to-br from-emerald-500/10 to-transparent p-6">
           <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-            <TrendingUp className="h-4 w-4" /> Saldo disponible
+            <TrendingUp className="h-4 w-4" /> Disponible para solicitar retiro
           </p>
           <p className="text-4xl font-bold mt-2 text-emerald-600">{fmt(data?.balance.available ?? 0)}</p>
         </div>
@@ -128,7 +128,7 @@ export default function FinanzasPage() {
             </p>
             <p className="text-2xl font-bold mt-2 text-amber-600">{fmt(data?.balance.pendingReview ?? 0)}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Ventas con margen a confirmar por el equipo. Se liberan en 24-48h.
+              Son ventas cuyo costo o margen requiere validación. No se pueden retirar hasta que queden confirmadas.
             </p>
           </div>
         )}
@@ -139,6 +139,9 @@ export default function FinanzasPage() {
         <h2 className="font-semibold flex items-center gap-2">
           <ArrowDownToLine className="h-4 w-4" /> Solicitar retiro
         </h2>
+        <p className="text-sm text-muted-foreground">
+          Las solicitudes aprobadas se transfieren al alias o CBU indicado dentro de 24–48 h hábiles. Si existe una devolución o incidencia, el equipo te avisará antes de liquidar.
+        </p>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="amount">Monto (mín. {fmt(data?.minPayout ?? 20000)})</Label>

@@ -18,6 +18,7 @@ import {
   Clock,
   StickyNote,
   ShoppingBag,
+  Route,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -47,12 +48,20 @@ interface Order {
   payment_status: PaymentStatus
   shipping_info: Record<string, unknown>
   notes: string | null
+  fulfillment_status?: FulfillmentStatus
+  estimated_delivery_at?: string | null
+  carrier?: string | null
+  tracking_number?: string | null
+  tracking_url?: string | null
+  exception_reason?: string | null
+  fulfillment_updated_at?: string
   created_at: string
   updated_at: string
 }
 
 type OrderStatus = 'pending' | 'confirmed' | 'producing' | 'shipped' | 'delivered' | 'cancelled'
 type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'refunded'
+type FulfillmentStatus = 'awaiting_art_approval' | 'queued_for_production' | 'in_production' | 'quality_check' | 'ready_to_ship' | 'shipped' | 'delivered' | 'exception' | 'cancelled'
 
 // --- Constants ---
 
@@ -114,6 +123,18 @@ const FILTER_TABS: { value: string; label: string }[] = [
   { value: 'delivered', label: 'Entregado' },
   { value: 'cancelled', label: 'Cancelado' },
 ]
+
+const FULFILLMENT_CONFIG: Record<FulfillmentStatus, { label: string; description: string }> = {
+  awaiting_art_approval: { label: 'Validar arte', description: 'Revisar diseño y datos antes de producción.' },
+  queued_for_production: { label: 'En cola', description: 'Listo para entrar a producción.' },
+  in_production: { label: 'En producción', description: 'La prenda se está fabricando.' },
+  quality_check: { label: 'Control de calidad', description: 'Verificación final antes de despacho.' },
+  ready_to_ship: { label: 'Listo para despachar', description: 'Esperando retiro del transportista.' },
+  shipped: { label: 'Despachado', description: 'En camino al cliente.' },
+  delivered: { label: 'Entregado', description: 'El cliente recibió el pedido.' },
+  exception: { label: 'Con incidencia', description: 'Necesita intervención manual.' },
+  cancelled: { label: 'Cancelado', description: 'El pedido fue cancelado.' },
+}
 
 // --- Helpers ---
 
@@ -221,12 +242,14 @@ function OrderDetail({
   onClose,
   onStatusChange,
   onNotesChange,
+  onFulfillmentChange,
   isUpdating,
 }: {
   order: Order
   onClose: () => void
-  onStatusChange: (orderId: string, newStatus: OrderStatus) => void
-  onNotesChange: (orderId: string, notes: string) => void
+  onStatusChange: (orderId: string, newStatus: OrderStatus) => Promise<void>
+  onNotesChange: (orderId: string, notes: string) => Promise<void>
+  onFulfillmentChange: (orderId: string, updates: Record<string, unknown>) => Promise<void>
   isUpdating: boolean
 }) {
   const statusCfg = STATUS_CONFIG[order.status]
@@ -235,15 +258,61 @@ function OrderDetail({
   const displayName = order.customer_name || order.customer_email || order.customer_phone || 'Cliente anonimo'
   const [editingNotes, setEditingNotes] = useState(false)
   const [notesValue, setNotesValue] = useState(order.notes || '')
+  const [fulfillment, setFulfillment] = useState<FulfillmentStatus>(order.fulfillment_status || (order.status === 'producing' ? 'in_production' : order.status === 'shipped' ? 'shipped' : order.status === 'delivered' ? 'delivered' : order.status === 'cancelled' ? 'cancelled' : order.status === 'confirmed' ? 'queued_for_production' : 'awaiting_art_approval'))
+  const [eta, setEta] = useState(order.estimated_delivery_at ? toDateTimeInput(order.estimated_delivery_at) : '')
+  const [carrier, setCarrier] = useState(order.carrier || '')
+  const [trackingNumber, setTrackingNumber] = useState(order.tracking_number || '')
+  const [trackingUrl, setTrackingUrl] = useState(order.tracking_url || '')
+  const [exceptionReason, setExceptionReason] = useState(order.exception_reason || '')
+  const [events, setEvents] = useState<Array<{ id: string; type: string; body: string | null; from_status: string | null; to_status: string | null; created_at: string }>>([])
 
   useEffect(() => {
     setNotesValue(order.notes || '')
     setEditingNotes(false)
-  }, [order.id, order.notes])
+    setFulfillment(order.fulfillment_status || (order.status === 'producing' ? 'in_production' : order.status === 'shipped' ? 'shipped' : order.status === 'delivered' ? 'delivered' : order.status === 'cancelled' ? 'cancelled' : order.status === 'confirmed' ? 'queued_for_production' : 'awaiting_art_approval'))
+    setEta(order.estimated_delivery_at ? toDateTimeInput(order.estimated_delivery_at) : '')
+    setCarrier(order.carrier || '')
+    setTrackingNumber(order.tracking_number || '')
+    setTrackingUrl(order.tracking_url || '')
+    setExceptionReason(order.exception_reason || '')
+  }, [
+    order.id, order.notes, order.status, order.fulfillment_status,
+    order.estimated_delivery_at, order.carrier, order.tracking_number,
+    order.tracking_url, order.exception_reason,
+  ])
 
-  const handleSaveNotes = () => {
-    onNotesChange(order.id, notesValue)
+  const refreshEvents = useCallback(() => {
+    return authFetch(`/api/partners/orders/${order.id}`)
+      .then((res) => res.ok ? res.json() : Promise.reject(new Error('events unavailable')))
+      .then((data) => setEvents(data.events || []))
+      .catch(() => setEvents([]))
+  }, [order.id])
+
+  useEffect(() => {
+    let active = true
+    authFetch(`/api/partners/orders/${order.id}`)
+      .then((res) => res.ok ? res.json() : Promise.reject(new Error('events unavailable')))
+      .then((data) => { if (active) setEvents(data.events || []) })
+      .catch(() => { if (active) setEvents([]) })
+    return () => { active = false }
+  }, [order.id])
+
+  const handleSaveNotes = async () => {
+    await onNotesChange(order.id, notesValue)
+    await refreshEvents()
     setEditingNotes(false)
+  }
+
+  const saveFulfillment = async () => {
+    await onFulfillmentChange(order.id, {
+      fulfillment_status: fulfillment,
+      estimated_delivery_at: eta ? new Date(eta).toISOString() : null,
+      carrier: carrier || null,
+      tracking_number: trackingNumber || null,
+      tracking_url: trackingUrl || null,
+      exception_reason: fulfillment === 'exception' ? exceptionReason || null : null,
+    })
+    await refreshEvents()
   }
 
   return (
@@ -355,7 +424,10 @@ function OrderDetail({
                     <button
                       key={nextStatus}
                       disabled={isUpdating}
-                      onClick={() => onStatusChange(order.id, nextStatus)}
+                      onClick={async () => {
+                        await onStatusChange(order.id, nextStatus)
+                        await refreshEvents()
+                      }}
                       className={cn(
                         'flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-all',
                         'border-zinc-700 text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800/60',
@@ -387,6 +459,44 @@ function OrderDetail({
                   ID: {order.payment_id}
                 </span>
               )}
+            </div>
+          </div>
+
+          {/* Fulfillment */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Route className="w-3.5 h-3.5 text-violet-400" />
+              <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Fulfillment</h3>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3 space-y-3">
+              <div>
+                <label className="text-xs text-zinc-500">Etapa operativa</label>
+                <select value={fulfillment} onChange={(event) => setFulfillment(event.target.value as FulfillmentStatus)} className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-2.5 py-2 text-sm text-zinc-200">
+                  {Object.entries(FULFILLMENT_CONFIG).map(([value, config]) => <option key={value} value={value}>{config.label}</option>)}
+                </select>
+                <p className="text-xs text-zinc-500 mt-1">{FULFILLMENT_CONFIG[fulfillment].description}</p>
+              </div>
+              <div>
+                <label className="text-xs text-zinc-500">Entrega estimada</label>
+                <input type="datetime-local" value={eta} onChange={(event) => setEta(event.target.value)} className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-2.5 py-2 text-sm text-zinc-200" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><label className="text-xs text-zinc-500">Transportista</label><input value={carrier} onChange={(event) => setCarrier(event.target.value)} className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-2.5 py-2 text-sm text-zinc-200" placeholder="Correo…" /></div>
+                <div><label className="text-xs text-zinc-500">N° tracking</label><input value={trackingNumber} onChange={(event) => setTrackingNumber(event.target.value)} className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-2.5 py-2 text-sm text-zinc-200" placeholder="ABC123" /></div>
+              </div>
+              <div><label className="text-xs text-zinc-500">Link de seguimiento</label><input type="url" value={trackingUrl} onChange={(event) => setTrackingUrl(event.target.value)} className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-2.5 py-2 text-sm text-zinc-200" placeholder="https://…" /></div>
+              {fulfillment === 'exception' && <div><label className="text-xs text-amber-400">Motivo de incidencia</label><textarea value={exceptionReason} onChange={(event) => setExceptionReason(event.target.value)} className="mt-1 w-full rounded-md border border-amber-500/30 bg-zinc-950 px-2.5 py-2 text-sm text-zinc-200" rows={2} placeholder="Explicá qué necesita resolución…" /></div>}
+              <button disabled={isUpdating} onClick={saveFulfillment} className="w-full rounded-md bg-violet-600 px-3 py-2 text-xs font-medium text-white hover:bg-violet-500 disabled:opacity-50">Guardar operación</button>
+            </div>
+          </div>
+
+          {/* Timeline */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Timeline</h3>
+            <div className="space-y-2">
+              {events.length === 0 ? <p className="text-xs text-zinc-600">Todavía no hay eventos operativos.</p> : events.map((event) => (
+                <div key={event.id} className="flex gap-2 text-xs"><span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-violet-400 shrink-0" /><div><p className="text-zinc-300">{event.type === 'fulfillment_changed' ? `${event.from_status || '—'} → ${event.to_status || '—'}` : event.type === 'tracking_updated' ? 'Seguimiento actualizado' : event.type === 'note' ? 'Nota actualizada' : event.type === 'exception' ? 'Incidencia registrada' : 'Estado actualizado'}</p>{event.body && <p className="text-zinc-500 mt-0.5">{event.body}</p>}<p className="text-zinc-600 mt-0.5">{relativeDate(event.created_at)}</p></div></div>
+              ))}
             </div>
           </div>
 
@@ -469,6 +579,12 @@ function OrderDetail({
       </div>
     </>
   )
+}
+
+function toDateTimeInput(value: string) {
+  const date = new Date(value)
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+  return local.toISOString().slice(0, 16)
 }
 
 // --- Main Page ---
@@ -571,6 +687,23 @@ export default function OrdersPage() {
       }
     } catch {
       showToast('Error de conexion', 'error')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  const handleFulfillmentChange = async (orderId: string, updates: Record<string, unknown>) => {
+    setUpdatingId(orderId)
+    try {
+      const res = await authFetch(`/api/partners/orders/${orderId}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'No se pudo actualizar la operación')
+      setOrders((prev) => prev.map((order) => order.id === orderId ? { ...order, ...data.order } : order))
+      showToast('Operación actualizada', 'success')
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Error al actualizar la operación', 'error')
     } finally {
       setUpdatingId(null)
     }
@@ -844,6 +977,7 @@ export default function OrdersPage() {
           onClose={() => setSelectedOrderId(null)}
           onStatusChange={handleStatusChange}
           onNotesChange={handleNotesChange}
+          onFulfillmentChange={handleFulfillmentChange}
           isUpdating={updatingId === selectedOrder.id}
         />
       )}
