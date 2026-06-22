@@ -17,8 +17,8 @@
 alter table partner_payouts
   add column if not exists idempotency_key text;
 
--- One payout per (tenant, idempotency_key). NULLs are unconstrained so legacy
--- rows and non-idempotent calls still work.
+-- One payout per (tenant, idempotency_key). NULLs remain possible on legacy
+-- rows, but new calls to partner_request_payout reject a missing key.
 create unique index if not exists partner_payouts_tenant_idem_uniq
   on partner_payouts (tenant_id, idempotency_key)
   where idempotency_key is not null;
@@ -46,6 +46,9 @@ declare
 begin
   if p_amount is null or p_amount <= 0 then
     return jsonb_build_object('ok', false, 'error', 'invalid_amount');
+  end if;
+  if p_idempotency_key is null or btrim(p_idempotency_key) = '' then
+    return jsonb_build_object('ok', false, 'error', 'missing_idempotency_key');
   end if;
 
   -- Serialize concurrent withdrawals for THIS tenant. Released at txn end.

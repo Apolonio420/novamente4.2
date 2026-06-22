@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getTenantFinancials, requestPayout, MIN_PAYOUT_ARS } from '@/lib/partners/payouts'
+import { getTenantFinancials, requestPayout, MIN_PAYOUT_ARS, validateIdempotencyKey } from '@/lib/partners/payouts'
 
 export async function GET(request: NextRequest) {
   try {
@@ -60,7 +60,13 @@ export async function POST(request: NextRequest) {
     const method = String(
       body.method || (tenant as any).bank_alias || (tenant as any).bank_cbu || '',
     ).slice(0, 120)
-    const idempotencyKey = request.headers.get('idempotency-key') || body.idempotencyKey || null
+    // Do not fall back to an optional body field. The client must retain this
+    // header while retrying a single withdrawal intent.
+    const idempotencyKey = request.headers.get('idempotency-key')?.trim() || ''
+    const keyValidation = validateIdempotencyKey(idempotencyKey)
+    if (!keyValidation.ok) {
+      return NextResponse.json({ error: keyValidation.error }, { status: keyValidation.status })
+    }
 
     const result = await requestPayout({ tenantId: tenant.id, amount, method, idempotencyKey })
     if (!result.ok) {

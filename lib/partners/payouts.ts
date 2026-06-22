@@ -19,7 +19,8 @@ export interface RequestPayoutInput {
   tenantId: string
   amount: number
   method: string
-  idempotencyKey?: string | null
+  /** Required so a timeout/retry cannot create a second withdrawal. */
+  idempotencyKey: string
 }
 
 export interface RequestPayoutResult {
@@ -36,6 +37,21 @@ export interface PayoutInputValidation {
   ok: boolean
   status?: number
   error?: string
+}
+
+/**
+ * The withdrawal endpoint must not accept an unkeyed request: an HTTP retry is
+ * indistinguishable from a second user action once it reaches the database.
+ */
+export function validateIdempotencyKey(key: string | null | undefined): PayoutInputValidation {
+  const normalized = String(key || '').trim()
+  if (!normalized) {
+    return { ok: false, status: 400, error: 'Falta el header Idempotency-Key' }
+  }
+  if (normalized.length > 255) {
+    return { ok: false, status: 400, error: 'Idempotency-Key demasiado larga' }
+  }
+  return { ok: true }
 }
 
 /**
@@ -63,16 +79,19 @@ export function validatePayoutInput(amount: number, method: string): PayoutInput
 export async function requestPayout(input: RequestPayoutInput): Promise<RequestPayoutResult> {
   const amount = Math.round(Number(input.amount) || 0)
   const method = String(input.method || '').slice(0, 120)
+  const idempotencyKey = String(input.idempotencyKey || '').trim()
 
   const valid = validatePayoutInput(amount, method)
   if (!valid.ok) return { ok: false, status: valid.status, error: valid.error }
+  const keyValid = validateIdempotencyKey(idempotencyKey)
+  if (!keyValid.ok) return { ok: false, status: keyValid.status, error: keyValid.error }
 
   const sb = supabaseAdmin as any
   const { data, error } = await sb.rpc('partner_request_payout', {
     p_tenant_id: input.tenantId,
     p_amount: amount,
     p_method: method,
-    p_idempotency_key: input.idempotencyKey || null,
+    p_idempotency_key: idempotencyKey,
   })
 
   if (error) {

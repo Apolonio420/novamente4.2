@@ -19,7 +19,13 @@ const h = vi.hoisted(() => {
 
 vi.mock('@/lib/supabase-admin', () => ({ supabaseAdmin: h.chain }))
 
-import { validatePayoutInput, requestPayout, computeFinancials, MIN_PAYOUT_ARS } from './payouts'
+import {
+  validateIdempotencyKey,
+  validatePayoutInput,
+  requestPayout,
+  computeFinancials,
+  MIN_PAYOUT_ARS,
+} from './payouts'
 
 beforeEach(() => {
   h.calls.length = 0
@@ -40,6 +46,17 @@ describe('validatePayoutInput', () => {
   })
 })
 
+describe('validateIdempotencyKey', () => {
+  it('rechaza una clave ausente o vacía', () => {
+    expect(validateIdempotencyKey(null).ok).toBe(false)
+    expect(validateIdempotencyKey('   ').ok).toBe(false)
+  })
+
+  it('acepta una clave no vacía', () => {
+    expect(validateIdempotencyKey('withdrawal-uuid').ok).toBe(true)
+  })
+})
+
 describe('requestPayout', () => {
   it('pasa la Idempotency-Key al RPC', async () => {
     await requestPayout({ tenantId: 't1', amount: 30000, method: 'alias', idempotencyKey: 'key-123' })
@@ -52,7 +69,7 @@ describe('requestPayout', () => {
 
   it('éxito del RPC → ok + payoutId', async () => {
     h.state.rpc = async () => ({ data: { ok: true, payout_id: 'p1', idempotent: false, available_after: 5000 }, error: null })
-    const r = await requestPayout({ tenantId: 't1', amount: 30000, method: 'alias' })
+    const r = await requestPayout({ tenantId: 't1', amount: 30000, method: 'alias', idempotencyKey: 'key-success' })
     expect(r.ok).toBe(true)
     expect(r.status).toBe(200)
     expect(r.payoutId).toBe('p1')
@@ -68,21 +85,28 @@ describe('requestPayout', () => {
 
   it('saldo insuficiente → 400 con disponible', async () => {
     h.state.rpc = async () => ({ data: { ok: false, error: 'insufficient_funds', available: 12000 }, error: null })
-    const r = await requestPayout({ tenantId: 't1', amount: 30000, method: 'alias' })
+    const r = await requestPayout({ tenantId: 't1', amount: 30000, method: 'alias', idempotencyKey: 'key-insufficient' })
     expect(r.ok).toBe(false)
     expect(r.status).toBe(400)
     expect(r.available).toBe(12000)
   })
 
   it('monto por debajo del mínimo no llega al RPC', async () => {
-    const r = await requestPayout({ tenantId: 't1', amount: 100, method: 'alias' })
+    const r = await requestPayout({ tenantId: 't1', amount: 100, method: 'alias', idempotencyKey: 'key-small' })
     expect(r.ok).toBe(false)
+    expect(h.calls).toHaveLength(0)
+  })
+
+  it('sin Idempotency-Key no llega al RPC ni puede crear un retiro duplicado', async () => {
+    const r = await requestPayout({ tenantId: 't1', amount: 30000, method: 'alias', idempotencyKey: '' })
+    expect(r.ok).toBe(false)
+    expect(r.status).toBe(400)
     expect(h.calls).toHaveLength(0)
   })
 
   it('error de RPC → 500', async () => {
     h.state.rpc = async () => ({ data: null, error: { message: 'db down' } })
-    const r = await requestPayout({ tenantId: 't1', amount: 30000, method: 'alias' })
+    const r = await requestPayout({ tenantId: 't1', amount: 30000, method: 'alias', idempotencyKey: 'key-db-error' })
     expect(r.ok).toBe(false)
     expect(r.status).toBe(500)
   })
