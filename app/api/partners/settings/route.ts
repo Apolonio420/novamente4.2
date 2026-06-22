@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateTenant } from '@/lib/partners/tenant'
 
 const SETTINGS_FIELDS = [
@@ -26,20 +26,19 @@ const WRITABLE_FIELDS = [
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-
-    if (!result) {
-      return NextResponse.json(
-        { error: 'No autenticado o sin tenant asociado' },
-        { status: 401 },
-      )
-    }
-
-    const { tenant } = result
+    const auth = await requireTenantPermission(request, 'settings:read')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
 
     const settings: Record<string, any> = {}
     for (const field of SETTINGS_FIELDS) {
       settings[field] = (tenant as any)[field] ?? null
+    }
+
+    // Bank details are owner-only. Operators/viewers must not see them.
+    if (auth.role !== 'owner') {
+      settings.bank_cbu = null
+      settings.bank_alias = null
     }
 
     return NextResponse.json({ settings })
@@ -51,16 +50,11 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-
-    if (!result) {
-      return NextResponse.json(
-        { error: 'No autenticado o sin tenant asociado' },
-        { status: 401 },
-      )
-    }
-
-    const { tenant } = result
+    // Owner-only: settings include bank details (changing them would redirect
+    // withdrawals) and other tenant configuration.
+    const auth = await requireTenantPermission(request, 'settings:write')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
     const body = await request.json()
 
     // Build whitelisted updates
