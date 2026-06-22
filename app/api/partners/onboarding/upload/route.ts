@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 
 export const maxDuration = 30
 
@@ -11,13 +12,20 @@ export const maxDuration = 30
  */
 export async function POST(req: NextRequest) {
   try {
+    // Uploads happen after step 1 created and signed in the owner. Do not let
+    // an unauthenticated caller use this endpoint as arbitrary storage.
+    const auth = await requireTenantPermission(req, 'designs:write')
+    if (!auth.ok) return auth.response
+
     const formData = await req.formData()
     const file = formData.get('file') as File | null
     const type = (formData.get('type') as string) || 'logo'
-    const sessionId = (formData.get('sessionId') as string) || 'unknown'
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+    }
+    if (!['logo', 'banner'].includes(type)) {
+      return NextResponse.json({ error: 'Invalid onboarding asset type' }, { status: 400 })
     }
 
     // Validate file
@@ -35,7 +43,7 @@ export async function POST(req: NextRequest) {
     // Determine file extension
     const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
     const timestamp = Date.now()
-    const storagePath = `onboarding/${sessionId}/${type}/${timestamp}.${ext}`
+    const storagePath = `onboarding/${auth.tenant.id}/${type}/${timestamp}.${ext}`
 
     // Upload to Supabase Storage
     const { error: uploadError } = await supabaseAdmin.storage

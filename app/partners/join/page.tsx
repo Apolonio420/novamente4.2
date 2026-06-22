@@ -279,16 +279,11 @@ function FileUploadBox({
 // Upload file to R2 immediately during onboarding
 async function uploadOnboardingFile(file: File, type: 'logo' | 'banner'): Promise<string | null> {
   try {
-    const sessionId = sessionStorage.getItem('nv_onboarding_session')
-      || Math.random().toString(36).slice(2)
-    sessionStorage.setItem('nv_onboarding_session', sessionId)
-
     const formData = new FormData()
     formData.append('file', file)
     formData.append('type', type)
-    formData.append('sessionId', sessionId)
 
-    const res = await fetch('/api/partners/onboarding/upload', {
+    const res = await authFetch('/api/partners/onboarding/upload', {
       method: 'POST',
       body: formData,
     })
