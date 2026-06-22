@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateLeadStatus } from '@/lib/partners/leads'
 
 const VALID_STATUSES = ['new', 'contacted', 'qualified', 'converted', 'lost']
@@ -9,13 +9,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json(
-        { error: 'No autenticado o sin tenant asociado' },
-        { status: 401 },
-      )
-    }
+    const auth = await requireTenantPermission(request, 'leads:write')
+    if (!auth.ok) return auth.response
 
     const { id } = await params
     const body = await request.json()
@@ -28,12 +23,11 @@ export async function PATCH(
       )
     }
 
-    const success = await updateLeadStatus(id, status)
+    const success = await updateLeadStatus(auth.tenant.id, id, status)
     if (!success) {
-      return NextResponse.json(
-        { error: 'Error al actualizar el lead' },
-        { status: 500 },
-      )
+      // Either the lead does not exist or it belongs to another tenant.
+      // Return 404 either way — never reveal the existence of other tenants' leads.
+      return NextResponse.json({ error: 'Lead no encontrado' }, { status: 404 })
     }
 
     return NextResponse.json({ success: true })

@@ -66,11 +66,20 @@ export async function countLeadsThisMonth(tenantId: string): Promise<number> {
   return count || 0
 }
 
-export async function updateLeadStatus(leadId: string, status: string): Promise<boolean> {
-  const { error } = await db()
+/**
+ * Update a lead's status, scoped to the owning tenant.
+ *
+ * The tenant_id filter is mandatory: without it any authenticated partner could
+ * mutate another tenant's lead by guessing its id (the service-role client
+ * bypasses RLS). Returns true only when a row in THIS tenant was updated.
+ */
+export async function updateLeadStatus(tenantId: string, leadId: string, status: string): Promise<boolean> {
+  const { data, error } = await db()
     .from('partner_leads')
     .update({ status })
     .eq('id', leadId)
+    .eq('tenant_id', tenantId)
+    .select('id')
 
-  return !error
+  return !error && Array.isArray(data) && data.length > 0
 }
