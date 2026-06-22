@@ -28,6 +28,7 @@ vi.mock('./garment-pricing', () => ({
 import {
   validateVariantInput,
   validateProductForPublish,
+  needsPublishedProductValidation,
   resolveProductCost,
   createVariant,
   deleteVariant,
@@ -82,8 +83,41 @@ describe('validateProductForPublish', () => {
       }).ok,
     ).toBe(true)
   })
+  it('rechaza una variante disponible cuyo precio efectivo no cubre el costo', () => {
+    expect(
+      validateProductForPublish({
+        price: 18000,
+        cost: 10000,
+        variants: [{ availability: 'available', price: 9000 }],
+      }).ok,
+    ).toBe(false)
+  })
+  it('acepta variantes disponibles que cubren el costo', () => {
+    expect(
+      validateProductForPublish({
+        price: 18000,
+        cost: 10000,
+        variants: [{ availability: 'available', price: 15000 }],
+      }).ok,
+    ).toBe(true)
+  })
   it('sin costo resoluble no bloquea por margen', () => {
     expect(validateProductForPublish({ price: 5000, cost: null }).ok).toBe(true)
+  })
+})
+
+describe('needsPublishedProductValidation', () => {
+  it('revalida cuando cambia el precio de un producto que ya está publicado', () => {
+    expect(needsPublishedProductValidation('published', { price: 1 })).toBe(true)
+  })
+  it('revalida cuando cambia el metadata de costo de un producto publicado', () => {
+    expect(needsPublishedProductValidation('published', { metadata: { cost_ars: 10000 } })).toBe(true)
+  })
+  it('permite una edición de contenido legacy sin forzar el gate', () => {
+    expect(needsPublishedProductValidation('published', { name: 'Copy nuevo' })).toBe(false)
+  })
+  it('siempre valida la transición explícita a published', () => {
+    expect(needsPublishedProductValidation('draft', { status: 'published' })).toBe(true)
   })
 })
 

@@ -4,8 +4,9 @@
 --   { "colors": [ { "name", "value", "hex", "images": { "front", "back" } } ],
 --     "sizes":  [ "S", "M", "L", ... ] }
 -- This materializes them into the real partner_product_variants table without
--- losing information: metadata is left untouched, and products that already have
--- variant rows are skipped (idempotent).
+-- losing information: metadata is left untouched. Existing variant rows are
+-- preserved and only missing color × size combinations are inserted, so a
+-- partially seeded product is completed on the first run and unchanged later.
 --
 -- Apply with: psql "$DATABASE_URL" -f migrations/20260622_partner_variants_from_metadata.sql
 
@@ -26,9 +27,14 @@ cross join lateral jsonb_array_elements(coalesce(p.metadata->'colors', '[]'::jso
 cross join lateral jsonb_array_elements_text(coalesce(p.metadata->'sizes', '[]'::jsonb)) as s(size)
 where jsonb_typeof(p.metadata->'colors') = 'array'
   and jsonb_typeof(p.metadata->'sizes') = 'array'
-  -- Idempotent: only backfill products that have no variants yet.
+  -- Idempotent per color × size (not merely per product): legacy rows may
+  -- already cover part of the metadata matrix.
   and not exists (
-    select 1 from partner_product_variants v where v.product_id = p.id
+    select 1
+    from partner_product_variants v
+    where v.product_id = p.id
+      and v.color is not distinct from c->>'name'
+      and v.size is not distinct from s.size
   );
 
 -- Verification:

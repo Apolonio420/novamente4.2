@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateProduct, deleteProduct } from '@/lib/partners/catalog'
 import { validatePartnerProductForCreation } from '@/lib/partners/product-policy'
-import { listVariants, resolveProductCost, validateProductForPublish } from '@/lib/partners/variants'
+import {
+  listVariants,
+  needsPublishedProductValidation,
+  resolveProductCost,
+  validateProductForPublish,
+} from '@/lib/partners/variants'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 async function getProductById(productId: string) {
@@ -60,8 +65,9 @@ export async function PUT(
         .replace(/^-|-$/g, '')
     }
 
-    // Publish gate: price set, margin over production cost, and an available variant.
-    if (updates.status === 'published') {
+    // A published product must keep passing the gate when price/cost changes,
+    // not only on the first draft → published transition.
+    if (needsPublishedProductValidation(existing.status, updates)) {
       const resolvedPrice = updates.price !== undefined ? Number(updates.price) : existing.price
       const resolvedMeta = (updates.metadata !== undefined ? updates.metadata : existing.metadata) as
         | Record<string, unknown>

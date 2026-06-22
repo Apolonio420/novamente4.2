@@ -80,7 +80,7 @@ export const MIN_PUBLISH_MARGIN_ARS = 0 // price must strictly exceed production
 export function validateProductForPublish(input: {
   price?: number | null
   cost?: number | null
-  variants?: Array<{ availability?: string | null }>
+  variants?: Array<{ availability?: string | null; price?: number | string | null }>
 }): { ok: boolean; reason?: string } {
   const price = Number(input.price) || 0
   if (price <= 0) {
@@ -96,15 +96,43 @@ export function validateProductForPublish(input: {
     }
   }
   if (input.variants && input.variants.length > 0) {
-    const anyAvailable = input.variants.some((v) => (v.availability ?? 'available') === 'available')
-    if (!anyAvailable) {
+    const availableVariants = input.variants.filter((v) => (v.availability ?? 'available') === 'available')
+    if (availableVariants.length === 0) {
       return {
         ok: false,
         reason: 'No hay ninguna variante disponible. Marcá al menos una como disponible antes de publicar.',
       }
     }
+
+    // A variant price overrides the catalog price at checkout, so validating
+    // only the parent product would still allow an available loss-making SKU.
+    if (input.cost != null && Number.isFinite(Number(input.cost))) {
+      const cost = Number(input.cost)
+      for (const variant of availableVariants) {
+        const effectivePrice = variant.price == null ? price : Number(variant.price)
+        if (!Number.isFinite(effectivePrice) || effectivePrice <= 0 || effectivePrice - cost <= MIN_PUBLISH_MARGIN_ARS) {
+          return {
+            ok: false,
+            reason: `El precio de una variante disponible no cubre el costo de producción ($${cost.toLocaleString('es-AR')}).`,
+          }
+        }
+      }
+    }
   }
   return { ok: true }
+}
+
+/**
+ * A published product must keep passing the publish gate when a price or its
+ * production-cost metadata changes. Content-only edits remain possible for
+ * legacy products that predate the gate.
+ */
+export function needsPublishedProductValidation(
+  currentStatus: string | null | undefined,
+  updates: { status?: unknown; price?: unknown; metadata?: unknown; [key: string]: unknown },
+): boolean {
+  return updates.status === 'published'
+    || (currentStatus === 'published' && (updates.price !== undefined || updates.metadata !== undefined))
 }
 
 /** Production cost of a product (ARS): explicit metadata cost, else garment pricing. */
