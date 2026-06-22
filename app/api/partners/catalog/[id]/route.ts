@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateProduct, deleteProduct } from '@/lib/partners/catalog'
 import { validatePartnerProductForCreation } from '@/lib/partners/product-policy'
+import { listVariants, resolveProductCost, validateProductForPublish } from '@/lib/partners/variants'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 async function getProductById(productId: string) {
@@ -20,20 +21,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'catalog:write')
+    if (!auth.ok) return auth.response
 
     const { id } = await params
     const existing = await getProductById(id)
 
-    if (!existing) {
+    // Not found OR belongs to another tenant → 404 (never reveal existence).
+    if (!existing || existing.tenant_id !== auth.tenant.id) {
       return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
-    }
-
-    if (existing.tenant_id !== result.tenant.id) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -64,14 +60,17 @@ export async function PUT(
         .replace(/^-|-$/g, '')
     }
 
-    // Price required when publishing
+    // Publish gate: price set, margin over production cost, and an available variant.
     if (updates.status === 'published') {
-      const resolvedPrice = updates.price !== undefined ? updates.price : existing.price
-      if (!resolvedPrice || Number(resolvedPrice) <= 0) {
-        return NextResponse.json(
-          { error: 'Necesitás definir un precio antes de publicar este producto.' },
-          { status: 400 },
-        )
+      const resolvedPrice = updates.price !== undefined ? Number(updates.price) : existing.price
+      const resolvedMeta = (updates.metadata !== undefined ? updates.metadata : existing.metadata) as
+        | Record<string, unknown>
+        | null
+      const cost = resolveProductCost(resolvedMeta, auth.tenant.plan)
+      const variants = await listVariants(auth.tenant.id, id)
+      const check = validateProductForPublish({ price: resolvedPrice, cost, variants })
+      if (!check.ok) {
+        return NextResponse.json({ error: check.reason }, { status: 400 })
       }
     }
 
@@ -109,7 +108,7 @@ export async function PUT(
       ;(supabaseAdmin as any)
         .from('tenants')
         .update({ first_product_published_at: new Date().toISOString() })
-        .eq('id', result.tenant.id)
+        .eq('id', auth.tenant.id)
         .is('first_product_published_at', null)
     }
 
@@ -125,20 +124,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'catalog:write')
+    if (!auth.ok) return auth.response
 
     const { id } = await params
     const existing = await getProductById(id)
 
-    if (!existing) {
+    // Not found OR belongs to another tenant → 404 (never reveal existence).
+    if (!existing || existing.tenant_id !== auth.tenant.id) {
       return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
-    }
-
-    if (existing.tenant_id !== result.tenant.id) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
     }
 
     const success = await deleteProduct(id)
