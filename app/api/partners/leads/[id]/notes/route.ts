@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { addLeadActivity, getLeadById } from '@/lib/partners/leads'
+import { isPartnersCrmEnabled } from '@/lib/partners/feature-flags'
 
 export async function POST(
   request: NextRequest,
@@ -8,6 +9,7 @@ export async function POST(
 ) {
   const auth = await requireTenantPermission(request, 'leads:write')
   if (!auth.ok) return auth.response
+  if (!isPartnersCrmEnabled()) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
   const { id } = await params
   const body = await request.json().catch(() => ({}))

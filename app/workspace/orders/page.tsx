@@ -23,6 +23,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { isPartnersFulfillmentEnabled } from '@/lib/partners/feature-flags'
 
 // --- Types ---
 
@@ -142,6 +143,8 @@ const FULFILLMENT_CONFIG: Record<FulfillmentStatus, { label: string; description
   exception: { label: 'Con incidencia', description: 'Necesita intervención manual.' },
   cancelled: { label: 'Cancelado', description: 'El pedido fue cancelado.' },
 }
+
+const FULFILLMENT_ENABLED = isPartnersFulfillmentEnabled()
 
 // --- Helpers ---
 
@@ -289,6 +292,7 @@ function OrderDetail({
   ])
 
   const refreshEvents = useCallback(() => {
+    if (!FULFILLMENT_ENABLED) return Promise.resolve()
     return authFetch(`/api/partners/orders/${order.id}`)
       .then((res) => res.ok ? res.json() : Promise.reject(new Error('events unavailable')))
       .then((data) => setEvents(data.events || []))
@@ -296,6 +300,11 @@ function OrderDetail({
   }, [order.id])
 
   useEffect(() => {
+    if (!FULFILLMENT_ENABLED) {
+      setEvents([])
+      return
+    }
+
     let active = true
     authFetch(`/api/partners/orders/${order.id}`)
       .then((res) => res.ok ? res.json() : Promise.reject(new Error('events unavailable')))
@@ -469,6 +478,7 @@ function OrderDetail({
             </div>
           </div>
 
+          {FULFILLMENT_ENABLED && <>
           {/* Fulfillment */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -506,6 +516,7 @@ function OrderDetail({
               ))}
             </div>
           </div>
+          </>}
 
           {/* Notes */}
           <div className="space-y-3">

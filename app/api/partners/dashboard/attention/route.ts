@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getDailyAttention } from '@/lib/partners/daily-attention'
+import { isPartnersCockpitEnabled } from '@/lib/partners/feature-flags'
 
 export async function GET(request: NextRequest) {
   const auth = await requireTenantPermission(request, 'orders:read')
   if (!auth.ok) return auth.response
+  if (!isPartnersCockpitEnabled()) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
   try {
     const items = await getDailyAttention(auth.tenant, { includeFinancial: auth.role === 'owner' })

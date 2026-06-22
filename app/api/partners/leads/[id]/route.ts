@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { addLeadActivity, getLeadActivities, getLeadById, updateLead } from '@/lib/partners/leads'
 import { getUserTenantRole } from '@/lib/partners/tenant'
+import { isPartnersCrmEnabled } from '@/lib/partners/feature-flags'
 
 const VALID_STATUSES = ['new', 'contacted', 'qualified', 'converted', 'lost']
 
@@ -11,6 +12,7 @@ export async function GET(
 ) {
   const auth = await requireTenantPermission(request, 'leads:read')
   if (!auth.ok) return auth.response
+  if (!isPartnersCrmEnabled()) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
   const { id } = await params
   const lead = await getLeadById(auth.tenant.id, id)
@@ -27,6 +29,7 @@ export async function PATCH(
   try {
     const auth = await requireTenantPermission(request, 'leads:write')
     if (!auth.ok) return auth.response
+    if (!isPartnersCrmEnabled()) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
     const { id } = await params
     const body = await request.json().catch(() => ({}))

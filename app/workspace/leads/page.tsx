@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { isPartnersCrmEnabled } from '@/lib/partners/feature-flags'
 
 type LeadStatus = 'new' | 'contacted' | 'qualified' | 'converted' | 'lost'
 
@@ -87,6 +88,15 @@ function whatsappUrl(lead: Lead) {
 }
 
 export default function LeadsPage() {
+  if (!isPartnersCrmEnabled()) {
+    return (
+      <div className="max-w-2xl mx-auto rounded-xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
+        <h1 className="text-xl font-semibold text-zinc-100">Inbox de ventas no disponible</h1>
+        <p className="mt-2 text-sm text-zinc-500">El CRM estÃ¡ en lanzamiento gradual para esta marca. Mientras tanto, los contactos existentes siguen resguardados.</p>
+      </div>
+    )
+  }
+
   const [leads, setLeads] = useState<Lead[]>([])
   const [filter, setFilter] = useState<'all' | LeadStatus | 'attention'>('attention')
   const [loading, setLoading] = useState(true)

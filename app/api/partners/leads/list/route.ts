@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getLeads, countLeadsThisMonth } from '@/lib/partners/leads'
 import { getPlanFeatures } from '@/lib/partners/plans'
+import { isPartnersCrmEnabled } from '@/lib/partners/feature-flags'
 
 export async function GET(request: NextRequest) {
   try {
     const auth = await requireTenantPermission(request, 'leads:read')
     if (!auth.ok) return auth.response
+    if (!isPartnersCrmEnabled()) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
     const { tenant } = auth
     const { searchParams } = new URL(request.url)

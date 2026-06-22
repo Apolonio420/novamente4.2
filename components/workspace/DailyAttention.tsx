@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { AlertTriangle, ArrowRight, BadgeAlert, CircleAlert, Package, UserRound, Wallet } from 'lucide-react'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { isPartnersCockpitEnabled } from '@/lib/partners/feature-flags'
 
 type AttentionItem = {
   id: string
@@ -30,16 +31,21 @@ function iconFor(entity: AttentionItem['entity']) {
 }
 
 export function DailyAttention() {
+  const cockpitEnabled = isPartnersCockpitEnabled()
   const [items, setItems] = useState<AttentionItem[] | null>(null)
 
   useEffect(() => {
+    if (!cockpitEnabled) return
+
     let cancelled = false
     authFetch('/api/partners/dashboard/attention')
       .then((res) => res.ok ? res.json() : Promise.reject(new Error('attention unavailable')))
       .then((data) => !cancelled && setItems(data.items || []))
       .catch(() => !cancelled && setItems([]))
     return () => { cancelled = true }
-  }, [])
+  }, [cockpitEnabled])
+
+  if (!cockpitEnabled) return null
 
   if (items === null) {
     return <div className="h-28 rounded-xl border border-zinc-800 bg-zinc-900/40 animate-pulse" />

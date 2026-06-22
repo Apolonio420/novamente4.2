@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { createOrderEvent, getOrderById, getOrderEvents, updateOrder, type FulfillmentStatus, type PartnerOrder } from '@/lib/partners/orders'
+import { isPartnersFulfillmentEnabled } from '@/lib/partners/feature-flags'
 
 type LegacyOrderStatus = PartnerOrder['status']
 
@@ -68,6 +69,7 @@ export async function GET(
   try {
     const auth = await requireTenantPermission(request, 'orders:read')
     if (!auth.ok) return auth.response
+    if (!isPartnersFulfillmentEnabled()) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
 
     const { id } = await params
     const order = await getOrderById(id)
@@ -98,6 +100,14 @@ export async function PUT(
     }
 
     const body = await request.json().catch(() => ({}))
+    const isFulfillmentMutation = [
+      'fulfillment_status', 'estimated_delivery_at', 'carrier',
+      'tracking_number', 'tracking_url', 'exception_reason',
+    ].some((field) => body[field] !== undefined)
+    if (isFulfillmentMutation && !isPartnersFulfillmentEnabled()) {
+      return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+    }
+
     const allowedFields = [
       'status', 'payment_status', 'notes', 'shipping_info', 'fulfillment_status',
       'estimated_delivery_at', 'carrier', 'tracking_number', 'tracking_url', 'exception_reason',
