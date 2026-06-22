@@ -21,7 +21,7 @@ interface LedgerEntry {
 interface Payout {
   id: string
   amount: number
-  status: 'requested' | 'paid' | 'rejected'
+  status: 'requested' | 'processing' | 'paid' | 'rejected'
   method: string | null
   requested_at: string
   resolved_at: string | null
@@ -44,6 +44,7 @@ const fmtDate = (iso: string) =>
 
 const PAYOUT_BADGE: Record<Payout['status'], { label: string; cls: string }> = {
   requested: { label: 'Pendiente', cls: 'bg-amber-500/15 text-amber-600 border-amber-500/30' },
+  processing: { label: 'En proceso', cls: 'bg-blue-500/15 text-blue-600 border-blue-500/30' },
   paid: { label: 'Pagado', cls: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30' },
   rejected: { label: 'Rechazado', cls: 'bg-red-500/15 text-red-600 border-red-500/30' },
 }
@@ -56,6 +57,9 @@ export default function FinanzasPage() {
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState('')
   const [okMsg, setOkMsg] = useState<string | null>(null)
+  // Retain this key while retrying the same intent. A lost response must not
+  // turn a second click into a second withdrawal.
+  const [payoutIdempotencyKey, setPayoutIdempotencyKey] = useState<string | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -80,16 +84,19 @@ export default function FinanzasPage() {
     setRequesting(true)
     setError(null)
     setOkMsg(null)
+    const idempotencyKey = payoutIdempotencyKey || crypto.randomUUID()
+    if (!payoutIdempotencyKey) setPayoutIdempotencyKey(idempotencyKey)
     try {
       const res = await authFetch('/api/partners/finanzas', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
         body: JSON.stringify({ amount: Number(amount), method }),
       })
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || 'Error al solicitar el retiro')
       setOkMsg('Retiro solicitado. El equipo lo revisará y transferirá a tu alias o CBU en 24–48 h hábiles.')
       setAmount('')
+      setPayoutIdempotencyKey(null)
       await load()
     } catch (e: any) {
       setError(e.message)
@@ -151,7 +158,7 @@ export default function FinanzasPage() {
               inputMode="numeric"
               placeholder="50000"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => { setAmount(e.target.value); setPayoutIdempotencyKey(null) }}
             />
           </div>
           <div>
@@ -160,7 +167,7 @@ export default function FinanzasPage() {
               id="method"
               placeholder="tu.alias.mp"
               value={method}
-              onChange={(e) => setMethod(e.target.value)}
+              onChange={(e) => { setMethod(e.target.value); setPayoutIdempotencyKey(null) }}
             />
           </div>
         </div>
