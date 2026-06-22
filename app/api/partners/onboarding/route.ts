@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createTenant, updateTenant, addTenantUser, getTenantBySlug } from '@/lib/partners/tenant'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 
 const db = () => supabaseAdmin as any
 
@@ -19,7 +20,7 @@ function generatePassword(): string {
   return crypto.randomBytes(12).toString('base64url')
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   let body: any = null
   try {
     body = await request.json()
@@ -125,9 +126,18 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
       }
 
+      // Step 1 is public account creation. Every later mutation must be made
+      // by the owner of the tenant being onboarded; the body never selects an
+      // arbitrary tenant outside the membership-validated active tenant.
+      const auth = await requireTenantPermission(request, 'settings:write')
+      if (!auth.ok) return auth.response
+      if (auth.tenant.id !== tenantId) {
+        return NextResponse.json({ error: 'Tenant no encontrado' }, { status: 404 })
+      }
+
       const { logo_url, banner_url, primary_color, secondary_color, accent_color, font_preference, tagline, about_text, visual_style } = data || {}
 
-      const updated = await updateTenant(tenantId, {
+      const updated = await updateTenant(auth.tenant.id, {
         logo_url,
         banner_url,
         primary_color,
@@ -144,7 +154,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Failed to update tenant branding' }, { status: 500 })
       }
 
-      return NextResponse.json({ tenant: { id: tenantId } })
+      return NextResponse.json({ tenant: { id: auth.tenant.id } })
     }
 
     // --- Step 7: Plan ---
@@ -154,16 +164,30 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
       }
 
-      const { plan, billing_cycle } = data || {}
-
-      if (!plan) {
-        console.error('[onboarding] 400 step=7 missing plan', { tenantId, dataKeys: Object.keys(data || {}) })
-        return NextResponse.json({ error: 'plan is required' }, { status: 400 })
+      const auth = await requireTenantPermission(request, 'billing:manage')
+      if (!auth.ok) return auth.response
+      if (auth.tenant.id !== tenantId) {
+        return NextResponse.json({ error: 'Tenant no encontrado' }, { status: 404 })
       }
 
-      const updated = await updateTenant(tenantId, {
-        plan,
-        ...(billing_cycle ? { billing_cycle } : {}),
+      const { plan, billing_cycle } = data || {}
+
+      if (!['starter', 'growth', 'pro'].includes(plan)) {
+        console.error('[onboarding] 400 step=7 missing plan', { tenantId, dataKeys: Object.keys(data || {}) })
+        return NextResponse.json({ error: 'plan inválido' }, { status: 400 })
+      }
+      if (billing_cycle && !['monthly', 'annual'].includes(billing_cycle)) {
+        return NextResponse.json({ error: 'billing_cycle inválido' }, { status: 400 })
+      }
+
+      // A plan choice is not a paid entitlement. Persist it as pending until
+      // Mercado Pago confirms payment through the subscription flow.
+      const updated = await updateTenant(auth.tenant.id, {
+        metadata: {
+          ...((auth.tenant as any).metadata || {}),
+          pending_plan: plan,
+          ...(billing_cycle ? { pending_billing_cycle: billing_cycle } : {}),
+        },
         onboarding_step: 7,
       })
 
@@ -171,7 +195,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Failed to update tenant plan' }, { status: 500 })
       }
 
-      return NextResponse.json({ tenant: { id: tenantId } })
+      return NextResponse.json({ tenant: { id: auth.tenant.id } })
     }
 
     // --- Step 9: Brief (onboarding questionnaire) ---
@@ -181,13 +205,19 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
       }
 
+      const auth = await requireTenantPermission(request, 'settings:write')
+      if (!auth.ok) return auth.response
+      if (auth.tenant.id !== tenantId) {
+        return NextResponse.json({ error: 'Tenant no encontrado' }, { status: 404 })
+      }
+
       const { brief } = data || {}
 
       // Save brief fields — only set industry if not already populated (avoid overwriting detailed value from step 1)
       const { data: currentTenant } = await db()
         .from('tenants')
         .select('industry')
-        .eq('id', tenantId)
+        .eq('id', auth.tenant.id)
         .single()
 
       const updates: Record<string, unknown> = {
@@ -200,7 +230,7 @@ export async function POST(request: Request) {
       const { data: updated, error: updateError } = await db()
         .from('tenants')
         .update(updates)
-        .eq('id', tenantId)
+        .eq('id', auth.tenant.id)
         .select()
         .single()
 
@@ -209,7 +239,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: `Failed to save brief: ${updateError?.message || 'unknown'}` }, { status: 500 })
       }
 
-      return NextResponse.json({ tenant: { id: tenantId } })
+      return NextResponse.json({ tenant: { id: auth.tenant.id } })
     }
 
     // --- Step 8: Activate ---
@@ -219,6 +249,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'tenantId is required' }, { status: 400 })
       }
 
+      const auth = await requireTenantPermission(request, 'settings:write')
+      if (!auth.ok) return auth.response
+      if (auth.tenant.id !== tenantId) {
+        return NextResponse.json({ error: 'Tenant no encontrado' }, { status: 404 })
+      }
+
       const updates: Record<string, any> = {
         status: 'active',
         onboarding_completed: true,
@@ -226,17 +262,13 @@ export async function POST(request: Request) {
         onboarding_step: 8,
       }
 
-      if (data?.plan) {
-        updates.plan = data.plan
-      }
-
-      const updated = await updateTenant(tenantId, updates)
+      const updated = await updateTenant(auth.tenant.id, updates)
 
       if (!updated) {
         return NextResponse.json({ error: 'Failed to activate tenant' }, { status: 500 })
       }
 
-      return NextResponse.json({ tenant: { id: tenantId } })
+      return NextResponse.json({ tenant: { id: auth.tenant.id } })
     }
 
     console.error('[onboarding] 400 unknown step', { step, body })

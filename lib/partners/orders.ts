@@ -96,6 +96,7 @@ export async function createOrder(
 }
 
 export async function updateOrderStatus(
+  tenantId: string,
   id: string,
   status: PartnerOrder['status']
 ): Promise<PartnerOrder | null> {
@@ -103,6 +104,7 @@ export async function updateOrderStatus(
     .from('partner_orders')
     .update({ status, updated_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('tenant_id', tenantId)
     .select()
     .single()
 
@@ -111,6 +113,7 @@ export async function updateOrderStatus(
 }
 
 export async function updateOrder(
+  tenantId: string,
   id: string,
   updates: Partial<Pick<PartnerOrder, 'notes' | 'shipping_info' | 'payment_status' | 'status'>>
 ): Promise<PartnerOrder | null> {
@@ -118,6 +121,7 @@ export async function updateOrder(
     .from('partner_orders')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('tenant_id', tenantId)
     .select()
     .single()
 

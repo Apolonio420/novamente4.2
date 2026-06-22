@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { trackGenerateLead } from '@/lib/analytics'
+import { authFetch } from '@/lib/partners/auth-fetch'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -1873,9 +1874,12 @@ async function callOnboardingAPI(
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 15000)
   try {
-    const res = await fetch('/api/partners/onboarding', {
+    const headers = new Headers({ 'Content-Type': 'application/json' })
+    const tenantId = typeof payload.tenantId === 'string' ? payload.tenantId : null
+    if (tenantId) headers.set('x-tenant-id', tenantId)
+    const res = await authFetch('/api/partners/onboarding', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload),
       signal: controller.signal,
     })
@@ -1889,6 +1893,32 @@ async function callOnboardingAPI(
       throw new Error('El servidor tardó demasiado. Intentá de nuevo.')
     }
     throw err
+  }
+}
+
+async function establishOnboardingSession(credentials: { email: string; password: string | null }): Promise<boolean> {
+  if (!credentials.password) return false
+  try {
+    const { getSupabase } = await import('@/lib/supabase')
+    const sb = getSupabase()
+    if (!sb) return false
+    const { data, error } = await sb.auth.signInWithPassword({
+      email: credentials.email,
+      password: credentials.password,
+    })
+    if (error || !data.session?.access_token) return false
+
+    const sessionResponse = await fetch('/api/auth/set-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      }),
+    })
+    return sessionResponse.ok
+  } catch {
+    return false
   }
 }
 
@@ -1970,9 +2000,22 @@ export default function PartnersJoinPage() {
       // Datos basicos (step 1) returns the new tenant + credentials
       if (step === 0 && result.tenant?.id) {
         setData((prev) => ({ ...prev, tenantId: result.tenant.id }))
-        // Show credentials if a new account was created
-        if ((result as any).credentials?.password) {
-          setCredentials((result as any).credentials)
+        const onboardingCredentials = (result as any).credentials as { email: string; password: string | null } | undefined
+        if (!onboardingCredentials) {
+          throw new Error('No se pudieron crear las credenciales de acceso')
+        }
+        setCredentials(onboardingCredentials)
+
+        // Steps 2+ are owner-protected. Establish a real Supabase session as
+        // soon as step 1 created the owner, rather than keeping an anonymous
+        // tenant id in the browser as an authorization mechanism.
+        const signedIn = await establishOnboardingSession(onboardingCredentials)
+        if (!signedIn) {
+          saveWizardProgress(1, { ...data, tenantId: result.tenant.id })
+          const params = new URLSearchParams({ redirect: '/partners/join' })
+          params.set('email', onboardingCredentials.email)
+          window.location.href = `/partners/login?${params.toString()}`
+          return
         }
       }
 
@@ -2013,30 +2056,7 @@ export default function PartnersJoinPage() {
         // Auto-login + set server-side cookie so middleware detects session.
         // Without /api/auth/set-session the middleware can't see the token and
         // bounces the user back to /partners/login.
-        let signedIn = false
-        if (credentials?.password) {
-          try {
-            const { getSupabase } = await import('@/lib/supabase')
-            const sb = getSupabase()
-            if (sb) {
-              const { data: authData, error: authErr } = await sb.auth.signInWithPassword({
-                email: credentials.email,
-                password: credentials.password,
-              })
-              if (!authErr && authData?.session?.access_token) {
-                await fetch('/api/auth/set-session', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    access_token: authData.session.access_token,
-                    refresh_token: authData.session.refresh_token,
-                  }),
-                })
-                signedIn = true
-              }
-            }
-          } catch {}
-        }
+        const signedIn = credentials ? await establishOnboardingSession(credentials) : false
         if (signedIn) {
           window.location.href = '/workspace'
         } else {

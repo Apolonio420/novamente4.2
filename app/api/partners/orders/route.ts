@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getOrdersByTenant, createOrder, countOrdersByTenant } from '@/lib/partners/orders'
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'orders:read')
+    if (!auth.ok) return auth.response
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || undefined
@@ -15,8 +13,8 @@ export async function GET(request: NextRequest) {
     const offset = Number(searchParams.get('offset')) || 0
 
     const [orders, total] = await Promise.all([
-      getOrdersByTenant(result.tenant.id, { status, limit, offset }),
-      countOrdersByTenant(result.tenant.id),
+      getOrdersByTenant(auth.tenant.id, { status, limit, offset }),
+      countOrdersByTenant(auth.tenant.id),
     ])
 
     return NextResponse.json({ orders, total })
@@ -28,17 +26,15 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'orders:write')
+    if (!auth.ok) return auth.response
 
     const body = await request.json()
     if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
       return NextResponse.json({ error: 'Se requiere al menos un item' }, { status: 400 })
     }
 
-    const order = await createOrder(result.tenant.id, {
+    const order = await createOrder(auth.tenant.id, {
       customer_name: body.customer_name,
       customer_email: body.customer_email,
       customer_phone: body.customer_phone,

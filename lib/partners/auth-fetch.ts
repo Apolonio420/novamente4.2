@@ -93,7 +93,7 @@ export async function authFetch(
   }
 
   const override = getAdminTenantOverride()
-  if (override) {
+  if (override && !headers.has('x-tenant-id')) {
     headers.set('x-tenant-id', override)
   }
 
