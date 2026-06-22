@@ -32,6 +32,16 @@ CREATE TABLE IF NOT EXISTS partner_lead_activities (
 CREATE INDEX IF NOT EXISTS idx_partner_lead_activities_lead
   ON partner_lead_activities(tenant_id, lead_id, created_at DESC);
 
+-- Browser clients use the protected API routes; activity records are never a
+-- direct PostgREST surface. This keeps tenant/role enforcement centralized in
+-- requireTenantPermission and avoids leaking notes across brands.
+ALTER TABLE partner_lead_activities ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Service role full access" ON partner_lead_activities;
+CREATE POLICY "Service role full access" ON partner_lead_activities
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+REVOKE ALL ON TABLE partner_lead_activities FROM PUBLIC, anon, authenticated;
+GRANT ALL ON TABLE partner_lead_activities TO service_role;
+
 -- Detailed fulfillment augments the legacy order.status field. Existing
 -- integrations can keep using status while workspace operations use the
 -- more specific fulfillment_status.
@@ -98,6 +108,13 @@ CREATE TABLE IF NOT EXISTS partner_order_events (
 CREATE INDEX IF NOT EXISTS idx_partner_order_events_order
   ON partner_order_events(tenant_id, order_id, created_at DESC);
 
+ALTER TABLE partner_order_events ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Service role full access" ON partner_order_events;
+CREATE POLICY "Service role full access" ON partner_order_events
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+REVOKE ALL ON TABLE partner_order_events FROM PUBLIC, anon, authenticated;
+GRANT ALL ON TABLE partner_order_events TO service_role;
+
 -- Campaigns intentionally do not buy ads. They record a launch-ready package
 -- and its UTM identity so first-party analytics can attribute it.
 CREATE TABLE IF NOT EXISTS partner_campaigns (
@@ -121,3 +138,10 @@ CREATE TABLE IF NOT EXISTS partner_campaigns (
 
 CREATE INDEX IF NOT EXISTS idx_partner_campaigns_tenant
   ON partner_campaigns(tenant_id, status, created_at DESC);
+
+ALTER TABLE partner_campaigns ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Service role full access" ON partner_campaigns;
+CREATE POLICY "Service role full access" ON partner_campaigns
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+REVOKE ALL ON TABLE partner_campaigns FROM PUBLIC, anon, authenticated;
+GRANT ALL ON TABLE partner_campaigns TO service_role;
