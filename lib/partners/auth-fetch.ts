@@ -63,13 +63,20 @@ async function getAccessToken(): Promise<string | null> {
   return null
 }
 
+const ACTIVE_TENANT_STORAGE_KEY = 'active_tenant_id'
+
 /**
- * Get the admin tenant override ID from localStorage (if any).
+ * Read the tenant selected in the workspace UI. The server independently
+ * validates that it is an accepted membership (or a platform-admin selection),
+ * so localStorage is only a preference, never an authorization override.
  */
-function getAdminTenantOverride(): string | null {
+function getActiveTenantSelection(): string | null {
   if (typeof window === 'undefined') return null
   try {
-    return localStorage.getItem('admin_tenant_id')
+    // Remove the legacy key so a stale unauthorised-looking override is never
+    // silently carried into the new membership selector.
+    localStorage.removeItem('admin_tenant_id')
+    return localStorage.getItem(ACTIVE_TENANT_STORAGE_KEY)
   } catch {
     return null
   }
@@ -77,7 +84,8 @@ function getAdminTenantOverride(): string | null {
 
 /**
  * Wrapper around fetch that automatically injects the Supabase access token.
- * If an admin tenant override is set, includes x-tenant-id header.
+ * If the user has selected a tenant, includes x-tenant-id. The API verifies it
+ * against the authenticated user's accepted memberships.
  */
 export async function authFetch(
   url: string,
@@ -92,9 +100,9 @@ export async function authFetch(
     console.warn('[authFetch] No session found for', url)
   }
 
-  const override = getAdminTenantOverride()
-  if (override && !headers.has('x-tenant-id')) {
-    headers.set('x-tenant-id', override)
+  const selectedTenant = getActiveTenantSelection()
+  if (selectedTenant && !headers.has('x-tenant-id')) {
+    headers.set('x-tenant-id', selectedTenant)
   }
 
   return fetch(url, { ...options, headers })

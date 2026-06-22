@@ -2068,19 +2068,14 @@ export default function PartnersJoinPage() {
         }
       } else {
         // Paid plan — save plan, then redirect to MercadoPago
-        await callOnboardingAPI({
-          step: 8,
-          tenantId: data.tenantId,
-          data: { plan: data.selectedPlan },
-        })
         trackGenerateLead('partner_signup_completed')
         // Starter-product generation moved to novamente-platform — partners
         // add products from the dashboard after activation.
 
         // Create MercadoPago subscription preference
-        const res = await fetch('/api/partners/subscribe', {
+        const res = await authFetch('/api/partners/subscribe', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-tenant-id': data.tenantId },
           body: JSON.stringify({
             tenantId: data.tenantId,
             plan: data.selectedPlan,

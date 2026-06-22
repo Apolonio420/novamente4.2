@@ -20,6 +20,15 @@ function generatePassword(): string {
   return crypto.randomBytes(12).toString('base64url')
 }
 
+/** A paid plan choice is not an entitlement until Mercado Pago confirms it. */
+export function canActivateOnboardingWithoutPayment(tenant: {
+  plan: string
+  metadata?: Record<string, unknown>
+}): boolean {
+  const pendingPlan = tenant.metadata?.pending_plan
+  return tenant.plan === 'starter' && pendingPlan !== 'growth' && pendingPlan !== 'pro'
+}
+
 export async function POST(request: NextRequest) {
   let body: any = null
   try {
@@ -253,6 +262,12 @@ export async function POST(request: NextRequest) {
       if (!auth.ok) return auth.response
       if (auth.tenant.id !== tenantId) {
         return NextResponse.json({ error: 'Tenant no encontrado' }, { status: 404 })
+      }
+      if (!canActivateOnboardingWithoutPayment(auth.tenant)) {
+        return NextResponse.json(
+          { error: 'La activación del plan pago se realiza al confirmar Mercado Pago' },
+          { status: 409 },
+        )
       }
 
       const updates: Record<string, any> = {

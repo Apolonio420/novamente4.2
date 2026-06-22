@@ -14,7 +14,7 @@ vi.mock('@/lib/partners/permissions', () => ({
 
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateTenant } from '@/lib/partners/tenant'
-import { POST } from './route'
+import { POST, canActivateOnboardingWithoutPayment } from './route'
 
 const requirePermission = requireTenantPermission as ReturnType<typeof vi.fn>
 const update = updateTenant as ReturnType<typeof vi.fn>
@@ -51,5 +51,29 @@ describe('protected onboarding steps', () => {
     expect(response.status).toBe(401)
     expect(requirePermission).toHaveBeenCalledWith(expect.anything(), permission)
     expect(update).not.toHaveBeenCalled()
+  })
+
+  it('does not activate a pending paid plan before Mercado Pago confirms it', async () => {
+    requirePermission.mockResolvedValue({
+      ok: true,
+      tenant: {
+        id: 'tenant-b',
+        plan: 'starter',
+        metadata: { pending_plan: 'pro' },
+      },
+    })
+
+    const response = await POST(request(8))
+
+    expect(response.status).toBe(409)
+    expect(update).not.toHaveBeenCalled()
+  })
+})
+
+describe('canActivateOnboardingWithoutPayment', () => {
+  it('only permits Starter when no paid entitlement is pending', () => {
+    expect(canActivateOnboardingWithoutPayment({ plan: 'starter' })).toBe(true)
+    expect(canActivateOnboardingWithoutPayment({ plan: 'starter', metadata: { pending_plan: 'growth' } })).toBe(false)
+    expect(canActivateOnboardingWithoutPayment({ plan: 'pro' })).toBe(false)
   })
 })
