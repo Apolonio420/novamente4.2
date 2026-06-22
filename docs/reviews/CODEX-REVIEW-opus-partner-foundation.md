@@ -15,6 +15,28 @@
 
 No se autoriza merge mientras existan los P0. Cada corrección necesita la prueba de regresión indicada y una nueva ejecución del revisor.
 
+## Re-verificación — 2026-06-22
+
+Todos los hallazgos de esta acta están **corregidos en código y re-verificados**
+antes del rebase de Codex sobre Opus. Los fixes llegaron en `bff6115`,
+`4944432`, `5654bec`, `8b4c6be`, `652042e`, `443080f`, `a425b2b` y
+`7415f32`; el estado integrado pasó `npx tsc --noEmit` y `npm test`.
+
+- P0-1/P0-2: onboarding y checkout ahora exigen el owner del tenant activo;
+  la activación de planes pagos sólo ocurre tras webhook aprobado.
+- P0-3/P0-4/P0-5/P0-6: RLS, rutas operativas y cancelación de reservas quedan
+  tenant-scoped y con permiso explícito.
+- P0-7/P0-8: la key de idempotencia es obligatoria y retiros/RPCs son
+  backend-only; la UI conserva la key al reintentar una intención.
+- P1-1/P1-2/P1-4/P1-5 y P2-1/P2-2: corregidos en catálogo/variantes,
+  invitaciones y selector. P1-3 fue resuelto al integrar el badge `processing`
+  en Finanzas.
+
+**Puntaje abierto para integración: 0.** El marcador inicial se conserva como
+registro honesto del primer review; no implica puntos pendientes. Falta aplicar
+las migraciones a un entorno de staging y ejecutar las pruebas de dos tenants/
+tres roles contra una base real antes de publicar.
+
 ## P0-1 — Onboarding muta cualquier tenant sin autenticación
 
 - **Archivos:** `app/api/partners/onboarding/route.ts:22,130-141,164-168,201-203,222-233`.
