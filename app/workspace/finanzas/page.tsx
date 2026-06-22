@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Wallet, ArrowDownToLine, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle } from "lucide-react"
+import { PAYOUT_BADGE, type PayoutDisplayStatus } from '@/lib/partners/finance-ui'
 
 interface LedgerEntry {
   id: string
@@ -21,7 +22,7 @@ interface LedgerEntry {
 interface Payout {
   id: string
   amount: number
-  status: 'requested' | 'processing' | 'paid' | 'rejected'
+  status: PayoutDisplayStatus
   method: string | null
   requested_at: string
   resolved_at: string | null
@@ -41,13 +42,6 @@ const fmt = (n: number) =>
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-
-const PAYOUT_BADGE: Record<Payout['status'], { label: string; cls: string }> = {
-  requested: { label: 'Pendiente', cls: 'bg-amber-500/15 text-amber-600 border-amber-500/30' },
-  processing: { label: 'En proceso', cls: 'bg-blue-500/15 text-blue-600 border-blue-500/30' },
-  paid: { label: 'Pagado', cls: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30' },
-  rejected: { label: 'Rechazado', cls: 'bg-red-500/15 text-red-600 border-red-500/30' },
-}
 
 export default function FinanzasPage() {
   const [data, setData] = useState<FinanzasData | null>(null)
