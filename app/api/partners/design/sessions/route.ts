@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 const db = () => supabaseAdmin as any
@@ -9,10 +9,9 @@ export const dynamic = 'force-dynamic'
 // GET: List sessions for current tenant
 export async function GET(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-
-    const { tenant } = result
+    const auth = await requireTenantPermission(request, 'designs:read')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
 
     const { data, error } = await db()
       .from('partner_design_sessions')
@@ -47,10 +46,10 @@ export async function GET(request: NextRequest) {
 // POST: Create new session
 export async function POST(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-
-    const { userId, tenant } = result
+    const auth = await requireTenantPermission(request, 'designs:write')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
+    const userId = auth.userId
     const body = await request.json()
 
     const { data, error } = await db()

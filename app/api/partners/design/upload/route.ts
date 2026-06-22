@@ -10,7 +10,7 @@
  * Response: { url, assetId, storageKey }
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { saveDesignAsset } from '@/lib/partners/design-engine'
 import { uploadFile } from '@/lib/cloudflare-r2'
 import { v4 as uuidv4 } from 'uuid'
@@ -29,11 +29,9 @@ const ALLOWED_TYPES = new Set([
 
 export async function POST(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-    const { tenant } = result
+    const auth = await requireTenantPermission(request, 'designs:write')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
 
     const formData = await request.formData().catch(() => null)
     if (!formData) {

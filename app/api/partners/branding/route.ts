@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateTenant } from '@/lib/partners/tenant'
 import { getPlanFeatures } from '@/lib/partners/plans'
 import type { Plan } from '@/lib/partners/types'
@@ -22,15 +22,9 @@ const BRANDING_FIELDS = [
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json(
-        { error: 'No autenticado o sin tenant asociado' },
-        { status: 401 },
-      )
-    }
-
-    const { tenant } = result
+    const auth = await requireTenantPermission(request, 'marketing:read')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
 
     return NextResponse.json({
       plan: tenant.plan,
@@ -61,15 +55,9 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json(
-        { error: 'No autenticado o sin tenant asociado' },
-        { status: 401 },
-      )
-    }
-
-    const { tenant } = result
+    const auth = await requireTenantPermission(request, 'marketing:write')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
     const body = await request.json()
     const features = getPlanFeatures(tenant.plan as Plan)
 

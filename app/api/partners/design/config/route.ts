@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getUserTenantRole } from '@/lib/partners/tenant'
 import {
   getDesignConfig,
@@ -12,12 +12,9 @@ import type { Plan } from '@/lib/partners/types'
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    const { tenant } = result
+    const auth = await requireTenantPermission(request, 'designs:read')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
     const config = await getDesignConfig(tenant.id)
 
     // Check access
@@ -48,12 +45,10 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    const { userId, tenant } = result
+    const auth = await requireTenantPermission(request, 'designs:write')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
+    const userId = auth.userId
 
     // Only owner/operator can update config
     const role = await getUserTenantRole(tenant.id, userId)

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getPlanFeatures } from '@/lib/partners/plans'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
@@ -9,12 +9,9 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
  */
 export async function GET(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    const { tenant } = result
+    const auth = await requireTenantPermission(request, 'marketing:read')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
     const features = getPlanFeatures(tenant.plan)
 
     if (!features.metaBusinessSetup) {
@@ -51,12 +48,9 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    const { tenant } = result
+    const auth = await requireTenantPermission(request, 'marketing:write')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
     const features = getPlanFeatures(tenant.plan)
 
     if (!features.metaBusinessSetup) {

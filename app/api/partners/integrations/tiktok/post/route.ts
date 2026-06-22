@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import {
   publishToTikTokFileUpload,
@@ -13,10 +13,10 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
-  const ctx = await getRequestTenant(req)
-  if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireTenantPermission(req, 'marketing:write')
+  if (!auth.ok) return auth.response
 
-  const accessToken = await resolveTikTokAccessToken(ctx.tenant.id)
+  const accessToken = await resolveTikTokAccessToken(auth.tenant.id)
   if (!accessToken) {
     return NextResponse.json(
       { error: 'TikTok no está conectado. Conectalo primero en Integraciones.' },
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await (supabaseAdmin as any)
       .from('tiktok_scheduled_posts')
       .insert({
-        tenant_id: ctx.tenant.id,
+        tenant_id: auth.tenant.id,
         video_url: videoUrl,
         video_r2_key: videoKey,
         caption,
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
   }
 
   const result = await publishToTikTokFileUpload({
-    tenantId: ctx.tenant.id,
+    tenantId: auth.tenant.id,
     videoBuffer,
     caption,
     mode: 'inbox',
@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabaseAdmin as any).from('tiktok_scheduled_posts').insert({
-    tenant_id: ctx.tenant.id,
+    tenant_id: auth.tenant.id,
     video_url: videoUrl,
     video_r2_key: videoKey,
     caption,
