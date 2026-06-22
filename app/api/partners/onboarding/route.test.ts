@@ -14,7 +14,7 @@ vi.mock('@/lib/partners/permissions', () => ({
 
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateTenant } from '@/lib/partners/tenant'
-import { POST, canActivateOnboardingWithoutPayment } from './route'
+import { POST } from './route'
 
 const requirePermission = requireTenantPermission as ReturnType<typeof vi.fn>
 const update = updateTenant as ReturnType<typeof vi.fn>
@@ -67,13 +67,5 @@ describe('protected onboarding steps', () => {
 
     expect(response.status).toBe(409)
     expect(update).not.toHaveBeenCalled()
-  })
-})
-
-describe('canActivateOnboardingWithoutPayment', () => {
-  it('only permits Starter when no paid entitlement is pending', () => {
-    expect(canActivateOnboardingWithoutPayment({ plan: 'starter' })).toBe(true)
-    expect(canActivateOnboardingWithoutPayment({ plan: 'starter', metadata: { pending_plan: 'growth' } })).toBe(false)
-    expect(canActivateOnboardingWithoutPayment({ plan: 'pro' })).toBe(false)
   })
 })

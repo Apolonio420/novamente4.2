@@ -21,7 +21,7 @@ function generatePassword(): string {
 }
 
 /** A paid plan choice is not an entitlement until Mercado Pago confirms it. */
-export function canActivateOnboardingWithoutPayment(tenant: {
+function canActivateOnboardingWithoutPayment(tenant: {
   plan: string
   metadata?: Record<string, unknown>
 }): boolean {
