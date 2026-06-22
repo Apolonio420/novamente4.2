@@ -19,9 +19,10 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || undefined
     const limit = parseInt(searchParams.get('limit') || '50', 10)
     const offset = parseInt(searchParams.get('offset') || '0', 10)
+    const attentionOnly = searchParams.get('attention') === 'true'
 
     const [leads, totalThisMonth] = await Promise.all([
-      getLeads(tenant.id, { status, limit, offset }),
+      getLeads(tenant.id, { status, limit, offset, attentionOnly }),
       countLeadsThisMonth(tenant.id),
     ])
 
