@@ -29,7 +29,10 @@ function priorityWeight(priority: AttentionPriority) {
  * Computes a compact, actionable queue instead of a decorative activity feed.
  * Every item must point to the workspace surface that resolves it.
  */
-export async function getDailyAttention(tenant: { id: string; plan: Plan }): Promise<DailyAttentionItem[]> {
+export async function getDailyAttention(
+  tenant: { id: string; plan: Plan },
+  options: { includeFinancial?: boolean } = {},
+): Promise<DailyAttentionItem[]> {
   const now = Date.now()
   const staleLeadAt = new Date(now - 24 * HOUR).toISOString()
   const staleOrderAt = new Date(now - 48 * HOUR).toISOString()
@@ -54,13 +57,15 @@ export async function getDailyAttention(tenant: { id: string; plan: Plan }): Pro
       .eq('tenant_id', tenant.id)
       .in('status', ['draft', 'ready', 'published'])
       .limit(150),
-    db()
-      .from('partner_payouts')
-      .select('id, amount, status, requested_at')
-      .eq('tenant_id', tenant.id)
-      .eq('status', 'requested')
-      .order('requested_at', { ascending: true })
-      .limit(25),
+    options.includeFinancial
+      ? db()
+          .from('partner_payouts')
+          .select('id, amount, status, requested_at')
+          .eq('tenant_id', tenant.id)
+          .eq('status', 'requested')
+          .order('requested_at', { ascending: true })
+          .limit(25)
+      : Promise.resolve({ data: [] }),
   ])
 
   const items: DailyAttentionItem[] = []

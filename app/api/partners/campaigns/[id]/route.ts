@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateCampaign } from '@/lib/partners/campaigns'
 
 const VALID_STATUSES = ['draft', 'active', 'paused', 'completed']
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const result = await getRequestTenant(request)
-  if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const auth = await requireTenantPermission(request, 'marketing:write')
+  if (!auth.ok) return auth.response
   const body = await request.json().catch(() => ({}))
   const updates: Record<string, unknown> = {}
   if (typeof body.name === 'string' && body.name.trim()) updates.name = body.name.trim().slice(0, 120)
@@ -19,7 +19,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (Object.keys(updates).length === 0) return NextResponse.json({ error: 'No hay cambios' }, { status: 400 })
 
   const { id } = await params
-  const campaign = await updateCampaign(result.tenant.id, id, updates)
+  const campaign = await updateCampaign(auth.tenant.id, id, updates)
   if (!campaign) return NextResponse.json({ error: 'Campaña no encontrada' }, { status: 404 })
   return NextResponse.json({ campaign })
 }

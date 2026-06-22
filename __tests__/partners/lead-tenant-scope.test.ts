@@ -7,10 +7,12 @@ const state = vi.hoisted(() => ({
   addLeadActivity: vi.fn(),
 }))
 
-vi.mock('@/lib/partners/auth', () => ({
-  getRequestTenant: vi.fn(async () => ({
+vi.mock('@/lib/partners/permissions', () => ({
+  requireTenantPermission: vi.fn(async () => ({
+    ok: true,
     userId: 'user-owner-a',
     tenant: { id: 'tenant-a', slug: 'marca-a' },
+    role: 'owner',
   })),
 }))
 

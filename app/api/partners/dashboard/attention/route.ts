@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getDailyAttention } from '@/lib/partners/daily-attention'
 
 export async function GET(request: NextRequest) {
-  const result = await getRequestTenant(request)
-  if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const auth = await requireTenantPermission(request, 'orders:read')
+  if (!auth.ok) return auth.response
 
   try {
-    const items = await getDailyAttention(result.tenant)
+    const items = await getDailyAttention(auth.tenant, { includeFinancial: auth.role === 'owner' })
     return NextResponse.json({ items, generatedAt: new Date().toISOString() })
   } catch (error) {
     console.error('GET /api/partners/dashboard/attention error:', error)

@@ -121,8 +121,13 @@ export async function updateLead(
 
 /** Backward-compatible status-only updater, always tenant-scoped. */
 export async function updateLeadStatus(tenantId: string, leadId: string, status: string): Promise<boolean> {
-  const lead = await updateLead(tenantId, leadId, { status })
-  return !!lead
+  const { data, error } = await db()
+    .from('partner_leads')
+    .update({ status })
+    .eq('tenant_id', tenantId)
+    .eq('id', leadId)
+    .select('id')
+  return !error && Array.isArray(data) && data.length > 0
 }
 
 export async function getLeadActivities(

@@ -15,7 +15,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('@/lib/partners/auth', () => ({ getRequestTenant: vi.fn() }))
+vi.mock('@/lib/partners/permissions', () => ({ requireTenantPermission: vi.fn() }))
 vi.mock('@/lib/partners/orders', () => ({
   getOrderById: vi.fn(),
   updateOrder: vi.fn(),
@@ -24,12 +24,12 @@ vi.mock('@/lib/partners/orders', () => ({
 }))
 
 import { PUT } from '@/app/api/partners/orders/[id]/route'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getOrderById, updateOrder } from '@/lib/partners/orders'
 
 const TENANT = 't1'
 const m = {
-  auth: getRequestTenant as unknown as ReturnType<typeof vi.fn>,
+  auth: requireTenantPermission as unknown as ReturnType<typeof vi.fn>,
   getById: getOrderById as unknown as ReturnType<typeof vi.fn>,
   update: updateOrder as unknown as ReturnType<typeof vi.fn>,
 }
@@ -42,7 +42,7 @@ const lastUpdates = (): any => {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  m.auth.mockResolvedValue({ tenant: { id: TENANT }, userId: 'u1' })
+  m.auth.mockResolvedValue({ ok: true, tenant: { id: TENANT }, userId: 'u1', role: 'owner' })
   m.update.mockImplementation(async (_t: string, _id: string, u: any) => ({ id: 'o1', tenant_id: TENANT, ...u }))
 })
 

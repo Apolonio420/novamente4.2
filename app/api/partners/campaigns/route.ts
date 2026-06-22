@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { createCampaign, listCampaigns } from '@/lib/partners/campaigns'
 import { getUtmPerformance } from '@/lib/partners/analytics-queries'
 import { supabaseAdmin } from '@/lib/supabase-admin'
@@ -7,20 +7,20 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 const VALID_CHANNELS = ['meta', 'google', 'tiktok', 'other']
 
 export async function GET(request: NextRequest) {
-  const result = await getRequestTenant(request)
-  if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const auth = await requireTenantPermission(request, 'marketing:read')
+  if (!auth.ok) return auth.response
 
   const [campaigns, performance] = await Promise.all([
-    listCampaigns(result.tenant.id),
-    getUtmPerformance(result.tenant.id, 90),
+    listCampaigns(auth.tenant.id),
+    getUtmPerformance(auth.tenant.id, 90),
   ])
   const byUtm = new Map(performance.map((item) => [item.campaign, item]))
   return NextResponse.json({ campaigns: campaigns.map((campaign) => ({ ...campaign, performance: byUtm.get(campaign.utm_campaign) || null })) })
 }
 
 export async function POST(request: NextRequest) {
-  const result = await getRequestTenant(request)
-  if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const auth = await requireTenantPermission(request, 'marketing:write')
+  if (!auth.ok) return auth.response
   const body = await request.json().catch(() => ({}))
 
   const name = typeof body.name === 'string' ? body.name.trim().slice(0, 120) : ''
@@ -45,12 +45,12 @@ export async function POST(request: NextRequest) {
       .from('partner_products')
       .select('id')
       .eq('id', productId)
-      .eq('tenant_id', result.tenant.id)
+      .eq('tenant_id', auth.tenant.id)
       .maybeSingle()
     if (!product) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
   }
 
-  const campaign = await createCampaign(result.tenant.id, {
+  const campaign = await createCampaign(auth.tenant.id, {
     product_id: productId,
     channel: channel as 'meta',
     name,
