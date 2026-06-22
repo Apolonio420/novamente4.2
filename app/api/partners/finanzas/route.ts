@@ -1,23 +1,25 @@
 /**
- * GET /api/partners/finanzas — balance + movimientos + retiros del tenant
+ * GET  /api/partners/finanzas — balance + movimientos + retiros del tenant
  * POST /api/partners/finanzas — solicitar retiro { amount, method? }
+ *
+ * Ambos son owner-only: exponen y mueven dinero (banco + retiros). El retiro usa
+ * el RPC transaccional partner_request_payout (atómico, idempotente y serializado
+ * por tenant). Idempotency-Key se toma del header homónimo.
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getTenantBalance } from '@/lib/partners/ledger'
-
-const MIN_PAYOUT_ARS = 20000
+import { getTenantFinancials, requestPayout, MIN_PAYOUT_ARS } from '@/lib/partners/payouts'
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    const { tenant } = result
+    const auth = await requireTenantPermission(request, 'withdrawals:read')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
     const sb = supabaseAdmin as any
 
-    const [balance, { data: entries }, { data: payouts }] = await Promise.all([
-      getTenantBalance(tenant.id),
+    const [financials, { data: entries }, { data: payouts }] = await Promise.all([
+      getTenantFinancials(tenant.id),
       sb
         .from('partner_ledger_entries')
         .select('id, type, amount, concept, status, source, created_at')
@@ -33,7 +35,8 @@ export async function GET(request: NextRequest) {
     ])
 
     return NextResponse.json({
-      balance,
+      // `pendingReview` kept as an alias for backward compatibility with the UI.
+      balance: { ...financials, pendingReview: financials.pending },
       minPayout: MIN_PAYOUT_ARS,
       entries: entries ?? [],
       payouts: payouts ?? [],
@@ -48,69 +51,44 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    const { tenant } = result
-    const sb = supabaseAdmin as any
+    const auth = await requireTenantPermission(request, 'withdrawals:manage')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
 
     const body = await request.json().catch(() => ({}))
     const amount = Math.round(Number(body.amount) || 0)
-    const method = String(body.method || (tenant as any).bank_alias || (tenant as any).bank_cbu || '').slice(0, 120)
+    const method = String(
+      body.method || (tenant as any).bank_alias || (tenant as any).bank_cbu || '',
+    ).slice(0, 120)
+    const idempotencyKey = request.headers.get('idempotency-key') || body.idempotencyKey || null
 
-    if (amount < MIN_PAYOUT_ARS) {
-      return NextResponse.json({ error: `El retiro mínimo es $${MIN_PAYOUT_ARS.toLocaleString('es-AR')}` }, { status: 400 })
-    }
-    if (!method) {
-      return NextResponse.json({ error: 'Indicá un alias o CBU de destino (o cargalo en Configuración)' }, { status: 400 })
-    }
-
-    const { available } = await getTenantBalance(tenant.id)
-    if (amount > available) {
-      return NextResponse.json({ error: `Saldo insuficiente (disponible $${available.toLocaleString('es-AR')})` }, { status: 400 })
+    const result = await requestPayout({ tenantId: tenant.id, amount, method, idempotencyKey })
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status })
     }
 
-    // Crear payout + debit atómico-ish (si falla el debit, borramos el payout)
-    const { data: payout, error: pErr } = await sb
-      .from('partner_payouts')
-      .insert({ tenant_id: tenant.id, amount, method, status: 'requested' })
-      .select('id')
-      .single()
-    if (pErr || !payout) {
-      console.error('[finanzas] payout insert error:', pErr?.message)
-      return NextResponse.json({ error: 'No se pudo crear la solicitud' }, { status: 500 })
-    }
-
-    const { error: dErr } = await sb.from('partner_ledger_entries').insert({
-      tenant_id: tenant.id,
-      payout_id: payout.id,
-      source: 'payout',
-      type: 'debit',
-      amount,
-      concept: `Retiro solicitado a ${method}`,
-    })
-    if (dErr) {
-      await sb.from('partner_payouts').delete().eq('id', payout.id)
-      console.error('[finanzas] debit error:', dErr.message)
-      return NextResponse.json({ error: 'No se pudo registrar el retiro' }, { status: 500 })
-    }
-
-    // Aviso interno (Telegram ventas si está configurado) — best effort
-    try {
-      const token = process.env.TELEGRAM_BOT_TOKEN_SALES || process.env.TELEGRAM_BOT_TOKEN
-      const chatId = process.env.TELEGRAM_CHAT_ID_SALES || process.env.TELEGRAM_CHAT_ID
-      if (token && chatId) {
-        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: `💸 RETIRO SOLICITADO\n\nPartner: ${tenant.name} (${tenant.slug})\nMonto: $${amount.toLocaleString('es-AR')}\nDestino: ${method}\n\nTransferir y marcar pagado.`,
-          }),
-        })
+    // Aviso interno (Telegram ventas si está configurado) — best effort.
+    // No se reenvía en réplicas idempotentes para no duplicar la notificación.
+    if (!result.idempotent) {
+      try {
+        const token = process.env.TELEGRAM_BOT_TOKEN_SALES || process.env.TELEGRAM_BOT_TOKEN
+        const chatId = process.env.TELEGRAM_CHAT_ID_SALES || process.env.TELEGRAM_CHAT_ID
+        if (token && chatId) {
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `💸 RETIRO SOLICITADO\n\nPartner: ${tenant.name} (${tenant.slug})\nMonto: $${amount.toLocaleString('es-AR')}\nDestino: ${method}\n\nTransferir y marcar pagado.`,
+            }),
+          })
+        }
+      } catch {
+        /* no bloquea */
       }
-    } catch { /* no bloquea */ }
+    }
 
-    return NextResponse.json({ ok: true, payoutId: payout.id })
+    return NextResponse.json({ ok: true, payoutId: result.payoutId, idempotent: !!result.idempotent })
   } catch (e: any) {
     console.error('[finanzas] POST error:', e?.message)
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })
