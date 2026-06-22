@@ -87,6 +87,19 @@ export async function getDailyAttention(tenant: { id: string; plan: Plan }): Pro
   for (const order of ordersRes.data || []) {
     const fulfillment = order.fulfillment_status || 'awaiting_art_approval'
     if (TERMINAL_FULFILLMENT.has(fulfillment)) continue
+    if (fulfillment === 'exception') {
+      items.push({
+        id: `order:${order.id}`,
+        priority: 'critical',
+        entity: 'order',
+        title: `Pedido #${order.id.slice(0, 8)} con incidencia`,
+        reason: 'La operación requiere intervención manual antes de continuar.',
+        dueAt: order.fulfillment_updated_at || order.updated_at,
+        actionUrl: `/workspace/orders?order=${order.id}`,
+        actionLabel: 'Resolver incidencia',
+      })
+      continue
+    }
     const updatedAt = new Date(order.fulfillment_updated_at || order.updated_at).getTime()
     const eta = order.estimated_delivery_at ? new Date(order.estimated_delivery_at).getTime() : null
     const etaOverdue = eta !== null && eta < now

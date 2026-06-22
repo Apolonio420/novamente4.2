@@ -59,7 +59,7 @@ interface Order {
   updated_at: string
 }
 
-type OrderStatus = 'pending' | 'confirmed' | 'producing' | 'shipped' | 'delivered' | 'cancelled'
+type OrderStatus = 'pending' | 'confirmed' | 'producing' | 'shipped' | 'delivered' | 'exception' | 'cancelled'
 type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'refunded'
 type FulfillmentStatus = 'awaiting_art_approval' | 'queued_for_production' | 'in_production' | 'quality_check' | 'ready_to_ship' | 'shipped' | 'delivered' | 'exception' | 'cancelled'
 
@@ -91,6 +91,11 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; bg: string; icon: Reac
     bg: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300',
     icon: CheckCircle2,
   },
+  exception: {
+    label: 'Con incidencia',
+    bg: 'bg-amber-500/20 border-amber-500/30 text-amber-300',
+    icon: XCircle,
+  },
   cancelled: {
     label: 'Cancelado',
     bg: 'bg-red-500/20 border-red-500/30 text-red-300',
@@ -106,11 +111,12 @@ const PAYMENT_CONFIG: Record<PaymentStatus, { label: string; bg: string }> = {
 }
 
 const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  pending: ['confirmed', 'cancelled'],
-  confirmed: ['producing', 'cancelled'],
-  producing: ['shipped'],
-  shipped: ['delivered'],
+  pending: ['confirmed', 'cancelled', 'exception'],
+  confirmed: ['producing', 'cancelled', 'exception'],
+  producing: ['shipped', 'cancelled', 'exception'],
+  shipped: ['delivered', 'exception'],
   delivered: [],
+  exception: [],
   cancelled: [],
 }
 
@@ -121,6 +127,7 @@ const FILTER_TABS: { value: string; label: string }[] = [
   { value: 'producing', label: 'En produccion' },
   { value: 'shipped', label: 'Enviado' },
   { value: 'delivered', label: 'Entregado' },
+  { value: 'exception', label: 'Con incidencia' },
   { value: 'cancelled', label: 'Cancelado' },
 ]
 
@@ -258,7 +265,7 @@ function OrderDetail({
   const displayName = order.customer_name || order.customer_email || order.customer_phone || 'Cliente anonimo'
   const [editingNotes, setEditingNotes] = useState(false)
   const [notesValue, setNotesValue] = useState(order.notes || '')
-  const [fulfillment, setFulfillment] = useState<FulfillmentStatus>(order.fulfillment_status || (order.status === 'producing' ? 'in_production' : order.status === 'shipped' ? 'shipped' : order.status === 'delivered' ? 'delivered' : order.status === 'cancelled' ? 'cancelled' : order.status === 'confirmed' ? 'queued_for_production' : 'awaiting_art_approval'))
+  const [fulfillment, setFulfillment] = useState<FulfillmentStatus>(() => getInitialFulfillmentStatus(order))
   const [eta, setEta] = useState(order.estimated_delivery_at ? toDateTimeInput(order.estimated_delivery_at) : '')
   const [carrier, setCarrier] = useState(order.carrier || '')
   const [trackingNumber, setTrackingNumber] = useState(order.tracking_number || '')
@@ -269,7 +276,7 @@ function OrderDetail({
   useEffect(() => {
     setNotesValue(order.notes || '')
     setEditingNotes(false)
-    setFulfillment(order.fulfillment_status || (order.status === 'producing' ? 'in_production' : order.status === 'shipped' ? 'shipped' : order.status === 'delivered' ? 'delivered' : order.status === 'cancelled' ? 'cancelled' : order.status === 'confirmed' ? 'queued_for_production' : 'awaiting_art_approval'))
+    setFulfillment(getInitialFulfillmentStatus(order))
     setEta(order.estimated_delivery_at ? toDateTimeInput(order.estimated_delivery_at) : '')
     setCarrier(order.carrier || '')
     setTrackingNumber(order.tracking_number || '')
@@ -585,6 +592,17 @@ function toDateTimeInput(value: string) {
   const date = new Date(value)
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
   return local.toISOString().slice(0, 16)
+}
+
+function getInitialFulfillmentStatus(order: Order): FulfillmentStatus {
+  if (order.fulfillment_status) return order.fulfillment_status
+  if (order.status === 'producing') return 'in_production'
+  if (order.status === 'shipped') return 'shipped'
+  if (order.status === 'delivered') return 'delivered'
+  if (order.status === 'exception') return 'exception'
+  if (order.status === 'cancelled') return 'cancelled'
+  if (order.status === 'confirmed') return 'queued_for_production'
+  return 'awaiting_art_approval'
 }
 
 // --- Main Page ---

@@ -46,18 +46,38 @@ ALTER TABLE partner_orders
   ADD COLUMN IF NOT EXISTS tracking_number TEXT,
   ADD COLUMN IF NOT EXISTS tracking_url TEXT,
   ADD COLUMN IF NOT EXISTS exception_reason TEXT,
-  ADD COLUMN IF NOT EXISTS fulfillment_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+  ADD COLUMN IF NOT EXISTS fulfillment_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- This marker is only used by this one-time data migration. New orders get
+  -- a value through the default below, so a later re-run cannot mistake an
+  -- intentionally selected `awaiting_art_approval` for an unmigrated row.
+  ADD COLUMN IF NOT EXISTS fulfillment_backfilled_at TIMESTAMPTZ;
+
+-- Keep the legacy list/filter column expressive enough to surface a
+-- fulfillment incident instead of making it look like a normal production or
+-- delivery state.
+ALTER TABLE partner_orders
+  DROP CONSTRAINT IF EXISTS partner_orders_status_check;
+
+ALTER TABLE partner_orders
+  ADD CONSTRAINT partner_orders_status_check
+  CHECK (status IN ('pending', 'confirmed', 'producing', 'shipped', 'delivered', 'exception', 'cancelled'));
 
 UPDATE partner_orders
-SET fulfillment_status = CASE status
-  WHEN 'confirmed' THEN 'queued_for_production'
-  WHEN 'producing' THEN 'in_production'
-  WHEN 'shipped' THEN 'shipped'
-  WHEN 'delivered' THEN 'delivered'
-  WHEN 'cancelled' THEN 'cancelled'
-  ELSE 'awaiting_art_approval'
-END
-WHERE fulfillment_status = 'awaiting_art_approval';
+SET
+  fulfillment_status = CASE status
+    WHEN 'confirmed' THEN 'queued_for_production'
+    WHEN 'producing' THEN 'in_production'
+    WHEN 'shipped' THEN 'shipped'
+    WHEN 'delivered' THEN 'delivered'
+    WHEN 'exception' THEN 'exception'
+    WHEN 'cancelled' THEN 'cancelled'
+    ELSE 'awaiting_art_approval'
+  END,
+  fulfillment_backfilled_at = NOW()
+WHERE fulfillment_backfilled_at IS NULL;
+
+ALTER TABLE partner_orders
+  ALTER COLUMN fulfillment_backfilled_at SET DEFAULT NOW();
 
 CREATE INDEX IF NOT EXISTS idx_partner_orders_fulfillment
   ON partner_orders(tenant_id, fulfillment_status, fulfillment_updated_at DESC);

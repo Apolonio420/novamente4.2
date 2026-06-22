@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
-import { createOrderEvent, getOrderById, getOrderEvents, updateOrder, type FulfillmentStatus } from '@/lib/partners/orders'
+import { createOrderEvent, getOrderById, getOrderEvents, updateOrder, type FulfillmentStatus, type PartnerOrder } from '@/lib/partners/orders'
+
+type LegacyOrderStatus = PartnerOrder['status']
 
 const FULFILLMENT_STATUSES: FulfillmentStatus[] = [
   'awaiting_art_approval', 'queued_for_production', 'in_production',
   'quality_check', 'ready_to_ship', 'shipped', 'delivered', 'exception', 'cancelled',
 ]
 
-const LEGACY_STATUS_BY_FULFILLMENT: Partial<Record<FulfillmentStatus, string>> = {
+const LEGACY_ORDER_STATUSES: LegacyOrderStatus[] = [
+  'pending', 'confirmed', 'producing', 'shipped', 'delivered', 'exception', 'cancelled',
+]
+
+const LEGACY_STATUS_BY_FULFILLMENT: Record<FulfillmentStatus, LegacyOrderStatus> = {
   awaiting_art_approval: 'pending',
   queued_for_production: 'confirmed',
   in_production: 'producing',
@@ -15,7 +21,44 @@ const LEGACY_STATUS_BY_FULFILLMENT: Partial<Record<FulfillmentStatus, string>> =
   ready_to_ship: 'producing',
   shipped: 'shipped',
   delivered: 'delivered',
+  exception: 'exception',
   cancelled: 'cancelled',
+}
+
+// Direct legacy status changes have to follow the same DAG shown in the
+// workspace. Fulfillment updates can skip intermediate legacy milestones (for
+// example, a bulk update to `shipped`), but can never move a milestone back.
+const LEGACY_STATUS_TRANSITIONS: Record<LegacyOrderStatus, LegacyOrderStatus[]> = {
+  pending: ['confirmed', 'cancelled', 'exception'],
+  confirmed: ['producing', 'cancelled', 'exception'],
+  producing: ['shipped', 'cancelled', 'exception'],
+  shipped: ['delivered', 'exception'],
+  delivered: [],
+  exception: [],
+  cancelled: [],
+}
+
+const LEGACY_STATUS_RANK: Partial<Record<LegacyOrderStatus, number>> = {
+  pending: 0,
+  confirmed: 1,
+  producing: 2,
+  shipped: 3,
+  delivered: 4,
+}
+
+function isDirectLegacyTransitionAllowed(from: LegacyOrderStatus, to: LegacyOrderStatus) {
+  return from === to || LEGACY_STATUS_TRANSITIONS[from].includes(to)
+}
+
+function canAdvanceLegacyStatus(from: LegacyOrderStatus, to: LegacyOrderStatus) {
+  if (from === to) return true
+  if (to === 'exception') return from !== 'delivered' && from !== 'exception' && from !== 'cancelled'
+  if (to === 'cancelled') return from !== 'delivered' && from !== 'exception' && from !== 'cancelled'
+  if (from === 'exception' || from === 'cancelled') return false
+
+  const fromRank = LEGACY_STATUS_RANK[from]
+  const toRank = LEGACY_STATUS_RANK[to]
+  return fromRank !== undefined && toRank !== undefined && toRank >= fromRank
 }
 
 export async function GET(
@@ -67,8 +110,17 @@ export async function PUT(
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No hay campos para actualizar' }, { status: 400 })
     }
-    if (updates.fulfillment_status && !FULFILLMENT_STATUSES.includes(updates.fulfillment_status as FulfillmentStatus)) {
+    if (updates.fulfillment_status !== undefined && (
+      typeof updates.fulfillment_status !== 'string'
+      || !FULFILLMENT_STATUSES.includes(updates.fulfillment_status as FulfillmentStatus)
+    )) {
       return NextResponse.json({ error: 'Estado de fulfillment invalido' }, { status: 400 })
+    }
+    if (updates.status !== undefined && (
+      typeof updates.status !== 'string'
+      || !LEGACY_ORDER_STATUSES.includes(updates.status as LegacyOrderStatus)
+    )) {
+      return NextResponse.json({ error: 'Estado del pedido invalido' }, { status: 400 })
     }
     if (updates.tracking_url && (typeof updates.tracking_url !== 'string' || !/^https?:\/\//.test(updates.tracking_url))) {
       return NextResponse.json({ error: 'El link de seguimiento debe ser una URL http(s)' }, { status: 400 })
@@ -77,11 +129,20 @@ export async function PUT(
       return NextResponse.json({ error: 'Fecha estimada invalida' }, { status: 400 })
     }
 
+    const requestedLegacyStatus = updates.status as LegacyOrderStatus | undefined
     const nextFulfillment = updates.fulfillment_status as FulfillmentStatus | undefined
     if (nextFulfillment) {
-      updates.fulfillment_updated_at = new Date().toISOString()
       const legacyStatus = LEGACY_STATUS_BY_FULFILLMENT[nextFulfillment]
-      if (legacyStatus) updates.status = legacyStatus
+      if (requestedLegacyStatus && requestedLegacyStatus !== legacyStatus) {
+        return NextResponse.json({ error: 'El estado y el fulfillment no son consistentes' }, { status: 400 })
+      }
+      if (!canAdvanceLegacyStatus(existing.status, legacyStatus)) {
+        return NextResponse.json({ error: 'No se puede retroceder el estado operativo del pedido' }, { status: 409 })
+      }
+      updates.fulfillment_updated_at = new Date().toISOString()
+      updates.status = legacyStatus
+    } else if (requestedLegacyStatus && !isDirectLegacyTransitionAllowed(existing.status, requestedLegacyStatus)) {
+      return NextResponse.json({ error: 'Transicion de estado no permitida' }, { status: 409 })
     }
 
     const order = await updateOrder(auth.tenant.id, id, updates as any)

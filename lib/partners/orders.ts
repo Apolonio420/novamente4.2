@@ -28,7 +28,10 @@ export interface PartnerOrder {
   }>
   total: number | null
   currency: string
-  status: 'pending' | 'confirmed' | 'producing' | 'shipped' | 'delivered' | 'cancelled'
+  // `exception` is a visible legacy-compatible terminal state. It mirrors an
+  // operational fulfillment incident so existing list/filter consumers never
+  // hide an order that needs manual attention.
+  status: 'pending' | 'confirmed' | 'producing' | 'shipped' | 'delivered' | 'exception' | 'cancelled'
   payment_id: string | null
   payment_status: 'pending' | 'approved' | 'rejected' | 'refunded'
   shipping_info: Record<string, unknown>
