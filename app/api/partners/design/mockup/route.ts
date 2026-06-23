@@ -7,12 +7,10 @@ import {
   getAvailableGarments,
   saveDesignAsset,
 } from '@/lib/partners/design-engine'
-import { getGeminiClient } from '@/lib/gemini'
 import { getGarmentMapping } from '@/lib/garment-mappings'
 import { uploadFile } from '@/lib/cloudflare-r2'
 import { v4 as uuidv4 } from 'uuid'
 import type { Plan } from '@/lib/partners/types'
-import { getGeminiSafetySettings } from '@/lib/partners/studio/moderation'
 import { checkUsageLimit, recordUsage } from '@/lib/partners/studio/usage-tracker'
 
 export const runtime = 'nodejs'
@@ -152,111 +150,41 @@ export async function POST(request: NextRequest) {
     const garmentPath = mapping?.garmentPath?.replace(/^\//, '') || `garments/tshirt-${color}-oversize-front.jpeg`
     const garmentUrl = `${origin}/${garmentPath}`
 
-    let garmentBase64: string
+    let garmentBase64 = ''
     try {
       const gResp = await fetch(garmentUrl)
       if (!gResp.ok) throw new Error(`Garment fetch failed: ${gResp.status}`)
       const gBuf = await gResp.arrayBuffer()
       garmentBase64 = Buffer.from(gBuf).toString('base64')
     } catch (e: any) {
-      console.warn('Garment fetch failed, using design only:', e.message)
+      console.warn('Garment fetch failed:', e.message)
       garmentBase64 = ''
     }
 
-    // Build prompt for Gemini mockup composition
-    const sideLabel = sideChoice === 'back' ? 'espalda' : 'frente'
-    const stampModeChoice = (stampMode || 'large') as 'large' | 'medium' | 'chest-logo'
-    const placementChoice = (placement || '') as string
-
-    const sizeLine =
-      stampModeChoice === 'chest-logo'
-        ? 'Logo pequeño (~10×10 cm), discreto y bien proporcionado'
-        : stampModeChoice === 'medium'
-          ? 'Estampa mediana (~20×25 cm)'
-          : 'Estampa grande que debe ocupar casi toda el área imprimible disponible, aproximándose a 35×40 cm (sin exceder ese máximo). No la achiques: maximiza la presencia del diseño en la prenda'
-
-    const positionLine = (() => {
-      switch (placementChoice) {
-        case 'left-chest':
-          return `Posicionada en el pecho izquierdo del ${sideLabel} (sobre el corazón)`
-        case 'right-chest':
-          return `Posicionada en el pecho derecho del ${sideLabel}, espejada respecto del pecho izquierdo`
-        case 'center-high':
-          return `Centrada horizontalmente en el ${sideLabel} y ubicada en la zona alta de la prenda (no centro absoluto, anclada hacia arriba)`
-        case 'upper-center':
-          return `Centrada horizontalmente en la espalda, justo debajo del cuello / nuca`
-        case 'upper-left':
-          return `En la espalda, cerca del hombro izquierdo`
-        case 'upper-right':
-          return `En la espalda, cerca del hombro derecho`
-        case 'pocket':
-          return `Si la prenda tiene bolsillo en el ${sideLabel}, aplicala sobre o junto al bolsillo respetando su forma. Si no tiene bolsillo, posicionala en el pecho izquierdo como fallback`
-        case 'hem-left':
-          return `Como detalle chico en el dobladillo (base) del ${sideLabel}, lado izquierdo de la prenda`
-        case 'hem-right':
-          return `Como detalle chico en el dobladillo (base) del ${sideLabel}, lado derecho de la prenda`
-        case 'hem-center':
-          return `Como detalle chico centrado en el dobladillo (base) de la espalda`
-        case 'chest-wide':
-          return `Centrada horizontalmente en el pecho, ocupando el ancho del pecho de hombro a hombro`
-        case 'shoulder-blades':
-          return `Centrada en la zona alta de la espalda, entre los omóplatos`
-        case 'center':
-        default:
-          return `Centrada en el ${sideLabel} de la prenda`
-      }
-    })()
-
-    const stampPlacement = `${sizeLine}. ${positionLine}. La composición debe verse estéticamente equilibrada y profesional.`
-
-    const promptText = `Aplica este diseno a la prenda siguiendo estas instrucciones:
-- ${stampPlacement}
-- Manten la forma y proporciones originales de la prenda
-- El diseno debe verse natural y bien integrado, con los colores del diseno respetados
-- Devuelve solo la imagen final de la prenda con el diseno aplicado`
-
-    // Mockup composite SOLO usa gemini-2.5-flash-image (sin -preview, ya en GA).
-    // IMPORTANTE: NO usar GEMINI_IMAGE_MODEL como fallback porque ese env esta
-    // apuntando a gemini-3-pro-image en Vercel — ese modelo es lento
-    // y devuelve 503 Service Unavailable / Deadline expired en composites
-    // multimodales pesados. Solo aceptamos override explicito via
-    // GEMINI_STAMP_MODEL para futuros tests.
-    const genAI = getGeminiClient()
-    const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_STAMP_MODEL || 'gemini-2.5-flash-image',
-      safetySettings: getGeminiSafetySettings() as any,
-    })
-
-    const parts: any[] = [promptText]
-    parts.push({
-      inlineData: { data: designBase64, mimeType: 'image/png' },
-    })
-    if (garmentBase64) {
-      parts.push({
-        inlineData: { data: garmentBase64, mimeType: 'image/png' },
-      })
+    // Compositor DETERMINÍSTICO (sharp): respeta/saca el fondo del diseño y lo
+    // ubica dentro de la zona de estampa de la prenda (imprint box), centrado y
+    // a escala fit-inside. Antes esto lo hacía Gemini (IA), que ubicaba el
+    // diseño gigante e inconsistente, cubriendo toda la prenda → "superpuesto".
+    if (!garmentBase64) {
+      return NextResponse.json({ error: 'No se pudo cargar la prenda base' }, { status: 500 })
     }
-
-    const geminiResult = await model.generateContent(parts)
-    const response = await geminiResult.response
-    const candidates = response.candidates || []
-
-    let mockupBase64: string | null = null
-    for (const cand of candidates) {
-      for (const part of cand.content?.parts || []) {
-        if (part.inlineData?.data) {
-          mockupBase64 = part.inlineData.data
-          break
-        }
-      }
-      if (mockupBase64) break
-    }
-
-    if (!mockupBase64) {
-      return NextResponse.json(
-        { error: 'No se pudo generar el mockup' },
-        { status: 500 },
+    const { compositeDesignOnGarment } = await import('@/lib/partners/studio/composite')
+    let mockupBase64: string
+    try {
+      const mockupBuffer = await compositeDesignOnGarment(
+        Buffer.from(designBase64, 'base64'),
+        Buffer.from(garmentBase64, 'base64'),
+        {
+          side: sideChoice,
+          imprint: mapping?.coordinates ?? null,
+          stampMode: stampMode || 'large',
+          placement: placement || '',
+        },
       )
+      mockupBase64 = mockupBuffer.toString('base64')
+    } catch (e) {
+      console.error('[partners/design/mockup] composite error:', e)
+      return NextResponse.json({ error: 'No se pudo generar el mockup' }, { status: 500 })
     }
 
     // Upload mockup

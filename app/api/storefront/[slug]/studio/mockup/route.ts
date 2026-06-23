@@ -128,7 +128,7 @@ export async function POST(
       const mockupBuffer = await compositeDesignOnGarment(
         Buffer.from(designBase64, 'base64'),
         Buffer.from(garmentBase64, 'base64'),
-        { side: sideChoice },
+        { side: sideChoice, imprint: mapping?.coordinates ?? null },
       )
       mockupBase64 = mockupBuffer.toString('base64')
     } catch (e) {
