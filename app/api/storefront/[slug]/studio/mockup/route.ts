@@ -7,12 +7,10 @@ import {
   getAvailableGarments,
   saveDesignAsset,
 } from '@/lib/partners/design-engine'
-import { getGeminiClient } from '@/lib/gemini'
 import { getGarmentMapping } from '@/lib/garment-mappings'
 import { uploadFile } from '@/lib/cloudflare-r2'
 import { v4 as uuidv4 } from 'uuid'
 import type { Plan } from '@/lib/partners/types'
-import { getGeminiSafetySettings } from '@/lib/partners/studio/moderation'
 import { checkUsageLimit, recordUsage } from '@/lib/partners/studio/usage-tracker'
 
 export const runtime = 'nodejs'
@@ -117,44 +115,24 @@ export async function POST(
       }
     } catch {}
 
-    const placement = sideChoice === 'back'
-      ? 'Coloca el diseno en la espalda de la prenda, centrado'
-      : 'Coloca el diseno en el frente de la prenda, centrado'
-
-    const promptText = `Aplica este diseno a la prenda siguiendo estas instrucciones:
-- ${placement}
-- Tamano mediano-grande del diseno
-- Manten la forma y proporciones originales de la prenda
-- El diseno debe verse natural y bien integrado
-- Devuelve solo la imagen final de la prenda con el diseno aplicado`
-
-    const genAI = getGeminiClient()
-    const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_STAMP_MODEL || process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image',
-      safetySettings: getGeminiSafetySettings() as any,
-    })
-
-    const parts: any[] = [promptText]
-    parts.push({ inlineData: { data: designBase64, mimeType: 'image/png' } })
-    if (garmentBase64) {
-      parts.push({ inlineData: { data: garmentBase64, mimeType: 'image/png' } })
+    // Compositor DETERMINÍSTICO (sharp): saca el fondo del diseño y lo pega
+    // centrado en la plantilla de la prenda a posición/tamaño fijos. Antes esto
+    // lo hacía Gemini (IA), que dejaba el fondo y lo ubicaba inconsistente →
+    // mockups "superpuestos". Determinístico = prolijo y consistente siempre.
+    if (!garmentBase64) {
+      return NextResponse.json({ error: 'No se pudo cargar la prenda base' }, { status: 500 })
     }
-
-    const geminiResult = await model.generateContent(parts)
-    const response = await geminiResult.response
-
-    let mockupBase64: string | null = null
-    for (const cand of response.candidates || []) {
-      for (const part of cand.content?.parts || []) {
-        if (part.inlineData?.data) {
-          mockupBase64 = part.inlineData.data
-          break
-        }
-      }
-      if (mockupBase64) break
-    }
-
-    if (!mockupBase64) {
+    const { compositeDesignOnGarment } = await import('@/lib/partners/studio/composite')
+    let mockupBase64: string
+    try {
+      const mockupBuffer = await compositeDesignOnGarment(
+        Buffer.from(designBase64, 'base64'),
+        Buffer.from(garmentBase64, 'base64'),
+        { side: sideChoice },
+      )
+      mockupBase64 = mockupBuffer.toString('base64')
+    } catch (e) {
+      console.error('[studio/mockup] composite error:', e)
       return NextResponse.json({ error: 'No se pudo generar el mockup' }, { status: 500 })
     }
 
