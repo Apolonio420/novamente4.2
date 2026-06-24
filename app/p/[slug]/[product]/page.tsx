@@ -359,6 +359,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 productId={product.id}
                 productName={product.name}
                 brandName={tenant.name}
+                tenantId={tenant.id}
+                brandSlug={tenant.slug}
                 category={product.category ?? null}
                 price={product.price ?? 0}
                 imageUrl={product.images?.[0] ?? null}

@@ -123,10 +123,19 @@ export async function compositeDesignOnGarment(
   if (opts.imprint && opts.imprint.width > 0 && opts.imprint.height > 0) {
     const baseW = opts.imprint.baseW ?? 400
     const baseH = opts.imprint.baseH ?? 500
-    boxL = (opts.imprint.x / baseW) * W
-    boxT = (opts.imprint.y / baseH) * H
-    boxW = (opts.imprint.width / baseW) * W
-    boxH = (opts.imprint.height / baseH) * H
+    // Encajamos el frame de referencia (baseW×baseH, retrato 400×500) DENTRO de
+    // la imagen de la prenda con UNA escala uniforme + centrado (letterbox).
+    // Escalar x/y por separado (x/baseW*W, y/baseH*H) deformaba y agrandaba la
+    // caja cuando la prenda no era retrato 0.8 (ej. foto cuadrada) → estampa
+    // oversized/descentrada. Con escala uniforme, para una prenda retrato 0.8 el
+    // resultado es idéntico al anterior; para una cuadrada queda bien ubicada.
+    const s = Math.min(W / baseW, H / baseH)
+    const offX = (W - baseW * s) / 2
+    const offY = (H - baseH * s) / 2
+    boxL = offX + opts.imprint.x * s
+    boxT = offY + opts.imprint.y * s
+    boxW = opts.imprint.width * s
+    boxH = opts.imprint.height * s
   } else {
     const scale = opts.scale ?? 0.46
     boxW = W * scale

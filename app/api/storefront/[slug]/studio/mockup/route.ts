@@ -97,11 +97,18 @@ export async function POST(
       designBase64 = Buffer.from(imgBuf).toString('base64')
     }
 
-    // Fetch garment base image
+    // Fetch garment base image.
+    // El header `origin` NO siempre viene (lo manda el browser solo en CORS/POST,
+    // y falta en navegación same-origin o server-to-server). Usamos `host` +
+    // `x-forwarded-proto` que sí están siempre — mismo patrón que design/mockup.
     const h = await headers()
-    const origin = h.get('origin') || (process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000')
+    const hostHeader = h.get('host')
+    const protoHeader = h.get('x-forwarded-proto') || 'https'
+    const originFromHeaders = hostHeader ? `${protoHeader}://${hostHeader}` : null
+    const origin =
+      originFromHeaders
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+      || 'http://localhost:3000'
 
     const garmentPath = mapping?.garmentPath?.replace(/^\//, '') || `garments/tshirt-${color}-oversize-front.jpeg`
     const garmentUrl = `${origin}/${garmentPath}`

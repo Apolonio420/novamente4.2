@@ -19,6 +19,10 @@ interface AddToCartButtonsProps {
   productId: string
   productName: string
   brandName: string
+  // tenant.id / tenant.slug del partner dueño del producto — CRÍTICO para que la
+  // orden quede con tenant_id y el partner cobre su margen (sin esto tenant_id=null).
+  tenantId: string
+  brandSlug: string
   category: string | null
   price: number
   imageUrl: string | null
@@ -41,6 +45,8 @@ export function AddToCartButtons({
   productId,
   productName,
   brandName,
+  tenantId,
+  brandSlug,
   category,
   price,
   imageUrl,
@@ -87,6 +93,9 @@ export function AddToCartButtons({
       price,
       quantity: 1,
       image: imageUrl || "",
+      tenantId,
+      brandSlug,
+      brandName,
     })
     fpixel.event("AddToCart", {
       content_ids: [productId],
