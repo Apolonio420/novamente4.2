@@ -161,29 +161,28 @@ export async function POST(request: NextRequest) {
       garmentBase64 = ''
     }
 
-    // Compositor DETERMINÍSTICO (sharp): respeta/saca el fondo del diseño y lo
-    // ubica dentro de la zona de estampa de la prenda (imprint box), centrado y
-    // a escala fit-inside. Antes esto lo hacía Gemini (IA), que ubicaba el
-    // diseño gigante e inconsistente, cubriendo toda la prenda → "superpuesto".
+    // Motor de mockups "perfecto" (PoC validado 2026-06-24): quita el fondo del
+    // diseño (gemini-2.5-flash-image) + cuadro rojo DINÁMICO sobre el área de
+    // impresión + estampa con gemini-3-pro-image (prompt best-of). Reemplaza el
+    // compositor sharp determinístico (pegado plano que Apo rechazaba).
     if (!garmentBase64) {
       return NextResponse.json({ error: 'No se pudo cargar la prenda base' }, { status: 500 })
     }
-    const { compositeDesignOnGarment } = await import('@/lib/partners/studio/composite')
+    const stampSize: 'R1' | 'R2' | 'R3' =
+      stampMode === 'chest-logo' ? 'R1' : stampMode === 'medium' ? 'R2' : 'R3'
+    const { generatePerfectStamp } = await import('@/lib/mockup/perfect-stamp')
     let mockupBase64: string
     try {
-      const mockupBuffer = await compositeDesignOnGarment(
-        Buffer.from(designBase64, 'base64'),
-        Buffer.from(garmentBase64, 'base64'),
-        {
-          side: sideChoice,
-          imprint: mapping?.coordinates ?? null,
-          stampMode: stampMode || 'large',
-          placement: placement || '',
-        },
-      )
+      const mockupBuffer = await generatePerfectStamp({
+        designBuffer: Buffer.from(designBase64, 'base64'),
+        baseGarmentBuffer: Buffer.from(garmentBase64, 'base64'),
+        imprint: mapping?.coordinates ?? { x: 112, y: 175, width: 180, height: 145 },
+        side: sideChoice,
+        stampSize,
+      })
       mockupBase64 = mockupBuffer.toString('base64')
     } catch (e) {
-      console.error('[partners/design/mockup] composite error:', e)
+      console.error('[partners/design/mockup] perfect-stamp error:', e)
       return NextResponse.json({ error: 'No se pudo generar el mockup' }, { status: 500 })
     }
 

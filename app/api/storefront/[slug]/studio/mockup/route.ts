@@ -122,24 +122,26 @@ export async function POST(
       }
     } catch {}
 
-    // Compositor DETERMINÍSTICO (sharp): saca el fondo del diseño y lo pega
-    // centrado en la plantilla de la prenda a posición/tamaño fijos. Antes esto
-    // lo hacía Gemini (IA), que dejaba el fondo y lo ubicaba inconsistente →
-    // mockups "superpuestos". Determinístico = prolijo y consistente siempre.
+    // Motor de mockups "perfecto" (PoC validado 2026-06-24): quita el fondo del
+    // diseño (gemini-2.5-flash-image) + cuadro rojo DINÁMICO sobre el área de
+    // impresión + estampa con gemini-3-pro-image (prompt best-of). Reemplaza el
+    // compositor sharp determinístico (pegado plano que Apo rechazaba).
     if (!garmentBase64) {
       return NextResponse.json({ error: 'No se pudo cargar la prenda base' }, { status: 500 })
     }
-    const { compositeDesignOnGarment } = await import('@/lib/partners/studio/composite')
+    const { generatePerfectStamp } = await import('@/lib/mockup/perfect-stamp')
     let mockupBase64: string
     try {
-      const mockupBuffer = await compositeDesignOnGarment(
-        Buffer.from(designBase64, 'base64'),
-        Buffer.from(garmentBase64, 'base64'),
-        { side: sideChoice, imprint: mapping?.coordinates ?? null },
-      )
+      const mockupBuffer = await generatePerfectStamp({
+        designBuffer: Buffer.from(designBase64, 'base64'),
+        baseGarmentBuffer: Buffer.from(garmentBase64, 'base64'),
+        imprint: mapping?.coordinates ?? { x: 112, y: 175, width: 180, height: 145 },
+        side: sideChoice,
+        stampSize: 'R3',
+      })
       mockupBase64 = mockupBuffer.toString('base64')
     } catch (e) {
-      console.error('[studio/mockup] composite error:', e)
+      console.error('[studio/mockup] perfect-stamp error:', e)
       return NextResponse.json({ error: 'No se pudo generar el mockup' }, { status: 500 })
     }
 
