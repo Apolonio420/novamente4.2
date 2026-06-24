@@ -25,6 +25,13 @@ const FORBIDDEN_LEAK_KEYS = [
   'cost_chica',
   'supplier_cost',
   'producto_dreamful',
+  // Economía interna del pago al proveedor (transferencia −3%) — nunca al partner
+  'costo_proveedor_lista',
+  'costo_proveedor_neto_transfer',
+  'neto_transfer',
+  'supplier_paid_amount',
+  'supplier_paid_at',
+  'transfer_discount',
 ]
 
 test.describe('Partner: cargar venta + no-filtración', () => {
