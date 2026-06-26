@@ -151,6 +151,22 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const features = getPlanFeatures(tenant.plan)
 
+  // Colores disponibles para el selector de la tienda. El catálogo del partner
+  // guarda los colores en metadata.colors ({ name, value, hex, images }); el
+  // botón de compra espera { name, code }. Mapeamos acá (antes solo se leía
+  // metadata.available_colors, que el catálogo nunca escribe → el selector
+  // nunca aparecía y la prenda se veía "en un solo color").
+  const rawColors = (product.metadata as any)?.colors
+  const legacyColors = (product.metadata as any)?.available_colors
+  const availableColors: { name: string; code: string }[] | undefined =
+    Array.isArray(rawColors) && rawColors.length > 0
+      ? rawColors
+          .filter((c: any) => c && typeof c.name === 'string' && c.name.trim())
+          .map((c: any) => ({ name: c.name, code: c.hex || c.code || '#000000' }))
+      : Array.isArray(legacyColors) && legacyColors.length > 0
+        ? legacyColors
+        : undefined
+
   return (
     <main
       className="min-h-screen bg-zinc-950 text-zinc-100"
@@ -365,7 +381,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 price={product.price ?? 0}
                 imageUrl={product.images?.[0] ?? null}
                 sizes={Array.isArray((product.metadata as any)?.sizes) ? (product.metadata as any).sizes : undefined}
-                availableColors={Array.isArray((product.metadata as any)?.available_colors) ? (product.metadata as any).available_colors : undefined}
+                availableColors={availableColors}
                 defaultColor={(product.metadata as any)?.color ?? undefined}
                 fallbackWhatsappUrl={ctaHref ?? undefined}
                 whatsappLabel={ctaUsesFallback ? "Consultar a Novamente por WhatsApp" : `Consultar a ${tenant.name} por WhatsApp`}
