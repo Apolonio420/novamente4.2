@@ -29,6 +29,9 @@ export type B2BModel = {
   measurementsChart: string
   prices: { partner: number; starter: number; pro: number; drop: number; bulk: number }
   colors: ColorVariant[]
+  // Productos fuera del catálogo de prendas (ej. lienzos) que no derivan Growth
+  // desde garment-pricing: su precio Growth se declara acá directamente.
+  growthPartner?: number
 }
 
 // Mapeo model.id (este catalogo) -> key del catalogo partner (garment-pricing.ts).
@@ -351,6 +354,48 @@ export const MODELS: B2BModel[] = [
           "/products/musculosa-bali-gris/Musculosa_Rib_Blanca_Lifestyle.png",
         ],
       },
+    ],
+  },
+  {
+    id: "lienzo-20x30",
+    name: "Lienzo 20×30",
+    subtitle: "Arte impreso sobre lienzo 100% algodón",
+    category: "Arte",
+    fabric: "Lienzo 100% algodón · impresión DTG · formato enrollado",
+    sizes: ["20×30 cm"],
+    measurementsChart: "/products/lienzo-medidas.jpg",
+    prices: { partner: 24500, starter: 24500, pro: 24500, drop: 24500, bulk: 24500 },
+    growthPartner: 22000,
+    colors: [
+      { name: "Personalizable", swatch: "#1e222c", images: ["/products/lienzo-art-1.jpg", "/products/lienzo-room.jpg"] },
+    ],
+  },
+  {
+    id: "lienzo-35x40",
+    name: "Lienzo 35×40",
+    subtitle: "Arte impreso sobre lienzo 100% algodón",
+    category: "Arte",
+    fabric: "Lienzo 100% algodón · impresión DTG · formato enrollado",
+    sizes: ["35×40 cm"],
+    measurementsChart: "/products/lienzo-medidas.jpg",
+    prices: { partner: 29500, starter: 29500, pro: 29500, drop: 29500, bulk: 29500 },
+    growthPartner: 26500,
+    colors: [
+      { name: "Personalizable", swatch: "#1e222c", images: ["/products/lienzo-art-2.jpg", "/products/lienzo-room.jpg"] },
+    ],
+  },
+  {
+    id: "lienzo-40x50",
+    name: "Lienzo 40×50",
+    subtitle: "Arte impreso sobre lienzo 100% algodón",
+    category: "Arte",
+    fabric: "Lienzo 100% algodón · impresión DTG · formato enrollado",
+    sizes: ["40×50 cm"],
+    measurementsChart: "/products/lienzo-medidas.jpg",
+    prices: { partner: 35000, starter: 35000, pro: 35000, drop: 35000, bulk: 35000 },
+    growthPartner: 31500,
+    colors: [
+      { name: "Personalizable", swatch: "#1e222c", images: ["/products/lienzo-art-3.jpg", "/products/lienzo-room.jpg"] },
     ],
   },
 ]

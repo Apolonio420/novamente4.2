@@ -126,13 +126,13 @@ export const PRODUCTS: Product[] = [
     {
         id: "lienzo",
         name: "Lienzo",
-        price: "$59.900",
+        price: "Desde $34.000",
         description:
-            "Obra impresa sobre lienzo textil premium. Personalizá con tu diseño IA en alta definición. Ideal para decorar espacios con identidad propia. Montaje liviano y resistente. Disponible en tres tamaños: 40x35cm, 30x20cm y 15x10cm.",
+            "Obra impresa en alta definición sobre lienzo 100% algodón. Personalizá con tu diseño propio o generado con IA. Ideal para decorar espacios con identidad. Disponible en 3 medidas: 20×30 cm ($34.000), 35×40 cm ($41.000) y 40×50 cm ($49.000). Formato enrollado, listo para enmarcar o tensar.",
         images: {
-            main: "/products/lienzo-main.png",
-            lifestyle: ["/products/lienzo-medidas-1.png", "/products/lienzo-medidas-2.png"],
-            measurements: "/products/lienzo-medidas-3.png",
+            main: "/products/lienzo-art-1.jpg",
+            lifestyle: ["/products/lienzo-art-2.jpg", "/products/lienzo-art-3.jpg", "/products/lienzo-room.jpg"],
+            measurements: "/products/lienzo-medidas.jpg",
         },
         category: "Arte",
         color: "Personalizable",

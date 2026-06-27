@@ -22,7 +22,7 @@ export default function B2BPricesPage() {
   // Precio Growth "desde (1u)" derivado en el server: al cliente solo le llega el
   // precio final, nunca el costo de produccion del que se deriva (regla innegociable).
   const growthByModel: Record<string, number | null> = Object.fromEntries(
-    MODELS.map((m) => [m.id, getGrowthPrice(MODEL_TO_GARMENT_KEY[m.id], "partner")])
+    MODELS.map((m) => [m.id, getGrowthPrice(MODEL_TO_GARMENT_KEY[m.id], "partner") ?? m.growthPartner ?? null])
   )
 
   return (

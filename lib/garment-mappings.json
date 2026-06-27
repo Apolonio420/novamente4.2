@@ -414,6 +414,30 @@
     "timestamp": 1761100000106
   },
   {
+    "id": "1761100000201",
+    "name": "Buzo Hoodie Oversize Negro Trasero",
+    "garmentPath": "/garments/buzo-hoodie-unisex-black-back.jpeg",
+    "margins": { "top": 28, "right": 27, "bottom": 32, "left": 28 },
+    "coordinates": { "x": 112, "y": 150, "width": 180, "height": 180 },
+    "timestamp": 1761100000201
+  },
+  {
+    "id": "1761100000202",
+    "name": "Buzo Hoodie Oversize Blanco Trasero",
+    "garmentPath": "/garments/buzo-hoodie-unisex-white-back.jpeg",
+    "margins": { "top": 28, "right": 27, "bottom": 32, "left": 28 },
+    "coordinates": { "x": 112, "y": 150, "width": 180, "height": 180 },
+    "timestamp": 1761100000202
+  },
+  {
+    "id": "1761100000203",
+    "name": "Buzo Hoodie Oversize Stone Wash Trasero",
+    "garmentPath": "/garments/buzo-hoodie-unisex-stone-wash-back.jpeg",
+    "margins": { "top": 28, "right": 27, "bottom": 32, "left": 28 },
+    "coordinates": { "x": 112, "y": 150, "width": 180, "height": 180 },
+    "timestamp": 1761100000203
+  },
+  {
     "id": "1761100000004",
     "name": "Buzo Cuello Redondo Unisex Negro Frontal",
     "garmentPath": "/garments/buzo-cuello-redondo-black-front.png",
@@ -508,5 +532,21 @@
     "margins": { "top": 26, "right": 32, "bottom": 52, "left": 32 },
     "coordinates": { "x": 130, "y": 130, "width": 140, "height": 160 },
     "timestamp": 1761100000015
+  },
+  {
+    "id": "1761100000016",
+    "name": "Remera Clásica Mujer Negra Trasero",
+    "garmentPath": "/garments/remera-clasica-mujer-black-back.png",
+    "margins": { "top": 26, "right": 29, "bottom": 34, "left": 29 },
+    "coordinates": { "x": 116, "y": 130, "width": 168, "height": 200 },
+    "timestamp": 1761100000016
+  },
+  {
+    "id": "1761100000017",
+    "name": "Remera Clásica Mujer Blanca Trasero",
+    "garmentPath": "/garments/remera-clasica-mujer-white-back.png",
+    "margins": { "top": 26, "right": 29, "bottom": 34, "left": 29 },
+    "coordinates": { "x": 116, "y": 130, "width": 168, "height": 200 },
+    "timestamp": 1761100000017
   }
 ]

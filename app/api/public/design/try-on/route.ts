@@ -7,7 +7,7 @@ import { resolveAbsoluteUrl } from "@/lib/absolute-url"
 export const runtime = "nodejs"
 
 // More restrictive limit — processes biometric data
-const limiter = rateLimit({ limit: 3, windowSeconds: 60, prefix: "tryon" })
+const limiter = rateLimit({ limit: 5, windowSeconds: 60, prefix: "tryon" })
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",

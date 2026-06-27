@@ -10,7 +10,7 @@ import { resolveAbsoluteUrl } from "@/lib/absolute-url"
 export const runtime = "nodejs"
 export const maxDuration = 60
 
-const limiter = rateLimit({ limit: 10, windowSeconds: 60, prefix: "remove-bg" })
+const limiter = rateLimit({ limit: 12, windowSeconds: 60, prefix: "remove-bg" })
 
 const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"
 

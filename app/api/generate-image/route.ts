@@ -8,7 +8,7 @@ import type { GarmentColorway, PrintArea } from "@/lib/designer/types"
 
 export const runtime = "nodejs"
 
-const limiter = rateLimit({ limit: 10, windowSeconds: 60, prefix: 'gen-img' })
+const limiter = rateLimit({ limit: 12, windowSeconds: 60, prefix: 'gen-img' })
 
 // ==== Config ====
 const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"

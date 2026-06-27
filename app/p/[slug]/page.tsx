@@ -404,6 +404,9 @@ function ProductCard({
         )}
 
         <div className="mt-auto flex items-baseline gap-2 pt-2">
+          {(product.metadata as any)?.size_prices && product.price != null && (
+            <span className="text-xs text-zinc-400">Desde</span>
+          )}
           {product.price != null && (
             <span className="text-lg font-bold text-white">
               {formatPrice(product.price, currency)}

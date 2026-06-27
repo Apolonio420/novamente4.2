@@ -272,6 +272,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   </div>
                 )}
                 <div className="flex items-baseline gap-3 flex-wrap">
+                  {(product.metadata as any)?.size_prices && (
+                    <span className="text-base text-zinc-400">Desde</span>
+                  )}
                   <span
                     className={
                       hotSaleOffer
@@ -379,6 +382,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 brandSlug={tenant.slug}
                 category={product.category ?? null}
                 price={product.price ?? 0}
+                sizePrices={(product.metadata as any)?.size_prices ?? undefined}
+                sizeLabel={(product.metadata as any)?.size_prices ? "Medida" : undefined}
                 imageUrl={product.images?.[0] ?? null}
                 sizes={Array.isArray((product.metadata as any)?.sizes) ? (product.metadata as any).sizes : undefined}
                 availableColors={availableColors}

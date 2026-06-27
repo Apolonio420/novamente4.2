@@ -820,7 +820,14 @@ export function DesignChat({
       })
       const data = await res.json()
       const mockupUrl = data.publicUrl ?? data.mockupUrl
-      if (!res.ok || !mockupUrl) throw new Error(data.error ?? "Error generando mockup")
+      if (!res.ok || !mockupUrl) {
+        const tooMany = res.status === 429
+        throw new Error(
+          tooMany
+            ? "Estás probando muy rápido 🙌 Esperá unos segundos y volvé a intentar."
+            : (data.error ?? "Error generando mockup")
+        )
+      }
       setSession((prev) => ({
         ...prev,
         side: effSide,
@@ -835,7 +842,18 @@ export function DesignChat({
       }))
       toast({ title: "Mockup listo", description: "Tu prenda en una foto lifestyle 👇" })
     } catch (e: any) {
-      toast({ title: "Error en mockup", description: e.message, variant: "destructive" })
+      // Si el mockup que quedó en pantalla no coincide con la selección actual,
+      // lo limpiamos para NO mostrar una prenda/color de un intento anterior (bug stale).
+      setSession((prev) => {
+        const stale =
+          !!prev.mockupGeneratedFor &&
+          (prev.mockupGeneratedFor.garmentType !== prev.garmentType ||
+            prev.mockupGeneratedFor.garmentColor !== prev.garmentColor ||
+            prev.mockupGeneratedFor.side !== effSide ||
+            prev.mockupGeneratedFor.designUrl !== (prev.currentDesignUrl ?? ""))
+        return stale ? { ...prev, currentMockupUrl: null, mockupGeneratedFor: null } : prev
+      })
+      toast({ title: "No se pudo generar el mockup", description: e.message, variant: "destructive" })
     } finally {
       setMockupLoading(false)
     }

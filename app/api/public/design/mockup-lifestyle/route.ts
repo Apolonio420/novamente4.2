@@ -11,7 +11,7 @@ import { getCatalogProduct, getCatalogProductColor } from "@/lib/catalog/product
 export const runtime = "nodejs"
 export const maxDuration = 60
 
-const limiter = rateLimit({ limit: 5, windowSeconds: 60, prefix: "mockup-lifestyle" })
+const limiter = rateLimit({ limit: 7, windowSeconds: 60, prefix: "mockup-lifestyle" })
 
 const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"
 

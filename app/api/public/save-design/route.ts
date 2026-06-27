@@ -3,7 +3,7 @@ import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
 
 export const runtime = "nodejs"
 
-const limiter = rateLimit({ limit: 5, windowSeconds: 600, prefix: "save-design" })
+const limiter = rateLimit({ limit: 7, windowSeconds: 600, prefix: "save-design" })
 
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 

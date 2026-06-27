@@ -4,7 +4,7 @@ import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
 
 export const runtime = "nodejs"
 
-const limiter = rateLimit({ limit: 5, windowSeconds: 60, prefix: "presign-selfie" })
+const limiter = rateLimit({ limit: 7, windowSeconds: 60, prefix: "presign-selfie" })
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",

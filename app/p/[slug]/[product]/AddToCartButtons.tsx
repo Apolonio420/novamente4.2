@@ -25,6 +25,11 @@ interface AddToCartButtonsProps {
   brandSlug: string
   category: string | null
   price: number
+  // Precio por medida/variante: si metadata.size_prices existe, el precio cambia
+  // según el talle/medida elegido (ej. lienzos 20×30/35×40/40×50 con precios distintos).
+  sizePrices?: Record<string, number>
+  // Etiqueta del selector ("Talle" para ropa, "Medida" para lienzos)
+  sizeLabel?: string
   imageUrl: string | null
   // Talles posibles — si el partner_product.metadata.sizes existe se pasan;
   // si no, default unisex S-XXL.
@@ -49,6 +54,8 @@ export function AddToCartButtons({
   brandSlug,
   category,
   price,
+  sizePrices,
+  sizeLabel = "Talle",
   imageUrl,
   sizes,
   availableColors,
@@ -59,6 +66,8 @@ export function AddToCartButtons({
 }: AddToCartButtonsProps) {
   const availableSizes = sizes && sizes.length > 0 ? sizes : DEFAULT_SIZES
   const [selectedSize, setSelectedSize] = useState<string>(availableSizes[0])
+  // Precio efectivo según la medida elegida (variant pricing); si no hay tabla, usa el base.
+  const currentPrice = (sizePrices && sizePrices[selectedSize] != null) ? sizePrices[selectedSize] : price
   const hasColors = availableColors && availableColors.length > 0
   const initialColor = defaultColor && availableColors?.some(c => c.name === defaultColor)
     ? defaultColor
@@ -90,7 +99,7 @@ export function AddToCartButtons({
       garmentType: category || "Producto",
       color: selectedColor,
       size: selectedSize,
-      price,
+      price: currentPrice,
       quantity: 1,
       image: imageUrl || "",
       tenantId,
@@ -102,7 +111,7 @@ export function AddToCartButtons({
       content_name: `${productName} — ${brandName}`,
       content_type: "product",
       content_category: category || undefined,
-      value: price,
+      value: currentPrice,
       currency: "ARS",
     })
   }
@@ -124,7 +133,7 @@ export function AddToCartButtons({
       content_name: `${productName} — ${brandName}`,
       content_type: "product",
       num_items: 1,
-      value: price,
+      value: currentPrice,
       currency: "ARS",
     })
     toast({
@@ -174,9 +183,9 @@ export function AddToCartButtons({
         </div>
       )}
 
-      {/* Talles */}
+      {/* Talles / Medidas */}
       <div className="flex flex-col gap-2">
-        <span className="text-xs uppercase tracking-wider text-zinc-500">Talle</span>
+        <span className="text-xs uppercase tracking-wider text-zinc-500">{sizeLabel}</span>
         <div className="flex flex-wrap gap-2">
           {availableSizes.map(size => (
             <button
@@ -195,6 +204,14 @@ export function AddToCartButtons({
           ))}
         </div>
       </div>
+
+      {/* Precio en vivo según la medida (variant pricing) */}
+      {sizePrices && (
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-bold text-white">${currentPrice.toLocaleString("es-AR")}</span>
+          <span className="text-sm text-zinc-400">· {selectedSize}</span>
+        </div>
+      )}
 
       {/* Botones primarios: cart + buy now */}
       <div className="flex flex-col gap-2 sm:flex-row">
