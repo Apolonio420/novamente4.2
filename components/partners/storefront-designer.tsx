@@ -41,17 +41,37 @@ const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = {
     gray: '/garments/buzo-hoodie-unisex-gris-front.jpeg',
     marron: '/garments/buzo-hoodie-unisex-marron-front.jpeg',
   },
+  'remera-clasica-mujer': {
+    black: '/garments/remera-clasica-mujer-black-front.png',
+    white: '/garments/remera-clasica-mujer-white-front.png',
+  },
+  'remera-crop-mujer': {
+    black: '/garments/remera-crop-mujer-black-front.png',
+    chocolate: '/garments/remera-crop-mujer-chocolate-front.png',
+    gray: '/garments/remera-crop-mujer-gray-front.png',
+    yellow: '/garments/remera-crop-mujer-yellow-front.png',
+  },
+  'musculosa-bali': {
+    black: '/garments/musculosa-bali-black-front.png',
+    white: '/garments/musculosa-bali-white-front.png',
+    gray: '/garments/musculosa-bali-gray-front.png',
+  },
+  'buzo-cuello-redondo': {
+    black: '/garments/buzo-cuello-redondo-black-front.png',
+    white: '/garments/buzo-cuello-redondo-white-front.png',
+    'stone-wash': '/garments/buzo-cuello-redondo-stone-wash-front.png',
+  },
   lienzo: {
     white: '/garments/lienzo-main.png',
   },
 }
 
 const COLOR_LABELS: Record<string, string> = {
-  black: 'Negro', white: 'Blanco', cream: 'Crema', gray: 'Gris', marron: 'Marron',
+  black: 'Negro', white: 'Blanco', cream: 'Crema', gray: 'Gris', marron: 'Marron', chocolate: 'Chocolate', yellow: 'Amarillo', 'stone-wash': 'Stone Wash',
 }
 
 const COLOR_MAP: Record<string, string> = {
-  black: '#1a1a1a', white: '#f5f5f5', cream: '#f5f0e1', gray: '#6b7280', marron: '#8B5E34',
+  black: '#1a1a1a', white: '#f5f5f5', cream: '#f5f0e1', gray: '#6b7280', marron: '#8B5E34', chocolate: '#5C3A21', yellow: '#F5C518', 'stone-wash': '#9a9085',
 }
 
 // ---------------------------------------------------------------------------
