@@ -84,6 +84,15 @@ export async function POST(
     const sideChoice = (side || 'front') as 'front' | 'back'
     const mapping = getGarmentMapping(garmentType, color, sideChoice)
 
+    // Si no hay base mapeada para esta combinación (garmentPath === "fallback"),
+    // avisamos claro en vez de tirar un 500 "No se pudo cargar la prenda base".
+    if (mapping?.garmentPath === 'fallback') {
+      const msg = sideChoice === 'back'
+        ? 'El dorso de esta prenda todavía no está disponible para mockup. Probá con el frente 🙌'
+        : 'Esta combinación de prenda/color todavía no está disponible para mockup.'
+      return NextResponse.json({ error: msg }, { status: 422 })
+    }
+
     // Fetch design image
     let designBase64: string
     if (designImageUrl.startsWith('data:')) {

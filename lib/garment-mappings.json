@@ -438,6 +438,78 @@
     "timestamp": 1761100000203
   },
   {
+    "id": "1761100000301",
+    "name": "Buzo Cuello Redondo Negro Trasero",
+    "garmentPath": "/garments/buzo-cuello-redondo-black-back.png",
+    "margins": { "top": 28, "right": 27, "bottom": 32, "left": 28 },
+    "coordinates": { "x": 110, "y": 120, "width": 180, "height": 215 },
+    "timestamp": 1761100000301
+  },
+  {
+    "id": "1761100000302",
+    "name": "Buzo Cuello Redondo Blanco Trasero",
+    "garmentPath": "/garments/buzo-cuello-redondo-white-back.png",
+    "margins": { "top": 28, "right": 27, "bottom": 32, "left": 28 },
+    "coordinates": { "x": 110, "y": 120, "width": 180, "height": 215 },
+    "timestamp": 1761100000302
+  },
+  {
+    "id": "1761100000303",
+    "name": "Buzo Cuello Redondo Stone Wash Trasero",
+    "garmentPath": "/garments/buzo-cuello-redondo-stone-wash-back.png",
+    "margins": { "top": 28, "right": 27, "bottom": 32, "left": 28 },
+    "coordinates": { "x": 110, "y": 120, "width": 180, "height": 215 },
+    "timestamp": 1761100000303
+  },
+  {
+    "id": "1761100000304",
+    "name": "Musculosa Bali Blanca Trasera",
+    "garmentPath": "/garments/musculosa-bali-white-back.png",
+    "margins": { "top": 22, "right": 30, "bottom": 24, "left": 30 },
+    "coordinates": { "x": 135, "y": 145, "width": 130, "height": 190 },
+    "timestamp": 1761100000304
+  },
+  {
+    "id": "1761100000305",
+    "name": "Musculosa Bali Gris Trasera",
+    "garmentPath": "/garments/musculosa-bali-gray-back.png",
+    "margins": { "top": 22, "right": 30, "bottom": 24, "left": 30 },
+    "coordinates": { "x": 135, "y": 145, "width": 130, "height": 190 },
+    "timestamp": 1761100000305
+  },
+  {
+    "id": "1761100000306",
+    "name": "Remera Crop Mujer Negra Trasera",
+    "garmentPath": "/garments/remera-crop-mujer-black-back.png",
+    "margins": { "top": 26, "right": 32, "bottom": 52, "left": 32 },
+    "coordinates": { "x": 132, "y": 128, "width": 138, "height": 155 },
+    "timestamp": 1761100000306
+  },
+  {
+    "id": "1761100000307",
+    "name": "Remera Crop Mujer Chocolate Trasera",
+    "garmentPath": "/garments/remera-crop-mujer-chocolate-back.png",
+    "margins": { "top": 26, "right": 32, "bottom": 52, "left": 32 },
+    "coordinates": { "x": 132, "y": 128, "width": 138, "height": 155 },
+    "timestamp": 1761100000307
+  },
+  {
+    "id": "1761100000308",
+    "name": "Remera Crop Mujer Gris Trasera",
+    "garmentPath": "/garments/remera-crop-mujer-gray-back.png",
+    "margins": { "top": 26, "right": 32, "bottom": 52, "left": 32 },
+    "coordinates": { "x": 132, "y": 128, "width": 138, "height": 155 },
+    "timestamp": 1761100000308
+  },
+  {
+    "id": "1761100000309",
+    "name": "Remera Crop Mujer Amarilla Trasera",
+    "garmentPath": "/garments/remera-crop-mujer-yellow-back.png",
+    "margins": { "top": 26, "right": 32, "bottom": 52, "left": 32 },
+    "coordinates": { "x": 132, "y": 128, "width": 138, "height": 155 },
+    "timestamp": 1761100000309
+  },
+  {
     "id": "1761100000004",
     "name": "Buzo Cuello Redondo Unisex Negro Frontal",
     "garmentPath": "/garments/buzo-cuello-redondo-black-front.png",
