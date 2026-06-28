@@ -386,6 +386,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 sizeLabel={(product.metadata as any)?.size_prices ? "Medida" : undefined}
                 imageUrl={product.images?.[0] ?? null}
                 sizes={Array.isArray((product.metadata as any)?.sizes) ? (product.metadata as any).sizes : undefined}
+                sizing={(product.metadata as any)?.sizing ?? undefined}
+                sizeGuideUrl={(product.metadata as any)?.size_prices ? "" : "/guia-de-talles-novamente.pdf"}
                 availableColors={availableColors}
                 defaultColor={(product.metadata as any)?.color ?? undefined}
                 fallbackWhatsappUrl={ctaHref ?? undefined}

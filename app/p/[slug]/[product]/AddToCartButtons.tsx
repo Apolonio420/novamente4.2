@@ -34,6 +34,11 @@ interface AddToCartButtonsProps {
   // Talles posibles — si el partner_product.metadata.sizes existe se pasan;
   // si no, default unisex S-XXL.
   sizes?: string[]
+  // Medidas por talle (metadata.sizing), ej: { S: "Ancho 48 cm · Largo 63 cm" }.
+  sizing?: Record<string, string>
+  // Guía de talles oficial — fallback universal: TODO producto de partner muestra
+  // medidas (tabla inline si hay sizing, si no este link). Garantiza "nunca falta".
+  sizeGuideUrl?: string
   // Colores disponibles · cuando el partner produce el mismo diseño en
   // múltiples colores (ej: Blanco/Negro/Stone Wash) · pasados como metadata.available_colors
   availableColors?: ColorOption[]
@@ -58,6 +63,8 @@ export function AddToCartButtons({
   sizeLabel = "Talle",
   imageUrl,
   sizes,
+  sizing,
+  sizeGuideUrl = "/guia-de-talles-novamente.pdf",
   availableColors,
   defaultColor,
   fallbackWhatsappUrl,
@@ -202,6 +209,25 @@ export function AddToCartButtons({
               {size}
             </button>
           ))}
+        </div>
+        {/* Medidas: tabla inline del talle elegido si hay datos + link a la guía
+            (siempre presente → todo producto muestra medidas, nunca falta). */}
+        <div className="flex flex-col gap-1 pt-1">
+          {sizing && sizing[selectedSize] && (
+            <span className="text-xs text-zinc-400">
+              📏 Talle {selectedSize}: <span className="text-zinc-200">{sizing[selectedSize]}</span>
+            </span>
+          )}
+          {sizeGuideUrl && (
+            <a
+              href={sizeGuideUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-fit text-xs text-zinc-500 underline underline-offset-2 hover:text-zinc-300"
+            >
+              Ver guía de talles
+            </a>
+          )}
         </div>
       </div>
 
