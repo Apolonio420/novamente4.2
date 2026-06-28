@@ -88,85 +88,6 @@ const ZINC_700 = '#3f3f46'
 const ZINC_500 = '#71717a'
 const ZINC_200 = '#e4e4e7'
 
-/**
- * Toma el flat-lay de una prenda y le DIBUJA las flechas de medida:
- *  - Ancho (horizontal, a la altura del pecho, sobre el ancho del cuerpo)
- *  - Largo (vertical, del hombro al ruedo)
- * Detecta la prenda por contraste con el fondo (grilla baja) para ubicar
- * hombro (primera fila ancha → saltea la capucha) y ruedo. Devuelve un JPEG
- * listo para embeber + su aspect ratio. Si no detecta, devuelve el flat-lay liso.
- */
-async function annotateGarment(absPath: string): Promise<{ buf: Buffer; ar: number }> {
-  const W = 440
-  const base = await sharp(absPath)
-    .resize({ width: W, withoutEnlargement: true })
-    .flatten({ background: '#ffffff' })
-    .toBuffer()
-  const m = await sharp(base).metadata()
-  const w = m.width ?? W
-  const h = m.height ?? W
-
-  const N = 110
-  const gh0 = Math.max(1, Math.round((N * h) / w))
-  const { data, info } = await sharp(base).resize(N, gh0, { fit: 'fill' }).removeAlpha().raw().toBuffer({ resolveWithObject: true })
-  const gw = info.width
-  const gh = info.height
-  const ch = info.channels
-  const isG = (x: number, y: number) => {
-    const i = (y * gw + x) * ch
-    return Math.min(data[i], data[i + 1], data[i + 2]) < 225
-  }
-  const rowL = new Array(gh).fill(-1)
-  const rowR = new Array(gh).fill(-1)
-  let maxW = 0
-  let minY = gh
-  let maxY = 0
-  for (let y = 0; y < gh; y++) {
-    let l = -1
-    let r = -1
-    for (let x = 0; x < gw; x++) if (isG(x, y)) { if (l < 0) l = x; r = x }
-    rowL[y] = l
-    rowR[y] = r
-    if (l >= 0) { if (y < minY) minY = y; if (y > maxY) maxY = y; if (r - l > maxW) maxW = r - l }
-  }
-  if (maxY <= minY || maxW <= 0) {
-    const out = await sharp(base).jpeg({ quality: 85 }).toBuffer()
-    return { buf: out, ar: h / w }
-  }
-  let shoulderY = minY
-  for (let y = minY; y <= maxY; y++) if (rowR[y] - rowL[y] > 0.55 * maxW) { shoulderY = y; break }
-  const hemY = maxY
-  const yA = Math.min(maxY, Math.round(shoulderY + 0.42 * (hemY - shoulderY)))
-  const sx = w / gw
-  const sy = h / gh
-  const ax1 = rowL[yA] * sx
-  const ax2 = rowR[yA] * sx
-  const ay = yA * sy + sy / 2
-  const lx = ((rowL[yA] + rowR[yA]) / 2) * sx
-  const ly1 = shoulderY * sy
-  const ly2 = hemY * sy
-  const midA = (ax1 + ax2) / 2
-  const midL = (ly1 + ly2) / 2
-  const V = VIOLET
-  const F = 'font-family="Helvetica, Arial, sans-serif" font-size="22" font-weight="bold"'
-  const svg = `<svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
-    <line x1="${ax1}" y1="${ay}" x2="${ax2}" y2="${ay}" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
-    <line x1="${ax1}" y1="${ay}" x2="${ax2}" y2="${ay}" stroke="${V}" stroke-width="5" stroke-linecap="round"/>
-    <line x1="${lx}" y1="${ly1}" x2="${lx}" y2="${ly2}" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
-    <line x1="${lx}" y1="${ly1}" x2="${lx}" y2="${ly2}" stroke="${V}" stroke-width="5" stroke-linecap="round"/>
-    <polygon points="${ax1},${ay} ${ax1 + 14},${ay - 8} ${ax1 + 14},${ay + 8}" fill="${V}" stroke="#fff" stroke-width="1.5"/>
-    <polygon points="${ax2},${ay} ${ax2 - 14},${ay - 8} ${ax2 - 14},${ay + 8}" fill="${V}" stroke="#fff" stroke-width="1.5"/>
-    <polygon points="${lx},${ly1} ${lx - 8},${ly1 + 14} ${lx + 8},${ly1 + 14}" fill="${V}" stroke="#fff" stroke-width="1.5"/>
-    <polygon points="${lx},${ly2} ${lx - 8},${ly2 - 14} ${lx + 8},${ly2 - 14}" fill="${V}" stroke="#fff" stroke-width="1.5"/>
-    <rect x="${midA - 44}" y="${ay - 40}" width="88" height="28" rx="7" fill="${V}"/>
-    <text x="${midA}" y="${ay - 20}" fill="#fff" ${F} text-anchor="middle">Ancho</text>
-    <rect x="${lx + 12}" y="${midL - 14}" width="80" height="28" rx="7" fill="${V}"/>
-    <text x="${lx + 52}" y="${midL + 6}" fill="#fff" ${F} text-anchor="middle">Largo</text>
-  </svg>`
-  const out = await sharp(base).composite([{ input: Buffer.from(svg), top: 0, left: 0 }]).jpeg({ quality: 85 }).toBuffer()
-  return { buf: out, ar: h / w }
-}
-
 function drawHeader(doc: PDFKit.PDFDocument) {
   const pageWidth = doc.page.width
   doc.rect(0, 0, pageWidth, 90).fill(VIOLET)
@@ -207,8 +128,8 @@ function drawSizeTable(
   const x = 50
   const pageWidth = doc.page.width
   const fullWidth = pageWidth - 100
-  const imgW = img ? 165 : 0
-  const gap = img ? 22 : 0
+  const imgW = img ? 140 : 0
+  const gap = img ? 24 : 0
   const tableWidth = fullWidth - imgW - gap
   const colWidth = tableWidth / 3
   const rowHeight = 24
@@ -307,8 +228,12 @@ async function main() {
       console.warn('  ⚠ imagen no encontrada:', chart.image)
       continue
     }
-    const ann = await annotateGarment(p)
-    imgMap.set(chart.title, ann)
+    const { data, info } = await sharp(p)
+      .resize({ width: 360, withoutEnlargement: true })
+      .flatten({ background: '#ffffff' })
+      .jpeg({ quality: 82 })
+      .toBuffer({ resolveWithObject: true })
+    imgMap.set(chart.title, { buf: data, ar: info.height / info.width })
   }
 
   for (const chart of SIZE_CHARTS) {
