@@ -9,12 +9,15 @@
 import PDFDocument from 'pdfkit'
 import fs from 'fs'
 import path from 'path'
+import sharp from 'sharp'
 
 type SizeChart = {
   title: string
   sizes: string[]
   width: string[]
   length: string[]
+  // Imagen de la prenda (ruta relativa a /public) — se muestra junto a la tabla.
+  image?: string
   note?: string
 }
 
@@ -24,48 +27,56 @@ const SIZE_CHARTS: SizeChart[] = [
     sizes: ['XS', 'S', 'M', 'L', 'XL', '2XL'],
     width: ['64', '66', '68', '70', '72', '74'],
     length: ['67', '69', '71', '73', '75', '77'],
+    image: 'garments/hoodie-black-front.jpeg',
   },
   {
     title: 'Buzos cuello redondo (Crewneck — unisex)',
     sizes: ['XS', 'S', 'M', 'L', 'XL', '2XL'],
     width: ['65', '67', '69', '71', '73', '75'],
     length: ['66', '68', '70', '72', '74', '76'],
+    image: 'garments/buzo-cuello-redondo-black-front.png',
   },
   {
     title: 'Remera Aura T-Shirt (oversize unisex)',
     sizes: ['2XS', 'XS', 'S', 'M', 'L', 'XL', '2XL'],
     width: ['55', '57', '59', '61', '63', '66', '69'],
     length: ['69', '71', '73', '75', '77', '79', '81'],
+    image: 'garments/tshirt-black-oversize-front.jpeg',
   },
   {
     title: 'Remera Aldea T-Shirt (clásica unisex)',
     sizes: ['S', 'M', 'L', 'XL', 'XXL'],
     width: ['48', '52', '56', '58', '60'],
     length: ['63', '68', '72', '75', '77'],
+    image: 'garments/tshirt-black-classic-front.jpeg',
   },
   {
     title: 'Remera Crop (mujer)',
     sizes: ['S', 'M', 'L', 'XL', '2XL'],
     width: ['46', '48', '50', '52', '53'],
     length: ['40', '42', '44', '46', '48'],
+    image: 'garments/remera-crop-mujer-black-front.png',
   },
   {
     title: 'Musculosa Bali (mujer)',
     sizes: ['S', 'M', 'L', 'XL', '2XL'],
     width: ['28', '30', '32', '34', '36'],
     length: ['44', '46', '48', '50', '52'],
+    image: 'garments/musculosa-bali-black-front.png',
   },
   {
     title: 'Remera clásica (mujer)',
     sizes: ['S', 'M', 'L', 'XL', '2XL'],
     width: ['47', '49', '51', '53', '55'],
     length: ['61', '63', '65', '67', '69'],
+    image: 'garments/remera-clasica-mujer-black-front.png',
   },
   {
     title: 'Remera Bambino (infantil unisex)',
     sizes: ['4', '6', '8', '10', '12', '14', '16'],
     width: ['38', '40', '42', '44', '46', '48', '50'],
     length: ['53', '55', '57', '59', '61', '63', '66'],
+    image: 'products/remera-infantil-negro/front.jpg',
     note: 'Medidas aproximadas, pueden variar hasta un 5%.',
   },
 ]
@@ -108,20 +119,28 @@ function drawFooter(doc: PDFKit.PDFDocument) {
   doc.fillColor(ZINC_900)
 }
 
-function drawSizeTable(doc: PDFKit.PDFDocument, chart: SizeChart, y: number): number {
+function drawSizeTable(
+  doc: PDFKit.PDFDocument,
+  chart: SizeChart,
+  y: number,
+  img?: { buf: Buffer; ar: number },
+): number {
   const x = 50
   const pageWidth = doc.page.width
-  const tableWidth = pageWidth - 100
-  const colCount = 3
-  const colWidth = tableWidth / colCount
+  const fullWidth = pageWidth - 100
+  const imgW = img ? 140 : 0
+  const gap = img ? 24 : 0
+  const tableWidth = fullWidth - imgW - gap
+  const colWidth = tableWidth / 3
   const rowHeight = 24
+  const startY = y
 
   // Title
   doc
     .fillColor(VIOLET)
     .font('Helvetica-Bold')
     .fontSize(14)
-    .text(chart.title, x, y)
+    .text(chart.title, x, y, { width: fullWidth })
   y += 22
 
   // Header row
@@ -149,15 +168,27 @@ function drawSizeTable(doc: PDFKit.PDFDocument, chart: SizeChart, y: number): nu
     y += rowHeight
   })
 
-  // Border
+  // Border tabla
   const tableHeight = rowHeight * (chart.sizes.length + 1)
   doc
     .lineWidth(0.5)
     .strokeColor(ZINC_200)
     .rect(x, y - tableHeight, tableWidth, tableHeight)
     .stroke()
+  const tableBottom = y
 
-  return y + 24
+  // Imagen de la prenda a la derecha, alineada al tope de la tabla
+  let imgBottom = startY
+  if (img) {
+    const imgTop = startY + 22
+    const imgX = x + tableWidth + gap
+    const imgH = imgW * img.ar
+    doc.image(img.buf, imgX, imgTop, { width: imgW })
+    doc.lineWidth(0.5).strokeColor(ZINC_200).rect(imgX, imgTop, imgW, imgH).stroke()
+    imgBottom = imgTop + imgH
+  }
+
+  return Math.max(tableBottom, imgBottom) + 24
 }
 
 async function main() {
@@ -187,14 +218,33 @@ async function main() {
     )
   y += 50
 
+  // Precargar imágenes de prenda (thumb 360px, fondo blanco para PNGs transparentes).
+  const PUBLIC = path.join(process.cwd(), 'public')
+  const imgMap = new Map<string, { buf: Buffer; ar: number }>()
   for (const chart of SIZE_CHARTS) {
-    if (y > doc.page.height - 220) {
+    if (!chart.image) continue
+    const p = path.join(PUBLIC, chart.image)
+    if (!fs.existsSync(p)) {
+      console.warn('  ⚠ imagen no encontrada:', chart.image)
+      continue
+    }
+    const { data, info } = await sharp(p)
+      .resize({ width: 360, withoutEnlargement: true })
+      .flatten({ background: '#ffffff' })
+      .jpeg({ quality: 82 })
+      .toBuffer({ resolveWithObject: true })
+    imgMap.set(chart.title, { buf: data, ar: info.height / info.width })
+  }
+
+  for (const chart of SIZE_CHARTS) {
+    const img = imgMap.get(chart.title)
+    if (y > doc.page.height - 260) {
       drawFooter(doc)
       doc.addPage()
       drawHeader(doc)
       y = 120
     }
-    y = drawSizeTable(doc, chart, y)
+    y = drawSizeTable(doc, chart, y, img)
   }
 
   drawFooter(doc)
