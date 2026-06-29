@@ -81,6 +81,15 @@ export async function POST(request: NextRequest) {
     // Get garment mapping for coordinates
     const mapping = getGarmentMapping(garmentType, color, sideChoice)
 
+    // Si no hay base mapeada para esta combinación (garmentPath === "fallback"),
+    // avisamos claro en vez de tirar un 500 (mismo guard que el studio).
+    if (mapping?.garmentPath === 'fallback') {
+      const msg = sideChoice === 'back'
+        ? 'El dorso de esta prenda todavía no está disponible para mockup. Probá con el frente 🙌'
+        : 'Esta combinación de prenda/color todavía no está disponible para mockup.'
+      return NextResponse.json({ error: msg }, { status: 422 })
+    }
+
     // Resolver origin para URLs relativas que no apunten a R2 directamente
     const h = await headers()
     const hostHeader = h.get('host')

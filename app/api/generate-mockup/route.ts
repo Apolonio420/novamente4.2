@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     // 1) Obtener el mapeo de la prenda
     const mapping = getGarmentMapping(garmentType, garmentColor, side)
-    if (!mapping) {
+    if (!mapping || mapping.garmentPath === 'fallback') {
       return NextResponse.json({
         error: `No se encontró mapeo para ${garmentType}-${garmentColor}-${side}`
       }, { status: 400 })

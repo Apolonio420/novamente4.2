@@ -42,7 +42,7 @@ export async function generateMockup({
 
     // 1. Mapping
     const mapping = getGarmentMapping(garmentType, garmentColor, side)
-    if (!mapping) {
+    if (!mapping || mapping.garmentPath === 'fallback') {
         throw new Error(`No mapping for ${garmentType}-${garmentColor}-${side}`)
     }
 
