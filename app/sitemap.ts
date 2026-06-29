@@ -274,7 +274,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     for (const tenant of tenants) {
       // Skip Starter tenants — they have noindex, adding to sitemap is contradictory
-      if (!tenant.seo_indexable) continue
+      // Skip tiendas DEMO/placeholder (metadata.is_demo) — no van al índice de Google
+      if (!tenant.seo_indexable || tenant.metadata?.is_demo === true) continue
 
       // Tenant storefront page (Growth+)
       dynamicPages.push({

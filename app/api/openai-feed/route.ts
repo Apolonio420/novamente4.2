@@ -136,12 +136,14 @@ export async function GET() {
 
     const { data: tenants } = await supabase
       .from('tenants')
-      .select('id, slug, name, seo_indexable, storefront_published')
+      .select('id, slug, name, seo_indexable, storefront_published, metadata')
       .eq('storefront_published', true)
       .eq('seo_indexable', true)
 
     if (tenants && tenants.length > 0) {
       for (const tenant of tenants) {
+        // Saltear tiendas DEMO/placeholder (metadata.is_demo) — no van al feed de AI
+        if ((tenant.metadata as Record<string, unknown> | null)?.is_demo === true) continue
         const { data: products } = await supabase
           .from('tenant_products')
           .select('slug, name, description, price, images, sku')

@@ -37,6 +37,7 @@ const BLOCKED_SLUGS = new Set([
   "studio-bella",
   "textilpro-mayorista",
   "cristian-dior",
+  "tu-marca", // tienda DEMO (placeholder /p/tu-marca) — no es marca real
 ])
 
 // Tambien matcheamos por nombre (lowercase) para slugs alternativos del mismo partner
@@ -55,6 +56,9 @@ const BLOCKED_INDUSTRIES = new Set([
 ])
 
 function isPartnerVisibleInDirectory(t: Tenant): boolean {
+  // Tiendas DEMO/placeholder (metadata.is_demo) NO van al directorio público — existen solo
+  // para mostrar un link de ejemplo (ej. /p/tu-marca), no son marcas reales. (future-proof)
+  if (t.metadata?.is_demo === true) return false
   if (BLOCKED_SLUGS.has(t.slug)) return false
   if (t.industry && BLOCKED_INDUSTRIES.has(t.industry)) return false
   const lowerName = t.name.toLowerCase().trim()
