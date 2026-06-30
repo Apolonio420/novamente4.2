@@ -30,6 +30,8 @@ export type DesignSession = {
   garmentColor: string
   side: "front" | "back"
   printArea: "R1" | "R2" | "R3"
+  /** Doble estampado: el cliente estampa frente Y espalda en la misma prenda. */
+  dobleEstampa: boolean
 }
 
 export type Mode = "chat" | "canvas" | "lifestyle"
@@ -48,6 +50,7 @@ export default function CrearPage() {
     garmentColor: "black",
     side: "front",
     printArea: "R2",
+    dobleEstampa: false,
   })
   const [tryOnOpen, setTryOnOpen] = useState(false)
   const cartCount = useCart((s) => s.items.length)

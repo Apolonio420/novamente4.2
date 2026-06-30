@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
         back_mockup_url: toPublicR2Url(item.backMockup || item.back_mockup_url || null),
         front_design_url: toPublicR2Url(item.frontDesign || item.front_design_url || null),
         back_design_url: toPublicR2Url(item.backDesign || item.back_design_url || null),
+        doble_estampa: item.doble_estampa || (item.backDesign && item.frontDesign ? 'Si' : 'No'),
         front_stamp_size: item.frontStampSize || null,
         back_stamp_size: item.backStampSize || null,
         front_stamp_position: item.frontStampPosition || null,

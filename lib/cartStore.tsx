@@ -26,6 +26,8 @@ export interface CartItem {
   backStampSize?: 'R1' | 'R2' | 'R3'
   frontStampPosition?: 'center' | 'left'
   backStampPosition?: 'center' | 'left'
+  /** Doble estampado (frente + espalda en la misma prenda) — va a fulfillment. */
+  doble_estampa?: 'Si' | 'No'
   customDesign?: {
     image: string
     position: { x: number; y: number }

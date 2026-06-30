@@ -21,6 +21,8 @@ import {
   ChevronDown,
 } from "lucide-react"
 import { GarmentCatalog } from "./GarmentCatalog"
+import { DoubleSidePreview } from "./DoubleSidePreview"
+import { hasBackTemplate } from "./garment-templates"
 
 // ============================================================
 // Types
@@ -55,6 +57,7 @@ function colorLabel(productKey: string, colorKey: string) {
   return getCatalogProductColor(productKey, colorKey)?.name ?? colorKey
 }
 function getPrice(key: string) {
+  // El precio del producto ya incluye las dos estampas (doble estampado sin recargo).
   return getCatalogProduct(key)?.retailARS ?? 35000
 }
 
@@ -863,6 +866,11 @@ export function DesignChat({
   const handleAddToCart = useCallback(() => {
     if (!session.currentMockupUrl) return
     const id = `custom-${session.garmentType}-${session.garmentColor}-${Date.now()}`
+    const doble = session.dobleEstampa && hasBackTemplate(session.garmentType)
+    if (doble && (!session.frontDesignUrl || !session.backDesignUrl)) {
+      toast({ title: "Falta un lado", description: "Diseñá el frente y la espalda antes de agregar al carrito.", variant: "destructive" })
+      return
+    }
     const price = getPrice(session.garmentType)
     const name = `${garmentLabel(session.garmentType)} Custom — Novamente`
     addItem({
@@ -876,8 +884,9 @@ export function DesignChat({
       quantity: 1,
       image: session.currentMockupUrl,
       mockupUrl: session.currentMockupUrl,
-      frontDesign: session.side === "front" ? session.currentDesignUrl ?? undefined : undefined,
-      backDesign: session.side === "back" ? session.currentDesignUrl ?? undefined : undefined,
+      frontDesign: doble ? session.frontDesignUrl ?? undefined : session.side === "front" ? session.currentDesignUrl ?? undefined : undefined,
+      backDesign: doble ? session.backDesignUrl ?? undefined : session.side === "back" ? session.currentDesignUrl ?? undefined : undefined,
+      doble_estampa: doble ? "Si" : "No",
     })
     // Pixel events para que Meta+Google puedan optimizar el funnel
     fpixel.event("AddToCart", {
@@ -897,6 +906,11 @@ export function DesignChat({
   const handleBuyNow = useCallback(() => {
     if (!session.currentMockupUrl) return
     const id = `custom-${session.garmentType}-${session.garmentColor}-${Date.now()}`
+    const doble = session.dobleEstampa && hasBackTemplate(session.garmentType)
+    if (doble && (!session.frontDesignUrl || !session.backDesignUrl)) {
+      toast({ title: "Falta un lado", description: "Diseñá el frente y la espalda antes de comprar.", variant: "destructive" })
+      return
+    }
     const price = getPrice(session.garmentType)
     const name = `${garmentLabel(session.garmentType)} Custom — Novamente`
     addItem({
@@ -910,8 +924,9 @@ export function DesignChat({
       quantity: 1,
       image: session.currentMockupUrl,
       mockupUrl: session.currentMockupUrl,
-      frontDesign: session.side === "front" ? session.currentDesignUrl ?? undefined : undefined,
-      backDesign: session.side === "back" ? session.currentDesignUrl ?? undefined : undefined,
+      frontDesign: doble ? session.frontDesignUrl ?? undefined : session.side === "front" ? session.currentDesignUrl ?? undefined : undefined,
+      backDesign: doble ? session.backDesignUrl ?? undefined : session.side === "back" ? session.currentDesignUrl ?? undefined : undefined,
+      doble_estampa: doble ? "Si" : "No",
     })
     // Pixel: ambos eventos juntos para señal completa de intent
     fpixel.event("AddToCart", {
@@ -931,7 +946,7 @@ export function DesignChat({
       currency: "ARS",
     })
     router.push("/checkout")
-  }, [session, selectedSize, addItem, router])
+  }, [session, selectedSize, addItem, router, toast])
 
   // Wire buyNowRef → handleBuyNow para que intent detector pueda invocarlo
   useEffect(() => {
@@ -1817,6 +1832,65 @@ export function DesignChat({
               })
             }
           />
+
+          {/* Doble estampado — frente + espalda */}
+          {hasBackTemplate(session.garmentType) && (
+            <button
+              type="button"
+              onClick={() => setSession((prev) => ({ ...prev, dobleEstampa: !prev.dobleEstampa }))}
+              aria-pressed={session.dobleEstampa}
+              className={`mt-4 flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
+                session.dobleEstampa
+                  ? "border-violet-500/60 bg-violet-500/10"
+                  : "border-white/10 bg-zinc-900/50 hover:border-white/25"
+              }`}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-white">
+                  Doble estampado
+                  <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
+                    Sin costo extra
+                  </span>
+                </span>
+                <span className="mt-0.5 block text-[11px] text-zinc-400">
+                  Estampá el frente y la espalda de la misma prenda
+                </span>
+              </span>
+              <span
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                  session.dobleEstampa ? "bg-violet-600" : "bg-zinc-700"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                    session.dobleEstampa ? "left-[22px]" : "left-0.5"
+                  }`}
+                />
+              </span>
+            </button>
+          )}
+
+          {/* Vista de ambos lados cuando hay doble estampado */}
+          {session.dobleEstampa && hasBackTemplate(session.garmentType) && (
+            <DoubleSidePreview
+              className="mt-3"
+              garmentType={session.garmentType}
+              garmentColor={session.garmentColor}
+              frontDesign={session.frontDesignUrl}
+              backDesign={session.backDesignUrl}
+              activeSide={session.side}
+              onSelectSide={(side) =>
+                setSession((prev) => ({
+                  ...prev,
+                  side,
+                  currentDesignUrl:
+                    side === "front"
+                      ? prev.frontDesignUrl ?? prev.currentDesignUrl
+                      : prev.backDesignUrl ?? prev.currentDesignUrl,
+                }))
+              }
+            />
+          )}
 
           {/* Print area selector — tamaño de la estampa sobre la prenda */}
           <div className="mt-4 space-y-1.5">
