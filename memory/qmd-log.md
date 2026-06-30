@@ -8,7 +8,7 @@
 - Scripts nancupil (create-nancupil.mjs, update-nancupil-sizing.mjs, 06-27/28) = provisión one-off de la tienda Ñancupil, NO relacionado → dejados en STAND-BY (sin commitear).
 **Decisions**: 2 commits separados — uno mío (contador), uno con la feature analytics ajena (factual). Staging selectivo del join (mis hunks vs los de ellos) con patch filtrado. nancupil en stand-by por las dudas (confirmar si es de APO o de Juan).
 **Verify**: gads.test 9/9, next build PASS, tsc PASS (9 preexistentes images/history).
-**Blockers/Pending**: scripts nancupil sin commitear (definir owner). DOBLE PULL antes del push.
+**Blockers/Pending**: ninguno. Scripts nancupil → COMMITEADOS (revisados: sin secretos, password random en runtime, keys via env; precedente: ya hay create-partner/create-sm-partner versionados). Working tree limpio.
 
 ### [2026-06-30d] Barrido COMPLETO de la promo en todas las superficies + contador + fix links
 **Goal**: Juan marcó que faltaban superficies (join wizard, lanza-tu-marca) sin la promo, los botones de plan iban a /lanza-tu-marca en vez de /partners/join, y pidió un contador "X/100 lugares" con barrita que se llena en el step de plan del join. Actualizar TODAS las superficies por igual.
