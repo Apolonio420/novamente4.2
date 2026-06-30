@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation"
 import * as fpixel from "@/lib/fpixel"
 import { trackViewItem } from "@/lib/analytics"
 import type { Product } from "@/src/data/partners"
+import { TwoSidePreview } from "./TwoSidePreview"
 
 interface PartnerInfo {
   id: string
@@ -244,6 +245,20 @@ export function ProductDetail({ product, partner, brandSlug, tenantId, brandLogo
               </div>
             ))}
           </div>
+
+          {/* Doble estampado — frente + espalda interpuestos en un recuadro */}
+          {selectedColorData?.images?.front && selectedColorData?.images?.back && selectedColorData.images.front !== selectedColorData.images.back && (
+            <TwoSidePreview
+              frontSrc={selectedColorData.images.front}
+              backSrc={selectedColorData.images.back}
+              productName={product.name}
+              colorName={selectedColorData.name}
+              onSelectSide={(side) => {
+                const idx = galleryImages.indexOf(side === "front" ? selectedColorData.images.front : selectedColorData.images.back)
+                if (idx >= 0) setCurrentImageIndex(idx)
+              }}
+            />
+          )}
         </div>
 
         {/* Product Info */}

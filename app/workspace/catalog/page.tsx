@@ -63,6 +63,12 @@ interface Product {
 
 type FormMode = 'closed' | 'create' | 'edit'
 
+/** Algún color tiene imagen de espalda explícita y distinta a la de frente. */
+function hasDoubleSide(product: Product): boolean {
+  const colors = (product.metadata?.colors as any[] | undefined) || []
+  return colors.some((c) => c?.images?.back && c.images.back !== c.images?.front)
+}
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -803,14 +809,19 @@ export default function CatalogPage() {
                 <h3 className="text-sm font-semibold text-zinc-100 truncate">
                   {product.name}
                 </h3>
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span
                     className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[product.status] || STATUS_BADGE.draft}`}
                   >
                     {STATUS_LABELS[product.status] || product.status}
                   </span>
+                  {hasDoubleSide(product) && (
+                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full font-medium bg-violet-500/15 text-violet-300">
+                      Doble estampado
+                    </span>
+                  )}
                   {product.category && (
-                    <span className="text-xs text-zinc-500 truncate">
+                    <span className="text-xs text-zinc-500 truncate ml-auto">
                       {product.category}
                     </span>
                   )}
@@ -1180,7 +1191,14 @@ export default function CatalogPage() {
                 {/* Colors */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <Label className="text-zinc-300 text-sm font-medium">Colores</Label>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-zinc-300 text-sm font-medium">Colores</Label>
+                      {formColors.some((c) => c.frontImage && c.backImage && c.frontImage !== c.backImage) && (
+                        <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-violet-500/15 text-violet-300">
+                          Doble estampado
+                        </span>
+                      )}
+                    </div>
                     <button
                       type="button"
                       onClick={() => setFormColors((prev) => [...prev, { name: '', hex: '#000000', frontImage: '', backImage: '' }])}
@@ -1189,6 +1207,10 @@ export default function CatalogPage() {
                       + Agregar color
                     </button>
                   </div>
+                  <p className="text-[11px] text-zinc-500 -mt-1">
+                    Cargá &quot;Imagen frente&quot; y &quot;Imagen dorso&quot; en un color para que el producto
+                    quede marcado como doble estampado y se muestre así en la tienda.
+                  </p>
                   {formColors.length === 0 && (
                     <p className="text-xs text-zinc-600">Sin colores definidos. Se usara la imagen principal como default.</p>
                   )}
