@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Check, Sparkles, MessageCircle, Zap, TrendingUp } from "lucide-react"
 import { firstYearPromoPct } from "@/lib/partners/plans"
 import { formatUsdPrice } from "@/lib/partners/plan-display"
+import { PromoSpotsCounter } from "@/components/partners/PromoSpotsCounter"
 
 export function PlanCards() {
   const [annual, setAnnual] = useState(false)
@@ -47,6 +48,8 @@ export function PlanCards() {
         </div>
       </div>
 
+      <PromoSpotsCounter className="mb-8" />
+
       {/* Plan cards */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-16 md:mb-24">
         {/* Starter */}
@@ -78,7 +81,7 @@ export function PlanCards() {
               </li>
             ))}
           </ul>
-          <Link href="/lanza-tu-marca">
+          <Link href="/partners/join">
             <Button variant="outline" className="w-full" size="lg">
               Empezar gratis
             </Button>
@@ -138,7 +141,7 @@ export function PlanCards() {
               </li>
             ))}
           </ul>
-          <Link href="/lanza-tu-marca">
+          <Link href="/partners/join">
             <Button className="w-full" size="lg">
               Elegir Growth
             </Button>
@@ -191,7 +194,7 @@ export function PlanCards() {
               </li>
             ))}
           </ul>
-          <Link href="/lanza-tu-marca">
+          <Link href="/partners/join">
             <Button variant="outline" className="w-full border-purple-600/60 hover:bg-purple-600/10" size="lg">
               Elegir Pro
             </Button>

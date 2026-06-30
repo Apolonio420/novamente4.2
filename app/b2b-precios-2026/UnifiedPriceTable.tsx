@@ -101,7 +101,8 @@ export default function UnifiedPriceTable({
 
       {showGrowth && (
         <p className="text-xs text-muted-foreground text-center mt-3">
-          Plan Studio Growth: USD$50/mes (−15% en plan anual). El beneficio es mayor en los tiers de
+          Plan Studio Growth: USD$50/mes — con 50% OFF el primer año para los primeros 100 partners
+          (USD$25/mes), después USD$50/mes (−15% en plan anual). El beneficio es mayor en los tiers de
           menor volumen; en Drop y Bulk la diferencia se reduce porque el precio Starter ya tiene
           descuentos por volumen.
         </p>

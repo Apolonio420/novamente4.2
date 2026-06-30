@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
+import { PromoSpotsCounter } from "@/components/partners/PromoSpotsCounter"
 import {
   Sparkles, Users, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Palette, Package,
@@ -545,6 +546,8 @@ export default function LanzaTuMarca() {
               </p>
             </div>
 
+            <PromoSpotsCounter className="mb-8" />
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
               {plans.map((plan) => (
                 <Card
@@ -556,7 +559,15 @@ export default function LanzaTuMarca() {
                       <Badge className="bg-emerald-600 text-white mb-3 text-xs">Mas popular</Badge>
                     )}
                     <h3 className="text-xl font-bold text-white mb-1">{plan.name}</h3>
-                    <div className="text-2xl font-bold text-emerald-400 mb-1">{plan.price}</div>
+                    {plan.name === "Growth" ? (
+                      <>
+                        <span className="text-sm text-zinc-500 line-through">{plan.price}</span>
+                        <div className="text-2xl font-bold text-emerald-400">USD$25/mes</div>
+                        <p className="text-[11px] font-semibold text-amber-500 mb-1">🔥 50% OFF primer año · primeros 100 partners</p>
+                      </>
+                    ) : (
+                      <div className="text-2xl font-bold text-emerald-400 mb-1">{plan.price}</div>
+                    )}
                     <p className="text-sm text-zinc-500 mb-4">{plan.priceDetail}</p>
                     <ul className="space-y-2 mb-6">
                       {plan.features.map((f) => (

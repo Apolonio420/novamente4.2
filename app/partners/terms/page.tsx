@@ -100,7 +100,8 @@ export default function TermsPage() {
                 <span className="text-zinc-200 font-medium">Growth</span> — USD$50
                 /mes. Productos ilimitados, leads ilimitados, SEO completo,
                 Design Engine, branding avanzado, analytics basicos y prendas
-                al costo Novamente (margen alto para el partner).
+                al costo Novamente (margen alto para el partner).{' '}
+                <span className="text-amber-400">Promo de lanzamiento: 50% OFF el primer año (USD$25/mes) para los primeros 100 partners; luego, precio full.</span>
               </li>
               <li>
                 <span className="text-zinc-200 font-medium">Pro</span> — USD$100

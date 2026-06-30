@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
+import { PromoSpotsCounter } from '@/components/partners/PromoSpotsCounter'
 import {
   ArrowLeft, ArrowRight, Check, Upload, Globe, Palette,
   Store, Layers, ShoppingBag, Megaphone, Eye, Sparkles,
@@ -1414,6 +1415,8 @@ function StepPlan({
         Selecciona el plan que mejor se adapte a tu marca. Podes cambiar en cualquier momento.
       </p>
 
+      <PromoSpotsCounter />
+
       {/* Billing cycle toggle */}
       {showBillingToggle && (
         <div className="flex items-center justify-center gap-3 mb-2">
@@ -1449,8 +1452,22 @@ function StepPlan({
         {PLAN_CARDS.map((plan) => {
           const selected = data.selectedPlan === plan.id
           const Icon = plan.icon
-          const annualPrice = plan.id === 'growth' ? '$21' : plan.id === 'pro' ? '$85' : null
-          const displayPrice = isAnnual && annualPrice ? annualPrice : plan.price
+          const isGrowthPromo = plan.id === 'growth'
+          const monthlyDisplay = isGrowthPromo ? '$25 USD' : plan.price
+          const annualDisplay = plan.id === 'growth' ? '$21 USD' : plan.id === 'pro' ? '$85 USD' : null
+          const displayPrice = isAnnual && annualDisplay ? annualDisplay : monthlyDisplay
+          const strikePrice = isGrowthPromo
+            ? '$50 USD'
+            : isAnnual && plan.id === 'pro'
+              ? '$100 USD'
+              : null
+          const promoSub = isGrowthPromo
+            ? isAnnual
+              ? 'US$255 el primer año · luego US$510/año'
+              : 'primer año · luego $50 USD/mes'
+            : isAnnual && plan.id === 'pro'
+              ? 'Ahorro anual -15%'
+              : null
           return (
             <button
               key={plan.id}
@@ -1476,12 +1493,18 @@ function StepPlan({
                 {plan.name}
               </h4>
               <div className="mt-1 mb-4">
+                {strikePrice && (
+                  <span className="text-sm text-zinc-500 line-through mr-2">{strikePrice}</span>
+                )}
                 <span className={`text-2xl font-bold ${selected ? 'text-purple-300' : 'text-zinc-100'}`}>
                   {displayPrice}
                 </span>
                 <span className="text-sm text-zinc-500 ml-1">{plan.priceDetail}</span>
-                {isAnnual && annualPrice && (
-                  <p className="text-xs text-emerald-400 mt-1">Ahorro anual incluido</p>
+                {isGrowthPromo && (
+                  <p className="text-[11px] font-semibold text-amber-500 mt-1">🔥 50% OFF · primeros 100 partners</p>
+                )}
+                {promoSub && (
+                  <p className="text-xs text-zinc-400 mt-0.5">{promoSub}</p>
                 )}
               </div>
               <ul className="space-y-2 flex-1">
@@ -1778,7 +1801,11 @@ function StepPreview({ data }: { data: WizardData }) {
           </span>
         </div>
         <span className="text-xs font-medium" style={{ color: data.colorPrimary }}>
-          {planCard ? `${planCard.price} ${planCard.priceDetail}` : 'Gratis'}
+          {!planCard
+            ? 'Gratis'
+            : planCard.id === 'growth'
+              ? `${data.billingCycle === 'annual' ? '$21' : '$25'} USD ${planCard.priceDetail} · 50% OFF`
+              : `${planCard.price} ${planCard.priceDetail}`}
         </span>
       </div>
     </div>

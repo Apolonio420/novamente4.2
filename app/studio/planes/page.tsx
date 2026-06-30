@@ -120,7 +120,7 @@ const faqSchema = {
       name: "¿Los planes anuales tienen descuento?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Sí, los planes anuales tienen 15% de descuento. Growth anual sale US$42.5/mes (US$510/año) y Pro anual sale US$85/mes (US$1.020/año). El pago se factura en ARS al tipo de cambio del día.",
+        text: "Sí. Además, por lanzamiento Growth tiene 50% OFF el primer año para los primeros 100 partners: US$25/mes (mensual) o US$255 el primer año (anual). Pasado el primer año, el plan anual mantiene 15% de descuento: Growth US$42.5/mes (US$510/año) y Pro US$85/mes (US$1.020/año). El pago se factura en ARS al tipo de cambio del día.",
       },
     },
     {
@@ -268,7 +268,7 @@ export default function PlanesPage() {
             Empezá con el plan Starter sin tarjeta. Cuando estés vendiendo, upgrade a Growth y multiplicá tu margen.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/lanza-tu-marca">
+            <Link href="/partners/join">
               <Button size="lg">Empezar gratis</Button>
             </Link>
             <Link href="/studio">

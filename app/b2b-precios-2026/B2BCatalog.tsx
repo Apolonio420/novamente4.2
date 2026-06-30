@@ -65,7 +65,7 @@ export default function B2BCatalog({
                   <div>
                     <p className="text-xs uppercase tracking-widest text-primary font-semibold">Plan Studio Growth</p>
                     <p className="text-lg font-bold">
-                      Hasta {avgSavingsPct}% menos por prenda — USD$50/mes
+                      Hasta {avgSavingsPct}% menos por prenda — USD$50/mes (50% OFF 1er año, primeros 100)
                     </p>
                   </div>
                 </div>

@@ -1,5 +1,18 @@
 # QMD Log - novamente4.2
 
+### [2026-06-30d] Barrido COMPLETO de la promo en todas las superficies + contador + fix links
+**Goal**: Juan marcó que faltaban superficies (join wizard, lanza-tu-marca) sin la promo, los botones de plan iban a /lanza-tu-marca en vez de /partners/join, y pidió un contador "X/100 lugares" con barrita que se llena en el step de plan del join. Actualizar TODAS las superficies por igual.
+**Done**:
+- `components/partners/PromoSpotsCounter.tsx` (NUEVO, client): barrita "X/100 lugares · 50% OFF primer año" base 66, sube de a 1 (~9s, cap 93) — número de MARKETING, NO conteo real de DB. Reutilizable.
+- Contador agregado en: join StepPlan, PlanCards (/studio/planes), PartnersPricing (/partners), lanza-tu-marca.
+- `app/partners/join/page.tsx` (StepPlan): mensual Growth ahora $25 (tachado $50), anual $21 (tachado $50), nota "50% OFF · primeros 100", sub. Antes mensual mostraba $50 (bug). Fix StepPreview summary (1804) y el pay button ya estaba ok ($25/$21).
+- `app/lanza-tu-marca/page.tsx`: Growth ~~USD$50~~ → USD$25/mes + "50% OFF primer año · primeros 100" + contador.
+- **Fix links de botones de plan → /partners/join** (antes /lanza-tu-marca): PlanCards ×3 (Starter/Growth/Pro) + studio/planes CTA "Empezar gratis". (join NO lee ?plan, va al primer step.)
+- Copy consistente: home (756), faq (128), terms (Growth + amber note), studio/planes FAQ anual (123), b2b-precios UnifiedPriceTable (104) + B2BCatalog (68).
+**Decisions**: contador = número de marketing (66), no real (Juan: "pondría que es el número 66, que vaya variando"). Labels compactas de b2b (table header / card) se dejan como precio de lista USD$50/mes (contexto de prenda). Metadata SEO no se tocó.
+**Verify**: tsc PASS (solo 9 preexistentes images/history). next build PASS. Screenshots /studio/planes + /lanza-tu-marca: contador 66/100 + barra + promo OK.
+**Blockers/Pending**: Push + auto-deploy (DOBLE PULL antes). Falta verificar visualmente el join StepPlan (requiere navegar wizard; build OK, misma lógica).
+
 ### [2026-06-30c] Precio anchor (tachado) en catálogo Novamente + deploy planes
 **Goal**: Mostrar un "precio antes" tachado, chiquito arriba del real, para dar sensación de descuento. SOLO display, sin tocar DB.
 **Done**:
