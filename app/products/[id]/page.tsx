@@ -12,6 +12,7 @@ import {
   WashingMachine, ArrowLeft
 } from "lucide-react"
 import { PRODUCTS } from "@/lib/products"
+import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 
 // Size data — keyed by chart key. T-Shirts split into Aura/Aldea (different charts despite same category)
 type SizeChart = { sizes: string[]; width: string[]; length: string[] }
@@ -320,6 +321,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <span className="text-sm text-muted-foreground">{avgRating}/5 ({reviews.length} reviews)</span>
             </div>
 
+            {anchorPriceLabel(product.price) && (
+              <p className="text-base text-muted-foreground/60 line-through -mb-1">{anchorPriceLabel(product.price)}</p>
+            )}
             <p className="text-4xl font-bold text-primary mb-4">{product.price}</p>
             <p className="text-sm text-muted-foreground mb-6">6 cuotas sin interes de ${(numericPrice / 6).toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
 
@@ -523,6 +527,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   </div>
                   <CardContent className="p-4">
                     <h3 className="font-semibold truncate">{rp.name}</h3>
+                    {anchorPriceLabel(rp.price) && (
+                      <span className="text-[11px] text-muted-foreground/60 line-through block leading-none">{anchorPriceLabel(rp.price)}</span>
+                    )}
                     <p className="text-primary font-bold text-lg">{rp.price}</p>
                   </CardContent>
                 </Card>

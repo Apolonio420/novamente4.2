@@ -10,6 +10,7 @@ import { Palette, Sparkles, ZoomIn, ShoppingCart, Check, SlidersHorizontal, X } 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCart } from "@/lib/cartStore"
 import type { Product } from "@/lib/products"
+import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 
 const CATEGORIES = ["Todos", "Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Mujer", "Remeras Infantiles", "Arte"] as const
 
@@ -190,7 +191,12 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
                       <div className="p-3 md:p-4 flex flex-col flex-1">
                         <h3 className="text-sm md:text-base font-semibold leading-tight line-clamp-2">{product.name}</h3>
                         <div className="flex items-center justify-between mt-1 mb-2">
-                          <span className="text-lg md:text-xl font-bold text-primary">{product.price}</span>
+                          <div className="flex flex-col leading-none">
+                            {anchorPriceLabel(product.price) && (
+                              <span className="text-[11px] text-muted-foreground/60 line-through">{anchorPriceLabel(product.price)}</span>
+                            )}
+                            <span className="text-lg md:text-xl font-bold text-primary">{product.price}</span>
+                          </div>
                           <span className="text-[10px] md:text-xs text-muted-foreground hidden sm:inline">{product.color}</span>
                         </div>
 

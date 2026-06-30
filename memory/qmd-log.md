@@ -1,5 +1,15 @@
 # QMD Log - novamente4.2
 
+### [2026-06-30c] Precio anchor (tachado) en catálogo Novamente + deploy planes
+**Goal**: Mostrar un "precio antes" tachado, chiquito arriba del real, para dar sensación de descuento. SOLO display, sin tocar DB.
+**Done**:
+- `lib/catalog/anchor-price.ts` (NUEVO): `anchorPriceLabel(priceStr)` → +25% (ANCHOR_MARKUP_PCT) redondeado a $50, parsea/formatea es-AR, null si no aplica.
+- `components/ProductsFilter.tsx` (grilla /products) y `app/products/[id]/page.tsx` (detalle + relacionados): anchor tachado gris chiquito arriba del precio real. Decisión de Juan: SOLO catálogo Novamente, NO tiendas de partners. El filtro de precios sigue usando el precio real (no se afecta).
+- Deploy planes (commit 71a33a0): el push a GitHub auto-deployó vía integración Vercel (repo Apolonio420/novamente4.2 conectado). Verificado live: novamente.ar/studio/planes y /partners muestran "primeros 100 partners" + badge OFF.
+**Decisions**: anchor +25% (sutil) por elección de Juan. Solo catálogo propio para no inventar precios en tiendas de partners (que ya tienen compare_at_price real). NO se corrió `vercel --prod` manual (habría subido WIP local ajeno).
+**Verify**: tsc PASS (solo 9 preexistentes en images/history/route.ts). next build PASS. Screenshots grilla+detalle OK ($68.750 tachado / $55.000 real).
+**Blockers/Pending**: Push de este round + auto-deploy. DOBLE PULL antes del push.
+
 ### [2026-06-30b] Wireado del 50% en el COBRO real (ciclo anual) + consistencia
 **Goal**: Que el 50% OFF primer año no sea solo display — que MercadoPago cobre el monto con descuento. (El mensual YA estaba wireado; faltaba el anual.)
 **Done**:
