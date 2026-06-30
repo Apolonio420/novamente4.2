@@ -2033,7 +2033,10 @@ export default function PartnersJoinPage() {
           step: 8,
           tenantId: data.tenantId,
         })
-        trackGenerateLead('partner_signup_completed')
+        trackGenerateLead('partner_signup_completed', {
+          email: data.email,
+          phone: data.whatsapp,
+        })
         // Starter-product generation moved to novamente-platform — partners
         // add products from the dashboard after activation.
         clearWizardProgress()
@@ -2080,7 +2083,10 @@ export default function PartnersJoinPage() {
           tenantId: data.tenantId,
           data: { plan: data.selectedPlan },
         })
-        trackGenerateLead('partner_signup_completed')
+        trackGenerateLead('partner_signup_completed', {
+          email: data.email,
+          phone: data.whatsapp,
+        })
         // Starter-product generation moved to novamente-platform — partners
         // add products from the dashboard after activation.
 

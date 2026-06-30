@@ -11,6 +11,7 @@ import { CheckCircle, Package, Mail, Home, Truck } from "lucide-react"
 import * as fpixel from "@/lib/fpixel"
 import { trackPurchase as gadsPurchase } from "@/lib/gads"
 import { trackPurchase as dataLayerPurchase } from "@/lib/analytics"
+import { getStoredPixelUser } from "@/lib/pixel-user"
 import { useCart } from "@/lib/cartStore"
 
 export default function CheckoutSuccessPage() {
@@ -129,7 +130,11 @@ export default function CheckoutSuccessPage() {
         num_items: snapshotItems.reduce((n, i) => n + i.quantity, 0),
         order_id: orderId,
       }, orderId)  // eventID for Pixel/CAPI dedup
-      gadsPurchase(snapshotValue, orderId, "ARS")
+      const pixelUser = getStoredPixelUser()
+      gadsPurchase(snapshotValue, orderId, "ARS", {
+        email: pixelUser.em,
+        phone: pixelUser.ph,
+      })
       dataLayerPurchase({
         orderId: orderId ?? "",
         value: snapshotValue,

@@ -40,13 +40,14 @@ export const trackBeginCheckout = (items: Item[]) =>
     items,
   })
 
-import { trackPartnerLead } from "./gads"
+import { trackPartnerLead, type AdsUserData } from "./gads"
 
 export const trackGenerateLead = (
   leadType:
     | "partner_signup_started"
     | "partner_signup_completed"
     | "contact_advisor",
+  user?: AdsUserData,
 ) => {
   if (typeof window === "undefined") return
   window.dataLayer = window.dataLayer || []
@@ -59,7 +60,7 @@ export const trackGenerateLead = (
     },
   })
   if (leadType === "partner_signup_completed") {
-    trackPartnerLead()
+    trackPartnerLead(user)
   }
 }
 
