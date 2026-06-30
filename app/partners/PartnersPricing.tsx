@@ -12,7 +12,6 @@ import {
   firstYearPromoPct,
 } from "@/lib/partners/plans"
 import { formatUsdPrice } from "@/lib/partners/plan-display"
-import { PromoSpotsCounter } from "@/components/partners/PromoSpotsCounter"
 import type { Plan } from "@/lib/partners/types"
 
 type Tier = { plan: Plan; popular?: boolean; features: string[] }
@@ -52,8 +51,6 @@ export function PartnersPricing({ tiers }: { tiers: Tier[] }) {
           </button>
         </div>
       </div>
-
-      <PromoSpotsCounter className="mb-10" />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
         {tiers.map(({ plan, popular, features }) => {

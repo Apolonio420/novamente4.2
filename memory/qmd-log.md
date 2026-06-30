@@ -1,5 +1,15 @@
 # QMD Log - novamente4.2
 
+### [2026-06-30e] Contador solo en join (sube al elegir Growth) + commit feature analytics ajena
+**Goal**: (1) Dejar el PromoSpotsCounter SOLO en /partners/join y que suba 1 lugar solo cuando eligen Growth (antes: timer en 4 superficies). (2) Revisar el WIP sin commitear de otra sesión y commitearlo si está settled.
+**Done**:
+- `PromoSpotsCounter.tsx`: sacado el timer; ahora prop `active` → sube +1 (una vez) cuando active=true. Quitado de PlanCards (/studio/planes), PartnersPricing (/partners) y lanza-tu-marca (+ imports). Queda SOLO en join: `<PromoSpotsCounter active={data.selectedPlan === 'growth'} />`.
+- WIP ajeno: todo de 2026-06-29 o antes (no tocado hoy). La feature de **Google Ads enhanced conversions** (lib/gads.ts +58, lib/analytics.ts trackGenerateLead(user?), app/checkout/success gadsPurchase con email/phone via getStoredPixelUser, + join hunks trackGenerateLead{email,phone}, + __tests__/gads.test.ts) está coherente y completa — gads.test 9/9 PASS. Continúa la serie de commits gads/pixel (0aac4e2, 3024336...). → COMMITEADA aparte (settled).
+- Scripts nancupil (create-nancupil.mjs, update-nancupil-sizing.mjs, 06-27/28) = provisión one-off de la tienda Ñancupil, NO relacionado → dejados en STAND-BY (sin commitear).
+**Decisions**: 2 commits separados — uno mío (contador), uno con la feature analytics ajena (factual). Staging selectivo del join (mis hunks vs los de ellos) con patch filtrado. nancupil en stand-by por las dudas (confirmar si es de APO o de Juan).
+**Verify**: gads.test 9/9, next build PASS, tsc PASS (9 preexistentes images/history).
+**Blockers/Pending**: scripts nancupil sin commitear (definir owner). DOBLE PULL antes del push.
+
 ### [2026-06-30d] Barrido COMPLETO de la promo en todas las superficies + contador + fix links
 **Goal**: Juan marcó que faltaban superficies (join wizard, lanza-tu-marca) sin la promo, los botones de plan iban a /lanza-tu-marca en vez de /partners/join, y pidió un contador "X/100 lugares" con barrita que se llena en el step de plan del join. Actualizar TODAS las superficies por igual.
 **Done**:

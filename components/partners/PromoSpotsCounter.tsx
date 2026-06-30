@@ -1,25 +1,33 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 // Contador de "lugares" de la promo de lanzamiento (50% OFF primer año para los
 // primeros 100 partners). El número es de marketing (base 66), NO es el conteo
-// real de la base de datos: arranca en BASE y "se va llenando" de a poco para
-// generar urgencia. Reutilizable en todas las superficies de planes.
+// real de la base de datos. Solo se usa en el wizard de /partners/join y sube
+// 1 lugar cuando el usuario elige el plan Growth (prop `active`), simulando que
+// "tomó uno de los últimos lugares".
 const TOTAL = 100
 const BASE_TAKEN = 66
-const CAP = 93 // nunca llega a 100: siempre quedan lugares
+const CAP = 99
 
-export function PromoSpotsCounter({ className = "" }: { className?: string }) {
+export function PromoSpotsCounter({
+  active = false,
+  className = "",
+}: {
+  active?: boolean
+  className?: string
+}) {
   const [taken, setTaken] = useState(BASE_TAKEN)
+  const bumped = useRef(false)
 
   useEffect(() => {
-    // sube de a 1 cada ~9s (40% de chance por tick) → la barra "se llena" sola
-    const id = setInterval(() => {
-      setTaken((t) => (t >= CAP ? t : Math.random() < 0.4 ? t + 1 : t))
-    }, 9000)
-    return () => clearInterval(id)
-  }, [])
+    // sube 1 lugar (una sola vez) cuando eligen el plan Growth
+    if (active && !bumped.current) {
+      bumped.current = true
+      setTaken((t) => Math.min(CAP, t + 1))
+    }
+  }, [active])
 
   const pct = Math.round((taken / TOTAL) * 100)
   const left = TOTAL - taken

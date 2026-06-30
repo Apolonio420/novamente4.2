@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
-import { PromoSpotsCounter } from "@/components/partners/PromoSpotsCounter"
 import {
   Sparkles, Users, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Palette, Package,
@@ -545,8 +544,6 @@ export default function LanzaTuMarca() {
                 Arranca gratis y escala cuando estes listo.
               </p>
             </div>
-
-            <PromoSpotsCounter className="mb-8" />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
               {plans.map((plan) => (

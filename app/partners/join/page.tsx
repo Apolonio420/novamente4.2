@@ -1415,7 +1415,7 @@ function StepPlan({
         Selecciona el plan que mejor se adapte a tu marca. Podes cambiar en cualquier momento.
       </p>
 
-      <PromoSpotsCounter />
+      <PromoSpotsCounter active={data.selectedPlan === 'growth'} />
 
       {/* Billing cycle toggle */}
       {showBillingToggle && (

@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge"
 import { Check, Sparkles, MessageCircle, Zap, TrendingUp } from "lucide-react"
 import { firstYearPromoPct } from "@/lib/partners/plans"
 import { formatUsdPrice } from "@/lib/partners/plan-display"
-import { PromoSpotsCounter } from "@/components/partners/PromoSpotsCounter"
 
 export function PlanCards() {
   const [annual, setAnnual] = useState(false)
@@ -47,8 +46,6 @@ export function PlanCards() {
           </button>
         </div>
       </div>
-
-      <PromoSpotsCounter className="mb-8" />
 
       {/* Plan cards */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 mb-16 md:mb-24">
