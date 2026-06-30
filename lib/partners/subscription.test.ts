@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolvePriceUsd, addMonths, promoExpired, GROWTH_PROMO } from './subscription'
+import { resolvePriceUsd, resolveAnnualPriceUsd, GROWTH_PROMO_PCT, addMonths, promoExpired, GROWTH_PROMO } from './subscription'
 
 describe('GROWTH_PROMO config', () => {
   it('es 50% off del precio standard', () => {
@@ -23,6 +23,25 @@ describe('resolvePriceUsd', () => {
   it('Pro nunca tiene promo (siempre US$100)', () => {
     expect(resolvePriceUsd('pro', true)).toBe(100)
     expect(resolvePriceUsd('pro', false)).toBe(100)
+  })
+})
+
+describe('GROWTH_PROMO_PCT', () => {
+  it('es 50% (derivado de 25/50)', () => {
+    expect(GROWTH_PROMO_PCT).toBe(0.5)
+  })
+})
+
+describe('resolveAnnualPriceUsd', () => {
+  it('Growth con promo → 50% del anual de lista ($510 → $255)', () => {
+    expect(resolveAnnualPriceUsd('growth', true)).toBe(255)
+  })
+  it('Growth sin promo → anual de lista ($510)', () => {
+    expect(resolveAnnualPriceUsd('growth', false)).toBe(510)
+  })
+  it('Pro nunca tiene promo anual (siempre $1020)', () => {
+    expect(resolveAnnualPriceUsd('pro', true)).toBe(1020)
+    expect(resolveAnnualPriceUsd('pro', false)).toBe(1020)
   })
 })
 

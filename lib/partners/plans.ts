@@ -119,6 +119,22 @@ export const PLAN_PRICING_MONTHLY_FROM_ANNUAL: Record<Plan, number> = {
   pro: Math.round(100 * 0.85 * 100) / 100, // ~$85/mo
 }
 
+// ── Promoción de lanzamiento (SOLO DISPLAY) ─────────────────────────────────
+// Estos valores afectan únicamente lo que se muestra en las páginas/planillas
+// de planes. El cobro real sigue derivándose de PLAN_PRICING_USD /
+// PLAN_PRICING_ANNUAL_USD: el 50% del primer año se aplica como cupón/manual
+// al dar de alta al partner, no automáticamente.
+export const ANNUAL_DISCOUNT = 0.15
+
+// 50% OFF el primer año para atraer partners pagos. Por ahora solo Growth.
+export const FIRST_YEAR_PROMO_PCT: Partial<Record<Plan, number>> = {
+  growth: 0.5,
+}
+
+export function firstYearPromoPct(plan: Plan): number {
+  return FIRST_YEAR_PROMO_PCT[plan] ?? 0
+}
+
 export const PLAN_NAMES: Record<Plan, string> = {
   starter: 'Starter',
   growth: 'Growth',

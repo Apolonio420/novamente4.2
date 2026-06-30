@@ -3,14 +3,14 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
-import { PartnersHeroCTAs, PartnersJoinLink } from "@/components/PartnersHeroCTAs"
+import { PartnersHeroCTAs } from "@/components/PartnersHeroCTAs"
 import {
   ArrowRight, Store, Palette, BarChart3, Bot,
-  Zap, Shield, Globe, Check, Sparkles,
+  Zap, Shield, Globe, Sparkles,
   Compass, LogIn, ShoppingBag,
 } from "lucide-react"
-import { PLAN_NAMES, PLAN_DESCRIPTIONS, PLAN_PRICING_USD } from "@/lib/partners/plans"
 import type { Plan } from "@/lib/partners/types"
+import { PartnersPricing } from "./PartnersPricing"
 
 export const metadata: Metadata = {
   title: "Novamente Studio — Lanzá tu marca con storefront, IA y growth",
@@ -347,64 +347,7 @@ export default function PartnersPage() {
               Empezá gratis y escalá cuando quieras. Todos los planes incluyen acceso a precios mayoristas.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {TIERS.map(({ plan, popular, features }) => (
-              <div
-                key={plan}
-                className={`relative p-6 rounded-xl border transition-all ${
-                  popular
-                    ? 'border-purple-500 bg-purple-500/5 shadow-lg shadow-purple-500/10'
-                    : 'border-zinc-800 bg-zinc-900/50 hover:border-zinc-700'
-                }`}
-              >
-                {popular && (
-                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-500 text-white border-0">
-                    Más popular
-                  </Badge>
-                )}
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold mb-1">{PLAN_NAMES[plan]}</h3>
-                  <p className="text-zinc-400 text-sm mb-4">{PLAN_DESCRIPTIONS[plan]}</p>
-                  <div className="flex items-baseline gap-1">
-                    {PLAN_PRICING_USD[plan] === 0 ? (
-                      <span className="text-3xl font-bold">Gratis</span>
-                    ) : (
-                      <>
-                        <span className="text-3xl font-bold">${PLAN_PRICING_USD[plan]}</span>
-                        <span className="text-zinc-400 text-sm">USD/mes</span>
-                      </>
-                    )}
-                  </div>
-                  {PLAN_PRICING_USD[plan] > 0 && (
-                    <p className="text-zinc-500 text-xs mt-1">
-                      Facturado en ARS al tipo de cambio del día
-                      <br />
-                      <span className="text-emerald-500">Plan anual: -15% (US${Math.round(PLAN_PRICING_USD[plan] * 0.85)}/mes)</span>
-                    </p>
-                  )}
-                </div>
-                <ul className="space-y-3 mb-8">
-                  {features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2 text-sm">
-                      <Check className="w-4 h-4 text-purple-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-zinc-300">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <PartnersJoinLink className="block">
-                  <Button
-                    className={`w-full ${
-                      popular
-                        ? 'bg-purple-500 hover:bg-purple-400 text-white'
-                        : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200'
-                    }`}
-                  >
-                    {plan === 'starter' ? 'Empezar gratis' : 'Elegir plan'}
-                  </Button>
-                </PartnersJoinLink>
-              </div>
-            ))}
-          </div>
+          <PartnersPricing tiers={TIERS} />
         </div>
       </section>
 

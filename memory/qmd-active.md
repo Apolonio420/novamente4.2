@@ -2,22 +2,22 @@
 
 **Project**: novamente4.2 (partner storefront platform)
 **Branch**: main
-**Last action**: Ronda 2 — suba precios venta partner + Growth único por producto (2026-06-02b). Antes: costos Dreamful + tier Growth (2026-06-02).
-**State**: tsc PASS, next build PASS (203 pág).
-**Regla 8%**: on_demand >= getGrowthPrice(key,'partner')/0.92 (centena). Recalcular al cambiar costos (ver garment-pricing.ts).
-**Blockers**: ninguno técnico.
+**Last action**: Promo 50% OFF primer año en Growth — display (cards/toggle) + WIREADO en el cobro real (mensual ya estaba; anual nuevo) (2026-06-30).
+**State**: vitest 14/14 PASS. tsc PASS (mis archivos; 9 errores preexistentes en app/api/images/history/route.ts). next build PASS (217 pág). Screenshots OK.
+**Cobro real**: mensual = PreApproval $25 + cron bump a $50 a los 12 meses (preexistente). Anual = Preference $255 primer pago (gate: primer pago + cupo 100), renovación full $510 (nuevo, subscribe/route.ts).
 
-## Completado esta sesión (precios Dreamful 2026-06)
-- `lib/partners/garment-pricing.ts`: nuevos costos (peor color/familia) + precios partner + campo `b2b_bulk`. Growth = `cost + GROWTH_TIER_DELTA_ARS[tier]` (1000/800/600/400/200). `getGrowthPrice(key,tier)` nuevo; `getPartnerPlanPrice`/`getPlanMargin` con `tier` opcional. Eliminado `PLAN_GROWTH_PRO_MARGIN_ARS`.
-- `app/b2b-precios-2026/`: data.ts precios al color caro; page.tsx deriva Growth server-side y lo pasa por prop a B2BCatalog/UnifiedPriceTable (no leak de costo al cliente). Growth "desde 1u".
-- `app/studio/planes/page.tsx`: tabla auto-actualiza; FAQ JSON-LD corregido (Aldea 23.670, Hoodie 31.170; margen "hasta ~$7.500").
-- `lib/catalog/products.ts`: Musculosa costARS 17400→19500.
-- **B2C NO se tocó** (decisión de Juan): retail, b2c_suggested, retailARS, landings, cotizador, DesignCustomizer, PublicAssistant intactos.
+## Completado esta sesión (promo planes 2026-06-30)
+- `lib/partners/plans.ts`: exports display-only `ANNUAL_DISCOUNT`, `FIRST_YEAR_PROMO_PCT={growth:0.5}`, `firstYearPromoPct()`. Billing (PLAN_PRICING_USD/ANNUAL) NO tocado.
+- `lib/partners/plan-display.ts` (nuevo): `formatUsdPrice(monthly, annual, promoPct)` → {main, sub, strike}.
+- `app/studio/planes/PlanCards.tsx`: badge 🔥 50% OFF · 1ER AÑO (amber→orange→rose) + tachado en Growth, helper compartido.
+- `app/partners/PartnersPricing.tsx` (nuevo client) + `app/partners/page.tsx`: grilla extraída a client con toggle Mensual/Anual + promo. Imports muertos limpiados.
+- Growth: mensual $50→$25; anual $510→$255/año ($21.25/mes, ahorrás $345). Pro anual $100→$85 (sin promo).
 
 ## Pendiente humano
 - Push pendiente: Juan revisa antes de mergear.
-- Copy "hasta ~$7.500 adicionales" en studio/planes HowTo → confirmar con Juan.
-- Verificación visual: abrir /b2b-precios-2026 (toggle Growth) y /studio/planes.
+- Confirmar números del descuento (Juan delegó "calculalo vos").
+- DECISIÓN: el 50% es SOLO display. Para honrarlo en el cobro real (subscribe/MercadoPago) → cupón/preapproval o aplicación manual al alta. Hoy no es automático.
 
 ## Follow-up no bloqueante
-- Superficies autenticadas (workspace/catalog, design-engine, MarginBreakdown, storefront-designer) aún embeben `cost` en bundle cliente (preexistente, auth-gated). A futuro: módulo server-only de costos.
+- Productos tachados en el frontend (precio "antes" más caro, final igual, sin tocar DB) = DIFERIDO, pedido de Juan para más adelante.
+- FAQ JSON-LD en studio/planes/page.tsx:123 no menciona la promo a propósito (evitar claim time-limited en structured data).

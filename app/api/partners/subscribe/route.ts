@@ -1,10 +1,15 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Preference } from 'mercadopago'
 import { updateTenant, getTenantById } from '@/lib/partners/tenant'
-import { PLAN_PRICING_USD, PLAN_PRICING_ANNUAL_USD, PLAN_NAMES } from '@/lib/partners/plans'
+import { PLAN_NAMES } from '@/lib/partners/plans'
 import { getUsdToArs } from '@/lib/partners/currency'
-import { createRecurringSubscription } from '@/lib/partners/subscription'
-import type { Plan } from '@/lib/partners/types'
+import {
+  createRecurringSubscription,
+  resolveAnnualPriceUsd,
+  isGrowthPromoEligible,
+  type PaidPlan,
+  type PromoLock,
+} from '@/lib/partners/subscription'
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -85,29 +90,41 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Calculate price based on billing cycle
-    const typedPlan = plan as Plan
-    const priceUSD = billingCycle === 'annual'
-      ? PLAN_PRICING_ANNUAL_USD[typedPlan]
-      : PLAN_PRICING_USD[typedPlan]
+    // ── Anual → pago único (Preference). Aplica la promo de primer año (50% OFF
+    // en Growth) si el tenant es elegible (cupo de 100 partners) y es su PRIMER
+    // pago. La renovación del año siguiente ya tiene last_payment_at → full. ──
+    const typedPlan = plan as PaidPlan
+    const isFirstPayment = !tenant.last_payment_at
+    const promoEligible = isFirstPayment && (await isGrowthPromoEligible(typedPlan))
+    const priceUSD = resolveAnnualPriceUsd(typedPlan, promoEligible)
     const rate = await getUsdToArs()
     const priceARS = Math.round(priceUSD * rate)
     const planName = PLAN_NAMES[typedPlan]
-    const cycleLabel = billingCycle === 'annual' ? 'Anual' : 'Mensual'
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
     const timestamp = Date.now()
-    const externalReference = `partner_sub_${tenantId}_${timestamp}_${billingCycle}`
+    const externalReference = `partner_sub_${tenantId}_${timestamp}_annual`
 
-    // Save plan choice and billing cycle to tenant
+    // Save plan choice + billing cycle + promo lock to tenant
     const subscriptionStartedAt = new Date().toISOString()
-    const subscriptionExpiresAt = calculateExpiresAt(billingCycle as BillingCycle)
+    const subscriptionExpiresAt = calculateExpiresAt('annual')
+    const promo: PromoLock | null = promoEligible
+      ? { price_usd: priceUSD, expires_at: subscriptionExpiresAt }
+      : null
+    const metadata = {
+      ...((tenant.metadata as Record<string, unknown>) ?? {}),
+      subscription_type: 'one_time',
+      promo,
+    }
 
     await updateTenant(tenantId, {
       plan: typedPlan,
-      billing_cycle: billingCycle as BillingCycle,
+      billing_cycle: 'annual' as BillingCycle,
       subscription_started_at: subscriptionStartedAt,
       subscription_expires_at: subscriptionExpiresAt,
+      metadata,
     } as any)
+
+    const discountNote = promoEligible ? ' (50% OFF primer año)' : ' (15% descuento)'
 
     // Create MercadoPago preference (one-time payment)
     // Renewal reminders handled by cron + webhook extends expiration on payment
@@ -116,12 +133,12 @@ export async function POST(request: NextRequest) {
     const preferenceData = {
       items: [
         {
-          id: `partners-${plan}-${billingCycle}`,
-          title: `Novamente Partners - Plan ${planName} (${cycleLabel})`,
+          id: `partners-${plan}-annual`,
+          title: `Novamente Partners - Plan ${planName} (Anual)`,
           quantity: 1,
           unit_price: priceARS,
           currency_id: 'ARS',
-          description: `Suscripción ${cycleLabel.toLowerCase()} al plan ${planName} de Novamente Partners${billingCycle === 'annual' ? ' (15% descuento)' : ''}`,
+          description: `Suscripción anual al plan ${planName} de Novamente Partners${discountNote}`,
         },
       ],
       back_urls: {
@@ -135,12 +152,12 @@ export async function POST(request: NextRequest) {
       auto_return: 'approved' as const,
     }
 
-    console.log('Creating partner subscription preference:', {
+    console.log('Creating partner annual subscription preference:', {
       tenant: tenant.name,
       plan,
-      billingCycle,
       priceUSD,
       priceARS,
+      promoEligible,
       externalReference,
     })
 
@@ -157,8 +174,9 @@ export async function POST(request: NextRequest) {
       external_reference: externalReference,
       price_ars: priceARS,
       price_usd: priceUSD,
-      billing_cycle: billingCycle,
+      billing_cycle: 'annual',
       expires_at: subscriptionExpiresAt,
+      promo,
     })
   } catch (error: any) {
     console.error('Partner subscribe error:', error)

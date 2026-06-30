@@ -1,5 +1,29 @@
 # QMD Log - novamente4.2
 
+### [2026-06-30b] Wireado del 50% en el COBRO real (ciclo anual) + consistencia
+**Goal**: Que el 50% OFF primer año no sea solo display — que MercadoPago cobre el monto con descuento. (El mensual YA estaba wireado; faltaba el anual.)
+**Done**:
+- Hallazgo: el MENSUAL ya aplicaba la promo (lib/partners/subscription.ts `GROWTH_PROMO` $25/12 meses/primeros 100 + PreApproval $25 + cron `bumpPromoToStandardIfDue` que sube a $50 al vencer). El ANUAL cobraba full $510 (gap).
+- `lib/partners/subscription.ts`: nuevos `GROWTH_PROMO_PCT` (0.5, derivado 25/50) y `resolveAnnualPriceUsd(plan, promoEligible)` → Growth $510→$255 con promo, full si no; Pro siempre $1020.
+- `app/api/partners/subscribe/route.ts` (branch anual): aplica la promo si `!tenant.last_payment_at` (PRIMER pago) && `isGrowthPromoEligible` (cupo 100). Guarda promo lock + `subscription_type:'one_time'` en metadata. Preference con monto descontado + descripción "(50% OFF primer año)". Devuelve `promo`. Renovación (año 2) ya tiene last_payment_at → full. NO toca el mensual.
+- `lib/partners/subscription.test.ts`: +4 tests (GROWTH_PROMO_PCT, resolveAnnualPriceUsd growth promo/full + pro). 14/14 PASS.
+- `components/partners/upgrade-modal.tsx`: agregado `promoAnnualMonth: 21.25` y display de promo también en anual (antes solo mensual): tachado del precio del ciclo, nota "$255 el primer año (-50%), luego $510/año".
+**Decisions**: Gate anual = primer pago (no last_payment_at) + cupo global 100. El anual one-time no entra al bump del cron (subscription_type:'one_time' y sin mp_subscription_id) → seguro. join/page.tsx:2210 ya mostraba $21/$25 → ahora coincide con el cobro.
+**Verify**: vitest 14/14 PASS. tsc PASS (solo 9 errores preexistentes en app/api/images/history/route.ts). next build PASS (217 pág, /api/partners/subscribe ƒ OK).
+**Blockers/Pending**: Push pendiente (Juan revisa) — DOBLE PULL antes de push. El display público sigue anunciando la promo sin el "primeros 100" (igual que el join existente): si se agotan los 100, el checkout cobra full aunque la card diga 50% → decidir si se aclara "primeros 100" o se quita el cupo.
+
+### [2026-06-30] Promo 50% OFF primer año en Growth + toggle Mensual/Anual en /partners
+**Goal**: En las planillas de planes, aplicar 50% OFF el primer año al plan Growth con algo llamativo (otro color) y sumar botonera Mensual/Anual con el descuento anual. SOLO frontend, sin tocar DB ni billing. (Productos tachados = diferido para más adelante.)
+**Done**:
+- `lib/partners/plans.ts`: nuevos exports SOLO-display `ANNUAL_DISCOUNT=0.15`, `FIRST_YEAR_PROMO_PCT={growth:0.5}`, helper `firstYearPromoPct(plan)`. No se tocaron PLAN_PRICING_USD/ANNUAL (billing intacto).
+- `lib/partners/plan-display.ts` (NUEVO): helper `formatUsdPrice(monthlyUsd, annual, promoPct)` → {main, sub, strike}. Tachado siempre = mensual de lista. Growth mensual $50→$25; anual $510→$255/año ($21.25/mes equiv, ahorrás $345); Pro anual $100→$85.
+- `app/studio/planes/PlanCards.tsx`: usa helpers compartidos (borró ANNUAL_DISCOUNT y formatUsdPrice locales). Badge llamativo 🔥 50% OFF · 1ER AÑO (gradiente amber→orange→rose, animate-pulse) + tachado en Growth (mensual y anual). Pro pasa por el mismo helper (strike preservado en anual).
+- `app/partners/page.tsx` + `app/partners/PartnersPricing.tsx` (NUEVO client): se extrajo la grilla de precios a client component con toggle Mensual/Anual (antes /partners NO tenía toggle) + mismo badge/promo. TIERS se pasa por prop. Limpiados imports muertos (Check, PartnersJoinLink, PLAN_* en page.tsx).
+**Decisions**: Promo SOLO en Growth (instrucción de Juan). 50% es display/marketing: el cobro real sigue saliendo de plans.ts → el 50% se aplica como cupón/manual al alta del partner (NO automático en subscribe/MercadoPago). Stacking anual: 50% sobre el anual ya con -15% = $255 primer año (mejor deal year-1 e impulsa prepago anual).
+**Verify**: tsc PASS (9 errores preexistentes solo en app/api/images/history/route.ts, ninguno mío). next build PASS (217 pág, /partners y /studio/planes ○ static). Screenshots Playwright CLI de ambas páginas en mensual+anual: badge, tachado y toggle OK.
+**Blockers/Pending**: (1) Confirmar con Juan los números exactos del descuento (delegó "calculalo vos"). (2) Si quieren honrar el 50% en el cobro real → wirear cupón/preapproval o aplicar manual. (3) FAQ JSON-LD de studio/planes:123 NO menciona la promo (a propósito, evitar claim time-limited en structured data). (4) Productos tachados (frontend, sin DB) = diferido.
+**Next**: Commit/push pendiente (Juan revisa). Si OK la promo, decidir cómo se honra en billing.
+
 ### [2026-06-08] Provisión tienda Partner "Mala Conducta" (mala-conducta)
 **Goal**: Dejar online la tienda de la clienta Engels Carrasco ("Mala Conducta", streetwear) con sus productos hero del diseño "Stay Positive" y acceso confirmado.
 **Done**:

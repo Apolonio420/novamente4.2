@@ -18,6 +18,7 @@ interface PlanCard {
   priceMonthly: number
   priceAnnualMonth: number
   promoMonthly?: number // precio promo de lanzamiento (mensual)
+  promoAnnualMonth?: number // precio/mes promo de lanzamiento (anual, primer año)
   icon: typeof Zap
   popular?: boolean
   features: string[]
@@ -51,6 +52,7 @@ const plans: PlanCard[] = [
     priceMonthly: 50,
     priceAnnualMonth: 42.5,
     promoMonthly: 25, // lanzamiento -50% (primeros 100 partners, 12 meses)
+    promoAnnualMonth: 21.25, // lanzamiento -50% primer año ($255/año)
     icon: Sparkles,
     popular: true,
     features: [
@@ -179,9 +181,10 @@ export function UpgradeModal({ currentPlan, tenantId, onClose }: UpgradeModalPro
             const Icon = plan.icon
             const isCurrent = plan.id === currentPlan
             const isUpgrade = plans.findIndex((p) => p.id === plan.id) > plans.findIndex((p) => p.id === currentPlan)
-            const hasPromo = billingCycle === 'monthly' && !!plan.promoMonthly
+            const promoForCycle = billingCycle === 'annual' ? plan.promoAnnualMonth : plan.promoMonthly
+            const hasPromo = !!promoForCycle
             const basePrice = billingCycle === 'annual' ? plan.priceAnnualMonth : plan.priceMonthly
-            const price = hasPromo ? plan.promoMonthly! : basePrice
+            const price = hasPromo ? promoForCycle! : basePrice
 
             return (
               <div
@@ -215,17 +218,19 @@ export function UpgradeModal({ currentPlan, tenantId, onClose }: UpgradeModalPro
                           US${price}<span className="text-sm font-normal text-zinc-400">/mes</span>
                         </p>
                         {hasPromo && (
-                          <span className="text-sm text-zinc-500 line-through">US${plan.priceMonthly}</span>
+                          <span className="text-sm text-zinc-500 line-through">US${basePrice}</span>
                         )}
                       </div>
-                      {hasPromo && (
+                      {hasPromo && billingCycle === 'monthly' && (
                         <p className="text-xs text-emerald-400 mt-1">
-                          Promo lanzamiento -50% · 12 meses, luego US${plan.priceMonthly}/mes
+                          Promo -50% · primeros 100 partners · 12 meses, luego US${plan.priceMonthly}/mes
                         </p>
                       )}
                       {billingCycle === 'annual' && (
                         <p className="text-xs text-emerald-400 mt-1">
-                          US${Math.round(price * 12)}/año — ahorrás 15%
+                          {hasPromo
+                            ? `US$${Math.round(price * 12)} el primer año (-50%, primeros 100), luego US$${Math.round(plan.priceAnnualMonth * 12)}/año`
+                            : `US$${Math.round(price * 12)}/año — ahorrás 15%`}
                         </p>
                       )}
                     </>

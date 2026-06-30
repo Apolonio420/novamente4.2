@@ -5,28 +5,13 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Check, Sparkles, MessageCircle, Zap, TrendingUp } from "lucide-react"
-
-const ANNUAL_DISCOUNT = 0.15
-
-function formatUsdPrice(monthlyUsd: number, annual: boolean): { main: string; sub: string } {
-  if (!annual) {
-    return {
-      main: `USD$${monthlyUsd}`,
-      sub: "Facturado en ARS al tipo de cambio del día",
-    }
-  }
-  const effectiveMonthly = Math.round(monthlyUsd * (1 - ANNUAL_DISCOUNT) * 10) / 10
-  const yearlyTotal = Math.round(monthlyUsd * 12 * (1 - ANNUAL_DISCOUNT))
-  const savings = Math.round(monthlyUsd * 12 * ANNUAL_DISCOUNT)
-  return {
-    main: `USD$${effectiveMonthly}`,
-    sub: `Facturado anualmente · US$${yearlyTotal}/año · ahorrás US$${savings}`,
-  }
-}
+import { firstYearPromoPct } from "@/lib/partners/plans"
+import { formatUsdPrice } from "@/lib/partners/plan-display"
 
 export function PlanCards() {
   const [annual, setAnnual] = useState(false)
-  const growth = formatUsdPrice(50, annual)
+  const growthPromo = firstYearPromoPct("growth")
+  const growth = formatUsdPrice(50, annual, growthPromo)
   const pro = formatUsdPrice(100, annual)
 
   return (
@@ -113,8 +98,15 @@ export function PlanCards() {
             <p className="text-sm text-muted-foreground">Para marcas que quieren crecer en serio.</p>
           </header>
           <div className="mb-6">
-            {annual && (
-              <span className="text-xs text-muted-foreground line-through block mb-1">USD$50/mes</span>
+            {growthPromo > 0 && (
+              <div className="mb-2">
+                <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-white text-[11px] font-bold uppercase tracking-wide px-2.5 py-1 shadow-lg shadow-orange-500/30 animate-pulse">
+                  🔥 {Math.round(growthPromo * 100)}% OFF · 1<sup>er</sup> año
+                </span>
+              </div>
+            )}
+            {growth.strike && (
+              <span className="text-xs text-muted-foreground line-through block mb-1">{growth.strike}/mes</span>
             )}
             <div className="flex items-baseline gap-1 flex-wrap">
               <span className={`font-bold tracking-tight ${annual ? "text-4xl" : "text-5xl"}`}>
@@ -123,6 +115,9 @@ export function PlanCards() {
               <span className="text-sm text-muted-foreground">/mes</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">{growth.sub}</p>
+            {growthPromo > 0 && (
+              <p className="text-[11px] font-semibold text-amber-500 mt-1">⚡ Solo para los primeros 100 partners</p>
+            )}
           </div>
           <ul className="space-y-3 text-sm flex-1 mb-6">
             {[
@@ -160,8 +155,8 @@ export function PlanCards() {
             <p className="text-sm text-muted-foreground">La experiencia completa con automatización de marketing.</p>
           </header>
           <div className="mb-6">
-            {annual && (
-              <span className="text-xs text-muted-foreground line-through block mb-1">USD$100/mes</span>
+            {pro.strike && (
+              <span className="text-xs text-muted-foreground line-through block mb-1">{pro.strike}/mes</span>
             )}
             <div className="flex items-baseline gap-1 flex-wrap">
               <span className={`font-bold tracking-tight ${annual ? "text-4xl" : "text-5xl"}`}>
