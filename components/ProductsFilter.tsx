@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/
 import { Palette, Sparkles, ZoomIn, ShoppingCart, Check, SlidersHorizontal, X } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCart } from "@/lib/cartStore"
-import type { Product } from "@/lib/products"
+import { parsePrice, type Product } from "@/lib/products"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 
 const CATEGORIES = ["Todos", "Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Mujer", "Remeras Infantiles", "Arte"] as const
@@ -23,10 +23,6 @@ const PRICE_RANGES = [
 
 const SIZES = ["S", "M", "L", "XL", "XXL"] as const
 const KIDS_SIZES = ["4", "6", "8", "10", "12", "14", "16"] as const
-
-function parsePrice(priceStr: string): number {
-  return parseInt(priceStr.replace(/[$.]/g, ""), 10)
-}
 
 export default function ProductsFilter({ products }: { products: Product[] }) {
   const [activeCategory, setActiveCategory] = useState<string>("Todos")

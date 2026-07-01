@@ -11,7 +11,7 @@ import {
   ZoomIn, Star, Shirt, Droplets, ThermometerSnowflake,
   WashingMachine, ArrowLeft
 } from "lucide-react"
-import { PRODUCTS } from "@/lib/products"
+import { PRODUCTS, parsePrice } from "@/lib/products"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 
 // Size data — keyed by chart key. T-Shirts split into Aura/Aldea (different charts despite same category)
@@ -104,7 +104,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const product = PRODUCTS.find((p) => p.id === id)
   if (!product || !product.available) return { title: "Producto no encontrado" }
 
-  const numericPrice = parseInt(product.price.replace(/[$.]/g, ""), 10)
+  const numericPrice = parsePrice(product.price)
   const baseUrl = "https://www.novamente.ar"
 
   return {
@@ -139,7 +139,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const product = PRODUCTS.find((p) => p.id === id)
   if (!product || !product.available) notFound()
 
-  const numericPrice = parseInt(product.price.replace(/[$.]/g, ""), 10)
+  const numericPrice = parsePrice(product.price)
   const baseUrl = "https://www.novamente.ar"
   const reviews = generateReviews(product.name, product.category)
   const avgRating = (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)

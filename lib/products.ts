@@ -503,6 +503,16 @@ export interface MetaCommerceProduct {
 }
 
 /**
+ * Extrae el precio numérico de un string de precio de catálogo.
+ * Robusto ante prefijos como "Desde $34.000" (toma el primer número).
+ * "Desde $34.000" -> 34000 · "$55.000" -> 55000 · sin número -> 0
+ */
+export function parsePrice(priceStr: string): number {
+    const match = priceStr.match(/[\d.]+/)
+    return match ? parseInt(match[0].replace(/\./g, ""), 10) : 0
+}
+
+/**
  * Get products formatted for Meta Commerce feed
  * Converts relative image URLs to absolute URLs and extracts numeric price
  */
@@ -513,7 +523,7 @@ export function getPublishableProducts(): MetaCommerceProduct[] {
         .filter(product => product.available)
         .map(product => {
             // Extract numeric price from string like "$55.000" -> 55000
-            const numericPrice = parseInt(product.price.replace(/[$.]/g, ""), 10)
+            const numericPrice = parsePrice(product.price)
 
             // Convert relative image URL to absolute
             const imageUrl = product.images.main.startsWith("http")

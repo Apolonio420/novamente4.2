@@ -3,7 +3,7 @@ export const revalidate = 3600 // ISR: revalidate every hour
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { PRODUCTS } from "@/lib/products"
+import { PRODUCTS, parsePrice } from "@/lib/products"
 import ProductsFilter from "@/components/ProductsFilter"
 
 export const metadata: Metadata = {
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 function generateProductsJsonLd() {
   const baseUrl = "https://www.novamente.ar"
   return PRODUCTS.filter(p => p.available).map((product) => {
-    const numericPrice = parseInt(product.price.replace(/[$.]/g, ""), 10)
+    const numericPrice = parsePrice(product.price)
     return {
       "@context": "https://schema.org",
       "@type": "Product",
