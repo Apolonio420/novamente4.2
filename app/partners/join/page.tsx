@@ -1800,7 +1800,7 @@ function StepPreview({ data }: { data: WizardData }) {
           {!planCard
             ? 'Gratis'
             : planCard.id === 'growth'
-              ? `${data.billingCycle === 'annual' ? '$21' : '$25'} USD ${planCard.priceDetail} · 50% OFF`
+              ? `${data.billingCycle === 'annual' ? '$21' : '$25'} USD ${planCard.priceDetail} · 50% OFF · primeros 100 partners`
               : `${planCard.price} ${planCard.priceDetail}`}
         </span>
       </div>

@@ -125,10 +125,11 @@ export async function POST(req: NextRequest) {
     const key = `v1/try-on/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.png`
     const { url: tryOnUrl } = await uploadFile(buffer, key, "image/png")
 
-    // TODO: schedule cleanup job to delete selfieUrl R2 object after session ends
-    // The selfie is not stored — it was downloaded from the pre-signed R2 URL provided by the client
-    // and used only for this generation. The client must call DELETE /api/public/design/cleanup-selfie
-    // passing the R2 key to remove it.
+    // The selfie is not stored here — it was downloaded from the pre-signed R2 URL provided
+    // by the client and used only for this generation. The client calls
+    // DELETE /api/public/design/cleanup-selfie right after (best-effort, fire-and-forget).
+    // Backstop: app/api/cron/cleanup-tryon-selfies runs daily and deletes any v1/selfies/*
+    // object older than 24h, in case the client-side delete never fired.
 
     return ok({ tryOnUrl })
   } catch (e: any) {
