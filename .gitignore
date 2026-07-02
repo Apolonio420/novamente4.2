@@ -46,3 +46,7 @@ autopilot-session-*.log
 .DS_Store
 /e2e/screenshots/
 /scripts/diag-76-detalle.mjs
+
+# one-off scripts y logs locales (2026-07-02)
+scripts/_*
+scripts/out/
