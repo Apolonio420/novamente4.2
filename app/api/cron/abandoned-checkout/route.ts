@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Preference } from 'mercadopago'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail } from '@/lib/email'
+import { findApprovedPaymentByReference, processPaymentById } from '@/lib/payments/process-payment'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -103,6 +104,18 @@ export async function GET(request: NextRequest) {
 
   for (const o of candidates) {
     try {
+      // Anti doble-cobro: si MP ya tiene un pago APROBADO para esta referencia
+      // (webhook y confirm fallback pudieron fallar), confirmamos la orden en
+      // vez de mandarle a un cliente que YA PAGÓ un link de pago nuevo.
+      if (o.external_reference) {
+        const approvedPaymentId = await findApprovedPaymentByReference(o.external_reference)
+        if (approvedPaymentId) {
+          if (!dry) await processPaymentById(approvedPaymentId)
+          results.push({ order: o.order_number, status: `⚠️ ya estaba pagada en MP (${approvedPaymentId}) — confirmada, sin email` })
+          continue
+        }
+      }
+
       const { data: items } = await sb
         .from('order_items')
         .select('item_name, quantity, unit_price')

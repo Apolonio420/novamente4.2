@@ -113,13 +113,15 @@ export function computeOrderMargin(
 /**
  * Acredita el margen de una orden web confirmada al ledger del tenant.
  * Idempotente (unique index por tenant+order en credits). No lanza: loguea.
+ * Devuelve el margen calculado para que el caller pueda informarlo (p.ej. en
+ * la notificación al partner) sin recomputarlo.
  */
 export async function creditOrderMargin(order: {
   id: string
   tenant_id: string
   order_number?: string | null
   items?: OrderItemLike[] | null
-}): Promise<void> {
+}): Promise<{ margin: number; needsReview: boolean }> {
   try {
     const sb = supabaseAdmin as any
     const [{ data: tenant }, { data: products }] = await Promise.all([
@@ -130,7 +132,7 @@ export async function creditOrderMargin(order: {
     const { margin, needsReview, breakdown } = computeOrderMargin(order.items || [], products || [], plan)
     if (margin <= 0 && !needsReview) {
       console.log('[ledger] margen 0 sin review — no se acredita', order.id)
-      return
+      return { margin: 0, needsReview: false }
     }
     const { error } = await sb.from('partner_ledger_entries').insert({
       tenant_id: order.tenant_id,
@@ -149,8 +151,10 @@ export async function creditOrderMargin(order: {
     } else {
       console.log(`[ledger] ✅ acreditado $${margin} a tenant ${order.tenant_id} (orden ${order.order_number})${needsReview ? ' [NEEDS REVIEW]' : ''}`)
     }
+    return { margin, needsReview }
   } catch (e: any) {
     console.error('[ledger] exception:', e?.message)
+    return { margin: 0, needsReview: false }
   }
 }
 

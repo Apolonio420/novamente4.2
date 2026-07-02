@@ -296,8 +296,17 @@ export default function CheckoutSuccessPage() {
             </div>
 
             <div className="space-y-3">
+              {paymentData?.externalReference && (
+                <Link href={`/pedido/${encodeURIComponent(paymentData.externalReference)}`} className="block" data-cta="checkout-success-track-order">
+                  <Button className="w-full" size="lg">
+                    <Package className="mr-2 h-4 w-4" />
+                    Seguir mi pedido
+                  </Button>
+                </Link>
+              )}
+
               <Link href="/" className="block">
-                <Button className="w-full" size="lg">
+                <Button variant={paymentData?.externalReference ? "outline" : "default"} className={`w-full ${paymentData?.externalReference ? "bg-transparent" : ""}`} size="lg">
                   <Home className="mr-2 h-4 w-4" />
                   Volver al Inicio
                 </Button>
