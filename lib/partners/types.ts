@@ -134,5 +134,22 @@ export interface PartnerLead {
   product_interest: string | null
   status: string
   metadata: Record<string, unknown>
+  assigned_user_id: string | null
+  next_action_at: string | null
+  last_contacted_at: string | null
+  estimated_value_ars: number | null
+  lost_reason: string | null
   created_at: string
+  updated_at: string
 }
+
+export type FulfillmentStatus =
+  | 'awaiting_art_approval'
+  | 'queued_for_production'
+  | 'in_production'
+  | 'quality_check'
+  | 'ready_to_ship'
+  | 'shipped'
+  | 'delivered'
+  | 'exception'
+  | 'cancelled'

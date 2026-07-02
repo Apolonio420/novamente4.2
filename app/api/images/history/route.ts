@@ -57,7 +57,9 @@ export async function GET(req: NextRequest) {
       query = query.eq("session_id", sessionId!)
     }
 
-    const { data, error } = await query
+    // This project does not ship generated Supabase table types. The inferred
+    // query row is `never` here even though the selected columns are explicit.
+    const { data, error } = await (query as any)
 
     if (error) {
       // session_id column might not exist yet

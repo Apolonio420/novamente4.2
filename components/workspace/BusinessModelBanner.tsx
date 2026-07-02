@@ -43,9 +43,9 @@ export function BusinessModelBanner({ tenantId }: BusinessModelBannerProps) {
       icon: Banknote,
       text: (
         <>
-          Te liquidamos tu ganancia (PVP − costo Novamente){' '}
-          <strong className="text-emerald-300">en el momento</strong> a tu
-          CBU/alias.
+          Tu ganancia (PVP − costo Novamente) queda disponible cuando se confirma
+          el pago. Los retiros aprobados se transfieren a tu CBU/alias en{' '}
+          <strong className="text-emerald-300">24–48 h hábiles</strong>.
         </>
       ),
     },

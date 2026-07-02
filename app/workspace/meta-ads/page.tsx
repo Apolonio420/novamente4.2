@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import { LockedFeature } from '@/components/partners/locked-feature'
 import {
@@ -28,7 +29,7 @@ import {
   getTargetingSuggestions,
   type AdTemplate,
 } from '@/lib/partners/ad-templates'
-import { generateMetaAdUtm } from '@/lib/partners/utm-generator'
+import { generateUtmUrl } from '@/lib/partners/utm-generator'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,6 +50,17 @@ interface TenantInfo {
   industry: string | null
 }
 
+interface Campaign {
+  id: string
+  name: string
+  channel: string
+  status: 'draft' | 'active' | 'paused' | 'completed'
+  utm_campaign: string
+  budget_daily_ars: number | null
+  created_at: string
+  performance: { visits: number; leads: number; conversion: number } | null
+}
+
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
@@ -56,6 +68,7 @@ interface TenantInfo {
 export default function MetaAdsPage() {
   const [tenant, setTenant] = useState<TenantInfo | null>(null)
   const [products, setProducts] = useState<Product[]>([])
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
 
   // Builder state
@@ -64,13 +77,23 @@ export default function MetaAdsPage() {
   const [selectedCopyIdx, setSelectedCopyIdx] = useState(0)
   const [copiedUtm, setCopiedUtm] = useState(false)
 
+  const updateCampaignStatus = async (id: string, status: Campaign['status']) => {
+    const response = await authFetch(`/api/partners/campaigns/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }),
+    })
+    if (!response.ok) return
+    const data = await response.json()
+    setCampaigns((current) => current.map((campaign) => campaign.id === id ? { ...campaign, ...data.campaign } : campaign))
+  }
+
   // Load tenant + products
   useEffect(() => {
     async function load() {
       try {
-        const [dashRes, catalogRes] = await Promise.all([
+        const [dashRes, catalogRes, campaignsRes] = await Promise.all([
           authFetch('/api/partners/dashboard'),
           authFetch('/api/partners/catalog'),
+          authFetch('/api/partners/campaigns'),
         ])
 
         if (dashRes.ok) {
@@ -94,6 +117,10 @@ export default function MetaAdsPage() {
               images: p.images || [],
             })),
           )
+        }
+        if (campaignsRes.ok) {
+          const campaignData = await campaignsRes.json()
+          setCampaigns(campaignData.campaigns || [])
         }
       } catch {
         // silent
@@ -148,6 +175,7 @@ export default function MetaAdsPage() {
         setSelectedCopyIdx={setSelectedCopyIdx}
         copiedUtm={copiedUtm}
         setCopiedUtm={setCopiedUtm}
+        onCampaignSaved={(campaign) => setCampaigns((current) => [campaign, ...current])}
         onBack={() => {
           setSelectedTemplate(null)
           setSelectedProduct(null)
@@ -211,6 +239,8 @@ export default function MetaAdsPage() {
         ))}
       </div>
 
+      <CampaignOverview campaigns={campaigns} onStatusChange={updateCampaignStatus} />
+
       {/* Budget & Targeting Section */}
       <BudgetSection industry={tenant.industry} />
 
@@ -234,6 +264,7 @@ function TemplateBuilder({
   setSelectedCopyIdx,
   copiedUtm,
   setCopiedUtm,
+  onCampaignSaved,
   onBack,
 }: {
   template: AdTemplate
@@ -245,6 +276,7 @@ function TemplateBuilder({
   setSelectedCopyIdx: (i: number) => void
   copiedUtm: boolean
   setCopiedUtm: (v: boolean) => void
+  onCampaignSaved: (campaign: Campaign) => void
   onBack: () => void
 }) {
   const product = selectedProduct || (products[0] ?? null)
@@ -253,9 +285,17 @@ function TemplateBuilder({
     : []
   const selectedCopy = copyVariants[selectedCopyIdx] || null
 
-  const utmUrl = product
-    ? generateMetaAdUtm(tenant.slug, template.type, product.slug)
-    : ''
+  const [campaignName, setCampaignName] = useState('')
+  const [dailyBudget, setDailyBudget] = useState('')
+  const [savingCampaign, setSavingCampaign] = useState(false)
+  const [campaignError, setCampaignError] = useState<string | null>(null)
+  const [campaignSaved, setCampaignSaved] = useState(false)
+  const campaignKey = (campaignName || `${tenant.slug}-${template.type}-${product?.slug || 'producto'}`)
+    .toLowerCase().trim().replace(/[^a-z0-9_-]+/g, '-').replace(/^-|-$/g, '')
+  const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_BASE_URL || 'https://novamente.ar'
+  const utmUrl = product ? generateUtmUrl(`${origin}/merch/${tenant.slug}/${product.slug}`, {
+    source: 'meta', medium: 'paid_social', campaign: campaignKey, content: template.type,
+  }) : ''
 
   const handleCopyUtm = () => {
     navigator.clipboard.writeText(utmUrl)
@@ -270,6 +310,38 @@ function TemplateBuilder({
     a.download = `${template.type}-${product.slug || 'ad'}.jpg`
     a.target = '_blank'
     a.click()
+  }
+
+  const saveCampaign = async () => {
+    if (!product || !utmUrl || !campaignKey) return
+    setSavingCampaign(true)
+    setCampaignError(null)
+    try {
+      const response = await authFetch('/api/partners/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: campaignName.trim() || `${template.name}: ${product.name}`,
+          product_id: product.id,
+          channel: 'meta',
+          template_type: template.type,
+          utm_campaign: campaignKey,
+          utm_source: 'meta',
+          utm_medium: 'paid_social',
+          destination_url: utmUrl,
+          budget_daily_ars: dailyBudget ? Number(dailyBudget) : null,
+          metadata: { copy: selectedCopy, product_slug: product.slug },
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'No se pudo guardar la campaña')
+      onCampaignSaved(data.campaign)
+      setCampaignSaved(true)
+    } catch (error) {
+      setCampaignError(error instanceof Error ? error.message : 'No se pudo guardar la campaña')
+    } finally {
+      setSavingCampaign(false)
+    }
   }
 
   return (
@@ -463,10 +535,31 @@ function TemplateBuilder({
               </CardContent>
             </Card>
           )}
+
+          {utmUrl && (
+            <Card className="bg-zinc-900/50 border-zinc-800">
+              <CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-zinc-300 flex items-center gap-2"><Megaphone className="w-4 h-4" />Guardar para lanzar</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div><label className="text-xs text-zinc-500">Nombre interno</label><Input value={campaignName} onChange={(event) => { setCampaignName(event.target.value); setCampaignSaved(false) }} className="mt-1 bg-zinc-800 border-zinc-700" placeholder={`${template.name} · ${product?.name || ''}`} /></div>
+                <div><label className="text-xs text-zinc-500">Presupuesto diario (ARS, opcional)</label><Input inputMode="numeric" value={dailyBudget} onChange={(event) => { setDailyBudget(event.target.value); setCampaignSaved(false) }} className="mt-1 bg-zinc-800 border-zinc-700" placeholder="3000" /></div>
+                {campaignError && <p className="text-xs text-red-400">{campaignError}</p>}
+                {campaignSaved && <p className="text-xs text-emerald-400">Campaña guardada como borrador. Cuando la lances en Meta, marcala activa desde tu lista.</p>}
+                <Button onClick={saveCampaign} disabled={savingCampaign || campaignSaved || !product} className="w-full bg-violet-600 hover:bg-violet-500">{savingCampaign ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}{campaignSaved ? 'Campaña guardada' : 'Guardar campaña'}</Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
   )
+}
+
+function CampaignOverview({ campaigns, onStatusChange }: { campaigns: Campaign[]; onStatusChange: (id: string, status: Campaign['status']) => Promise<void> }) {
+  if (campaigns.length === 0) return null
+  return <Card className="bg-zinc-900/50 border-zinc-800"><CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-zinc-300">Campañas guardadas</CardTitle></CardHeader><CardContent className="space-y-2">{campaigns.slice(0, 5).map((campaign) => {
+    const nextStatus = campaign.status === 'active' ? 'paused' : campaign.status === 'completed' ? null : 'active'
+    return <div key={campaign.id} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 px-3 py-2"><div className="min-w-0"><p className="text-sm text-zinc-200 truncate">{campaign.name}</p><p className="text-xs text-zinc-500 truncate">{campaign.utm_campaign} · {campaign.performance?.visits || 0} visitas · {campaign.performance?.leads || 0} leads</p></div><div className="flex items-center gap-2 shrink-0"><Badge variant="outline" className="border-zinc-700 text-zinc-400">{campaign.status}</Badge>{nextStatus && <button onClick={() => onStatusChange(campaign.id, nextStatus)} className="text-xs text-violet-400 hover:text-violet-300">{nextStatus === 'active' ? 'Marcar activa' : 'Pausar'}</button>}</div></div>
+  })}</CardContent></Card>
 }
 
 // ---------------------------------------------------------------------------
