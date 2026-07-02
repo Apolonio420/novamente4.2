@@ -5,6 +5,20 @@ import { toPublicR2Url, normalizeR2Key } from "@/lib/r2"
 
 const SESSION_COOKIE = "novamente_session_id"
 
+// Row shape returned by the images query. The Supabase client has no generated
+// types for this table, so the result would otherwise infer as `never[]`.
+interface ImageRow {
+  id: string
+  storage_key: string | null
+  url: string | null
+  prompt: string | null
+  created_at: string
+  has_bg_removed: boolean | null
+  url_without_bg: string | null
+  session_id: string | null
+  user_id: string | null
+}
+
 export async function GET(req: NextRequest) {
   try {
     const cookieStore = await cookies()
@@ -54,7 +68,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ images: [] })
     }
 
-    const images = (data || []).map((item) => {
+    const images = ((data || []) as ImageRow[]).map((item) => {
       const key = normalizeR2Key(item.storage_key || item.url || "")
       const url = key ? toPublicR2Url(key) || `/api/proxy-image?key=${encodeURIComponent(key)}` : item.url
       return {

@@ -1,21 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateTenant } from '@/lib/partners/tenant'
 import { PLAN_FEATURES, PLAN_PRICING_USD } from '@/lib/partners/plans'
 import type { Plan } from '@/lib/partners/types'
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-
-    if (!result) {
-      return NextResponse.json(
-        { error: 'No autenticado o sin tenant asociado' },
-        { status: 401 },
-      )
-    }
-
-    const { tenant } = result
+    const auth = await requireTenantPermission(request, 'billing:read')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
 
     // Calculate next billing date (subscription_started_at + 1 month, rolling)
     let nextBillingDate: string | null = null
@@ -48,16 +41,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-
-    if (!result) {
-      return NextResponse.json(
-        { error: 'No autenticado o sin tenant asociado' },
-        { status: 401 },
-      )
-    }
-
-    const { tenant } = result
+    // Owner-only: plan downgrade / cancellation.
+    const auth = await requireTenantPermission(request, 'billing:manage')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
     const body = await request.json()
     const { action } = body
 

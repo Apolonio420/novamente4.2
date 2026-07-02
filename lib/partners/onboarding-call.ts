@@ -75,16 +75,19 @@ export async function getBooking(tenantId: string): Promise<OnboardingBooking | 
 }
 
 /**
- * Cancel a booking by ID.
+ * Cancel a booking only when it belongs to the caller's tenant.
  */
-export async function cancelBooking(bookingId: string): Promise<void> {
-  const { error } = await db()
+export async function cancelBooking(tenantId: string, bookingId: string): Promise<boolean> {
+  const { data, error } = await db()
     .from('partner_onboarding_calls')
     .update({ status: 'cancelled' })
     .eq('id', bookingId)
+    .eq('tenant_id', tenantId)
+    .select('id')
 
   if (error) {
     console.error('cancelBooking error:', error)
     throw new Error('No se pudo cancelar la llamada')
   }
+  return Array.isArray(data) && data.length > 0
 }

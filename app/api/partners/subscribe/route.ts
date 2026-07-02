@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Preference } from 'mercadopago'
-import { updateTenant, getTenantById } from '@/lib/partners/tenant'
+import { requireTenantPermission } from '@/lib/partners/permissions'
+import { updateTenant } from '@/lib/partners/tenant'
 import { PLAN_NAMES } from '@/lib/partners/plans'
 import { getUsdToArs } from '@/lib/partners/currency'
 import {
@@ -17,23 +18,19 @@ const client = new MercadoPagoConfig({
 
 type BillingCycle = 'monthly' | 'annual'
 
-function calculateExpiresAt(billingCycle: BillingCycle): string {
-  const now = new Date()
-  if (billingCycle === 'annual') {
-    now.setFullYear(now.getFullYear() + 1)
-  } else {
-    now.setMonth(now.getMonth() + 1)
-  }
-  return now.toISOString()
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const { tenantId, plan, billingCycle = 'monthly' } = await request.json()
+    const auth = await requireTenantPermission(request, 'billing:manage')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
 
-    if (!tenantId || !plan) {
+    // tenantId is deliberately not accepted from the request body. The active
+    // tenant was already membership-validated by requireTenantPermission.
+    const { plan, billingCycle = 'monthly' } = await request.json()
+
+    if (!plan) {
       return NextResponse.json(
-        { error: 'tenantId y plan son requeridos' },
+        { error: 'plan es requerido' },
         { status: 400 }
       )
     }
@@ -52,22 +49,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify tenant exists
-    const tenant = await getTenantById(tenantId)
-    if (!tenant) {
-      return NextResponse.json(
-        { error: 'Tenant no encontrado' },
-        { status: 404 }
-      )
-    }
-
     // ── Mensual → suscripción recurrente (débito automático vía PreApproval) ──
     // El plan NO se cambia acá: lo activa el webhook cuando MP confirma la
     // autorización (subscription_preapproval authorized). Anual sigue abajo
     // como pago único (Preference).
     if (billingCycle === 'monthly') {
       const result = await createRecurringSubscription({
-        tenantId,
+        tenantId: tenant.id,
         tenantEmail: tenant.email,
         plan: plan as 'growth' | 'pro',
         baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
@@ -102,27 +90,31 @@ export async function POST(request: NextRequest) {
     const planName = PLAN_NAMES[typedPlan]
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
     const timestamp = Date.now()
-    const externalReference = `partner_sub_${tenantId}_${timestamp}_annual`
+    // The plan is embedded in the server-created payment reference so the webhook can
+    // activate it only after Mercado Pago returns an approved payment (it also sets
+    // billing_cycle + subscription_expires_at). Do not persist plan or expiration here.
+    const externalReference = `partner_sub_${tenant.id}_${timestamp}_${billingCycle}_${typedPlan}`
 
-    // Save plan choice + billing cycle + promo lock to tenant
-    const subscriptionStartedAt = new Date().toISOString()
-    const subscriptionExpiresAt = calculateExpiresAt('annual')
+    // La promo prometida se registra en metadata SIN activar plan (mismo patrón que
+    // persistPendingSubscription en el flujo mensual): el precio ya viaja en la
+    // Preference y el cron de renovación usa promo.expires_at para volver a full.
+    // El cupo de 100 se consume recién con last_payment_at (countPaidPartners), así
+    // que un checkout abandonado no quema lugar.
     const promo: PromoLock | null = promoEligible
-      ? { price_usd: priceUSD, expires_at: subscriptionExpiresAt }
+      ? {
+          price_usd: priceUSD,
+          expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        }
       : null
-    const metadata = {
-      ...((tenant.metadata as Record<string, unknown>) ?? {}),
-      subscription_type: 'one_time',
-      promo,
+    if (promo) {
+      await updateTenant(tenant.id, {
+        metadata: {
+          ...((tenant.metadata as Record<string, unknown>) ?? {}),
+          subscription_type: 'one_time',
+          promo,
+        },
+      } as any)
     }
-
-    await updateTenant(tenantId, {
-      plan: typedPlan,
-      billing_cycle: 'annual' as BillingCycle,
-      subscription_started_at: subscriptionStartedAt,
-      subscription_expires_at: subscriptionExpiresAt,
-      metadata,
-    } as any)
 
     const discountNote = promoEligible ? ' (50% OFF primer año)' : ' (15% descuento)'
 
@@ -142,9 +134,9 @@ export async function POST(request: NextRequest) {
         },
       ],
       back_urls: {
-        success: `${baseUrl}/partners/payment/success?tenant_id=${tenantId}`,
-        failure: `${baseUrl}/partners/payment/failure?tenant_id=${tenantId}`,
-        pending: `${baseUrl}/partners/payment/pending?tenant_id=${tenantId}`,
+        success: `${baseUrl}/partners/payment/success?tenant_id=${tenant.id}`,
+        failure: `${baseUrl}/partners/payment/failure?tenant_id=${tenant.id}`,
+        pending: `${baseUrl}/partners/payment/pending?tenant_id=${tenant.id}`,
       },
       notification_url: `${baseUrl}/api/partners/webhook/mercadopago`,
       external_reference: externalReference,
@@ -174,8 +166,8 @@ export async function POST(request: NextRequest) {
       external_reference: externalReference,
       price_ars: priceARS,
       price_usd: priceUSD,
-      billing_cycle: 'annual',
-      expires_at: subscriptionExpiresAt,
+      billing_cycle: billingCycle,
+      payment_pending: true,
       promo,
     })
   } catch (error: any) {

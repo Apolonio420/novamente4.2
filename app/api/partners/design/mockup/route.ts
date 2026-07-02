@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import {
   getDesignConfig,
   validateDesignAccess,
@@ -18,12 +18,10 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    const { userId, tenant } = result
+    const auth = await requireTenantPermission(request, 'designs:write')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
+    const userId = auth.userId
     const config = await getDesignConfig(tenant.id)
 
     // Validate access

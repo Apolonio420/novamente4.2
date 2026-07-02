@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { parseCsvProducts } from '@/lib/partners/csv-parser'
 import { countProducts, createProduct } from '@/lib/partners/catalog'
 import { validatePartnerProductForCreation } from '@/lib/partners/product-policy'
@@ -8,12 +8,10 @@ import type { Plan } from '@/lib/partners/types'
 
 export async function POST(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'catalog:write')
+    if (!auth.ok) return auth.response
 
-    const { tenant } = result
+    const tenant = auth.tenant
     const plan = tenant.plan as Plan
     const features = PLAN_FEATURES[plan]
 

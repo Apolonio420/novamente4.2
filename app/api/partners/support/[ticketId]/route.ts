@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getTicketById, addMessage, updateTicketStatus } from '@/lib/partners/support'
 
 export async function GET(
@@ -7,13 +7,11 @@ export async function GET(
   { params }: { params: Promise<{ ticketId: string }> }
 ) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'support:read')
+    if (!auth.ok) return auth.response
 
     const { ticketId } = await params
-    const ticket = await getTicketById(ticketId, result.tenant.id)
+    const ticket = await getTicketById(ticketId, auth.tenant.id)
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 })
     }
@@ -30,15 +28,13 @@ export async function POST(
   { params }: { params: Promise<{ ticketId: string }> }
 ) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'support:write')
+    if (!auth.ok) return auth.response
 
     const { ticketId } = await params
 
     // Verify ticket belongs to tenant
-    const ticket = await getTicketById(ticketId, result.tenant.id)
+    const ticket = await getTicketById(ticketId, auth.tenant.id)
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 })
     }
@@ -51,9 +47,10 @@ export async function POST(
     }
 
     const msg = await addMessage(
+      auth.tenant.id,
       ticketId,
       'partner',
-      result.tenant.name,
+      auth.tenant.name,
       message.trim()
     )
 
@@ -73,15 +70,13 @@ export async function PATCH(
   { params }: { params: Promise<{ ticketId: string }> }
 ) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'support:write')
+    if (!auth.ok) return auth.response
 
     const { ticketId } = await params
 
     // Verify ticket belongs to tenant
-    const existing = await getTicketById(ticketId, result.tenant.id)
+    const existing = await getTicketById(ticketId, auth.tenant.id)
     if (!existing) {
       return NextResponse.json({ error: 'Ticket no encontrado' }, { status: 404 })
     }
@@ -94,7 +89,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Estado invalido' }, { status: 400 })
     }
 
-    const updated = await updateTicketStatus(ticketId, status)
+    const updated = await updateTicketStatus(auth.tenant.id, ticketId, status)
     if (!updated) {
       return NextResponse.json({ error: 'Error al actualizar ticket' }, { status: 500 })
     }

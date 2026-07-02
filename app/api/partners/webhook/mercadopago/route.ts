@@ -30,11 +30,12 @@ function resolvePaymentId(body: any, request: NextRequest): string | null {
 }
 
 /**
- * Extract tenant_id from external_reference format: partner_sub_{tenantId}_{timestamp}[_{billingCycle}]
+ * Extract tenant_id from external_reference format:
+ * partner_sub_{tenantId}_{timestamp}_{billingCycle}[_{plan}]
  */
 function extractTenantId(externalReference: string): string | null {
   // New format: partner_sub_{tenantId}_{timestamp}_{billingCycle}
-  const matchNew = externalReference.match(/^partner_sub_(.+)_\d+_(monthly|annual)$/)
+  const matchNew = externalReference.match(/^partner_sub_(.+)_\d+_(monthly|annual)(?:_(growth|pro))?$/)
   if (matchNew) return matchNew[1]
   // Legacy format: partner_sub_{tenantId}_{timestamp}
   const matchLegacy = externalReference.match(/^partner_sub_(.+)_\d+$/)
@@ -45,8 +46,14 @@ function extractTenantId(externalReference: string): string | null {
  * Extract billing cycle from external_reference. Defaults to 'monthly' for legacy references.
  */
 function extractBillingCycle(externalReference: string): 'monthly' | 'annual' {
-  if (externalReference.endsWith('_annual')) return 'annual'
-  return 'monthly'
+  const match = externalReference.match(/^partner_sub_.+_\d+_(monthly|annual)(?:_(growth|pro))?$/)
+  return match?.[1] === 'annual' ? 'annual' : 'monthly'
+}
+
+/** The requested paid plan is embedded by /api/partners/subscribe. */
+function extractPlan(externalReference: string): Exclude<Plan, 'starter'> | null {
+  const match = externalReference.match(/^partner_sub_.+_\d+_(?:monthly|annual)_(growth|pro)$/)
+  return (match?.[1] as Exclude<Plan, 'starter'> | undefined) ?? null
 }
 
 /**
@@ -240,10 +247,13 @@ export async function POST(request: NextRequest) {
 
     // Handle payment status
     if (paymentDetails.status === 'approved') {
-      console.log('Partner payment APPROVED for tenant:', tenant.name, 'Plan:', tenant.plan)
+      const paidPlan = extractPlan(externalReference)
+        || ((tenant.metadata as any)?.pending_plan as Exclude<Plan, 'starter'> | undefined)
+        || (tenant.plan === 'starter' ? 'growth' : tenant.plan as Exclude<Plan, 'starter'>)
+      console.log('Partner payment APPROVED for tenant:', tenant.name, 'Plan:', paidPlan)
 
       // Get plan features to apply limits
-      const features = PLAN_FEATURES[tenant.plan as Plan]
+      const features = PLAN_FEATURES[paidPlan]
 
       // Extract billing cycle and calculate new expiration
       const billingCycle = extractBillingCycle(externalReference)
@@ -252,6 +262,7 @@ export async function POST(request: NextRequest) {
 
       // Activate tenant + update subscription fields
       const updated = await updateTenant(tenantId, {
+        plan: paidPlan,
         status: 'active',
         storefront_published: true,
         onboarding_completed: true,
@@ -261,20 +272,21 @@ export async function POST(request: NextRequest) {
         seo_indexable: features?.seoIndexable ?? false,
         billing_cycle: billingCycle,
         last_payment_at: now,
+        subscription_started_at: tenant.subscription_started_at ?? now,
         subscription_expires_at: subscriptionExpiresAt,
         payment_failures: 0,
       } as any)
 
       if (updated) {
-        console.log('Tenant activated:', tenant.name, 'Plan:', tenant.plan)
+        console.log('Tenant activated:', tenant.name, 'Plan:', paidPlan)
 
         // Notify sales team via Telegram
         try {
           const { notifyPartnerSubscription } = await import('@/lib/notifications')
           await notifyPartnerSubscription({
             tenantName: tenant.name,
-            plan: tenant.plan,
-            priceUsd: PLAN_PRICING_USD[tenant.plan as Plan] || 0,
+            plan: paidPlan,
+            priceUsd: PLAN_PRICING_USD[paidPlan] || 0,
             priceArs: paymentDetails.transaction_amount || 0,
             billingCycle: externalReference.includes('_annual_') ? 'annual' : 'monthly',
             tenantEmail: tenant.email,

@@ -1,10 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 import { NextRequest } from "next/server"
 
-vi.mock("@/lib/partners/auth", () => ({
-  getRequestTenant: vi.fn(async () => ({
-    tenant: { id: "tenant-1", slug: "acme" },
-    user: { id: "user-1" },
+vi.mock("@/lib/partners/permissions", () => ({
+  requireTenantPermission: vi.fn(async () => ({
+    ok: true,
+    tenant: { id: "tenant-1", slug: "acme", plan: "starter" },
+    role: "owner",
+    userId: "user-1",
+    email: "owner@acme.com",
+    isPlatformAdmin: false,
   })),
 }))
 

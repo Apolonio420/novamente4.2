@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getOrderById, updateOrder } from '@/lib/partners/orders'
 
 export async function GET(
@@ -7,14 +7,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'orders:read')
+    if (!auth.ok) return auth.response
 
     const { id } = await params
     const order = await getOrderById(id)
-    if (!order || order.tenant_id !== result.tenant.id) {
+    if (!order || order.tenant_id !== auth.tenant.id) {
       return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
     }
 
@@ -30,14 +28,12 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'orders:write')
+    if (!auth.ok) return auth.response
 
     const { id } = await params
     const existing = await getOrderById(id)
-    if (!existing || existing.tenant_id !== result.tenant.id) {
+    if (!existing || existing.tenant_id !== auth.tenant.id) {
       return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 })
     }
 
@@ -54,7 +50,7 @@ export async function PUT(
       return NextResponse.json({ error: 'No hay campos para actualizar' }, { status: 400 })
     }
 
-    const order = await updateOrder(id, updates as any)
+    const order = await updateOrder(auth.tenant.id, id, updates as any)
     if (!order) {
       return NextResponse.json({ error: 'Error al actualizar el pedido' }, { status: 500 })
     }

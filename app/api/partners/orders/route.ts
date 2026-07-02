@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { z } from 'zod'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getOrdersByTenant, createOrder, countOrdersByTenant } from '@/lib/partners/orders'
 import { sendToProduction } from '@/lib/partners/production'
 import { notifyPartnerOrder, notifyTeamManualSale, type ManualOrderItemNotice } from '@/lib/notifications'
@@ -9,10 +9,8 @@ export const maxDuration = 30
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'orders:read')
+    if (!auth.ok) return auth.response
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || undefined
@@ -20,8 +18,8 @@ export async function GET(request: NextRequest) {
     const offset = Number(searchParams.get('offset')) || 0
 
     const [orders, total] = await Promise.all([
-      getOrdersByTenant(result.tenant.id, { status, limit, offset }),
-      countOrdersByTenant(result.tenant.id),
+      getOrdersByTenant(auth.tenant.id, { status, limit, offset }),
+      countOrdersByTenant(auth.tenant.id),
     ])
 
     return NextResponse.json({ orders, total })
@@ -67,11 +65,9 @@ function variantLabel(color?: string, talle?: string, doble?: 'Si' | 'No' | 'Chi
 
 export async function POST(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-    const { tenant } = result
+    const auth = await requireTenantPermission(request, 'orders:write')
+    if (!auth.ok) return auth.response
+    const tenant = auth.tenant
 
     let raw: unknown
     try {

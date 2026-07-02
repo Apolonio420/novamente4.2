@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getAllProducts, createProduct, countProducts } from '@/lib/partners/catalog'
 import { canAddProduct } from '@/lib/partners/plans'
 import { validatePartnerProductForCreation } from '@/lib/partners/product-policy'
@@ -7,19 +7,17 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'catalog:read')
+    if (!auth.ok) return auth.response
 
-    const products = await getAllProducts(result.tenant.id)
+    const products = await getAllProducts(auth.tenant.id)
     const count = products.length
 
     return NextResponse.json({
       products,
       count,
-      plan: result.tenant.plan,
-      maxProducts: result.tenant.max_products,
+      plan: auth.tenant.plan,
+      maxProducts: auth.tenant.max_products,
     })
   } catch (error) {
     console.error('GET /api/partners/catalog error:', error)
@@ -29,12 +27,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'catalog:write')
+    if (!auth.ok) return auth.response
 
-    const { tenant } = result
+    const tenant = auth.tenant
     const currentCount = await countProducts(tenant.id)
 
     if (!canAddProduct(tenant.plan, currentCount)) {

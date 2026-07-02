@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getDesignUploadLimit } from '@/lib/partners/plan-limits'
 
@@ -11,10 +11,8 @@ const BUCKET = 'partner-assets'
 
 export async function POST(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'designs:write')
+    if (!auth.ok) return auth.response
 
     const formData = await request.formData()
     const file = formData.get('file') as File | null
@@ -47,13 +45,13 @@ export async function POST(request: NextRequest) {
       const { count } = await db
         .from('partner_assets')
         .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', result.tenant.id)
+        .eq('tenant_id', auth.tenant.id)
         .eq('type', 'design')
         .eq('source', 'uploaded')
 
-      const limit = getDesignUploadLimit(result.tenant.plan)
+      const limit = getDesignUploadLimit(auth.tenant.plan)
       if (limit !== Infinity && (count ?? 0) >= limit) {
-        const planLabel = result.tenant.plan.charAt(0).toUpperCase() + result.tenant.plan.slice(1)
+        const planLabel = auth.tenant.plan.charAt(0).toUpperCase() + auth.tenant.plan.slice(1)
         return NextResponse.json(
           {
             error: `Llegaste al límite de tu plan (${limit} diseños en ${planLabel}). Eliminá uno o subí a Growth para hasta 100.`,
@@ -78,7 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     const ext = file.name.split('.').pop() || 'png'
-    const filename = `${result.tenant.id}/${type}/${Date.now()}.${ext}`
+    const filename = `${auth.tenant.id}/${type}/${Date.now()}.${ext}`
 
     const buffer = Buffer.from(await file.arrayBuffer())
 
@@ -104,7 +102,7 @@ export async function POST(request: NextRequest) {
     // Save asset record — design uploads use status='active' so they appear in design-library
     const db2 = supabaseAdmin as any
     await db2.from('partner_assets').insert({
-      tenant_id: result.tenant.id,
+      tenant_id: auth.tenant.id,
       type,
       status: source === 'uploaded' && type === 'design' ? 'active' : 'uploaded',
       source,

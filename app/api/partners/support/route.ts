@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { createTicket, getTickets } from '@/lib/partners/support'
 
 export async function GET(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'support:read')
+    if (!auth.ok) return auth.response
 
     const url = new URL(request.url)
     const status = url.searchParams.get('status') as any
 
-    const tickets = await getTickets(result.tenant.id, status || undefined)
+    const tickets = await getTickets(auth.tenant.id, status || undefined)
     return NextResponse.json({ tickets })
   } catch (error) {
     console.error('GET /api/partners/support error:', error)
@@ -22,10 +20,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'support:write')
+    if (!auth.ok) return auth.response
 
     const body = await request.json()
     const { subject, description, category } = body
@@ -41,11 +37,11 @@ export async function POST(request: NextRequest) {
     const ticketCategory = validCategories.includes(category) ? category : 'general'
 
     const ticket = await createTicket(
-      result.tenant.id,
+      auth.tenant.id,
       subject,
       description,
       ticketCategory,
-      result.tenant.plan
+      auth.tenant.plan
     )
 
     if (!ticket) {
