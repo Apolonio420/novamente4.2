@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getPlanFeatures } from '@/lib/partners/plans'
 import { createBooking, getBooking, cancelBooking } from '@/lib/partners/onboarding-call'
 
@@ -8,12 +8,10 @@ import { createBooking, getBooking, cancelBooking } from '@/lib/partners/onboard
  */
 export async function GET(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'support:read')
+    if (!auth.ok) return auth.response
 
-    const features = getPlanFeatures(result.tenant.plan)
+    const features = getPlanFeatures(auth.tenant.plan)
     if (!features.onboardingCall) {
       return NextResponse.json(
         { error: 'Disponible solo en plan Pro', locked: true },
@@ -21,7 +19,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const booking = await getBooking(result.tenant.id)
+    const booking = await getBooking(auth.tenant.id)
     return NextResponse.json({ booking })
   } catch (error) {
     console.error('GET /api/partners/onboarding-call error:', error)
@@ -34,12 +32,10 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'support:write')
+    if (!auth.ok) return auth.response
 
-    const features = getPlanFeatures(result.tenant.plan)
+    const features = getPlanFeatures(auth.tenant.plan)
     if (!features.onboardingCall) {
       return NextResponse.json(
         { error: 'Disponible solo en plan Pro', locked: true },
@@ -87,7 +83,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const booking = await createBooking(result.tenant.id, {
+    const booking = await createBooking(auth.tenant.id, {
       preferredDate,
       preferredTime,
       topic,
@@ -106,25 +102,24 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const result = await getRequestTenant(request)
-    if (!result) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    const auth = await requireTenantPermission(request, 'support:write')
+    if (!auth.ok) return auth.response
 
     const { searchParams } = new URL(request.url)
     const bookingId = searchParams.get('id')
 
     if (!bookingId) {
       // If no ID provided, cancel the latest active booking
-      const existing = await getBooking(result.tenant.id)
+      const existing = await getBooking(auth.tenant.id)
       if (!existing) {
         return NextResponse.json({ error: 'No hay reserva activa' }, { status: 404 })
       }
-      await cancelBooking(existing.id)
+      await cancelBooking(auth.tenant.id, existing.id)
       return NextResponse.json({ success: true })
     }
 
-    await cancelBooking(bookingId)
+    const cancelled = await cancelBooking(auth.tenant.id, bookingId)
+    if (!cancelled) return NextResponse.json({ error: 'Reserva no encontrada' }, { status: 404 })
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('DELETE /api/partners/onboarding-call error:', error)

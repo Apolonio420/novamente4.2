@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Wallet, ArrowDownToLine, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle } from "lucide-react"
+import { PAYOUT_BADGE, type PayoutDisplayStatus } from '@/lib/partners/finance-ui'
 
 interface LedgerEntry {
   id: string
@@ -21,7 +22,7 @@ interface LedgerEntry {
 interface Payout {
   id: string
   amount: number
-  status: 'requested' | 'paid' | 'rejected'
+  status: PayoutDisplayStatus
   method: string | null
   requested_at: string
   resolved_at: string | null
@@ -42,12 +43,6 @@ const fmt = (n: number) =>
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
-const PAYOUT_BADGE: Record<Payout['status'], { label: string; cls: string }> = {
-  requested: { label: 'Pendiente', cls: 'bg-amber-500/15 text-amber-600 border-amber-500/30' },
-  paid: { label: 'Pagado', cls: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30' },
-  rejected: { label: 'Rechazado', cls: 'bg-red-500/15 text-red-600 border-red-500/30' },
-}
-
 export default function FinanzasPage() {
   const [data, setData] = useState<FinanzasData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -56,6 +51,9 @@ export default function FinanzasPage() {
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState('')
   const [okMsg, setOkMsg] = useState<string | null>(null)
+  // Retain this key while retrying the same intent. A lost response must not
+  // turn a second click into a second withdrawal.
+  const [payoutIdempotencyKey, setPayoutIdempotencyKey] = useState<string | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -80,16 +78,19 @@ export default function FinanzasPage() {
     setRequesting(true)
     setError(null)
     setOkMsg(null)
+    const idempotencyKey = payoutIdempotencyKey || crypto.randomUUID()
+    if (!payoutIdempotencyKey) setPayoutIdempotencyKey(idempotencyKey)
     try {
       const res = await authFetch('/api/partners/finanzas', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
         body: JSON.stringify({ amount: Number(amount), method }),
       })
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || 'Error al solicitar el retiro')
-      setOkMsg('Retiro solicitado. Te lo transferimos dentro de las próximas 48h hábiles.')
+      setOkMsg('Retiro solicitado. El equipo lo revisará y transferirá a tu alias o CBU en 24–48 h hábiles.')
       setAmount('')
+      setPayoutIdempotencyKey(null)
       await load()
     } catch (e: any) {
       setError(e.message)
@@ -109,7 +110,7 @@ export default function FinanzasPage() {
           <Wallet className="h-6 w-6" /> Finanzas
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Tu margen por cada venta se acredita acá automáticamente cuando el pago se confirma.
+          Tu margen se acredita cuando el pago se confirma. Desde acá podés ver qué está disponible, qué requiere revisión y el estado de cada liquidación.
         </p>
       </div>
 
@@ -117,7 +118,7 @@ export default function FinanzasPage() {
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="rounded-2xl border bg-gradient-to-br from-emerald-500/10 to-transparent p-6">
           <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-            <TrendingUp className="h-4 w-4" /> Saldo disponible
+            <TrendingUp className="h-4 w-4" /> Disponible para solicitar retiro
           </p>
           <p className="text-4xl font-bold mt-2 text-emerald-600">{fmt(data?.balance.available ?? 0)}</p>
         </div>
@@ -128,7 +129,7 @@ export default function FinanzasPage() {
             </p>
             <p className="text-2xl font-bold mt-2 text-amber-600">{fmt(data?.balance.pendingReview ?? 0)}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Ventas con margen a confirmar por el equipo. Se liberan en 24-48h.
+              Son ventas cuyo costo o margen requiere validación. No se pueden retirar hasta que queden confirmadas.
             </p>
           </div>
         )}
@@ -139,6 +140,9 @@ export default function FinanzasPage() {
         <h2 className="font-semibold flex items-center gap-2">
           <ArrowDownToLine className="h-4 w-4" /> Solicitar retiro
         </h2>
+        <p className="text-sm text-muted-foreground">
+          Las solicitudes aprobadas se transfieren al alias o CBU indicado dentro de 24–48 h hábiles. Si existe una devolución o incidencia, el equipo te avisará antes de liquidar.
+        </p>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="amount">Monto (mín. {fmt(data?.minPayout ?? 20000)})</Label>
@@ -148,7 +152,7 @@ export default function FinanzasPage() {
               inputMode="numeric"
               placeholder="50000"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => { setAmount(e.target.value); setPayoutIdempotencyKey(null) }}
             />
           </div>
           <div>
@@ -157,7 +161,7 @@ export default function FinanzasPage() {
               id="method"
               placeholder="tu.alias.mp"
               value={method}
-              onChange={(e) => setMethod(e.target.value)}
+              onChange={(e) => { setMethod(e.target.value); setPayoutIdempotencyKey(null) }}
             />
           </div>
         </div>

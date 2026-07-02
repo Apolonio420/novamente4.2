@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const runtime = 'nodejs'
@@ -19,12 +19,10 @@ const PLAN_CREDITS: Record<string, number> = {
 
 export async function POST(request: NextRequest) {
     try {
-        const result = await getRequestTenant(request)
-        if (!result) {
-            return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-        }
+        const auth = await requireTenantPermission(request, 'support:write')
+        if (!auth.ok) return auth.response
 
-        const { tenant } = result
+        const tenant = auth.tenant
 
         const body = await request.json().catch(() => null)
         const parsed = SuperActionSchema.safeParse(body)

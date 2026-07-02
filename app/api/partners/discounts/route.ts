@@ -5,22 +5,22 @@
  * POST  — crea un codigo
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { listDiscountCodes, createDiscountCode } from '@/lib/partners/discounts'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-  const result = await getRequestTenant(request)
-  if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  const codes = await listDiscountCodes(result.tenant.id)
+  const auth = await requireTenantPermission(request, 'marketing:read')
+  if (!auth.ok) return auth.response
+  const codes = await listDiscountCodes(auth.tenant.id)
   return NextResponse.json({ codes })
 }
 
 export async function POST(request: NextRequest) {
-  const result = await getRequestTenant(request)
-  if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const auth = await requireTenantPermission(request, 'marketing:write')
+  if (!auth.ok) return auth.response
 
   const body = await request.json().catch(() => null)
   if (!body || typeof body.code !== 'string') {
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Porcentaje no puede ser mayor a 100' }, { status: 400 })
   }
 
-  const code = await createDiscountCode(result.tenant.id, {
+  const code = await createDiscountCode(auth.tenant.id, {
     code: body.code,
     description: body.description,
     discount_type: body.discount_type,

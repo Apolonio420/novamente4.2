@@ -24,7 +24,8 @@
  *   { updated: number, products: PartnerProduct[] }
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
+import { listVariants, resolveProductCost, validateProductForPublish } from '@/lib/partners/variants'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const runtime = 'nodejs'
@@ -33,11 +34,9 @@ export const dynamic = 'force-dynamic'
 const db = () => supabaseAdmin as any
 
 export async function POST(request: NextRequest) {
-  const result = await getRequestTenant(request)
-  if (!result) {
-    return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-  }
-  const { tenant } = result
+  const auth = await requireTenantPermission(request, 'catalog:write')
+  if (!auth.ok) return auth.response
+  const tenant = auth.tenant
 
   const body = await request.json().catch(() => null)
   if (!body || typeof body !== 'object') {
@@ -69,7 +68,7 @@ export async function POST(request: NextRequest) {
   // 1) Cargar productos del tenant que matcheen el filtro
   let query = db()
     .from('partner_products')
-    .select('id, name, category, price, compare_at_price, status')
+    .select('id, name, category, price, compare_at_price, status, metadata')
     .eq('tenant_id', tenant.id)
 
   if (filter.productIds && filter.productIds.length > 0) {
@@ -94,8 +93,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ updated: 0, products: [] })
   }
 
-  // 2) Para cada producto, calcular el nuevo precio y actualizar
-  const updatedProducts: any[] = []
+  // 2) Validate every published product before writing any of them. This keeps
+  // a failed bulk repricing from partially exposing products below their cost.
+  const pendingUpdates: Array<{ product: any; updates: Record<string, any> }> = []
   for (const p of products) {
     const updates: Record<string, any> = {}
     if (setPrice !== undefined) {
@@ -108,6 +108,23 @@ export async function POST(request: NextRequest) {
     }
     if (Object.keys(updates).length === 0) continue
 
+    if (p.status === 'published' && updates.price !== undefined) {
+      const variants = await listVariants(tenant.id, p.id)
+      const gate = validateProductForPublish({
+        price: updates.price,
+        cost: resolveProductCost(p.metadata || {}, tenant.plan),
+        variants,
+      })
+      if (!gate.ok) {
+        return NextResponse.json({ error: `${p.name}: ${gate.reason}` }, { status: 400 })
+      }
+    }
+    pendingUpdates.push({ product: p, updates })
+  }
+
+  // 3) Apply only after the complete candidate set passed validation.
+  const updatedProducts: any[] = []
+  for (const { product: p, updates } of pendingUpdates) {
     const { data: updated, error: updErr } = await db()
       .from('partner_products')
       .update(updates)

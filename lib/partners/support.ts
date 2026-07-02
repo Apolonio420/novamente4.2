@@ -117,6 +117,7 @@ export async function getTicketById(
 }
 
 export async function addMessage(
+  tenantId: string,
   ticketId: string,
   senderType: SupportMessage['sender_type'],
   senderName: string,
@@ -143,11 +144,13 @@ export async function addMessage(
     .from('partner_support_tickets')
     .update({ updated_at: new Date().toISOString() })
     .eq('id', ticketId)
+    .eq('tenant_id', tenantId)
 
   return data
 }
 
 export async function updateTicketStatus(
+  tenantId: string,
   ticketId: string,
   status: SupportTicket['status']
 ): Promise<SupportTicket | null> {
@@ -164,6 +167,7 @@ export async function updateTicketStatus(
     .from('partner_support_tickets')
     .update(updates)
     .eq('id', ticketId)
+    .eq('tenant_id', tenantId)
     .select()
     .single()
 

@@ -146,8 +146,12 @@ interface TenantOption {
   logo_url: string | null
   plan: string
   status: string
-  email: string
+  email?: string
+  role?: 'owner' | 'operator' | 'viewer'
+  pending?: boolean
 }
+
+const ACTIVE_TENANT_STORAGE_KEY = 'active_tenant_id'
 
 const planColors: Record<string, string> = {
   starter: 'bg-zinc-700 text-zinc-300',
@@ -186,25 +190,25 @@ export default function WorkspaceLayout({
     fetchTenant()
   }, [])
 
-  // Fetch all tenants for admin switcher
+  // Fetch the memberships available to the current user. Platform admins get
+  // every tenant for support; regular users only receive their own brands.
   useEffect(() => {
-    async function fetchAdminTenants() {
+    async function fetchTenants() {
       try {
         const res = await authFetch('/api/partners/tenants')
         if (res.ok) {
           const json = await res.json()
-          if (json.tenants?.length > 0) {
-            setAllTenants(json.tenants)
-            setIsAdmin(true)
-          }
+          setAllTenants(Array.isArray(json.tenants) ? json.tenants : [])
+          setIsAdmin(json.isAdmin === true)
         }
       } catch {}
     }
-    fetchAdminTenants()
+    fetchTenants()
   }, [])
 
   const switchTenant = (tenantOption: TenantOption) => {
-    localStorage.setItem('admin_tenant_id', tenantOption.id)
+    if (tenantOption.pending) return
+    localStorage.setItem(ACTIVE_TENANT_STORAGE_KEY, tenantOption.id)
     setTenant({
       id: tenantOption.id,
       name: tenantOption.name,
@@ -220,18 +224,36 @@ export default function WorkspaceLayout({
     window.location.reload()
   }
 
-  const clearTenantOverride = () => {
-    localStorage.removeItem('admin_tenant_id')
+  const clearTenantSelection = () => {
+    localStorage.removeItem(ACTIVE_TENANT_STORAGE_KEY)
     setShowTenantPicker(false)
     setTenantSearch('')
     window.location.reload()
   }
 
+  const acceptInvitation = async (tenantOption: TenantOption) => {
+    if (!tenantOption.pending) return
+    try {
+      const response = await authFetch('/api/partners/team/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId: tenantOption.id }),
+      })
+      if (!response.ok) return
+      localStorage.setItem(ACTIVE_TENANT_STORAGE_KEY, tenantOption.id)
+      window.location.reload()
+    } catch {
+      // Keep the invitation visible so the user can retry.
+    }
+  }
+
+  const canSwitchTenants = allTenants.length > 1 || allTenants.some((t) => t.pending)
+
   const filteredTenants = tenantSearch
     ? allTenants.filter(t =>
         t.name.toLowerCase().includes(tenantSearch.toLowerCase()) ||
         t.slug.toLowerCase().includes(tenantSearch.toLowerCase()) ||
-        t.email.toLowerCase().includes(tenantSearch.toLowerCase())
+        (t.email || '').toLowerCase().includes(tenantSearch.toLowerCase())
       )
     : allTenants
 
@@ -279,11 +301,11 @@ export default function WorkspaceLayout({
       {/* Tenant header */}
       <div className="relative border-b border-zinc-800">
         <button
-          onClick={isAdmin ? (e) => { e.stopPropagation(); setShowTenantPicker(!showTenantPicker) } : undefined}
+          onClick={canSwitchTenants ? (e) => { e.stopPropagation(); setShowTenantPicker(!showTenantPicker) } : undefined}
           className={cn(
             'flex items-center gap-3 w-full transition-all',
             sidebarCollapsed ? 'px-3 py-4 justify-center' : 'px-5 py-5',
-            isAdmin && 'hover:bg-zinc-800/60 cursor-pointer'
+            canSwitchTenants && 'hover:bg-zinc-800/60 cursor-pointer'
           )}
         >
           {tenant?.logo_url ? (
@@ -320,13 +342,13 @@ export default function WorkspaceLayout({
                   )}
                 </div>
               </div>
-              {isAdmin && <ChevronsUpDown className="w-4 h-4 text-zinc-500 shrink-0" />}
+              {canSwitchTenants && <ChevronsUpDown className="w-4 h-4 text-zinc-500 shrink-0" />}
             </>
           )}
         </button>
 
         {/* Tenant picker dropdown */}
-        {showTenantPicker && isAdmin && (
+        {showTenantPicker && canSwitchTenants && (
           <div className="absolute left-0 top-full z-50 w-72 max-h-96 rounded-lg border border-zinc-700 bg-zinc-900 shadow-2xl overflow-hidden">
             <div className="p-2 border-b border-zinc-800">
               <input
@@ -339,28 +361,29 @@ export default function WorkspaceLayout({
               />
             </div>
             <div className="overflow-y-auto max-h-72">
-              {/* Clear override option */}
-              {localStorage.getItem('admin_tenant_id') && (
+              {/* Return to the default accepted membership. */}
+              {localStorage.getItem(ACTIVE_TENANT_STORAGE_KEY) && (
                 <button
-                  onClick={clearTenantOverride}
+                  onClick={clearTenantSelection}
                   className="flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-zinc-800 transition-colors border-b border-zinc-800"
                 >
                   <div className="w-7 h-7 rounded-md bg-zinc-700 flex items-center justify-center shrink-0">
                     <X className="w-3.5 h-3.5 text-zinc-400" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-zinc-300">Volver a mi cuenta</p>
-                    <p className="text-[11px] text-zinc-500">Quitar override</p>
+                    <p className="text-sm text-zinc-300">Volver a mi marca predeterminada</p>
+                    <p className="text-[11px] text-zinc-500">Quitar selección</p>
                   </div>
                 </button>
               )}
               {filteredTenants.map((t) => (
                 <button
                   key={t.id}
-                  onClick={() => switchTenant(t)}
+                  onClick={() => t.pending ? acceptInvitation(t) : switchTenant(t)}
                   className={cn(
                     'flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-zinc-800 transition-colors',
-                    tenant?.id === t.id && 'bg-violet-600/10'
+                    tenant?.id === t.id && 'bg-violet-600/10',
+                    t.pending && 'border-l-2 border-amber-500/70'
                   )}
                 >
                   {t.logo_url ? (
@@ -383,7 +406,7 @@ export default function WorkspaceLayout({
                         'text-[10px]',
                         t.status === 'active' ? 'text-emerald-400' : 'text-zinc-500'
                       )}>
-                        {t.status}
+                        {t.pending ? 'Invitación pendiente — aceptar' : t.status}
                       </span>
                     </div>
                   </div>

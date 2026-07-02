@@ -4,18 +4,18 @@
  * PATCH { id, status: 'approved' | 'rejected' }
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET(request: NextRequest) {
-  const result = await getRequestTenant(request)
-  if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const auth = await requireTenantPermission(request, 'marketing:read')
+  if (!auth.ok) return auth.response
   const sb = supabaseAdmin as any
 
   const { data: reviews } = await sb
     .from('product_reviews')
     .select('id, product_id, customer_name, rating, title, body, verified_purchase, status, created_at')
-    .eq('tenant_id', result.tenant.id)
+    .eq('tenant_id', auth.tenant.id)
     .order('created_at', { ascending: false })
     .limit(100)
 
@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const result = await getRequestTenant(request)
-  if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const auth = await requireTenantPermission(request, 'marketing:write')
+  if (!auth.ok) return auth.response
 
   const body = await request.json().catch(() => ({}))
   const id = String(body.id || '')
@@ -46,7 +46,7 @@ export async function PATCH(request: NextRequest) {
     .from('product_reviews')
     .update({ status, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .eq('tenant_id', result.tenant.id) // solo sus reviews
+    .eq('tenant_id', auth.tenant.id) // solo sus reviews
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }

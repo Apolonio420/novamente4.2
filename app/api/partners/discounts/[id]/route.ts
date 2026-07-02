@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getRequestTenant } from '@/lib/partners/auth'
+import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateDiscountCode, deleteDiscountCode } from '@/lib/partners/discounts'
 
 export const runtime = 'nodejs'
@@ -9,8 +9,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const result = await getRequestTenant(request)
-  if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const auth = await requireTenantPermission(request, 'marketing:write')
+  if (!auth.ok) return auth.response
   const { id } = await params
 
   const body = await request.json().catch(() => ({}))
@@ -22,7 +22,7 @@ export async function PATCH(
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: 'Sin cambios' }, { status: 400 })
   }
-  const code = await updateDiscountCode(id, result.tenant.id, updates)
+  const code = await updateDiscountCode(id, auth.tenant.id, updates)
   if (!code) return NextResponse.json({ error: 'No se pudo actualizar' }, { status: 404 })
   return NextResponse.json({ code })
 }
@@ -31,10 +31,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const result = await getRequestTenant(request)
-  if (!result) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const auth = await requireTenantPermission(request, 'marketing:write')
+  if (!auth.ok) return auth.response
   const { id } = await params
-  const ok = await deleteDiscountCode(id, result.tenant.id)
+  const ok = await deleteDiscountCode(id, auth.tenant.id)
   if (!ok) return NextResponse.json({ error: 'No se pudo borrar' }, { status: 500 })
   return NextResponse.json({ deleted: true })
 }

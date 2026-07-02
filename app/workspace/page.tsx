@@ -34,6 +34,8 @@ import { KpiOverview } from '@/components/workspace/KpiOverview'
 import { BusinessModelBanner } from '@/components/workspace/BusinessModelBanner'
 import { QuickStartCard } from '@/components/workspace/QuickStartCard'
 import { QuickDesignUpload } from '@/components/workspace/QuickDesignUpload'
+import { DailyAttention } from '@/components/workspace/DailyAttention'
+import { isPartnersCockpitEnabled } from '@/lib/partners/feature-flags'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -740,6 +742,8 @@ export default function WorkspaceDashboard() {
       {/* KPI OVERVIEW — Performance ultimos 30 dias                        */}
       {/* ================================================================= */}
       <KpiOverview />
+
+      {isPartnersCockpitEnabled() && <DailyAttention />}
 
       {/* ================================================================= */}
       {/* METRIC CARDS                                                      */}

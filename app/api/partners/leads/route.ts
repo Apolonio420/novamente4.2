@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getTenantBySlug } from '@/lib/partners/tenant'
 import { createLead, countLeadsThisMonth } from '@/lib/partners/leads'
 import { getPlanFeatures } from '@/lib/partners/plans'
+import { isPartnersCrmEnabled } from '@/lib/partners/feature-flags'
 
 export async function POST(request: NextRequest) {
+  if (!isPartnersCrmEnabled()) {
+    return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
+  }
+
   try {
     const body = await request.json()
     const { slug, name, email, phone, message, product_interest } = body
