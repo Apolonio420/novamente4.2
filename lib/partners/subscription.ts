@@ -120,9 +120,40 @@ export interface CreateRecurringResult {
 }
 
 /**
+ * Cancela un PreApproval existente en MP (status → 'cancelled'). Se llama antes
+ * de crear uno nuevo para el mismo tenant, para no dejar dos suscripciones
+ * debitando en paralelo (hallazgo [4] del review de caminos de plata). Trata
+ * 'ya cancelado / no encontrado' como éxito (nada que cancelar); cualquier otro
+ * error de la API se propaga para abortar la creación del nuevo PreApproval.
+ */
+async function cancelExistingPreapproval(preapprovalId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const current: any = await new PreApproval(mpClient()).get({ id: preapprovalId })
+    if (current?.status === 'cancelled') return { ok: true }
+    await new PreApproval(mpClient()).update({
+      id: preapprovalId,
+      body: { status: 'cancelled' },
+    })
+    return { ok: true }
+  } catch (e: any) {
+    const status = e?.status ?? e?.statusCode ?? e?.response?.status
+    // 404: el preapproval ya no existe en MP — no hay nada que cancelar, no bloqueamos el alta nueva.
+    if (status === 404) return { ok: true }
+    console.error('[subscription] cancelExistingPreapproval failed:', preapprovalId, e?.message || e)
+    return { ok: false, error: e?.message || 'No se pudo cancelar la suscripción anterior en MercadoPago' }
+  }
+}
+
+/**
  * Crea una suscripción recurrente (PreApproval sin plan). Devuelve el init_point
  * donde el partner autoriza la tarjeta. NO cambia el plan del tenant (eso lo hace
  * el webhook). Guarda el preapproval id + la promo en metadata para reconciliar.
+ *
+ * Antes de crear el PreApproval nuevo, si el tenant ya tiene uno activo/pending
+ * registrado (mp_subscription_id), lo cancela primero — evita que un upgrade o
+ * un reintento de checkout dejen dos suscripciones debitando en paralelo
+ * (hallazgo [4]). Si la cancelación del viejo falla, se aborta sin crear el
+ * nuevo: mejor fallar explícito que arriesgar un doble débito.
  */
 export async function createRecurringSubscription(args: {
   tenantId: string
@@ -135,6 +166,15 @@ export async function createRecurringSubscription(args: {
   if (!tenantEmail) return { ok: false, error: 'El tenant no tiene email para la suscripción' }
 
   try {
+    const { data: existing } = await db().from('tenants').select('mp_subscription_id').eq('id', tenantId).single()
+    const existingPreapprovalId: string | null = existing?.mp_subscription_id ?? null
+    if (existingPreapprovalId) {
+      const cancelled = await cancelExistingPreapproval(existingPreapprovalId)
+      if (cancelled.ok === false) {
+        return { ok: false, error: `No se pudo cancelar la suscripción anterior: ${cancelled.error}` }
+      }
+    }
+
     const promoEligible = await isGrowthPromoEligible(plan)
     const priceUsd = resolvePriceUsd(plan, promoEligible)
     const rate = await getUsdToArs()
