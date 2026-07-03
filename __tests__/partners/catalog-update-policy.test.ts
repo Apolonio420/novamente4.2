@@ -44,6 +44,15 @@ vi.mock("@/lib/supabase-admin", () => {
   return { supabaseAdmin: builder }
 })
 
+// The route imports lib/partners/variants.ts, which imports the server-only
+// garment-pricing.server module. `server-only` throws unconditionally outside
+// Next's RSC bundler (e.g. under Vitest), so it must be stubbed here too —
+// same pattern as lib/partners/variants.test.ts.
+vi.mock("@/lib/partners/garment-pricing.server", () => ({
+  ALL_GARMENT_PRICING: {},
+  getPartnerPlanPrice: () => null,
+}))
+
 import { PUT } from "@/app/api/partners/catalog/[id]/route"
 
 function makeRequest(body: unknown) {

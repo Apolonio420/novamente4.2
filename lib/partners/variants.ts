@@ -11,7 +11,7 @@
  * product returns 404 (never reveals existence).
  */
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getPartnerPlanPrice, ALL_GARMENT_PRICING } from './garment-pricing'
+import { getPartnerPlanPrice, ALL_GARMENT_PRICING } from './garment-pricing.server'
 import type { Plan } from './types'
 
 const db = () => supabaseAdmin as any
@@ -135,16 +135,21 @@ export function needsPublishedProductValidation(
     || (currentStatus === 'published' && (updates.price !== undefined || updates.metadata !== undefined))
 }
 
-/** Production cost of a product (ARS): explicit metadata cost, else garment pricing. */
+/**
+ * Production cost of a product (ARS): garment pricing (plan price) is always the
+ * source of truth when garmentKey resolves — explicit metadata cost is only a
+ * last-resort fallback (a partner writing metadata.cost_partner cannot override
+ * the plan price and evade the publish margin gate).
+ */
 export function resolveProductCost(metadata: Record<string, unknown> | null | undefined, plan: Plan): number | null {
   const meta = metadata || {}
-  const explicit = Number((meta as any).cost_partner ?? (meta as any).cost_ars)
-  if (Number.isFinite(explicit) && explicit > 0) return explicit
   const gk = typeof (meta as any).garmentKey === 'string' ? (meta as any).garmentKey : null
   if (gk && ALL_GARMENT_PRICING[gk]) {
     const price = getPartnerPlanPrice(gk, plan)
     if (price) return price
   }
+  const explicit = Number((meta as any).cost_partner ?? (meta as any).cost_ars)
+  if (Number.isFinite(explicit) && explicit > 0) return explicit
   return null
 }
 

@@ -17,7 +17,7 @@
 import { getOrderByExternalReference, updateOrder } from "@/lib/db"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { MercadoPagoConfig, Payment } from "mercadopago"
-import { creditOrderMargin } from "@/lib/partners/ledger"
+import { creditOrderMargin, reverseOrderMargin } from "@/lib/partners/ledger"
 import { sendEmail } from "@/lib/email"
 
 const client = new MercadoPagoConfig({
@@ -116,7 +116,10 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
   console.log("✅ Orden encontrada:", order.id, "Número:", order.order_number, "Estado actual:", order.status)
 
   // PASO 3: Idempotencia — no reescribir si ya está confirmada con el mismo pago
-  if (order.status === "confirmed" && order.payment_id === String(paymentId)) {
+  // Y el estado fresco de MP sigue siendo "approved". Si MP reenvía el mismo
+  // paymentId ahora con status "refunded"/"charged_back", este guard NO debe
+  // cortar antes de llegar al switch de PASO 4 (que sí mapea esos estados).
+  if (order.status === "confirmed" && order.payment_id === String(paymentId) && paymentDetails.status === "approved") {
     console.log("ℹ️ Orden ya confirmada con mismo payment_id, saltando:", order.id)
     return {
       ok: true,
@@ -146,6 +149,10 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
       break
     case "refunded":
       paymentStatus = "refunded"
+      orderStatus = "cancelled"
+      break
+    case "charged_back":
+      paymentStatus = "charged_back"
       orderStatus = "cancelled"
       break
     case "pending":
@@ -212,6 +219,26 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
   }
 
   console.log("✅ Orden actualizada:", order.id, "→ status:", orderStatus)
+
+  // Refund/chargeback: revertir el margen del partner ya acreditado (si lo hubo).
+  // Asiento inverso en el ledger — no toca notificaciones/email/CAPI del camino approved.
+  if ((paymentStatus === "refunded" || paymentStatus === "charged_back") && orderStatus === "cancelled") {
+    const tenantId = (order as any).tenant_id
+    if (tenantId) {
+      try {
+        const result = await reverseOrderMargin({
+          id: order.id as string,
+          tenant_id: tenantId,
+          order_number: order.order_number,
+        })
+        if (result.reversed) {
+          console.log(`✅ Margen revertido ($${result.amount}) para orden ${order.order_number || order.id} por ${paymentStatus}`)
+        }
+      } catch (reverseErr: any) {
+        console.error("❌ Exception revirtiendo margen del partner:", reverseErr.message)
+      }
+    }
+  }
 
   if (paymentStatus === "approved" && orderStatus === "confirmed") {
     console.log("🎉 Pago aprobado! Orden confirmada:", order.order_number)
