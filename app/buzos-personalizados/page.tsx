@@ -79,12 +79,6 @@ export default function BuzosPersonalizados() {
       offerCount: 7,
       availability: "https://schema.org/InStock",
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "340",
-      bestRating: "5",
-    },
   }
 
   const faqJsonLd = {

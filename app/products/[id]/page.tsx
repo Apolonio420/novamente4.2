@@ -191,19 +191,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       },
       hasMerchantReturnPolicy: { "@id": "https://www.novamente.ar/#return-policy" },
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: avgRating,
-      reviewCount: reviews.length,
-      bestRating: "5",
-      worstRating: "1",
-    },
-    review: reviews.map((r) => ({
-      "@type": "Review",
-      author: { "@type": "Person", name: r.author },
-      reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: "5" },
-      reviewBody: r.text,
-    })),
   }
 
   const breadcrumbJsonLd = {

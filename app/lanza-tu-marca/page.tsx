@@ -73,12 +73,6 @@ export default function LanzaTuMarca() {
       offerCount: 3,
       availability: "https://schema.org/InStock",
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      reviewCount: "150",
-      bestRating: "5",
-    },
   }
 
   const faqJsonLd = {

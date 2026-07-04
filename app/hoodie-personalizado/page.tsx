@@ -86,12 +86,6 @@ export default function HoodiePersonalizado() {
         },
       },
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "67",
-      bestRating: "5",
-    },
   }
 
   const faqJsonLd = {

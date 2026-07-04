@@ -84,12 +84,6 @@ export default function RegalosPersonalizados() {
       offerCount: 9,
       availability: "https://schema.org/InStock",
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "412",
-      bestRating: "5",
-    },
   }
 
   const faqJsonLd = {

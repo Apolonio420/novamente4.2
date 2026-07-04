@@ -77,12 +77,6 @@ export default function RegalosDiaDelPadre() {
       offerCount: 9,
       availability: "https://schema.org/InStock",
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "285",
-      bestRating: "5",
-    },
   }
 
   const faqJsonLd = {

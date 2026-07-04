@@ -73,12 +73,6 @@ export default function IndumentariaDeportiva() {
       offerCount: 26,
       availability: "https://schema.org/InStock",
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      reviewCount: "340",
-      bestRating: "5",
-    },
   }
 
   const faqJsonLd = {

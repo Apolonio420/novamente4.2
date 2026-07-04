@@ -86,12 +86,6 @@ export default function DisenaTuRemera() {
         },
       },
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      reviewCount: "95",
-      bestRating: "5",
-    },
   }
 
   const faqJsonLd = {

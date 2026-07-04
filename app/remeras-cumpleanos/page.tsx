@@ -73,12 +73,6 @@ export default function RemerasCumpleanos() {
       offerCount: 26,
       availability: "https://schema.org/InStock",
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "215",
-      bestRating: "5",
-    },
   }
 
   const faqJsonLd = {
