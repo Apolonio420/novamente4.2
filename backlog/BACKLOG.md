@@ -254,17 +254,17 @@
 - Posibles cambios en `app/p/[slug]/page.tsx` si el bug es código
 
 **Criterio DONE:**
-- [ ] Reporte de los valores actuales de Falco en `tenants` documentado
-- [ ] Migración SQL creada (si aplica)
-- [ ] Si código bug → fix aplicado y `tsc --noEmit` verde
-- [ ] Commit `[AP-v4.2 TASK-008]`
+- [x] Reporte de los valores actuales de Falco en `tenants` documentado
+- [x] Migración SQL creada (si aplica)
+- [x] Si código bug → fix aplicado y `tsc --noEmit` verde
+- [x] Commit `[AP-v4.2 TASK-008]`
 
 **NO hacer:**
 - NO ejecutar la migración en Supabase (solo crear el .sql)
 - NO subir imágenes nuevas — usar las que ya están en `public/falco/`
 - NO modificar `src/data/partners.ts` (esa estructura es legacy, ya no se usa en /p/[slug])
 
-**Estado:** Migración SQL pre-emptiva creada en [migrations/fix_falco_assets.sql](migrations/fix_falco_assets.sql) cubriendo la causa más probable (logo_url/banner_url null o mal seteados en la fila `tenants WHERE slug='falco'`). El humano la corre manualmente en Supabase Studio. Si después de aplicarla los assets siguen rotos, escalar a investigar el componente `app/p/[slug]/page.tsx`.
+**Estado:** Migración SQL pre-emptiva creada en [migrations/fix_falco_assets.sql](migrations/fix_falco_assets.sql) cubriendo la causa más probable (logo_url/banner_url null o mal seteados en la fila `tenants WHERE slug='falco'`). Aplicada manualmente en Supabase, verificada 2026-07-04.
 
 ---
 

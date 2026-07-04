@@ -27,7 +27,7 @@ Formato:
 **Tasks DONE:**
 - TASK-020 — feat(design): "Subí tu diseño" como acción primaria del workspace (P8)
   - `lib/partners/plan-limits.ts` — creado con `DESIGN_UPLOAD_LIMIT_BY_PLAN` (Starter=20, Growth=100, Pro=∞)
-  - `migrations/design_source_column.sql` — ADD COLUMN source TEXT en partner_assets (NO ejecutada — Juan la corre en Supabase)
+  - `migrations/design_source_column.sql` — ADD COLUMN source TEXT en partner_assets (aplicada manualmente en Supabase, verificada 2026-07-04)
   - `app/api/partners/upload/route.ts` — gate de plan para design uploads + campo `source='uploaded'` + `status='active'` para que aparezcan en biblioteca
   - `components/workspace/QuickDesignUpload.tsx` — nuevo componente: dropzone PNG/SVG, validaciones, warnings no-bloqueantes (transparencia + resolución), preview, 3 botones post-upload (Mockup / Biblioteca / Publicar)
   - `app/workspace/page.tsx` — card "Subí tu propio diseño" entre BusinessModelBanner y QuickStartCard (descartable con X)
@@ -39,7 +39,7 @@ Formato:
 **build:** SKIPPED
 **Notas:**
 - TASK-020: requiere verificación visual — (a) abrir dashboard y verificar card upload; (b) abrir design-engine y verificar tab "Subir mi PNG"; (c) subir un PNG y verificar los 3 botones post-upload
-- Migración `migrations/design_source_column.sql` pendiente de correr en Supabase Studio antes de que los uploads se guarden con source correctamente
+- Migración `migrations/design_source_column.sql` aplicada manualmente en Supabase, verificada 2026-07-04 — uploads ya se guardan con source correctamente
 - La card de upload en dashboard es siempre visible (no tiene estado persistente de dismiss — KISS por ahora)
 
 ---
