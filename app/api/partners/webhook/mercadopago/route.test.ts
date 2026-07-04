@@ -41,7 +41,8 @@ vi.mock('@/lib/meta/capi', () => ({
 
 vi.mock('@/lib/supabase-admin', () => ({ supabaseAdmin: {} }))
 
-import { POST, isPaymentAlreadyProcessed, isSuspectedDoubleCharge } from './route'
+import { POST } from './route'
+import { isPaymentAlreadyProcessed, isSuspectedDoubleCharge } from '@/lib/partners/webhook-guards'
 
 function webhookRequest(paymentId: string) {
   return new NextRequest('http://localhost/api/partners/webhook/mercadopago', {
