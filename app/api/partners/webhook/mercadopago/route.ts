@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Payment, PreApproval } from 'mercadopago'
 import { updateTenant, getTenantById } from '@/lib/partners/tenant'
 import { PLAN_FEATURES, PLAN_PRICING_USD } from '@/lib/partners/plans'
-import { activateRecurringTenant, registerRecurringCharge, getAuthorizedPayment, computeRenewalExpiration } from '@/lib/partners/subscription'
+import { activateRecurringTenant, registerRecurringCharge, getAuthorizedPayment, computeRenewalExpiration, isGenuinePreapprovalActivation } from '@/lib/partners/subscription'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import type { Plan } from '@/lib/partners/types'
 import { isPaymentAlreadyProcessed, isSuspectedDoubleCharge } from '@/lib/partners/webhook-guards'
@@ -106,6 +106,14 @@ async function handlePreapprovalEvent(body: any, request: NextRequest) {
     const now = new Date().toISOString()
 
     if (status === 'authorized') {
+      // Hallazgo [15]: 'authorized' llega también en eventos que NO son un cobro
+      // nuevo (bump de monto del cron, notificaciones duplicadas de MP). Solo
+      // otorgar el mes / extender vencimiento en un alta real o reactivación —
+      // ver comentario de isGenuinePreapprovalActivation en lib/partners/subscription.ts.
+      if (!isGenuinePreapprovalActivation(tenant, id)) {
+        console.log('Preapproval authorized pero tenant ya activo en este preapproval — evento no representa un cobro nuevo, no se extiende:', tenant.name)
+        return NextResponse.json({ received: true, skipped: 'already_active_on_preapproval' })
+      }
       await activateRecurringTenant(tenant, id, now)
       console.log('Suscripción recurrente ACTIVADA:', tenant.name)
       try {

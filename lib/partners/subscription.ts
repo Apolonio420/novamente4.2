@@ -299,6 +299,38 @@ async function persistPendingSubscription(
 }
 
 /**
+ * Hallazgo [15] del review: MP notifica `subscription_preapproval` con
+ * status='authorized' no solo en el alta, sino en CUALQUIER evento posterior
+ * sobre un preapproval que sigue autorizado — incluido el propio bump de monto
+ * que dispara bumpPromoToStandardIfDue (cron) y reintentos/duplicados de
+ * notificación de MP. Antes de este guard, activateRecurringTenant corría de
+ * nuevo en esos casos y regalaba un mes gratis (extendía subscription_expires_at
+ * y refrescaba last_payment_at) sin que hubiera un cobro real detrás.
+ *
+ * Un evento de preapproval 'authorized' representa un cobro real / merece
+ * extender el vencimiento SOLO cuando es:
+ *   - un alta nueva (el tenant todavía no tiene este preapproval activado), o
+ *   - una reactivación (el tenant venía 'cancelled'/'paused'/'suspended').
+ * Si el tenant YA está 'active', con este mismo mp_subscription_id y
+ * subscription_type ya 'recurring', el evento es un update sobre un preapproval
+ * ya activo (bump de monto, notificación duplicada, etc.) — no un cobro nuevo.
+ * El cobro mensual real se confirma aparte vía `subscription_authorized_payment`
+ * (ver handleAuthorizedPaymentEvent → registerRecurringCharge), que sí es la
+ * única fuente de verdad para extender fecha + last_payment_at mes a mes.
+ */
+export function isGenuinePreapprovalActivation(
+  tenant: Pick<Tenant, 'status' | 'mp_subscription_id' | 'metadata'>,
+  preapprovalId: string,
+): boolean {
+  const meta = (tenant.metadata ?? {}) as SubscriptionMeta
+  const alreadyActiveOnThisPreapproval =
+    tenant.status === 'active' &&
+    tenant.mp_subscription_id === preapprovalId &&
+    meta.subscription_type === 'recurring'
+  return !alreadyActiveOnThisPreapproval
+}
+
+/**
  * Activa el tenant cuando MP confirma la suscripción (preapproval authorized).
  * Aplica las features del plan, incluido design_engine_mode (esto arregla que
  * antes el Studio quedaba `disabled` aún pagando).
@@ -306,6 +338,11 @@ async function persistPendingSubscription(
  * El vencimiento se calcula con computeRenewalExpiration: si el tenant venía
  * de una suscripción todavía vigente (ej. reactivación antes de vencer), el
  * mes nuevo se suma desde ese vencimiento vigente, no desde hoy (hallazgo [19]).
+ *
+ * IMPORTANTE (hallazgo [15]): el caller (handlePreapprovalEvent) debe llamar
+ * a esta función SOLO cuando isGenuinePreapprovalActivation(...) es true — acá
+ * no se vuelve a chequear para mantener esta función enfocada en "cómo activar",
+ * no en "cuándo". Ver el comentario de isGenuinePreapprovalActivation arriba.
  */
 export async function activateRecurringTenant(tenant: Tenant, preapprovalId: string, nowISO: string): Promise<void> {
   const meta: SubscriptionMeta = { ...(tenant.metadata ?? {}) }

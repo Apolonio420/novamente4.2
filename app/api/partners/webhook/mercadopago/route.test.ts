@@ -8,11 +8,15 @@ import { NextRequest } from 'next/server'
 
 const h = vi.hoisted(() => ({
   paymentGet: vi.fn(),
+  preapprovalGet: vi.fn(),
   getTenantById: vi.fn(),
   updateTenant: vi.fn(),
   notifyPartnerSubscription: vi.fn(),
   notifyPossibleDoubleCharge: vi.fn(),
   sendCapiPurchase: vi.fn(),
+  // activateRecurringTenant/registerRecurringCharge (lib/partners/subscription.ts)
+  // escriben directo con `db()` = supabaseAdmin, no con updateTenant.
+  tenantsUpdate: vi.fn(),
 }))
 
 vi.mock('mercadopago', () => ({
@@ -21,7 +25,7 @@ vi.mock('mercadopago', () => ({
     get = h.paymentGet
   },
   PreApproval: class PreApproval {
-    get = vi.fn()
+    get = h.preapprovalGet
   },
 }))
 
@@ -39,7 +43,32 @@ vi.mock('@/lib/meta/capi', () => ({
   sendCapiPurchase: h.sendCapiPurchase,
 }))
 
-vi.mock('@/lib/supabase-admin', () => ({ supabaseAdmin: {} }))
+vi.mock('@/lib/supabase-admin', () => ({
+  supabaseAdmin: {
+    from: (table: string) => {
+      if (table === 'tenants') {
+        return {
+          update: (updates: any) => {
+            h.tenantsUpdate(updates)
+            return {
+              eq: async () => ({ error: null }),
+              select: () => ({ single: async () => ({ data: null }) }),
+            }
+          },
+          select: () => ({
+            eq: () => ({
+              single: async () => ({ data: { subscription_expires_at: null } }),
+              maybeSingle: async () => ({ data: null }),
+            }),
+          }),
+        }
+      }
+      return {
+        select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }),
+      }
+    },
+  },
+}))
 
 import { POST } from './route'
 import { isPaymentAlreadyProcessed, isSuspectedDoubleCharge } from '@/lib/partners/webhook-guards'
@@ -240,5 +269,94 @@ describe('POST /api/partners/webhook/mercadopago — alerta de doble cobro', () 
     expect(res.status).toBe(200)
     expect(h.updateTenant).toHaveBeenCalledTimes(1)
     expect(h.notifyPossibleDoubleCharge).not.toHaveBeenCalled()
+  })
+})
+
+// Hallazgo [15] del review: eventos `subscription_preapproval` espurios o
+// repetidos (bump de monto del cron, reintento/duplicado de notificación de
+// MP) sobre un preapproval que YA está activo no deben re-ejecutar
+// activateRecurringTenant — eso extendería subscription_expires_at y
+// refrescaría last_payment_at sin que haya un cobro real detrás.
+describe('POST /api/partners/webhook/mercadopago — subscription_preapproval no re-dispara activación sin cobro', () => {
+  const preapprovalId = 'preapproval-abc'
+  const externalReference = `partner_sub_tenant-1_1751500000000_monthly`
+
+  function preapprovalWebhookRequest(id: string) {
+    return new NextRequest('http://localhost/api/partners/webhook/mercadopago', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'subscription_preapproval', data: { id } }),
+    })
+  }
+
+  it('alta nueva (tenant no activo en este preapproval): SÍ activa y extiende', async () => {
+    h.getTenantById.mockResolvedValue({
+      ...baseTenant,
+      status: 'onboarding',
+      mp_subscription_id: null,
+      subscription_expires_at: null,
+    })
+    h.preapprovalGet.mockResolvedValue({
+      id: preapprovalId,
+      status: 'authorized',
+      external_reference: externalReference,
+      auto_recurring: { transaction_amount: 25000 },
+    })
+
+    const res = await POST(preapprovalWebhookRequest(preapprovalId))
+    expect(res.status).toBe(200)
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
+    const [updates] = h.tenantsUpdate.mock.calls[0]
+    expect(updates.status).toBe('active')
+    expect(updates.subscription_expires_at).toBeTruthy()
+  })
+
+  it('evento repetido/espurio sobre preapproval YA activo (ej. bump de monto del cron): NO re-activa ni extiende', async () => {
+    const nowExpiry = '2026-08-01T00:00:00.000Z'
+    h.getTenantById.mockResolvedValue({
+      ...baseTenant,
+      status: 'active',
+      mp_subscription_id: preapprovalId,
+      metadata: { subscription_type: 'recurring' },
+      subscription_expires_at: nowExpiry,
+      last_payment_at: '2026-07-01T00:00:00.000Z',
+    })
+    h.preapprovalGet.mockResolvedValue({
+      id: preapprovalId,
+      status: 'authorized', // MP sigue reportando "authorized" — no es un alta, es un update sobre lo mismo
+      external_reference: externalReference,
+      auto_recurring: { transaction_amount: 50000 }, // ej. el propio bump de monto
+    })
+
+    const res = await POST(preapprovalWebhookRequest(preapprovalId))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.skipped).toBe('already_active_on_preapproval')
+
+    // No debe haber tocado el tenant: ni extendido vencimiento, ni refrescado
+    // last_payment_at, ni notificado una "nueva" activación.
+    expect(h.tenantsUpdate).not.toHaveBeenCalled()
+    expect(h.updateTenant).not.toHaveBeenCalled()
+    expect(h.notifyPartnerSubscription).not.toHaveBeenCalled()
+  })
+
+  it('reactivación tras cancelled (mismo preapproval, tenant no activo): SÍ activa de nuevo', async () => {
+    h.getTenantById.mockResolvedValue({
+      ...baseTenant,
+      status: 'suspended',
+      mp_subscription_id: preapprovalId,
+      metadata: { subscription_type: 'cancelled' },
+      subscription_expires_at: '2026-05-01T00:00:00.000Z',
+    })
+    h.preapprovalGet.mockResolvedValue({
+      id: preapprovalId,
+      status: 'authorized',
+      external_reference: externalReference,
+      auto_recurring: { transaction_amount: 25000 },
+    })
+
+    const res = await POST(preapprovalWebhookRequest(preapprovalId))
+    expect(res.status).toBe(200)
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
   })
 })
