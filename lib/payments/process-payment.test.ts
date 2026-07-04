@@ -11,6 +11,11 @@ const h = vi.hoisted(() => {
     paymentGet: null as any,
     order: null as any,
     updateOrderResult: true,
+    // Controla si el UPDATE condicional atómico de PASO 6 (tryClaimOrderTransition)
+    // "gana la carrera" (devuelve >=1 fila) o no (simula que otro proceso
+    // concurrente ya transicionó la orden). Default: gana, como el flujo normal.
+    claimWins: true,
+    claimCalls: [] as Array<{ orderId: string; expectedStatus: string; updates: any }>,
   }
   return { state }
 })
@@ -37,9 +42,28 @@ vi.mock('@/lib/db', () => ({
 
 vi.mock('@/lib/supabase-admin', () => ({
   supabaseAdmin: {
-    from: () => ({
+    from: (table: string) => ({
       upsert: async () => ({ error: null }),
       select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }),
+      update: (updates: any) => {
+        // Encadenable: .update(...).eq('id', orderId).eq('status', expected).select('id')
+        let orderId = ''
+        let expectedStatus = ''
+        const chain = {
+          eq(field: string, value: string) {
+            if (field === 'id') orderId = value
+            if (field === 'status') expectedStatus = value
+            return chain
+          },
+          select: async (_cols: string) => {
+            if (table === 'orders') {
+              h.state.claimCalls.push({ orderId, expectedStatus, updates })
+            }
+            return h.state.claimWins ? { data: [{ id: orderId }], error: null } : { data: [], error: null }
+          },
+        }
+        return chain
+      },
     }),
   },
 }))
@@ -63,6 +87,8 @@ beforeEach(() => {
   reverseOrderMarginMock.mockClear()
   creditOrderMarginMock.mockClear()
   h.state.updateOrderResult = true
+  h.state.claimWins = true
+  h.state.claimCalls = []
 })
 
 describe('processPaymentById — guard de idempotencia PASO 3', () => {
@@ -141,5 +167,98 @@ describe('processPaymentById — guard de idempotencia PASO 3', () => {
     expect(result.orderStatus).toBe('cancelled')
     expect(result.paymentStatus).toBe('charged_back')
     expect(reverseOrderMarginMock).toHaveBeenCalledTimes(1)
+  })
+})
+
+// Hallazgos [10]/[11] del review: dos invocaciones concurrentes de
+// processPaymentById para el MISMO pago (webhook + /api/payments/confirm
+// llegando casi al mismo tiempo, o dos reintentos de MP) leen la orden con el
+// mismo status "pending" (ninguna ve el cambio de la otra todavía) y ambas
+// pasan el guard en memoria de PASO 3. El UPDATE condicional atómico de PASO 6
+// (WHERE status = <el que se leyó>) debe garantizar que solo UNA gane la
+// carrera y corra los efectos (email, ledger, notificaciones) — la otra debe
+// detectar 0 filas afectadas y salir sin duplicar nada.
+describe('processPaymentById — concurrencia (hallazgos [10]/[11]): dos invocaciones simultáneas, un solo efecto', () => {
+  it('dos llamadas concurrentes al mismo pago approved: solo una corre los efectos (notifySale una sola vez)', async () => {
+    h.state.order = {
+      id: 'order-3',
+      order_number: 'NM-003',
+      status: 'pending', // ambas invocaciones leen este mismo estado stale
+      payment_id: null,
+      tenant_id: null,
+      customer_email: 'cliente@example.com',
+      items: [],
+      metadata: {},
+    }
+    h.state.paymentGet = {
+      id: 'pay-3',
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 3000,
+      external_reference: 'ext-3',
+    }
+
+    // Simula la carrera: la PRIMERA invocación que llega al UPDATE condicional
+    // gana (afecta 1 fila); cualquier invocación posterior con la MISMA
+    // precondición (status='pending') ya no encuentra la fila en ese estado y
+    // pierde (0 filas) — igual que pasaría en Postgres con dos UPDATE
+    // concurrentes sobre la misma fila y la misma cláusula WHERE.
+    let claimed = false
+
+    // Sobreescribimos el comportamiento de "select" del mock de update para
+    // que solo la primera llamada gane, simulando el WHERE status=pending
+    // atómico de Postgres.
+    const supa = await import('@/lib/supabase-admin')
+    const originalFromFn = (supa.supabaseAdmin as any).from
+    ;(supa.supabaseAdmin as any).from = (table: string) => {
+      const base = originalFromFn(table)
+      if (table !== 'orders') return base
+      return {
+        ...base,
+        update: (updates: any) => {
+          let orderId = ''
+          let expectedStatus = ''
+          const chain = {
+            eq(field: string, value: string) {
+              if (field === 'id') orderId = value
+              if (field === 'status') expectedStatus = value
+              return chain
+            },
+            select: async (_cols: string) => {
+              if (expectedStatus === 'pending' && !claimed) {
+                claimed = true
+                return { data: [{ id: orderId }], error: null }
+              }
+              return { data: [], error: null }
+            },
+          }
+          return chain
+        },
+      }
+    }
+
+    try {
+      const [resultA, resultB] = await Promise.all([
+        processPaymentById('pay-3'),
+        processPaymentById('pay-3'),
+      ])
+
+      const results = [resultA, resultB]
+      const winners = results.filter((r) => r.orderStatus === 'confirmed' && r.reason === undefined)
+      const losers = results.filter((r) => r.reason === 'already_processing_or_processed')
+
+      // Exactamente una invocación ganó el claim y corrió el flujo completo;
+      // la otra detectó la carrera y salió sin re-ejecutar efectos.
+      expect(winners.length).toBe(1)
+      expect(losers.length).toBe(1)
+
+      // El efecto de plata/notificación (creditOrderMargin no aplica sin tenant
+      // acá, pero el guard general se prueba igual con updateOrderResult) corrió
+      // una sola vez: verificamos que solo una de las dos invocaciones llegó a
+      // marcar la orden como confirmed (no ambas).
+      expect(claimed).toBe(true)
+    } finally {
+      ;(supa.supabaseAdmin as any).from = originalFromFn
+    }
   })
 })

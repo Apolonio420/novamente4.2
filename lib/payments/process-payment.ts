@@ -78,6 +78,44 @@ function confirmationHtml(opts: {
   </td></tr></table></body></html>`
 }
 
+/**
+ * Hallazgos [10]/[11] del review: dos invocaciones concurrentes de
+ * processPaymentById para el MISMO pago (webhook + /api/payments/confirm
+ * llegando casi al mismo tiempo, o dos reintentos de MP) leían la orden con
+ * un status "pending" stale, pasaban ambas el guard de PASO 3 (que compara en
+ * memoria, no en la base) y corrían el bloque de efectos completo dos veces:
+ * doble email al cliente, doble aviso a Telegram/partner, doble bridge a
+ * partner_orders. Acá cerramos la ventana con un UPDATE condicional atómico
+ * (compare-and-swap a nivel fila): solo transiciona la orden si su status en
+ * la base SIGUE siendo el mismo que se leyó en PASO 2. Si 0 filas fueron
+ * afectadas, alguien más (la otra invocación concurrente) ya ganó la carrera
+ * y ya está corriendo (o corrió) los efectos — este proceso no debe repetirlos.
+ *
+ * No se agregan locks externos ni colas: es el mismo patrón de "UPDATE ...
+ * WHERE <precondición> RETURNING" que ya usa la RPC partner_request_payout
+ * (migrations/20260622_partner_payout_transaction.sql) para serializar
+ * retiros, aplicado acá a nivel de una sola fila con el cliente de Supabase
+ * en vez de una función SQL (no hace falta una transacción multi-statement:
+ * un solo UPDATE condicional alcanza para esta carrera de 2 lecturas).
+ */
+async function tryClaimOrderTransition(
+  orderId: string,
+  expectedCurrentStatus: string,
+  updates: Record<string, any>,
+): Promise<boolean> {
+  const { data, error } = await (supabaseAdmin as any)
+    .from("orders")
+    .update(updates)
+    .eq("id", orderId)
+    .eq("status", expectedCurrentStatus)
+    .select("id")
+  if (error) {
+    console.error("❌ Error en UPDATE condicional de orden:", error.message)
+    return false
+  }
+  return Array.isArray(data) && data.length > 0
+}
+
 export async function processPaymentById(paymentId: string, webhookBody?: any): Promise<ProcessPaymentResult> {
   console.log("💳 Procesando pago ID:", paymentId)
 
@@ -200,7 +238,14 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
     console.warn("⚠️ No se pudo extraer DNI:", dniErr.message)
   }
 
-  // PASO 6: Actualizar orden en Supabase
+  // PASO 6: Actualizar orden en Supabase — UPDATE condicional atómico
+  // (hallazgos [10]/[11]): la condición WHERE status = <lo que leímos en PASO 2>
+  // hace de compare-and-swap a nivel fila. Si dos invocaciones concurrentes
+  // (webhook + /api/payments/confirm, o dos reintentos de MP) leyeron la misma
+  // orden "pending" y llegan acá casi al mismo tiempo, solo UNA de los dos
+  // UPDATE afecta una fila — la otra recibe 0 filas y sabe que perdió la
+  // carrera, sin haber corrido ningún efecto (email, ledger, notificaciones)
+  // todavía. No hace falta un guard en memoria: la propia base decide.
   const orderUpdates: any = {
     payment_id: String(paymentId),
     payment_status: paymentStatus,
@@ -211,11 +256,23 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
     orderUpdates.customer_dni = extractedDni
     orderUpdates.customer_dni_type = extractedDniType
   }
-  const updated = await updateOrder(order.id!, orderUpdates)
 
-  if (!updated) {
-    console.error("❌ Falló la actualización de la orden:", order.id)
-    return { ok: false, reason: "order_update_failed", orderId: String(order.id) }
+  const claimed = await tryClaimOrderTransition(order.id!, order.status || "pending", orderUpdates)
+
+  if (!claimed) {
+    // Perdimos la carrera: otra invocación concurrente ya transicionó esta
+    // orden desde el mismo status que leímos. Releer el estado fresco para
+    // responder correctamente sin re-ejecutar ningún efecto acá.
+    const freshOrder = await getOrderByExternalReference(externalReference)
+    console.log("ℹ️ UPDATE condicional no afectó filas (carrera concurrente ganada por otro proceso):", order.id, "status fresco:", freshOrder?.status)
+    return {
+      ok: true,
+      reason: "already_processing_or_processed",
+      orderId: String(order.id),
+      orderNumber: order.order_number || undefined,
+      orderStatus: freshOrder?.status || order.status,
+      paymentStatus: (freshOrder as any)?.payment_status || undefined,
+    }
   }
 
   console.log("✅ Orden actualizada:", order.id, "→ status:", orderStatus)
