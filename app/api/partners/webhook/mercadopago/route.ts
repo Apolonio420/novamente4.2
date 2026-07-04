@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Payment, PreApproval } from 'mercadopago'
 import { updateTenant, getTenantById } from '@/lib/partners/tenant'
 import { PLAN_FEATURES, PLAN_PRICING_USD } from '@/lib/partners/plans'
-import { activateRecurringTenant, registerRecurringCharge, getAuthorizedPayment } from '@/lib/partners/subscription'
+import { activateRecurringTenant, registerRecurringCharge, getAuthorizedPayment, computeRenewalExpiration } from '@/lib/partners/subscription'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import type { Plan } from '@/lib/partners/types'
 
@@ -57,16 +57,19 @@ function extractPlan(externalReference: string): Exclude<Plan, 'starter'> | null
 }
 
 /**
- * Calculate new subscription_expires_at based on billing cycle
+ * Calculate new subscription_expires_at based on billing cycle.
+ *
+ * If the subscription is still active at payment time (on-time / early
+ * renewal), the new period is added on top of the CURRENT due date instead
+ * of today — otherwise a payment arriving a few days before the due date
+ * would "steal" days from the partner. If it's already expired (late
+ * payment), the new period starts from today (the payment date), with no
+ * retroactive dead period lost or gained (hallazgo [19] del review).
  */
-function calculateNewExpiration(billingCycle: 'monthly' | 'annual'): string {
-  const now = new Date()
-  if (billingCycle === 'annual') {
-    now.setFullYear(now.getFullYear() + 1)
-  } else {
-    now.setMonth(now.getMonth() + 1)
-  }
-  return now.toISOString()
+function calculateNewExpiration(billingCycle: 'monthly' | 'annual', currentExpiresAt: string | null | undefined): string {
+  const nowISO = new Date().toISOString()
+  const months = billingCycle === 'annual' ? 12 : 1
+  return computeRenewalExpiration(currentExpiresAt, nowISO, months)
 }
 
 /** data.id de un evento de suscripción (body o querystring). */
@@ -90,6 +93,26 @@ export function isPaymentAlreadyProcessed(
 ): boolean {
   const lastProcessed = (tenantMetadata as any)?.last_mp_payment_id
   return lastProcessed != null && String(lastProcessed) === String(paymentId)
+}
+
+/**
+ * Detecta sospecha de doble cobro (hallazgo [18] del review): un payment id
+ * DISTINTO del último procesado llega aprobado mientras la suscripción TODAVÍA
+ * está vigente (no vencida). Esto NO bloquea el cobro — solo dispara una
+ * alerta para que el equipo audite manualmente (ej. reintento del cliente tras
+ * un error de red, o dos pestañas de checkout abiertas). Si la suscripción ya
+ * estaba vencida, un payment id nuevo es una renovación normal, no doble cobro.
+ */
+export function isSuspectedDoubleCharge(
+  tenant: { metadata?: Record<string, unknown> | null; subscription_expires_at?: string | null },
+  paymentId: string,
+  nowISO: string,
+): boolean {
+  const lastProcessed = (tenant.metadata as any)?.last_mp_payment_id
+  if (lastProcessed == null || String(lastProcessed) === String(paymentId)) return false
+  const expiresAt = tenant.subscription_expires_at
+  if (!expiresAt) return false
+  return new Date(expiresAt).getTime() > new Date(nowISO).getTime()
 }
 
 /**
@@ -280,9 +303,30 @@ export async function POST(request: NextRequest) {
 
       // Extract billing cycle and calculate new expiration
       const billingCycle = extractBillingCycle(externalReference)
-      const subscriptionExpiresAt = calculateNewExpiration(billingCycle)
+      const subscriptionExpiresAt = calculateNewExpiration(billingCycle, tenant.subscription_expires_at)
       const now = new Date().toISOString()
       const metadata = { ...((tenant.metadata as any) ?? {}), last_mp_payment_id: String(paymentId) }
+
+      // Sospecha de doble cobro (hallazgo [18]): un payment id distinto llega
+      // aprobado mientras el período activo actual todavía no venció. NO
+      // bloquea el cobro — solo alerta para auditoría manual.
+      if (isSuspectedDoubleCharge(tenant, String(paymentId), now)) {
+        const previousPaymentId = String((tenant.metadata as any)?.last_mp_payment_id)
+        console.warn('⚠️ Posible doble cobro detectado:', tenant.name, previousPaymentId, '→', paymentId)
+        try {
+          const { notifyPossibleDoubleCharge } = await import('@/lib/notifications')
+          await notifyPossibleDoubleCharge({
+            tenantName: tenant.name,
+            amountArs: Number(paymentDetails.transaction_amount) || 0,
+            previousPaymentId,
+            newPaymentId: String(paymentId),
+            previousPaymentDate: tenant.last_payment_at || 'desconocida',
+            newPaymentDate: now,
+          })
+        } catch (e) {
+          console.error('Error enviando alerta de doble cobro:', e)
+        }
+      }
 
       // Activate tenant + update subscription fields
       const updated = await updateTenant(tenantId, {

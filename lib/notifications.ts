@@ -175,6 +175,42 @@ export async function notifyPartnerSubscription(subscription: {
 }
 
 /**
+ * Alerta de sospecha de doble cobro con DOS payment ids distintos de MP para
+ * el mismo período de suscripción activo (hallazgo [18] del review
+ * docs/reviews/REVIEW-caminos-de-plata-2026-07-03.md). No bloquea el cobro:
+ * el pago se procesa normal, esto es solo una alerta para que el equipo audite
+ * manualmente si corresponde reembolsar el segundo cobro.
+ */
+export async function notifyPossibleDoubleCharge(alert: {
+  tenantName: string
+  amountArs: number
+  previousPaymentId: string
+  newPaymentId: string
+  previousPaymentDate: string
+  newPaymentDate: string
+}) {
+  const fmtDate = (iso: string) => {
+    const d = new Date(iso)
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleString('es-AR')
+  }
+  const message = `
+⚠️ <b>POSIBLE DOBLE COBRO — SUSCRIPCIÓN PARTNER</b> ⚠️
+
+<b>Partner:</b> ${alert.tenantName}
+<b>Monto:</b> $${alert.amountArs.toLocaleString('es-AR')}
+
+<b>Pago anterior:</b> <code>${alert.previousPaymentId}</code> (${fmtDate(alert.previousPaymentDate)})
+<b>Pago nuevo:</b> <code>${alert.newPaymentId}</code> (${fmtDate(alert.newPaymentDate)})
+
+<i>Dos payment ids distintos de MP cayeron dentro del mismo período de
+suscripción activo. El pago nuevo se procesó normalmente — revisar si
+corresponde reembolsar uno de los dos.</i>
+  `.trim()
+
+  return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN)
+}
+
+/**
  * Notifies a partner subscription expiring soon
  */
 export async function notifySubscriptionExpiring(tenant: { name: string; plan: string; expiresAt: string }) {
