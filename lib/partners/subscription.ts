@@ -130,9 +130,21 @@ export async function countPaidPartners(): Promise<number> {
   return count ?? 0
 }
 
-/** Growth mensual + dentro del cupo de 100 partners pagos → elegible a promo. */
-export async function isGrowthPromoEligible(plan: PaidPlan): Promise<boolean> {
+/**
+ * Growth + dentro del cupo de 100 partners pagos + PRIMER PAGO del tenant →
+ * elegible a promo (hallazgos [14]/[20] del review docs/reviews/REVIEW-caminos-de-plata-2026-07-03.md).
+ *
+ * `isFirstPayment` por defecto es `true` para no cambiar la semántica de los
+ * callers que todavía no conocen el tenant (ej. checks agnósticos de cupo).
+ * El flujo anual (app/api/partners/subscribe/route.ts) ya pasa
+ * `!tenant.last_payment_at`; el mensual (createRecurringSubscription) hace lo
+ * mismo. Un tenant con last_payment_at poblado NO es elegible aunque haya
+ * cupo: ya tuvo su promo de lanzamiento (o nunca la tuvo y ya pagó full), y
+ * re-suscribirse no debe volver a regalarle el 50% off.
+ */
+export async function isGrowthPromoEligible(plan: PaidPlan, isFirstPayment = true): Promise<boolean> {
   if (plan !== 'growth') return false
+  if (!isFirstPayment) return false
   const paid = await countPaidPartners()
   return paid < GROWTH_PROMO.maxPartners
 }
@@ -188,6 +200,11 @@ async function cancelExistingPreapproval(preapprovalId: string): Promise<{ ok: t
  * un reintento de checkout dejen dos suscripciones debitando en paralelo
  * (hallazgo [4]). Si la cancelación del viejo falla, se aborta sin crear el
  * nuevo: mejor fallar explícito que arriesgar un doble débito.
+ *
+ * La elegibilidad a la promo Growth se decide con isFirstPayment = !last_payment_at
+ * (hallazgos [14]/[20]): mismo criterio que el flujo anual en
+ * app/api/partners/subscribe/route.ts. Un tenant con last_payment_at poblado
+ * (ya pagó alguna vez) nunca vuelve a recibir el 50% off al re-suscribirse.
  */
 export async function createRecurringSubscription(args: {
   tenantId: string
@@ -200,7 +217,11 @@ export async function createRecurringSubscription(args: {
   if (!tenantEmail) return { ok: false, error: 'El tenant no tiene email para la suscripción' }
 
   try {
-    const { data: existing } = await db().from('tenants').select('mp_subscription_id').eq('id', tenantId).single()
+    const { data: existing } = await db()
+      .from('tenants')
+      .select('mp_subscription_id, last_payment_at')
+      .eq('id', tenantId)
+      .single()
     const existingPreapprovalId: string | null = existing?.mp_subscription_id ?? null
     if (existingPreapprovalId) {
       const cancelled = await cancelExistingPreapproval(existingPreapprovalId)
@@ -209,7 +230,13 @@ export async function createRecurringSubscription(args: {
       }
     }
 
-    const promoEligible = await isGrowthPromoEligible(plan)
+    // Hallazgo [14]/[20]: el mensual otorgaba la promo Growth sin verificar
+    // primer pago (a diferencia del anual, que ya chequea !tenant.last_payment_at
+    // en app/api/partners/subscribe/route.ts). Mismo criterio acá: un tenant
+    // que ya acreditó un pago (re-suscripción, cambio de plan, reintento tras
+    // cancelar) paga precio full, nunca vuelve a entrar a la promo de lanzamiento.
+    const isFirstPayment = !existing?.last_payment_at
+    const promoEligible = await isGrowthPromoEligible(plan, isFirstPayment)
     const priceUsd = resolvePriceUsd(plan, promoEligible)
     const rate = await getUsdToArs()
     const priceARS = Math.round(priceUsd * rate)
