@@ -19,8 +19,8 @@ const h = vi.hoisted(() => {
 })
 
 vi.mock('@/lib/supabase-admin', () => ({ supabaseAdmin: h.chain }))
-// garment-pricing is imported by variants.ts; stub it so resolveProductCost is deterministic.
-vi.mock('./garment-pricing', () => ({
+// garment-pricing.server is imported by variants.ts; stub it so resolveProductCost is deterministic.
+vi.mock('./garment-pricing.server', () => ({
   ALL_GARMENT_PRICING: { 'aura-oversize-tshirt': {} },
   getPartnerPlanPrice: (_gk: string, _plan: string) => 10000,
 }))
@@ -122,11 +122,15 @@ describe('needsPublishedProductValidation', () => {
 })
 
 describe('resolveProductCost', () => {
-  it('usa cost_partner explícito', () => {
+  it('usa cost_partner explícito solo cuando no hay garmentKey resoluble', () => {
     expect(resolveProductCost({ cost_partner: 7777 }, 'starter')).toBe(7777)
   })
-  it('cae a garment pricing por garmentKey', () => {
+  it('usa garment pricing por garmentKey', () => {
     expect(resolveProductCost({ garmentKey: 'aura-oversize-tshirt' }, 'growth')).toBe(10000)
+  })
+  it('garmentKey resoluble gana SIEMPRE sobre cost_partner declarado por el partner (anti-inflado de margen)', () => {
+    expect(resolveProductCost({ garmentKey: 'aura-oversize-tshirt', cost_partner: 1 }, 'starter')).toBe(10000)
+    expect(resolveProductCost({ garmentKey: 'aura-oversize-tshirt', cost_partner: 999999 }, 'starter')).toBe(10000)
   })
   it('devuelve null si no hay costo resoluble', () => {
     expect(resolveProductCost({}, 'starter')).toBe(null)

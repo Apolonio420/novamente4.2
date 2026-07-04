@@ -6,15 +6,19 @@
  * Balance = SUM(credit) − SUM(debit). Los retiros (partner_payouts) generan
  * un debit al solicitarse.
  *
- * Resolución del costo por item (en orden):
- *   1. metadata.cost_partner / cost_ars del partner_product matcheado
- *   2. metadata.garmentKey → getPartnerPlanPrice(key, plan del tenant)
- *   3. metadata.model / category → heurística a garment key
+ * Resolución del costo por item (en orden — getPartnerPlanPrice es SIEMPRE la
+ * fuente de verdad del costo cuando el garmentKey es resoluble; metadata.cost_partner
+ * es solo un último fallback y NUNCA puede pisar el precio de plan, para que un
+ * partner no pueda inflar su margen escribiendo metadata sin validar):
+ *   1. metadata.garmentKey (directo) → getPartnerPlanPrice(key, plan del tenant)
+ *   2. metadata.model / category → heurística a garment key → getPartnerPlanPrice
+ *   3. metadata.cost_partner / cost_ars del partner_product matcheado (solo si
+ *      ninguna de las anteriores resolvió un garment key válido)
  * Si no se puede resolver, el margen del item es 0 y la entry queda
  * status='needs_review' para ajuste manual.
  */
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getPartnerPlanPrice, ALL_GARMENT_PRICING } from './garment-pricing'
+import { getPartnerPlanPrice, ALL_GARMENT_PRICING } from './garment-pricing.server'
 
 type Plan = 'starter' | 'growth' | 'pro'
 
@@ -59,9 +63,9 @@ function resolveItemCost(
   const product = products.find((p) => p.name && itemName.startsWith(p.name.toLowerCase()))
   const meta = (product?.metadata || {}) as Record<string, unknown>
 
-  const explicit = Number(meta.cost_partner ?? meta.cost_ars)
-  if (Number.isFinite(explicit) && explicit > 0) return { cost: explicit, via: 'metadata.cost' }
-
+  // getPartnerPlanPrice (garmentKey directo o por heurística) es SIEMPRE la
+  // fuente de verdad del costo cuando el garmentKey es resoluble — metadata
+  // declarada por el partner no puede pisarlo (evita inflar el margen).
   const gk = typeof meta.garmentKey === 'string' ? meta.garmentKey : null
   if (gk && ALL_GARMENT_PRICING[gk]) {
     const price = getPartnerPlanPrice(gk, plan)
@@ -77,6 +81,11 @@ function resolveItemCost(
       if (price) return { cost: price, via: `guess:${guessed}` }
     }
   }
+
+  // Último fallback: metadata.cost_partner/cost_ars, solo si ningún garmentKey
+  // (directo ni heurístico) resolvió un precio de plan.
+  const explicit = Number(meta.cost_partner ?? meta.cost_ars)
+  if (Number.isFinite(explicit) && explicit > 0) return { cost: explicit, via: 'metadata.cost' }
 
   return { cost: null, via: 'unresolved' }
 }
@@ -155,6 +164,70 @@ export async function creditOrderMargin(order: {
   } catch (e: any) {
     console.error('[ledger] exception:', e?.message)
     return { margin: 0, needsReview: false }
+  }
+}
+
+/**
+ * Revierte el margen acreditado de una orden (refund/chargeback), como asiento
+ * inverso — nunca borra ni edita la entry original (trazabilidad contable).
+ * Idempotente: si ya existe un reverso (source='order_refund') para esta orden,
+ * no hace nada. Si nunca hubo credit confirmado (orden needs_review o margen 0),
+ * tampoco hace nada. No lanza: loguea.
+ */
+export async function reverseOrderMargin(order: {
+  id: string
+  tenant_id: string
+  order_number?: string | null
+}): Promise<{ reversed: boolean; amount: number }> {
+  try {
+    const sb = supabaseAdmin as any
+
+    const { data: existingReversal } = await sb
+      .from('partner_ledger_entries')
+      .select('id')
+      .eq('order_id', order.id)
+      .eq('source', 'order_refund')
+      .maybeSingle()
+    if (existingReversal) {
+      console.log('[ledger] reverso ya existía para orden', order.id)
+      return { reversed: false, amount: 0 }
+    }
+
+    const { data: originalCredit } = await sb
+      .from('partner_ledger_entries')
+      .select('id, amount')
+      .eq('order_id', order.id)
+      .eq('type', 'credit')
+      .eq('status', 'confirmed')
+      .maybeSingle()
+    if (!originalCredit) {
+      console.log('[ledger] sin crédito confirmado previo — nada que revertir para orden', order.id)
+      return { reversed: false, amount: 0 }
+    }
+
+    const amount = Number(originalCredit.amount) || 0
+    const { error } = await sb.from('partner_ledger_entries').insert({
+      tenant_id: order.tenant_id,
+      order_id: order.id,
+      source: 'order_refund',
+      type: 'debit',
+      amount,
+      concept: `Reverso margen por reembolso orden ${order.order_number || order.id.slice(0, 8)}`,
+      status: 'confirmed',
+    })
+    if (error) {
+      if (error.code === '23505') {
+        console.log('[ledger] reverso ya existía (constraint) para orden', order.id)
+        return { reversed: false, amount: 0 }
+      }
+      console.error('[ledger] error revirtiendo margen:', error.message)
+      return { reversed: false, amount: 0 }
+    }
+    console.log(`[ledger] ↩️ reversado $${amount} del tenant ${order.tenant_id} (orden ${order.order_number || order.id})`)
+    return { reversed: true, amount }
+  } catch (e: any) {
+    console.error('[ledger] exception revirtiendo margen:', e?.message)
+    return { reversed: false, amount: 0 }
   }
 }
 

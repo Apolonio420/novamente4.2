@@ -15,6 +15,15 @@ export interface GarmentPricing {
    * Base para calcular precio Growth/Pro = cost + GROWTH_TIER_DELTA_ARS[tier].
    * Precio unico por familia para respetar regla comercial "mismo precio todos los colores".
    * INNEGOCIABLE: nunca renderizar este valor en UI/API del lado del cliente.
+   *
+   * Codigo SERVER debe importar este objeto via `./garment-pricing.server`
+   * (que envuelve `server-only`), no desde este archivo directamente. Este
+   * archivo original sigue siendo importado por codigo cliente existente
+   * (ver app/workspace/design-engine/page.tsx, app/workspace/catalog/page.tsx,
+   * components/workspace/MarginBreakdown.tsx, components/partners/storefront-designer.tsx)
+   * asi que `cost` todavia viaja al bundle publico para esos 4 casos — pendiente
+   * de extraccion en una sesion futura. `garment-pricing.server.ts` es la fuente
+   * de verdad server-only para trabajo nuevo.
    */
   cost: number
   /** B2B Partner price (1u, retail B2B publicado en /b2b-precios-2026). */
@@ -122,6 +131,9 @@ export function getPlanMargin(
   return Math.max(0, pricing.b2c_suggested - partnerPrice)
 }
 
+// ADVERTENCIA: estos objetos contienen `cost` (costo real de produccion). Codigo
+// server debe importarlos desde `./garment-pricing.server` (server-only), NUNCA
+// directamente desde acá si el consumidor puede terminar en un bundle cliente.
 export const GARMENT_PRICING: Record<string, GarmentPricing> = {
   'aldea-classic-tshirt': {
     key: 'aldea-classic-tshirt',
@@ -149,7 +161,8 @@ export const GARMENT_PRICING: Record<string, GarmentPricing> = {
   // Si vuelve a ofrecerse, reagregar entrada con campo cost del Excel.
 }
 
-// Additional garments not in design engine but available for partners
+// Additional garments not in design engine but available for partners.
+// ADVERTENCIA: contiene `cost` — mismo criterio que GARMENT_PRICING arriba.
 export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
   'remera-clasica-mujer': {
     key: 'remera-clasica-mujer',
@@ -219,7 +232,11 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
   },
 }
 
-/** All garments combined (design engine + extras) */
+/**
+ * All garments combined (design engine + extras).
+ * ADVERTENCIA: contiene `cost` en cada entry — usar `./garment-pricing.server`
+ * desde código server; el campo cost nunca debe llegar a un bundle client.
+ */
 export const ALL_GARMENT_PRICING: Record<string, GarmentPricing> = {
   ...GARMENT_PRICING,
   ...EXTRA_GARMENT_PRICING,
