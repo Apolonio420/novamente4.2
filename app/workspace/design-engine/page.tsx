@@ -12,16 +12,12 @@ import { QuickDesignUpload } from '@/components/workspace/QuickDesignUpload'
 import type { StudioMessage, StudioSession, UsageInfo } from '@/lib/partners/studio/types'
 import { createStudioMessage, createStudioSession } from '@/lib/partners/studio/types'
 import {
-  ALL_GARMENT_PRICING,
   TIER_THRESHOLDS,
-  getTierForVolume,
   getTierLabel,
   getNextTier,
-  getPartnerPlanPrice,
-  formatPrice as formatGarmentPrice,
-  type PricingTier,
-  type GarmentPricing,
 } from '@/lib/partners/garment-pricing'
+import { formatPrice as formatGarmentPrice } from '@/lib/partners/format-price'
+import type { PublicGarmentPricing } from '@/lib/partners/garment-pricing.server'
 import {
   fetchStudioSessions,
   fetchSessionMessages,
@@ -152,6 +148,9 @@ export default function DesignStudioPage() {
   const [plan, setPlan] = useState('')
   const [styles, setStyles] = useState<StyleOption[]>([])
   const [garments, setGarments] = useState<GarmentOption[]>([])
+  // Pricing ya derivado por plan (sin `cost` crudo del proveedor) — servido por
+  // GET /api/partners/design/config. Ver getAllPublicGarmentPricing.
+  const [garmentPricing, setGarmentPricing] = useState<Record<string, PublicGarmentPricing>>({})
   const [accessAllowed, setAccessAllowed] = useState(false)
   const [accessReason, setAccessReason] = useState('')
 
@@ -254,6 +253,7 @@ export default function DesignStudioPage() {
         setPlan(data.plan || '')
         setStyles(data.styles || [])
         setGarments(data.garments || [])
+        setGarmentPricing(data.pricing || {})
         // No autoseleccionar estilo. Default "sin estilo" para que el prompt del
         // partner mande sin sesgos. Si quiere un estilo, lo abre del modal y elige.
         // (antes auto-seleccionaba el primero, lo que cambiaba el output sin que
@@ -1148,13 +1148,8 @@ export default function DesignStudioPage() {
           <div className="ml-auto" />
 
           {/* Selected garment price badge — segun plan del partner */}
-          {selectedGarment && ALL_GARMENT_PRICING[selectedGarment] && (() => {
-            const planKey = (plan || '').toLowerCase() === 'pro'
-              ? 'pro'
-              : (plan || '').toLowerCase() === 'growth'
-                ? 'growth'
-                : 'starter'
-            const myPrice = getPartnerPlanPrice(selectedGarment, planKey as 'starter' | 'growth' | 'pro')
+          {selectedGarment && garmentPricing[selectedGarment] && (() => {
+            const myPrice = garmentPricing[selectedGarment].myPrice
             if (myPrice == null) return null
             return (
               <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md whitespace-nowrap">
@@ -1306,7 +1301,7 @@ export default function DesignStudioPage() {
           {/* Garment cards */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {garments.map(g => {
-              const pricing = ALL_GARMENT_PRICING[g.key]
+              const pricing = garmentPricing[g.key]
               const catalogProduct = CATALOG_PRODUCTS.find(p => p.key === g.key)
               const isSelected = selectedGarment === g.key
               const thumbKey = Object.keys(GARMENT_THUMBNAILS[g.key] || {})[0] || 'black'
@@ -1361,12 +1356,10 @@ export default function DesignStudioPage() {
                           : (plan || '').toLowerCase() === 'growth'
                             ? 'growth'
                             : 'starter'
-                        const myPrice = getPartnerPlanPrice(g.key, planKey as 'starter' | 'growth' | 'pro')
+                        const myPrice = pricing.myPrice
                         const retail = catalogProduct?.retailARS ?? pricing.b2c_suggested
                         if (myPrice == null) return null
-                        const growthPrice = planKey === 'starter'
-                          ? getPartnerPlanPrice(g.key, 'growth')
-                          : null
+                        const growthPrice = planKey === 'starter' ? pricing.growthPrice : null
                         const growthSavings = growthPrice != null ? myPrice - growthPrice : 0
                         return (
                           <>
@@ -1510,7 +1503,7 @@ export default function DesignStudioPage() {
                   <div className="border-t border-zinc-700 pt-3">
                     <p className="text-xs font-medium text-zinc-400 mb-2">Precios por prenda</p>
                     <div className="space-y-2">
-                      {Object.values(ALL_GARMENT_PRICING).map(gp => (
+                      {Object.values(garmentPricing).map(gp => (
                         <div key={gp.key} className="text-xs">
                           <p className="text-zinc-300 font-medium mb-1">{gp.name}</p>
                           <div className="grid grid-cols-4 gap-1">
@@ -1534,14 +1527,9 @@ export default function DesignStudioPage() {
             </div>
 
             {/* B2C suggested price hint — margen segun plan del partner */}
-            {selectedGarment && ALL_GARMENT_PRICING[selectedGarment] && (() => {
-              const planKey = (plan || '').toLowerCase() === 'pro'
-                ? 'pro'
-                : (plan || '').toLowerCase() === 'growth'
-                  ? 'growth'
-                  : 'starter'
-              const myPrice = getPartnerPlanPrice(selectedGarment, planKey as 'starter' | 'growth' | 'pro') ?? 0
-              const retail = ALL_GARMENT_PRICING[selectedGarment].b2c_suggested
+            {selectedGarment && garmentPricing[selectedGarment] && (() => {
+              const myPrice = garmentPricing[selectedGarment].myPrice ?? 0
+              const retail = garmentPricing[selectedGarment].b2c_suggested
               return (
               <div className="rounded-xl border border-zinc-800 bg-zinc-800/30 p-3">
                 <p className="text-xs text-zinc-400">

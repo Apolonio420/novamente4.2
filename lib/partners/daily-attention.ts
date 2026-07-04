@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getPartnerPlanPrice } from './garment-pricing'
+import { getPartnerPlanPrice } from './garment-pricing.server'
 import type { Plan } from './types'
 
 const db = () => supabaseAdmin as any

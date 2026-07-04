@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import B2BCatalog from "./B2BCatalog"
 import UnifiedPriceTable from "./UnifiedPriceTable"
 import { TIERS, MODELS, MODEL_TO_GARMENT_KEY } from "./data"
-import { getGrowthPrice } from "@/lib/partners/garment-pricing"
+import { getGrowthPrice } from "@/lib/partners/garment-pricing.server"
 
 export const metadata: Metadata = {
   title: "Catalogo B2B Novamente — Tarifas Exclusivas 2026",

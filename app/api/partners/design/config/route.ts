@@ -8,7 +8,17 @@ import {
   updateDesignConfig,
   validateDesignAccess,
 } from '@/lib/partners/design-engine'
+import { getAllPublicGarmentPricing } from '@/lib/partners/garment-pricing.server'
 import type { Plan } from '@/lib/partners/types'
+
+// Plan del tenant puede venir en variantes (mayusculas, etc.) — normalizar al
+// tipo que espera el pricing engine, igual que ya hacian los componentes cliente.
+function normalizePricingPlan(plan: string | null | undefined): 'starter' | 'growth' | 'pro' {
+  const p = (plan || '').toLowerCase()
+  if (p === 'pro') return 'pro'
+  if (p === 'growth') return 'growth'
+  return 'starter'
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,10 +37,15 @@ export async function GET(request: NextRequest) {
     const styles = getAvailableStyles(config)
     const garments = getAvailableGarments(config)
 
+    // Precios ya derivados por plan (sin `cost` crudo, ver hallazgo [1] del
+    // review de 2026-07-03 — INNEGOCIABLE que el costo de produccion viaje al bundle).
+    const pricing = getAllPublicGarmentPricing(normalizePricingPlan(tenant.plan))
+
     return NextResponse.json({
       config,
       styles,
       garments,
+      pricing,
       access: access.allowed
         ? { allowed: true, mode: access.mode }
         : { allowed: false, reason: (access as any).reason },
