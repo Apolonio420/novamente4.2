@@ -73,6 +73,27 @@ export function addMonths(fromISO: string, months: number): string {
   return d.toISOString()
 }
 
+/**
+ * Calcula el nuevo vencimiento al procesar un pago de renovación (hallazgo [19]
+ * del review docs/reviews/REVIEW-caminos-de-plata-2026-07-03.md).
+ *
+ * Regla de negocio: si la suscripción SIGUE VIGENTE al momento del pago (pago
+ * a tiempo o anticipado), el nuevo período se suma desde el vencimiento actual
+ * — no desde hoy — para no robarle días al partner que paga antes de tiempo.
+ * Si la suscripción YA VENCIÓ (pago atrasado), el nuevo período arranca desde
+ * la fecha del pago (hoy): no hay período muerto retroactivo que sumar ni
+ * restar por el tiempo que estuvo vencida.
+ */
+export function computeRenewalExpiration(
+  currentExpiresAt: string | null | undefined,
+  nowISO: string,
+  months: number,
+): string {
+  const stillActive = !!currentExpiresAt && new Date(currentExpiresAt).getTime() > new Date(nowISO).getTime()
+  const base = stillActive ? (currentExpiresAt as string) : nowISO
+  return addMonths(base, months)
+}
+
 /** ¿La promo de un tenant ya venció (corresponde subir a precio standard)? */
 export function promoExpired(promo: PromoLock | null | undefined, nowISO: string): boolean {
   if (!promo?.expires_at) return false
@@ -81,7 +102,20 @@ export function promoExpired(promo: PromoLock | null | undefined, nowISO: string
 
 // ── DB-dependent ─────────────────────────────────────────────────────────────
 
-/** Cuántos partners ya tienen al menos un pago registrado (para el cupo de 100). */
+/**
+ * Cuántos partners ya tienen al menos un pago registrado (para el cupo de 100).
+ *
+ * Decisión de negocio (confirmada en el punto 2 del ticket de subscription
+ * semantics, 2026-07): el cupo de la promo Growth se consume en el PRIMER PAGO
+ * ACREDITADO (last_payment_at), NO en la creación de la suscripción/checkout.
+ * Crear un PreApproval o una Preference (createRecurringSubscription,
+ * /api/partners/subscribe anual) NUNCA debe tocar last_payment_at — solo lo
+ * setean activateRecurringTenant/registerRecurringCharge y el webhook de pago
+ * único, todos disparados por un evento de pago real de MP. Esto ya cierra el
+ * borde "el primer pago falla": como last_payment_at nunca se seteó, el cupo
+ * jamás se consumió y el tenant puede reintentar el checkout re-evaluando
+ * elegibilidad desde cero. Ver test 'quota semantics' en subscription.test.ts.
+ */
 export async function countPaidPartners(): Promise<number> {
   const { count, error } = await db()
     .from('tenants')
@@ -241,6 +275,10 @@ async function persistPendingSubscription(
  * Activa el tenant cuando MP confirma la suscripción (preapproval authorized).
  * Aplica las features del plan, incluido design_engine_mode (esto arregla que
  * antes el Studio quedaba `disabled` aún pagando).
+ *
+ * El vencimiento se calcula con computeRenewalExpiration: si el tenant venía
+ * de una suscripción todavía vigente (ej. reactivación antes de vencer), el
+ * mes nuevo se suma desde ese vencimiento vigente, no desde hoy (hallazgo [19]).
  */
 export async function activateRecurringTenant(tenant: Tenant, preapprovalId: string, nowISO: string): Promise<void> {
   const meta: SubscriptionMeta = { ...(tenant.metadata ?? {}) }
@@ -264,7 +302,7 @@ export async function activateRecurringTenant(tenant: Tenant, preapprovalId: str
       billing_cycle: 'monthly',
       mp_subscription_id: preapprovalId,
       subscription_started_at: tenant.subscription_started_at ?? nowISO,
-      subscription_expires_at: addMonths(nowISO, 1),
+      subscription_expires_at: computeRenewalExpiration(tenant.subscription_expires_at, nowISO, 1),
       last_payment_at: nowISO,
       payment_failures: 0,
       metadata: meta,
@@ -273,14 +311,24 @@ export async function activateRecurringTenant(tenant: Tenant, preapprovalId: str
     .eq('id', tenant.id)
 }
 
-/** Registra un cobro recurrente exitoso: extiende +1 mes y limpia fallas. */
+/**
+ * Registra un cobro recurrente exitoso: extiende el período y limpia fallas.
+ * Usa computeRenewalExpiration para no robarle días al partner que paga antes
+ * de vencer (hallazgo [19]) — necesita leer el vencimiento vigente del tenant.
+ */
 export async function registerRecurringCharge(tenantId: string, nowISO: string): Promise<void> {
+  const { data: tenant } = await db()
+    .from('tenants')
+    .select('subscription_expires_at')
+    .eq('id', tenantId)
+    .single()
+
   await db()
     .from('tenants')
     .update({
       status: 'active',
       last_payment_at: nowISO,
-      subscription_expires_at: addMonths(nowISO, 1),
+      subscription_expires_at: computeRenewalExpiration(tenant?.subscription_expires_at, nowISO, 1),
       payment_failures: 0,
       updated_at: nowISO,
     })

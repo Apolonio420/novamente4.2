@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolvePriceUsd, resolveAnnualPriceUsd, GROWTH_PROMO_PCT, addMonths, promoExpired, GROWTH_PROMO } from './subscription'
+import { resolvePriceUsd, resolveAnnualPriceUsd, GROWTH_PROMO_PCT, addMonths, promoExpired, GROWTH_PROMO, computeRenewalExpiration } from './subscription'
 
 describe('GROWTH_PROMO config', () => {
   it('es 50% off del precio standard', () => {
@@ -65,5 +65,44 @@ describe('promoExpired', () => {
   it('sin promo → no vencida', () => {
     expect(promoExpired(null, now)).toBe(false)
     expect(promoExpired(undefined, now)).toBe(false)
+  })
+})
+
+// Hallazgo [19] del review: la renovación debe sumar el período desde el
+// vencimiento VIGENTE cuando el pago llega a tiempo (no desde hoy, que le
+// robaría días al partner), y desde HOY cuando la suscripción ya venció
+// (pago atrasado, sin período muerto retroactivo).
+describe('computeRenewalExpiration', () => {
+  it('pago a tiempo (suscripción todavía activa): extiende desde el vencimiento vigente, no desde hoy', () => {
+    // Vence 2027-04-01, paga anticipado el 2027-03-01 (mismo caso del hallazgo).
+    const currentExpiresAt = '2027-04-01T00:00:00.000Z'
+    const paymentNow = '2027-03-01T00:00:00.000Z'
+    const result = computeRenewalExpiration(currentExpiresAt, paymentNow, 12)
+    expect(result).toBe('2028-04-01T00:00:00.000Z') // +12 meses desde el vencimiento vigente, no 2028-03-01
+  })
+
+  it('pago mensual a tiempo: suma 1 mes desde el vencimiento vigente', () => {
+    const currentExpiresAt = '2026-08-10T12:00:00.000Z'
+    const paymentNow = '2026-08-05T12:00:00.000Z' // paga 5 días antes de vencer
+    const result = computeRenewalExpiration(currentExpiresAt, paymentNow, 1)
+    expect(result).toBe('2026-09-10T12:00:00.000Z')
+  })
+
+  it('pago atrasado (suscripción ya vencida): arranca desde la fecha del pago (hoy)', () => {
+    const currentExpiresAt = '2026-06-01T00:00:00.000Z' // ya venció
+    const paymentNow = '2026-06-15T00:00:00.000Z' // paga 2 semanas tarde
+    const result = computeRenewalExpiration(currentExpiresAt, paymentNow, 1)
+    expect(result).toBe('2026-07-15T00:00:00.000Z') // desde hoy, no desde el vencimiento pasado
+  })
+
+  it('sin vencimiento previo (alta nueva): arranca desde hoy', () => {
+    const result = computeRenewalExpiration(null, '2026-07-03T12:00:00.000Z', 1)
+    expect(result).toBe('2026-08-03T12:00:00.000Z')
+  })
+
+  it('vencimiento exactamente igual a ahora: se trata como ya vencido, arranca desde hoy', () => {
+    const now = '2026-07-03T12:00:00.000Z'
+    const result = computeRenewalExpiration(now, now, 1)
+    expect(result).toBe('2026-08-03T12:00:00.000Z')
   })
 })
