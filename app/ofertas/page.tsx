@@ -9,21 +9,21 @@ import { getActiveOffers, formatARS, getDiscountPercent, type Offer } from "@/li
 export const revalidate = 1800 // ISR: 30 min
 
 export const metadata: Metadata = {
-  title: "Ofertas Hot Sale — Remeras Novamente con hasta 30% OFF",
+  title: "Ofertas y promociones — Novamente",
   description:
-    "Hot Sale Novamente: remeras oversize personalizadas con descuentos de hasta 30%. Remera Pasión Infinita $32.900, Cielo Eterno $29.900, Argentina Eterna $31.900 y más. Stock limitado, envíos a todo el país.",
+    "Mirá las promos vigentes de Novamente: remeras, buzos y hoodies personalizados con IA y estampado DTG premium. Descuentos activos y stock limitado cuando hay campaña en curso.",
   alternates: { canonical: "https://www.novamente.ar/ofertas" },
   openGraph: {
-    title: "Hot Sale Novamente — Remeras desde $29.900",
-    description: "5 remeras oversize con hasta 30% OFF. Diseños exclusivos del mundial argentino, estampado DTG premium.",
+    title: "Ofertas y promociones — Novamente",
+    description: "Promos vigentes en remeras, buzos y hoodies personalizados con IA y estampado DTG premium.",
     url: "https://www.novamente.ar/ofertas",
     type: "website",
-    images: ["https://www.novamente.ar/marketing/hot-sale/pasion-infinita.jpeg"],
+    images: ["https://www.novamente.ar/novamente-logo.png"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Hot Sale Novamente — hasta 30% OFF",
-    description: "Remeras oversize con diseños exclusivos. Stock limitado.",
+    title: "Ofertas y promociones — Novamente",
+    description: "Promos vigentes en remeras, buzos y hoodies personalizados con IA y estampado DTG premium.",
   },
 }
 
@@ -34,9 +34,9 @@ function buildOffersSchema(offers: Offer[]) {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": `${baseUrl}/ofertas#webpage`,
-    name: "Ofertas Hot Sale — Novamente",
+    name: "Ofertas y promociones — Novamente",
     description:
-      "Remeras oversize con descuentos Hot Sale. Diseños exclusivos del mundial argentino con estampado DTG premium.",
+      "Promos vigentes en remeras, buzos y hoodies personalizados con IA y estampado DTG premium.",
     url: `${baseUrl}/ofertas`,
     isPartOf: { "@id": `${baseUrl}/#website` },
     about: { "@id": `${baseUrl}/#organization` },
@@ -119,10 +119,10 @@ export default function OfertasPage() {
       <header className="text-center mb-12 md:mb-16">
         <Badge className="mb-4 bg-orange-500/15 text-orange-400 border-orange-500/40 text-xs tracking-widest uppercase hover:bg-orange-500/20">
           <Flame className="w-3 h-3 mr-1.5" />
-          Hot Sale Activo
+          Promo activa
         </Badge>
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4" data-speakable>
-          Ofertas Hot Sale
+          Ofertas y promociones
         </h1>
         <p className="text-muted-foreground text-lg max-w-3xl mx-auto leading-relaxed" data-speakable>
           {offers.length} {offers.length === 1 ? "remera oversize con descuento" : "remeras oversize con descuento"}.

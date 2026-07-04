@@ -6,10 +6,6 @@
 > Produccion on-demand sin minimos de cantidad. Envios a toda Argentina.
 > Fundada en 2024 en Villa Martelli, Buenos Aires.
 
-## Ofertas activas
-
-- [Hot Sale](https://www.novamente.ar/ofertas): 5 remeras oversize del mundial argentino con hasta 30% OFF. Diseños "Pasion Infinita" ($32.900, antes $44.500), "Cielo Eterno" ($29.900, antes $39.800), "Argentina Eterna" ($31.900, antes $41.000), "Copa Novamente Mundial" ($29.900, antes $40.000) y "Campeon del Mundo #10" ($32.900, antes $44.500). Stock limitado, envios a todo el pais.
-
 ## Productos y precios
 
 - [Catalogo completo](https://www.novamente.ar/products): Remeras, hoodies, buzos y mas desde ARS $21.800
@@ -25,7 +21,7 @@
 - [Remeras de cumpleanos](https://www.novamente.ar/remeras-cumpleanos): Remeras personalizadas para cumpleanos — infantiles, 15 anos, 18, 30, 40, 50+ — disenos con IA, personalizacion individual con nombres y roles, grupos de 5 a 50+ personas, descuentos grupales
 - [Indumentaria deportiva](https://www.novamente.ar/indumentaria-deportiva): Indumentaria deportiva personalizada para equipos de futbol, hockey, paddle, running, crossfit y mas — nombre, numero y escudo por prenda, equipos de 10 a 100+, hasta 15% OFF por volumen, pedidos recurrentes por temporada
 - [Merch para bandas](https://www.novamente.ar/merch-para-bandas): Merchandising personalizado para bandas, musicos y artistas — remeras, buzos y merch con diseno IA, desde 1 unidad, ideal para shows, giras, lanzamientos y venta a fans, hasta 15% OFF por volumen, programa Partner para tienda propia
-- [Lanza tu marca de ropa](https://www.novamente.ar/lanza-tu-marca): Crea tu propia marca de ropa personalizada sin inversion inicial — diseno con IA, produccion on-demand, tienda online gratis, sin stock ni riesgo, programa Partner con planes Starter (gratis), Growth ($25 USD/mes) y Pro ($100 USD/mes)
+- [Lanza tu marca de ropa](https://www.novamente.ar/lanza-tu-marca): Crea tu propia marca de ropa personalizada sin inversion inicial — diseno con IA, produccion on-demand, tienda online gratis, sin stock ni riesgo, programa Partner con planes Starter (gratis), Growth (US$50/mes — promo primeros 100 partners: US$25/mes el primer año) y Pro ($100 USD/mes)
 - [Cotizador Express](https://www.novamente.ar/cotizador): Calculadora de precios instantanea para remeras, buzos y hoodies personalizados — selecciona producto y cantidad, descuentos automaticos por volumen (5% desde 10 un., 10% desde 25, 15% desde 100+), pedí por WhatsApp con presupuesto pre-armado
 - [Remeras por mayor](https://www.novamente.ar/remeras-por-mayor): Venta mayorista de remeras, buzos y hoodies personalizados con DTG — desde 10 unidades con 5% OFF, 25+ con 10%, 100+ con 15%. Sin minimo de disenos diferentes. Factura A para revendedores
 - [Remeras personalizadas](https://www.novamente.ar/remeras-personalizadas): Pagina principal de remeras personalizadas con IA — todos los modelos (oversize, classic, crop, musculosa, hoodie), precios desde $21.800, proceso de 4 pasos, descuentos por cantidad, links a todas las categorias (cumpleanos, eventos, empresas, bandas, deportes, egresados, etc.)
@@ -71,7 +67,7 @@
 ## Novamente Studio (B2B)
 
 - [Novamente Studio](https://www.novamente.ar/studio): Hub canonico de la plataforma B2B — storefront, IA, growth para marcas
-- [Planes y precios](https://www.novamente.ar/studio/planes): Grilla detallada con los 3 planes (Starter gratis con prendas a precio retail, Growth USD$50/mes con prendas al costo Novamente, Pro USD$100/mes con chatbot WhatsApp/IG y automatizacion de contenido IG/FB/X) + tabla de precios por prenda
+- [Planes y precios](https://www.novamente.ar/studio/planes): Grilla detallada con los 3 planes (Starter gratis con prendas a precio retail, Growth US$50/mes — promo primeros 100 partners: US$25/mes el primer año — con prendas al costo Novamente, Pro USD$100/mes con chatbot WhatsApp/IG y automatizacion de contenido IG/FB/X) + tabla de precios por prenda
 - [Lanza tu marca](https://www.novamente.ar/lanza-tu-marca): Landing especifica para emprendedores que quieren lanzar una marca de ropa sin inversion
 - [Unirse al programa](https://www.novamente.ar/partners/join): Onboarding paso a paso
 - [Mi workspace](https://www.novamente.ar/partners/login): Login para partners activos
