@@ -1031,7 +1031,7 @@ export default function DesignStudioPage() {
           {/* Style selector */}
           <button
             onClick={() => setStyleModalOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-zinc-800 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors whitespace-nowrap"
+            className="flex items-center gap-1 flex-shrink-0 px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700/60 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 transition-all duration-150 active:scale-[0.96] whitespace-nowrap"
           >
             <Sparkles className="h-3 w-3 text-violet-400" />
             {styles.find(s => s.key === selectedStyle)?.name || 'Sin estilo'}
@@ -1056,40 +1056,40 @@ export default function DesignStudioPage() {
           </button>
 
           {/* Side toggle */}
-          <div className="flex items-center bg-zinc-800 rounded-lg overflow-hidden text-xs">
+          <div className="flex items-center flex-shrink-0 bg-zinc-800 rounded-lg overflow-hidden text-xs border border-zinc-700/60 divide-x divide-zinc-700/50">
             <button
               onClick={() => setSelectedSide('front')}
-              className={`px-2.5 py-1.5 ${selectedSide === 'front' ? 'bg-violet-600 text-white' : 'text-zinc-400'}`}
+              className={`px-3 py-1.5 whitespace-nowrap transition-all duration-150 active:scale-[0.96] ${selectedSide === 'front' ? 'bg-violet-600 text-white shadow-inner' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/60'}`}
             >
               Frente
             </button>
             <button
               onClick={() => setSelectedSide('back')}
-              className={`px-2.5 py-1.5 ${selectedSide === 'back' ? 'bg-violet-600 text-white' : 'text-zinc-400'}`}
+              className={`px-3 py-1.5 whitespace-nowrap transition-all duration-150 active:scale-[0.96] ${selectedSide === 'back' ? 'bg-violet-600 text-white shadow-inner' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/60'}`}
             >
               Espalda
             </button>
           </div>
 
           {/* Stamp mode selector */}
-          <div className="flex items-center bg-zinc-800 rounded-lg overflow-hidden text-xs">
+          <div className="flex items-center flex-shrink-0 bg-zinc-800 rounded-lg overflow-hidden text-xs border border-zinc-700/60 divide-x divide-zinc-700/50">
             <button
               onClick={() => setSelectedStampMode('chest-logo')}
-              className={`px-2.5 py-1.5 ${selectedStampMode === 'chest-logo' ? 'bg-violet-600 text-white' : 'text-zinc-400'}`}
+              className={`px-3 py-1.5 whitespace-nowrap transition-all duration-150 active:scale-[0.96] ${selectedStampMode === 'chest-logo' ? 'bg-violet-600 text-white shadow-inner' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/60'}`}
               title="Logo pequeño en pecho o espalda (~10×10 cm)"
             >
               Chico / Logo
             </button>
             <button
               onClick={() => setSelectedStampMode('medium')}
-              className={`px-2.5 py-1.5 ${selectedStampMode === 'medium' ? 'bg-violet-600 text-white' : 'text-zinc-400'}`}
+              className={`px-3 py-1.5 whitespace-nowrap transition-all duration-150 active:scale-[0.96] ${selectedStampMode === 'medium' ? 'bg-violet-600 text-white shadow-inner' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/60'}`}
               title="Estampa mediana (~20×25 cm)"
             >
               Mediano
             </button>
             <button
               onClick={() => setSelectedStampMode('large')}
-              className={`px-2.5 py-1.5 ${selectedStampMode === 'large' ? 'bg-violet-600 text-white' : 'text-zinc-400'}`}
+              className={`px-3 py-1.5 whitespace-nowrap transition-all duration-150 active:scale-[0.96] ${selectedStampMode === 'large' ? 'bg-violet-600 text-white shadow-inner' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/60'}`}
               title="Estampa grande, hasta 35×40 cm de área"
             >
               Grande
@@ -1105,7 +1105,7 @@ export default function DesignStudioPage() {
                 <button
                   ref={placementBtnRef}
                   onClick={() => (placementMenuOpen ? setPlacementMenuOpen(false) : openPlacementMenu())}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-800 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors whitespace-nowrap"
+                  className="flex items-center gap-1.5 flex-shrink-0 px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700/60 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 transition-all duration-150 active:scale-[0.96] whitespace-nowrap"
                   title={current?.hint}
                 >
                   <Pin className="h-3 w-3 text-violet-400" />
