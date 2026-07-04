@@ -39,7 +39,7 @@ export interface PartnerOrder {
   // hide an order that needs manual attention.
   status: 'pending' | 'confirmed' | 'producing' | 'shipped' | 'delivered' | 'exception' | 'cancelled'
   payment_id: string | null
-  payment_status: 'pending' | 'approved' | 'rejected' | 'refunded'
+  payment_status: 'pending' | 'approved' | 'rejected' | 'refunded' | 'charged_back' | 'cancelled'
   shipping_info: Record<string, unknown>
   notes: string | null
   fulfillment_status: FulfillmentStatus
