@@ -78,6 +78,21 @@ function resolveSubscriptionId(body: any, request: NextRequest): string | null {
 }
 
 /**
+ * Guard de idempotencia para el pago único (one-time / anual): MP puede reenviar
+ * el mismo webhook (reintento, notificación duplicada, replay manual del id viejo
+ * — ver hallazgo [3] de docs/reviews/REVIEW-caminos-de-plata-2026-07-03.md). Si ya
+ * procesamos este payment id para este tenant, no hay que re-ejecutar los efectos
+ * (activar plan, extender vencimiento, notificar, CAPI) de nuevo.
+ */
+export function isPaymentAlreadyProcessed(
+  tenantMetadata: Record<string, unknown> | null | undefined,
+  paymentId: string,
+): boolean {
+  const lastProcessed = (tenantMetadata as any)?.last_mp_payment_id
+  return lastProcessed != null && String(lastProcessed) === String(paymentId)
+}
+
+/**
  * subscription_preapproval: alta / cambio de estado de la suscripción recurrente.
  * status 'authorized' → activa el tenant (y prende el Studio). 'cancelled'/'paused'
  * → marca metadata (el acceso sigue hasta subscription_expires_at; el cron decide).
@@ -245,6 +260,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true })
     }
 
+    // Guard de idempotencia — MP reenvía webhooks (reintentos, notificaciones
+    // duplicadas, o un replay manual de un id viejo). Si este payment id ya fue
+    // aplicado a este tenant, no re-ejecutar los efectos (hallazgo [3] del review).
+    if (paymentDetails.status === 'approved' && isPaymentAlreadyProcessed(tenant.metadata, String(paymentId))) {
+      console.log('Partner webhook: payment ya procesado, saltando efectos:', paymentId, tenant.name)
+      return NextResponse.json({ received: true, already_processed: true })
+    }
+
     // Handle payment status
     if (paymentDetails.status === 'approved') {
       const paidPlan = extractPlan(externalReference)
@@ -259,6 +282,7 @@ export async function POST(request: NextRequest) {
       const billingCycle = extractBillingCycle(externalReference)
       const subscriptionExpiresAt = calculateNewExpiration(billingCycle)
       const now = new Date().toISOString()
+      const metadata = { ...((tenant.metadata as any) ?? {}), last_mp_payment_id: String(paymentId) }
 
       // Activate tenant + update subscription fields
       const updated = await updateTenant(tenantId, {
@@ -275,6 +299,7 @@ export async function POST(request: NextRequest) {
         subscription_started_at: tenant.subscription_started_at ?? now,
         subscription_expires_at: subscriptionExpiresAt,
         payment_failures: 0,
+        metadata,
       } as any)
 
       if (updated) {
