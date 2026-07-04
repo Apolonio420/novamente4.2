@@ -70,7 +70,12 @@ export default function NovamenteVsPrintfulArgentina() {
     headline: "Novamente vs Printful en Argentina: que conviene para vender merch",
     description:
       "Comparativa practica entre Novamente y Printful para marcas argentinas que quieren vender merch personalizado.",
-    author: { "@type": "Organization", name: "Novamente", url: "https://www.novamente.ar" },
+    author: {
+      "@type": "Person",
+      "@id": "https://www.novamente.ar/nosotros#founder-sambuceti",
+      name: "Juan Ignacio Sambuceti",
+      url: "https://www.novamente.ar/nosotros",
+    },
     publisher: {
       "@type": "Organization",
       "@id": "https://www.novamente.ar/#organization",
@@ -79,8 +84,13 @@ export default function NovamenteVsPrintfulArgentina() {
     datePublished: "2026-04-29",
     dateModified: "2026-04-29",
     mainEntityOfPage: "https://www.novamente.ar/blog/novamente-vs-printful-argentina",
+    image: "https://www.novamente.ar/marketing/lifestyle/hero-merch-personalizado.webp",
     articleSection: "Comparativas",
     inLanguage: "es-AR",
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: ["h1", "h2", "[data-speakable]"],
+    },
   }
 
   const faqJsonLd = {

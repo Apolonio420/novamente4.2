@@ -70,7 +70,12 @@ export default function NovamenteVsFullprinted() {
     headline: "Novamente vs proveedores tradicionales: IA, DTG y produccion on-demand",
     description:
       "Comparativa entre Novamente y proveedores tradicionales de indumentaria personalizada para marcas argentinas.",
-    author: { "@type": "Organization", name: "Novamente", url: "https://www.novamente.ar" },
+    author: {
+      "@type": "Person",
+      "@id": "https://www.novamente.ar/nosotros#founder-sambuceti",
+      name: "Juan Ignacio Sambuceti",
+      url: "https://www.novamente.ar/nosotros",
+    },
     publisher: {
       "@type": "Organization",
       "@id": "https://www.novamente.ar/#organization",
@@ -79,8 +84,13 @@ export default function NovamenteVsFullprinted() {
     datePublished: "2026-04-29",
     dateModified: "2026-04-29",
     mainEntityOfPage: "https://www.novamente.ar/blog/novamente-vs-fullprinted",
+    image: "https://www.novamente.ar/marketing/lifestyle/hero-otono-streetwear.webp",
     articleSection: "Comparativas",
     inLanguage: "es-AR",
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: ["h1", "h2", "[data-speakable]"],
+    },
   }
 
   const faqJsonLd = {

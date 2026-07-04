@@ -34,13 +34,43 @@ const STATS = [
 ]
 
 export default function NosotrosPage() {
+  const founderSambuceti = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    '@id': 'https://www.novamente.ar/nosotros#founder-sambuceti',
+    name: 'Juan Ignacio Sambuceti',
+    jobTitle: 'Co-Fundador',
+    worksFor: { '@id': 'https://www.novamente.ar/#organization' },
+    knowsAbout: [
+      'Desarrollo de negocio',
+      'Indumentaria personalizada con IA',
+      'Relacion con clientes',
+      'Estrategia comercial',
+    ],
+  }
+
+  const founderNunez = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    '@id': 'https://www.novamente.ar/nosotros#founder-nunez',
+    name: 'Valentin Nunez',
+    jobTitle: 'Co-Fundador & Desarrollador',
+    worksFor: { '@id': 'https://www.novamente.ar/#organization' },
+    knowsAbout: [
+      'Desarrollo de software',
+      'Arquitectura de plataformas web',
+      'Inteligencia artificial generativa',
+      'Estampado DTG',
+    ],
+  }
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ClothingStore',
-    '@id': 'https://novamente.ar/#organization',
+    '@id': 'https://www.novamente.ar/#organization',
     name: 'Novamente',
-    url: 'https://novamente.ar',
-    logo: 'https://novamente.ar/novamente-logo.png',
+    url: 'https://www.novamente.ar',
+    logo: 'https://www.novamente.ar/novamente-logo.png',
     description: 'Primera marca argentina de indumentaria personalizada con inteligencia artificial',
     foundingDate: '2024',
     address: {
@@ -58,16 +88,9 @@ export default function NosotrosPage() {
     areaServed: { '@type': 'Country', name: 'Argentina' },
     sameAs: ['https://instagram.com/novamente.ar', 'https://twitter.com/Novamentear'],
     founder: [
-      { '@type': 'Person', name: 'Juan Ignacio Sambuceti', jobTitle: 'Co-Fundador' },
-      { '@type': 'Person', name: 'Valentin Nunez', jobTitle: 'Co-Fundador & Desarrollador' },
+      { '@id': 'https://www.novamente.ar/nosotros#founder-sambuceti' },
+      { '@id': 'https://www.novamente.ar/nosotros#founder-nunez' },
     ],
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.8',
-      reviewCount: '95',
-      bestRating: '5',
-      worstRating: '1',
-    },
   }
 
   const webPageJsonLd = {
@@ -97,6 +120,14 @@ export default function NosotrosPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(founderSambuceti) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(founderNunez) }}
       />
       <script
         type="application/ld+json"
