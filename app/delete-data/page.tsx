@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-    title: 'Eliminación de Datos · Novamente',
+    title: 'Eliminación de Datos',
     description: 'Solicitá la eliminación de tus datos personales de Novamente.',
 }
 

@@ -12,7 +12,7 @@ import {
 import { PlanCards } from "./PlanCards"
 
 export const metadata: Metadata = {
-  title: "Planes y precios — Novamente Studio",
+  title: "Planes y precios — Studio",
   description:
     "Conocé los planes de Novamente Studio: Starter gratis, Growth USD$50/mes con prendas al costo Novamente, y Pro USD$100/mes con chatbot WhatsApp/Instagram y automatización de contenido para tu marca.",
   alternates: { canonical: "https://www.novamente.ar/studio/planes" },

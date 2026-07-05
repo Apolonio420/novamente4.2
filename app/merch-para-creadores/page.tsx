@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Merch para Creadores de Contenido — YouTubers, Streamers e Influencers | Novamente",
+  title: "Merch para Creadores — YouTubers y Streamers",
   description:
     "Crea tu linea de merch personalizada con IA. Remeras, hoodies y buzos para youtubers, streamers, podcasters e influencers. Sin minimo de cantidad, sin inversion inicial. Estampado DTG premium. Envios a toda Argentina.",
   keywords: [

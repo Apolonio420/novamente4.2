@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Buzos Personalizados Argentina — Hoodies y Crewnecks con IA y DTG | Novamente",
+  title: "Buzos Personalizados Argentina con IA y DTG",
   description:
     "Buzos personalizados con inteligencia artificial y estampado DTG premium. Hoodies oversize desde $55.000, crewnecks desde $43.000. Algodon 100% frizado, desde 1 unidad. Descuentos por cantidad. Envios a toda Argentina.",
   keywords: [

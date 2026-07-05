@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Terminos y Condiciones — Novamente',
+  title: 'Terminos y Condiciones',
   description:
     'Terminos y condiciones de uso de Novamente. Venta de indumentaria personalizada con disenos generados por inteligencia artificial y estampado DTG.',
   alternates: { canonical: 'https://www.novamente.ar/terminos' },

@@ -13,7 +13,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Uniformes Personalizados con IA — Remeras y Buzos para tu Equipo | Novamente",
+  title: "Uniformes Personalizados con IA para tu Equipo",
   description:
     "Uniformes personalizados con inteligencia artificial para empresas, restaurantes, gimnasios y mas. Remeras desde $28.600, hoodies desde $43.000. Algodon 100%, estampado DTG premium. Pedidos recurrentes con descuento. Envios a toda Argentina.",
   keywords: [

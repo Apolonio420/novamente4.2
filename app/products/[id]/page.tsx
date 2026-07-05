@@ -108,7 +108,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const baseUrl = "https://www.novamente.ar"
 
   return {
-    title: `${product.name} — Personalizable con IA | Novamente`,
+    title: `${product.name} — Personalizable con IA`,
     description: `${product.name} a ${product.price}. ${product.description.slice(0, 140)}... Algodon 100% premium con estampado DTG. Personalizalo con inteligencia artificial.`,
     keywords: [
       product.name.toLowerCase(),

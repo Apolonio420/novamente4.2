@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import SchedulerPageContent from "../tiktok/page"
 
 export const metadata: Metadata = {
-  title: "Scheduler de redes para marcas — Novamente",
+  title: "Scheduler de redes para marcas",
   description:
     "Programá y publicá videos en tus redes sociales desde Novamente. Cada marca conecta su propia cuenta y publica drops, lookbooks y behind the scenes en su calendario.",
   alternates: { canonical: "https://www.novamente.ar/partners/scheduler" },

@@ -21,7 +21,7 @@ import { ScrollButton } from "@/components/scroll-button"
 import { INTERNAL_LINKS } from "@/lib/config/links"
 
 export const metadata = {
-  title: "Novamente — Diseñá tu ropa personalizada con inteligencia artificial",
+  title: { absolute: "Novamente — Diseñá tu ropa personalizada con inteligencia artificial" },
   description: "Novamente es la primera marca argentina de indumentaria personalizada con IA. Elegí entre 37 estilos artísticos, diseñá tu remera, hoodie o buzo en minutos con estampado DTG premium. Más de 1.200 diseños creados y envíos a todo el país.",
   openGraph: {
     title: "Novamente — Ropa personalizada con IA en Argentina",

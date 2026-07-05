@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Remeras para Despedidas de Soltero/a — Personalizadas con IA | Novamente",
+  title: "Remeras para Despedidas de Soltero/a con IA",
   description:
     "Remeras y buzos personalizados para despedidas de soltero y soltera. Disenos unicos con IA, cada invitado con su nombre. Desde $28.600. Algodon 100%, estampado DTG premium. Pedidos grupales con descuento. Envios a toda Argentina.",
   keywords: [

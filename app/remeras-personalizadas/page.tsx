@@ -13,7 +13,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Remeras Personalizadas Argentina — Disena con IA, Estampado DTG Premium | Novamente",
+  title: "Remeras Personalizadas Argentina con IA y DTG",
   description:
     "Remeras personalizadas con inteligencia artificial y estampado DTG premium. Desde 1 unidad, sin minimos. Oversize, classic, crop y musculosas en algodon 100%. Descuentos por cantidad. Envios a toda Argentina. Disena online en minutos.",
   keywords: [

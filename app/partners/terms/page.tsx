@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Terminos y Condiciones — Novamente Partners',
+  title: 'Terminos y Condiciones — Partners',
   description:
     'Terminos y condiciones de uso del programa Novamente Partners. Planes, facturacion, derechos y responsabilidades.',
   alternates: {

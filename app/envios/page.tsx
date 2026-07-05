@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ArrowLeft, Truck, Package, RefreshCw } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Envios y Devoluciones — Novamente',
+  title: 'Envios y Devoluciones',
   description:
     'Informacion sobre envios, tiempos de entrega, costos por zona, tabla de talles y politica de devoluciones de Novamente.',
   alternates: { canonical: 'https://www.novamente.ar/envios' },

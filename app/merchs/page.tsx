@@ -17,7 +17,7 @@ import { WHATSAPP_MESSAGES, getWhatsAppLink } from "@/lib/config/links"
 import StickyCTA from "@/components/merchs/StickyCTA"
 
 export const metadata: Metadata = {
-    title: "Lanzá tu marca de ropa gratis — Sin stock ni inversión | Novamente",
+    title: "Lanzá tu marca de ropa gratis, sin stock",
     description:
         "Te damos un ecommerce con tu marca y producimos por vos. Vendés online, ganás margen real, sin stock. Activación gratis en el día.",
     openGraph: {

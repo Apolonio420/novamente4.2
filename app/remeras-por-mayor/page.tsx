@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Remeras por Mayor Personalizadas — Desde 10 Unidades con Descuento | Novamente",
+  title: "Remeras por Mayor desde 10 Unidades",
   description:
     "Compra remeras por mayor personalizadas con estampado DTG premium. Desde 10 unidades con 5% OFF, 25+ con 10% OFF, 100+ con 15% OFF. Sin minimo de disenos. Envios a todo Argentina. Ideal para revendedores, ferias y showrooms.",
   keywords: [

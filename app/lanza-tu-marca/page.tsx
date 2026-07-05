@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Lanza Tu Marca de Ropa — Emprender con Remeras Personalizadas | Novamente",
+  title: "Lanza Tu Marca de Ropa con Remeras Personalizadas",
   description:
     "Crea tu propia marca de ropa personalizada sin inversion inicial. Disena con IA, nosotros producimos y enviamos. Tienda online gratis. Sin stock, sin riesgo. Remeras, buzos y hoodies con estampado DTG premium. Programa Partner de Novamente.",
   keywords: [

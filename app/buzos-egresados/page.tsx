@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Buzos de Egresados 2026 — Personalizados con IA | Novamente",
+  title: "Buzos de Egresados 2026 — Personalizados con IA",
   description:
     "Buzos de egresados personalizados con inteligencia artificial. Hoodies desde $43.000, remeras desde $28.600. Cada alumno elige su nombre y numero. Algodon 100%, estampado DTG premium. Descuentos desde 10 unidades. Envios a toda Argentina.",
   keywords: [

@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Regalos Personalizados con IA — Remeras, Buzos y Hoodies Unicos | Novamente",
+  title: "Regalos Personalizados con IA — Remeras y Buzos",
   description:
     "Regalos personalizados para cualquier ocasion. Remeras, buzos y hoodies con disenos unicos creados con inteligencia artificial y estampado DTG premium. Desde $21.800. Envios a toda Argentina.",
   keywords: [

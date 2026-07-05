@@ -11,7 +11,7 @@ import {
 import CotizadorCalculator from "@/components/cotizador-calculator"
 
 export const metadata: Metadata = {
-  title: "Cotizador Express — Presupuesto Instantaneo Remeras y Buzos | Novamente",
+  title: "Cotizador Express — Presupuesto Instantaneo",
   description:
     "Calcula el precio de tus remeras, buzos y hoodies personalizados al instante. Descuentos por cantidad: 5% desde 10 un., 10% desde 25, 15% desde 100. Estampado DTG premium. Envios a todo Argentina.",
   keywords: [

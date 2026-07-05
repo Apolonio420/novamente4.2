@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Remeras de Cumpleanos Personalizadas con IA | Novamente",
+  title: "Remeras de Cumpleanos Personalizadas con IA",
   description:
     "Remeras y buzos personalizados para cumpleanos: infantiles, 15 anos, 18, 30, 40, 50 y mas. Disena con IA en minutos. Grupos de 5 a 50+ personas. Estampado DTG premium, algodon 100%. Envios a toda Argentina.",
   keywords: [

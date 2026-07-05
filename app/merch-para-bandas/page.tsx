@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Merch Personalizado para Vender - Bandas, Creadores y Marcas | Novamente",
+  title: "Merch Personalizado para Bandas y Creadores",
   description:
     "Remeras, buzos y merch personalizado para bandas, creadores, marcas, eventos y empresas. Disena con IA, vende sin stock o produci por cantidad. Desde 1 unidad. Estampado DTG premium. Envios a toda Argentina.",
   keywords: [

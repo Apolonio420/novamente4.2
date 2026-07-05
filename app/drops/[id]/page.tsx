@@ -34,7 +34,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { id } = await params;
   const drop = await fetchDrop(id);
-  if (!drop) return { title: "Drop no encontrado · Novamente" };
+  if (!drop) return { title: "Drop no encontrado" };
 
   const title = `${garmentLabel(drop.garmentKey)} — Drop único`;
   const description =

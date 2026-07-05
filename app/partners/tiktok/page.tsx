@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowRight, Calendar, Sparkles, Eye, Shield, Users, BarChart3 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "TikTok Scheduler para creadores de moda — Novamente Studio",
+  title: "TikTok Scheduler para creadores de moda — Studio",
   description:
     "Programá y publicá videos de moda en TikTok desde Novamente Studio. Cada marca conecta su propia cuenta y publica drops, lookbooks y behind the scenes en su calendario.",
   alternates: { canonical: "https://www.novamente.ar/partners/tiktok" },

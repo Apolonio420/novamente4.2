@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Politica de Privacidad — Novamente',
+  title: 'Politica de Privacidad',
   description:
     'Conoce como Novamente protege tus datos personales. Politica de privacidad conforme a la Ley 25.326 de Proteccion de Datos Personales de Argentina.',
   alternates: { canonical: 'https://www.novamente.ar/privacidad' },

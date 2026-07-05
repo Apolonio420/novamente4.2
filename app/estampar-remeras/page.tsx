@@ -12,7 +12,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Estampar Remeras — Servicio de Estampado DTG Premium | Novamente Argentina",
+  title: "Estampar Remeras — Servicio DTG Premium",
   description:
     "Servicio de estampado de remeras en Argentina. Estampado DTG directo sobre tela, colores vibrantes, desde 1 unidad. Trае tu diseno o crealo con IA. Remeras, buzos, hoodies y musculosas. Sin minimos, sin matriceria. Envios a todo el pais.",
   keywords: [

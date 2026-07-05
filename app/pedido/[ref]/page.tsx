@@ -8,7 +8,7 @@ import { CheckCircle2, Circle, Package, Truck, Home, Clock } from 'lucide-react'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export const metadata: Metadata = {
-  title: 'Seguimiento de pedido · Novamente',
+  title: 'Seguimiento de pedido',
   robots: { index: false, follow: false },
   openGraph: {
     title: 'Seguimiento de tu pedido',

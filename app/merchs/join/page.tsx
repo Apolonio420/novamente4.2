@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import JoinForm from "@/components/merchs/JoinForm"
 
 export const metadata: Metadata = {
-    title: "Sumate como Partner | Novamente",
+    title: "Sumate como Partner",
     description: "Completá el formulario para sumarte al programa de partners de Novamente y lanzar tu línea de merchandising oficial.",
     openGraph: {
         title: "Sumate como Partner — Novamente",

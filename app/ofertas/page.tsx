@@ -9,7 +9,7 @@ import { getActiveOffers, formatARS, getDiscountPercent, type Offer } from "@/li
 export const revalidate = 1800 // ISR: 30 min
 
 export const metadata: Metadata = {
-  title: "Ofertas y promociones — Novamente",
+  title: "Ofertas y promociones",
   description:
     "Mirá las promos vigentes de Novamente: remeras, buzos y hoodies personalizados con IA y estampado DTG premium. Descuentos activos y stock limitado cuando hay campaña en curso.",
   alternates: { canonical: "https://www.novamente.ar/ofertas" },

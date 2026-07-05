@@ -10,7 +10,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Hoodie Personalizado Argentina — Buzo custom con IA | Novamente",
+  title: "Hoodie Personalizado Argentina con IA",
   description:
     "Disena tu hoodie personalizado con inteligencia artificial. Buzo Hoodie Oversize desde $55.000, algodon premium, estampado DTG. 37 estilos artisticos, 6 colores. Envios a todo el pais.",
   keywords: [

@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Remeras para Eventos — Personalizadas con IA | Novamente",
+  title: "Remeras para Eventos — Personalizadas con IA",
   description:
     "Remeras y buzos personalizados para eventos: maratones, conferencias, festivales, carreras solidarias, team building y mas. Pedidos de 10 a 500+ unidades con descuentos por volumen. Estampado DTG premium, algodon 100%. Envios a toda Argentina.",
   keywords: [

@@ -13,7 +13,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Regalos Dia del Padre — Remeras y Buzos Personalizados con IA",
+  title: "Regalos Dia del Padre — Personalizados con IA",
   description:
     "Regala algo unico este Dia del Padre. Remeras y buzos personalizados con inteligencia artificial y estampado DTG. Diseña un regalo con significado en minutos. Desde $21.800. Envios a toda Argentina.",
   keywords: [
