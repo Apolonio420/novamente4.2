@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Diseñá tu prenda con IA · Novamente",
+  title: "Diseñá tu prenda con IA",
   description:
     "Creá remeras, buzos y hoodies únicos con inteligencia artificial. Diseño en segundos, producción a pedido en Argentina, envío a todo el país.",
   keywords: [
