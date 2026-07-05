@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Package, Star, Shield, Clock, CheckCircle2,
   Truck, Palette, Sparkles, ArrowRight,
@@ -303,7 +304,7 @@ export default function EstamparRemeras() {
         <section className="border-y border-zinc-800 bg-zinc-900/50">
           <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div>
-              <p className="text-3xl font-bold text-orange-400">1,500+</p>
+              <p className="text-3xl font-bold text-orange-400">{SITE_STATS.designsCreated}</p>
               <p className="text-sm text-zinc-400">Prendas estampadas</p>
             </div>
             <div>
@@ -311,7 +312,7 @@ export default function EstamparRemeras() {
               <p className="text-sm text-zinc-400">Lavados de durabilidad</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-emerald-400">4.9/5</p>
+              <p className="text-3xl font-bold text-emerald-400">{SITE_STATS.averageRating}</p>
               <p className="text-sm text-zinc-400">Rating clientes</p>
             </div>
             <div>

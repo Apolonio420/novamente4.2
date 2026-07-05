@@ -3,9 +3,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, MessageCircle, Mail, MapPin, Phone, Sparkles, Users, Palette, Award } from 'lucide-react'
 import { LandingHeroImage } from '@/components/LandingHeroImage'
+import { SITE_STATS } from '@/lib/site-stats'
 
 export const metadata: Metadata = {
-  title: 'Sobre Novamente — Ropa Personalizada con IA en Argentina',
+  title: { absolute: 'Sobre Novamente — Ropa Personalizada con IA en Argentina' },
   description:
     'Novamente es la primera marca argentina de indumentaria personalizada con inteligencia artificial. Fundada en 2024 en Villa Martelli, Buenos Aires. Combinamos IA generativa con estampado DTG premium para crear prendas unicas bajo demanda. 37 estilos artisticos, envios a todo el pais.',
   openGraph: {
@@ -27,10 +28,10 @@ export const metadata: Metadata = {
 }
 
 const STATS = [
-  { value: '1,200+', label: 'Disenos creados', icon: Palette },
-  { value: '95+', label: 'Clientes satisfechos', icon: Users },
-  { value: '37', label: 'Estilos artisticos', icon: Sparkles },
-  { value: '4.8/5', label: 'Rating promedio', icon: Award },
+  { value: SITE_STATS.designsCreated, label: SITE_STATS.designsCreatedLabel, icon: Palette },
+  { value: SITE_STATS.happyCustomers, label: SITE_STATS.happyCustomersLabel, icon: Users },
+  { value: SITE_STATS.artisticStyles, label: SITE_STATS.artisticStylesLabel, icon: Sparkles },
+  { value: SITE_STATS.averageRating, label: SITE_STATS.averageRatingLabel, icon: Award },
 ]
 
 export default function NosotrosPage() {

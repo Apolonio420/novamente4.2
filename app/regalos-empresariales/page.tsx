@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Sparkles, Building2, Users, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Zap, Package, Palette,
@@ -307,7 +308,7 @@ export default function RegalosEmpresariales() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                  4.9/5 en corporativo
+                  {SITE_STATS.averageRating} en corporativo
                 </span>
               </div>
             </div>
@@ -521,7 +522,7 @@ export default function RegalosEmpresariales() {
                 <Star key={i} className="w-6 h-6 text-yellow-400 fill-yellow-400" />
               ))}
             </div>
-            <p className="text-2xl font-semibold mb-2">4.9/5 en pedidos corporativos</p>
+            <p className="text-2xl font-semibold mb-2">{SITE_STATS.averageRating} en pedidos corporativos</p>
             <p className="text-muted-foreground">
               Empresas de toda Argentina confian en Novamente para su merchandising
             </p>

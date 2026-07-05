@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Sparkles, Heart, Users, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Palette, Package,
@@ -340,7 +341,7 @@ export default function DespedidasPersonalizadas() {
                 <div className="text-sm text-zinc-400">despedidas equipadas</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-pink-400">4.9/5</div>
+                <div className="text-2xl sm:text-3xl font-bold text-pink-400">{SITE_STATS.averageRating}</div>
                 <div className="text-sm text-zinc-400">calificacion promedio</div>
               </div>
               <div>
@@ -587,7 +588,7 @@ export default function DespedidasPersonalizadas() {
             </div>
 
             <div className="text-center mt-6 text-zinc-500">
-              Calificacion promedio: <span className="text-white font-semibold">4.9/5</span> basado en 67 pedidos de despedidas
+              Calificacion promedio: <span className="text-white font-semibold">{SITE_STATS.averageRating}</span> de nuestros clientes
             </div>
           </div>
         </section>

@@ -32,6 +32,14 @@ export const metadata: Metadata = {
       "Cual metodo de estampado conviene? Comparamos DTG, serigrafia y sublimacion en calidad, costo, durabilidad y mas.",
     url: "https://www.novamente.ar/dtg-vs-serigrafia",
     type: "article",
+    images: [
+      {
+        url: "https://www.novamente.ar/marketing/lifestyle/blog-cover-dtg.webp",
+        width: 1200,
+        height: 630,
+        alt: "Comparativa de metodos de estampado: DTG vs serigrafia vs sublimacion",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",

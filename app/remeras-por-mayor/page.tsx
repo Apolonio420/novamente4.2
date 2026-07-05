@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Package, Star, Shield, Clock, CheckCircle2,
   Truck, Palette, Sparkles, ArrowRight,
@@ -382,7 +383,7 @@ export default function RemerasPorMayor() {
                 <div className="text-sm text-zinc-400">dias produccion</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-amber-400">4.9/5</div>
+                <div className="text-2xl sm:text-3xl font-bold text-amber-400">{SITE_STATS.averageRating}</div>
                 <div className="text-sm text-zinc-400">calificacion clientes</div>
               </div>
             </div>
@@ -707,7 +708,7 @@ export default function RemerasPorMayor() {
             </div>
 
             <div className="text-center mt-6 text-zinc-500">
-              Calificacion promedio: <span className="text-white font-semibold">4.9/5</span> basado en 340+ pedidos mayoristas
+              Calificacion promedio: <span className="text-white font-semibold">{SITE_STATS.averageRating}</span> de nuestros clientes
             </div>
           </div>
         </section>

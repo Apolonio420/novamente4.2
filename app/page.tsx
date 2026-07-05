@@ -27,7 +27,14 @@ export const metadata = {
     title: "Novamente — Ropa personalizada con IA en Argentina",
     description: "Diseñá tu prenda única en minutos. 37 estilos artísticos, estampado DTG premium, hoodies desde $55.000 y remeras desde $28.600. Envíos a todo el país.",
     url: "https://www.novamente.ar/",
-    images: [{ url: "https://www.novamente.ar/novamente-logo.png", width: 1200, height: 630, alt: "Novamente — Ropa personalizada con inteligencia artificial" }],
+    images: [
+      {
+        url: "https://www.novamente.ar/marketing/lifestyle/home-carousel-1.webp",
+        width: 1200,
+        height: 630,
+        alt: "Novamente — indumentaria personalizada con inteligencia artificial",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",

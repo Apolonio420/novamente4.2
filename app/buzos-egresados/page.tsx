@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Sparkles, GraduationCap, Users, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Palette, Package, Heart,
@@ -345,7 +346,7 @@ export default function BuzosEgresados() {
                 <div className="text-sm text-zinc-400">promos atendidas</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-cyan-400">4.9/5</div>
+                <div className="text-2xl sm:text-3xl font-bold text-cyan-400">{SITE_STATS.averageRating}</div>
                 <div className="text-sm text-zinc-400">calificacion promedio</div>
               </div>
               <div>
@@ -560,7 +561,7 @@ export default function BuzosEgresados() {
             </div>
 
             <div className="text-center mt-6 text-zinc-500">
-              Calificacion promedio: <span className="text-white font-semibold">4.9/5</span> basado en 83 pedidos de egresados
+              Calificacion promedio: <span className="text-white font-semibold">{SITE_STATS.averageRating}</span> de nuestros clientes
             </div>
           </div>
         </section>
