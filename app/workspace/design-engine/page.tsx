@@ -1239,7 +1239,7 @@ export default function DesignStudioPage() {
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Describí tu diseño... (ej: dragon japones en estilo acuarela)"
+              placeholder="Describí solo el dibujo, sin la prenda (ej: dragon japones en estilo acuarela)"
               rows={1}
               className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/50 min-h-[44px] max-h-[120px]"
               style={{ height: 'auto', overflow: 'hidden' }}
