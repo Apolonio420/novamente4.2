@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { PLAN_FEATURES } from './plans'
 import type { Tenant, TenantUser } from './types'
 
 // Cast helper — Supabase doesn't have generated types for these new tables
@@ -94,6 +95,12 @@ export async function createTenant(input: {
       plan: 'starter',
       status: 'onboarding',
       onboarding_step: 1,
+      // Prende el Design Engine segun el piso del plan starter ('presets').
+      // Antes se dejaba sin setear y quedaba en el DEFAULT 'disabled' de la
+      // columna hasta que el webhook de pago lo corregia — bloqueaba el
+      // Studio a partners starter que nunca pagaron (decision 06/07: el
+      // Studio va prendido para todos segun su plan desde el alta).
+      design_engine_mode: PLAN_FEATURES.starter.designEngine,
     })
     .select()
     .single()

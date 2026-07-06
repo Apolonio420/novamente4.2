@@ -17,6 +17,7 @@ export interface PlanFeatures {
   feedExport: boolean
   onboardingCall: boolean
   brandingFull: boolean
+  customFaqs: boolean
 }
 
 export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
@@ -37,6 +38,7 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     feedExport: false,
     onboardingCall: false,
     brandingFull: true,
+    customFaqs: false,
   },
   growth: {
     maxProducts: 999999,
@@ -55,6 +57,7 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     feedExport: false,
     onboardingCall: false,
     brandingFull: true,
+    customFaqs: false,
   },
   pro: {
     maxProducts: 999999,
@@ -73,6 +76,7 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     feedExport: true,
     onboardingCall: true,
     brandingFull: true,
+    customFaqs: true,
   },
 }
 

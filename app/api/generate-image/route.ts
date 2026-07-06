@@ -4,6 +4,7 @@ import { uploadFile } from "@/lib/cloudflare-r2"
 import { toPublicR2Url } from "@/lib/r2"
 import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
 import { optimizeDesignPrompt } from "@/lib/designer/prompt-optimizer"
+import { saveGeneratedImage } from "@/lib/db"
 import type { GarmentColorway, PrintArea } from "@/lib/designer/types"
 
 export const runtime = "nodejs"
@@ -21,7 +22,7 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
 
-type OptimizerOptions = { styleId?: string; colorway?: GarmentColorway; printArea?: PrintArea }
+type OptimizerOptions = { styleId?: string; colorway?: GarmentColorway; printArea?: PrintArea; sessionId?: string }
 type Body =
   | ({ prompt: string; n?: number; size?: { width: number; height: number } } & OptimizerOptions)
   | ({ instruction: string; lastPrompt: string; n?: number; size?: { width: number; height: number } } & OptimizerOptions)
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
     // 3) Optimizar prompt — opcional via flag `raw`
     //    - raw=true: usa el prompt del user TAL CUAL + guard minimo anti-prenda
     //    - raw=false (default): pasa por optimizer que fuerza estilo vectorial textile
-    const { styleId, colorway, printArea } = body as OptimizerOptions
+    const { styleId, colorway, printArea, sessionId } = body as OptimizerOptions
     const rawMode = (body as { raw?: boolean }).raw === true
     const garmentColor = (body as { garmentColor?: string }).garmentColor
 
@@ -255,6 +256,18 @@ export async function POST(req: NextRequest) {
     }))
     const t1 = Date.now()
     console.log("GEN-IMG done", { totalMs: t1 - t0, count: out.length })
+
+    // Telemetria — desde la migracion /design -> /crear (19/06) este endpoint
+    // no escribia nada en DB, dejando el /crear publico ciego. Fire-and-forget:
+    // NUNCA debe bloquear ni romper la respuesta al usuario.
+    if (sessionId) {
+      for (const img of out) {
+        if ((img as { isFallback?: boolean }).isFallback) continue // data: URI, no hay R2 key que loguear
+        saveGeneratedImage(img.url, finalPrompt, undefined, sessionId).catch((err) => {
+          console.error("GEN-IMG telemetry insert failed:", err?.message || err)
+        })
+      }
+    }
 
     return ok({
       success: true,

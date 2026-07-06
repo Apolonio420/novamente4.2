@@ -6,6 +6,7 @@ import {
   validateDesignAccess,
   getAvailableGarments,
   saveDesignAsset,
+  resolveDesignEngineMode,
 } from '@/lib/partners/design-engine'
 import { getGarmentMapping } from '@/lib/garment-mappings'
 import { uploadFile } from '@/lib/cloudflare-r2'
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     // Validate access
     const access = validateDesignAccess(
-      config.mode || tenant.design_engine_mode,
+      resolveDesignEngineMode(tenant),
       tenant.plan as Plan,
       'mockup',
     )

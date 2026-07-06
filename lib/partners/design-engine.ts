@@ -165,6 +165,36 @@ export function validateDesignAccess(
 }
 
 // ---------------------------------------------------------------------------
+// resolveDesignEngineMode
+// ---------------------------------------------------------------------------
+// Helper unico para leer el modo efectivo del Design Engine de un tenant.
+// El plan es el PISO: si tenant.design_engine_mode viene 'disabled'/null/
+// undefined (columna nunca seteada al crear el tenant, default de DB), se usa
+// el modo del plan. Un modo explicito superior (ej. full_brand_fit seteado a
+// mano) se respeta. Decision de producto 06/07: "prender el Studio para
+// todos segun su plan" — reemplaza el patron disperso `config.mode ||
+// tenant.design_engine_mode` (que en la practica nunca caia al fallback
+// porque config.mode default tambien es 'disabled', un string truthy).
+export function resolveDesignEngineMode(tenant: {
+  plan: Plan
+  design_engine_mode?: DesignEngineMode | null
+}): DesignEngineMode {
+  const planMode = PLAN_FEATURES[tenant.plan].designEngine
+  const tenantMode = tenant.design_engine_mode
+
+  if (!tenantMode || tenantMode === 'disabled') return planMode
+
+  const modePriority: Record<DesignEngineMode, number> = {
+    disabled: 0,
+    mockups_only: 1,
+    presets: 2,
+    full_brand_fit: 3,
+  }
+
+  return modePriority[tenantMode] > modePriority[planMode] ? tenantMode : planMode
+}
+
+// ---------------------------------------------------------------------------
 // buildTenantPrompt
 // ---------------------------------------------------------------------------
 

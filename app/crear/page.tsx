@@ -38,8 +38,11 @@ export type Mode = "chat" | "canvas" | "lifestyle"
 
 export default function CrearPage() {
   const [mode, setMode] = useState<Mode>("chat")
-  const [session, setSession] = useState<DesignSession>({
-    sessionId: null,
+  const [session, setSession] = useState<DesignSession>(() => ({
+    // Un id por sesion de chat — antes quedaba siempre null y el generador
+    // (/api/generate-image) no tenia forma de asociar generaciones a una
+    // sesion para telemetria (ciegos desde la migracion /design -> /crear).
+    sessionId: typeof crypto !== "undefined" ? crypto.randomUUID() : null,
     currentDesignUrl: null,
     frontDesignUrl: null,
     backDesignUrl: null,
@@ -51,7 +54,7 @@ export default function CrearPage() {
     side: "front",
     printArea: "R2",
     dobleEstampa: false,
-  })
+  }))
   const [tryOnOpen, setTryOnOpen] = useState(false)
   const cartCount = useCart((s) => s.items.length)
   const [socialProof, setSocialProof] = useState<{

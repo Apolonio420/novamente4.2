@@ -81,7 +81,7 @@ const navSections: NavSection[] = [
   {
     title: 'Comunicacion',
     items: [
-      { label: 'Chatbot', href: '/workspace/chatbot', icon: MessageSquare, requiredPlan: 'growth' },
+      { label: 'Chatbot', href: '/workspace/chatbot', icon: MessageSquare, requiredPlan: 'pro' },
       { label: 'Soporte', href: '/workspace/support', icon: LifeBuoy },
     ],
   },

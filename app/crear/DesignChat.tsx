@@ -378,6 +378,7 @@ export function DesignChat({
           raw: true,
           garmentColor: session.garmentColor,
           printArea: session.printArea,
+          sessionId: session.sessionId,
         }),
       })
       const data = await res.json()
@@ -411,7 +412,7 @@ export function DesignChat({
     } finally {
       setLoading(false)
     }
-  }, [loading, session.garmentColor, session.garmentType, session.printArea, setSession, toast])
+  }, [loading, session.garmentColor, session.garmentType, session.printArea, session.sessionId, setSession, toast])
 
   const handleSend = useCallback(async (overridePrompt?: string) => {
     const text = (overridePrompt ?? input).trim()
@@ -686,6 +687,7 @@ export function DesignChat({
           size: aspectSize,
           garmentColor: session.garmentColor,
           printArea: session.printArea,
+          sessionId: session.sessionId,
         }
       }
 
