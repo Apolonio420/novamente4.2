@@ -15,12 +15,12 @@ export async function generateMetadata({
 
   if (!demo) {
     return {
-      title: "Demo — Novamente",
+      title: "Demo",
       description: "Probá en vivo el asistente de IA de Novamente para atención por WhatsApp.",
     }
   }
 
-  const title = `Demo — ${demo.name} · Novamente`
+  const title = `Demo — ${demo.name}`
   const description = `Probá en vivo el asistente de IA de Novamente simulando a ${demo.name}. Chateá y mirá cómo respondería tu negocio por WhatsApp.`
 
   return {
