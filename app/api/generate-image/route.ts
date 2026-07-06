@@ -258,15 +258,21 @@ export async function POST(req: NextRequest) {
     console.log("GEN-IMG done", { totalMs: t1 - t0, count: out.length })
 
     // Telemetria — desde la migracion /design -> /crear (19/06) este endpoint
-    // no escribia nada en DB, dejando el /crear publico ciego. Fire-and-forget:
-    // NUNCA debe bloquear ni romper la respuesta al usuario.
+    // no escribia nada en DB, dejando el /crear publico ciego. IMPORTANTE:
+    // awaited — en serverless una promesa sin await pierde la carrera contra
+    // el freeze post-response y el INSERT nunca completa (mismo bug que mato
+    // el tracking de storefront). Los errores se atrapan por imagen: la
+    // telemetria jamas rompe la respuesta al usuario.
     if (sessionId) {
-      for (const img of out) {
-        if ((img as { isFallback?: boolean }).isFallback) continue // data: URI, no hay R2 key que loguear
-        saveGeneratedImage(img.url, finalPrompt, undefined, sessionId).catch((err) => {
-          console.error("GEN-IMG telemetry insert failed:", err?.message || err)
-        })
-      }
+      await Promise.all(
+        out
+          .filter((img) => !(img as { isFallback?: boolean }).isFallback) // data: URI, no hay R2 key que loguear
+          .map((img) =>
+            saveGeneratedImage(img.url, finalPrompt, undefined, sessionId).catch((err) => {
+              console.error("GEN-IMG telemetry insert failed:", err?.message || err)
+            })
+          )
+      )
     }
 
     return ok({
