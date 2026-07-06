@@ -40,6 +40,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Marcas en Novamente — Directorio de Partners',
     description: 'Descubri las marcas que confian en Novamente para crear y vender merch premium.',
+    images: [`${BASE_URL}/novamente-logo.png`],
   },
 }
 

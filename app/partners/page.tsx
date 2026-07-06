@@ -31,6 +31,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Novamente Studio — Lanzá tu marca",
     description: "Storefront, catalogo, diseño con IA y growth comercial para marcas, creadores y negocios.",
+    images: ["https://www.novamente.ar/novamente-logo.png"],
   },
 }
 

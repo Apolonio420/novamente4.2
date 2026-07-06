@@ -10,6 +10,19 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 export const metadata: Metadata = {
   title: 'Seguimiento de pedido · Novamente',
   robots: { index: false, follow: false },
+  openGraph: {
+    title: 'Seguimiento de tu pedido',
+    description: 'Mirá el estado de tu pedido Novamente en tiempo real.',
+    images: [{ url: 'https://www.novamente.ar/novamente-logo.png', width: 1200, height: 630, alt: 'Novamente — Seguimiento de pedido' }],
+    siteName: 'Novamente',
+    locale: 'es_AR',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Seguimiento de tu pedido',
+    description: 'Mirá el estado de tu pedido Novamente en tiempo real.',
+    images: ['https://www.novamente.ar/novamente-logo.png'],
+  },
 }
 
 interface TrackingPageProps {
