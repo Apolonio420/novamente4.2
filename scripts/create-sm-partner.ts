@@ -283,7 +283,7 @@ async function main() {
   console.log('✅ PARTNER CREADO')
   console.log(`Tenant ID: ${tenantId}`)
   console.log(`Slug: ${INPUT.slug}`)
-  console.log(`URL: https://novamente.ar/merch/${INPUT.slug}`)
+  console.log(`URL: https://www.novamente.ar/p/${INPUT.slug}`)
   console.log(`Login: https://novamente.ar/partners/login`)
   console.log(`Email: ${INPUT.email}`)
   console.log(`Password: ${INPUT.password}`)

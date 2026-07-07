@@ -116,7 +116,7 @@ export default function MerchFilter({ entries, categories }: MerchFilterProps) {
           {filtered.map((brand) => (
             <Link
               key={brand.slug}
-              href={`/merch/${brand.slug}`}
+              href={`/p/${brand.slug}`}
               className="group relative"
             >
               <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60 transition-all duration-300 hover:border-zinc-600 hover:shadow-xl hover:shadow-purple-900/10 hover:-translate-y-1">

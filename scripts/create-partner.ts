@@ -7,7 +7,7 @@
  * 3. tenant_users link (owner role)
  * 4. AI-generated banner (cinematic, brand-essence)
  * 5. 3 AI-generated products with front/back mockups + AI texts
- * 6. Published storefront ready to view at /merch/{slug}
+ * 6. Published storefront ready to view at /p/{slug}
  *
  * Usage:
  *   npx tsx scripts/create-partner.ts
@@ -530,7 +530,7 @@ async function createPartner(input: PartnerInput) {
   console.log(`  User ID:     ${userId}`)
   console.log(`  Productos:   ${productCount}/3 generados (con lifestyle mockups)`)
   console.log(`  Banner:      ${bannerUrl ? '✓' : '✗'}`)
-  console.log(`  Storefront:  /merch/${slug}`)
+  console.log(`  Storefront:  /p/${slug}`)
   console.log(`  Partner Dir: /p/${slug}`)
   console.log(`  Workspace:   /workspace (login con ${input.email})`)
   console.log('═'.repeat(60) + '\n')

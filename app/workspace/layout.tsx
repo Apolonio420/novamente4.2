@@ -475,7 +475,7 @@ export default function WorkspaceLayout({
       {tenant?.slug && !sidebarCollapsed && (
         <div className="px-3 pb-2">
           <Link
-            href={`/merch/${tenant.slug}`}
+            href={`/p/${tenant.slug}`}
             target="_blank"
             className="flex items-center gap-2 rounded-lg border border-zinc-800 px-3 py-2 text-xs text-zinc-500 transition hover:border-zinc-700 hover:text-zinc-300"
           >
@@ -628,7 +628,7 @@ export default function WorkspaceLayout({
                   </Link>
                   {tenant?.slug && (
                     <Link
-                      href={`/merch/${tenant.slug}`}
+                      href={`/p/${tenant.slug}`}
                       target="_blank"
                       className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
                       onClick={() => setShowUserMenu(false)}

@@ -14,6 +14,9 @@ const SHARED_PATH_PREFIXES = [
   '/cart', '/checkout', '/api', '/_next', '/merch', '/marcas', '/design',
   '/crear', '/partners', '/workspace', '/pedido', '/terminos', '/privacidad',
   '/faq', '/favicon', '/logo', '/robots', '/sitemap', '/manifest', '/opengraph',
+  // '/p/' CON barra final: un producto de subdominio como /pantalon-x no debe
+  // matchear, pero <slug>.novamente.ar/p/... debe servirse sin re-rewrite (loop).
+  '/p/',
 ]
 
 /** Si el host es <slug>.novamente.ar (no reservado), devuelve el slug del tenant. */
@@ -33,13 +36,15 @@ function tenantSlugFromHost(host: string | null): string | null {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // --- Tiendas por subdominio: tu-marca.novamente.ar → /merch/tu-marca ---
+  // --- Tiendas por subdominio: tu-marca.novamente.ar → /p/tu-marca ---
+  // (antes reescribía a /merch/<slug>; ese storefront legacy fue retirado y el
+  // subdominio ahora sirve directo la tienda canónica /p/<slug>)
   let response = NextResponse.next()
   const tenantSlug = tenantSlugFromHost(request.headers.get('host'))
   if (tenantSlug && !SHARED_PATH_PREFIXES.some((p) => pathname.startsWith(p))) {
     const url = request.nextUrl.clone()
     // raíz → tienda · /<producto> → página de producto de la marca
-    url.pathname = pathname === '/' ? `/merch/${tenantSlug}` : `/merch/${tenantSlug}${pathname}`
+    url.pathname = pathname === '/' ? `/p/${tenantSlug}` : `/p/${tenantSlug}${pathname}`
     response = NextResponse.rewrite(url)
     response.headers.set('x-tenant-slug', tenantSlug)
   }

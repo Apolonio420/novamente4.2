@@ -44,7 +44,7 @@ export function StoreBrandBar() {
         </div>
       </div>
       <Link
-        href={`/merch/${brandSlug}`}
+        href={`/p/${brandSlug}`}
         className="inline-flex items-center gap-1.5 text-xs font-medium shrink-0 hover:underline"
         style={{ color: brandColor || "#6366f1" }}
       >

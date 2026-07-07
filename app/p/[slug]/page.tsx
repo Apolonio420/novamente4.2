@@ -20,6 +20,7 @@ import { PartnerFaqSection } from '@/components/partners/faq-section'
 import ContactForm from './contact-form'
 import ChatWidget from '@/components/partners/chat-widget'
 import { StorefrontTracker } from '@/components/partners/storefront-tracker'
+import { BrandLandingPixel } from '@/components/partners/brand-landing-pixel'
 import { StorefrontDesigner } from '@/components/partners/storefront-designer'
 import { StoreWhatsAppButton } from '@/components/StoreWhatsAppButton'
 
@@ -123,6 +124,14 @@ export default async function PartnerStorefrontPage({ params, searchParams }: Pa
     >
       {/* Analytics tracking */}
       <StorefrontTracker tenantId={tenant.id} event="page_view" data={{ slug: tenant.slug }} />
+
+      {/* Meta Pixel · ViewContent al cargar la landing de marca (señal para
+          retargeting/optimización de campañas — portado de /merch/[brand]) */}
+      <BrandLandingPixel
+        brandId={tenant.slug}
+        brandName={tenant.name}
+        productCount={products.length}
+      />
 
       {/* JSON-LD: Organization (ALL tiers) */}
       <JsonLd data={generateOrganizationSchema(tenant)} />

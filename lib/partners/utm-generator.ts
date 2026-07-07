@@ -28,7 +28,7 @@ export function generateUtmUrl(baseUrl: string, params: UtmParams): string {
 
 /**
  * Generate a UTM URL specifically for Meta Ads, with consistent naming conventions.
- * Format: https://domain/merch/{slug}?utm_source=meta&utm_medium=paid_social&utm_campaign={slug}_{templateType}&utm_content={productSlug}
+ * Format: https://domain/p/{slug}?utm_source=meta&utm_medium=paid_social&utm_campaign={slug}_{templateType}&utm_content={productSlug}
  */
 export function generateMetaAdUtm(
   tenantSlug: string,
@@ -40,7 +40,7 @@ export function generateMetaAdUtm(
     ? window.location.origin
     : process.env.NEXT_PUBLIC_BASE_URL || 'https://novamente.ar'
 
-  const baseUrl = `${origin}/merch/${tenantSlug}`
+  const baseUrl = `${origin}/p/${tenantSlug}`
 
   return generateUtmUrl(baseUrl, {
     source: 'meta',

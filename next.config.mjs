@@ -172,10 +172,29 @@ const nextConfig = {
         destination: '/meta/catalog',
         permanent: true,
       },
-      // Renamed brand slugs
+      // ── Retiro del storefront legacy /merch/[brand] → canónico /p/[slug] ──
+      // 308 (permanent) preserva método y querystring (UTMs de campañas de
+      // partners generadas por utm-generator siguen llegando intactas).
+      // OJO orden: la regla del slug renombrado hard-demonio va ANTES de la
+      // genérica /merch/:brand para ganar el match.
+      // NO se toca /merch raíz (directorio de marcas) ni /merch-para-* ni
+      // /merchs (landings SEO distintas — no matchean /merch/:brand).
       {
         source: '/merch/hard-demonio',
-        destination: '/merch/maldito-demonio',
+        destination: '/p/maldito-demonio',
+        permanent: true,
+      },
+      {
+        source: '/merch/:brand',
+        destination: '/p/:brand',
+        permanent: true,
+      },
+      // Producto: los slugs de partner_products coinciden 1:1 con los slugs
+      // legibles del viejo catálogo estático (verificado en DB), así que el
+      // detalle de producto redirige directo a su equivalente canónico.
+      {
+        source: '/merch/:brand/:product',
+        destination: '/p/:brand/:product',
         permanent: true,
       },
       // Generador viejo → nuevo estudio. source EXACTO '/design' (NO matchea

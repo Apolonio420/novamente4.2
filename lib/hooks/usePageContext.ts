@@ -13,14 +13,14 @@ export interface PageContext {
 export function usePageContext(): PageContext {
   const pathname = usePathname()
 
-  // /merch/[slug]
-  const merchMatch = pathname.match(/^\/merch\/([^/]+)$/)
+  // /p/[slug] (tienda canónica de partner; /merch/[brand] legacy redirige acá)
+  const merchMatch = pathname.match(/^\/p\/([^/]+)$/)
   if (merchMatch) {
     return { pathname, pageType: 'storefront', storefrontSlug: merchMatch[1] }
   }
 
-  // /merch/[slug]/[product]
-  const productMatch = pathname.match(/^\/merch\/([^/]+)\/([^/]+)$/)
+  // /p/[slug]/[product]
+  const productMatch = pathname.match(/^\/p\/([^/]+)\/([^/]+)$/)
   if (productMatch) {
     return { pathname, pageType: 'product', storefrontSlug: productMatch[1], productSlug: productMatch[2] }
   }

@@ -27,10 +27,8 @@ const HIDDEN_DB_SLUGS = new Set([
   'karimarket.ok',
 ])
 
-// Slug redirects — old slug → current slug (for renamed brands)
-export const SLUG_REDIRECTS: Record<string, string> = {
-  'hard-demonio': 'maldito-demonio',
-}
+// NOTA: el redirect de slugs renombrados (hard-demonio → maldito-demonio) vive
+// en next.config.mjs (308 → /p/maldito-demonio) desde el retiro de /merch/[brand].
 
 // Category mapping for static partners (DB partners use their `industry` field)
 const STATIC_CATEGORIES: Record<string, string> = {

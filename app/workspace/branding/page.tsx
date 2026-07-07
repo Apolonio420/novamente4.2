@@ -132,7 +132,7 @@ function LivePreview({ branding, slug }: { branding: BrandingData; slug: string 
           <span className="w-2 h-2 rounded-full bg-zinc-700" />
         </div>
         <div className="flex-1 mx-2 h-5 rounded bg-zinc-800/80 flex items-center px-2">
-          <span className="text-[9px] text-zinc-600 truncate">novamente.ar/merch/{slug || 'tu-marca'}</span>
+          <span className="text-[9px] text-zinc-600 truncate">novamente.ar/p/{slug || 'tu-marca'}</span>
         </div>
       </div>
 
@@ -220,7 +220,7 @@ function LivePreview({ branding, slug }: { branding: BrandingData; slug: string 
       {slug && (
         <div className="px-3 py-2 border-t border-zinc-800">
           <Link
-            href={`/merch/${slug}`}
+            href={`/p/${slug}`}
             target="_blank"
             className="flex items-center justify-center gap-1.5 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
           >
@@ -390,7 +390,7 @@ export default function BrandingPage() {
             )}
             {tenantSlug && (
               <Link
-                href={`/merch/${tenantSlug}`}
+                href={`/p/${tenantSlug}`}
                 target="_blank"
                 className="flex items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:border-zinc-600 hover:text-zinc-100"
               >
@@ -800,7 +800,7 @@ export default function BrandingPage() {
                       <p className="text-[11px] text-zinc-500 leading-relaxed">
                         A dónde llevás al visitante que aprieta el botón. Ej: tu WhatsApp
                         (<span className="text-zinc-400">wa.me/549…</span>), tu Instagram, un formulario.
-                        {tenantSlug && branding.cta_url && branding.cta_url.toLowerCase().includes(`/merch/${tenantSlug}`) && (
+                        {tenantSlug && branding.cta_url && (branding.cta_url.toLowerCase().includes(`/p/${tenantSlug}`) || branding.cta_url.toLowerCase().includes(`/merch/${tenantSlug}`)) && (
                           <span className="block mt-1 text-amber-400">
                             ⚠️ Esta URL apunta a tu propia tienda. El botón llevaría al visitante a la misma página — usá algo externo (WhatsApp, IG, formulario).
                           </span>
