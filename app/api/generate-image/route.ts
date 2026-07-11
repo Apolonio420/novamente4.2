@@ -2,46 +2,44 @@ import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { uploadFile } from "@/lib/cloudflare-r2"
 import { toPublicR2Url } from "@/lib/r2"
-import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
 import { optimizeDesignPrompt } from "@/lib/designer/prompt-optimizer"
 import { saveGeneratedImage } from "@/lib/db"
 import type { GarmentColorway, PrintArea } from "@/lib/designer/types"
+import { corsHeaders, preflightResponse } from "@/lib/security/cors"
+import { guardPublicImageGen } from "@/lib/security/public-image-guard"
+import { meterPublicImageGen } from "@/lib/security/meter-usage"
 
 export const runtime = "nodejs"
-
-const limiter = rateLimit({ limit: 12, windowSeconds: 60, prefix: 'gen-img' })
 
 // ==== Config ====
 const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"
 const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-1.5-pro"
 const DEBUG = (process.env.DEBUG_GEMINI || "").toLowerCase() === "true"
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-}
-
 type OptimizerOptions = { styleId?: string; colorway?: GarmentColorway; printArea?: PrintArea; sessionId?: string }
 type Body =
   | ({ prompt: string; n?: number; size?: { width: number; height: number } } & OptimizerOptions)
   | ({ instruction: string; lastPrompt: string; n?: number; size?: { width: number; height: number } } & OptimizerOptions)
 
-function ok(data: unknown, status = 200) {
-  return new NextResponse(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS },
-  })
-}
-
-export async function OPTIONS() {
-  return ok({ ok: true })
+export async function OPTIONS(req: NextRequest) {
+  return preflightResponse(req)
 }
 
 export async function POST(req: NextRequest) {
-  // Rate limit: 10 requests/min per IP
-  const { success, resetAt } = limiter.check(req)
-  if (!success) return rateLimitResponse(resetAt)
+  // ok() shadowea el helper del modulo — cierra sobre `req` para poder
+  // devolver los headers CORS con allowlist (ver lib/security/cors.ts).
+  function ok(data: unknown, status = 200) {
+    return new NextResponse(JSON.stringify(data), {
+      status,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+    })
+  }
+
+  // Rate-limit por IP + tope diario global (DB-backed). Reemplaza el
+  // rate-limiter viejo en memoria (inutil en serverless — ver auditoria
+  // 2026-07-11).
+  const guard = await guardPublicImageGen(req, "generate-image")
+  if (guard.allowed === false) return ok({ error: guard.message }, guard.status)
 
   const t0 = Date.now()
   try {
@@ -274,6 +272,16 @@ export async function POST(req: NextRequest) {
           )
       )
     }
+
+    // Metering de costo real — awaited por el mismo motivo que la telemetria
+    // de arriba (una promesa sin await pierde la carrera contra el freeze
+    // post-response en serverless). meterPublicImageGen nunca tira: falla
+    // en silencio y jamas rompe esta respuesta.
+    await meterPublicImageGen({
+      endpoint: "public/generate-image",
+      model: IMAGE_MODEL,
+      units: out.filter((img) => !(img as { isFallback?: boolean }).isFallback).length || out.length,
+    })
 
     return ok({
       success: true,

@@ -5,6 +5,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getGeminiClient } from "@/lib/gemini"
 import { headers } from "next/headers"
 import * as path from "path"
+import { corsHeaders, preflightResponse } from "@/lib/security/cors"
+import { guardPublicImageGen } from "@/lib/security/public-image-guard"
+import { meterPublicImageGen } from "@/lib/security/meter-usage"
 
 // Utility functions for file handling
 function mimeFromExt(ext: string): string {
@@ -80,6 +83,15 @@ function isSafePath(p: string) {
 
 export async function POST(request: NextRequest) {
   console.log("[v0] APPLY-DESIGN: Starting request processing")
+  const ch = corsHeaders(request)
+
+  // Rate-limit por IP + tope diario global (DB-backed). Este endpoint NO
+  // tenia NINGUN limite (auditoria 2026-07-11): CORS "*" + generacion
+  // ilimitada a nuestro costo.
+  const guard = await guardPublicImageGen(request, "apply-design")
+  if (guard.allowed === false) {
+    return NextResponse.json({ success: false, error: guard.message }, { status: guard.status, headers: ch })
+  }
 
   try {
     const body = await request.json()
@@ -94,12 +106,12 @@ export async function POST(request: NextRequest) {
 
     if (!body.designBase64) {
       console.log("[v0] APPLY-DESIGN: Missing designBase64")
-      return NextResponse.json({ success: false, error: "Falta designBase64" }, { status: 400 })
+      return NextResponse.json({ success: false, error: "Falta designBase64" }, { status: 400, headers: ch })
     }
 
     if (body.productPath && !isSafePath(body.productPath)) {
       console.log(`[v0] APPLY-DESIGN: Invalid productPath: ${body.productPath}`)
-      return NextResponse.json({ success: false, error: "productPath inválido" }, { status: 400 })
+      return NextResponse.json({ success: false, error: "productPath inválido" }, { status: 400, headers: ch })
     }
 
     let productDataUrl: string
@@ -118,17 +130,16 @@ export async function POST(request: NextRequest) {
         console.log("[v0] APPLY-DESIGN: Successfully loaded garment via HTTP (no fs)")
       } catch (error: any) {
         console.log(`[v0] APPLY-DESIGN: HTTP load failed: ${error.message}`)
-        return NextResponse.json({ success: false, error: "productPath invalido o no encontrado" }, { status: 400 })
+        return NextResponse.json({ success: false, error: "productPath invalido o no encontrado" }, { status: 400, headers: ch })
       }
     } else {
       console.log("[v0] APPLY-DESIGN: Missing both productBase64 and productPath")
-      return NextResponse.json({ success: false, error: "Se requiere productBase64 o productPath" }, { status: 400 })
+      return NextResponse.json({ success: false, error: "Se requiere productBase64 o productPath" }, { status: 400, headers: ch })
     }
 
+    const modelName = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image"
     const gemini = getGeminiClient()
-    const model = gemini.getGenerativeModel({
-      model: process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image",
-    })
+    const model = gemini.getGenerativeModel({ model: modelName })
 
     const placement = body.placement || "Coloca el diseño en el centro de la prenda"
     const scaleHint = body.scaleHint || "Tamaño mediano del diseño"
@@ -172,7 +183,7 @@ export async function POST(request: NextRequest) {
 
     if (!candidates || candidates.length === 0) {
       console.log("[v0] APPLY-DESIGN: No candidates in response")
-      return NextResponse.json({ success: false, error: "No se pudo generar la imagen" }, { status: 500 })
+      return NextResponse.json({ success: false, error: "No se pudo generar la imagen" }, { status: 500, headers: ch })
     }
 
     const parts = candidates[0].content.parts
@@ -180,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     if (!imagePart || !imagePart.inlineData) {
       console.log("[v0] APPLY-DESIGN: No image data in response")
-      return NextResponse.json({ success: false, error: "No se recibió imagen del modelo" }, { status: 500 })
+      return NextResponse.json({ success: false, error: "No se recibió imagen del modelo" }, { status: 500, headers: ch })
     }
 
     console.log("[v0] APPLY-DESIGN: Successfully generated image")
@@ -190,13 +201,15 @@ export async function POST(request: NextRequest) {
       scale: body.scaleHint,
     })
 
+    await meterPublicImageGen({ endpoint: "apply-design", model: modelName })
+
     return NextResponse.json({
       success: true,
       image: {
         data: imagePart.inlineData.data,
         contentType: "image/png",
       },
-    })
+    }, { headers: ch })
   } catch (error: any) {
     console.error("[v0] APPLY-DESIGN: Error:", error.message)
     return NextResponse.json(
@@ -204,18 +217,11 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error.message || "Error interno del servidor",
       },
-      { status: 500 },
+      { status: 500, headers: ch },
     )
   }
 }
 
 export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  })
+  return preflightResponse(request)
 }

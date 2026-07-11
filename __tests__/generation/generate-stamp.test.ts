@@ -17,6 +17,19 @@ vi.mock("@/lib/notifications", () => ({
   notifyError: vi.fn().mockResolvedValue(undefined),
 }))
 
+// Mock del guard publico (rate-limit + tope diario DB-backed, ver
+// lib/security/public-image-guard.ts). Sin este mock, este endpoint
+// intentaria pegarle a supabaseAdmin real (sin credenciales en test),
+// caeria al fallback en memoria y despues de ~10 requests en este mismo
+// archivo empezaria a devolver 429 y romper el resto de los tests — el
+// rate-limit real se testea aparte en lib/security/public-image-guard.test.ts.
+vi.mock("@/lib/security/public-image-guard", () => ({
+  guardPublicImageGen: vi.fn().mockResolvedValue({ allowed: true }),
+}))
+vi.mock("@/lib/security/meter-usage", () => ({
+  meterPublicImageGen: vi.fn().mockResolvedValue(undefined),
+}))
+
 // Mock garment mappings
 vi.mock("@/lib/garment-red-square-mapping", () => ({
   getBaseGarmentImage: vi.fn().mockReturnValue("/garments/tshirt-classic-black-front.jpg"),

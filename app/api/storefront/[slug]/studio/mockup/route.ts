@@ -12,55 +12,61 @@ import { uploadFile } from '@/lib/cloudflare-r2'
 import { v4 as uuidv4 } from 'uuid'
 import type { Plan } from '@/lib/partners/types'
 import { checkUsageLimit, recordUsage } from '@/lib/partners/studio/usage-tracker'
+import { corsHeaders, preflightResponse } from '@/lib/security/cors'
+import { guardPublicImageGen } from '@/lib/security/public-image-guard'
+import { meterPublicImageGen } from '@/lib/security/meter-usage'
+import { getRequestTenant } from '@/lib/partners/permissions'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Simple IP rate limiter: max 10 mockups per IP per hour
-const ipLimiter = new Map<string, { count: number; resetAt: number }>()
-
-function checkIpLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = ipLimiter.get(ip)
-  if (!entry || now > entry.resetAt) {
-    ipLimiter.set(ip, { count: 1, resetAt: now + 3600_000 })
-    return true
-  }
-  if (entry.count >= 10) return false
-  entry.count++
-  return true
+export async function OPTIONS(request: NextRequest) {
+  return preflightResponse(request)
 }
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
 ) {
+  const ch = corsHeaders(request)
   try {
     const { slug } = await params
 
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    if (!checkIpLimit(ip)) {
-      return NextResponse.json(
-        { error: 'Demasiadas solicitudes. Intentá de nuevo en un rato.' },
-        { status: 429 },
-      )
+    // Rate-limit por IP + tope diario global (DB-backed). Reemplaza el
+    // ipLimiter viejo (Map en memoria — sin techo real en serverless,
+    // auditoria 2026-07-11). checkUsageLimit de abajo sigue siendo el cupo
+    // del PLAN del partner (separado). Partner autenticado revisando su
+    // propia tienda queda exento — ya paga su cupo via checkUsageLimit.
+    let isAuthedPartner = false
+    try {
+      isAuthedPartner = (await getRequestTenant(request)) !== null
+    } catch {
+      // best-effort
     }
+    if (!isAuthedPartner) {
+      const guard = await guardPublicImageGen(request, 'storefront-studio-mockup')
+      if (guard.allowed === false) {
+        return NextResponse.json({ error: guard.message }, { status: guard.status, headers: ch })
+      }
+    }
+
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
 
     const tenant = await getTenantBySlug(slug)
     if (!tenant || !tenant.storefront_published) {
-      return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404, headers: ch })
     }
 
     const features = getPlanFeatures(tenant.plan as Plan)
     if (!features.storefrontDesigner) {
-      return NextResponse.json({ error: 'No disponible en este plan' }, { status: 403 })
+      return NextResponse.json({ error: 'No disponible en este plan' }, { status: 403, headers: ch })
     }
 
     const { allowed, usage } = await checkUsageLimit(tenant.id, tenant.plan)
     if (!allowed) {
       return NextResponse.json(
         { error: 'La tienda alcanzó su límite de generaciones. Volvé pronto.' },
-        { status: 429 },
+        { status: 429, headers: ch },
       )
     }
 
@@ -68,16 +74,16 @@ export async function POST(
     const { designImageUrl, garmentType, garmentColor, side } = body
 
     if (!designImageUrl) {
-      return NextResponse.json({ error: 'Se requiere la imagen del diseño' }, { status: 400 })
+      return NextResponse.json({ error: 'Se requiere la imagen del diseño' }, { status: 400, headers: ch })
     }
     if (!garmentType) {
-      return NextResponse.json({ error: 'Se requiere el tipo de prenda' }, { status: 400 })
+      return NextResponse.json({ error: 'Se requiere el tipo de prenda' }, { status: 400, headers: ch })
     }
 
     const config = await getDesignConfig(tenant.id)
     const availableGarments = getAvailableGarments(config)
     if (!availableGarments.some(g => g.key === garmentType)) {
-      return NextResponse.json({ error: 'Prenda no disponible' }, { status: 400 })
+      return NextResponse.json({ error: 'Prenda no disponible' }, { status: 400, headers: ch })
     }
 
     const color = garmentColor || 'black'
@@ -90,7 +96,7 @@ export async function POST(
       const msg = sideChoice === 'back'
         ? 'El dorso de esta prenda todavía no está disponible para mockup. Probá con el frente 🙌'
         : 'Esta combinación de prenda/color todavía no está disponible para mockup.'
-      return NextResponse.json({ error: msg }, { status: 422 })
+      return NextResponse.json({ error: msg }, { status: 422, headers: ch })
     }
 
     // Fetch design image
@@ -100,7 +106,7 @@ export async function POST(
     } else {
       const imgResp = await fetch(designImageUrl)
       if (!imgResp.ok) {
-        return NextResponse.json({ error: 'No se pudo obtener la imagen' }, { status: 400 })
+        return NextResponse.json({ error: 'No se pudo obtener la imagen' }, { status: 400, headers: ch })
       }
       const imgBuf = await imgResp.arrayBuffer()
       designBase64 = Buffer.from(imgBuf).toString('base64')
@@ -136,7 +142,7 @@ export async function POST(
     // impresión + estampa (prompt best-of, modelo STAMP_MODEL — default flash desde 2026-07-11). Reemplaza el
     // compositor sharp determinístico (pegado plano que Apo rechazaba).
     if (!garmentBase64) {
-      return NextResponse.json({ error: 'No se pudo cargar la prenda base' }, { status: 500 })
+      return NextResponse.json({ error: 'No se pudo cargar la prenda base' }, { status: 500, headers: ch })
     }
     const { generatePerfectStamp } = await import('@/lib/mockup/perfect-stamp')
     let mockupBase64: string
@@ -151,7 +157,7 @@ export async function POST(
       mockupBase64 = mockupBuffer.toString('base64')
     } catch (e) {
       console.error('[studio/mockup] perfect-stamp error:', e)
-      return NextResponse.json({ error: 'No se pudo generar el mockup' }, { status: 500 })
+      return NextResponse.json({ error: 'No se pudo generar el mockup' }, { status: 500, headers: ch })
     }
 
     const assetId = uuidv4()
@@ -169,14 +175,23 @@ export async function POST(
 
     await recordUsage(tenant.id, 'storefront-customer', 'mockup', undefined, assetId).catch(() => {})
 
+    // generatePerfectStamp hace >=1 llamada interna a Gemini (bg-removal +
+    // estampado) — metering aproximado con el modelo de estampado default,
+    // no desglosa cada sub-llamada. Ver comentario arriba sobre el motor.
+    await meterPublicImageGen({
+      endpoint: 'storefront/studio/mockup',
+      model: process.env.GEMINI_STAMP_MODEL ?? process.env.GEMINI_IMAGE_MODEL ?? 'gemini-2.5-flash-image',
+      metadata: { tenantSlug: slug },
+    })
+
     return NextResponse.json({
       mockupUrl: uploadResult.url,
-    })
+    }, { headers: ch })
   } catch (error: any) {
     console.error('POST /api/storefront/[slug]/studio/mockup error:', error)
     return NextResponse.json(
       { error: 'Error generando el mockup. Intentá de nuevo.' },
-      { status: 500 },
+      { status: 500, headers: ch },
     )
   }
 }

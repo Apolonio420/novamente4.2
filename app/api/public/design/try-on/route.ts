@@ -1,37 +1,30 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { uploadFile } from "@/lib/cloudflare-r2"
-import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
 import { resolveAbsoluteUrl } from "@/lib/absolute-url"
+import { corsHeaders, preflightResponse } from "@/lib/security/cors"
+import { guardPublicImageGen } from "@/lib/security/public-image-guard"
+import { meterPublicImageGen } from "@/lib/security/meter-usage"
 
 export const runtime = "nodejs"
 
-// More restrictive limit — processes biometric data
-const limiter = rateLimit({ limit: 5, windowSeconds: 60, prefix: "tryon" })
-
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-}
-
-function ok(data: unknown, status = 200) {
-  return new NextResponse(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS },
-  })
-}
-
-export async function OPTIONS() {
-  return ok({ ok: true })
+export async function OPTIONS(req: NextRequest) {
+  return preflightResponse(req)
 }
 
 const TRY_ON_PROMPT =
   "Generate a realistic photo of the person in the first image wearing the exact t-shirt design from the second image. Keep the person's face, hair, body type and pose exactly the same. Replace their current shirt with the t-shirt design from the second image. Photorealistic, natural lighting, same background as the original photo. The design on the t-shirt must remain exactly as in the second reference. 4K quality."
 
 export async function POST(req: NextRequest) {
-  const { success, resetAt } = limiter.check(req)
-  if (!success) return rateLimitResponse(resetAt)
+  function ok(data: unknown, status = 200) {
+    return new NextResponse(JSON.stringify(data), {
+      status,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+    })
+  }
+
+  const guard = await guardPublicImageGen(req, "try-on")
+  if (guard.allowed === false) return ok({ error: guard.message }, guard.status)
 
   try {
     const apiKey = process.env.GEMINI_API_KEY
@@ -108,13 +101,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Try primary model, fallback to secondary
-    let imageBase64 =
-      await attemptGeneration(
-        process.env.GEMINI_DESIGN_MODEL || "gemini-3.1-flash-image"
-      ).catch(() => null)
+    const primaryModel = process.env.GEMINI_DESIGN_MODEL || "gemini-3.1-flash-image"
+    const fallbackModel = "gemini-2.5-flash-preview-05-20"
+    let usedModel = primaryModel
+    let imageBase64 = await attemptGeneration(primaryModel).catch(() => null)
 
     if (!imageBase64) {
-      imageBase64 = await attemptGeneration("gemini-2.5-flash-preview-05-20").catch(() => null)
+      usedModel = fallbackModel
+      imageBase64 = await attemptGeneration(fallbackModel).catch(() => null)
     }
 
     if (!imageBase64) {
@@ -124,6 +118,8 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(imageBase64, "base64")
     const key = `v1/try-on/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.png`
     const { url: tryOnUrl } = await uploadFile(buffer, key, "image/png")
+
+    await meterPublicImageGen({ endpoint: "public/design/try-on", model: usedModel })
 
     // The selfie is not stored here — it was downloaded from the pre-signed R2 URL provided
     // by the client and used only for this generation. The client calls

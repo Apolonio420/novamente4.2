@@ -5,13 +5,29 @@ import { normalizeR2Key, toPublicR2Url } from "@/lib/r2"
 import { v4 as uuidv4 } from "uuid"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { cookies } from "next/headers"
+import { corsHeaders, preflightResponse } from "@/lib/security/cors"
+import { guardPublicImageGen } from "@/lib/security/public-image-guard"
+import { meterPublicImageGen } from "@/lib/security/meter-usage"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
+export async function OPTIONS(req: NextRequest) {
+  return preflightResponse(req)
+}
+
 export async function POST(req: NextRequest) {
   const debugId = uuidv4().substring(0, 8)
   const tStart = Date.now()
+  const ch = corsHeaders(req)
+
+  // Rate-limit por IP + tope diario global (DB-backed). Este endpoint NO
+  // tenia NINGUN limite ni CORS (auditoria 2026-07-11) — generacion
+  // ilimitada a nuestro costo.
+  const guard = await guardPublicImageGen(req, "process-design")
+  if (guard.allowed === false) {
+    return NextResponse.json({ error: guard.message, debugId }, { status: guard.status, headers: ch })
+  }
 
   try {
     const { imageUrl, prompt, hasImageUrl, useBase64, meta = {} } = await req.json()
@@ -179,6 +195,10 @@ export async function POST(req: NextRequest) {
       console.error(`[${debugId}] DB: Exception during persistence:`, dbEx?.message || dbEx)
     }
 
+    if (hasBackgroundRemoved) {
+      await meterPublicImageGen({ endpoint: "process-design", model: "gemini-2.0-flash-exp" })
+    }
+
     return NextResponse.json({
       success: true,
       image: {
@@ -187,7 +207,7 @@ export async function POST(req: NextRequest) {
         has_bg_removed: hasBackgroundRemoved,
         debugId
       }
-    })
+    }, { headers: ch })
 
   } catch (error: any) {
     // 🔔 Notificar por Telegram
@@ -206,6 +226,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       error: error.message || "Error procesando diseño",
       debugId
-    }, { status: 500 })
+    }, { status: 500, headers: ch })
   }
 }

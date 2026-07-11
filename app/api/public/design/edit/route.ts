@@ -1,35 +1,29 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { uploadFile } from "@/lib/cloudflare-r2"
-import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
 import { optimizeDesignPrompt } from "@/lib/designer/prompt-optimizer"
+import { corsHeaders, preflightResponse } from "@/lib/security/cors"
+import { guardPublicImageGen } from "@/lib/security/public-image-guard"
+import { meterPublicImageGen } from "@/lib/security/meter-usage"
 
 export const runtime = "nodejs"
 
-const limiter = rateLimit({ limit: 10, windowSeconds: 60, prefix: "design-edit" })
-
 const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-}
-
-function ok(data: unknown, status = 200) {
-  return new NextResponse(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS },
-  })
-}
-
-export async function OPTIONS() {
-  return ok({ ok: true })
+export async function OPTIONS(req: NextRequest) {
+  return preflightResponse(req)
 }
 
 export async function POST(req: NextRequest) {
-  const { success, resetAt } = limiter.check(req)
-  if (!success) return rateLimitResponse(resetAt)
+  function ok(data: unknown, status = 200) {
+    return new NextResponse(JSON.stringify(data), {
+      status,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+    })
+  }
+
+  const guard = await guardPublicImageGen(req, "design-edit")
+  if (guard.allowed === false) return ok({ error: guard.message }, guard.status)
 
   try {
     const apiKey = process.env.GEMINI_API_KEY
@@ -136,6 +130,8 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(imageBase64, "base64")
     const key = `v1/edited-designs/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.png`
     const { url } = await uploadFile(buffer, key, "image/png")
+
+    await meterPublicImageGen({ endpoint: "public/design/edit", model: IMAGE_MODEL })
 
     return ok({
       success: true,

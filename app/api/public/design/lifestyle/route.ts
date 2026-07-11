@@ -1,27 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { uploadFile } from "@/lib/cloudflare-r2"
-import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
+import { corsHeaders, preflightResponse } from "@/lib/security/cors"
+import { guardPublicImageGen } from "@/lib/security/public-image-guard"
+import { meterPublicImageGen } from "@/lib/security/meter-usage"
 
 export const runtime = "nodejs"
 
-const limiter = rateLimit({ limit: 7, windowSeconds: 60, prefix: "lifestyle" })
-
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-}
-
-function ok(data: unknown, status = 200) {
-  return new NextResponse(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS },
-  })
-}
-
-export async function OPTIONS() {
-  return ok({ ok: true })
+export async function OPTIONS(req: NextRequest) {
+  return preflightResponse(req)
 }
 
 type Scenario = "palermo_street" | "rooftop_sunset" | "caminito" | "fan_zone" | "cafe_san_telmo"
@@ -42,8 +29,15 @@ const SCENARIO_PROMPTS: Record<Scenario, string> = {
 const ALL_SCENARIOS = Object.keys(SCENARIO_PROMPTS) as Scenario[]
 
 export async function POST(req: NextRequest) {
-  const { success, resetAt } = limiter.check(req)
-  if (!success) return rateLimitResponse(resetAt)
+  function ok(data: unknown, status = 200) {
+    return new NextResponse(JSON.stringify(data), {
+      status,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+    })
+  }
+
+  const guard = await guardPublicImageGen(req, "lifestyle")
+  if (guard.allowed === false) return ok({ error: guard.message }, guard.status)
 
   try {
     const apiKey = process.env.GEMINI_API_KEY
@@ -72,10 +66,9 @@ export async function POST(req: NextRequest) {
 
     const prompt = SCENARIO_PROMPTS[scenario]
 
+    const modelName = process.env.GEMINI_DESIGN_MODEL || "gemini-3.1-flash-image"
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_DESIGN_MODEL || "gemini-3.1-flash-image",
-    })
+    const model = genAI.getGenerativeModel({ model: modelName })
 
     const result = await model.generateContent([
       {
@@ -110,6 +103,8 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(imageBase64, "base64")
     const key = `v1/lifestyle/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.png`
     const { url: lifestyleUrl } = await uploadFile(buffer, key, "image/png")
+
+    await meterPublicImageGen({ endpoint: "public/design/lifestyle", model: modelName })
 
     return ok({ lifestyleUrl, scenario })
   } catch (e: any) {

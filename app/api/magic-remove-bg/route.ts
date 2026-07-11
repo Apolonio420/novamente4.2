@@ -1,14 +1,31 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { corsHeaders, preflightResponse } from "@/lib/security/cors"
+import { guardPublicImageGen } from "@/lib/security/public-image-guard"
+import { meterPublicImageGen } from "@/lib/security/meter-usage"
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 
+export async function OPTIONS(request: NextRequest) {
+    return preflightResponse(request)
+}
+
 export async function POST(request: NextRequest) {
+    const headers = corsHeaders(request)
+
+    // Rate-limit por IP + tope diario global (DB-backed). Este endpoint NO
+    // tenia NINGUN limite ni CORS restrictivo antes — generacion ilimitada
+    // a nuestro costo (auditoria 2026-07-11).
+    const guard = await guardPublicImageGen(request, "magic-remove-bg")
+    if (guard.allowed === false) {
+        return NextResponse.json({ error: guard.message }, { status: guard.status, headers })
+    }
+
     try {
         const { imageUrl } = await request.json()
 
         if (!imageUrl) {
-            return NextResponse.json({ error: "Image URL is required" }, { status: 400 })
+            return NextResponse.json({ error: "Image URL is required" }, { status: 400, headers })
         }
 
         // 1. Get image data
@@ -74,11 +91,15 @@ export async function POST(request: NextRequest) {
             console.warn("Gemini 3 did not return an image part. Response text:", response.text())
         }
 
+        if (hasBackgroundRemoved) {
+            await meterPublicImageGen({ endpoint: "magic-remove-bg", model: removeBgModel })
+        }
+
         return NextResponse.json({
             success: true,
             imageBase64: hasBackgroundRemoved ? `data:image/png;base64,${processedBase64}` : imageUrl,
             hasBackgroundRemoved
-        })
+        }, { headers })
 
     } catch (error) {
         console.error("Error in magic-remove-bg (Gemini 3):", error)
@@ -87,7 +108,7 @@ export async function POST(request: NextRequest) {
                 error: error instanceof Error ? error.message : "Failed to remove background",
                 details: error instanceof Error ? error.stack : undefined
             },
-            { status: 500 }
+            { status: 500, headers }
         )
     }
 }

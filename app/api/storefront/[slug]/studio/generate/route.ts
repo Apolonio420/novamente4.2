@@ -13,49 +13,57 @@ import type { Plan } from '@/lib/partners/types'
 import { checkPromptModeration, getGeminiSafetySettings } from '@/lib/partners/studio/moderation'
 import { checkUsageLimit, recordUsage } from '@/lib/partners/studio/usage-tracker'
 import { extractBrandEssence, buildBrandAwarePrompt } from '@/lib/partners/studio/prompt-builder'
+import { corsHeaders, preflightResponse } from '@/lib/security/cors'
+import { guardPublicImageGen } from '@/lib/security/public-image-guard'
+import { meterPublicImageGen } from '@/lib/security/meter-usage'
+import { getRequestTenant } from '@/lib/partners/permissions'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Simple IP rate limiter: max 10 generations per IP per hour
-const ipLimiter = new Map<string, { count: number; resetAt: number }>()
-
-function checkIpLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = ipLimiter.get(ip)
-  if (!entry || now > entry.resetAt) {
-    ipLimiter.set(ip, { count: 1, resetAt: now + 3600_000 })
-    return true
-  }
-  if (entry.count >= 10) return false
-  entry.count++
-  return true
+export async function OPTIONS(request: NextRequest) {
+  return preflightResponse(request)
 }
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
 ) {
+  const ch = corsHeaders(request)
   try {
     const { slug } = await params
 
-    // IP rate limiting
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    if (!checkIpLimit(ip)) {
-      return NextResponse.json(
-        { error: 'Demasiadas solicitudes. Intentá de nuevo en un rato.' },
-        { status: 429 },
-      )
+    // Rate-limit por IP + tope diario global (DB-backed). Reemplaza el
+    // ipLimiter viejo (Map en memoria por instancia — sin techo real en
+    // serverless, auditoria 2026-07-11). El checkUsageLimit de abajo sigue
+    // aplicando aparte — es el cupo del PLAN del partner, no defensa contra
+    // un visitante anonimo abusando de varias tiendas distintas. Un partner
+    // con sesion propia (revisando su propia tienda) queda exento — ya paga
+    // su propio cupo via checkUsageLimit.
+    let isAuthedPartner = false
+    try {
+      isAuthedPartner = (await getRequestTenant(request)) !== null
+    } catch {
+      // best-effort — si falla, tratamos como anonimo (no relajamos el guard)
     }
+    if (!isAuthedPartner) {
+      const guard = await guardPublicImageGen(request, 'storefront-studio-generate')
+      if (guard.allowed === false) {
+        return NextResponse.json({ error: guard.message }, { status: guard.status, headers: ch })
+      }
+    }
+
+    // IP para telemetria de saveDesignAsset (no para rate-limit — eso ya lo cubre el guard de arriba)
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
 
     const tenant = await getTenantBySlug(slug)
     if (!tenant || !tenant.storefront_published) {
-      return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404 })
+      return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404, headers: ch })
     }
 
     const features = getPlanFeatures(tenant.plan as Plan)
     if (!features.storefrontDesigner) {
-      return NextResponse.json({ error: 'No disponible en este plan' }, { status: 403 })
+      return NextResponse.json({ error: 'No disponible en este plan' }, { status: 403, headers: ch })
     }
 
     // Tenant usage limit
@@ -63,7 +71,7 @@ export async function POST(
     if (!allowed) {
       return NextResponse.json(
         { error: 'La tienda alcanzó su límite de generaciones. Volvé pronto.' },
-        { status: 429 },
+        { status: 429, headers: ch },
       )
     }
 
@@ -71,17 +79,17 @@ export async function POST(
     const { prompt, style, garmentColor } = body
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
-      return NextResponse.json({ error: 'Describí qué querés diseñar' }, { status: 400 })
+      return NextResponse.json({ error: 'Describí qué querés diseñar' }, { status: 400, headers: ch })
     }
 
     if (prompt.trim().length > 300) {
-      return NextResponse.json({ error: 'El texto es demasiado largo (máximo 300 caracteres)' }, { status: 400 })
+      return NextResponse.json({ error: 'El texto es demasiado largo (máximo 300 caracteres)' }, { status: 400, headers: ch })
     }
 
     // Moderation
     const moderation = checkPromptModeration(prompt)
     if (!moderation.passed) {
-      return NextResponse.json({ error: moderation.reason }, { status: 400 })
+      return NextResponse.json({ error: moderation.reason }, { status: 400, headers: ch })
     }
 
     // Build brand-aware prompt
@@ -93,9 +101,10 @@ export async function POST(
     console.log(`[storefront-studio] Generating for ${slug} (customer):`, optimizedPrompt.substring(0, 100))
 
     // Generate
+    const modelName = process.env.GEMINI_DESIGN_MODEL || process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image'
     const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_DESIGN_MODEL || process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image',
+      model: modelName,
       safetySettings: getGeminiSafetySettings() as any,
     })
 
@@ -105,7 +114,7 @@ export async function POST(
     if (response.promptFeedback?.blockReason) {
       return NextResponse.json(
         { error: 'El contenido fue bloqueado por seguridad. Probá con otro texto.' },
-        { status: 400 },
+        { status: 400, headers: ch },
       )
     }
 
@@ -123,7 +132,7 @@ export async function POST(
     if (!imageBase64) {
       return NextResponse.json(
         { error: 'No se pudo generar la imagen. Probá con otra descripción.' },
-        { status: 500 },
+        { status: 500, headers: ch },
       )
     }
 
@@ -144,14 +153,20 @@ export async function POST(
     // Record usage (no userId for public — use 'storefront-customer')
     await recordUsage(tenant.id, 'storefront-customer', 'design', undefined, assetId).catch(() => {})
 
+    await meterPublicImageGen({
+      endpoint: 'storefront/studio/generate',
+      model: modelName,
+      metadata: { tenantSlug: slug },
+    })
+
     return NextResponse.json({
       imageUrl: uploadResult.url,
-    })
+    }, { headers: ch })
   } catch (error: any) {
     console.error('POST /api/storefront/[slug]/studio/generate error:', error)
     return NextResponse.json(
       { error: 'Error generando el diseño. Intentá de nuevo.' },
-      { status: 500 },
+      { status: 500, headers: ch },
     )
   }
 }

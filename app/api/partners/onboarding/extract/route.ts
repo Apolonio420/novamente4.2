@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { corsHeaders, preflightResponse } from '@/lib/security/cors'
+import { guardPublicImageGen } from '@/lib/security/public-image-guard'
+import { meterPublicImageGen } from '@/lib/security/meter-usage'
 
 export const maxDuration = 45
 
@@ -11,12 +14,28 @@ export const maxDuration = 45
  * 4. Gemini Text — analyzes Jina content for brand info, social links, tagline
  *
  * Both results are merged into a complete BrandKit.
+ *
+ * Publico y anonimo (se llama desde /partners/join, ANTES de que el partner
+ * tenga cuenta) — sin CORS ni rate-limit hasta la auditoria 2026-07-11.
+ * Reusa el mismo guard que los endpoints de imagen: no genera imagenes pero
+ * llama a Gemini (vision+text) sin limite, mismo vector de costo.
  */
+export async function OPTIONS(req: NextRequest) {
+  return preflightResponse(req)
+}
+
 export async function POST(req: NextRequest) {
+  const ch = corsHeaders(req)
+
+  const guard = await guardPublicImageGen(req, 'partners-onboarding-extract')
+  if (guard.allowed === false) {
+    return NextResponse.json({ success: false, error: guard.message }, { status: guard.status, headers: ch })
+  }
+
   try {
     const { url, mode } = await req.json()
     if (!url || typeof url !== 'string') {
-      return NextResponse.json({ success: false, error: 'URL requerida' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'URL requerida' }, { status: 400, headers: ch })
     }
 
     let targetUrl = url.trim()
@@ -29,16 +48,18 @@ export async function POST(req: NextRequest) {
     ])
 
     if (!jinaContent && !screenshotBase64) {
-      return NextResponse.json({ success: false, error: 'No se pudo acceder al sitio' }, { status: 422 })
+      return NextResponse.json({ success: false, error: 'No se pudo acceder al sitio' }, { status: 422, headers: ch })
     }
 
     // Analyze with Gemini — vision (screenshot) + text (Jina content) combined
     const brandKit = await analyzeWithGemini(targetUrl, jinaContent, screenshotBase64, mode || 'brand')
 
-    return NextResponse.json({ success: true, extracted: brandKit })
+    await meterPublicImageGen({ endpoint: 'partners/onboarding/extract', model: 'gemini-2.0-flash' })
+
+    return NextResponse.json({ success: true, extracted: brandKit }, { headers: ch })
   } catch (err) {
     console.error('Extract error:', err)
-    return NextResponse.json({ success: false, error: 'Error al analizar el sitio' }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Error al analizar el sitio' }, { status: 500, headers: ch })
   }
 }
 
