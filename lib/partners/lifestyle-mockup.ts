@@ -185,10 +185,13 @@ export async function generateLifestyleMockup(params: LifestyleMockupParams): Pr
       designMime = designImageUrl.endsWith('.png') ? 'image/png' : 'image/jpeg'
     }
 
-    // 3. Call Gemini with both images
+    // 3. Call Gemini with both images — esto compone un stamp/diseño sobre una foto
+    // lifestyle (mockup, no generación de arte desde cero) → misma cadena STAMP_MODEL.
+    // A/B ciego 2026-07-11: flash gana colocación de estampa. Sin callers activos hoy
+    // (código no referenciado), se deja consistente para cuando se use.
     const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_IMAGE_MODEL || 'gemini-3-pro-image',
+      model: process.env.GEMINI_STAMP_MODEL || process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image',
     })
 
     const prompt = buildCompositePrompt(garmentType, isSmallLogo)

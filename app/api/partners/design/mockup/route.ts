@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
 
     // Motor de mockups "perfecto" (PoC validado 2026-06-24): quita el fondo del
     // diseño (gemini-2.5-flash-image) + cuadro rojo DINÁMICO sobre el área de
-    // impresión + estampa con gemini-3-pro-image (prompt best-of). Reemplaza el
+    // impresión + estampa (prompt best-of, modelo STAMP_MODEL — default flash desde 2026-07-11). Reemplaza el
     // compositor sharp determinístico (pegado plano que Apo rechazaba).
     if (!garmentBase64) {
       return NextResponse.json({ error: 'No se pudo cargar la prenda base' }, { status: 500 })

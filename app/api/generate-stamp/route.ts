@@ -296,10 +296,15 @@ Produce ONE realistic product photo of the garment with the design applied.
 
 STRICT BOUNDARY ENFORCEMENT. DO NOT CROSS THE RED LINES.`
 
+    // A/B ciego 20 casos reales (2026-07-11): gemini-2.5-flash-image 13 vs
+    // gemini-3-pro-image 4 (3 empates) para COLOCACIÓN DE ESTAMPA → default flash.
+    // Rollback en minutos vía env (ver docs/ROLLBACK-gemini-models.md en platform-master).
+    const stampModel = process.env.GEMINI_STAMP_MODEL ?? process.env.GEMINI_IMAGE_MODEL ?? "gemini-2.5-flash-image"
+
     let result
     try {
       result = await genAI.models.generateContent({
-        model: "gemini-3-pro-image",
+        model: stampModel,
         contents: [
           { text: stampPrompt },
           { inlineData: { data: designBase64, mimeType: "image/png" } },
