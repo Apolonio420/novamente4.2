@@ -32,30 +32,39 @@ export async function POST(
   try {
     const { slug } = await params
 
+    // Resolver el tenant del slug ANTES de decidir la exencion del guard —
+    // la exencion tiene que compararse contra ESTA tienda.
+    const tenant = await getTenantBySlug(slug)
+    if (!tenant || !tenant.storefront_published) {
+      return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404, headers: ch })
+    }
+
     // Rate-limit por IP + tope diario global (DB-backed). Reemplaza el
     // ipLimiter viejo (Map en memoria — sin techo real en serverless,
     // auditoria 2026-07-11). checkUsageLimit de abajo sigue siendo el cupo
-    // del PLAN del partner (separado). Partner autenticado revisando su
-    // propia tienda queda exento — ya paga su cupo via checkUsageLimit.
-    let isAuthedPartner = false
+    // del PLAN del partner (separado).
+    //
+    // Exencion SOLO para el DUEÑO de esta tienda (sesion cuyo tenant activo
+    // es el mismo tenant del slug) — ya paga su cupo via checkUsageLimit.
+    // Con "cualquier sesion de partner" alcanzaba un signup gratis anonimo
+    // para bypassear el guard contra la tienda de OTRO tenant growth/pro
+    // (checkUsageLimit unlimited por el plan de la victima). Ver review
+    // adversarial del commit ac4ee45.
+    let isOwnerPartner = false
     try {
-      isAuthedPartner = (await getRequestTenant(request)) !== null
+      const authed = await getRequestTenant(request)
+      isOwnerPartner = authed !== null && authed.tenant.id === tenant.id
     } catch {
-      // best-effort
+      // best-effort — si falla, tratamos como anonimo (no relajamos el guard)
     }
-    if (!isAuthedPartner) {
+    if (!isOwnerPartner) {
       const guard = await guardPublicImageGen(request, 'storefront-studio-mockup')
-      if (guard.allowed === false) {
+      if (!guard.allowed) {
         return NextResponse.json({ error: guard.message }, { status: guard.status, headers: ch })
       }
     }
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-
-    const tenant = await getTenantBySlug(slug)
-    if (!tenant || !tenant.storefront_published) {
-      return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404, headers: ch })
-    }
 
     const features = getPlanFeatures(tenant.plan as Plan)
     if (!features.storefrontDesigner) {

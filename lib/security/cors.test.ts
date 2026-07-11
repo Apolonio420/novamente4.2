@@ -1,11 +1,9 @@
-import { describe, expect, it, afterEach } from "vitest"
+import { describe, expect, it, afterEach, vi } from "vitest"
 import { isAllowedOrigin } from "./cors"
 
 describe("isAllowedOrigin", () => {
-  const originalNodeEnv = process.env.NODE_ENV
-
   afterEach(() => {
-    process.env.NODE_ENV = originalNodeEnv
+    vi.unstubAllEnvs()
   })
 
   it("allows requests without an Origin header (server-to-server / same-origin)", () => {
@@ -35,10 +33,10 @@ describe("isAllowedOrigin", () => {
   })
 
   it("only allows localhost when NODE_ENV=development", () => {
-    process.env.NODE_ENV = "production"
+    vi.stubEnv("NODE_ENV", "production")
     expect(isAllowedOrigin("http://localhost:3000")).toBe(false)
 
-    process.env.NODE_ENV = "development"
+    vi.stubEnv("NODE_ENV", "development")
     expect(isAllowedOrigin("http://localhost:3000")).toBe(true)
   })
 })

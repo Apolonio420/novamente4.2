@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   // rate-limiter viejo en memoria (inutil en serverless — auditoria
   // 2026-07-11) y agrega CORS con allowlist (antes no tenia ninguno).
   const guard = await guardPublicImageGen(request, "remove-background")
-  if (guard.allowed === false) {
+  if (!guard.allowed) {
     return NextResponse.json({ error: guard.message }, { status: guard.status, headers: ch })
   }
 

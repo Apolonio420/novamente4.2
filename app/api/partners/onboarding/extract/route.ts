@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   const ch = corsHeaders(req)
 
   const guard = await guardPublicImageGen(req, 'partners-onboarding-extract')
-  if (guard.allowed === false) {
+  if (!guard.allowed) {
     return NextResponse.json({ success: false, error: guard.message }, { status: guard.status, headers: ch })
   }
 

@@ -31,18 +31,20 @@ import { rateLimit as memoryRateLimit } from "@/lib/rate-limit"
  * y para el tope global.
  */
 
-export interface ImageGuardBlocked {
-  allowed: false
-  status: number
-  message: string
-}
-
-export interface ImageGuardAllowed {
-  allowed: true
+// Shape PLANO a proposito (no discriminated union): con strict:false el
+// narrowing de `!guard.allowed` no funciona en este tsconfig y los call
+// sites no compilan (TS2339). Misma leccion ya aplicada en el repo para
+// TenantAuthResult (lib/partners/permissions.ts). Cuando allowed=false,
+// status y message SIEMPRE vienen seteados en runtime.
+export interface ImageGuardResult {
+  allowed: boolean
+  /** true si la request quedo exenta por secret interno */
   exempt?: boolean
+  /** HTTP status a devolver cuando allowed=false */
+  status?: number
+  /** Mensaje amigable a devolver cuando allowed=false */
+  message?: string
 }
-
-export type ImageGuardResult = ImageGuardBlocked | ImageGuardAllowed
 
 const DAILY_CAP_DEFAULT = 400
 

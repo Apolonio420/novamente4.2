@@ -33,33 +33,42 @@ export async function POST(
   try {
     const { slug } = await params
 
+    // Resolver el tenant del slug ANTES de decidir la exencion del guard —
+    // la exencion tiene que compararse contra ESTA tienda.
+    const tenant = await getTenantBySlug(slug)
+    if (!tenant || !tenant.storefront_published) {
+      return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404, headers: ch })
+    }
+
     // Rate-limit por IP + tope diario global (DB-backed). Reemplaza el
     // ipLimiter viejo (Map en memoria por instancia — sin techo real en
     // serverless, auditoria 2026-07-11). El checkUsageLimit de abajo sigue
     // aplicando aparte — es el cupo del PLAN del partner, no defensa contra
-    // un visitante anonimo abusando de varias tiendas distintas. Un partner
-    // con sesion propia (revisando su propia tienda) queda exento — ya paga
-    // su propio cupo via checkUsageLimit.
-    let isAuthedPartner = false
+    // un visitante anonimo abusando de varias tiendas distintas.
+    //
+    // Exencion SOLO para el DUEÑO de esta tienda (sesion cuyo tenant activo
+    // es el mismo tenant del slug): ya paga su propio cupo via
+    // checkUsageLimit. NO alcanza con "tiene una sesion de partner
+    // cualquiera": un signup gratis anonimo da sesion valida, y con eso se
+    // podia bypassear el guard contra la tienda de OTRO tenant growth/pro
+    // (cuyo plan da checkUsageLimit unlimited) = generacion sin limite a
+    // nuestro costo. Ver review adversarial del commit ac4ee45.
+    let isOwnerPartner = false
     try {
-      isAuthedPartner = (await getRequestTenant(request)) !== null
+      const authed = await getRequestTenant(request)
+      isOwnerPartner = authed !== null && authed.tenant.id === tenant.id
     } catch {
       // best-effort — si falla, tratamos como anonimo (no relajamos el guard)
     }
-    if (!isAuthedPartner) {
+    if (!isOwnerPartner) {
       const guard = await guardPublicImageGen(request, 'storefront-studio-generate')
-      if (guard.allowed === false) {
+      if (!guard.allowed) {
         return NextResponse.json({ error: guard.message }, { status: guard.status, headers: ch })
       }
     }
 
     // IP para telemetria de saveDesignAsset (no para rate-limit — eso ya lo cubre el guard de arriba)
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-
-    const tenant = await getTenantBySlug(slug)
-    if (!tenant || !tenant.storefront_published) {
-      return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404, headers: ch })
-    }
 
     const features = getPlanFeatures(tenant.plan as Plan)
     if (!features.storefrontDesigner) {

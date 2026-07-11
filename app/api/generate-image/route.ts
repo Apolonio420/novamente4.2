@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   // rate-limiter viejo en memoria (inutil en serverless — ver auditoria
   // 2026-07-11).
   const guard = await guardPublicImageGen(req, "generate-image")
-  if (guard.allowed === false) return ok({ error: guard.message }, guard.status)
+  if (!guard.allowed) return ok({ error: guard.message }, guard.status)
 
   const t0 = Date.now()
   try {

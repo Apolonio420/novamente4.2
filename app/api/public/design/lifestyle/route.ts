@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   }
 
   const guard = await guardPublicImageGen(req, "lifestyle")
-  if (guard.allowed === false) return ok({ error: guard.message }, guard.status)
+  if (!guard.allowed) return ok({ error: guard.message }, guard.status)
 
   try {
     const apiKey = process.env.GEMINI_API_KEY

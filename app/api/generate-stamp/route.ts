@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     // tenia NINGUN limite antes — generacion ilimitada a nuestro costo
     // (auditoria 2026-07-11).
     const guard = await guardPublicImageGen(request, "generate-stamp")
-    if (guard.allowed === false) {
+    if (!guard.allowed) {
       return NextResponse.json({ error: guard.message, debugId }, { status: guard.status, headers: baseHeaders })
     }
 

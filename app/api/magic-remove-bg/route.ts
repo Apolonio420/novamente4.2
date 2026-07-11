@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     // tenia NINGUN limite ni CORS restrictivo antes — generacion ilimitada
     // a nuestro costo (auditoria 2026-07-11).
     const guard = await guardPublicImageGen(request, "magic-remove-bg")
-    if (guard.allowed === false) {
+    if (!guard.allowed) {
         return NextResponse.json({ error: guard.message }, { status: guard.status, headers })
     }
 

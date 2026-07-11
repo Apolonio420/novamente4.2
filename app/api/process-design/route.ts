@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
   // tenia NINGUN limite ni CORS (auditoria 2026-07-11) — generacion
   // ilimitada a nuestro costo.
   const guard = await guardPublicImageGen(req, "process-design")
-  if (guard.allowed === false) {
+  if (!guard.allowed) {
     return NextResponse.json({ error: guard.message, debugId }, { status: guard.status, headers: ch })
   }
 
