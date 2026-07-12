@@ -13,7 +13,13 @@ import { meterPublicImageGen } from "@/lib/security/meter-usage"
 export const runtime = "nodejs"
 export const maxDuration = 60
 
-const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"
+// Mockup lifestyle compone un diseño/estampa sobre foto de persona — NO es
+// generación desde cero, así que usa la cadena STAMP_MODEL (barata) igual que
+// su gemelo interno lib/partners/lifestyle-mockup.ts. GEMINI_IMAGE_MODEL queda
+// como fallback intermedio pero en Vercel está seteada a pro a propósito para
+// generate-image (diseño desde cero) — este endpoint no debería tocarla salvo
+// que no exista GEMINI_STAMP_MODEL.
+const IMAGE_MODEL = process.env.GEMINI_STAMP_MODEL || process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image"
 
 export async function OPTIONS(req: NextRequest) {
   return preflightResponse(req)

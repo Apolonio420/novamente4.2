@@ -12,7 +12,9 @@ import { meterPublicImageGen } from "@/lib/security/meter-usage"
 export const runtime = "nodejs"
 export const maxDuration = 60
 
-const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"
+// Remove-bg NUNCA necesita pro — misma cadena que su gemelo
+// app/api/magic-remove-bg/route.ts (GEMINI_REMOVE_BG_MODEL, default flash-image).
+const IMAGE_MODEL = process.env.GEMINI_REMOVE_BG_MODEL ?? "gemini-2.5-flash-image"
 
 export async function OPTIONS(req: NextRequest) {
   return preflightResponse(req)
