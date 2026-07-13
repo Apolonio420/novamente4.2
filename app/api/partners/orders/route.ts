@@ -5,7 +5,7 @@ import { getOrdersByTenant, createOrder, countOrdersByTenant } from '@/lib/partn
 import { sendToProduction } from '@/lib/partners/production'
 import { notifyPartnerOrder, notifyTeamManualSale, type ManualOrderItemNotice } from '@/lib/notifications'
 import { guessGarmentKey } from '@/lib/partners/ledger'
-import { getPartnerPlanPrice } from '@/lib/partners/garment-pricing.server'
+import { getPartnerPlanPrice, type GrowthTier } from '@/lib/partners/garment-pricing.server'
 
 export const maxDuration = 30
 
@@ -95,9 +95,18 @@ export async function POST(request: NextRequest) {
     if (body.produce) {
       const plan: 'starter' | 'growth' | 'pro' =
         tenant.plan === 'growth' || tenant.plan === 'pro' ? tenant.plan : 'starter'
+      // El tier de volumen del piso sale de la cantidad TOTAL del pedido, con
+      // los mismos cortes que la tabla B2B publicada (/b2b-precios-2026):
+      // 1-4u → partner (1u) · 5-9 → starter · 10-29 → pro · 30-99 → drop ·
+      // 100+ → bulk. Sin esto, un pedido de 1 unidad podía pagar el precio
+      // mayorista de 100+ (piso 'bulk' fijo ≈ costo+$200): nunca por debajo
+      // del costo, pero erosionaba el margen del tier real en $800-3000/u.
+      const totalQty = body.items.reduce((s, it) => s + it.quantity, 0)
+      const floorTier: GrowthTier =
+        totalQty >= 100 ? 'bulk' : totalQty >= 30 ? 'drop' : totalQty >= 10 ? 'pro' : totalQty >= 5 ? 'starter' : 'partner'
       for (const it of body.items) {
         const garmentKey = guessGarmentKey(it.producto_canonical || it.name)
-        const floor = garmentKey ? getPartnerPlanPrice(garmentKey, plan, 'bulk') : null
+        const floor = garmentKey ? getPartnerPlanPrice(garmentKey, plan, floorTier) : null
         if (floor == null) {
           return NextResponse.json(
             {

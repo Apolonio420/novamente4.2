@@ -101,8 +101,10 @@ async function flushAfter() {
   afterCallbacks.length = 0
 }
 
-// Piso real (tier 'bulk', el más barato del catálogo) para la prenda de prueba.
-const FLOOR = planPriceFromData('aura-oversize-tshirt', 'starter', 'bulk')!
+// Pisos reales para la prenda de prueba, según el tier de volumen del pedido:
+// qty 1-4 → 'partner' (precio 1u) · qty 100+ → 'bulk' (mayorista).
+const FLOOR_1U = planPriceFromData('aura-oversize-tshirt', 'starter', 'partner')!
+const FLOOR_BULK = planPriceFromData('aura-oversize-tshirt', 'starter', 'bulk')!
 
 const baseItem = {
   name: 'Remera Aura Oversize',
@@ -130,9 +132,31 @@ describe('POST /api/partners/orders — piso de precio en produce=true', () => {
     expect(create).not.toHaveBeenCalled()
   })
 
-  it('acepta produce=true cuando partner_price >= piso del plan', async () => {
+  it('acepta produce=true cuando partner_price >= piso del plan (1u → tier partner)', async () => {
     const response = await POST(
-      req({ produce: true, items: [{ ...baseItem, partner_price: FLOOR }] }),
+      req({ produce: true, items: [{ ...baseItem, partner_price: FLOOR_1U }] }),
+    )
+    expect(response.status).toBe(201)
+    expect(create).toHaveBeenCalledTimes(1)
+
+    await flushAfter()
+    expect(production).toHaveBeenCalledTimes(1)
+  })
+
+  it('rechaza produce=true de 1 unidad al precio mayorista bulk (el tier del piso sale de la cantidad)', async () => {
+    // FLOOR_BULK < FLOOR_1U: con el piso fijo en 'bulk' esto pasaba y erosionaba
+    // el margen del tier real en cada pedido chico.
+    expect(FLOOR_BULK).toBeLessThan(FLOOR_1U)
+    const response = await POST(
+      req({ produce: true, items: [{ ...baseItem, partner_price: FLOOR_BULK }] }),
+    )
+    expect(response.status).toBe(400)
+    expect(create).not.toHaveBeenCalled()
+  })
+
+  it('acepta produce=true de 100+ unidades al precio bulk', async () => {
+    const response = await POST(
+      req({ produce: true, items: [{ ...baseItem, quantity: 100, partner_price: FLOOR_BULK }] }),
     )
     expect(response.status).toBe(201)
     expect(create).toHaveBeenCalledTimes(1)
