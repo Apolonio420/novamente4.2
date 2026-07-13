@@ -27,10 +27,8 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { ImageUpload } from '@/components/partners/image-upload'
 import { authFetch } from '@/lib/partners/auth-fetch'
-import {
-  ALL_GARMENT_PRICING,
-  formatPrice as formatGarmentPrice,
-} from '@/lib/partners/garment-pricing'
+import { formatPrice as formatGarmentPrice } from '@/lib/partners/format-price'
+import type { PublicGarmentPricing } from '@/lib/partners/garment-pricing.server'
 import { MarginBreakdown } from '@/components/workspace/MarginBreakdown'
 
 // ---------------------------------------------------------------------------
@@ -152,6 +150,9 @@ export default function CatalogPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [planInfo, setPlanInfo] = useState<{ plan: string; maxProducts: number } | null>(null)
+  // Pricing ya derivado por plan (sin `cost` crudo del proveedor) — servido por
+  // GET /api/partners/catalog. Ver getAllPublicGarmentPricing.
+  const [garmentPricing, setGarmentPricing] = useState<Record<string, PublicGarmentPricing>>({})
 
   // Filters
   const [search, setSearch] = useState('')
@@ -282,6 +283,7 @@ export default function CatalogPage() {
       const data = await res.json()
       setProducts(data.products)
       setPlanInfo({ plan: data.plan, maxProducts: data.maxProducts })
+      setGarmentPricing(data.garmentPricing || {})
     } catch {
       showToast('Error al cargar productos', 'error')
     } finally {
@@ -726,7 +728,7 @@ export default function CatalogPage() {
             <span className="text-xs text-zinc-600 ml-auto">Click para ver</span>
           </summary>
           <div className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-            {Object.values(ALL_GARMENT_PRICING).map(gp => (
+            {Object.values(garmentPricing).map(gp => (
               <div key={gp.key} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-zinc-800/40 text-xs">
                 <span className="text-zinc-300 truncate">{gp.name}</span>
                 <span className="text-emerald-400 font-semibold whitespace-nowrap">{formatGarmentPrice(gp.on_demand)}</span>
@@ -1056,7 +1058,7 @@ export default function CatalogPage() {
                     className="appearance-none w-full h-11 rounded-md border border-zinc-800 bg-zinc-900/60 px-3 pr-9 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50"
                   >
                     <option value="">Sin prenda base</option>
-                    {Object.values(ALL_GARMENT_PRICING).map((gp) => (
+                    {Object.values(garmentPricing).map((gp) => (
                       <option key={gp.key} value={gp.key}>{gp.name}</option>
                     ))}
                   </select>
@@ -1066,6 +1068,7 @@ export default function CatalogPage() {
                   price={formPrice ? Number(formPrice) : null}
                   garmentKey={formGarmentKey || null}
                   plan={planInfo?.plan || 'starter'}
+                  garmentPricing={garmentPricing}
                 />
               </div>
 

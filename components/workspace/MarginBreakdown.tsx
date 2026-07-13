@@ -1,14 +1,21 @@
 'use client'
 
-import { getPartnerPlanPrice, formatPrice, ALL_GARMENT_PRICING } from '@/lib/partners/garment-pricing'
+import { formatPrice } from '@/lib/partners/format-price'
+import type { PublicGarmentPricing } from '@/lib/partners/garment-pricing.server'
 
 interface MarginBreakdownProps {
   price: number | null
   garmentKey: string | null
   plan: string
+  /**
+   * Mapa de pricing publico (sin `cost` crudo del proveedor) por garmentKey,
+   * ya calculado server-side segun el plan del tenant. Ver
+   * getAllPublicGarmentPricing en lib/partners/garment-pricing.server.ts.
+   */
+  garmentPricing: Record<string, PublicGarmentPricing>
 }
 
-export function MarginBreakdown({ price, garmentKey, plan }: MarginBreakdownProps) {
+export function MarginBreakdown({ price, garmentKey, plan, garmentPricing }: MarginBreakdownProps) {
   const safePlan = plan === 'growth' || plan === 'pro' ? plan : 'starter'
 
   if (!garmentKey) {
@@ -19,10 +26,11 @@ export function MarginBreakdown({ price, garmentKey, plan }: MarginBreakdownProp
     )
   }
 
-  const partnerCost = getPartnerPlanPrice(garmentKey, safePlan)
-  if (partnerCost === null) return null
+  const pricing = garmentPricing[garmentKey]
+  if (!pricing) return null
+  const partnerCost = pricing.myPrice
 
-  const garmentName = ALL_GARMENT_PRICING[garmentKey]?.name ?? garmentKey
+  const garmentName = pricing.name ?? garmentKey
 
   if (price === null || price <= 0) {
     return (
