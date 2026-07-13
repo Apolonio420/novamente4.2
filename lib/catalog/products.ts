@@ -20,7 +20,7 @@
  * - Composicion: algodon 100% (peinado en remeras, frizado en buzos).
  */
 
-export type GarmentTypeKind = 'tshirt' | 'hoodie' | 'sweatshirt' | 'tank' | 'canvas'
+export type GarmentTypeKind = 'tshirt' | 'hoodie' | 'sweatshirt' | 'tank' | 'canvas' | 'bag'
 
 export interface ProductColor {
   /** Slug interno en ingles (consistencia con tooling Gemini/internacional) */
@@ -324,6 +324,36 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
         hex: '#9a9085',
         thumbnail: '/garments/buzo-hoodie-unisex-stone-wash-front.png',
         hero: '/products/buzo-hoddie-unisex-stone-wash/mockups nuevos productos-13.png',
+      },
+    ],
+  },
+  {
+    key: 'totebag',
+    name: 'Bahía Totebag',
+    category: 'Accesorio',
+    garmentType: 'bag',
+    fit: 'regular',
+    fabric: 'algodon crudo resistente',
+    weightGsm: null,
+    costARS: 18500,
+    retailARS: 20900,
+    sizes: ['Único'],
+    measurementsImage: null,
+    shortDescription: 'Totebag de algodon crudo resistente, asas largas para llevar al hombro. Estampado DTG de alta definicion.',
+    colors: [
+      {
+        key: 'crudo',
+        name: 'Crudo',
+        hex: '#e8dfc9',
+        thumbnail: '/products/totebag-crudo/front.jpg',
+        hero: '/products/totebag-crudo/front.jpg',
+      },
+      {
+        key: 'negro',
+        name: 'Negro',
+        hex: '#1a1a1a',
+        thumbnail: '/products/totebag-negro/front.jpg',
+        hero: '/products/totebag-negro/front.jpg',
       },
     ],
   },

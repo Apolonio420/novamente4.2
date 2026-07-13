@@ -45,6 +45,7 @@ export const MODEL_TO_GARMENT_KEY: Record<string, string> = {
   bahamas: "remera-crop-mujer",
   bambino: "remera-infantil",
   bali: "musculosa-bali",
+  bahia: "totebag",
 }
 
 export const MODELS: B2BModel[] = [
@@ -353,6 +354,28 @@ export const MODELS: B2BModel[] = [
           "/products/musculosa-bali-gris/back.png",
           "/products/musculosa-bali-gris/Musculosa_Rib_Blanca_Lifestyle.png",
         ],
+      },
+    ],
+  },
+  {
+    id: "bahia",
+    name: "Bahía",
+    subtitle: "Totebag de Algodón",
+    category: "Accesorios",
+    fabric: "Algodón crudo resistente · asas largas · estampado DTG",
+    sizes: ["Único"],
+    measurementsChart: "/products/totebag-crudo/front.jpg",
+    prices: { partner: 18500, starter: 18000, pro: 17500, drop: 17000, bulk: 16600 },
+    colors: [
+      {
+        name: "Crudo",
+        swatch: "#e8dfc9",
+        images: ["/products/totebag-crudo/front.jpg", "/products/totebag-crudo/back.jpg"],
+      },
+      {
+        name: "Negro",
+        swatch: "#1a1a1a",
+        images: ["/products/totebag-negro/front.jpg", "/products/totebag-negro/back.jpg"],
       },
     ],
   },

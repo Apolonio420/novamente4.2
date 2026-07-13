@@ -351,7 +351,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Ruler className="w-4 h-4 text-orange-500" />
-                <span>{product.category === "Remeras Infantiles" ? "Talles 4 a 16" : `Talles S a ${product.category === "Remeras Crop" || product.category === "Musculosas" || product.category === "Remeras Mujer" ? "XL" : "XXL"}`}</span>
+                <span>{product.category === "Remeras Infantiles" ? "Talles 4 a 16" : product.category === "Accesorios" ? "Tamaño único" : `Talles S a ${product.category === "Remeras Crop" || product.category === "Musculosas" || product.category === "Remeras Mujer" ? "XL" : "XXL"}`}</span>
               </div>
             </div>
 

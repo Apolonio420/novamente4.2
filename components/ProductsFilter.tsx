@@ -12,7 +12,7 @@ import { useCart } from "@/lib/cartStore"
 import { parsePrice, type Product } from "@/lib/products"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 
-const CATEGORIES = ["Todos", "Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Mujer", "Remeras Infantiles", "Arte"] as const
+const CATEGORIES = ["Todos", "Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Mujer", "Remeras Infantiles", "Arte", "Accesorios"] as const
 
 const PRICE_RANGES = [
   { label: "Todos", min: 0, max: Infinity },
@@ -63,7 +63,7 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
       setTimeout(() => setAddedId(null), 2000)
     } else {
       setQuickAddId(product.id)
-      setSelectedSize(product.category === "Remeras Infantiles" ? "8" : "M")
+      setSelectedSize(product.category === "Remeras Infantiles" ? "8" : product.category === "Accesorios" ? "Único" : "M")
     }
   }
 
@@ -72,7 +72,7 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
     if (activeCategory !== "Todos") {
       return [{ name: activeCategory, items: filtered }]
     }
-    const cats = ["Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Mujer", "Remeras Infantiles", "Arte"]
+    const cats = ["Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Mujer", "Remeras Infantiles", "Arte", "Accesorios"]
     return cats.map(c => ({ name: c, items: filtered.filter(p => p.category === c) })).filter(g => g.items.length > 0)
   }, [filtered, activeCategory])
 
@@ -198,8 +198,8 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
 
                         <p className="text-muted-foreground text-xs leading-relaxed flex-1 line-clamp-2 hidden md:block mb-3">{product.description}</p>
 
-                        {/* Quick-add size selector */}
-                        {quickAddId === product.id && product.category !== "Arte" && (
+                        {/* Quick-add size selector — Accesorios es talle único, no muestra selector */}
+                        {quickAddId === product.id && product.category !== "Arte" && product.category !== "Accesorios" && (
                           <div className="flex gap-1 mb-2 flex-wrap">
                             {(product.category === "Remeras Infantiles" ? KIDS_SIZES : SIZES).map(size => (
                               <button

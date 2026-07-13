@@ -11,7 +11,7 @@ export interface Product {
   price: number
   colors: string[]
   image: string
-  category: 'hoodie' | 'buzo' | 'remera' | 'musculosa' | 'lienzo'
+  category: 'hoodie' | 'buzo' | 'remera' | 'musculosa' | 'lienzo' | 'accesorio'
 }
 
 export const PRODUCTS: Product[] = [
@@ -86,6 +86,14 @@ export const PRODUCTS: Product[] = [
     colors: [],
     image: '/products/lienzo-front.jpeg',
     category: 'lienzo',
+  },
+  {
+    name: 'Bahía Totebag',
+    garmentType: 'totebag',
+    price: 20900,
+    colors: ['crudo', 'negro'],
+    image: '/products/totebag-crudo/front.jpg',
+    category: 'accesorio',
   },
 ]
 

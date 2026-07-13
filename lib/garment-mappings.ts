@@ -25,6 +25,7 @@ const PATH_BUILDERS: Record<string, (color: string, side: "front" | "back") => s
   "remera-clasica-mujer": (c, s) => `remera-clasica-mujer-${c}-${s}`,
   "remera-crop-mujer": (c, s) => `remera-crop-mujer-${c}-${s}`,
   "remera-infantil": (c, s) => `remera-infantil-${c}-${s}`,
+  totebag: (c, s) => `totebag-${c}-${s}`,
   // Lienzo no depende de color ni lado para el mapeo base
   lienzo: () => `lienzo`,
 }

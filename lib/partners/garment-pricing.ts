@@ -230,6 +230,17 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
     b2b_bulk: 20100,
     b2c_suggested: 21800,
   },
+  'totebag': {
+    key: 'totebag',
+    name: 'Bahía Totebag',
+    cost: 16000,
+    on_demand: 18500,
+    b2b_starter: 18000,
+    b2b_pro: 17500,
+    b2b_drop: 17000,
+    b2b_bulk: 16600,
+    b2c_suggested: 20900,
+  },
 }
 
 /**
