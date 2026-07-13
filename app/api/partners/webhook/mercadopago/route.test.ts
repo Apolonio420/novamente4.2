@@ -309,6 +309,44 @@ describe('POST /api/partners/webhook/mercadopago — subscription_preapproval no
     const [updates] = h.tenantsUpdate.mock.calls[0]
     expect(updates.status).toBe('active')
     expect(updates.subscription_expires_at).toBeTruthy()
+    // Hallazgo [9]: tras un authorized real, activateRecurringTenant deja
+    // subscription_type en 'recurring' (nunca 'recurring_pending').
+    expect(updates.metadata.subscription_type).toBe('recurring')
+  })
+
+  // Hallazgo [9] + interacción con [15]: un tenant YA 'active' pide un upgrade
+  // mensual. persistPendingSubscription ya actualizó mp_subscription_id al
+  // preapproval NUEVO, pero metadata.subscription_type quedó en
+  // 'recurring_pending' (MP todavía no autorizó). El primer 'authorized' de
+  // ese preapproval nuevo debe activar el plan — si acá dijera 'recurring' (el
+  // bug de antes del fix), isGenuinePreapprovalActivation lo descartaría como
+  // espurio y MP debitaría sin que el plan se aplique nunca.
+  it('upgrade de tenant activo con checkout mensual recién creado (recurring_pending, mismo preapproval): SÍ activa el plan nuevo', async () => {
+    h.getTenantById.mockResolvedValue({
+      ...baseTenant,
+      status: 'active',
+      mp_subscription_id: preapprovalId,
+      metadata: { subscription_type: 'recurring_pending', pending_plan: 'pro' },
+      subscription_expires_at: '2026-08-01T00:00:00.000Z',
+      last_payment_at: '2026-07-01T00:00:00.000Z',
+    })
+    h.preapprovalGet.mockResolvedValue({
+      id: preapprovalId,
+      status: 'authorized',
+      external_reference: externalReference,
+      auto_recurring: { transaction_amount: 50000 },
+    })
+
+    const res = await POST(preapprovalWebhookRequest(preapprovalId))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.skipped).toBeUndefined()
+
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
+    const [updates] = h.tenantsUpdate.mock.calls[0]
+    expect(updates.status).toBe('active')
+    expect(updates.metadata.subscription_type).toBe('recurring')
+    expect(h.notifyPartnerSubscription).toHaveBeenCalledTimes(1)
   })
 
   it('evento repetido/espurio sobre preapproval YA activo (ej. bump de monto del cron): NO re-activa ni extiende', async () => {

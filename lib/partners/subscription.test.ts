@@ -163,4 +163,20 @@ describe('isGenuinePreapprovalActivation', () => {
     }
     expect(isGenuinePreapprovalActivation(tenant, preapprovalId)).toBe(true)
   })
+
+  // Hallazgo [9]: upgrade mensual de un tenant YA activo. El checkout nuevo
+  // (persistPendingSubscription) ya dejó mp_subscription_id apuntando al
+  // preapproval nuevo, pero metadata.subscription_type todavía es
+  // 'recurring_pending' (MP no autorizó todavía). El PRIMER authorized de ese
+  // preapproval debe tratarse como genuino y activar el plan nuevo — antes de
+  // este fix, persistPendingSubscription escribía 'recurring' a secas y este
+  // evento se descartaba como espurio (MP debitaba, el plan nunca se aplicaba).
+  it('upgrade de tenant activo con checkout mensual recién creado (recurring_pending, mismo preapproval): es genuino', () => {
+    const tenant = {
+      status: 'active' as const,
+      mp_subscription_id: preapprovalId,
+      metadata: { subscription_type: 'recurring_pending' as const },
+    }
+    expect(isGenuinePreapprovalActivation(tenant, preapprovalId)).toBe(true)
+  })
 })
