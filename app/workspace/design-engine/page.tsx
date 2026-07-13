@@ -389,6 +389,20 @@ export default function DesignStudioPage() {
   // imagen. Esperamos a que loadingSessions termine para no perder la
   // inyección si la hidratación del historial remoto pisa el estado después,
   // y usamos un ref para no inyectar 2 veces (StrictMode / re-renders).
+  // Solo aceptamos URLs https del storage propio (Supabase público del
+  // proyecto): es lo único que devuelve /api/partners/upload. Sin este check,
+  // un link armado con ?uploadedDesignUrl=<url-atacante> inyectaría una URL
+  // arbitraria que después /api/partners/design/mockup fetchea server-side.
+  const isTrustedDesignUrl = (raw: string): boolean => {
+    try {
+      const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || '').hostname
+      const parsed = new URL(raw)
+      return !!supabaseHost && parsed.protocol === 'https:' && parsed.hostname === supabaseHost
+    } catch {
+      return false
+    }
+  }
+
   const uploadedDesignHandledRef = useRef(false)
   useEffect(() => {
     if (loadingSessions) return
@@ -400,6 +414,14 @@ export default function DesignStudioPage() {
     if (!uploadedUrl) return
 
     uploadedDesignHandledRef.current = true
+
+    if (!isTrustedDesignUrl(uploadedUrl)) {
+      // URL ajena al storage propio: se descarta y se limpia el param igual
+      const url = new URL(window.location.href)
+      url.searchParams.delete('uploadedDesignUrl')
+      window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+      return
+    }
 
     ;(async () => {
       const sessionId = await ensureRemoteSession()
