@@ -2,14 +2,41 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
 // garment-pricing.server.ts trae `import 'server-only'`, que revienta fuera de
 // un build real de Next (ver garment-pricing.server.test.ts / ledger.test.ts).
-// Lo mockeamos delegando a la versión sin el guard — mismo catálogo, mismo cálculo.
-import { getPartnerPlanPrice } from '@/lib/partners/garment-pricing'
+// Lo mockeamos recomputando desde el catálogo crudo (garment-pricing-data.ts,
+// módulo de datos puro sin el guard) — mismo catálogo, mismo cálculo.
+import {
+  ALL_GARMENT_PRICING,
+  GROWTH_TIER_DELTA_ARS,
+  VOLUME_FIELD_BY_TIER,
+  type GrowthTier,
+} from '@/lib/partners/garment-pricing-data'
+
+function planPriceFromData(
+  garmentKey: string,
+  plan: 'starter' | 'growth' | 'pro',
+  tier: GrowthTier = 'partner',
+): number | null {
+  const pricing = ALL_GARMENT_PRICING[garmentKey]
+  if (!pricing) return null
+  if (plan === 'starter') return pricing[VOLUME_FIELD_BY_TIER[tier]] as number
+  return pricing.cost + GROWTH_TIER_DELTA_ARS[tier]
+}
 
 vi.mock('@/lib/partners/garment-pricing.server', async () => {
-  const real = await vi.importActual<typeof import('@/lib/partners/garment-pricing')>(
-    '@/lib/partners/garment-pricing',
+  const data = await vi.importActual<typeof import('@/lib/partners/garment-pricing-data')>(
+    '@/lib/partners/garment-pricing-data',
   )
-  return real
+  const getPartnerPlanPrice = (
+    garmentKey: string,
+    plan: 'starter' | 'growth' | 'pro',
+    tier: keyof typeof data.GROWTH_TIER_DELTA_ARS = 'partner',
+  ): number | null => {
+    const pricing = data.ALL_GARMENT_PRICING[garmentKey]
+    if (!pricing) return null
+    if (plan === 'starter') return pricing[data.VOLUME_FIELD_BY_TIER[tier]] as number
+    return pricing.cost + data.GROWTH_TIER_DELTA_ARS[tier]
+  }
+  return { ...data, getPartnerPlanPrice }
 })
 
 // Hallazgo [7] · REVIEW-caminos-de-plata-2026-07-03: POST /api/partners/orders
@@ -75,7 +102,7 @@ async function flushAfter() {
 }
 
 // Piso real (tier 'bulk', el más barato del catálogo) para la prenda de prueba.
-const FLOOR = getPartnerPlanPrice('aura-oversize-tshirt', 'starter', 'bulk')!
+const FLOOR = planPriceFromData('aura-oversize-tshirt', 'starter', 'bulk')!
 
 const baseItem = {
   name: 'Remera Aura Oversize',
