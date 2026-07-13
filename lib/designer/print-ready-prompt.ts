@@ -46,7 +46,15 @@ const NEGATIVE_RULES = `Negative rules: No mockup. No garment. No hoodie. No t-s
 // Regla anti-split-canvas: el modelo a veces divide la imagen en dos paneles
 // (design isolated + design on hoodie) cuando el user prompt menciona la
 // prenda. Va al final para maximo peso por recency bias.
-const SINGLE_PANEL_RULE = `CRITICAL OUTPUT FORMAT: Output ONE single artwork only. Do NOT split the image into multiple panels, side-by-side comparisons, before/after layouts, diptychs or grids. Do NOT show the artwork twice (once isolated, once on a garment). Do NOT include any garment (hoodie, t-shirt, sweatshirt, buzo, remera, crop, tank, vest, hanger) anywhere in the output, even as a secondary element or thumbnail. The output must be a single isolated graphic. If the user prompt mentions a garment ("para buzo", "para remera", "for a hoodie", "on a t-shirt", "para hoodie"), treat that as TARGET INTENT only — generate ONLY the standalone artwork suitable for printing on that garment, never the garment itself.`
+const SINGLE_PANEL_RULE = `CRITICAL OUTPUT FORMAT: Output ONE single artwork only — exactly ONE composition, ONE version. Do NOT split the image into multiple panels, side-by-side comparisons, before/after layouts, diptychs, collages or grids. Do NOT show the artwork twice (once isolated, once on a garment). Do NOT show two versions, two variants or two duplicates of the same design anywhere in the frame, even if scaled or rotated differently. Do NOT include any garment (hoodie, t-shirt, sweatshirt, buzo, remera, crop, tank, vest, hanger) anywhere in the output, even as a secondary element or thumbnail. The output must be a single isolated graphic. If the user prompt mentions a garment ("para buzo", "para remera", "for a hoodie", "on a t-shirt", "para hoodie"), treat that as TARGET INTENT only — generate ONLY the standalone artwork suitable for printing on that garment, never the garment itself.`
+
+// Regla de encuadre: el modelo a veces desborda el canvas elegido (aspect
+// ratio real distinto al pedido) o corta el sujeto contra un borde. Esto es
+// COMPLEMENTARIO al aspectRatio que ahora se manda a nivel API (ver
+// app/api/generate-image/route.ts, imageConfig.aspectRatio) — el prompt
+// refuerza que, sea cual sea el canvas resultante, el arte tiene que entrar
+// entero adentro.
+const FRAMING_RULE = `CRITICAL FRAMING: The complete artwork must be fully contained within the canvas, with a clear margin of empty background on all four sides. Nothing may touch, bleed off, or be cropped by any edge of the image — no part of the subject, silhouette, typography, or ornament may be cut off at the top, bottom, left or right border. The entire subject must be fully visible, not partially out of frame.`
 
 // Regla dura anti-texto: Gemini agrega texto literal cuando el prompt
 // describe estilos como "estetica lujo salvaje 2026", "vibe noir 80s", etc.
@@ -154,9 +162,11 @@ export function buildPrintReadyPrompt(
     blocks.push(NO_TEXT_RULE)
   }
 
-  // 8) regla critica de output format (single panel, no garment) — al final
-  //    para maximo peso por recency bias del modelo
+  // 8) regla critica de output format (single panel, no garment) y de
+  //    encuadre (nada cortado por los bordes) — al final para maximo peso
+  //    por recency bias del modelo
   blocks.push(SINGLE_PANEL_RULE)
+  blocks.push(FRAMING_RULE)
 
   return blocks.join("\n\n")
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { GoogleGenAI } from "@google/genai"
 import { uploadFile } from "@/lib/cloudflare-r2"
 import { toPublicR2Url } from "@/lib/r2"
 import { optimizeDesignPrompt } from "@/lib/designer/prompt-optimizer"
@@ -15,6 +16,37 @@ export const runtime = "nodejs"
 const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"
 const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-1.5-pro"
 const DEBUG = (process.env.DEBUG_GEMINI || "").toLowerCase() === "true"
+
+// Valores soportados por ImageConfig.aspectRatio en @google/genai (ver
+// node_modules/@google/genai/dist/node/node.d.ts — GenerateContentConfig.imageConfig).
+// La API vieja (@google/generative-ai, deprecated) no tiene este campo: por
+// eso el gen de imagen usa el SDK nuevo aunque el resto del route siga con
+// el viejo (rewrite de instrucciones, sin impacto de aspect ratio).
+const SUPPORTED_ASPECT_RATIOS: Array<{ ratio: string; value: number }> = [
+  { ratio: "1:1", value: 1 / 1 },
+  { ratio: "2:3", value: 2 / 3 },
+  { ratio: "3:2", value: 3 / 2 },
+  { ratio: "3:4", value: 3 / 4 },
+  { ratio: "4:3", value: 4 / 3 },
+  { ratio: "9:16", value: 9 / 16 },
+  { ratio: "16:9", value: 16 / 9 },
+  { ratio: "21:9", value: 21 / 9 },
+]
+
+function resolveAspectRatio(size?: { width?: number; height?: number }): string {
+  if (!size?.width || !size?.height) return "1:1"
+  const target = size.width / size.height
+  let best = SUPPORTED_ASPECT_RATIOS[0]!
+  let bestDiff = Infinity
+  for (const opt of SUPPORTED_ASPECT_RATIOS) {
+    const diff = Math.abs(opt.value - target)
+    if (diff < bestDiff) {
+      bestDiff = diff
+      best = opt
+    }
+  }
+  return best.ratio
+}
 
 type OptimizerOptions = { styleId?: string; colorway?: GarmentColorway; printArea?: PrintArea; sessionId?: string }
 type Body =
@@ -48,6 +80,9 @@ export async function POST(req: NextRequest) {
 
     const body = (await req.json()) as Body
     const genAI = new GoogleGenerativeAI(apiKey)
+    // SDK nuevo, SOLO para la llamada de generación de imagen — es el único
+    // que soporta imageConfig.aspectRatio a nivel API (ver nota arriba).
+    const genAIImage = new GoogleGenAI({ apiKey })
 
     // 1) Resolver prompt final (inicial o iteración)
     let basePrompt = ""
@@ -93,6 +128,14 @@ export async function POST(req: NextRequest) {
       console.log("GEN-IMG aspect ratio:", { width: size.width, height: size.height, hint: aspectRatioHint })
     }
 
+    // aspectRatio a nivel API (imageConfig) — refuerza el hint textual de
+    // arriba con un parámetro real que el modelo no puede "elegir mal".
+    // Antes solo iba la frase en el prompt y el modelo derivaba a 16:9 por
+    // su cuenta, lo que invitaba a duplicar el diseño en dos paneles o a
+    // cortar la composición contra el borde del canvas.
+    const resolvedAspectRatio = resolveAspectRatio(size)
+    console.log("GEN-IMG resolved aspectRatio (API param):", resolvedAspectRatio)
+
     // 3) Optimizar prompt — opcional via flag `raw`
     //    - raw=true: usa el prompt del user TAL CUAL + guard minimo anti-prenda
     //    - raw=false (default): pasa por optimizer que fuerza estilo vectorial textile
@@ -124,26 +167,30 @@ export async function POST(req: NextRequest) {
     })
 
     const n = Math.max(1, Math.min(4, (body as any).n ?? 1))
-    const model = genAI.getGenerativeModel({ model: IMAGE_MODEL })
 
     // 3) Función para generar e intentar extraer imágenes
+    //    Usa @google/genai (genAIImage) — es el único SDK del repo que tipa
+    //    imageConfig.aspectRatio en generateContent. La forma de la respuesta
+    //    difiere del SDK viejo: candidates va directo en el resultado (no
+    //    bajo `.response`) y `.text` es un getter, no un método.
     async function runOnce(prompt: string) {
-      const res = await model.generateContent([prompt])
+      const res = await genAIImage.models.generateContent({
+        model: IMAGE_MODEL,
+        contents: [{ text: prompt }],
+        config: { imageConfig: { aspectRatio: resolvedAspectRatio } },
+      })
       const imagesBase64: string[] = []
-      for (const cand of res.response?.candidates ?? []) {
+      for (const cand of res.candidates ?? []) {
         for (const part of cand?.content?.parts ?? []) {
-          // @ts-ignore
           const inline = part?.inlineData
-          // @ts-ignore
           if (inline?.mimeType?.startsWith("image/") && typeof inline?.data === "string") {
-            // @ts-ignore
             imagesBase64.push(inline.data)
             if (imagesBase64.length >= n) break
           }
         }
         if (imagesBase64.length >= n) break
       }
-      const fallbackText = res.response?.text?.()
+      const fallbackText = res.text
       return { imagesBase64, fallbackText }
     }
 
