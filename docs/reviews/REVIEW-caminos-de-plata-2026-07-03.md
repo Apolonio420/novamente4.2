@@ -156,6 +156,13 @@ Workflow multi-agente Fable 5: 5 dimensiones × finder + verificador adversarial
 
 **Evidencia**: Grep de 'partner_resolve_payout' en todo el repo: matches solo en migrations/20260622 (definición), migrations/20260623 (grants), docs/reviews y docs/partners-os-rollout.md. Ningún .ts la invoca. La lógica de reverso vive exclusivamente dentro de la función: `if p_status = 'rejected' then insert into partner_ledger_entries (... 'payout_reversal', 'credit', v_payout.amount ...)`.
 
+**RESUELTO (2026-07-04, rama `fix/finding-13-resolve-payout`)**: Confirmado que era un paso faltante del flujo admin, no código muerto — la RPC fue diseñada específicamente para esto (reverso automático en `rejected`) y el propio `finanzas/route.ts:88` instruye al equipo a "marcar pagado" sin darle ninguna vía para hacerlo. Se agregó el caller mínimo:
+- `resolvePayout()` en `lib/partners/payouts.ts` — wrapper tipado del RPC `partner_resolve_payout`, con `validatePayoutResolution()` para el enum `paid|processing|rejected` y mapeo de errores (`not_found`→404, `already_final`→409).
+- `POST /api/partners/admin/payouts/[id]/resolve` en `app/api/partners/admin/payouts/[id]/resolve/route.ts` — admin-only vía `getAdminUser()` (mismo patrón que `app/api/partners/admin/onboard/route.ts`), body `{ status }`.
+- Tests en `lib/partners/payouts.test.ts` (RPC call shape, idempotencia, not_found, already_final, validación).
+
+**Pendiente de decisión de producto**: esta ruta es solo la API — no hay UI de admin (`/admin/partners/...`) que la consuma todavía. El equipo sigue resolviendo el retiro manualmente hoy vía este endpoint (curl/Postman) o una futura pantalla; queda a criterio de negocio si se justifica construir una UI dedicada en `/admin` o si el volumen de retiros no lo amerita por ahora. Mientras tanto, el punto crítico del hallazgo (rechazo manual = plata perdida sin reverso) ya está cerrado: cualquier resolución de payout, manual o vía futura UI, debe pasar por este endpoint/wrapper, nunca por un UPDATE directo en Supabase.
+
 ---
 
 ## [14] HIGH — El flujo mensual recurrente no exige primer pago para la promo: cualquier partner ya pago puede re-suscribirse y reiniciar 12 meses al 50%

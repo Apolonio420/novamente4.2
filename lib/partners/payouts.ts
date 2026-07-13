@@ -6,6 +6,13 @@
  * balance, creates the payout + debit atomically, serializes concurrent
  * withdrawals per tenant and is idempotent on an Idempotency-Key. This module is
  * the typed wrapper + the financial-state computation surfaced to the UI.
+ *
+ * Admin resolution of a payout (marking it paid/rejected) MUST go through the
+ * `partner_resolve_payout` RPC (same migration) via `resolvePayout()` below —
+ * never a manual UPDATE on partner_payouts. The RPC is the only place that
+ * reverses the debit (credits the amount back) when a payout is rejected; a
+ * manual UPDATE skips that reversal and silently strands the partner's money
+ * (see docs/reviews/REVIEW-caminos-de-plata-2026-07-03.md, finding [13]).
  */
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
@@ -128,6 +135,69 @@ export async function requestPayout(input: RequestPayoutInput): Promise<RequestP
     idempotent: !!res.idempotent,
     available: res.available_after,
   }
+}
+
+// ---------------------------------------------------------------------------
+// Resolve a payout (admin)
+// ---------------------------------------------------------------------------
+
+export type PayoutResolution = 'paid' | 'rejected' | 'processing'
+
+const VALID_RESOLUTIONS: readonly PayoutResolution[] = ['paid', 'rejected', 'processing']
+
+export interface ResolvePayoutResult {
+  ok: boolean
+  status: number
+  payoutStatus?: PayoutResolution
+  idempotent?: boolean
+  error?: string
+}
+
+export function validatePayoutResolution(status: unknown): status is PayoutResolution {
+  return typeof status === 'string' && (VALID_RESOLUTIONS as string[]).includes(status)
+}
+
+/**
+ * Transition a payout to paid/processing/rejected via the transactional RPC
+ * `partner_resolve_payout`. On 'rejected' the RPC reverses the debit (credits
+ * the amount back to the tenant), so the caller never needs to touch the
+ * ledger directly. Idempotent: re-resolving to the same status is a no-op;
+ * resolving an already-final payout (paid/rejected) to a different status
+ * fails with `already_final`.
+ */
+export async function resolvePayout(
+  payoutId: string,
+  status: PayoutResolution,
+): Promise<ResolvePayoutResult> {
+  if (!payoutId || typeof payoutId !== 'string') {
+    return { ok: false, status: 400, error: 'Falta payoutId' }
+  }
+  if (!validatePayoutResolution(status)) {
+    return { ok: false, status: 400, error: 'Estado inválido (esperado paid/rejected/processing)' }
+  }
+
+  const sb = supabaseAdmin as any
+  const { data, error } = await sb.rpc('partner_resolve_payout', {
+    p_payout_id: payoutId,
+    p_status: status,
+  })
+
+  if (error) {
+    console.error('[payouts] resolve rpc error:', error.message)
+    return { ok: false, status: 500, error: 'No se pudo resolver el retiro' }
+  }
+
+  const res = (data || {}) as { ok?: boolean; error?: string; status?: string; idempotent?: boolean }
+
+  if (!res.ok) {
+    if (res.error === 'not_found') return { ok: false, status: 404, error: 'Retiro no encontrado' }
+    if (res.error === 'already_final') {
+      return { ok: false, status: 409, error: `El retiro ya está en estado final: ${res.status}` }
+    }
+    return { ok: false, status: 400, error: res.error || 'No se pudo resolver el retiro' }
+  }
+
+  return { ok: true, status: 200, payoutStatus: status, idempotent: !!res.idempotent }
 }
 
 // ---------------------------------------------------------------------------
