@@ -48,6 +48,14 @@ export async function GET(request: NextRequest) {
           // Las suscripciones recurrentes las gestiona MercadoPago (débito + reintentos).
           // La baja llega por el webhook subscription_preapproval; no las suspendemos
           // por vencimiento acá para no cortar a un partner que MP sigue cobrando.
+          //
+          // Hallazgo [9]: este `continue` es SOLO para 'recurring' (autorizado real
+          // por MP), nunca para 'recurring_pending' (checkout mensual creado, MP
+          // todavía no autorizó nada — ver persistPendingSubscription en
+          // lib/partners/subscription.ts). Un tenant en 'recurring_pending' cae en
+          // la lógica normal de abajo (grace period → suspensión): si el checkout se
+          // abandonó y nunca hubo un authorized, no hay ningún cobro de MP que
+          // vigilar, así que debe tratarse como cualquier plan no recurrente vencido.
           if ((tenant.metadata as any)?.subscription_type === 'recurring') {
             continue
           }

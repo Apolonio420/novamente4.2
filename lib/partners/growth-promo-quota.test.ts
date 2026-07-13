@@ -56,8 +56,9 @@ describe('countPaidPartners — cupo por last_payment_at, no por creación', () 
 
   it('crear una suscripción sin pago (last_payment_at aún null) NO consume cupo: el conteo la ignora', async () => {
     // Un tenant recién creado con createRecurringSubscription/subscribe anual
-    // tiene metadata.subscription_type='recurring' pero last_payment_at=null
-    // hasta que el webhook confirme un pago real. La query de countPaidPartners
+    // tiene metadata.subscription_type='recurring_pending' (hallazgo [9]) pero
+    // last_payment_at=null hasta que el webhook confirme un pago real y active
+    // (activateRecurringTenant recién ahí pasa a 'recurring'). La query de countPaidPartners
     // solo cuenta filas con last_payment_at NOT NULL, así que ese tenant no
     // aparece en el conteo aunque ya haya "creado" la intención de suscripción.
     h.countResult = { count: 0, error: null } // ningún tenant con last_payment_at aún

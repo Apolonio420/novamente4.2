@@ -78,6 +78,44 @@ function confirmationHtml(opts: {
   </td></tr></table></body></html>`
 }
 
+/**
+ * Hallazgos [10]/[11] del review: dos invocaciones concurrentes de
+ * processPaymentById para el MISMO pago (webhook + /api/payments/confirm
+ * llegando casi al mismo tiempo, o dos reintentos de MP) leían la orden con
+ * un status "pending" stale, pasaban ambas el guard de PASO 3 (que compara en
+ * memoria, no en la base) y corrían el bloque de efectos completo dos veces:
+ * doble email al cliente, doble aviso a Telegram/partner, doble bridge a
+ * partner_orders. Acá cerramos la ventana con un UPDATE condicional atómico
+ * (compare-and-swap a nivel fila): solo transiciona la orden si su status en
+ * la base SIGUE siendo el mismo que se leyó en PASO 2. Si 0 filas fueron
+ * afectadas, alguien más (la otra invocación concurrente) ya ganó la carrera
+ * y ya está corriendo (o corrió) los efectos — este proceso no debe repetirlos.
+ *
+ * No se agregan locks externos ni colas: es el mismo patrón de "UPDATE ...
+ * WHERE <precondición> RETURNING" que ya usa la RPC partner_request_payout
+ * (migrations/20260622_partner_payout_transaction.sql) para serializar
+ * retiros, aplicado acá a nivel de una sola fila con el cliente de Supabase
+ * en vez de una función SQL (no hace falta una transacción multi-statement:
+ * un solo UPDATE condicional alcanza para esta carrera de 2 lecturas).
+ */
+async function tryClaimOrderTransition(
+  orderId: string,
+  expectedCurrentStatus: string,
+  updates: Record<string, any>,
+): Promise<boolean> {
+  const { data, error } = await (supabaseAdmin as any)
+    .from("orders")
+    .update(updates)
+    .eq("id", orderId)
+    .eq("status", expectedCurrentStatus)
+    .select("id")
+  if (error) {
+    console.error("❌ Error en UPDATE condicional de orden:", error.message)
+    return false
+  }
+  return Array.isArray(data) && data.length > 0
+}
+
 export async function processPaymentById(paymentId: string, webhookBody?: any): Promise<ProcessPaymentResult> {
   console.log("💳 Procesando pago ID:", paymentId)
 
@@ -119,8 +157,20 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
   // Y el estado fresco de MP sigue siendo "approved". Si MP reenvía el mismo
   // paymentId ahora con status "refunded"/"charged_back", este guard NO debe
   // cortar antes de llegar al switch de PASO 4 (que sí mapea esos estados).
+  //
+  // Hallazgo [10]: antes este guard cortaba SIN re-ejecutar efectos, así que si
+  // el proceso moría entre confirmar la orden (PASO 6) y acreditar el ledger /
+  // notificar, el reintento de MP entraba acá y el margen del partner se perdía
+  // para siempre. Ahora el retry re-corre los efectos, que son seguros de
+  // repetir: bridge upsert (onConflict payment_id) y creditOrderMargin (unique
+  // index) son idempotentes, y las notificaciones/email llevan guard en el
+  // metadata FRESCO de la orden (partner_notified_at, confirmation_email_sent_at,
+  // sale_notified_at) — lo ya hecho no se repite, lo que faltaba se completa.
   if (order.status === "confirmed" && order.payment_id === String(paymentId) && paymentDetails.status === "approved") {
-    console.log("ℹ️ Orden ya confirmada con mismo payment_id, saltando:", order.id)
+    console.log("ℹ️ Orden ya confirmada con mismo payment_id — reconciliando efectos pendientes:", order.id)
+    await runConfirmedOrderEffects(order, String(paymentId), paymentDetails, externalReference, {
+      ...((order as any).metadata || {}),
+    })
     return {
       ok: true,
       reason: "already_confirmed",
@@ -200,7 +250,14 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
     console.warn("⚠️ No se pudo extraer DNI:", dniErr.message)
   }
 
-  // PASO 6: Actualizar orden en Supabase
+  // PASO 6: Actualizar orden en Supabase — UPDATE condicional atómico
+  // (hallazgos [10]/[11]): la condición WHERE status = <lo que leímos en PASO 2>
+  // hace de compare-and-swap a nivel fila. Si dos invocaciones concurrentes
+  // (webhook + /api/payments/confirm, o dos reintentos de MP) leyeron la misma
+  // orden "pending" y llegan acá casi al mismo tiempo, solo UNA de los dos
+  // UPDATE afecta una fila — la otra recibe 0 filas y sabe que perdió la
+  // carrera, sin haber corrido ningún efecto (email, ledger, notificaciones)
+  // todavía. No hace falta un guard en memoria: la propia base decide.
   const orderUpdates: any = {
     payment_id: String(paymentId),
     payment_status: paymentStatus,
@@ -211,11 +268,23 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
     orderUpdates.customer_dni = extractedDni
     orderUpdates.customer_dni_type = extractedDniType
   }
-  const updated = await updateOrder(order.id!, orderUpdates)
 
-  if (!updated) {
-    console.error("❌ Falló la actualización de la orden:", order.id)
-    return { ok: false, reason: "order_update_failed", orderId: String(order.id) }
+  const claimed = await tryClaimOrderTransition(order.id!, order.status || "pending", orderUpdates)
+
+  if (!claimed) {
+    // Perdimos la carrera: otra invocación concurrente ya transicionó esta
+    // orden desde el mismo status que leímos. Releer el estado fresco para
+    // responder correctamente sin re-ejecutar ningún efecto acá.
+    const freshOrder = await getOrderByExternalReference(externalReference)
+    console.log("ℹ️ UPDATE condicional no afectó filas (carrera concurrente ganada por otro proceso):", order.id, "status fresco:", freshOrder?.status)
+    return {
+      ok: true,
+      reason: "already_processing_or_processed",
+      orderId: String(order.id),
+      orderNumber: order.order_number || undefined,
+      orderStatus: freshOrder?.status || order.status,
+      paymentStatus: (freshOrder as any)?.payment_status || undefined,
+    }
   }
 
   console.log("✅ Orden actualizada:", order.id, "→ status:", orderStatus)
@@ -241,6 +310,47 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
   }
 
   if (paymentStatus === "approved" && orderStatus === "confirmed") {
+    await runConfirmedOrderEffects(order, String(paymentId), paymentDetails, externalReference, newMetadata)
+  }
+
+  return {
+    ok: true,
+    orderId: String(order.id),
+    orderNumber: order.order_number || undefined,
+    orderStatus,
+    paymentStatus,
+  }
+}
+
+/**
+ * Efectos post-confirmación de una orden pagada: bridge a partner_orders,
+ * crédito del margen al ledger, aviso al partner, email al cliente, aviso de
+ * venta y Meta CAPI.
+ *
+ * Hallazgo [10]: esta función DEBE ser segura de re-ejecutar. Se corre en el
+ * camino normal tras ganar el claim de PASO 6, y también en cada retry que
+ * entra por el guard de PASO 3 (orden ya confirmada con el mismo pago) — así,
+ * si el proceso murió a mitad de los efectos, el reintento de MP o el fallback
+ * /api/payments/confirm completan lo que faltó. Repetir es seguro: el bridge
+ * es upsert (onConflict payment_id), creditOrderMargin es idempotente (unique
+ * index), y las comunicaciones llevan guard persistido en metadata
+ * (partner_notified_at / confirmation_email_sent_at / sale_notified_at).
+ * CAPI dedupea en Meta por event_id = order.id.
+ *
+ * `baseMetadata` = metadata vigente de la orden (fresco en el camino de retry;
+ * el recién escrito por el claim en el camino normal): de ahí se leen y sobre
+ * él se persisten los guards.
+ */
+async function runConfirmedOrderEffects(
+  order: any,
+  paymentId: string,
+  paymentDetails: any,
+  externalReference: string,
+  baseMetadata: Record<string, any>,
+): Promise<void> {
+  const meta: Record<string, any> = { ...baseMetadata }
+  // (bloque preservado tal cual del camino inline original de processPaymentById)
+  {
     console.log("🎉 Pago aprobado! Orden confirmada:", order.order_number)
 
     // Bridgear a partner_orders si la orden viene de un storefront partner
@@ -292,7 +402,7 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
 
       // Avisar al PARTNER que su tienda vendió (antes solo se enteraba Novamente).
       // Guard en metadata para no duplicar si webhook + confirm procesan ambos.
-      if (!existingMetadata.partner_notified_at) {
+      if (!meta.partner_notified_at) {
         try {
           const { data: tenant } = await (supabaseAdmin as any)
             .from("tenants")
@@ -316,8 +426,8 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
               produce: false,
               pedidoNumero: order.order_number || undefined,
             })
-            newMetadata.partner_notified_at = new Date().toISOString()
-            await updateOrder(order.id!, { metadata: newMetadata })
+            meta.partner_notified_at = new Date().toISOString()
+            await updateOrder(order.id!, { metadata: meta })
             console.log("✅ Partner notificado de la venta:", tenantId)
           }
         } catch (partnerNotifErr: any) {
@@ -328,7 +438,7 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
 
     // Email de confirmación al CLIENTE (la success page lo promete desde siempre).
     // Guard en metadata para no duplicar entre webhook y confirm fallback.
-    if (order.customer_email && !existingMetadata.confirmation_email_sent_at) {
+    if (order.customer_email && !meta.confirmation_email_sent_at) {
       try {
         const sent = await sendEmail({
           to: order.customer_email,
@@ -347,8 +457,8 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
           }),
         })
         if (sent.ok) {
-          newMetadata.confirmation_email_sent_at = new Date().toISOString()
-          await updateOrder(order.id!, { metadata: newMetadata })
+          meta.confirmation_email_sent_at = new Date().toISOString()
+          await updateOrder(order.id!, { metadata: meta })
           console.log("✅ Email de confirmación enviado a:", order.customer_email)
         } else {
           console.error("❌ Email de confirmación falló:", sent.error)
@@ -358,23 +468,30 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
       }
     }
 
-    try {
-      const { notifySale } = await import("@/lib/notifications")
-      await notifySale({
-        orderNumber: order.order_number || order.id || "N/A",
-        total: order.total || 0,
-        email: order.customer_email || "N/A",
-        items: (order.items || []).map((item: any) => ({
-          name: item.item_name || "Producto",
-          quantity: item.quantity || 1,
-          size: item.product_size || "N/A",
-          color: item.product_color || "N/A",
-          price: item.unit_price || 0,
-          imageUrl: item.image_url || item.mockup_url || null,
-        })),
-      })
-    } catch (notifErr: any) {
-      console.error("❌ Error enviando notificación de venta:", notifErr.message)
+    // Aviso de venta a Novamente (Telegram). Guard sale_notified_at: era el
+    // único efecto sin deduplicación — sin él, cada retry idempotente de PASO 3
+    // (hallazgo [10]) re-avisaría la misma venta.
+    if (!meta.sale_notified_at) {
+      try {
+        const { notifySale } = await import("@/lib/notifications")
+        await notifySale({
+          orderNumber: order.order_number || order.id || "N/A",
+          total: order.total || 0,
+          email: order.customer_email || "N/A",
+          items: (order.items || []).map((item: any) => ({
+            name: item.item_name || "Producto",
+            quantity: item.quantity || 1,
+            size: item.product_size || "N/A",
+            color: item.product_color || "N/A",
+            price: item.unit_price || 0,
+            imageUrl: item.image_url || item.mockup_url || null,
+          })),
+        })
+        meta.sale_notified_at = new Date().toISOString()
+        await updateOrder(order.id!, { metadata: meta })
+      } catch (notifErr: any) {
+        console.error("❌ Error enviando notificación de venta:", notifErr.message)
+      }
     }
 
     // ── Meta Conversions API (CAPI) — server-side Purchase event ──
@@ -414,14 +531,6 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
     } catch (capiErr: any) {
       console.error("❌ Exception Meta CAPI:", capiErr.message)
     }
-  }
-
-  return {
-    ok: true,
-    orderId: String(order.id),
-    orderNumber: order.order_number || undefined,
-    orderStatus,
-    paymentStatus,
   }
 }
 
