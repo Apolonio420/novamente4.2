@@ -79,6 +79,17 @@ vi.mock('@/lib/email', () => ({
   sendEmail: async () => ({ ok: true }),
 }))
 
+const notifySaleMock = vi.fn(async (_args: any) => undefined)
+const notifyPartnerOrderMock = vi.fn(async (_tenant: any, _args: any) => undefined)
+vi.mock('@/lib/notifications', () => ({
+  notifySale: (args: any) => notifySaleMock(args),
+  notifyPartnerOrder: (tenant: any, args: any) => notifyPartnerOrderMock(tenant, args),
+}))
+
+vi.mock('@/lib/meta/capi', () => ({
+  sendCapiPurchase: async () => ({ ok: false, skipped: 'not_configured' }),
+}))
+
 process.env.MP_ACCESS_TOKEN = 'test-token'
 
 import { processPaymentById } from './process-payment'
@@ -86,6 +97,8 @@ import { processPaymentById } from './process-payment'
 beforeEach(() => {
   reverseOrderMarginMock.mockClear()
   creditOrderMarginMock.mockClear()
+  notifySaleMock.mockClear()
+  notifyPartnerOrderMock.mockClear()
   h.state.updateOrderResult = true
   h.state.claimWins = true
   h.state.claimCalls = []
@@ -113,6 +126,75 @@ describe('processPaymentById — guard de idempotencia PASO 3', () => {
 
     expect(result.reason).toBe('already_confirmed')
     expect(reverseOrderMarginMock).not.toHaveBeenCalled()
+  })
+
+  // Hallazgo [10]: si el proceso murió entre confirmar la orden (PASO 6) y
+  // correr los efectos (ledger, notificaciones), el reintento de MP entra por
+  // PASO 3 — y ahora debe COMPLETAR los efectos pendientes en vez de cortar.
+  it('retry sobre orden ya confirmada re-ejecuta los efectos de plata pendientes (ledger) sin re-clamear la orden', async () => {
+    h.state.order = {
+      id: 'order-10',
+      order_number: 'NM-010',
+      status: 'confirmed', // ya confirmada por la invocación que murió
+      payment_id: 'pay-10',
+      tenant_id: 'tenant-10',
+      customer_email: null,
+      items: [{ item_name: 'Buzo', quantity: 1, unit_price: 55000 }],
+      metadata: {}, // sin flags: los efectos nunca llegaron a correr
+    }
+    h.state.paymentGet = {
+      id: 'pay-10',
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 55000,
+      external_reference: 'ext-10',
+    }
+
+    const result = await processPaymentById('pay-10')
+
+    expect(result.reason).toBe('already_confirmed')
+    // El efecto de plata (crédito de margen al partner) corrió en el retry:
+    expect(creditOrderMarginMock).toHaveBeenCalledTimes(1)
+    expect(creditOrderMarginMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'order-10', tenant_id: 'tenant-10' }),
+    )
+    // El aviso de venta también se completó (tenía metadata sin sale_notified_at):
+    expect(notifySaleMock).toHaveBeenCalledTimes(1)
+    // Pero NO se re-clameó la transición de la orden (PASO 6 no corre en este camino):
+    expect(h.state.claimCalls.length).toBe(0)
+  })
+
+  it('retry sobre orden confirmada con efectos YA completos no duplica nada (guards en metadata)', async () => {
+    h.state.order = {
+      id: 'order-11',
+      order_number: 'NM-011',
+      status: 'confirmed',
+      payment_id: 'pay-11',
+      tenant_id: 'tenant-11',
+      customer_email: 'cliente@example.com',
+      items: [{ item_name: 'Remera', quantity: 1, unit_price: 30000 }],
+      metadata: {
+        partner_notified_at: '2026-07-13T00:00:00.000Z',
+        confirmation_email_sent_at: '2026-07-13T00:00:00.000Z',
+        sale_notified_at: '2026-07-13T00:00:00.000Z',
+      },
+    }
+    h.state.paymentGet = {
+      id: 'pay-11',
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 30000,
+      external_reference: 'ext-11',
+    }
+
+    const result = await processPaymentById('pay-11')
+
+    expect(result.reason).toBe('already_confirmed')
+    // El crédito de ledger se re-intenta (es idempotente por unique index — no duplica):
+    expect(creditOrderMarginMock).toHaveBeenCalledTimes(1)
+    // Las comunicaciones NO se repiten: los guards del metadata las cortan.
+    expect(notifySaleMock).not.toHaveBeenCalled()
+    expect(notifyPartnerOrderMock).not.toHaveBeenCalled()
   })
 
   it('NO corta en already_confirmed cuando MP ahora reporta "refunded" para el mismo paymentId, y revierte el margen', async () => {

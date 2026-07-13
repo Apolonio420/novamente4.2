@@ -157,8 +157,20 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
   // Y el estado fresco de MP sigue siendo "approved". Si MP reenvía el mismo
   // paymentId ahora con status "refunded"/"charged_back", este guard NO debe
   // cortar antes de llegar al switch de PASO 4 (que sí mapea esos estados).
+  //
+  // Hallazgo [10]: antes este guard cortaba SIN re-ejecutar efectos, así que si
+  // el proceso moría entre confirmar la orden (PASO 6) y acreditar el ledger /
+  // notificar, el reintento de MP entraba acá y el margen del partner se perdía
+  // para siempre. Ahora el retry re-corre los efectos, que son seguros de
+  // repetir: bridge upsert (onConflict payment_id) y creditOrderMargin (unique
+  // index) son idempotentes, y las notificaciones/email llevan guard en el
+  // metadata FRESCO de la orden (partner_notified_at, confirmation_email_sent_at,
+  // sale_notified_at) — lo ya hecho no se repite, lo que faltaba se completa.
   if (order.status === "confirmed" && order.payment_id === String(paymentId) && paymentDetails.status === "approved") {
-    console.log("ℹ️ Orden ya confirmada con mismo payment_id, saltando:", order.id)
+    console.log("ℹ️ Orden ya confirmada con mismo payment_id — reconciliando efectos pendientes:", order.id)
+    await runConfirmedOrderEffects(order, String(paymentId), paymentDetails, externalReference, {
+      ...((order as any).metadata || {}),
+    })
     return {
       ok: true,
       reason: "already_confirmed",
@@ -298,6 +310,47 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
   }
 
   if (paymentStatus === "approved" && orderStatus === "confirmed") {
+    await runConfirmedOrderEffects(order, String(paymentId), paymentDetails, externalReference, newMetadata)
+  }
+
+  return {
+    ok: true,
+    orderId: String(order.id),
+    orderNumber: order.order_number || undefined,
+    orderStatus,
+    paymentStatus,
+  }
+}
+
+/**
+ * Efectos post-confirmación de una orden pagada: bridge a partner_orders,
+ * crédito del margen al ledger, aviso al partner, email al cliente, aviso de
+ * venta y Meta CAPI.
+ *
+ * Hallazgo [10]: esta función DEBE ser segura de re-ejecutar. Se corre en el
+ * camino normal tras ganar el claim de PASO 6, y también en cada retry que
+ * entra por el guard de PASO 3 (orden ya confirmada con el mismo pago) — así,
+ * si el proceso murió a mitad de los efectos, el reintento de MP o el fallback
+ * /api/payments/confirm completan lo que faltó. Repetir es seguro: el bridge
+ * es upsert (onConflict payment_id), creditOrderMargin es idempotente (unique
+ * index), y las comunicaciones llevan guard persistido en metadata
+ * (partner_notified_at / confirmation_email_sent_at / sale_notified_at).
+ * CAPI dedupea en Meta por event_id = order.id.
+ *
+ * `baseMetadata` = metadata vigente de la orden (fresco en el camino de retry;
+ * el recién escrito por el claim en el camino normal): de ahí se leen y sobre
+ * él se persisten los guards.
+ */
+async function runConfirmedOrderEffects(
+  order: any,
+  paymentId: string,
+  paymentDetails: any,
+  externalReference: string,
+  baseMetadata: Record<string, any>,
+): Promise<void> {
+  const meta: Record<string, any> = { ...baseMetadata }
+  // (bloque preservado tal cual del camino inline original de processPaymentById)
+  {
     console.log("🎉 Pago aprobado! Orden confirmada:", order.order_number)
 
     // Bridgear a partner_orders si la orden viene de un storefront partner
@@ -349,7 +402,7 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
 
       // Avisar al PARTNER que su tienda vendió (antes solo se enteraba Novamente).
       // Guard en metadata para no duplicar si webhook + confirm procesan ambos.
-      if (!existingMetadata.partner_notified_at) {
+      if (!meta.partner_notified_at) {
         try {
           const { data: tenant } = await (supabaseAdmin as any)
             .from("tenants")
@@ -373,8 +426,8 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
               produce: false,
               pedidoNumero: order.order_number || undefined,
             })
-            newMetadata.partner_notified_at = new Date().toISOString()
-            await updateOrder(order.id!, { metadata: newMetadata })
+            meta.partner_notified_at = new Date().toISOString()
+            await updateOrder(order.id!, { metadata: meta })
             console.log("✅ Partner notificado de la venta:", tenantId)
           }
         } catch (partnerNotifErr: any) {
@@ -385,7 +438,7 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
 
     // Email de confirmación al CLIENTE (la success page lo promete desde siempre).
     // Guard en metadata para no duplicar entre webhook y confirm fallback.
-    if (order.customer_email && !existingMetadata.confirmation_email_sent_at) {
+    if (order.customer_email && !meta.confirmation_email_sent_at) {
       try {
         const sent = await sendEmail({
           to: order.customer_email,
@@ -404,8 +457,8 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
           }),
         })
         if (sent.ok) {
-          newMetadata.confirmation_email_sent_at = new Date().toISOString()
-          await updateOrder(order.id!, { metadata: newMetadata })
+          meta.confirmation_email_sent_at = new Date().toISOString()
+          await updateOrder(order.id!, { metadata: meta })
           console.log("✅ Email de confirmación enviado a:", order.customer_email)
         } else {
           console.error("❌ Email de confirmación falló:", sent.error)
@@ -415,23 +468,30 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
       }
     }
 
-    try {
-      const { notifySale } = await import("@/lib/notifications")
-      await notifySale({
-        orderNumber: order.order_number || order.id || "N/A",
-        total: order.total || 0,
-        email: order.customer_email || "N/A",
-        items: (order.items || []).map((item: any) => ({
-          name: item.item_name || "Producto",
-          quantity: item.quantity || 1,
-          size: item.product_size || "N/A",
-          color: item.product_color || "N/A",
-          price: item.unit_price || 0,
-          imageUrl: item.image_url || item.mockup_url || null,
-        })),
-      })
-    } catch (notifErr: any) {
-      console.error("❌ Error enviando notificación de venta:", notifErr.message)
+    // Aviso de venta a Novamente (Telegram). Guard sale_notified_at: era el
+    // único efecto sin deduplicación — sin él, cada retry idempotente de PASO 3
+    // (hallazgo [10]) re-avisaría la misma venta.
+    if (!meta.sale_notified_at) {
+      try {
+        const { notifySale } = await import("@/lib/notifications")
+        await notifySale({
+          orderNumber: order.order_number || order.id || "N/A",
+          total: order.total || 0,
+          email: order.customer_email || "N/A",
+          items: (order.items || []).map((item: any) => ({
+            name: item.item_name || "Producto",
+            quantity: item.quantity || 1,
+            size: item.product_size || "N/A",
+            color: item.product_color || "N/A",
+            price: item.unit_price || 0,
+            imageUrl: item.image_url || item.mockup_url || null,
+          })),
+        })
+        meta.sale_notified_at = new Date().toISOString()
+        await updateOrder(order.id!, { metadata: meta })
+      } catch (notifErr: any) {
+        console.error("❌ Error enviando notificación de venta:", notifErr.message)
+      }
     }
 
     // ── Meta Conversions API (CAPI) — server-side Purchase event ──
@@ -471,14 +531,6 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
     } catch (capiErr: any) {
       console.error("❌ Exception Meta CAPI:", capiErr.message)
     }
-  }
-
-  return {
-    ok: true,
-    orderId: String(order.id),
-    orderNumber: order.order_number || undefined,
-    orderStatus,
-    paymentStatus,
   }
 }
 
