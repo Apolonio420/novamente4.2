@@ -4,31 +4,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { uploadFile } from "@/lib/cloudflare-r2"
-import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
 import { resolveAbsoluteUrl } from "@/lib/absolute-url"
+import { corsHeaders, preflightResponse } from "@/lib/security/cors"
+import { guardPublicImageGen } from "@/lib/security/public-image-guard"
+import { meterPublicImageGen } from "@/lib/security/meter-usage"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
 
-const limiter = rateLimit({ limit: 12, windowSeconds: 60, prefix: "remove-bg" })
+// Remove-bg NUNCA necesita pro — misma cadena que su gemelo
+// app/api/magic-remove-bg/route.ts (GEMINI_REMOVE_BG_MODEL, default flash-image).
+const IMAGE_MODEL = process.env.GEMINI_REMOVE_BG_MODEL ?? "gemini-2.5-flash-image"
 
-const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"
-
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-}
-
-function ok(data: unknown, status = 200) {
-  return new NextResponse(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS },
-  })
-}
-
-export async function OPTIONS() {
-  return ok({ ok: true })
+export async function OPTIONS(req: NextRequest) {
+  return preflightResponse(req)
 }
 
 const BG_REMOVAL_PROMPT = [
@@ -46,8 +35,15 @@ const BG_REMOVAL_PROMPT = [
 ].join(" ")
 
 export async function POST(req: NextRequest) {
-  const { success, resetAt } = limiter.check(req)
-  if (!success) return rateLimitResponse(resetAt)
+  function ok(data: unknown, status = 200) {
+    return new NextResponse(JSON.stringify(data), {
+      status,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+    })
+  }
+
+  const guard = await guardPublicImageGen(req, "remove-bg")
+  if (!guard.allowed) return ok({ error: guard.message }, guard.status)
 
   try {
     const apiKey = process.env.GEMINI_API_KEY
@@ -109,6 +105,8 @@ export async function POST(req: NextRequest) {
     const outBuffer = Buffer.from(imageBase64, "base64")
     const key = `v1/no-bg/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.png`
     const { url } = await uploadFile(outBuffer, key, "image/png")
+
+    await meterPublicImageGen({ endpoint: "public/design/remove-bg", model: IMAGE_MODEL })
 
     return ok({ success: true, images: [{ url }], method: "gemini" })
   } catch (e: unknown) {

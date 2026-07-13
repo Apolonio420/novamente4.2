@@ -7,6 +7,7 @@ import {
   getAvailableGarments,
   updateDesignConfig,
   validateDesignAccess,
+  resolveDesignEngineMode,
 } from '@/lib/partners/design-engine'
 import type { Plan } from '@/lib/partners/types'
 
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     // Check access
     const access = validateDesignAccess(
-      config.mode || tenant.design_engine_mode,
+      resolveDesignEngineMode(tenant),
       tenant.plan as Plan,
       'config',
     )
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
         ? { allowed: true, mode: access.mode }
         : { allowed: false, reason: (access as any).reason },
       plan: tenant.plan,
-      designEngineMode: tenant.design_engine_mode,
+      designEngineMode: resolveDesignEngineMode(tenant),
     })
   } catch (error: any) {
     console.error('GET /api/partners/design/config error:', error)

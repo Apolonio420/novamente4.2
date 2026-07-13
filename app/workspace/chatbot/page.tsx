@@ -6,6 +6,7 @@ import {
   Search, Download, Clock, ChevronRight, Zap, Filter
 } from 'lucide-react'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { LockedFeature } from '@/components/partners/locked-feature'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -47,6 +48,20 @@ export default function ChatbotPage() {
   const [metrics, setMetrics] = useState<Metrics>({ total: 0, active: 0, messagesToday: 0, avgMessages: 0 })
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closed'>('all')
+
+  // Plan gate — el chatbot es Pro-only (PLAN_FEATURES.pro.chatbot). El
+  // sidebar ya lo marca requiredPlan='pro', pero eso es solo cosmetico: el
+  // link navega igual, asi que el gate real vive aca.
+  const [plan, setPlan] = useState<string | null>(null)
+  const [planLoading, setPlanLoading] = useState(true)
+
+  useEffect(() => {
+    authFetch('/api/partners/dashboard')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setPlan(data?.tenant?.plan || 'starter'))
+      .catch(() => setPlan('starter'))
+      .finally(() => setPlanLoading(false))
+  }, [])
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -134,6 +149,25 @@ export default function ChatbotPage() {
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
+
+  if (!planLoading && plan !== 'pro') {
+    return (
+      <div className="mx-auto max-w-3xl">
+        <LockedFeature
+          title="Chatbot IA"
+          description="Asistente virtual con IA que responde consultas de tus visitantes por WhatsApp e Instagram, entrenado con tu catalogo."
+          requiredPlan="pro"
+          icon={MessageSquare}
+          features={[
+            'Respuestas automaticas 24/7 en tu storefront',
+            'Entrenado con los productos de tu catalogo',
+            'Historial de conversaciones en tiempo real',
+            'Metricas de sesiones y mensajes',
+          ]}
+        />
+      </div>
+    )
+  }
 
   if (loading) {
     return (

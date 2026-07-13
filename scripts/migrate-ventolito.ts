@@ -264,7 +264,7 @@ async function main() {
   console.log(`  Email:       ventolito@novamente.ar`)
   console.log(`  Password:    Ventolito2026!`)
   console.log(`  Plan:        pro`)
-  console.log(`  Storefront:  /merch/ventolito-wind-surf`)
+  console.log(`  Storefront:  /p/ventolito-wind-surf`)
   console.log(`  Workspace:   /workspace (login con ventolito@novamente.ar)`)
   console.log('═'.repeat(60))
   console.log('\n⚠️  IMPORTANTE: El storefront ahora resuelve DB primero.')

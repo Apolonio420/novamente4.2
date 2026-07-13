@@ -1,46 +1,77 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
+import { GoogleGenAI } from "@google/genai"
 import { uploadFile } from "@/lib/cloudflare-r2"
 import { toPublicR2Url } from "@/lib/r2"
-import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
 import { optimizeDesignPrompt } from "@/lib/designer/prompt-optimizer"
+import { saveGeneratedImage } from "@/lib/db"
 import type { GarmentColorway, PrintArea } from "@/lib/designer/types"
+import { corsHeaders, preflightResponse } from "@/lib/security/cors"
+import { guardPublicImageGen } from "@/lib/security/public-image-guard"
+import { meterPublicImageGen } from "@/lib/security/meter-usage"
 
 export const runtime = "nodejs"
-
-const limiter = rateLimit({ limit: 12, windowSeconds: 60, prefix: 'gen-img' })
 
 // ==== Config ====
 const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"
 const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-1.5-pro"
 const DEBUG = (process.env.DEBUG_GEMINI || "").toLowerCase() === "true"
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+// Valores soportados por ImageConfig.aspectRatio en @google/genai (ver
+// node_modules/@google/genai/dist/node/node.d.ts — GenerateContentConfig.imageConfig).
+// La API vieja (@google/generative-ai, deprecated) no tiene este campo: por
+// eso el gen de imagen usa el SDK nuevo aunque el resto del route siga con
+// el viejo (rewrite de instrucciones, sin impacto de aspect ratio).
+const SUPPORTED_ASPECT_RATIOS: Array<{ ratio: string; value: number }> = [
+  { ratio: "1:1", value: 1 / 1 },
+  { ratio: "2:3", value: 2 / 3 },
+  { ratio: "3:2", value: 3 / 2 },
+  { ratio: "3:4", value: 3 / 4 },
+  { ratio: "4:3", value: 4 / 3 },
+  { ratio: "9:16", value: 9 / 16 },
+  { ratio: "16:9", value: 16 / 9 },
+  { ratio: "21:9", value: 21 / 9 },
+]
+
+function resolveAspectRatio(size?: { width?: number; height?: number }): string {
+  if (!size?.width || !size?.height) return "1:1"
+  const target = size.width / size.height
+  let best = SUPPORTED_ASPECT_RATIOS[0]!
+  let bestDiff = Infinity
+  for (const opt of SUPPORTED_ASPECT_RATIOS) {
+    const diff = Math.abs(opt.value - target)
+    if (diff < bestDiff) {
+      bestDiff = diff
+      best = opt
+    }
+  }
+  return best.ratio
 }
 
-type OptimizerOptions = { styleId?: string; colorway?: GarmentColorway; printArea?: PrintArea }
+type OptimizerOptions = { styleId?: string; colorway?: GarmentColorway; printArea?: PrintArea; sessionId?: string }
 type Body =
   | ({ prompt: string; n?: number; size?: { width: number; height: number } } & OptimizerOptions)
   | ({ instruction: string; lastPrompt: string; n?: number; size?: { width: number; height: number } } & OptimizerOptions)
 
-function ok(data: unknown, status = 200) {
-  return new NextResponse(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS },
-  })
-}
-
-export async function OPTIONS() {
-  return ok({ ok: true })
+export async function OPTIONS(req: NextRequest) {
+  return preflightResponse(req)
 }
 
 export async function POST(req: NextRequest) {
-  // Rate limit: 10 requests/min per IP
-  const { success, resetAt } = limiter.check(req)
-  if (!success) return rateLimitResponse(resetAt)
+  // ok() shadowea el helper del modulo — cierra sobre `req` para poder
+  // devolver los headers CORS con allowlist (ver lib/security/cors.ts).
+  function ok(data: unknown, status = 200) {
+    return new NextResponse(JSON.stringify(data), {
+      status,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+    })
+  }
+
+  // Rate-limit por IP + tope diario global (DB-backed). Reemplaza el
+  // rate-limiter viejo en memoria (inutil en serverless — ver auditoria
+  // 2026-07-11).
+  const guard = await guardPublicImageGen(req, "generate-image")
+  if (!guard.allowed) return ok({ error: guard.message }, guard.status)
 
   const t0 = Date.now()
   try {
@@ -49,6 +80,9 @@ export async function POST(req: NextRequest) {
 
     const body = (await req.json()) as Body
     const genAI = new GoogleGenerativeAI(apiKey)
+    // SDK nuevo, SOLO para la llamada de generación de imagen — es el único
+    // que soporta imageConfig.aspectRatio a nivel API (ver nota arriba).
+    const genAIImage = new GoogleGenAI({ apiKey })
 
     // 1) Resolver prompt final (inicial o iteración)
     let basePrompt = ""
@@ -94,10 +128,18 @@ export async function POST(req: NextRequest) {
       console.log("GEN-IMG aspect ratio:", { width: size.width, height: size.height, hint: aspectRatioHint })
     }
 
+    // aspectRatio a nivel API (imageConfig) — refuerza el hint textual de
+    // arriba con un parámetro real que el modelo no puede "elegir mal".
+    // Antes solo iba la frase en el prompt y el modelo derivaba a 16:9 por
+    // su cuenta, lo que invitaba a duplicar el diseño en dos paneles o a
+    // cortar la composición contra el borde del canvas.
+    const resolvedAspectRatio = resolveAspectRatio(size)
+    console.log("GEN-IMG resolved aspectRatio (API param):", resolvedAspectRatio)
+
     // 3) Optimizar prompt — opcional via flag `raw`
     //    - raw=true: usa el prompt del user TAL CUAL + guard minimo anti-prenda
     //    - raw=false (default): pasa por optimizer que fuerza estilo vectorial textile
-    const { styleId, colorway, printArea } = body as OptimizerOptions
+    const { styleId, colorway, printArea, sessionId } = body as OptimizerOptions
     const rawMode = (body as { raw?: boolean }).raw === true
     const garmentColor = (body as { garmentColor?: string }).garmentColor
 
@@ -125,26 +167,30 @@ export async function POST(req: NextRequest) {
     })
 
     const n = Math.max(1, Math.min(4, (body as any).n ?? 1))
-    const model = genAI.getGenerativeModel({ model: IMAGE_MODEL })
 
     // 3) Función para generar e intentar extraer imágenes
+    //    Usa @google/genai (genAIImage) — es el único SDK del repo que tipa
+    //    imageConfig.aspectRatio en generateContent. La forma de la respuesta
+    //    difiere del SDK viejo: candidates va directo en el resultado (no
+    //    bajo `.response`) y `.text` es un getter, no un método.
     async function runOnce(prompt: string) {
-      const res = await model.generateContent([prompt])
+      const res = await genAIImage.models.generateContent({
+        model: IMAGE_MODEL,
+        contents: [{ text: prompt }],
+        config: { imageConfig: { aspectRatio: resolvedAspectRatio } },
+      })
       const imagesBase64: string[] = []
-      for (const cand of res.response?.candidates ?? []) {
+      for (const cand of res.candidates ?? []) {
         for (const part of cand?.content?.parts ?? []) {
-          // @ts-ignore
           const inline = part?.inlineData
-          // @ts-ignore
           if (inline?.mimeType?.startsWith("image/") && typeof inline?.data === "string") {
-            // @ts-ignore
             imagesBase64.push(inline.data)
             if (imagesBase64.length >= n) break
           }
         }
         if (imagesBase64.length >= n) break
       }
-      const fallbackText = res.response?.text?.()
+      const fallbackText = res.text
       return { imagesBase64, fallbackText }
     }
 
@@ -255,6 +301,34 @@ export async function POST(req: NextRequest) {
     }))
     const t1 = Date.now()
     console.log("GEN-IMG done", { totalMs: t1 - t0, count: out.length })
+
+    // Telemetria — desde la migracion /design -> /crear (19/06) este endpoint
+    // no escribia nada en DB, dejando el /crear publico ciego. IMPORTANTE:
+    // awaited — en serverless una promesa sin await pierde la carrera contra
+    // el freeze post-response y el INSERT nunca completa (mismo bug que mato
+    // el tracking de storefront). Los errores se atrapan por imagen: la
+    // telemetria jamas rompe la respuesta al usuario.
+    if (sessionId) {
+      await Promise.all(
+        out
+          .filter((img) => !(img as { isFallback?: boolean }).isFallback) // data: URI, no hay R2 key que loguear
+          .map((img) =>
+            saveGeneratedImage(img.url, finalPrompt, undefined, sessionId).catch((err) => {
+              console.error("GEN-IMG telemetry insert failed:", err?.message || err)
+            })
+          )
+      )
+    }
+
+    // Metering de costo real — awaited por el mismo motivo que la telemetria
+    // de arriba (una promesa sin await pierde la carrera contra el freeze
+    // post-response en serverless). meterPublicImageGen nunca tira: falla
+    // en silencio y jamas rompe esta respuesta.
+    await meterPublicImageGen({
+      endpoint: "public/generate-image",
+      model: IMAGE_MODEL,
+      units: out.filter((img) => !(img as { isFallback?: boolean }).isFallback).length || out.length,
+    })
 
     return ok({
       success: true,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateTenantResult } from '@/lib/partners/tenant'
+import { PLAN_FEATURES } from '@/lib/partners/plans'
 
 const SETTINGS_FIELDS = [
   'name', 'slug', 'email', 'phone', 'website', 'instagram',
@@ -108,6 +109,15 @@ export async function PUT(request: NextRequest) {
       } else {
         return NextResponse.json({ error: 'Alias inválido: solo letras, números, punto y guion (máx 50 caracteres)' }, { status: 400 })
       }
+    }
+
+    // custom_faqs is Pro only — el comentario decia "Pro only" pero nunca se
+    // aplicaba, cualquier plan podia escribir FAQs personalizadas via la API.
+    if ('custom_faqs' in updates && !PLAN_FEATURES[tenant.plan].customFaqs) {
+      return NextResponse.json(
+        { error: 'Las preguntas frecuentes personalizadas son una funcion Pro. Actualiza tu plan para usarlas.' },
+        { status: 403 },
+      )
     }
 
     // Validate custom_faqs (max 10 entries, Pro only)

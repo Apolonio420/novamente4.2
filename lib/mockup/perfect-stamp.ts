@@ -7,8 +7,11 @@
  *   2. Cuadro rojo DINÁMICO: se dibuja un rect rojo sobre la prenda base en las coords
  *      del área de impresión (letterbox uniforme 400×500 → dims reales). "Infinito":
  *      anda para cualquier prenda/color/lado/tamaño sin PNGs pre-hechos.
- *   3. gemini-3-pro-image con el prompt BEST-OF (de-labeleado, fusión de las mejores
- *      épocas: límite rígido + DTG no-sticker + congelar prenda + lista negra + legibilidad oscuro).
+ *   3. Estampado con el prompt BEST-OF (de-labeleado, fusión de las mejores épocas:
+ *      límite rígido + DTG no-sticker + congelar prenda + lista negra + legibilidad oscuro).
+ *      Modelo = STAMP_MODEL (default gemini-2.5-flash-image desde 2026-07-11, A/B ciego
+ *      20 casos: flash 13 vs pro 4, 3 empates, para colocación de estampa). Rollback por
+ *      env — ver docs/ROLLBACK-gemini-models.md en platform-master.
  *
  * NOTA: las imágenes (diseño + prenda base) las trae el caller (tiene el contexto de
  * request/origin). Acá sólo se procesan buffers → devuelve el PNG del mockup.
@@ -19,7 +22,7 @@ import { GoogleGenAI } from '@google/genai'
 export type StampSize = 'R1' | 'R2' | 'R3'
 export interface ImprintBox { x: number; y: number; width: number; height: number; baseW?: number; baseH?: number }
 
-const STAMP_MODEL = process.env.GEMINI_STAMP_MODEL ?? 'gemini-3-pro-image'
+const STAMP_MODEL = process.env.GEMINI_STAMP_MODEL ?? process.env.GEMINI_IMAGE_MODEL ?? 'gemini-2.5-flash-image'
 const REMOVE_BG_MODEL = process.env.GEMINI_REMOVE_BG_MODEL ?? 'gemini-2.5-flash-image'
 
 const STAMP_PROMPT = `You are a professional industrial garment printer and product retoucher creating ONE photorealistic commercial product photo.
@@ -147,7 +150,7 @@ export async function generatePerfectStamp(opts: PerfectStampOptions): Promise<B
   if (removeBg) designBuffer = await removeDesignBackground(designBuffer)
   // 2. cuadro rojo dinámico
   const redSquare = await buildDynamicRedSquare(baseGarmentBuffer, imprint, stampSize)
-  // 3. estampar con gemini-3-pro-image
+  // 3. estampar con STAMP_MODEL (default gemini-2.5-flash-image, ver header)
   const genAI = getClient()
   const result = await genAI.models.generateContent({
     model: STAMP_MODEL,

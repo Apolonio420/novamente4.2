@@ -3,10 +3,10 @@
 import { useEffect, useRef } from "react"
 import * as fpixel from "@/lib/fpixel"
 
-// Dispara ViewContent al cargar la landing de marca (/merch/[brand]).
-// Antes solo se disparaba en PDP individuales · Meta perdía la señal de
-// "vio el storefront" para retargeting y optimización de campañas con landing
-// en la marca (ej: MUNDIAL_01_Ventas_Prospecting, Google Search B2C Mundial).
+// Dispara ViewContent al cargar la landing de marca (/p/[slug]).
+// Portado desde el storefront legacy /merch/[brand] (retirado): Meta necesita
+// la señal de "vio el storefront" para retargeting y optimización de campañas
+// con landing en la marca. Convive con StorefrontTracker (analytics interno).
 export function BrandLandingPixel({
   brandId,
   brandName,

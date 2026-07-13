@@ -31,6 +31,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import { supabase } from '@/lib/supabase'
+import { LockedFeature } from '@/components/partners/locked-feature'
 
 // --- Types ---
 
@@ -637,7 +638,16 @@ export default function SettingsPage() {
         </Card>
 
         {/* FAQs (Pro only) */}
-        {settings.plan === 'pro' && (
+        {settings.plan !== 'pro' ? (
+          <div className="mt-4">
+            <LockedFeature
+              title="Preguntas Frecuentes personalizadas"
+              description="Personalizá las preguntas frecuentes que aparecen en tu storefront en vez de usar las genéricas."
+              requiredPlan="pro"
+              icon={Globe}
+            />
+          </div>
+        ) : (
           <Card className="bg-zinc-900/60 border-zinc-800 mt-4">
             <CardHeader>
               <CardTitle className="text-base font-medium text-zinc-100 flex items-center gap-2">

@@ -7,7 +7,7 @@
  * 3. tenant_users link (owner role)
  * 4. AI-generated banner (cinematic, brand-essence)
  * 5. 3 AI-generated products with front/back mockups + AI texts
- * 6. Published storefront ready to view at /merch/{slug}
+ * 6. Published storefront ready to view at /p/{slug}
  *
  * Usage:
  *   npx tsx scripts/create-partner.ts
@@ -20,6 +20,7 @@
 import { readFileSync, existsSync } from 'fs'
 import { resolve, join } from 'path'
 import { createClient } from '@supabase/supabase-js'
+import { PLAN_FEATURES } from '../lib/partners/plans'
 
 // Load .env.local manually (no dotenv dependency)
 const envPath = resolve(__dirname, '../.env.local')
@@ -375,7 +376,8 @@ async function createPartner(input: PartnerInput) {
       completeness_score: 80,
       commerce_mode: input.commerceMode || 'whatsapp',
       visual_style: input.visualStyle || 'bold',
-      design_engine_mode: input.designEngineMode || (input.plan === 'pro' ? 'full_brand_fit' : input.plan === 'growth' ? 'presets' : 'disabled'),
+      // Piso = modo del plan (nunca 'disabled' de entrada — decision 06/07).
+      design_engine_mode: input.designEngineMode || PLAN_FEATURES[input.plan].designEngine,
       cta_text: input.ctaText || 'Contactar',
       cta_url: input.ctaUrl || (input.instagram ? `https://instagram.com/${input.instagram.replace('@', '')}` : null),
       seo_title: `${input.name} — Merch Oficial en Novamente`,
@@ -528,7 +530,7 @@ async function createPartner(input: PartnerInput) {
   console.log(`  User ID:     ${userId}`)
   console.log(`  Productos:   ${productCount}/3 generados (con lifestyle mockups)`)
   console.log(`  Banner:      ${bannerUrl ? '✓' : '✗'}`)
-  console.log(`  Storefront:  /merch/${slug}`)
+  console.log(`  Storefront:  /p/${slug}`)
   console.log(`  Partner Dir: /p/${slug}`)
   console.log(`  Workspace:   /workspace (login con ${input.email})`)
   console.log('═'.repeat(60) + '\n')

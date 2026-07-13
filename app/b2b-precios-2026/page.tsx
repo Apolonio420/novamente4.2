@@ -16,6 +16,19 @@ export const metadata: Metadata = {
     googleBot: { index: false, follow: false },
   },
   alternates: { canonical: undefined },
+  openGraph: {
+    title: "Tarifas B2B 2026 — Novamente",
+    description: "Tarifa unica por modelo, sin diferenciar por color, y mejores margenes a medida que crecen tus colecciones. Precios mayoristas por volumen para marcas y revendedores socios de Novamente.",
+    images: [{ url: "https://www.novamente.ar/novamente-logo.png", width: 1200, height: 630, alt: "Novamente — Tarifas B2B 2026" }],
+    siteName: "Novamente",
+    locale: "es_AR",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Tarifas B2B 2026 — Novamente",
+    description: "Tarifa unica por modelo y mejores margenes a medida que crecen tus colecciones. Precios mayoristas por volumen para marcas y revendedores socios.",
+    images: ["https://www.novamente.ar/novamente-logo.png"],
+  },
 }
 
 export default function B2BPricesPage() {

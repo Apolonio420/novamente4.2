@@ -3,8 +3,15 @@ import { GoogleGenAI } from "@google/genai"
 import { uploadFile } from "@/lib/cloudflare-r2"
 import { v4 as uuidv4 } from "uuid"
 import { z } from "zod"
+import { corsHeaders, preflightResponse } from "@/lib/security/cors"
+import { guardPublicImageGen } from "@/lib/security/public-image-guard"
+import { meterPublicImageGen } from "@/lib/security/meter-usage"
 
 export const runtime = "nodejs"
+
+export async function OPTIONS(req: NextRequest) {
+  return preflightResponse(req)
+}
 
 // Schema de validación con Zod
 const generateStampSchema = z.object({
@@ -21,8 +28,17 @@ const generateStampSchema = z.object({
 
 export async function POST(request: NextRequest) {
   const debugId = uuidv4()
+  const baseHeaders = { 'X-Debug-Id': debugId, ...corsHeaders(request) }
   try {
     console.log(`[${debugId}] 🎨 STAMP-GEN: Starting stamp generation...`)
+
+    // Rate-limit por IP + tope diario global (DB-backed). Este endpoint NO
+    // tenia NINGUN limite antes — generacion ilimitada a nuestro costo
+    // (auditoria 2026-07-11).
+    const guard = await guardPublicImageGen(request, "generate-stamp")
+    if (!guard.allowed) {
+      return NextResponse.json({ error: guard.message, debugId }, { status: guard.status, headers: baseHeaders })
+    }
 
     let body: any
     try {
@@ -34,7 +50,7 @@ export async function POST(request: NextRequest) {
         debugId
       }, {
         status: 400,
-        headers: { 'X-Debug-Id': debugId }
+        headers: baseHeaders
       })
     }
 
@@ -58,7 +74,7 @@ export async function POST(request: NextRequest) {
         debugId
       }, {
         status: 400,
-        headers: { 'X-Debug-Id': debugId }
+        headers: baseHeaders
       })
     }
 
@@ -296,10 +312,15 @@ Produce ONE realistic product photo of the garment with the design applied.
 
 STRICT BOUNDARY ENFORCEMENT. DO NOT CROSS THE RED LINES.`
 
+    // A/B ciego 20 casos reales (2026-07-11): gemini-2.5-flash-image 13 vs
+    // gemini-3-pro-image 4 (3 empates) para COLOCACIÓN DE ESTAMPA → default flash.
+    // Rollback en minutos vía env (ver docs/ROLLBACK-gemini-models.md en platform-master).
+    const stampModel = process.env.GEMINI_STAMP_MODEL ?? process.env.GEMINI_IMAGE_MODEL ?? "gemini-2.5-flash-image"
+
     let result
     try {
       result = await genAI.models.generateContent({
-        model: "gemini-3-pro-image",
+        model: stampModel,
         contents: [
           { text: stampPrompt },
           { inlineData: { data: designBase64, mimeType: "image/png" } },
@@ -376,6 +397,8 @@ STRICT BOUNDARY ENFORCEMENT. DO NOT CROSS THE RED LINES.`
 
     console.log(`[${debugId}] STAMP-GEN: Mockup generated OK →`, { mockupUrl: publicUrl.substring(0, 100) })
 
+    await meterPublicImageGen({ endpoint: "generate-stamp", model: stampModel })
+
     return NextResponse.json({
       success: true,
       publicUrl,
@@ -385,7 +408,7 @@ STRICT BOUNDARY ENFORCEMENT. DO NOT CROSS THE RED LINES.`
       debugId
     }, {
       status: 200,
-      headers: { 'X-Debug-Id': debugId }
+      headers: baseHeaders
     })
 
   } catch (error: any) {
@@ -409,7 +432,7 @@ STRICT BOUNDARY ENFORCEMENT. DO NOT CROSS THE RED LINES.`
       debugId: finalDebugId
     }, {
       status: 500,
-      headers: { 'X-Debug-Id': finalDebugId }
+      headers: { 'X-Debug-Id': finalDebugId, ...corsHeaders(request) }
     })
   }
 }

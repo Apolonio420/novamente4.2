@@ -4,32 +4,25 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { uploadFile } from "@/lib/cloudflare-r2"
-import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
 import { resolveAbsoluteUrl } from "@/lib/absolute-url"
 import { getCatalogProduct, getCatalogProductColor } from "@/lib/catalog/products"
+import { corsHeaders, preflightResponse } from "@/lib/security/cors"
+import { guardPublicImageGen } from "@/lib/security/public-image-guard"
+import { meterPublicImageGen } from "@/lib/security/meter-usage"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
 
-const limiter = rateLimit({ limit: 7, windowSeconds: 60, prefix: "mockup-lifestyle" })
+// Mockup lifestyle compone un diseño/estampa sobre foto de persona — NO es
+// generación desde cero, así que usa la cadena STAMP_MODEL (barata) igual que
+// su gemelo interno lib/partners/lifestyle-mockup.ts. GEMINI_IMAGE_MODEL queda
+// como fallback intermedio pero en Vercel está seteada a pro a propósito para
+// generate-image (diseño desde cero) — este endpoint no debería tocarla salvo
+// que no exista GEMINI_STAMP_MODEL.
+const IMAGE_MODEL = process.env.GEMINI_STAMP_MODEL || process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image"
 
-const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"
-
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-}
-
-function ok(data: unknown, status = 200) {
-  return new NextResponse(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS },
-  })
-}
-
-export async function OPTIONS() {
-  return ok({ ok: true })
+export async function OPTIONS(req: NextRequest) {
+  return preflightResponse(req)
 }
 
 // Descripción natural por tipo de prenda — Gemini la usa para entender qué dibujar.
@@ -86,8 +79,15 @@ const SCENARIOS = [
 ]
 
 export async function POST(req: NextRequest) {
-  const { success, resetAt } = limiter.check(req)
-  if (!success) return rateLimitResponse(resetAt)
+  function ok(data: unknown, status = 200) {
+    return new NextResponse(JSON.stringify(data), {
+      status,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
+    })
+  }
+
+  const guard = await guardPublicImageGen(req, "mockup-lifestyle")
+  if (!guard.allowed) return ok({ error: guard.message }, guard.status)
 
   try {
     const apiKey = process.env.GEMINI_API_KEY
@@ -178,6 +178,8 @@ export async function POST(req: NextRequest) {
     const outBuffer = Buffer.from(imageBase64, "base64")
     const key = `v1/mockup-lifestyle/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.png`
     const { url } = await uploadFile(outBuffer, key, "image/png")
+
+    await meterPublicImageGen({ endpoint: "public/design/mockup-lifestyle", model: IMAGE_MODEL })
 
     return ok({ success: true, publicUrl: url, mockupUrl: url, scenario: scenarioIdx })
   } catch (e: unknown) {

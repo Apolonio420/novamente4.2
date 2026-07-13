@@ -138,14 +138,11 @@ function getPlacementOptions(
 
 export default function DesignStudioPage() {
   // Studio mode: 'ai' = generate with AI, 'upload' = upload your own design
-  const [studioMode, setStudioMode] = useState<'ai' | 'upload'>(() => {
-    // If arriving with an uploaded design URL, default to upload tab
-    if (typeof window !== 'undefined') {
-      const sp = new URLSearchParams(window.location.search)
-      if (sp.get('uploadedDesignUrl')) return 'upload'
-    }
-    return 'ai'
-  })
+  // Nota: cuando se llega con ?uploadedDesignUrl=, el diseño se inyecta como
+  // mensaje del chat (ver efecto más abajo) y se muestra la tab 'ai' — no la
+  // de upload, que llevaba a un callejón sin salida (el diseño nunca entraba
+  // al chat y el botón "Aplicar a mockup" no tenía nada sobre qué actuar).
+  const [studioMode, setStudioMode] = useState<'ai' | 'upload'>('ai')
 
   // Config/access state
   const [loading, setLoading] = useState(true)
@@ -380,6 +377,69 @@ export default function DesignStudioPage() {
     },
     [prompt],
   )
+
+  // ---------------------------------------------------------------------------
+  // Inyectar diseño subido desde QuickDesignUpload (?uploadedDesignUrl=)
+  // ---------------------------------------------------------------------------
+  // El botón "Aplicar a mockup" del panel de subida navega acá con el diseño
+  // en la URL. Antes ese query param solo decidía qué tab abrir al montar y
+  // el diseño nunca entraba al chat (callejón sin salida). Lo inyectamos como
+  // mensaje tipo "design" — mismo formato que produce el upload dentro del
+  // chat (handleUploadDesign) — para que "Aplicar a prenda" aparezca sobre la
+  // imagen. Esperamos a que loadingSessions termine para no perder la
+  // inyección si la hidratación del historial remoto pisa el estado después,
+  // y usamos un ref para no inyectar 2 veces (StrictMode / re-renders).
+  // Solo aceptamos URLs https del storage propio (Supabase público del
+  // proyecto): es lo único que devuelve /api/partners/upload. Sin este check,
+  // un link armado con ?uploadedDesignUrl=<url-atacante> inyectaría una URL
+  // arbitraria que después /api/partners/design/mockup fetchea server-side.
+  const isTrustedDesignUrl = (raw: string): boolean => {
+    try {
+      const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || '').hostname
+      const parsed = new URL(raw)
+      return !!supabaseHost && parsed.protocol === 'https:' && parsed.hostname === supabaseHost
+    } catch {
+      return false
+    }
+  }
+
+  const uploadedDesignHandledRef = useRef(false)
+  useEffect(() => {
+    if (loadingSessions) return
+    if (uploadedDesignHandledRef.current) return
+    if (typeof window === 'undefined') return
+
+    const sp = new URLSearchParams(window.location.search)
+    const uploadedUrl = sp.get('uploadedDesignUrl')
+    if (!uploadedUrl) return
+
+    uploadedDesignHandledRef.current = true
+
+    if (!isTrustedDesignUrl(uploadedUrl)) {
+      // URL ajena al storage propio: se descarta y se limpia el param igual
+      const url = new URL(window.location.href)
+      url.searchParams.delete('uploadedDesignUrl')
+      window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+      return
+    }
+
+    ;(async () => {
+      const sessionId = await ensureRemoteSession()
+      const assistantMsg = createStudioMessage(
+        'assistant',
+        'Diseño subido. Click en la imagen → ícono remera para aplicarlo a una prenda Novamente.',
+        { type: 'design', imageUrl: uploadedUrl, isLoading: false },
+      )
+      updateMessages(msgs => [...msgs, assistantMsg])
+      if (sessionId) saveStudioMessage(sessionId, assistantMsg).catch(() => {})
+
+      // Limpiar el query param para no re-inyectar en refresh/navegación
+      const url = new URL(window.location.href)
+      url.searchParams.delete('uploadedDesignUrl')
+      window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingSessions])
 
   const handleGenerate = async () => {
     if (!prompt.trim() || generating) return
@@ -1239,7 +1299,7 @@ export default function DesignStudioPage() {
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Describí tu diseño... (ej: dragon japones en estilo acuarela)"
+              placeholder="Describí solo el dibujo, sin la prenda (ej: dragon japones en estilo acuarela)"
               rows={1}
               className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/50 min-h-[44px] max-h-[120px]"
               style={{ height: 'auto', overflow: 'hidden' }}

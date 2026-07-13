@@ -36,13 +36,20 @@ export async function GET(request: NextRequest) {
 
     const score = calculateCompletenessScore(tenant)
 
-    // Fire-and-forget: set first_login_at once
+    // Set first_login_at once. IMPORTANTE: awaited — en serverless (Vercel) el
+    // proceso puede congelarse apenas se devuelve la response, y una promesa
+    // "fire-and-forget" sin await pierde la carrera contra ese freeze: nunca
+    // llega a completar el UPDATE. Esto dejaba first_login_at en 0/148 en
+    // prod pese a que el codigo "aparentaba" setearlo en cada primer request.
     if (!tenant.first_login_at) {
-      ;(supabaseAdmin as any)
+      const { error: firstLoginError } = await (supabaseAdmin as any)
         .from('tenants')
         .update({ first_login_at: new Date().toISOString() })
         .eq('id', tenant.id)
         .is('first_login_at', null)
+      if (firstLoginError) {
+        console.error('[dashboard] failed to set first_login_at', { tenantId: tenant.id, error: firstLoginError })
+      }
     }
 
     return NextResponse.json({

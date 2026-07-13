@@ -90,7 +90,7 @@ export default function AdminPartnersPage() {
                 {/* Actions */}
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <Link
-                    href={`/merch/${p.id}`}
+                    href={`/p/${p.id}`}
                     target="_blank"
                     className="text-zinc-500 hover:text-white text-sm transition-colors"
                     title="Ver en el sitio"

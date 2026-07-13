@@ -685,7 +685,7 @@ export default function WorkspaceDashboard() {
             asChild
             className="bg-violet-600 hover:bg-violet-500 text-white border-0 shadow-lg shadow-violet-600/20 transition-all hover:shadow-violet-500/30"
           >
-            <Link href={`/merch/${data.tenant.slug}`} target="_blank">
+            <Link href={`/p/${data.tenant.slug}`} target="_blank">
               <ExternalLink className="w-4 h-4 mr-2" />
               Ver tienda
             </Link>
