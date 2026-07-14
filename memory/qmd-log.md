@@ -1,5 +1,17 @@
 # QMD Log - novamente4.2
 
+### [2026-07-14] Brief Empresas + landing pública B2B
+**Goal**: Auditar/pulir el PDF Novamente Empresas y convertirlo en una nueva página web pública, ubicando Empresas en la navegación después de Marcas y antes de FAQ. Sincronizar dos veces para no pisar trabajo ajeno.
+**Done**:
+- Revisado visualmente el PDF de 8 páginas y regenerado `chatbot-whastapp/public/brief-empresas/novamente-empresas-2026.pdf` con los precios validados por el guard del script.
+- `chatbot-whastapp/scripts/generate-brief-empresas-pdf.ts`: los links de tarifa B2B ahora derivan a `https://www.novamente.ar/empresas`; contraportada actualizada a esa URL. No se añadieron fotos a cada tarjeta del PDF: el catálogo visual quedó en web para conservar la pieza comercial breve y editorial.
+- Creado `app/empresas/page.tsx`: hero corporativo, 6 razones, 6 casos de uso, grilla con fotos de Boston/Berlin/Aura/Aldea/Buenos Aires/Bahamas/Bali/Bambino/Bahía, proceso de 4 pasos y CTA a WhatsApp.
+- Actualizados `components/Navbar.tsx`, `components/Footer.tsx`, `app/sitemap.ts`; agregado `e2e/empresas-page.spec.ts`. `playwright.config.ts` soporta `PLAYWRIGHT_BASE_URL`.
+**Decisions**: `/empresas` es pública y comercial; no enlaza a `/b2b-precios-2026` ni divulga precios Growth/Partner. La tarifa depende de volumen y se solicita por WhatsApp. El PDF sí conserva precios “desde” validados, pero su siguiente paso lleva al catálogo visual/cotización.
+**Verify**: Primera y segunda sincronización `fetch + pull --ff-only`: sin cambios remotos. `npm run validate:pricing` PASS (9 productos); `tsc --noEmit` PASS; `next build` PASS (225 rutas; `/empresas` estática); Playwright `e2e/empresas-page.spec.ts` 2/2 PASS; screenshot desktop inspeccionado; PDF re-renderizado e inspeccionado (8 páginas).
+**Blockers/Pending**: No commit/push/deploy solicitado. El generador del PDF es un script local ignorado en `chatbot-whastapp`; el PDF actualizado sí figura como cambio. Ese repo tenía WIP ajeno previo, preservado.
+**Next**: Juan revisa contenido/estética; si aprueba, commit/push intencionalmente. Luego preparar mensajes de LinkedIn para contactos de Compras/RR.HH./Marketing (sin automatizar ni enviar sin revisión).
+
 ### [2026-06-30e] Contador solo en join (sube al elegir Growth) + commit feature analytics ajena
 **Goal**: (1) Dejar el PromoSpotsCounter SOLO en /partners/join y que suba 1 lugar solo cuando eligen Growth (antes: timer en 4 superficies). (2) Revisar el WIP sin commitear de otra sesión y commitearlo si está settled.
 **Done**:

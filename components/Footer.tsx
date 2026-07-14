@@ -15,6 +15,7 @@ const SOLUTIONS = {
     { href: "/lanza-tu-marca", label: "Lanzá tu marca sin stock" },
     { href: "/uniformes-personalizados", label: "Uniformes personalizados" },
     { href: "/regalos-empresariales", label: "Regalos empresariales" },
+    { href: "/empresas", label: "Empresas y equipos" },
     { href: "/remeras-por-mayor", label: "Remeras por mayor" },
   ],
   "Eventos & regalos": [
