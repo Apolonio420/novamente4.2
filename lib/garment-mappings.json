@@ -636,5 +636,109 @@
     "margins": { "top": 41, "right": 27, "bottom": 7, "left": 27 },
     "coordinates": { "x": 94, "y": 213, "width": 212, "height": 243 },
     "timestamp": 1752400000001
+  },
+  {
+    "id": "1763000000000",
+    "name": "Remera Infantil Blanco Frontal",
+    "garmentPath": "/garments/remera-infantil-white-front.jpeg",
+    "margins": { "top": 34, "right": 29, "bottom": 22, "left": 29 },
+    "coordinates": { "x": 115, "y": 170, "width": 170, "height": 220 },
+    "timestamp": 1763000000000
+  },
+  {
+    "id": "1763000000001",
+    "name": "Remera Infantil Blanco Trasero",
+    "garmentPath": "/garments/remera-infantil-white-back.jpeg",
+    "margins": { "top": 30, "right": 28, "bottom": 16, "left": 28 },
+    "coordinates": { "x": 110, "y": 150, "width": 180, "height": 270 },
+    "timestamp": 1763000000001
+  },
+  {
+    "id": "1763000000002",
+    "name": "Remera Infantil Negro Frontal",
+    "garmentPath": "/garments/remera-infantil-black-front.jpeg",
+    "margins": { "top": 34, "right": 29, "bottom": 22, "left": 29 },
+    "coordinates": { "x": 115, "y": 170, "width": 170, "height": 220 },
+    "timestamp": 1763000000002
+  },
+  {
+    "id": "1763000000003",
+    "name": "Remera Infantil Negro Trasero",
+    "garmentPath": "/garments/remera-infantil-black-back.jpeg",
+    "margins": { "top": 30, "right": 28, "bottom": 16, "left": 28 },
+    "coordinates": { "x": 110, "y": 150, "width": 180, "height": 270 },
+    "timestamp": 1763000000003
+  },
+  {
+    "id": "1763000000004",
+    "name": "Remera Infantil Gris Frontal",
+    "garmentPath": "/garments/remera-infantil-gray-front.jpeg",
+    "margins": { "top": 34, "right": 29, "bottom": 22, "left": 29 },
+    "coordinates": { "x": 115, "y": 170, "width": 170, "height": 220 },
+    "timestamp": 1763000000004
+  },
+  {
+    "id": "1763000000005",
+    "name": "Remera Infantil Gris Trasero",
+    "garmentPath": "/garments/remera-infantil-gray-back.jpeg",
+    "margins": { "top": 30, "right": 28, "bottom": 16, "left": 28 },
+    "coordinates": { "x": 110, "y": 150, "width": 180, "height": 270 },
+    "timestamp": 1763000000005
+  },
+  {
+    "id": "1763000000006",
+    "name": "Remera Infantil Amarillo Frontal",
+    "garmentPath": "/garments/remera-infantil-yellow-front.jpeg",
+    "margins": { "top": 34, "right": 29, "bottom": 22, "left": 29 },
+    "coordinates": { "x": 115, "y": 170, "width": 170, "height": 220 },
+    "timestamp": 1763000000006
+  },
+  {
+    "id": "1763000000007",
+    "name": "Remera Infantil Amarillo Trasero",
+    "garmentPath": "/garments/remera-infantil-yellow-back.jpeg",
+    "margins": { "top": 30, "right": 28, "bottom": 16, "left": 28 },
+    "coordinates": { "x": 110, "y": 150, "width": 180, "height": 270 },
+    "timestamp": 1763000000007
+  },
+  {
+    "id": "1763000000008",
+    "name": "Remera Infantil Celeste Frontal",
+    "garmentPath": "/garments/remera-infantil-celeste-front.jpeg",
+    "margins": { "top": 34, "right": 29, "bottom": 22, "left": 29 },
+    "coordinates": { "x": 115, "y": 170, "width": 170, "height": 220 },
+    "timestamp": 1763000000008
+  },
+  {
+    "id": "1763000000009",
+    "name": "Remera Infantil Celeste Trasero",
+    "garmentPath": "/garments/remera-infantil-celeste-back.jpeg",
+    "margins": { "top": 30, "right": 28, "bottom": 16, "left": 28 },
+    "coordinates": { "x": 110, "y": 150, "width": 180, "height": 270 },
+    "timestamp": 1763000000009
+  },
+  {
+    "id": "1763000000010",
+    "name": "Remera Infantil Rosa Frontal",
+    "garmentPath": "/garments/remera-infantil-rosa-front.jpeg",
+    "margins": { "top": 34, "right": 29, "bottom": 22, "left": 29 },
+    "coordinates": { "x": 115, "y": 170, "width": 170, "height": 220 },
+    "timestamp": 1763000000010
+  },
+  {
+    "id": "1763000000011",
+    "name": "Remera Infantil Rosa Trasero",
+    "garmentPath": "/garments/remera-infantil-rosa-back.jpeg",
+    "margins": { "top": 30, "right": 28, "bottom": 16, "left": 28 },
+    "coordinates": { "x": 110, "y": 150, "width": 180, "height": 270 },
+    "timestamp": 1763000000011
+  },
+  {
+    "id": "1763000000012",
+    "name": "T-shirt Stone Wash Oversize Trasero",
+    "garmentPath": "/garments/tshirt-stone-wash-oversize-back.jpeg",
+    "margins": { "top": 21, "right": 27, "bottom": 17, "left": 29 },
+    "coordinates": { "x": 115, "y": 103, "width": 177, "height": 313 },
+    "timestamp": 1763000000012
   }
 ]
