@@ -243,15 +243,18 @@ function HeroSection({ tenant }: { tenant: Tenant }) {
 
       {/* Content */}
       <div className="relative z-10 flex min-h-[60vh] flex-col items-center justify-center gap-6 px-6 py-24 text-center md:min-h-[70vh]">
-        {tenant.logo_url && (
-          <Image
-            src={tenant.logo_url}
-            alt={`${tenant.name} logo`}
-            width={120}
-            height={120}
-            className="rounded-2xl border border-white/10 bg-black/30 object-contain p-2 backdrop-blur-sm"
-          />
-        )}
+        {/* Hide the big hero logo when the partner opts out
+            (metadata.hero_hide_logo = true). Navbar/header logo is untouched. */}
+        {tenant.logo_url &&
+          (tenant.metadata as { hero_hide_logo?: boolean } | null)?.hero_hide_logo !== true && (
+            <Image
+              src={tenant.logo_url}
+              alt={`${tenant.name} logo`}
+              width={120}
+              height={120}
+              className="rounded-2xl border border-white/10 bg-black/30 object-contain p-2 backdrop-blur-sm"
+            />
+          )}
 
         {/* Hide the big brand-name heading when the partner opts out
             (metadata.hero_hide_name = true). Keeps the logo + tagline. */}
@@ -287,6 +290,25 @@ function HeroSection({ tenant }: { tenant: Tenant }) {
             </a>
           )}
         </div>
+
+        {/* Optional hero CTA that anchors down to the products grid
+            (metadata.hero_cta_label). Opt-in per-tenant. */}
+        {(() => {
+          const heroCtaLabel = (tenant.metadata as { hero_cta_label?: string } | null)
+            ?.hero_cta_label
+          return (
+            heroCtaLabel && (
+              <Button
+                asChild
+                size="lg"
+                className="mt-2 text-white"
+                style={{ backgroundColor: tenant.primary_color }}
+              >
+                <a href="#productos">{heroCtaLabel}</a>
+              </Button>
+            )
+          )
+        })()}
       </div>
     </section>
   )
@@ -327,10 +349,22 @@ function ProductsGrid({
   tenant: Tenant
   products: PartnerProduct[]
 }) {
+  // Custom heading/subheading per-tenant (metadata.products_heading /
+  // metadata.products_subheading). Falls back to the hardcoded "Productos".
+  const { products_heading: productsHeading, products_subheading: productsSubheading } =
+    (tenant.metadata as
+      | { products_heading?: string; products_subheading?: string }
+      | null) || {}
+
   return (
     <section className="mx-auto max-w-7xl px-6 py-20">
+      {productsSubheading && (
+        <p className="mb-2 text-center text-sm uppercase tracking-wide text-zinc-500">
+          {productsSubheading}
+        </p>
+      )}
       <h2 className="mb-10 text-center text-2xl font-semibold text-white md:text-3xl">
-        Productos
+        {productsHeading || 'Productos'}
       </h2>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
