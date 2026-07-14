@@ -111,13 +111,26 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // custom_faqs is Pro only — el comentario decia "Pro only" pero nunca se
-    // aplicaba, cualquier plan podia escribir FAQs personalizadas via la API.
+    // custom_faqs es Pro-only, pero el panel manda el campo aunque el partner
+    // no lo haya tocado (y rechazar el request COMPLETO por eso dejaba a todo
+    // plan no-Pro sin poder guardar NADA en Configuración). Solo se rechaza un
+    // alta/edición real: si viene igual a lo guardado se ignora el campo, y
+    // vaciar FAQs heredadas siempre está permitido.
     if ('custom_faqs' in updates && !PLAN_FEATURES[tenant.plan].customFaqs) {
-      return NextResponse.json(
-        { error: 'Las preguntas frecuentes personalizadas son una funcion Pro. Actualiza tu plan para usarlas.' },
-        { status: 403 },
-      )
+      const stored = (tenant as any).custom_faqs ?? null
+      const incoming = Array.isArray(updates.custom_faqs) && updates.custom_faqs.length > 0
+        ? updates.custom_faqs
+        : null
+      if (JSON.stringify(incoming) === JSON.stringify(stored)) {
+        delete updates.custom_faqs
+      } else if (incoming === null) {
+        updates.custom_faqs = null
+      } else {
+        return NextResponse.json(
+          { error: 'Las preguntas frecuentes personalizadas son una funcion Pro. Actualiza tu plan para usarlas.' },
+          { status: 403 },
+        )
+      }
     }
 
     // Validate custom_faqs (max 10 entries, Pro only)

@@ -232,7 +232,11 @@ export default function SettingsPage() {
           storefront_published: settings.storefront_published,
           seo_title: settings.seo_title,
           seo_description: settings.seo_description,
-          custom_faqs: settings.custom_faqs,
+          // custom_faqs es Pro-only y el server rechaza el save COMPLETO si un
+          // plan sin la feature lo manda: incluirlo solo si realmente cambió.
+          ...(JSON.stringify(settings.custom_faqs ?? null) !== JSON.stringify(initialRef.current?.custom_faqs ?? null)
+            ? { custom_faqs: settings.custom_faqs }
+            : {}),
           bank_cbu: cbu || null,
           bank_alias: settings.bank_alias?.trim() || null,
         }),
