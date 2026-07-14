@@ -57,26 +57,29 @@ export default function B2BCatalog({
             : 0
           return (
             <div className="mb-8 rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-purple-600/10 to-primary/5 p-5 md:p-6">
-              <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+              <div className="flex flex-col md:flex-row md:items-center gap-5 md:gap-8">
+                {/* Todo el texto en una sola columna fluida: el titular largo y la
+                    bajada se envuelven naturalmente en vez de estrangular al vecino. */}
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                     <Sparkles className="w-5 h-5 text-primary" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs uppercase tracking-widest text-primary font-semibold">Plan Studio Growth</p>
-                    <p className="text-lg font-bold">
-                      Hasta {avgSavingsPct}% menos por prenda — USD$50/mes (50% OFF 1er año, primeros 100)
+                    <p className="text-lg font-bold leading-snug">
+                      Hasta {avgSavingsPct}% menos por prenda — USD$50/mes{" "}
+                      <span className="whitespace-nowrap">(50% OFF 1er año, primeros 100)</span>
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1.5 max-w-2xl">
+                      Suscribite a{" "}
+                      <Link href="/studio/planes" className="text-primary font-medium underline-offset-4 hover:underline">
+                        Novamente Studio Growth
+                      </Link>{" "}
+                      y accedé a precios partner aún más competitivos, sin tope de unidades. Tu margen vendiendo a retail se multiplica.
                     </p>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground flex-1">
-                  Suscribite a{" "}
-                  <Link href="/studio/planes" className="text-primary font-medium underline-offset-4 hover:underline">
-                    Novamente Studio Growth
-                  </Link>{" "}
-                  y accedé a precios partner aún más competitivos, sin tope de unidades. Tu margen vendiendo a retail se multiplica.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row gap-2 shrink-0 md:self-center">
                   <Button
                     variant={showGrowthPrices ? "default" : "outline"}
                     className="rounded-lg"
