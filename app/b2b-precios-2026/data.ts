@@ -370,7 +370,15 @@ export const MODELS: B2BModel[] = [
       {
         name: "Crudo",
         swatch: "#e8dfc9",
-        images: ["/products/totebag-crudo/front.jpg", "/products/totebag-crudo/back.jpg"],
+        // design*.jpg: base real + compositor determinístico (composite.ts + imprint
+        // box de garment-mappings.json) — arte propio del eval interno, no de partners.
+        images: [
+          "/products/totebag-crudo/front.jpg",
+          "/products/totebag-crudo/design.jpg",
+          "/products/totebag-crudo/design2.jpg",
+          "/products/totebag-crudo/design3.jpg",
+          "/products/totebag-crudo/back.jpg",
+        ],
       },
     ],
   },

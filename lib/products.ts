@@ -497,9 +497,14 @@ export const PRODUCTS: Product[] = [
         description: "Totebag de algodón crudo resistente, asas largas para llevar al hombro. Estampado DTG de alta definición. Área de estampa de hasta 35×40 cm.",
         images: {
             main: "/products/totebag-crudo/front.jpg",
-            // design.jpg: base real + compositor determinístico (lib/partners/studio/composite.ts
+            // design*.jpg: base real + compositor determinístico (lib/partners/studio/composite.ts
             // con el imprint box de garment-mappings.json) — arte propio del eval interno, no de un partner.
-            lifestyle: ["/products/totebag-crudo/design.jpg", "/products/totebag-crudo/back.jpg"],
+            lifestyle: [
+                "/products/totebag-crudo/design.jpg",
+                "/products/totebag-crudo/design2.jpg",
+                "/products/totebag-crudo/design3.jpg",
+                "/products/totebag-crudo/back.jpg",
+            ],
             measurements: ""
         },
         category: "Accesorios",
