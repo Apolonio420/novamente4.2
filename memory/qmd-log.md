@@ -9,8 +9,8 @@
 - Actualizados `components/Navbar.tsx`, `components/Footer.tsx`, `app/sitemap.ts`; agregado `e2e/empresas-page.spec.ts`. `playwright.config.ts` soporta `PLAYWRIGHT_BASE_URL`.
 **Decisions**: `/empresas` es pública y comercial; no enlaza a `/b2b-precios-2026` ni divulga precios Growth/Partner. La tarifa depende de volumen y se solicita por WhatsApp. El PDF sí conserva precios “desde” validados, pero su siguiente paso lleva al catálogo visual/cotización.
 **Verify**: Primera y segunda sincronización `fetch + pull --ff-only`: sin cambios remotos. `npm run validate:pricing` PASS (9 productos); `tsc --noEmit` PASS; `next build` PASS (225 rutas; `/empresas` estática); Playwright `e2e/empresas-page.spec.ts` 2/2 PASS; screenshot desktop inspeccionado; PDF re-renderizado e inspeccionado (8 páginas).
-**Blockers/Pending**: No commit/push/deploy solicitado. El generador del PDF es un script local ignorado en `chatbot-whastapp`; el PDF actualizado sí figura como cambio. Ese repo tenía WIP ajeno previo, preservado.
-**Next**: Juan revisa contenido/estética; si aprueba, commit/push intencionalmente. Luego preparar mensajes de LinkedIn para contactos de Compras/RR.HH./Marketing (sin automatizar ni enviar sin revisión).
+**Blockers/Pending**: Publicado tras doble sync: `novamente4.2/main` `73030f8` y `chatbot-whastapp/master` `007ffb4`. El generador del PDF es un script local ignorado en `chatbot-whastapp`; el PDF actualizado sí se publicó. Ese repo tenía WIP ajeno previo, preservado.
+**Next**: Verificar el auto-deploy de la landing en producción. Luego preparar mensajes de LinkedIn para contactos de Compras/RR.HH./Marketing (sin automatizar ni enviar sin revisión).
 
 ### [2026-06-30e] Contador solo en join (sube al elegir Growth) + commit feature analytics ajena
 **Goal**: (1) Dejar el PromoSpotsCounter SOLO en /partners/join y que suba 1 lugar solo cuando eligen Growth (antes: timer en 4 superficies). (2) Revisar el WIP sin commitear de otra sesión y commitearlo si está settled.

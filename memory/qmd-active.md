@@ -3,7 +3,7 @@
 **Project**: novamente4.2 (partner storefront platform)
 **Branch**: main
 **Last action**: Brief Empresas pulido y nueva landing pública `/empresas` terminados (2026-07-14). Se hicieron dos sincronizaciones seguras (`git fetch --prune` + `git pull --ff-only`), ambas sin cambios remotos.
-**State**: Sin commit ni push (pendiente revisión de Juan). Build Next PASS (225 rutas), `tsc --noEmit` PASS, Playwright Empresas 2/2 PASS y screenshot verificado. Hay WIP previo/no relacionado en `chatbot-whastapp`; no se tocó. El árbol de `novamente4.2` contiene sólo cambios de esta tarea más esta memoria.
+**State**: Publicado en GitHub: `novamente4.2/main` commit `73030f8` y `chatbot-whastapp/master` commit `007ffb4`. Build Next PASS (225 rutas), `tsc --noEmit` PASS, Playwright Empresas 2/2 PASS y screenshot verificado. Hay WIP previo/no relacionado en `chatbot-whastapp`; no se tocó.
 **Cobro real**: mensual = PreApproval $25 + cron bump a $50 a los 12 meses (preexistente). Anual = Preference $255 primer pago (gate: primer pago + cupo 100), renovación full $510 (nuevo, subscribe/route.ts).
 
 ## Completado esta sesión (promo planes 2026-06-30)
