@@ -740,5 +740,13 @@
     "margins": { "top": 21, "right": 27, "bottom": 17, "left": 29 },
     "coordinates": { "x": 115, "y": 103, "width": 177, "height": 313 },
     "timestamp": 1763000000012
+  },
+  {
+    "id": "1763000000013",
+    "name": "T-shirt Stone Wash Oversize Frontal",
+    "garmentPath": "/garments/tshirt-stone-wash-oversize-front.jpeg",
+    "margins": { "top": 23, "right": 31, "bottom": 16, "left": 28 },
+    "coordinates": { "x": 112, "y": 115, "width": 164, "height": 305 },
+    "timestamp": 1763000000013
   }
 ]

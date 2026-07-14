@@ -227,13 +227,6 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     shortDescription: 'Musculosa rib en morley premium. Calce ajustado, ideal para verano y gym.',
     colors: [
       {
-        key: 'black',
-        name: 'Negra',
-        hex: '#1a1a1a',
-        thumbnail: '/garments/musculosa-bali-black-front.png',
-        hero: '/products/musculosa-bali-negra/Musculosa_Rib_Negra.png',
-      },
-      {
         key: 'white',
         name: 'Blanca',
         hex: '#f5f5f5',

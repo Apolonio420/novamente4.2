@@ -26,14 +26,10 @@ import { getGarmentMapping } from "@/lib/garment-mappings"
  *    garment-mappings.json — calibrala (ver el patrón en ese archivo) en vez
  *    de agregar la excepción acá.
  */
-const KNOWN_GAPS: Array<{ product: string; color: string; side: "front" | "back" }> = [
-  // Aura Oversize Stone Wash: solo existe /garments/tshirt-stone-wash-oversize-back.jpeg
-  // (ya calibrado). No hay foto stone-wash-oversize-FRONT en public/garments/.
-  { product: "aura-oversize-tshirt", color: "stone-wash", side: "front" },
-  // Musculosa Bali Negra: existe front (musculosa-bali-black-front.png) pero no
-  // hay foto de espalda (musculosa-bali-black-back.png) en public/garments/.
-  { product: "musculosa-bali", color: "black", side: "back" },
-]
+// Ya no quedan gaps conocidos. Si en el futuro se agrega un color/producto sin
+// base física en public/garments/, documentalo acá con:
+// { product: "<catalog key>", color: "<color key>", side: "front"|"back" }
+const KNOWN_GAPS: Array<{ product: string; color: string; side: "front" | "back" }> = []
 
 function isKnownGap(product: string, color: string, side: string) {
   return KNOWN_GAPS.some((g) => g.product === product && g.color === color && g.side === side)
