@@ -6,6 +6,7 @@ import {
   getAvailableStyles,
   getAvailableGarments,
 } from '@/lib/partners/design-engine'
+import { ALL_GARMENT_PRICING } from '@/lib/partners/garment-pricing.server'
 import type { Plan } from '@/lib/partners/types'
 
 export const runtime = 'nodejs'
@@ -32,9 +33,18 @@ export async function GET(
     const styles = getAvailableStyles(config)
     const garments = getAvailableGarments(config)
 
+    // Solo precio retail sugerido (b2c_suggested) — nunca `cost` crudo del
+    // proveedor. Esta es la tienda publica del partner, visible a cualquiera.
+    const retailByGarment: Record<string, number> = Object.fromEntries(
+      garments
+        .filter(g => ALL_GARMENT_PRICING[g.key])
+        .map(g => [g.key, ALL_GARMENT_PRICING[g.key].b2c_suggested])
+    )
+
     return NextResponse.json({
       styles: styles.map(s => ({ key: s.key, name: s.name, description: s.description })),
       garments: garments.map(g => ({ key: g.key, name: g.name, colors: g.colors })),
+      retailByGarment,
       brandName: tenant.name,
       primaryColor: tenant.primary_color,
     })

@@ -372,11 +372,6 @@ export const MODELS: B2BModel[] = [
         swatch: "#e8dfc9",
         images: ["/products/totebag-crudo/front.jpg", "/products/totebag-crudo/back.jpg"],
       },
-      {
-        name: "Negro",
-        swatch: "#1a1a1a",
-        images: ["/products/totebag-negro/front.jpg", "/products/totebag-negro/back.jpg"],
-      },
     ],
   },
   {

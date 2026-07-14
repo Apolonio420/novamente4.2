@@ -63,7 +63,7 @@ interface Order {
 }
 
 type OrderStatus = 'pending' | 'confirmed' | 'producing' | 'shipped' | 'delivered' | 'exception' | 'cancelled'
-type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'refunded'
+type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'refunded' | 'charged_back' | 'cancelled'
 type FulfillmentStatus = 'awaiting_art_approval' | 'queued_for_production' | 'in_production' | 'quality_check' | 'ready_to_ship' | 'shipped' | 'delivered' | 'exception' | 'cancelled'
 
 // --- Constants ---
@@ -111,6 +111,8 @@ const PAYMENT_CONFIG: Record<PaymentStatus, { label: string; bg: string }> = {
   approved: { label: 'Aprobado', bg: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' },
   rejected: { label: 'Rechazado', bg: 'bg-red-500/20 border-red-500/30 text-red-300' },
   refunded: { label: 'Reembolsado', bg: 'bg-amber-500/20 border-amber-500/30 text-amber-300' },
+  charged_back: { label: 'Contracargo', bg: 'bg-orange-500/20 border-orange-500/30 text-orange-300' },
+  cancelled: { label: 'Cancelado', bg: 'bg-zinc-500/20 border-zinc-500/30 text-zinc-400' },
 }
 
 const STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {

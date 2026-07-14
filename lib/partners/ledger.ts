@@ -36,8 +36,9 @@ interface PartnerProductLite {
   metadata: Record<string, unknown> | null
 }
 
-/** Heurística model/categoría → garment key del pricing. */
-function guessGarmentKey(raw: string): string | null {
+/** Heurística model/categoría → garment key del pricing. Exportada para reuso
+ *  (ej. app/api/partners/orders/route.ts, piso de precio en produce=true). */
+export function guessGarmentKey(raw: string): string | null {
   const s = raw.toLowerCase()
   if (/aura|oversize/.test(s) && /remera|tshirt|t-shirt|shirt/.test(s)) return 'aura-oversize-tshirt'
   if (/aldea|classic/.test(s) && /remera|tshirt|t-shirt|shirt/.test(s)) return 'aldea-classic-tshirt'

@@ -12,6 +12,7 @@ const h = vi.hoisted(() => {
     mpSubscriptionId: null as string | null,
     lastPaymentAt: null as string | null,
     paidPartnersCount: 0,
+    lastUpdatePayload: null as any,
   }
 
   const chain: any = {
@@ -21,10 +22,16 @@ const h = vi.hoisted(() => {
   chain.select = (cols: string) => {
     // countPaidPartners: .select('id', { count: 'exact', head: true })
     // tenant lookup (createRecurringSubscription): .select('mp_subscription_id, last_payment_at')
+    // metadata lookup (persistPendingSubscription): .select('metadata')
     chain._mode = cols === 'id' ? 'countPaid' : 'tenantLookup'
     return chain
   }
-  chain.update = () => chain
+  // persistPendingSubscription hace update({ mp_subscription_id, billing_cycle, metadata, updated_at })
+  // — capturamos el payload para verificar qué queda en metadata.subscription_type.
+  chain.update = (payload: any) => {
+    state.lastUpdatePayload = payload
+    return chain
+  }
   chain.eq = () => chain
   chain.not = () => chain
   // countPaidPartners hace `.in(...)` como último eslabón y lo awaitea directo
@@ -63,6 +70,7 @@ beforeEach(() => {
   h.state.mpSubscriptionId = null
   h.state.lastPaymentAt = null
   h.state.paidPartnersCount = 0 // cupo abierto por defecto
+  h.state.lastUpdatePayload = null
   h.getUsdToArs.mockResolvedValue(1000)
   h.preapprovalCreate.mockResolvedValue({ id: 'preapproval-new', init_point: 'https://mp.example/new' })
 })
@@ -125,6 +133,30 @@ describe('createRecurringSubscription — promo Growth exige primer pago (hallaz
     expect(result.ok).toBe(true)
     expect(result.price_usd).toBe(50)
     expect(result.promo).toBeNull()
+  })
+})
+
+// Hallazgo [9] del review: persistPendingSubscription escribía metadata.
+// subscription_type = 'recurring' al CREAR el checkout mensual, antes de que
+// MP autorice nada. Eso (a) hacía que el cron check-subscriptions ignorara
+// para siempre la suspensión por vencimiento de un checkout abandonado
+// (nunca autorizado), y (b) rompía isGenuinePreapprovalActivation en un
+// upgrade de un tenant ya activo (ver subscription.test.ts). El fix: acá debe
+// quedar 'recurring_pending', nunca 'recurring'.
+describe('createRecurringSubscription → persistPendingSubscription escribe recurring_pending (hallazgo [9])', () => {
+  it('al crear el checkout mensual, metadata.subscription_type queda en recurring_pending, NUNCA en recurring', async () => {
+    h.state.lastPaymentAt = null
+    h.state.paidPartnersCount = 0
+
+    const result = await createRecurringSubscription(baseArgs)
+
+    expect(result.ok).toBe(true)
+    expect(h.state.lastUpdatePayload).toBeTruthy()
+    expect(h.state.lastUpdatePayload.metadata.subscription_type).toBe('recurring_pending')
+    expect(h.state.lastUpdatePayload.metadata.subscription_type).not.toBe('recurring')
+    // El resto del payload de persistPendingSubscription sigue igual.
+    expect(h.state.lastUpdatePayload.mp_subscription_id).toBe('preapproval-new')
+    expect(h.state.lastUpdatePayload.billing_cycle).toBe('monthly')
   })
 })
 

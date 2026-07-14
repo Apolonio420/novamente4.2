@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolvePriceUsd, resolveAnnualPriceUsd, GROWTH_PROMO_PCT, addMonths, promoExpired, GROWTH_PROMO, computeRenewalExpiration } from './subscription'
+import { resolvePriceUsd, resolveAnnualPriceUsd, GROWTH_PROMO_PCT, addMonths, promoExpired, GROWTH_PROMO, computeRenewalExpiration, isGenuinePreapprovalActivation } from './subscription'
 
 describe('GROWTH_PROMO config', () => {
   it('es 50% off del precio standard', () => {
@@ -104,5 +104,79 @@ describe('computeRenewalExpiration', () => {
     const now = '2026-07-03T12:00:00.000Z'
     const result = computeRenewalExpiration(now, now, 1)
     expect(result).toBe('2026-08-03T12:00:00.000Z')
+  })
+})
+
+// Hallazgo [15] del review: un evento `subscription_preapproval` con
+// status='authorized' llega no solo en el alta, sino también en updates
+// posteriores del MISMO preapproval que sigue autorizado (el bump de monto
+// del cron bumpPromoToStandardIfDue, reintentos/duplicados de notificación de
+// MP). activateRecurringTenant NO debe correr de nuevo en esos casos: eso
+// regalaría un mes gratis (extiende subscription_expires_at y refresca
+// last_payment_at) sin que haya un cobro real. Solo debe correr en un alta
+// real (primera vez que se activa este preapproval) o una reactivación
+// (tenant venía cancelled/paused/suspended).
+describe('isGenuinePreapprovalActivation', () => {
+  const preapprovalId = 'preapproval-123'
+
+  it('alta nueva (tenant todavía no activo): es un evento genuino', () => {
+    const tenant = {
+      status: 'onboarding' as const,
+      mp_subscription_id: null,
+      metadata: {},
+    }
+    expect(isGenuinePreapprovalActivation(tenant, preapprovalId)).toBe(true)
+  })
+
+  it('reactivación tras cancelled: es un evento genuino', () => {
+    const tenant = {
+      status: 'suspended' as const,
+      mp_subscription_id: preapprovalId,
+      metadata: { subscription_type: 'cancelled' as const },
+    }
+    expect(isGenuinePreapprovalActivation(tenant, preapprovalId)).toBe(true)
+  })
+
+  it('tenant ya activo con este mismo preapproval y subscription_type recurring: NO es genuino (bump de monto / evento repetido/espurio)', () => {
+    const tenant = {
+      status: 'active' as const,
+      mp_subscription_id: preapprovalId,
+      metadata: { subscription_type: 'recurring' as const },
+    }
+    expect(isGenuinePreapprovalActivation(tenant, preapprovalId)).toBe(false)
+  })
+
+  it('tenant activo pero con OTRO preapproval id (upgrade real de suscripción): es genuino', () => {
+    const tenant = {
+      status: 'active' as const,
+      mp_subscription_id: 'otro-preapproval-999',
+      metadata: { subscription_type: 'recurring' as const },
+    }
+    expect(isGenuinePreapprovalActivation(tenant, preapprovalId)).toBe(true)
+  })
+
+  it('tenant activo con este preapproval pero subscription_type todavía no recurring (alta en curso): es genuino', () => {
+    const tenant = {
+      status: 'active' as const,
+      mp_subscription_id: preapprovalId,
+      metadata: { subscription_type: 'one_time' as const },
+    }
+    expect(isGenuinePreapprovalActivation(tenant, preapprovalId)).toBe(true)
+  })
+
+  // Hallazgo [9]: upgrade mensual de un tenant YA activo. El checkout nuevo
+  // (persistPendingSubscription) ya dejó mp_subscription_id apuntando al
+  // preapproval nuevo, pero metadata.subscription_type todavía es
+  // 'recurring_pending' (MP no autorizó todavía). El PRIMER authorized de ese
+  // preapproval debe tratarse como genuino y activar el plan nuevo — antes de
+  // este fix, persistPendingSubscription escribía 'recurring' a secas y este
+  // evento se descartaba como espurio (MP debitaba, el plan nunca se aplicaba).
+  it('upgrade de tenant activo con checkout mensual recién creado (recurring_pending, mismo preapproval): es genuino', () => {
+    const tenant = {
+      status: 'active' as const,
+      mp_subscription_id: preapprovalId,
+      metadata: { subscription_type: 'recurring_pending' as const },
+    }
+    expect(isGenuinePreapprovalActivation(tenant, preapprovalId)).toBe(true)
   })
 })

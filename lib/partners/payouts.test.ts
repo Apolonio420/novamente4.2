@@ -22,7 +22,9 @@ vi.mock('@/lib/supabase-admin', () => ({ supabaseAdmin: h.chain }))
 import {
   validateIdempotencyKey,
   validatePayoutInput,
+  validatePayoutResolution,
   requestPayout,
+  resolvePayout,
   computeFinancials,
   MIN_PAYOUT_ARS,
 } from './payouts'
@@ -107,6 +109,84 @@ describe('requestPayout', () => {
   it('error de RPC → 500', async () => {
     h.state.rpc = async () => ({ data: null, error: { message: 'db down' } })
     const r = await requestPayout({ tenantId: 't1', amount: 30000, method: 'alias', idempotencyKey: 'key-db-error' })
+    expect(r.ok).toBe(false)
+    expect(r.status).toBe(500)
+  })
+})
+
+describe('validatePayoutResolution', () => {
+  it('acepta paid/processing/rejected', () => {
+    expect(validatePayoutResolution('paid')).toBe(true)
+    expect(validatePayoutResolution('processing')).toBe(true)
+    expect(validatePayoutResolution('rejected')).toBe(true)
+  })
+  it('rechaza cualquier otro valor', () => {
+    expect(validatePayoutResolution('approved')).toBe(false)
+    expect(validatePayoutResolution('')).toBe(false)
+    expect(validatePayoutResolution(undefined)).toBe(false)
+    expect(validatePayoutResolution(null)).toBe(false)
+  })
+})
+
+describe('resolvePayout', () => {
+  it('llama al RPC partner_resolve_payout con payout_id y status', async () => {
+    h.state.rpc = async () => ({ data: { ok: true, idempotent: false, status: 'paid' }, error: null })
+    const r = await resolvePayout('payout-1', 'paid')
+    expect(h.calls).toHaveLength(1)
+    expect(h.calls[0].name).toBe('partner_resolve_payout')
+    expect(h.calls[0].args.p_payout_id).toBe('payout-1')
+    expect(h.calls[0].args.p_status).toBe('paid')
+    expect(r.ok).toBe(true)
+    expect(r.status).toBe(200)
+    expect(r.payoutStatus).toBe('paid')
+  })
+
+  it('rejected exitoso no falla — la reversión de ledger la hace la RPC, no este wrapper', async () => {
+    h.state.rpc = async () => ({ data: { ok: true, idempotent: false, status: 'rejected' }, error: null })
+    const r = await resolvePayout('payout-2', 'rejected')
+    expect(r.ok).toBe(true)
+    expect(r.payoutStatus).toBe('rejected')
+  })
+
+  it('replay del mismo estado → idempotent:true', async () => {
+    h.state.rpc = async () => ({ data: { ok: true, idempotent: true, status: 'paid' }, error: null })
+    const r = await resolvePayout('payout-1', 'paid')
+    expect(r.ok).toBe(true)
+    expect(r.idempotent).toBe(true)
+  })
+
+  it('payout inexistente → 404', async () => {
+    h.state.rpc = async () => ({ data: { ok: false, error: 'not_found' }, error: null })
+    const r = await resolvePayout('missing', 'paid')
+    expect(r.ok).toBe(false)
+    expect(r.status).toBe(404)
+  })
+
+  it('payout ya en estado final → 409, no reintenta transición', async () => {
+    h.state.rpc = async () => ({ data: { ok: false, error: 'already_final', status: 'paid' }, error: null })
+    const r = await resolvePayout('payout-1', 'rejected')
+    expect(r.ok).toBe(false)
+    expect(r.status).toBe(409)
+  })
+
+  it('status inválido no llega al RPC', async () => {
+    // @ts-expect-error probing runtime validation with a bad value
+    const r = await resolvePayout('payout-1', 'approved')
+    expect(r.ok).toBe(false)
+    expect(r.status).toBe(400)
+    expect(h.calls).toHaveLength(0)
+  })
+
+  it('payoutId vacío no llega al RPC', async () => {
+    const r = await resolvePayout('', 'paid')
+    expect(r.ok).toBe(false)
+    expect(r.status).toBe(400)
+    expect(h.calls).toHaveLength(0)
+  })
+
+  it('error de RPC → 500', async () => {
+    h.state.rpc = async () => ({ data: null, error: { message: 'db down' } })
+    const r = await resolvePayout('payout-1', 'paid')
     expect(r.ok).toBe(false)
     expect(r.status).toBe(500)
   })

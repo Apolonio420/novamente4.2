@@ -626,7 +626,7 @@
     "name": "Totebag Crudo Frontal",
     "garmentPath": "/garments/totebag-crudo-front.jpeg",
     "margins": { "top": 41, "right": 27, "bottom": 7, "left": 27 },
-    "coordinates": { "x": 117, "y": 248, "width": 167, "height": 173 },
+    "coordinates": { "x": 94, "y": 213, "width": 212, "height": 243 },
     "timestamp": 1752400000000
   },
   {
@@ -634,23 +634,7 @@
     "name": "Totebag Crudo Trasero",
     "garmentPath": "/garments/totebag-crudo-back.jpeg",
     "margins": { "top": 41, "right": 27, "bottom": 7, "left": 27 },
-    "coordinates": { "x": 117, "y": 248, "width": 167, "height": 173 },
+    "coordinates": { "x": 94, "y": 213, "width": 212, "height": 243 },
     "timestamp": 1752400000001
-  },
-  {
-    "id": "1752400000002",
-    "name": "Totebag Negro Frontal",
-    "garmentPath": "/garments/totebag-negro-front.jpeg",
-    "margins": { "top": 41, "right": 27, "bottom": 7, "left": 27 },
-    "coordinates": { "x": 117, "y": 248, "width": 167, "height": 173 },
-    "timestamp": 1752400000002
-  },
-  {
-    "id": "1752400000003",
-    "name": "Totebag Negro Trasero",
-    "garmentPath": "/garments/totebag-negro-back.jpeg",
-    "margins": { "top": 41, "right": 27, "bottom": 7, "left": 27 },
-    "coordinates": { "x": 117, "y": 248, "width": 167, "height": 173 },
-    "timestamp": 1752400000003
   }
 ]

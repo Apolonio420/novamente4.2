@@ -494,7 +494,7 @@ export const PRODUCTS: Product[] = [
         id: "bahia-totebag-crudo",
         name: "Bahía Totebag - Crudo",
         price: "$20.900",
-        description: "Totebag de algodón crudo resistente, asas largas para llevar al hombro. Estampado DTG de alta definición. Medidas aprox. 40×35 cm.",
+        description: "Totebag de algodón crudo resistente, asas largas para llevar al hombro. Estampado DTG de alta definición. Área de estampa de hasta 35×40 cm.",
         images: {
             main: "/products/totebag-crudo/front.jpg",
             lifestyle: ["/products/totebag-crudo/back.jpg"],
@@ -502,20 +502,6 @@ export const PRODUCTS: Product[] = [
         },
         category: "Accesorios",
         color: "Crudo",
-        available: true
-    },
-    {
-        id: "bahia-totebag-negro",
-        name: "Bahía Totebag - Negro",
-        price: "$20.900",
-        description: "Totebag de algodón crudo resistente, asas largas para llevar al hombro. Estampado DTG de alta definición. Medidas aprox. 40×35 cm.",
-        images: {
-            main: "/products/totebag-negro/front.jpg",
-            lifestyle: ["/products/totebag-negro/back.jpg"],
-            measurements: ""
-        },
-        category: "Accesorios",
-        color: "Negro",
         available: true
     }
 ]

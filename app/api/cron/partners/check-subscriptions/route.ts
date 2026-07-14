@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { updateTenant } from '@/lib/partners/tenant'
 import { bumpPromoToStandardIfDue } from '@/lib/partners/subscription'
-import { notifySubscriptionExpiring, notifySubscriptionSuspended } from '@/lib/notifications'
+import { notifyError, notifySubscriptionExpiring, notifySubscriptionSuspended } from '@/lib/notifications'
 
 const db = () => supabaseAdmin as any
 
@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     suspended: 0,
     dunning_sent: 0,
     promo_bumped: 0,
+    pending_stale: 0,
     errors: [] as string[],
   }
 
@@ -48,6 +49,14 @@ export async function GET(request: NextRequest) {
           // Las suscripciones recurrentes las gestiona MercadoPago (débito + reintentos).
           // La baja llega por el webhook subscription_preapproval; no las suspendemos
           // por vencimiento acá para no cortar a un partner que MP sigue cobrando.
+          //
+          // Hallazgo [9]: este `continue` es SOLO para 'recurring' (autorizado real
+          // por MP), nunca para 'recurring_pending' (checkout mensual creado, MP
+          // todavía no autorizó nada — ver persistPendingSubscription en
+          // lib/partners/subscription.ts). Un tenant en 'recurring_pending' cae en
+          // la lógica normal de abajo (grace period → suspensión): si el checkout se
+          // abandonó y nunca hubo un authorized, no hay ningún cobro de MP que
+          // vigilar, así que debe tratarse como cualquier plan no recurrente vencido.
           if ((tenant.metadata as any)?.subscription_type === 'recurring') {
             continue
           }
@@ -143,6 +152,43 @@ export async function GET(request: NextRequest) {
         } catch (e: any) {
           results.errors.push(`Promo bump ${tenant.id}: ${e.message}`)
         }
+      }
+    }
+
+    // 4. Reconciliación (hallazgo [8]): checkouts mensuales que quedaron en
+    // 'recurring_pending' hace >48h. Dos causas posibles, ambas requieren ojo
+    // humano: (a) el partner autorizó pero el webhook de suscripción nunca llegó
+    // (URL de tópicos subscription_* mal apuntada en el dashboard de MP → MP
+    // cobra y el tenant nunca se activa), o (b) abandonó el checkout (inofensivo,
+    // el cron ya lo suspende por vencimiento — bloque 1). No podemos distinguir
+    // (a) de (b) sin consultar MP, así que solo alertamos para revisión manual.
+    const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+    const { data: stalePending, error: stalePendingError } = await db()
+      .from('tenants')
+      .select('id, name, email, mp_subscription_id, updated_at')
+      .eq('metadata->>subscription_type', 'recurring_pending')
+      .lt('updated_at', twoDaysAgo)
+
+    if (stalePendingError) {
+      results.errors.push(`Query recurring_pending: ${stalePendingError.message}`)
+    }
+
+    if (stalePending && stalePending.length > 0) {
+      results.pending_stale = stalePending.length
+      try {
+        await notifyError({
+          endpoint: '/api/cron/partners/check-subscriptions',
+          area: 'suscripciones: recurring_pending >48h sin autorizar',
+          message:
+            `${stalePending.length} tenant(s) con checkout mensual creado hace >48h y nunca autorizado. ` +
+            `Verificar en MP si el preapproval está authorized (webhook de tópicos subscription_* mal configurado → cobrado sin activar) ` +
+            `o abandonado (sin acción): ` +
+            stalePending
+              .map((t: any) => `${t.name} <${t.email}> preapproval=${t.mp_subscription_id}`)
+              .join(' · '),
+        })
+      } catch (e: any) {
+        results.errors.push(`Alerta recurring_pending: ${e.message}`)
       }
     }
 

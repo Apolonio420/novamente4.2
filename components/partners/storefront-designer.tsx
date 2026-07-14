@@ -4,10 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   Sparkles, Loader2, Shirt, X, Send, Download, ZoomIn, ChevronDown,
 } from 'lucide-react'
-import {
-  GARMENT_PRICING,
-  formatPrice as formatGarmentPrice,
-} from '@/lib/partners/garment-pricing'
+import { formatPrice as formatGarmentPrice } from '@/lib/partners/format-price'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -91,6 +88,9 @@ export function StorefrontDesigner({
   const [error, setError] = useState<string | null>(null)
   const [styles, setStyles] = useState<StyleOption[]>([])
   const [garments, setGarments] = useState<GarmentOption[]>([])
+  // Precio retail sugerido (b2c_suggested) por garmentKey — sin `cost` crudo
+  // del proveedor. Servido por GET /api/storefront/[slug]/studio/config.
+  const [retailByGarment, setRetailByGarment] = useState<Record<string, number>>({})
 
   // Selection state
   const [selectedGarment, setSelectedGarment] = useState('')
@@ -122,6 +122,7 @@ export function StorefrontDesigner({
         const data = await res.json()
         setStyles(data.styles || [])
         setGarments(data.garments || [])
+        setRetailByGarment(data.retailByGarment || {})
         if (data.garments?.length > 0) setSelectedGarment(data.garments[0].key)
         if (data.styles?.length > 0) setSelectedStyle(data.styles[0].key)
       } catch (e: any) {
@@ -279,9 +280,9 @@ export function StorefrontDesigner({
                 <p className="text-sm font-medium text-zinc-200">{g.name}</p>
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-zinc-500">{g.colors.length} color{g.colors.length > 1 ? 'es' : ''}</p>
-                  {GARMENT_PRICING[g.key] && (
+                  {retailByGarment[g.key] != null && (
                     <p className="text-xs font-semibold" style={{ color: primaryColor }}>
-                      {formatGarmentPrice(GARMENT_PRICING[g.key].b2c_suggested)}
+                      {formatGarmentPrice(retailByGarment[g.key])}
                     </p>
                   )}
                 </div>

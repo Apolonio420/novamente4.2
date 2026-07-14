@@ -7,8 +7,8 @@ import {
   ALL_GARMENT_PRICING,
   getPartnerPlanPrice,
   getPlanMargin,
-  formatPrice,
-} from "@/lib/partners/garment-pricing"
+} from "@/lib/partners/garment-pricing.server"
+import { formatPrice } from "@/lib/partners/format-price"
 import { PlanCards } from "./PlanCards"
 
 export const metadata: Metadata = {

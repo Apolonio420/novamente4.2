@@ -348,13 +348,6 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
         thumbnail: '/products/totebag-crudo/front.jpg',
         hero: '/products/totebag-crudo/front.jpg',
       },
-      {
-        key: 'negro',
-        name: 'Negro',
-        hex: '#1a1a1a',
-        thumbnail: '/products/totebag-negro/front.jpg',
-        hero: '/products/totebag-negro/front.jpg',
-      },
     ],
   },
   // Lienzo Premium discontinuado del catalogo partner el 2026-05-18.

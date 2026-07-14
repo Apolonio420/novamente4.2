@@ -91,7 +91,7 @@ export const PRODUCTS: Product[] = [
     name: 'Bahía Totebag',
     garmentType: 'totebag',
     price: 20900,
-    colors: ['crudo', 'negro'],
+    colors: ['crudo'],
     image: '/products/totebag-crudo/front.jpg',
     category: 'accesorio',
   },

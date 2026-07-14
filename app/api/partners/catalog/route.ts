@@ -4,6 +4,14 @@ import { getAllProducts, createProduct, countProducts } from '@/lib/partners/cat
 import { canAddProduct } from '@/lib/partners/plans'
 import { validatePartnerProductForCreation } from '@/lib/partners/product-policy'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getAllPublicGarmentPricing } from '@/lib/partners/garment-pricing.server'
+
+function normalizePricingPlan(plan: string | null | undefined): 'starter' | 'growth' | 'pro' {
+  const p = (plan || '').toLowerCase()
+  if (p === 'pro') return 'pro'
+  if (p === 'growth') return 'growth'
+  return 'starter'
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,11 +21,16 @@ export async function GET(request: NextRequest) {
     const products = await getAllProducts(auth.tenant.id)
     const count = products.length
 
+    // Precios ya derivados por plan (sin `cost` crudo) — usados por la grilla
+    // "Costo base de prendas" y por MarginBreakdown en el form de producto.
+    const garmentPricing = getAllPublicGarmentPricing(normalizePricingPlan(auth.tenant.plan))
+
     return NextResponse.json({
       products,
       count,
       plan: auth.tenant.plan,
       maxProducts: auth.tenant.max_products,
+      garmentPricing,
     })
   } catch (error) {
     console.error('GET /api/partners/catalog error:', error)

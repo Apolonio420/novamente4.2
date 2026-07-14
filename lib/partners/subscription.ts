@@ -31,7 +31,11 @@ export interface PromoLock {
 }
 
 export interface SubscriptionMeta {
-  subscription_type?: 'recurring' | 'one_time' | 'cancelled' | 'paused'
+  // 'recurring_pending': checkout mensual creado, MP todavía NO autorizó nada
+  // (hallazgo [9] del review). 'recurring' se reserva para cuando el webhook
+  // confirmó un authorized real (activateRecurringTenant). Ver
+  // persistPendingSubscription / isGenuinePreapprovalActivation más abajo.
+  subscription_type?: 'recurring' | 'recurring_pending' | 'one_time' | 'cancelled' | 'paused'
   pending_plan?: Plan
   promo?: PromoLock | null
   [k: string]: unknown
@@ -282,20 +286,77 @@ export async function createRecurringSubscription(args: {
   }
 }
 
-/** Guarda preapproval id + promo en metadata. NO toca el plan (eso es del webhook). */
+/**
+ * Guarda preapproval id + promo en metadata. NO toca el plan (eso es del webhook).
+ *
+ * Hallazgo [9] del review: esto corre al CREAR el checkout mensual, antes de
+ * que MP autorice nada — acá se escribe 'recurring_pending', NUNCA 'recurring'.
+ * 'recurring' queda reservado para activateRecurringTenant, que solo corre
+ * tras un authorized real confirmado por el webhook. Escribir 'recurring' acá
+ * (como hacía antes) rompía dos cosas: (1) el cron check-subscriptions hace
+ * `continue` para 'recurring' → un checkout mensual abandonado (nunca
+ * autorizado) desactivaba para siempre la suspensión por vencimiento del
+ * tenant; (2) isGenuinePreapprovalActivation veía subscription_type ya
+ * 'recurring' en un tenant 'active' con este mismo preapproval_id (caso
+ * upgrade de plan de un tenant ya activo) y descartaba el PRIMER authorized
+ * genuino como si fuera un evento espurio — MP debitaba y el plan nuevo nunca
+ * se aplicaba (interacción con el fix [15]).
+ */
 async function persistPendingSubscription(
   tenantId: string,
   args: { preapprovalId: string; pendingPlan: Plan; promo: PromoLock | null; nowISO: string },
 ): Promise<void> {
   const { data: t } = await db().from('tenants').select('metadata').eq('id', tenantId).single()
   const metadata: SubscriptionMeta = { ...(t?.metadata ?? {}) }
-  metadata.subscription_type = 'recurring'
+  metadata.subscription_type = 'recurring_pending'
   metadata.pending_plan = args.pendingPlan
   metadata.promo = args.promo
   await db()
     .from('tenants')
     .update({ mp_subscription_id: args.preapprovalId, billing_cycle: 'monthly', metadata, updated_at: args.nowISO })
     .eq('id', tenantId)
+}
+
+/**
+ * Hallazgo [15] del review: MP notifica `subscription_preapproval` con
+ * status='authorized' no solo en el alta, sino en CUALQUIER evento posterior
+ * sobre un preapproval que sigue autorizado — incluido el propio bump de monto
+ * que dispara bumpPromoToStandardIfDue (cron) y reintentos/duplicados de
+ * notificación de MP. Antes de este guard, activateRecurringTenant corría de
+ * nuevo en esos casos y regalaba un mes gratis (extendía subscription_expires_at
+ * y refrescaba last_payment_at) sin que hubiera un cobro real detrás.
+ *
+ * Un evento de preapproval 'authorized' representa un cobro real / merece
+ * extender el vencimiento SOLO cuando es:
+ *   - un alta nueva (el tenant todavía no tiene este preapproval activado), o
+ *   - una reactivación (el tenant venía 'cancelled'/'paused'/'suspended').
+ * Si el tenant YA está 'active', con este mismo mp_subscription_id y
+ * subscription_type ya 'recurring', el evento es un update sobre un preapproval
+ * ya activo (bump de monto, notificación duplicada, etc.) — no un cobro nuevo.
+ * El cobro mensual real se confirma aparte vía `subscription_authorized_payment`
+ * (ver handleAuthorizedPaymentEvent → registerRecurringCharge), que sí es la
+ * única fuente de verdad para extender fecha + last_payment_at mes a mes.
+ *
+ * Interacción con el hallazgo [9]: en un upgrade mensual de un tenant YA
+ * 'active', persistPendingSubscription deja mp_subscription_id apuntando al
+ * preapproval NUEVO pero metadata.subscription_type = 'recurring_pending'
+ * (no 'recurring') hasta que MP autorice. Por eso el chequeo de abajo compara
+ * contra 'recurring' explícito: con 'recurring_pending' el guard NO matchea
+ * alreadyActiveOnThisPreapproval → el primer authorized de ese preapproval se
+ * trata como genuino y sí activa el plan nuevo. No hace falta listar
+ * 'recurring_pending' acá a mano; alcanza con que 'recurring' sea el único
+ * valor que dispara el early-return.
+ */
+export function isGenuinePreapprovalActivation(
+  tenant: Pick<Tenant, 'status' | 'mp_subscription_id' | 'metadata'>,
+  preapprovalId: string,
+): boolean {
+  const meta = (tenant.metadata ?? {}) as SubscriptionMeta
+  const alreadyActiveOnThisPreapproval =
+    tenant.status === 'active' &&
+    tenant.mp_subscription_id === preapprovalId &&
+    meta.subscription_type === 'recurring'
+  return !alreadyActiveOnThisPreapproval
 }
 
 /**
@@ -306,12 +367,19 @@ async function persistPendingSubscription(
  * El vencimiento se calcula con computeRenewalExpiration: si el tenant venía
  * de una suscripción todavía vigente (ej. reactivación antes de vencer), el
  * mes nuevo se suma desde ese vencimiento vigente, no desde hoy (hallazgo [19]).
+ *
+ * IMPORTANTE (hallazgo [15]): el caller (handlePreapprovalEvent) debe llamar
+ * a esta función SOLO cuando isGenuinePreapprovalActivation(...) es true — acá
+ * no se vuelve a chequear para mantener esta función enfocada en "cómo activar",
+ * no en "cuándo". Ver el comentario de isGenuinePreapprovalActivation arriba.
  */
 export async function activateRecurringTenant(tenant: Tenant, preapprovalId: string, nowISO: string): Promise<void> {
   const meta: SubscriptionMeta = { ...(tenant.metadata ?? {}) }
   const plan: PaidPlan = (meta.pending_plan as PaidPlan) || (tenant.plan === 'starter' ? 'growth' : (tenant.plan as PaidPlan))
   const features = PLAN_FEATURES[plan]
 
+  // Hallazgo [9]: acá (y SOLO acá, tras un authorized real) pasa de
+  // 'recurring_pending' a 'recurring'. Ver persistPendingSubscription.
   meta.subscription_type = 'recurring'
   delete meta.pending_plan // ya activado
 
