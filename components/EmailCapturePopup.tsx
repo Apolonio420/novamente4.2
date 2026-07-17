@@ -36,8 +36,16 @@ export function EmailCapturePopup() {
   useEffect(() => {
     if (isDismissed()) return
     // Don't interrupt the main conversion surfaces.
+    // `/p/*` (tiendas del partner) es la MÁS importante de todas y faltaba: este
+    // modal tapaba los productos del partner a los 45s y le quedaba con el mail
+    // de SU cliente, bajo la marca Novamente. Reportado por Impulso (16/07):
+    // "si un cliente quiere ver los productos para comprar, pide subscripción,
+    // así no se puede trabajar". El gate principal vive en GlobalChrome (no
+    // monta nada de Novamente sobre /p/); esto es la red de seguridad por si el
+    // popup se monta desde otro lado.
     if (
       window.location.pathname === "/" ||
+      window.location.pathname.startsWith("/p/") ||
       window.location.pathname.startsWith("/crear") ||
       window.location.pathname.startsWith("/design") ||
       window.location.pathname.startsWith("/workspace") ||

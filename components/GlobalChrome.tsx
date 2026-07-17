@@ -20,9 +20,14 @@ export function GlobalChrome({ children }: { children: React.ReactNode }) {
   // publico, email capture) para no competir con la UI. Mantenemos Navbar
   // para que el carrito siga accesible.
   const isCrear = pathname?.startsWith("/crear") ?? false
-  // /p/* son tiendas partner: el WhatsApp global iría al número de Novamente.
-  // Lo ocultamos acá y cada tienda monta su propio StoreWhatsAppButton apuntando
-  // al número del partner.
+  // /p/* son tiendas del partner: NINGÚN chrome flotante de Novamente va encima.
+  // Es la tienda de otra marca y su superficie de venta — todo lo nuestro que se
+  // monte ahí le tapa los productos o le roba el lead:
+  //   · WhatsAppButton      → iría al número de Novamente (cada tienda monta su
+  //                           propio StoreWhatsAppButton con el del partner).
+  //   · PublicAssistantLoader → atiende a los clientes del partner como Novamente.
+  //   · EmailCaptureLoader  → modal a pantalla completa que tapa la tienda y se
+  //                           queda con el mail del cliente del partner.
   const isStore = pathname?.startsWith("/p/") ?? false
 
   if (isCrear) {
@@ -57,9 +62,9 @@ export function GlobalChrome({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <Footer />
-      {!isCrear && (
+      {!isStore && (
         <>
-          {!isStore && <WhatsAppButton />}
+          <WhatsAppButton />
           <PublicAssistantLoader />
           <EmailCaptureLoader />
         </>
