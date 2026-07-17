@@ -6,7 +6,7 @@ import { rateLimit as memoryRateLimit } from "@/lib/rate-limit"
 /**
  * Guard compartido para los endpoints publicos/anonimos que llaman a Gemini
  * imagen (generate-image, generate-stamp, remove-bg, try-on, lifestyle,
- * mockup-lifestyle, apply-design, process-design, magic-remove-bg,
+ * mockup-lifestyle, process-design, magic-remove-bg,
  * storefront studio generate/mockup, partners/onboarding/extract).
  *
  * Reemplaza el rate-limiter viejo (lib/rate-limit.ts: Map en memoria por

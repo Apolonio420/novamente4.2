@@ -1,10 +1,12 @@
 # lib/security — blindaje de endpoints públicos de generación de imagen
 
-Protege los 14 endpoints anónimos que llaman a Gemini (imagen/vision):
-`generate-image`, `generate-stamp`, `magic-remove-bg`, `apply-design`,
-`process-design`, `remove-background`, `public/design/{edit,lifestyle,
+Protege los 12 endpoints anónimos que llaman a Gemini (imagen/vision):
+`generate-image`, `generate-stamp`, `magic-remove-bg`,
+`process-design`, `public/design/{edit,lifestyle,
 mockup-lifestyle,remove-bg,try-on}`, `storefront/[slug]/studio/{generate,mockup}`
 y `partners/onboarding/extract`. Ver auditoría 2026-07-11 (commit `ac4ee45`).
+(`apply-design` y `remove-background` fueron borrados 2026-07-16: página
+huérfana `/gemini-flow` sin callers, 0 tráfico desde que se instrumentó.)
 
 ## Piezas
 
