@@ -24,11 +24,34 @@ import { rateLimit as memoryRateLimit } from "@/lib/rate-limit"
  *     endpoint: 10/min, 60/dia.
  *  4. Tope global diario cross-instancia (PUBLIC_IMAGEGEN_DAILY_CAP,
  *     default 400) sobre TODOS los endpoints publicos combinados.
+ *  5. Tope MENSUAL en dolares (PUBLIC_GEMINI_BUDGET_USD, default 25) sobre
+ *     el gasto real (cost_usd) de TODOS los endpoints publicos combinados,
+ *     contado desde max(inicio del mes calendario UTC, PUBLIC_BUDGET_EPOCH
+ *     — default 2026-07-17, dia del deploy). El epoch evita que el gasto
+ *     pre-tope del mes de arranque (ya contaminado, no filtrable por
+ *     "publico" vs "no publico" retroactivamente) tire el tope de arranque
+ *     y bloquee /crear el mismo dia — el pedido era un tope hacia
+ *     adelante, no apagar la web hoy. A diferencia del tope 4 (cuenta
+ *     requests), este cuenta plata: un abuso con pocos requests pero al
+ *     modelo caro (gemini-3-pro-image, $0.134/unidad) puede volar el
+ *     presupuesto sin tocar el tope diario de requests. Ver aprobacion del
+ *     dueño 2026-07-16.
  *
- * Backend: tabla public_imagegen_requests (migrations/create_public_imagegen_requests.sql).
- * Una fila por request ALLOWED (se inserta antes de dejar pasar la llamada
- * a Gemini), asi la misma tabla sirve de contador para el rate-limit por IP
- * y para el tope global.
+ * Backend: tabla public_imagegen_requests (migrations/create_public_imagegen_requests.sql)
+ * para los topes 3-4. Una fila por request ALLOWED (se inserta antes de
+ * dejar pasar la llamada a Gemini), asi la misma tabla sirve de contador
+ * para el rate-limit por IP y para el tope global de requests.
+ *
+ * El tope 5 (USD) lee de `api_usage` (lib/security/meter-usage.ts), que
+ * registra el COSTO REAL despues de una generacion exitosa (provider
+ * siempre "gemini" para estos endpoints — es el unico writer de esa tabla
+ * hoy en todo el ecosistema, ver comentario en meter-usage.ts). OJO: el
+ * campo `operation` NO tiene el prefijo "public/" de forma consistente
+ * (ej. "generate-stamp", "storefront/studio/generate", "magic-remove-bg"
+ * no lo tienen; "public/generate-image", "public/design/edit" si) — por
+ * eso el tope 5 suma TODO api_usage con provider='gemini' del mes, sin
+ * filtrar por prefijo de `operation` (filtrar por "public/%" subcontaria
+ * ~la mitad del gasto real y el tope quedaria de adorno).
  */
 
 // Shape PLANO a proposito (no discriminated union): con strict:false el
@@ -47,11 +70,25 @@ export interface ImageGuardResult {
 }
 
 const DAILY_CAP_DEFAULT = 400
+const MONTHLY_BUDGET_USD_DEFAULT = 25
 
 // Dedupe muy simple para no floodear Telegram: solo alerta una vez cada 15
 // min por instancia tibia. No es cross-instancia (best-effort), ver TODO.
 let lastCapAlertAt = 0
 const CAP_ALERT_THROTTLE_MS = 15 * 60 * 1000
+
+// Mismo throttle pero con su propio timestamp: no queremos que una alerta
+// de tope de REQUESTS se coma la ventana de la alerta de tope de USD (o
+// viceversa) si ambas cruzan el umbral casi al mismo tiempo.
+let lastBudgetAlertAt = 0
+
+// Cache en memoria del proceso para no sumar toda `api_usage` en cada
+// request (a $25/mes con generate-image gratis eso puede ser cientos de
+// requests/dia). TTL corto: el overshoot maximo posible es "gasto de 60s
+// de trafico" antes de que el tope se entere de que ya se paso.
+const BUDGET_CACHE_TTL_MS = 60_000
+const BUDGET_PAGE_SIZE = 1000
+let budgetCache: { monthKey: string; totalUsd: number; fetchedAt: number } | null = null
 
 function getClientIp(request: NextRequest): string {
   return (
@@ -78,6 +115,107 @@ function hasInternalBypass(request: NextRequest): boolean {
   const secret = process.env.INTERNAL_API_SECRET
   if (!secret) return false
   return request.headers.get("x-internal-secret") === secret
+}
+
+/** <= 0 desactiva el chequeo de tope mensual en USD. */
+function getMonthlyBudgetUsd(): number {
+  const raw = Number(process.env.PUBLIC_GEMINI_BUDGET_USD ?? MONTHLY_BUDGET_USD_DEFAULT)
+  return Number.isFinite(raw) ? raw : MONTHLY_BUDGET_USD_DEFAULT
+}
+
+/** "YYYY-MM" en UTC — clave del mes calendario en curso. */
+function currentUtcMonthKey(): string {
+  return new Date().toISOString().slice(0, 7)
+}
+
+function startOfUtcMonthIso(): string {
+  return `${currentUtcMonthKey()}-01T00:00:00.000Z`
+}
+
+/**
+ * Epoch de arranque del tope (default 2026-07-17, dia del deploy). Sin
+ * esto, el primer dia el tope suma TODO julio retroactivo — incluido el
+ * gasto pre-tope del mes (ya ~$26.87 el 2026-07-17, antes de que esta
+ * feature existiera) — y bloquea /crear al instante hasta el 1 de agosto.
+ * El dueño pidio un tope hacia ADELANTE, no apagar la web el dia del
+ * deploy. En meses siguientes el epoch queda en el pasado (antes del
+ * inicio del mes calendario) y `startOfBudgetWindowIso` lo ignora — cuenta
+ * el mes entero como siempre. Mismo patron que GEMINI_BUDGET_EPOCH en los
+ * gates del robot de platform.
+ */
+function getBudgetEpochIso(): string {
+  const raw = (process.env.PUBLIC_BUDGET_EPOCH ?? "2026-07-17").trim()
+  const parsed = new Date(`${raw}T00:00:00.000Z`)
+  return Number.isNaN(parsed.getTime()) ? "2026-07-17T00:00:00.000Z" : parsed.toISOString()
+}
+
+/** max(inicio del mes calendario UTC, epoch del tope) — ver getBudgetEpochIso. */
+function startOfBudgetWindowIso(): string {
+  const startOfMonth = startOfUtcMonthIso()
+  const epoch = getBudgetEpochIso()
+  return epoch > startOfMonth ? epoch : startOfMonth
+}
+
+/**
+ * Suma cost_usd de `api_usage` (provider=gemini) desde max(inicio del mes
+ * calendario UTC, PUBLIC_BUDGET_EPOCH) — ver startOfBudgetWindowIso. Pagina
+ * de a BUDGET_PAGE_SIZE filas: el limite default de PostgREST/Supabase
+ * corta en 1000 filas por request si no se pagina, y a $25/mes con el
+ * modelo mas barato (~$0.039/unidad) eso son ~640 filas — cerca del
+ * limite, y si el tope se sube esto silenciosamente subcontaria el gasto
+ * real. Sin filtro por `operation`: ver comentario arriba del archivo (el
+ * prefijo "public/" no es consistente entre endpoints).
+ */
+async function fetchMonthlySpendUsd(): Promise<number> {
+  const startIso = startOfBudgetWindowIso()
+  let total = 0
+  let from = 0
+  for (;;) {
+    const { data, error } = await supabaseAdmin
+      .from("api_usage")
+      .select("cost_usd")
+      .eq("provider", "gemini")
+      .gte("created_at", startIso)
+      .range(from, from + BUDGET_PAGE_SIZE - 1)
+    if (error) throw new Error(error.message)
+    const rows = (data ?? []) as { cost_usd: number | null }[]
+    for (const row of rows) total += row.cost_usd ?? 0
+    if (rows.length < BUDGET_PAGE_SIZE) break
+    from += BUDGET_PAGE_SIZE
+  }
+  return total
+}
+
+/** Devuelve el gasto mensual cacheado (TTL BUDGET_CACHE_TTL_MS), recalculando en background al vencer. */
+async function getCachedMonthlySpendUsd(): Promise<number> {
+  const monthKey = currentUtcMonthKey()
+  const now = Date.now()
+  if (budgetCache && budgetCache.monthKey === monthKey && now - budgetCache.fetchedAt < BUDGET_CACHE_TTL_MS) {
+    return budgetCache.totalUsd
+  }
+  const totalUsd = await fetchMonthlySpendUsd()
+  budgetCache = { monthKey, totalUsd, fetchedAt: now }
+  return totalUsd
+}
+
+async function maybeAlertBudgetThreshold(spentUsd: number, budgetUsd: number, endpointFamily: string, capped: boolean) {
+  const now = Date.now()
+  if (now - lastBudgetAlertAt < CAP_ALERT_THROTTLE_MS) return
+  lastBudgetAlertAt = now
+  const pct = Math.round((spentUsd / budgetUsd) * 100)
+  const message = capped
+    ? `Tope MENSUAL en USD alcanzado: gasto $${spentUsd.toFixed(2)} >= $${budgetUsd} (PUBLIC_GEMINI_BUDGET_USD). Generacion publica bloqueada hasta el mes que viene (o hasta subir el tope).`
+    : `Uso al ${pct}% del tope mensual en USD ($${spentUsd.toFixed(2)}/$${budgetUsd}). Revisar abuso o subir PUBLIC_GEMINI_BUDGET_USD.`
+  try {
+    const { notifyError } = await import("@/lib/notifications")
+    await notifyError({
+      area: "Tope mensual USD de generacion de imagen publica",
+      endpoint: endpointFamily,
+      message,
+    })
+  } catch (e) {
+    console.warn(`[public-image-guard] ${pct}% del tope MENSUAL en USD ($${spentUsd.toFixed(2)}/$${budgetUsd}) en "${endpointFamily}" — notifyError fallo:`, (e as Error).message)
+  }
 }
 
 async function maybeAlertCapThreshold(dayCount: number, cap: number, endpointFamily: string) {
@@ -129,6 +267,34 @@ export async function guardPublicImageGen(
       allowed: false,
       status: 503,
       message: "La generacion de imagenes esta temporalmente deshabilitada. Probá de nuevo en un rato.",
+    }
+  }
+
+  // Tope 5: gasto mensual en USD. Va antes de las consultas de tope de
+  // requests (evita esas 3 queries en paralelo si ya estamos bloqueados
+  // por plata). Fail-OPEN si la query falla: preferimos un mes ocasional
+  // sin este tope a tirar abajo /crear por un hiccup de DB — el tope de
+  // requests (mas abajo) sigue de pie como red de contencion aparte.
+  const budgetUsd = getMonthlyBudgetUsd()
+  if (budgetUsd > 0) {
+    try {
+      const spentUsd = await getCachedMonthlySpendUsd()
+      if (spentUsd >= budgetUsd) {
+        void maybeAlertBudgetThreshold(spentUsd, budgetUsd, endpointFamily, true)
+        return {
+          allowed: false,
+          status: 429,
+          message: "Alcanzamos el limite de generacion de imagenes de este mes. Volvé el mes que viene o escribinos por WhatsApp.",
+        }
+      }
+      if (spentUsd >= budgetUsd * 0.8) {
+        void maybeAlertBudgetThreshold(spentUsd, budgetUsd, endpointFamily, false)
+      }
+    } catch (err) {
+      console.warn(
+        `[public-image-guard] chequeo de tope mensual USD fallo para "${endpointFamily}", dejamos pasar (fail-open):`,
+        (err as Error).message,
+      )
     }
   }
 
