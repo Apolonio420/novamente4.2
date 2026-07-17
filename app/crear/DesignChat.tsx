@@ -764,7 +764,15 @@ export function DesignChat({
       if (shouldGateGeneration()) {
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", text: "¡Le diste con todo! 🎉 Dejame tu mail para que sigas creando gratis." },
+          {
+            role: "assistant",
+            text: "¡Le diste con todo! 🎉 Dejame tu mail para que sigas creando gratis.",
+            // Preservamos el prompt/adjunto original (mismo patrón que el catch
+            // de error de abajo) para que el botón "Reintentar" recupere el
+            // borrador tras dejar el mail — sin esto se pierde y hay que retipear.
+            retryPrompt: text,
+            retryAttachment: pendingAttachment ?? null,
+          },
         ])
         setLoading(false)
         setGenGateOpen(true)
