@@ -64,6 +64,22 @@ function getPrice(key: string) {
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // ============================================================
+// Gate de lead en /crear: a las N generaciones/ediciones exitosas (contador
+// client-side en localStorage) pedimos el mail antes de seguir. NO es un
+// cepo de seguridad —evadible borrando storage a propósito— es para
+// convertir uso intensivo anónimo en un lead identificado. El límite real de
+// abuso (60 req/día por IP) vive server-side en lib/security, aparte.
+// Kill-switch: NEXT_PUBLIC_CREAR_EMAIL_GATE=off
+// ============================================================
+const GENERATION_GATE_THRESHOLD = 20
+const GEN_GATE_COUNT_KEY = "novamente:crear-gen-count"
+const GEN_GATE_EMAIL_KEY = "novamente:crear-gen-email-done"
+
+function isGenerationGateEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_CREAR_EMAIL_GATE !== "off"
+}
+
+// ============================================================
 // Heuristic: detectar si un prompt es ITERACION del diseño actual o
 // CONCEPTO NUEVO. Si es nuevo, hay que mandar text-to-image, no edit.
 //
@@ -205,6 +221,45 @@ export function DesignChat({
     }, 90_000)
     return () => clearTimeout(t)
   }, [session.currentMockupUrl, emailCaptureShown])
+
+  // Gate de lead a las N generaciones/ediciones (ver constantes arriba).
+  const [genGateOpen, setGenGateOpen] = useState(false)
+  const [genGateEmail, setGenGateEmail] = useState("")
+  const [genGateSubmitting, setGenGateSubmitting] = useState(false)
+  const [genGateError, setGenGateError] = useState("")
+
+  const hasGenGateEmailOnFile = useCallback((): boolean => {
+    if (typeof window === "undefined") return true
+    try {
+      return window.localStorage.getItem(GEN_GATE_EMAIL_KEY) === "1"
+    } catch {
+      return true // si localStorage falla, no bloqueamos al usuario
+    }
+  }, [])
+
+  const getGenGateCount = useCallback((): number => {
+    if (typeof window === "undefined") return 0
+    try {
+      const n = parseInt(window.localStorage.getItem(GEN_GATE_COUNT_KEY) ?? "0", 10)
+      return Number.isFinite(n) && n > 0 ? n : 0
+    } catch {
+      return 0
+    }
+  }, [])
+
+  const recordGenGateGeneration = useCallback(() => {
+    if (typeof window === "undefined") return
+    try {
+      window.localStorage.setItem(GEN_GATE_COUNT_KEY, String(getGenGateCount() + 1))
+    } catch {}
+  }, [getGenGateCount])
+
+  // true si la próxima generación/edición debe bloquearse y mostrar el modal
+  const shouldGateGeneration = useCallback((): boolean => {
+    if (!isGenerationGateEnabled()) return false
+    if (hasGenGateEmailOnFile()) return false
+    return getGenGateCount() >= GENERATION_GATE_THRESHOLD
+  }, [hasGenGateEmailOnFile, getGenGateCount])
 
   // Coachmark hints — small contextual popups
   const [showInputHint, setShowInputHint] = useState(false)
@@ -359,6 +414,14 @@ export function DesignChat({
   const handleVariant = useCallback(async () => {
     const basePrompt = lastPromptRef.current.trim()
     if (!basePrompt || loading) return
+    if (shouldGateGeneration()) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: "¡Le diste con todo! 🎉 Dejame tu mail para que sigas creando gratis." },
+      ])
+      setGenGateOpen(true)
+      return
+    }
     const nudges = [
       "varia la composicion manteniendo el concepto",
       "diferente angulo y paleta, mismo concepto",
@@ -385,6 +448,7 @@ export function DesignChat({
       if (!res.ok || !data.images?.[0]?.url) {
         throw new Error(data.error ?? "No se pudo generar la variante")
       }
+      recordGenGateGeneration()
       const imageUrl: string = data.images[0].url
       setMessages((prev) => [
         ...prev,
@@ -412,7 +476,7 @@ export function DesignChat({
     } finally {
       setLoading(false)
     }
-  }, [loading, session.garmentColor, session.garmentType, session.printArea, session.sessionId, setSession, toast])
+  }, [loading, session.garmentColor, session.garmentType, session.printArea, session.sessionId, setSession, toast, shouldGateGeneration, recordGenGateGeneration])
 
   const handleSend = useCallback(async (overridePrompt?: string) => {
     const text = (overridePrompt ?? input).trim()
@@ -694,6 +758,19 @@ export function DesignChat({
       const useEdit = endpoint !== "/api/generate-image"
       const wasNewConcept = isNewConcept
 
+      // Gate de lead: recién acá sabemos con certeza que la acción va a
+      // pegarle a generate-image/design-edit (los otros intents — comprar,
+      // ajustar mockup, usar tal cual, sacar fondo — ya devolvieron antes).
+      if (shouldGateGeneration()) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", text: "¡Le diste con todo! 🎉 Dejame tu mail para que sigas creando gratis." },
+        ])
+        setLoading(false)
+        setGenGateOpen(true)
+        return
+      }
+
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -705,6 +782,7 @@ export function DesignChat({
         throw new Error(data.error ?? "No se pudo generar la imagen")
       }
 
+      recordGenGateGeneration()
       const imageUrl: string = data.images[0].url
       const promptUsed: string = data.promptUsed ?? text
       lastPromptRef.current = promptUsed
@@ -759,7 +837,7 @@ export function DesignChat({
     } finally {
       setLoading(false)
     }
-  }, [input, loading, pendingAttachment, session.currentDesignUrl, setSession, toast])
+  }, [input, loading, pendingAttachment, session.currentDesignUrl, setSession, toast, shouldGateGeneration, recordGenGateGeneration])
 
   // ---- Auto-generar si viene prompt desde la landing (?prompt=) ----
   const initialFiredRef = useRef(false)
@@ -1306,6 +1384,103 @@ export function DesignChat({
                 No, gracias
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Gate de lead: a las GENERATION_GATE_THRESHOLD generaciones/ediciones
+          pedimos el mail para seguir. No es un cepo: se puede cerrar y seguir
+          usando lo ya generado (comprar, ver mockup, etc.) — solo bloquea
+          generar/editar de nuevo hasta dejar el mail. */}
+      {genGateOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="gen-gate-title"
+          onClick={() => setGenGateOpen(false)}
+        >
+          <div
+            className="bg-zinc-900 rounded-2xl border border-violet-700 w-full max-w-md p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-1">
+              <div className="text-3xl">🎉</div>
+              <button
+                type="button"
+                aria-label="Cerrar"
+                onClick={() => setGenGateOpen(false)}
+                className="text-zinc-500 hover:text-white text-xl leading-none -mt-1"
+              >
+                ×
+              </button>
+            </div>
+            <h3 id="gen-gate-title" className="text-base font-semibold text-white">
+              ¿Te está gustando?
+            </h3>
+            <p className="text-xs text-zinc-400 mt-1 mb-4">
+              Dejanos tu mail para seguir creando gratis en Novamente.
+            </p>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                const trimmed = genGateEmail.trim()
+                if (!EMAIL_RX.test(trimmed) || genGateSubmitting) return
+                setGenGateSubmitting(true)
+                setGenGateError("")
+                try {
+                  const r = await fetch("/api/email-capture", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: trimmed, source: "crear_generation_gate" }),
+                  })
+                  if (!r.ok) {
+                    const d = await r.json().catch(() => ({}))
+                    throw new Error(d.error ?? "No se pudo guardar")
+                  }
+                  try {
+                    window.localStorage.setItem(GEN_GATE_EMAIL_KEY, "1")
+                  } catch {}
+                  setGenGateOpen(false)
+                  setGenGateEmail("")
+                  toast({ title: "Listo", description: "Ya podés seguir creando 🎨" })
+                } catch (err: any) {
+                  setGenGateError(err?.message || "Intentalo de nuevo")
+                } finally {
+                  setGenGateSubmitting(false)
+                }
+              }}
+              className="flex flex-col gap-2"
+            >
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                placeholder="tu@email.com"
+                value={genGateEmail}
+                onChange={(e) => setGenGateEmail(e.target.value)}
+                className="w-full px-3 py-2 rounded-md bg-zinc-800 border border-zinc-700 text-sm text-white focus:outline-none focus:border-violet-500"
+              />
+              {genGateError && <p className="text-xs text-red-400">{genGateError}</p>}
+              <Button
+                type="submit"
+                disabled={!EMAIL_RX.test(genGateEmail.trim()) || genGateSubmitting}
+                className="bg-violet-600 hover:bg-violet-500 text-white"
+              >
+                {genGateSubmitting ? "Guardando..." : "Seguir creando"}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setGenGateOpen(false)}
+                className="text-[11px] text-zinc-500 hover:text-zinc-300 text-center mt-1"
+              >
+                Ahora no
+              </button>
+            </form>
+            <p className="mt-3 text-[11px] text-zinc-500 text-center">
+              Sin spam. Lo usamos solo para guardar tu progreso.
+            </p>
           </div>
         </div>
       )}

@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
+
+const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const limiter = rateLimit({ limit: 10, windowSeconds: 600, prefix: "email-capture" })
 
 export async function POST(req: NextRequest) {
+  const { success, resetAt } = limiter.check(req)
+  if (!success) return rateLimitResponse(resetAt)
+
   try {
     const { email, source } = await req.json()
 
-    if (!email || typeof email !== "string" || !email.includes("@")) {
+    if (!email || typeof email !== "string" || !EMAIL_RX.test(email)) {
       return NextResponse.json({ error: "Email invalido" }, { status: 400 })
     }
 
