@@ -4,14 +4,27 @@ import { updateTenant } from '@/lib/partners/tenant'
 import { bumpPromoToStandardIfDue } from '@/lib/partners/subscription'
 import { notifyError, notifySubscriptionExpiring, notifySubscriptionSuspended } from '@/lib/notifications'
 
+// Nunca corrió por Vercel cron hasta ahora (no estaba en vercel.json — ver
+// registro agregado 2026-07-18). Se agregan runtime/maxDuration siguiendo el
+// mismo patrón que los demás crons de este directorio (abandoned-checkout,
+// cleanup-tryon-selfies): loopea tenants y llama a la API de MP (promo bump),
+// puede tardar más que el default de una function normal.
+export const runtime = 'nodejs'
+export const maxDuration = 120
+
 const db = () => supabaseAdmin as any
 
 export async function GET(request: NextRequest) {
   // Verify cron secret
   const authHeader = request.headers.get('authorization')
+  // Auth: cron nativo de Vercel (header x-vercel-cron) o Bearer CRON_SECRET —
+  // mismo patrón que abandoned-checkout. Solo-Bearer dejaría el cron en 401
+  // silencioso si CRON_SECRET no está seteado en el proyecto de Vercel.
+  const isVercelCron = !!request.headers.get('x-vercel-cron')
   const cronSecret = process.env.CRON_SECRET
+  const bearerOk = !!cronSecret && authHeader === `Bearer ${cronSecret}`
 
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!isVercelCron && !bearerOk) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

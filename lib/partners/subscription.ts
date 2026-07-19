@@ -38,6 +38,19 @@ export interface SubscriptionMeta {
   subscription_type?: 'recurring' | 'recurring_pending' | 'one_time' | 'cancelled' | 'paused'
   pending_plan?: Plan
   promo?: PromoLock | null
+  // ISO: cuándo se creó ESTE checkout mensual pendiente (usado por el cron
+  // partners/pending-subscription-followup para saber hace cuánto está
+  // esperando autorización — no se puede usar tenants.updated_at para esto
+  // porque cualquier update del tenant lo pisa, ver updateTenant en
+  // lib/partners/tenant.ts). Se refresca en cada persistPendingSubscription
+  // (checkout nuevo = cuenta regresiva nueva).
+  pending_since?: string
+  // ISOs de los emails de recuperación de checkout ya enviados (idempotencia
+  // del cron pending-subscription-followup), en orden de envío.
+  subscription_followups?: string[]
+  // true = un humano está gestionando el cobro con este partner mano a mano;
+  // el cron pending-subscription-followup NO le manda emails automáticos.
+  subscription_followup_optout?: boolean
   [k: string]: unknown
 }
 
@@ -311,6 +324,11 @@ async function persistPendingSubscription(
   metadata.subscription_type = 'recurring_pending'
   metadata.pending_plan = args.pendingPlan
   metadata.promo = args.promo
+  // Checkout nuevo → cuenta regresiva del follow-up (pending-subscription-followup)
+  // arranca de cero: nueva fecha de referencia, se olvidan los recordatorios
+  // que se hayan mandado para un checkout anterior abandonado.
+  metadata.pending_since = args.nowISO
+  metadata.subscription_followups = []
   await db()
     .from('tenants')
     .update({ mp_subscription_id: args.preapprovalId, billing_cycle: 'monthly', metadata, updated_at: args.nowISO })

@@ -6,7 +6,7 @@ export async function sendEmail(opts: {
   to: string
   subject: string
   html: string
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; id?: string; error?: string }> {
   const key = process.env.RESEND_API_KEY
   if (!key) return { ok: false, error: 'RESEND_API_KEY no configurada' }
   try {
@@ -27,7 +27,10 @@ export async function sendEmail(opts: {
       const body = await res.text()
       return { ok: false, error: `Resend ${res.status}: ${body.slice(0, 200)}` }
     }
-    return { ok: true }
+    // Resend responde { id: "..." } en éxito — se devuelve para trazabilidad
+    // (ej. registrar el id del envío junto al timestamp en metadata).
+    const body = await res.json().catch(() => null)
+    return { ok: true, id: body?.id }
   } catch (e: any) {
     return { ok: false, error: e?.message }
   }
