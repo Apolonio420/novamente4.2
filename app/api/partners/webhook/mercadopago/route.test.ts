@@ -13,6 +13,7 @@ const h = vi.hoisted(() => ({
   updateTenant: vi.fn(),
   notifyPartnerSubscription: vi.fn(),
   notifyPossibleDoubleCharge: vi.fn(),
+  notifySubscriptionActivatedEmails: vi.fn(),
   sendCapiPurchase: vi.fn(),
   // activateRecurringTenant/registerRecurringCharge (lib/partners/subscription.ts)
   // escriben directo con `db()` = supabaseAdmin, no con updateTenant.
@@ -37,6 +38,7 @@ vi.mock('@/lib/partners/tenant', () => ({
 vi.mock('@/lib/notifications', () => ({
   notifyPartnerSubscription: h.notifyPartnerSubscription,
   notifyPossibleDoubleCharge: h.notifyPossibleDoubleCharge,
+  notifySubscriptionActivatedEmails: h.notifySubscriptionActivatedEmails,
 }))
 
 vi.mock('@/lib/meta/capi', () => ({
@@ -97,6 +99,7 @@ beforeEach(() => {
   h.updateTenant.mockResolvedValue({ ...baseTenant, plan: 'growth', status: 'active' })
   h.notifyPartnerSubscription.mockResolvedValue(undefined)
   h.notifyPossibleDoubleCharge.mockResolvedValue(undefined)
+  h.notifySubscriptionActivatedEmails.mockResolvedValue(undefined)
   h.sendCapiPurchase.mockResolvedValue({ ok: true })
 })
 

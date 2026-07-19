@@ -2,7 +2,14 @@
  * Utility for sending notifications via Telegram Bot API.
  */
 import { sendEmail } from './email';
-import type { Tenant } from './partners/types';
+import type { Tenant, Plan } from './partners/types';
+import {
+  buildSubscriptionActivatedEmail,
+  buildAdminSubscriptionActivatedEmail,
+  type BillingCycle,
+} from './partners/subscription-activated-email';
+
+const ADMIN_NOTIFICATIONS_EMAIL = process.env.ADMIN_NOTIFICATIONS_EMAIL || 'sambujuan@gmail.com';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const SALES_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN_SALES || BOT_TOKEN;
@@ -172,6 +179,52 @@ export async function notifyPartnerSubscription(subscription: {
   `.trim();
 
     return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
+}
+
+/**
+ * Emails de alta de suscripción paga (preapproval mensual autorizado, o pago
+ * único anual aprobado): bienvenida al partner + copia interna corta.
+ * NO Telegram acá — el aviso al equipo por Telegram de una nueva suscripción
+ * ya lo cubre notifyPartnerSubscription (arriba), llamado por el mismo caller.
+ * No debe romper la activación: cada envío se loguea si falla, no propaga.
+ */
+export async function notifySubscriptionActivatedEmails(details: {
+    tenantName: string;
+    tenantSlug: string;
+    tenantEmail: string;
+    tenantPhone?: string | null;
+    plan: Plan;
+    billingCycle: BillingCycle;
+    amountArs?: number;
+    nowISO?: string;
+}) {
+    const nowISO = details.nowISO || new Date().toISOString();
+
+    if (details.tenantEmail) {
+        const { subject, html } = buildSubscriptionActivatedEmail({
+            tenantName: details.tenantName,
+            plan: details.plan,
+            billingCycle: details.billingCycle,
+            amountArs: details.amountArs,
+        });
+        const result = await sendEmail({ to: details.tenantEmail, subject, html }).catch((e) => ({ ok: false, error: e?.message }));
+        if (!result.ok) console.error('❌ Welcome subscription email failed:', result.error);
+    } else {
+        console.warn('⚠️ notifySubscriptionActivatedEmails: tenant sin email, no se manda bienvenida:', details.tenantName);
+    }
+
+    const { subject: adminSubject, html: adminHtml } = buildAdminSubscriptionActivatedEmail({
+        tenantName: details.tenantName,
+        tenantSlug: details.tenantSlug,
+        plan: details.plan,
+        billingCycle: details.billingCycle,
+        amountArs: details.amountArs,
+        tenantEmail: details.tenantEmail,
+        tenantPhone: details.tenantPhone,
+        nowISO,
+    });
+    const adminResult = await sendEmail({ to: ADMIN_NOTIFICATIONS_EMAIL, subject: adminSubject, html: adminHtml }).catch((e) => ({ ok: false, error: e?.message }));
+    if (!adminResult.ok) console.error('❌ Admin subscription email failed:', adminResult.error);
 }
 
 /**

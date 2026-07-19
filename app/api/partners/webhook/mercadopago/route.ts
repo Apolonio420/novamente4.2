@@ -116,19 +116,38 @@ async function handlePreapprovalEvent(body: any, request: NextRequest) {
       }
       await activateRecurringTenant(tenant, id, now)
       console.log('Suscripción recurrente ACTIVADA:', tenant.name)
+      const activatedPlan = ((tenant.metadata as any)?.pending_plan || tenant.plan) as Plan
+      const activatedAmountArs = preapproval?.auto_recurring?.transaction_amount || 0
       try {
         const { notifyPartnerSubscription } = await import('@/lib/notifications')
         await notifyPartnerSubscription({
           tenantName: tenant.name,
-          plan: ((tenant.metadata as any)?.pending_plan || tenant.plan) as Plan,
+          plan: activatedPlan,
           priceUsd: 0,
-          priceArs: preapproval?.auto_recurring?.transaction_amount || 0,
+          priceArs: activatedAmountArs,
           billingCycle: 'monthly',
           tenantEmail: tenant.email,
           tenantSlug: tenant.slug,
         })
       } catch (e) {
         console.error('Telegram notification failed:', e)
+      }
+      // Emails de bienvenida (partner) + copia interna. No debe romper la
+      // activación si Resend falla — ver notifySubscriptionActivatedEmails.
+      try {
+        const { notifySubscriptionActivatedEmails } = await import('@/lib/notifications')
+        await notifySubscriptionActivatedEmails({
+          tenantName: tenant.name,
+          tenantSlug: tenant.slug,
+          tenantEmail: tenant.email,
+          tenantPhone: tenant.phone,
+          plan: activatedPlan,
+          billingCycle: 'monthly',
+          amountArs: activatedAmountArs,
+          nowISO: now,
+        })
+      } catch (e) {
+        console.error('Subscription activated email failed:', e)
       }
     } else if (status === 'cancelled' || status === 'paused') {
       const meta = { ...((tenant.metadata as any) ?? {}), subscription_type: status }
@@ -324,6 +343,7 @@ export async function POST(request: NextRequest) {
         console.log('Tenant activated:', tenant.name, 'Plan:', paidPlan)
 
         // Notify sales team via Telegram
+        const paidBillingCycle = externalReference.includes('_annual_') ? 'annual' : 'monthly'
         try {
           const { notifyPartnerSubscription } = await import('@/lib/notifications')
           await notifyPartnerSubscription({
@@ -331,12 +351,30 @@ export async function POST(request: NextRequest) {
             plan: paidPlan,
             priceUsd: PLAN_PRICING_USD[paidPlan] || 0,
             priceArs: paymentDetails.transaction_amount || 0,
-            billingCycle: externalReference.includes('_annual_') ? 'annual' : 'monthly',
+            billingCycle: paidBillingCycle,
             tenantEmail: tenant.email,
             tenantSlug: tenant.slug,
           })
         } catch (e) {
           console.error('Telegram notification failed:', e)
+        }
+
+        // Emails de bienvenida (partner) + copia interna. No debe romper la
+        // activación si Resend falla — ver notifySubscriptionActivatedEmails.
+        try {
+          const { notifySubscriptionActivatedEmails } = await import('@/lib/notifications')
+          await notifySubscriptionActivatedEmails({
+            tenantName: tenant.name,
+            tenantSlug: tenant.slug,
+            tenantEmail: tenant.email,
+            tenantPhone: tenant.phone,
+            plan: paidPlan,
+            billingCycle: paidBillingCycle,
+            amountArs: paymentDetails.transaction_amount || 0,
+            nowISO: now,
+          })
+        } catch (e) {
+          console.error('Subscription activated email failed:', e)
         }
 
         // ── Meta CAPI — Purchase event para subscription de Partner ──
