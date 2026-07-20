@@ -3,6 +3,8 @@ import crypto from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createTenant, updateTenant, addTenantUser, getTenantBySlug } from '@/lib/partners/tenant'
 import { requireTenantPermission } from '@/lib/partners/permissions'
+import { sendEmail } from '@/lib/email'
+import { buildPartnerWelcomeEmail } from '@/lib/partners/partner-welcome-email'
 
 const db = () => supabaseAdmin as any
 
@@ -121,6 +123,16 @@ export async function POST(request: NextRequest) {
 
       // Link user to tenant as owner
       await addTenantUser(tenant.id, userId, 'owner')
+
+      // Email de bienvenida (best-effort). La password ya se muestra una única
+      // vez en pantalla vía `credentials` — este mail NUNCA la incluye, solo
+      // linkea al login. Si falla, el alta del partner sigue sin problema.
+      try {
+        const { subject, html } = buildPartnerWelcomeEmail({ tenantName: name, email })
+        await sendEmail({ to: email, subject, html })
+      } catch (e) {
+        console.error('[onboarding] welcome email failed', e)
+      }
 
       return NextResponse.json({
         tenant: { id: tenant.id },

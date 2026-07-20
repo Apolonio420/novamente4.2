@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { rateLimit, rateLimitResponse } from "@/lib/rate-limit"
+import { sendEmail } from "@/lib/email"
+import { buildNewsletterWelcomeEmail } from "@/lib/newsletter-welcome-email"
 
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const limiter = rateLimit({ limit: 10, windowSeconds: 600, prefix: "email-capture" })
@@ -30,11 +32,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Insert new capture
-    const { error } = await (supabaseAdmin as any).from("email_captures").insert({
-      email: normalizedEmail,
-      source: source || "popup_newsletter",
-      created_at: new Date().toISOString(),
-    })
+    const effectiveSource = source || "popup_newsletter"
+    const { data: inserted, error } = await (supabaseAdmin as any)
+      .from("email_captures")
+      .insert({
+        email: normalizedEmail,
+        source: effectiveSource,
+        created_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single()
 
     if (error) {
       console.error("Email capture insert error:", error)
@@ -43,6 +50,20 @@ export async function POST(req: NextRequest) {
 
     // Send Telegram notification (fire and forget)
     notifyTelegram(normalizedEmail, source).catch(console.error)
+
+    // Bienvenida solo para el popup de newsletter (save_design ya manda el
+    // suyo, ver app/api/public/save-design/route.ts). Solo se llega acá en el
+    // INSERT de una fila nueva — el chequeo de `existing` arriba ya cortó el
+    // camino para emails que ya estaban capturados, así que nunca se duplica.
+    // Aislado en su propio try/catch: un mail caído no debe romper la captura.
+    if (effectiveSource === "popup_newsletter" && inserted?.id) {
+      try {
+        const { subject, html } = buildNewsletterWelcomeEmail(inserted.id)
+        await sendEmail({ to: normalizedEmail, subject, html })
+      } catch (e) {
+        console.error("[email-capture] welcome email failed:", e)
+      }
+    }
 
     return NextResponse.json({ ok: true })
   } catch {

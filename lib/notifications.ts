@@ -2,12 +2,15 @@
  * Utility for sending notifications via Telegram Bot API.
  */
 import { sendEmail } from './email';
+import { supabaseAdmin } from './supabase-admin';
 import type { Tenant, Plan } from './partners/types';
 import {
   buildSubscriptionActivatedEmail,
   buildAdminSubscriptionActivatedEmail,
   type BillingCycle,
 } from './partners/subscription-activated-email';
+import { updateOrder, type PartnerOrder } from './partners/orders';
+import { buildOrderShippingEmail } from './partners/order-shipping-email';
 
 const ADMIN_NOTIFICATIONS_EMAIL = process.env.ADMIN_NOTIFICATIONS_EMAIL || 'sambujuan@gmail.com';
 
@@ -434,5 +437,66 @@ ${order.customerName ? `<b>Cliente:</b> ${order.customerName}\n` : ''}${itemsLin
 <b>Tu precio Novamente:</b> ${ars(order.partnerTotal)}
     `.trim();
         await sendToTelegram(chatId, msg, SALES_BOT_TOKEN);
+    }
+}
+
+/**
+ * Avisa al COMPRADOR que su partner_order pasó a fulfillment 'shipped'.
+ * Llamada desde PUT /api/partners/orders/[id] la primera vez que el pedido
+ * llega a ese estado (dedupe adicional acá vía shipping_info.shipping_email_sent_at
+ * — partner_orders no tiene columna metadata como la tabla `orders` principal).
+ *
+ * Best-effort total: nunca lanza. Si el email falla o no hay customer_email,
+ * simplemente no se manda — el flujo de fulfillment del partner no depende de esto.
+ */
+export async function notifyOrderShipped(tenantId: string, order: PartnerOrder): Promise<void> {
+    if (!order.customer_email) return;
+    const shippingInfo = (order.shipping_info as Record<string, unknown> | null) || {};
+    if (shippingInfo.shipping_email_sent_at) return;
+
+    try {
+        // El pedido de tienda partner (`partner_orders`) no tiene order_number ni
+        // link directo a /pedido/[ref] — eso vive en la tabla `orders` principal,
+        // bridgeada por payment_id (ver runConfirmedOrderEffects en process-payment.ts).
+        // Si lo encontramos, reusamos el mismo número/link que ya vio el cliente en
+        // el email de confirmación; si no, caemos a una referencia corta del propio id.
+        let orderRef = `#${order.id.slice(0, 8).toUpperCase()}`;
+        let pedidoUrl: string | null = null;
+        if (order.payment_id) {
+            const { data: mainOrder } = await (supabaseAdmin as any)
+                .from('orders')
+                .select('order_number, external_reference')
+                .eq('payment_id', order.payment_id)
+                .maybeSingle();
+            if (mainOrder?.order_number) orderRef = mainOrder.order_number;
+            if (mainOrder?.external_reference) {
+                pedidoUrl = `https://www.novamente.ar/pedido/${encodeURIComponent(mainOrder.external_reference)}`;
+            }
+        }
+
+        const { subject, html } = buildOrderShippingEmail({
+            customerName: order.customer_name,
+            orderRef,
+            items: (order.items || []).map((item) => ({
+                name: item.name || 'Producto',
+                quantity: item.quantity || 1,
+                variant: [item.color, item.talle].filter(Boolean).join(' · ') || undefined,
+            })),
+            carrier: order.carrier,
+            trackingNumber: order.tracking_number,
+            trackingUrl: order.tracking_url,
+            pedidoUrl,
+        });
+
+        const sent = await sendEmail({ to: order.customer_email, subject, html });
+        if (sent.ok) {
+            await updateOrder(tenantId, order.id, {
+                shipping_info: { ...shippingInfo, shipping_email_sent_at: new Date().toISOString() },
+            } as any);
+        } else {
+            console.error('❌ Email de envío al comprador falló:', sent.error);
+        }
+    } catch (e: any) {
+        console.error('❌ Exception enviando email de envío al comprador:', e?.message);
     }
 }

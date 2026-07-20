@@ -3,6 +3,13 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { updateTenant } from '@/lib/partners/tenant'
 import { bumpPromoToStandardIfDue } from '@/lib/partners/subscription'
 import { notifyError, notifySubscriptionExpiring, notifySubscriptionSuspended } from '@/lib/notifications'
+import { sendEmail } from '@/lib/email'
+import {
+  buildSubscriptionExpiringEmail,
+  buildSubscriptionSuspendedEmail,
+  shouldSendExpiryEmail,
+  shouldSendSuspensionEmail,
+} from '@/lib/partners/subscription-lifecycle-emails'
 
 // Nunca corrió por Vercel cron hasta ahora (no estaba en vercel.json — ver
 // registro agregado 2026-07-18). Se agregan runtime/maxDuration siguiendo el
@@ -33,6 +40,8 @@ export async function GET(request: NextRequest) {
     grace_period: 0,
     suspended: 0,
     dunning_sent: 0,
+    dunning_email_sent: 0,
+    suspension_email_sent: 0,
     promo_bumped: 0,
     pending_stale: 0,
     errors: [] as string[],
@@ -93,7 +102,7 @@ export async function GET(request: NextRequest) {
 
             console.log(`Tenant ${tenant.name}: SUSPENDED (${currentFailures}+ payment failures)`)
 
-            // Send Telegram notification
+            // Send Telegram notification (equipo)
             try {
               await notifySubscriptionSuspended({
                 name: tenant.name,
@@ -102,6 +111,31 @@ export async function GET(request: NextRequest) {
               })
             } catch (e) {
               console.error('Failed to send suspension notification:', e)
+            }
+
+            // Email al PARTNER (tono empático, no punitivo — la tienda quedó
+            // offline pero nada se perdió). Aislado: si falla, la suspensión ya
+            // se aplicó arriba y no debe revertirse. Dedupe por
+            // subscription_expires_at para no reenviar en cada corrida del cron
+            // mientras el partner sigue suspendido con el mismo vencimiento.
+            if (tenant.email && shouldSendSuspensionEmail(tenant.metadata as any, tenant.subscription_expires_at)) {
+              try {
+                const { subject, html } = buildSubscriptionSuspendedEmail({ name: tenant.name, plan: tenant.plan })
+                const sent = await sendEmail({ to: tenant.email, subject, html })
+                if (sent.ok) {
+                  await updateTenant(tenant.id, {
+                    metadata: {
+                      ...((tenant.metadata as Record<string, unknown>) || {}),
+                      suspension_email_sent_for: tenant.subscription_expires_at,
+                    },
+                  } as any)
+                  results.suspension_email_sent++
+                } else {
+                  results.errors.push(`Suspension email ${tenant.id}: ${sent.error}`)
+                }
+              } catch (e: any) {
+                results.errors.push(`Suspension email ${tenant.id}: ${e.message}`)
+              }
             }
           }
         } catch (e: any) {
@@ -141,6 +175,33 @@ export async function GET(request: NextRequest) {
         } catch (e: any) {
           console.error('Failed to send dunning notification:', e)
           results.errors.push(`Dunning ${tenant.id}: ${e.message}`)
+        }
+
+        // Email al PARTNER (Telegram arriba solo avisa al equipo). Aislado en su
+        // propio try/catch para que un mail caído nunca bloquee el aviso interno.
+        // Dedupe por subscription_expires_at: no reenviar en cada corrida del
+        // cron mientras falte la misma fecha de vencimiento.
+        if (tenant.email && shouldSendExpiryEmail(tenant.metadata as any, tenant.subscription_expires_at)) {
+          try {
+            const { subject, html } = buildSubscriptionExpiringEmail(
+              { name: tenant.name, plan: tenant.plan },
+              tenant.subscription_expires_at,
+            )
+            const sent = await sendEmail({ to: tenant.email, subject, html })
+            if (sent.ok) {
+              await updateTenant(tenant.id, {
+                metadata: {
+                  ...((tenant.metadata as Record<string, unknown>) || {}),
+                  expiry_email_sent_for: tenant.subscription_expires_at,
+                },
+              } as any)
+              results.dunning_email_sent++
+            } else {
+              results.errors.push(`Dunning email ${tenant.id}: ${sent.error}`)
+            }
+          } catch (e: any) {
+            results.errors.push(`Dunning email ${tenant.id}: ${e.message}`)
+          }
         }
       }
     }

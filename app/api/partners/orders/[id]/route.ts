@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { createOrderEvent, getOrderById, getOrderEvents, updateOrder, type FulfillmentStatus, type PartnerOrder } from '@/lib/partners/orders'
 import { isPartnersFulfillmentEnabled } from '@/lib/partners/feature-flags'
+import { notifyOrderShipped } from '@/lib/notifications'
 
 type LegacyOrderStatus = PartnerOrder['status']
 
@@ -184,6 +185,18 @@ export async function PUT(
     }
     if (updates.notes && updates.notes !== existing.notes) {
       await createOrderEvent(auth.tenant.id, id, auth.userId, 'note', { body: String(updates.notes) })
+    }
+
+    // Aviso de envío al comprador — solo la primera vez que el pedido pasa a
+    // 'shipped' (nunca por ediciones posteriores de tracking sobre un pedido ya
+    // enviado). Aislado con su propio try/catch: un mail caído nunca debe romper
+    // la actualización del pedido, que ya se guardó arriba.
+    if (updates.status === 'shipped' && existing.status !== 'shipped') {
+      try {
+        await notifyOrderShipped(auth.tenant.id, order)
+      } catch (e) {
+        console.error('PUT /api/partners/orders/[id] shipping email error:', e)
+      }
     }
 
     return NextResponse.json({ order })

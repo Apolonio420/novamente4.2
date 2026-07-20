@@ -3,6 +3,8 @@ import { randomBytes } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getAdminUser } from '@/lib/partners/auth'
 import { getTenantById, addTenantUser } from '@/lib/partners/tenant'
+import { sendEmail } from '@/lib/email'
+import { buildPartnerWelcomeEmail } from '@/lib/partners/partner-welcome-email'
 
 const db = () => supabaseAdmin as any
 
@@ -122,11 +124,26 @@ export async function POST(request: NextRequest) {
   }
 
   const origin = new URL(request.url).origin
+  const loginUrl = `${origin}/partners/login`
+
+  // Email de bienvenida — solo en el alta real de una cuenta nueva (nunca en un
+  // reset_password sobre un usuario que ya existía, eso no es "dar de alta").
+  // Best-effort: la password ya vuelve una única vez en la respuesta al admin,
+  // este mail NUNCA la incluye, solo linkea al login.
+  if (!existingUser) {
+    try {
+      const { subject, html } = buildPartnerWelcomeEmail({ tenantName: tenant.name, email, loginUrl })
+      await sendEmail({ to: email, subject, html })
+    } catch (e) {
+      console.error('[admin/onboard] welcome email failed', e)
+    }
+  }
+
   return NextResponse.json({
     tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name },
     email,
     password,
     existing_user: existingUser,
-    login_url: `${origin}/partners/login`,
+    login_url: loginUrl,
   })
 }
