@@ -17,6 +17,7 @@ import {
   getDefaultPartnerFAQs,
 } from '@/lib/partners/seo'
 import { PartnerFaqSection } from '@/components/partners/faq-section'
+import { ProductCardImage } from '@/components/partners/product-card-image'
 import ContactForm from './contact-form'
 import ChatWidget from '@/components/partners/chat-widget'
 import { StorefrontTracker } from '@/components/partners/storefront-tracker'
@@ -390,7 +391,6 @@ function ProductCard({
   tenantSlug: string
   currency: string
 }) {
-  const image = product.images?.[0]
   const comingSoon = (product.metadata as any)?.coming_soon === true
 
   return (
@@ -400,14 +400,8 @@ function ProductCard({
     >
       {/* Image */}
       <div className="relative aspect-square w-full overflow-hidden bg-zinc-800">
-        {image ? (
-          <Image
-            src={image}
-            alt={product.name}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            className="object-cover transition duration-300 group-hover:scale-105"
-          />
+        {product.images?.length ? (
+          <ProductCardImage images={product.images} alt={product.name} />
         ) : (
           <div className="flex h-full items-center justify-center">
             <span className="text-3xl text-zinc-600">
