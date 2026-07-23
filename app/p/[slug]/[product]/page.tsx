@@ -9,6 +9,7 @@ import type { Tenant, PartnerProduct } from '@/lib/partners/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { JsonLd } from '@/components/partners/json-ld'
+import { ProductCardImage } from '@/components/partners/product-card-image'
 import ImageGalleryClient from './ImageGalleryClient'
 import {
   generateProductSchema,
@@ -483,22 +484,14 @@ function RelatedProductCard({
   tenantSlug: string
   currency: string
 }) {
-  const image = product.images?.[0]
-
   return (
     <Link
       href={`/p/${tenantSlug}/${product.slug}`}
       className="group flex flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 transition hover:border-[var(--partner-primary)] hover:shadow-lg hover:shadow-[var(--partner-primary)]/5"
     >
       <div className="relative aspect-square w-full overflow-hidden bg-zinc-800">
-        {image ? (
-          <Image
-            src={image}
-            alt={product.name}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            className="object-cover transition duration-300 group-hover:scale-105"
-          />
+        {product.images?.length ? (
+          <ProductCardImage images={product.images} alt={product.name} />
         ) : (
           <div className="flex h-full items-center justify-center">
             <span className="text-3xl text-zinc-600">
@@ -514,6 +507,19 @@ function RelatedProductCard({
         {product.price != null && (
           <span className="text-lg font-bold text-white">
             {formatPrice(product.price, currency)}
+          </span>
+        )}
+        {product.stock != null && (
+          <span
+            className={`text-xs font-medium ${
+              product.stock === 0
+                ? 'text-red-400'
+                : product.stock <= 5
+                  ? 'text-amber-400'
+                  : 'text-zinc-500'
+            }`}
+          >
+            {product.stock === 0 ? 'Sin stock' : `Quedan ${product.stock}`}
           </span>
         )}
       </div>
