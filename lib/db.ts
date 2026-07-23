@@ -818,6 +818,8 @@ function createImageKey(url: string, prompt: string): string {
 
 export interface OrderItem {
   item_name: string
+  /** ID del partner_products del catálogo (para decrementar stock al confirmar). */
+  partner_product_id?: string | null
   product_type: string
   product_color: string
   product_size: string
@@ -1012,6 +1014,7 @@ export async function createOrder(orderData: Omit<Order, 'id' | 'order_number'>)
       order_id: order.id,
       item_name: item.item_name,
       name: item.item_name, // Populate legacy/alternative column
+      partner_product_id: item.partner_product_id || null,
       product_type: item.product_type,
       garment_type: item.product_type, // Populate legacy/alternative column
       product_color: item.product_color,

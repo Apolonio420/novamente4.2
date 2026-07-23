@@ -16,6 +16,7 @@ const h = vi.hoisted(() => {
     // concurrente ya transicionó la orden). Default: gana, como el flujo normal.
     claimWins: true,
     claimCalls: [] as Array<{ orderId: string; expectedStatus: string; updates: any }>,
+    rpcCalls: [] as Array<{ fn: string; args: any }>,
   }
   return { state }
 })
@@ -65,6 +66,10 @@ vi.mock('@/lib/supabase-admin', () => ({
         return chain
       },
     }),
+    rpc: async (fn: string, args: any) => {
+      h.state.rpcCalls.push({ fn, args })
+      return { data: null, error: null }
+    },
   },
 }))
 
@@ -102,6 +107,7 @@ beforeEach(() => {
   h.state.updateOrderResult = true
   h.state.claimWins = true
   h.state.claimCalls = []
+  h.state.rpcCalls = []
 })
 
 describe('processPaymentById — guard de idempotencia PASO 3', () => {
@@ -342,5 +348,61 @@ describe('processPaymentById — concurrencia (hallazgos [10]/[11]): dos invocac
     } finally {
       ;(supa.supabaseAdmin as any).from = originalFromFn
     }
+  })
+})
+
+describe('processPaymentById — decremento de stock (Fase 2)', () => {
+  it('decrementa el stock solo de los items con partner_product_id al confirmar', async () => {
+    h.state.order = {
+      id: 'order-20',
+      order_number: 'NM-020',
+      status: 'confirmed',
+      payment_id: 'pay-20',
+      tenant_id: 'tenant-20',
+      customer_email: null,
+      items: [
+        { item_name: 'Buzo A', quantity: 2, unit_price: 60000, partner_product_id: 'prod-A' },
+        { item_name: 'Buzo B', quantity: 1, unit_price: 60000 }, // sin link → no decrementa
+      ],
+      metadata: {}, // sin flag: el decremento corre
+    }
+    h.state.paymentGet = {
+      id: 'pay-20',
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 180000,
+      external_reference: 'ext-20',
+    }
+
+    await processPaymentById('pay-20')
+
+    const dec = h.state.rpcCalls.filter((c) => c.fn === 'decrement_partner_product_stock')
+    expect(dec).toHaveLength(1) // solo el item con partner_product_id
+    expect(dec[0].args).toEqual({ p_id: 'prod-A', p_qty: 2 }) // con la cantidad comprada
+  })
+
+  it('no re-decrementa si el guard stock_decremented_at ya está seteado (retry idempotente)', async () => {
+    h.state.order = {
+      id: 'order-21',
+      order_number: 'NM-021',
+      status: 'confirmed',
+      payment_id: 'pay-21',
+      tenant_id: 'tenant-21',
+      customer_email: null,
+      items: [{ item_name: 'Buzo A', quantity: 1, unit_price: 60000, partner_product_id: 'prod-A' }],
+      metadata: { stock_decremented_at: '2026-07-23T00:00:00.000Z' }, // ya se decrementó
+    }
+    h.state.paymentGet = {
+      id: 'pay-21',
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 60000,
+      external_reference: 'ext-21',
+    }
+
+    await processPaymentById('pay-21')
+
+    const dec = h.state.rpcCalls.filter((c) => c.fn === 'decrement_partner_product_stock')
+    expect(dec).toHaveLength(0) // el guard evita el doble decremento
   })
 })

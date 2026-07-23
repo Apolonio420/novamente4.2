@@ -102,6 +102,7 @@ export function AddToCartButtons({
   const doAdd = () => {
     addItem({
       id: `${productId}-${selectedSize}-${selectedColor || 'def'}-${Date.now()}`,
+      productId,
       name: `${productName} — ${brandName}`,
       garmentType: category || "Producto",
       color: selectedColor,

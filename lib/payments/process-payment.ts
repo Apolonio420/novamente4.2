@@ -436,6 +436,32 @@ async function runConfirmedOrderEffects(
       }
     }
 
+    // Decrementar stock finito de los productos vendidos (Fase 2). Solo toca
+    // productos con stock != null; el decremento es ATÓMICO vía RPC (a prueba de
+    // concurrencia entre ventas simultáneas del mismo producto, clampea a 0).
+    // Guard en metadata para no re-decrementar en un retry idempotente del mismo pedido.
+    if (!meta.stock_decremented_at) {
+      try {
+        const stockItems = (order.items || []).filter(
+          (it: any) => it.partner_product_id && (it.quantity || 1) > 0,
+        )
+        if (stockItems.length) {
+          for (const it of stockItems) {
+            const { error: decErr } = await (supabaseAdmin as any).rpc(
+              "decrement_partner_product_stock",
+              { p_id: it.partner_product_id, p_qty: it.quantity || 1 },
+            )
+            if (decErr) console.error("❌ Error decrementando stock:", it.partner_product_id, decErr.message)
+          }
+          meta.stock_decremented_at = new Date().toISOString()
+          await updateOrder(order.id!, { metadata: meta })
+          console.log("✅ Stock decrementado para", stockItems.length, "item(s)")
+        }
+      } catch (stockErr: any) {
+        console.error("❌ Exception decrementando stock:", stockErr.message)
+      }
+    }
+
     // Email de confirmación al CLIENTE (la success page lo promete desde siempre).
     // Guard en metadata para no duplicar entre webhook y confirm fallback.
     if (order.customer_email && !meta.confirmation_email_sent_at) {

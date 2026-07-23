@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
       // Usar cartItems completos (tienen toda la información)
       orderItems = cartItems.map((item: any) => ({
         item_name: item.name || item.title || `${item.garmentType || 'Producto'} - ${item.color} - Talle ${item.size}`,
+        partner_product_id: item.productId || item.partner_product_id || null,
         product_type: item.garmentType || item.product_type || 'unknown',
         product_color: item.color || item.product_color || 'unknown',
         product_size: item.size || item.product_size || 'unknown',

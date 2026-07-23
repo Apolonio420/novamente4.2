@@ -8,6 +8,8 @@ import { trackAddToCart } from "@/lib/analytics"
 
 export interface CartItem {
   id: string
+  /** ID del partner_products del catálogo (para decrementar stock al confirmar la venta). */
+  productId?: string
   name: string
   garmentType?: string
   color: string
