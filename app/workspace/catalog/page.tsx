@@ -50,6 +50,7 @@ interface Product {
   category: string | null
   slug: string
   price: number | null
+  stock?: number | null
   status: 'draft' | 'needs_review' | 'ready' | 'published' | 'hidden' | 'archived'
   images: string[]
   tags: string[]
@@ -171,6 +172,7 @@ export default function CatalogPage() {
   const [formDescription, setFormDescription] = useState('')
   const [formCategory, setFormCategory] = useState('')
   const [formPrice, setFormPrice] = useState('')
+  const [formStock, setFormStock] = useState('')
   const [formStatus, setFormStatus] = useState('draft')
   const [formImages, setFormImages] = useState<(string | null)[]>([null])
 
@@ -311,6 +313,7 @@ export default function CatalogPage() {
     setFormDescription('')
     setFormCategory('')
     setFormPrice('')
+    setFormStock('')
     setFormStatus('draft')
     setFormImages([null])
     setFormColors([])
@@ -335,6 +338,7 @@ export default function CatalogPage() {
     setFormDescription(product.description || '')
     setFormCategory(product.category || '')
     setFormPrice(product.price != null ? String(product.price) : '')
+    setFormStock(product.stock != null ? String(product.stock) : '')
     setFormStatus(product.status)
     // Fill slots: existing images + empty slots up to MAX_IMAGES
     const imgs: (string | null)[] = (product.images || []).map((u) => u as string | null)
@@ -432,6 +436,7 @@ export default function CatalogPage() {
         description: formDescription.trim() || null,
         category: formCategory.trim() || null,
         price: formPrice ? Number(formPrice) : null,
+        stock: formStock === '' ? null : Number(formStock),
         status: formStatus,
         images,
         metadata,
@@ -1043,6 +1048,28 @@ export default function CatalogPage() {
                     className="pl-7 bg-zinc-900/60 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-violet-500/50 focus-visible:border-violet-500/50 h-11"
                   />
                 </div>
+              </div>
+
+              {/* Stock (opcional) */}
+              <div className="space-y-2">
+                <Label htmlFor="product-stock" className="text-zinc-300 text-sm font-medium">
+                  Stock (opcional)
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="product-stock"
+                    type="number"
+                    value={formStock}
+                    onChange={(e) => setFormStock(e.target.value)}
+                    placeholder="Ilimitado"
+                    min="0"
+                    step="1"
+                    className="bg-zinc-900/60 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-violet-500/50 focus-visible:border-violet-500/50 h-11"
+                  />
+                </div>
+                <p className="text-xs text-zinc-500">
+                  Dejalo vacío para stock ilimitado. En 0 se muestra Sin stock.
+                </p>
               </div>
 
               {/* Garment key + Margin breakdown */}

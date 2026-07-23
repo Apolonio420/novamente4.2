@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
       description: body.description || undefined,
       category: body.category || undefined,
       price: body.price != null ? Number(body.price) : undefined,
+      stock: body.stock === undefined ? undefined : body.stock,
       images: Array.isArray(body.images) ? body.images : undefined,
       tags: Array.isArray(body.tags) ? body.tags : undefined,
       collection: body.collection || undefined,

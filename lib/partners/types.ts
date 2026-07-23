@@ -111,6 +111,7 @@ export interface PartnerProduct {
   compare_at_price: number | null
   currency: string
   availability: string
+  stock: number | null
   status: ProductStatus
   images: string[]
   tags: string[]

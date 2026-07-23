@@ -44,7 +44,7 @@ export async function PUT(
       'name', 'description', 'category', 'subcategory', 'price',
       'compare_at_price', 'status', 'images', 'tags', 'collection',
       'seo_title', 'seo_description', 'sort_order', 'availability',
-      'metadata',
+      'stock', 'metadata',
     ]
 
     const updates: Record<string, unknown> = {}

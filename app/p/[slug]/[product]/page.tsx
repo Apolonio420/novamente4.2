@@ -320,25 +320,40 @@ export default async function ProductDetailPage({ params }: PageProps) {
             )}
 
             {/* Availability */}
-            <div>
+            <div className="flex flex-wrap items-center gap-2">
               <Badge
                 variant="outline"
                 className={
                   comingSoon
                     ? 'border-amber-700 text-amber-400'
-                    : product.availability === 'out_of_stock'
+                    : product.stock === 0 ||
+                        (product.stock == null && product.availability === 'out_of_stock')
                       ? 'border-red-800 text-red-400'
                       : 'border-green-800 text-green-400'
                 }
               >
                 {comingSoon
                   ? 'Próximamente'
-                  : product.availability === 'out_of_stock'
+                  : product.stock === 0
                     ? 'Sin stock'
-                    : product.availability === 'preorder'
-                      ? 'Pre-orden'
-                      : 'Disponible'}
+                    : product.stock == null && product.availability === 'out_of_stock'
+                      ? 'Sin stock'
+                      : product.availability === 'preorder'
+                        ? 'Pre-orden'
+                        : 'Disponible'}
               </Badge>
+              {!comingSoon && product.stock != null && product.stock > 0 && (
+                <Badge
+                  variant="outline"
+                  className={
+                    product.stock <= 5
+                      ? 'border-amber-700 text-amber-400'
+                      : 'border-zinc-700 text-zinc-400'
+                  }
+                >
+                  Quedan {product.stock} unidades
+                </Badge>
+              )}
             </div>
 
             {/* Description */}

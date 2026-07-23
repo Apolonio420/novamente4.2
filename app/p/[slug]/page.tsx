@@ -458,6 +458,20 @@ function ProductCard({
             )}
         </div>
 
+        {product.stock != null && (
+          <span
+            className={`text-xs font-medium ${
+              product.stock === 0
+                ? 'text-red-400'
+                : product.stock <= 5
+                  ? 'text-amber-400'
+                  : 'text-zinc-500'
+            }`}
+          >
+            {product.stock === 0 ? 'Sin stock' : `Quedan ${product.stock}`}
+          </span>
+        )}
+
         <span
           className="mt-3 inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-white transition"
           style={{ backgroundColor: 'var(--partner-primary)' }}

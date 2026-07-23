@@ -92,6 +92,7 @@ export async function createProduct(tenantId: string, input: {
   description?: string
   category?: string
   price?: number
+  stock?: number | null
   images?: string[]
   tags?: string[]
   collection?: string
@@ -105,6 +106,7 @@ export async function createProduct(tenantId: string, input: {
     category: input.category || null,
     slug,
     price: input.price || null,
+    stock: input.stock ?? null,
     images: input.images || [],
     tags: input.tags || [],
     collection: input.collection || null,
