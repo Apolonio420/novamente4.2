@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
-import { updateProduct, deleteProduct } from '@/lib/partners/catalog'
+import { updateProduct, deleteProduct, generateUniqueSlug } from '@/lib/partners/catalog'
 import { validatePartnerProductForCreation } from '@/lib/partners/product-policy'
 import {
   listVariants,
@@ -58,11 +58,12 @@ export async function PUT(
       if (typeof updates.name !== 'string' || (updates.name as string).trim().length === 0) {
         return NextResponse.json({ error: 'El nombre no puede estar vacio' }, { status: 400 })
       }
-      // Regenerate slug if name changed
-      updates.slug = (updates.name as string)
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
+      // Regenerate slug if name changed — deduped per-tenant y excluyendo este
+      // producto, así reusar un nombre que ya tiene otro producto del partner
+      // (típico en items auto-nombrados por el design-engine, p.ej. "Remera
+      // Aldea Classic Fit Negro") NO viola UNIQUE (tenant_id, slug) ni cae en un
+      // 500 "No se pudo actualizar el producto".
+      updates.slug = await generateUniqueSlug(auth.tenant.id, updates.name as string, id)
     }
 
     // A published product must keep passing the gate when price/cost changes,

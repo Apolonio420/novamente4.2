@@ -69,15 +69,21 @@ function slugify(name: string): string {
  * dos productos legítimos con el mismo nombre) sufijamos -2, -3, … en vez de
  * chocar con la constraint y tirar un 500 genérico.
  */
-async function generateUniqueSlug(tenantId: string, name: string): Promise<string> {
+export async function generateUniqueSlug(tenantId: string, name: string, excludeProductId?: string): Promise<string> {
   const base = slugify(name)
   const { data } = await db()
     .from('partner_products')
-    .select('slug')
+    .select('id,slug')
     .eq('tenant_id', tenantId)
     .like('slug', `${base}%`)
 
-  const taken = new Set<string>((data || []).map((r: { slug: string }) => r.slug))
+  // Excluir el propio producto (en edición) para que re-guardar con su mismo
+  // nombre devuelva su slug actual en vez de sufijarlo contra sí mismo.
+  const taken = new Set<string>(
+    (data || [])
+      .filter((r: { id: string; slug: string }) => r.id !== excludeProductId)
+      .map((r: { id: string; slug: string }) => r.slug),
+  )
   if (!taken.has(base)) return base
   for (let i = 2; i < 1000; i++) {
     const candidate = `${base}-${i}`
