@@ -178,6 +178,41 @@ export default function TermsPage() {
               son propiedad exclusiva de Novamente y estan protegidos por las
               leyes de propiedad intelectual.
             </p>
+
+            <h3 className="text-lg font-semibold text-zinc-100 mt-6 mb-2">
+              5.1. Garantia de derechos e indemnidad
+            </h3>
+            <p>
+              El Partner declara y garantiza que es titular, o que cuenta con las
+              licencias, permisos y autorizaciones necesarias, sobre la totalidad
+              del contenido que sube, publica o comercializa a traves del Servicio
+              (disenos, textos, logos, fotografias, marcas, escudos e imagenes).
+            </p>
+            <p className="mt-3">
+              Queda expresamente prohibido subir, publicar o vender contenido que
+              incorpore, sin autorizacion escrita del titular de los derechos:
+              marcas registradas; escudos, emblemas o denominaciones de clubes o
+              instituciones; logos o disenos de terceros (por ejemplo Adidas, Puma
+              u otras marcas); personajes protegidos; denominaciones, simbolos o
+              trofeos de eventos deportivos (por ejemplo "FIFA", "World Cup" y
+              similares); e imagenes de personas sin su consentimiento.
+            </p>
+            <p className="mt-3">
+              El Partner es el unico y exclusivo responsable por el contenido que
+              carga y se compromete a mantener indemne a Novamente, sus titulares,
+              empleados y colaboradores, frente a cualquier reclamo, demanda,
+              sancion, multa, dano o costo (incluidos honorarios legales) de
+              terceros derivado de la infraccion a derechos de propiedad
+              intelectual, marcaria, de imagen o de cualquier otra naturaleza
+              relacionada con dicho contenido. Novamente no asume responsabilidad
+              alguna por el contenido subido por los Partners.
+            </p>
+            <p className="mt-3">
+              Novamente podra despublicar, ocultar o suspender, sin aviso previo y
+              a su solo criterio, cualquier contenido que pudiera infringir
+              derechos de terceros, y reponerlo unicamente si el Partner acredita
+              de manera fehaciente la licencia o autorizacion correspondiente.
+            </p>
           </section>
 
           {/* 6 */}

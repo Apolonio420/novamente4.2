@@ -255,6 +255,25 @@ function LoginForm() {
             Registrate como Partner
           </Link>
         </p>
+
+        {/* Terms notice */}
+        <p className="text-center mt-4 text-xs text-zinc-500">
+          Al ingresar aceptás nuestros{' '}
+          <Link
+            href="/partners/terms"
+            className="text-zinc-400 hover:text-zinc-300 underline underline-offset-2"
+          >
+            Términos y Condiciones
+          </Link>{' '}
+          y la{' '}
+          <Link
+            href="/partners/privacy"
+            className="text-zinc-400 hover:text-zinc-300 underline underline-offset-2"
+          >
+            Política de Privacidad
+          </Link>
+          , incluida tu responsabilidad sobre los derechos del contenido que publicás.
+        </p>
       </div>
     </div>
   )
