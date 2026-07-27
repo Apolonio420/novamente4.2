@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { CURRENT_TERMS_VERSION } from '@/lib/partners/terms-version'
 
 export const metadata: Metadata = {
   title: 'Terminos y Condiciones — Novamente Partners',
@@ -31,7 +32,7 @@ export default function TermsPage() {
           Terminos y Condiciones
         </h1>
         <p className="text-zinc-500 text-sm mb-10">
-          Ultima actualizacion: 18 de marzo de 2026
+          Version {CURRENT_TERMS_VERSION} · Ultima actualizacion: 24 de julio de 2026
         </p>
 
         <div className="space-y-10 text-zinc-300 leading-relaxed text-[15px]">
