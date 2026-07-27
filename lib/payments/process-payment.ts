@@ -494,13 +494,22 @@ async function runConfirmedOrderEffects(
       }
     }
 
-    // Aviso de venta a Novamente (Telegram). Guard sale_notified_at: era el
-    // único efecto sin deduplicación — sin él, cada retry idempotente de PASO 3
-    // (hallazgo [10]) re-avisaría la misma venta.
+    // Aviso de venta a Novamente (Telegram + EMAIL). Guard sale_notified_at.
+    //
+    // ⚠️ FIX (2026-07-27, caso Celia NOV-20260722-5193 — venta de $62.000
+    // pagada el 22/07 de la que Juan se enteró 5 días después POR LA CLIENTA):
+    // 1. sendToTelegram devuelve null en silencio cuando falla (nunca lanza),
+    //    y el flag sale_notified_at se marcaba INCONDICIONALMENTE → cualquier
+    //    fallo transitorio de Telegram quedaba registrado como "avisado" y la
+    //    venta moría invisible. Ahora el flag SOLO se marca si el envío
+    //    devolvió ok — si falla, el próximo retry idempotente reintenta.
+    // 2. El único aviso era Telegram (se pierde entre alertas). Ahora la venta
+    //    también avisa por EMAIL (SALES_NOTIFY_EMAIL, default juan@novamente.ar)
+    //    con guard propio — dos canales independientes.
     if (!meta.sale_notified_at) {
       try {
         const { notifySale } = await import("@/lib/notifications")
-        await notifySale({
+        const tgResult = await notifySale({
           orderNumber: order.order_number || order.id || "N/A",
           total: order.total || 0,
           email: order.customer_email || "N/A",
@@ -513,10 +522,44 @@ async function runConfirmedOrderEffects(
             imageUrl: item.image_url || item.mockup_url || null,
           })),
         })
-        meta.sale_notified_at = new Date().toISOString()
-        await updateOrder(order.id!, { metadata: meta })
+        if (tgResult) {
+          meta.sale_notified_at = new Date().toISOString()
+          await updateOrder(order.id!, { metadata: meta })
+        } else {
+          console.error("❌ notifySale (Telegram) devolvió null — NO se marca sale_notified_at, se reintentará en el próximo retry")
+        }
       } catch (notifErr: any) {
         console.error("❌ Error enviando notificación de venta:", notifErr.message)
+      }
+    }
+
+    // EMAIL de venta a Novamente — canal independiente del Telegram.
+    if (!meta.sale_email_sent_at) {
+      try {
+        const salesEmail = process.env.SALES_NOTIFY_EMAIL || "juan@novamente.ar"
+        const itemsHtml = (order.items || [])
+          .map((item: any) => `<li><b>${item.item_name || "Producto"}</b> x${item.quantity || 1} — Talle ${item.product_size || "-"} · ${item.product_color || "-"}</li>`)
+          .join("")
+        const sent = await sendEmail({
+          to: salesEmail,
+          subject: `💰 VENTA ${order.order_number || ""} — $${Number(order.total || 0).toLocaleString("es-AR")} (${(order as any).customer_first_name || ""} ${(order as any).customer_last_name || ""})`,
+          html: `<h2>Nueva venta pagada ✅</h2>
+<p><b>Pedido:</b> ${order.order_number || order.id}<br/>
+<b>Total:</b> $${Number(order.total || 0).toLocaleString("es-AR")}<br/>
+<b>Cliente:</b> ${(order as any).customer_first_name || ""} ${(order as any).customer_last_name || ""} · ${order.customer_email || "-"} · ${(order as any).customer_phone || "-"}<br/>
+<b>Envío:</b> ${(order as any).shipping_address || "-"}, ${(order as any).shipping_city || "-"} (CP ${(order as any).shipping_postal_code || "-"})</p>
+<ul>${itemsHtml}</ul>
+<p>Ficha y assets: admin.novamente.ar/dashboard/orders/fichas</p>`,
+        })
+        if (sent.ok) {
+          meta.sale_email_sent_at = new Date().toISOString()
+          await updateOrder(order.id!, { metadata: meta })
+          console.log("✅ Email de venta enviado a:", salesEmail)
+        } else {
+          console.error("❌ Email de venta falló:", sent.error)
+        }
+      } catch (emailErr: any) {
+        console.error("❌ Exception enviando email de venta:", emailErr.message)
       }
     }
 
