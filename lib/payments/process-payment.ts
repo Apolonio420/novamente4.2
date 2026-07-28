@@ -19,6 +19,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 import { MercadoPagoConfig, Payment } from "mercadopago"
 import { creditOrderMargin, reverseOrderMargin } from "@/lib/partners/ledger"
 import { sendEmail } from "@/lib/email"
+import { matchGarmentKey, matchStockColor, normalizeStockSize } from "@/lib/stock/liquidation"
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -459,6 +460,45 @@ async function runConfirmedOrderEffects(
         }
       } catch (stockErr: any) {
         console.error("❌ Exception decrementando stock:", stockErr.message)
+      }
+    }
+
+    // Decrementar stock de LIQUIDACIÓN por talle (proveedor viejo, ver
+    // lib/stock/liquidation.ts). Independiente del bloque de arriba (stock de
+    // partner_products): esta tabla trackea SOLO buzo-oversize/remera-oversize
+    // en los colores sin reposición. Si un item no matchea las 3 claves
+    // (prenda/color/talle), decrement_garment_stock devuelve NULL y no pasa
+    // nada — venta libre, igual que siempre. Guard propio en metadata para no
+    // re-decrementar en un retry idempotente del mismo pedido.
+    if (!meta.garment_stock_decremented_at) {
+      try {
+        const items = order.items || []
+        if (items.length) {
+          for (const it of items as any[]) {
+            const productKey = matchGarmentKey(it.product_type || "")
+            const color = matchStockColor(it.product_color || "")
+            const size = normalizeStockSize(it.product_size || "")
+            if (!productKey || !color || !size) continue // no trackeado, venta libre
+            const { data: resultQty, error: garmentDecErr } = await (supabaseAdmin as any).rpc(
+              "decrement_garment_stock",
+              {
+                p_product_key: productKey,
+                p_color: color,
+                p_size: size,
+                p_qty: it.quantity || 1,
+              },
+            )
+            if (garmentDecErr) {
+              console.error("❌ Error decrementando garment_stock:", productKey, color, size, garmentDecErr.message)
+            } else if (resultQty !== null) {
+              console.log("✅ garment_stock decrementado:", productKey, color, size, "→ qty:", resultQty)
+            }
+          }
+        }
+        meta.garment_stock_decremented_at = new Date().toISOString()
+        await updateOrder(order.id!, { metadata: meta })
+      } catch (garmentStockErr: any) {
+        console.error("❌ Exception decrementando garment_stock:", garmentStockErr.message)
       }
     }
 

@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { PRODUCTS, parsePrice } from "@/lib/products"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
+import { StockPerSize } from "@/components/StockPerSize"
 
 // Size data — keyed by chart key. T-Shirts split into Aura/Aldea (different charts despite same category)
 type SizeChart = { sizes: string[]; width: string[]; length: string[] }
@@ -354,6 +355,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 <span>{product.category === "Remeras Infantiles" ? "Talles 4 a 16" : product.category === "Accesorios" ? "Tamaño único" : `Talles S a ${product.category === "Remeras Crop" || product.category === "Musculosas" || product.category === "Remeras Mujer" ? "XL" : "XXL"}`}</span>
               </div>
             </div>
+
+            {/* Stock por talle (solo prendas de liquidacion, ver lib/stock/liquidation.ts) */}
+            <StockPerSize productId={product.id} />
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
