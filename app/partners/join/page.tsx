@@ -14,6 +14,7 @@ import { PromoSpotsCounter } from '@/components/partners/PromoSpotsCounter'
 import {
   PLAN_PRICING_USD,
   PLAN_PRICING_ANNUAL_USD,
+  PLAN_PRICING_MONTHLY_FROM_ANNUAL,
   GROWTH_PROMO,
   GROWTH_PROMO_PCT,
   resolveAnnualPriceUsd,
@@ -1404,18 +1405,20 @@ const PLAN_CARDS = [
 
 // Precios derivados de lib/partners/plans.ts (única fuente de verdad, la
 // misma que usa el checkout en lib/partners/subscription.ts). `promoAvailable`
-// gatea si Growth muestra el precio promo (25/21) o el de lista (50/43) — Pro
+// gatea si Growth muestra el precio promo (25/21) o el de lista (50/42.5) — Pro
 // nunca tiene promo.
 function monthlyPriceUsd(plan: 'growth' | 'pro', promoAvailable: boolean): number {
   return plan === 'growth' && promoAvailable ? GROWTH_PROMO.priceUsd : PLAN_PRICING_USD[plan]
 }
 
 function annualMonthlyPriceUsd(plan: 'growth' | 'pro', promoAvailable: boolean): number {
-  const total =
-    plan === 'growth' && promoAvailable
-      ? resolveAnnualPriceUsd('growth', true)
-      : PLAN_PRICING_ANNUAL_USD[plan]
-  return Math.round(total / 12)
+  if (plan === 'growth' && promoAvailable) {
+    // 255/12 = 21.25 → se muestra $21 (redondeo a favor del partner, igual que
+    // el display histórico del wizard).
+    return Math.floor(resolveAnnualPriceUsd('growth', true) / 12)
+  }
+  // Lista: 42.5 (growth) / 85 (pro) exactos — nunca redondear un precio para arriba.
+  return PLAN_PRICING_MONTHLY_FROM_ANNUAL[plan]
 }
 
 function StepPlan({
