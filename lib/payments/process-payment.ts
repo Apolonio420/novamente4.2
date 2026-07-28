@@ -19,6 +19,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 import { MercadoPagoConfig, Payment } from "mercadopago"
 import { creditOrderMargin, reverseOrderMargin } from "@/lib/partners/ledger"
 import { sendEmail } from "@/lib/email"
+import { matchGarmentKey, matchStockColor, normalizeStockSize } from "@/lib/stock/liquidation"
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -459,6 +460,64 @@ async function runConfirmedOrderEffects(
         }
       } catch (stockErr: any) {
         console.error("❌ Exception decrementando stock:", stockErr.message)
+      }
+    }
+
+    // Decrementar stock de LIQUIDACIÓN por talle (proveedor viejo, ver
+    // lib/stock/liquidation.ts). Independiente del bloque de arriba (stock de
+    // partner_products): esta tabla trackea SOLO buzo-oversize/remera-oversize
+    // en los colores sin reposición. Si un item no matchea las 3 claves
+    // (prenda/color/talle), decrement_garment_stock devuelve NULL y no pasa
+    // nada — venta libre, igual que siempre.
+    //
+    // Claim ATÓMICO (no read-then-write) sobre la MISMA clave de metadata que
+    // usa el confirm manual del platform (novamente-platform-master
+    // app/api/admin/ventas/confirm/route.ts): UPDATE condicional con
+    // WHERE metadata->>garment_stock_decremented_at IS NULL. Si el UPDATE no
+    // devuelve fila, otro proceso (webhook duplicado, o el confirm manual del
+    // platform corriendo en paralelo) ya reclamó el decremento — skip sin
+    // tocar nada. Evita el doble descuento por carrera del guard read-then-write
+    // anterior.
+    if (!meta.garment_stock_decremented_at) {
+      try {
+        const stamp = new Date().toISOString()
+        const { data: claimed, error: claimErr } = await (supabaseAdmin as any)
+          .from("orders")
+          .update({ metadata: { ...meta, garment_stock_decremented_at: stamp } })
+          .eq("id", order.id)
+          .filter("metadata->>garment_stock_decremented_at", "is", null)
+          .select("id")
+        if (claimErr) {
+          console.error("❌ Error reclamando claim de garment_stock:", claimErr.message)
+        } else if (claimed?.[0]) {
+          // Reclamado: reflejar el flag en el `meta` en memoria para que los
+          // updateOrder posteriores del mismo flujo (email, etc.) no lo pisen.
+          meta.garment_stock_decremented_at = stamp
+          const items = order.items || []
+          for (const it of items as any[]) {
+            const productKey = matchGarmentKey(it.product_type || "")
+            const color = matchStockColor(it.product_color || "")
+            const size = normalizeStockSize(it.product_size || "")
+            if (!productKey || !color || !size) continue // no trackeado, venta libre
+            const { data: resultQty, error: garmentDecErr } = await (supabaseAdmin as any).rpc(
+              "decrement_garment_stock",
+              {
+                p_product_key: productKey,
+                p_color: color,
+                p_size: size,
+                p_qty: it.quantity || 1,
+              },
+            )
+            if (garmentDecErr) {
+              console.error("❌ Error decrementando garment_stock:", productKey, color, size, garmentDecErr.message)
+            } else if (resultQty !== null) {
+              console.log("✅ garment_stock decrementado:", productKey, color, size, "→ qty:", resultQty)
+            }
+          }
+        }
+        // claimed vacío → alguien más lo reclamó primero, no re-decrementar.
+      } catch (garmentStockErr: any) {
+        console.error("❌ Exception decrementando garment_stock:", garmentStockErr.message)
       }
     }
 

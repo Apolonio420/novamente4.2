@@ -1,9 +1,11 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
+import { matchGarmentKey, matchStockColor, normalizeStockSize, type LiquidationStockRow } from "@/lib/stock/liquidation"
 
 interface GarmentSelectorProps {
   selectedGarment: string
@@ -68,6 +70,30 @@ export function GarmentSelector({
   }
 
   const selectedGarmentData = garments.find((g) => g.id === selectedGarment)
+
+  // Stock por talle de liquidacion (proveedor viejo, ver lib/stock/liquidation.ts).
+  // Fail-open: si el fetch falla, stockRows queda vacio y no cambia nada visualmente.
+  const [stockRows, setStockRows] = useState<LiquidationStockRow[]>([])
+  useEffect(() => {
+    fetch("/api/stock/liquidation")
+      .then((res) => res.json())
+      .then((data) => setStockRows(Array.isArray(data?.rows) ? data.rows : []))
+      .catch(() => {})
+  }, [])
+
+  const matchedGarmentKey = selectedGarmentData ? matchGarmentKey(selectedGarmentData.name) : null
+  const matchedColor = matchStockColor(selectedColor)
+
+  const getSizeStock = (size: string): LiquidationStockRow | null => {
+    if (!matchedGarmentKey || !matchedColor) return null
+    const normSize = normalizeStockSize(size)
+    if (!normSize) return null
+    return (
+      stockRows.find(
+        (r) => r.productKey === matchedGarmentKey && r.color === matchedColor && r.size === normSize,
+      ) || null
+    )
+  }
 
   const handleGarmentChange = (garmentId: string) => {
     const newGarment = garments.find((g) => g.id === garmentId)
@@ -175,15 +201,28 @@ export function GarmentSelector({
         <div>
           <h3 className="text-lg font-semibold mb-3">{selectedGarment === "lienzo" ? "Tamaño" : "Talle"}</h3>
           <div className="grid grid-cols-2 gap-2">
-            {selectedGarmentData.sizes.map((size) => (
-              <Button
-                key={size}
-                variant={selectedSize === size ? "default" : "outline"}
-                onClick={() => onSizeChange(size)}
-              >
-                {size}
-              </Button>
-            ))}
+            {selectedGarmentData.sizes.map((size) => {
+              const stock = getSizeStock(size)
+              const outOfStock = !!stock && stock.qty <= 0
+              const lowStock = !!stock && stock.qty > 0 && stock.qty <= 3
+              return (
+                <div key={size} className="flex flex-col items-stretch">
+                  <Button
+                    variant={selectedSize === size ? "default" : "outline"}
+                    onClick={() => onSizeChange(size)}
+                    disabled={outOfStock}
+                  >
+                    {size}
+                  </Button>
+                  {outOfStock && (
+                    <span className="text-[11px] text-muted-foreground text-center mt-0.5">Sin stock</span>
+                  )}
+                  {lowStock && (
+                    <span className="text-[11px] text-amber-600 text-center mt-0.5">¡Últimas {stock!.qty}!</span>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

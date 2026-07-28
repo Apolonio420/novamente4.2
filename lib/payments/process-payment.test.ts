@@ -16,6 +16,12 @@ const h = vi.hoisted(() => {
     // concurrente ya transicionó la orden). Default: gana, como el flujo normal.
     claimWins: true,
     claimCalls: [] as Array<{ orderId: string; expectedStatus: string; updates: any }>,
+    // Controla si el claim atómico de garment_stock (WHERE
+    // metadata->>garment_stock_decremented_at IS NULL, via .filter(...)) "gana
+    // la carrera" — separado de claimWins/claimCalls porque es una clave y un
+    // método de encadenamiento (.filter, no .eq('status', ...)) distintos.
+    garmentClaimWins: true,
+    garmentClaimCalls: [] as Array<{ orderId: string; updates: any }>,
     rpcCalls: [] as Array<{ fn: string; args: any }>,
   }
   return { state }
@@ -48,15 +54,28 @@ vi.mock('@/lib/supabase-admin', () => ({
       select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }),
       update: (updates: any) => {
         // Encadenable: .update(...).eq('id', orderId).eq('status', expected).select('id')
+        // o el claim de garment_stock: .update(...).eq('id', orderId)
+        //   .filter('metadata->>garment_stock_decremented_at', 'is', null).select('id')
         let orderId = ''
         let expectedStatus = ''
+        let garmentClaim = false
         const chain = {
           eq(field: string, value: string) {
             if (field === 'id') orderId = value
             if (field === 'status') expectedStatus = value
             return chain
           },
+          filter(field: string, _op: string, _value: unknown) {
+            if (field === 'metadata->>garment_stock_decremented_at') garmentClaim = true
+            return chain
+          },
           select: async (_cols: string) => {
+            if (table === 'orders' && garmentClaim) {
+              h.state.garmentClaimCalls.push({ orderId, updates })
+              return h.state.garmentClaimWins
+                ? { data: [{ id: orderId }], error: null }
+                : { data: [], error: null }
+            }
             if (table === 'orders') {
               h.state.claimCalls.push({ orderId, expectedStatus, updates })
             }
@@ -107,6 +126,8 @@ beforeEach(() => {
   h.state.updateOrderResult = true
   h.state.claimWins = true
   h.state.claimCalls = []
+  h.state.garmentClaimWins = true
+  h.state.garmentClaimCalls = []
   h.state.rpcCalls = []
 })
 
@@ -404,5 +425,71 @@ describe('processPaymentById — decremento de stock (Fase 2)', () => {
 
     const dec = h.state.rpcCalls.filter((c) => c.fn === 'decrement_partner_product_stock')
     expect(dec).toHaveLength(0) // el guard evita el doble decremento
+  })
+})
+
+describe('processPaymentById — decremento de garment_stock (liquidación) con claim atómico', () => {
+  it('reclama el claim y decrementa con las claves canónicas cuando el item matchea prenda/color/talle', async () => {
+    h.state.order = {
+      id: 'order-30',
+      order_number: 'NM-030',
+      status: 'confirmed',
+      payment_id: 'pay-30',
+      tenant_id: null,
+      customer_email: null,
+      items: [
+        { item_name: 'Buzo', product_type: 'buzo-hoodie-unisex', product_color: 'Marrón', product_size: 'M', quantity: 2, unit_price: 60000 },
+        { item_name: 'Aura', product_type: 'aura-oversize-tshirt', product_color: 'Caramel', product_size: 'M', quantity: 1, unit_price: 30000 }, // color con reposición → no trackeado
+      ],
+      metadata: {},
+    }
+    h.state.paymentGet = {
+      id: 'pay-30',
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 150000,
+      external_reference: 'ext-30',
+    }
+
+    await processPaymentById('pay-30')
+
+    // El claim atómico corrió una sola vez, con la clave dentro del metadata:
+    expect(h.state.garmentClaimCalls).toHaveLength(1)
+    expect(h.state.garmentClaimCalls[0].orderId).toBe('order-30')
+    expect(h.state.garmentClaimCalls[0].updates?.metadata?.garment_stock_decremented_at).toBeTruthy()
+
+    // Decrementó SOLO el item trackeado, con claves canónicas:
+    const dec = h.state.rpcCalls.filter((c) => c.fn === 'decrement_garment_stock')
+    expect(dec).toHaveLength(1)
+    expect(dec[0].args).toEqual({ p_product_key: 'buzo-oversize', p_color: 'marron', p_size: 'M', p_qty: 2 })
+  })
+
+  it('si el claim atómico NO gana (otro proceso ya reclamó), no llama la RPC', async () => {
+    h.state.garmentClaimWins = false
+    h.state.order = {
+      id: 'order-31',
+      order_number: 'NM-031',
+      status: 'confirmed',
+      payment_id: 'pay-31',
+      tenant_id: null,
+      customer_email: null,
+      items: [
+        { item_name: 'Buzo', product_type: 'buzo-hoodie-unisex', product_color: 'Crema', product_size: 'S', quantity: 1, unit_price: 60000 },
+      ],
+      metadata: {}, // el flag no está en la copia en memoria, pero el UPDATE condicional devuelve 0 filas
+    }
+    h.state.paymentGet = {
+      id: 'pay-31',
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 60000,
+      external_reference: 'ext-31',
+    }
+
+    await processPaymentById('pay-31')
+
+    expect(h.state.garmentClaimCalls).toHaveLength(1) // intentó reclamar
+    const dec = h.state.rpcCalls.filter((c) => c.fn === 'decrement_garment_stock')
+    expect(dec).toHaveLength(0) // pero al perder el claim no decrementa
   })
 })
