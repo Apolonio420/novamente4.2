@@ -5,6 +5,7 @@ import { X, Check, Sparkles, Zap, Crown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { PLAN_PRICING_USD, PLAN_PRICING_MONTHLY_FROM_ANNUAL, GROWTH_PROMO, GROWTH_PROMO_PCT } from '@/lib/partners/plans'
 
 interface UpgradeModalProps {
   currentPlan: string
@@ -29,8 +30,8 @@ const plans: PlanCard[] = [
   {
     id: 'starter',
     name: 'Starter',
-    priceMonthly: 0,
-    priceAnnualMonth: 0,
+    priceMonthly: PLAN_PRICING_USD.starter,
+    priceAnnualMonth: PLAN_PRICING_MONTHLY_FROM_ANNUAL.starter,
     icon: Zap,
     features: [
       'Hasta 10 productos',
@@ -49,10 +50,11 @@ const plans: PlanCard[] = [
   {
     id: 'growth',
     name: 'Growth',
-    priceMonthly: 50,
-    priceAnnualMonth: 42.5,
-    promoMonthly: 25, // lanzamiento -50% (primeros 100 partners, 12 meses)
-    promoAnnualMonth: 21.25, // lanzamiento -50% primer año ($255/año)
+    priceMonthly: PLAN_PRICING_USD.growth,
+    priceAnnualMonth: PLAN_PRICING_MONTHLY_FROM_ANNUAL.growth,
+    // lanzamiento -50% (primeros GROWTH_PROMO.maxPartners partners, GROWTH_PROMO.months meses)
+    promoMonthly: GROWTH_PROMO.priceUsd,
+    promoAnnualMonth: Math.round(PLAN_PRICING_MONTHLY_FROM_ANNUAL.growth * (1 - GROWTH_PROMO_PCT) * 100) / 100,
     icon: Sparkles,
     popular: true,
     features: [
@@ -74,8 +76,8 @@ const plans: PlanCard[] = [
   {
     id: 'pro',
     name: 'Pro',
-    priceMonthly: 100,
-    priceAnnualMonth: 85,
+    priceMonthly: PLAN_PRICING_USD.pro,
+    priceAnnualMonth: PLAN_PRICING_MONTHLY_FROM_ANNUAL.pro,
     icon: Crown,
     features: [
       'Todo de Growth',
@@ -223,13 +225,13 @@ export function UpgradeModal({ currentPlan, tenantId, onClose }: UpgradeModalPro
                       </div>
                       {hasPromo && billingCycle === 'monthly' && (
                         <p className="text-xs text-emerald-400 mt-1">
-                          Promo -50% · primeros 100 partners · 12 meses, luego US${plan.priceMonthly}/mes
+                          Promo -{Math.round(GROWTH_PROMO_PCT * 100)}% · primeros {GROWTH_PROMO.maxPartners} partners · {GROWTH_PROMO.months} meses, luego US${plan.priceMonthly}/mes
                         </p>
                       )}
                       {billingCycle === 'annual' && (
                         <p className="text-xs text-emerald-400 mt-1">
                           {hasPromo
-                            ? `US$${Math.round(price * 12)} el primer año (-50%, primeros 100), luego US$${Math.round(plan.priceAnnualMonth * 12)}/año`
+                            ? `US$${Math.round(price * 12)} el primer año (-${Math.round(GROWTH_PROMO_PCT * 100)}%, primeros ${GROWTH_PROMO.maxPartners}), luego US$${Math.round(plan.priceAnnualMonth * 12)}/año`
                             : `US$${Math.round(price * 12)}/año — ahorrás 15%`}
                         </p>
                       )}

@@ -12,6 +12,13 @@ import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { PromoSpotsCounter } from '@/components/partners/PromoSpotsCounter'
 import {
+  PLAN_PRICING_USD,
+  PLAN_PRICING_ANNUAL_USD,
+  GROWTH_PROMO,
+  GROWTH_PROMO_PCT,
+  resolveAnnualPriceUsd,
+} from '@/lib/partners/plans'
+import {
   ArrowLeft, ArrowRight, Check, Upload, Globe, Palette,
   Store, Layers, ShoppingBag, Megaphone, Eye, Sparkles,
   Instagram, MessageCircle, Mail, FileSpreadsheet, Plus,
@@ -1359,7 +1366,7 @@ const PLAN_CARDS = [
   {
     id: 'growth' as const,
     name: 'Growth',
-    price: '$50 USD',
+    price: `$${PLAN_PRICING_USD.growth} USD`,
     priceDetail: '/mes',
     icon: Rocket,
     color: 'purple',
@@ -1377,7 +1384,7 @@ const PLAN_CARDS = [
   {
     id: 'pro' as const,
     name: 'Pro',
-    price: '$100 USD',
+    price: `$${PLAN_PRICING_USD.pro} USD`,
     priceDetail: '/mes',
     icon: Crown,
     color: 'pink',
@@ -1395,12 +1402,30 @@ const PLAN_CARDS = [
   },
 ]
 
+// Precios derivados de lib/partners/plans.ts (única fuente de verdad, la
+// misma que usa el checkout en lib/partners/subscription.ts). `promoAvailable`
+// gatea si Growth muestra el precio promo (25/21) o el de lista (50/43) — Pro
+// nunca tiene promo.
+function monthlyPriceUsd(plan: 'growth' | 'pro', promoAvailable: boolean): number {
+  return plan === 'growth' && promoAvailable ? GROWTH_PROMO.priceUsd : PLAN_PRICING_USD[plan]
+}
+
+function annualMonthlyPriceUsd(plan: 'growth' | 'pro', promoAvailable: boolean): number {
+  const total =
+    plan === 'growth' && promoAvailable
+      ? resolveAnnualPriceUsd('growth', true)
+      : PLAN_PRICING_ANNUAL_USD[plan]
+  return Math.round(total / 12)
+}
+
 function StepPlan({
   data,
   update,
+  promoAvailable,
 }: {
   data: WizardData
   update: (patch: Partial<WizardData>) => void
+  promoAvailable: boolean
 }) {
   const isAnnual = data.billingCycle === 'annual'
   const showBillingToggle = data.selectedPlan !== 'starter'
@@ -1411,7 +1436,7 @@ function StepPlan({
         Selecciona el plan que mejor se adapte a tu marca. Podes cambiar en cualquier momento.
       </p>
 
-      <PromoSpotsCounter active={data.selectedPlan === 'growth'} />
+      {promoAvailable && <PromoSpotsCounter />}
 
       {/* Billing cycle toggle */}
       {showBillingToggle && (
@@ -1448,19 +1473,24 @@ function StepPlan({
         {PLAN_CARDS.map((plan) => {
           const selected = data.selectedPlan === plan.id
           const Icon = plan.icon
-          const isGrowthPromo = plan.id === 'growth'
-          const monthlyDisplay = isGrowthPromo ? '$25 USD' : plan.price
-          const annualDisplay = plan.id === 'growth' ? '$21 USD' : plan.id === 'pro' ? '$85 USD' : null
+          const isGrowthPromo = plan.id === 'growth' && promoAvailable
+          const monthlyDisplay = isGrowthPromo ? `$${monthlyPriceUsd('growth', true)} USD` : plan.price
+          const annualDisplay =
+            plan.id === 'growth'
+              ? `$${annualMonthlyPriceUsd('growth', promoAvailable)} USD`
+              : plan.id === 'pro'
+                ? `$${annualMonthlyPriceUsd('pro', false)} USD`
+                : null
           const displayPrice = isAnnual && annualDisplay ? annualDisplay : monthlyDisplay
           const strikePrice = isGrowthPromo
-            ? '$50 USD'
+            ? `$${PLAN_PRICING_USD.growth} USD`
             : isAnnual && plan.id === 'pro'
-              ? '$100 USD'
+              ? `$${PLAN_PRICING_USD.pro} USD`
               : null
           const promoSub = isGrowthPromo
             ? isAnnual
-              ? 'US$255 el primer año · luego US$510/año'
-              : 'primer año · luego $50 USD/mes'
+              ? `US$${resolveAnnualPriceUsd('growth', true)} el primer año · luego US$${PLAN_PRICING_ANNUAL_USD.growth}/año`
+              : `primer año · luego $${PLAN_PRICING_USD.growth} USD/mes`
             : isAnnual && plan.id === 'pro'
               ? 'Ahorro anual -15%'
               : null
@@ -1497,7 +1527,9 @@ function StepPlan({
                 </span>
                 <span className="text-sm text-zinc-500 ml-1">{plan.priceDetail}</span>
                 {isGrowthPromo && (
-                  <p className="text-[11px] font-semibold text-amber-500 mt-1">🔥 50% OFF · primeros 100 partners</p>
+                  <p className="text-[11px] font-semibold text-amber-500 mt-1">
+                    🔥 {Math.round(GROWTH_PROMO_PCT * 100)}% OFF · primeros {GROWTH_PROMO.maxPartners} partners
+                  </p>
                 )}
                 {promoSub && (
                   <p className="text-xs text-zinc-400 mt-0.5">{promoSub}</p>
@@ -1542,7 +1574,7 @@ function usePreviewMockups(_data: WizardData) {
   return { mockups, generating }
 }
 
-function StepPreview({ data }: { data: WizardData }) {
+function StepPreview({ data, promoAvailable }: { data: WizardData; promoAvailable: boolean }) {
   const planCard = PLAN_CARDS.find((p) => p.id === data.selectedPlan)
   const slug = data.businessName
     .toLowerCase()
@@ -1799,8 +1831,8 @@ function StepPreview({ data }: { data: WizardData }) {
         <span className="text-xs font-medium" style={{ color: data.colorPrimary }}>
           {!planCard
             ? 'Gratis'
-            : planCard.id === 'growth'
-              ? `${data.billingCycle === 'annual' ? '$21' : '$25'} USD ${planCard.priceDetail} · 50% OFF · primeros 100 partners`
+            : planCard.id === 'growth' && promoAvailable
+              ? `$${data.billingCycle === 'annual' ? annualMonthlyPriceUsd('growth', true) : monthlyPriceUsd('growth', true)} USD ${planCard.priceDetail} · ${Math.round(GROWTH_PROMO_PCT * 100)}% OFF · primeros ${GROWTH_PROMO.maxPartners} partners`
               : `${planCard.price} ${planCard.priceDetail}`}
         </span>
       </div>
@@ -1956,6 +1988,28 @@ export default function PartnersJoinPage() {
   const [error, setError] = useState<string | null>(null)
   const [showResume, setShowResume] = useState(false)
   const [credentials, setCredentials] = useState<{ email: string; password: string | null } | null>(null)
+  // Disponibilidad REAL del cupo de la promo (default true para no ocultar el
+  // banner mientras carga; si el fetch falla, se queda en true — el checkout
+  // es la fuente de verdad final y nunca cobra de más si el cupo ya se agotó).
+  const [promoAvailable, setPromoAvailable] = useState(true)
+
+  // Chequea el cupo real de la promo una vez al montar el wizard.
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/partners/promo-status')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (!cancelled && json && typeof json.promoAvailable === 'boolean') {
+          setPromoAvailable(json.promoAvailable)
+        }
+      })
+      .catch(() => {
+        // fetch falló → queda en el default (true), no bloqueamos el wizard
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   // Check for saved progress on mount
   useEffect(() => {
@@ -2131,9 +2185,9 @@ export default function PartnersJoinPage() {
   const steps = [
     <StepDatosBasicos key={0} data={data} update={update} />,
     <StepIdentidadVisual key={1} data={data} update={update} />,
-    <StepPlan key={2} data={data} update={update} />,
+    <StepPlan key={2} data={data} update={update} promoAvailable={promoAvailable} />,
     <StepBrief key={3} data={data} update={update} />,
-    <StepPreview key={4} data={data} />,
+    <StepPreview key={4} data={data} promoAvailable={promoAvailable} />,
   ]
 
   return (
@@ -2247,7 +2301,11 @@ export default function PartnersJoinPage() {
                 ? 'Procesando...'
                 : data.selectedPlan === 'starter'
                   ? 'Activar mi storefront'
-                  : `Pagar y activar — $${data.selectedPlan === 'growth' ? (data.billingCycle === 'annual' ? '21' : '25') : (data.billingCycle === 'annual' ? '85' : '100')} USD/${data.billingCycle === 'annual' ? 'mes (anual)' : 'mes'}`}
+                  : `Pagar y activar — $${
+                      data.billingCycle === 'annual'
+                        ? annualMonthlyPriceUsd(data.selectedPlan === 'growth' ? 'growth' : 'pro', promoAvailable)
+                        : monthlyPriceUsd(data.selectedPlan === 'growth' ? 'growth' : 'pro', promoAvailable)
+                    } USD/${data.billingCycle === 'annual' ? 'mes (anual)' : 'mes'}`}
             </Button>
           )}
         </div>

@@ -123,20 +123,54 @@ export const PLAN_PRICING_MONTHLY_FROM_ANNUAL: Record<Plan, number> = {
   pro: Math.round(100 * 0.85 * 100) / 100, // ~$85/mo
 }
 
-// ── Promoción de lanzamiento (SOLO DISPLAY) ─────────────────────────────────
-// Estos valores afectan únicamente lo que se muestra en las páginas/planillas
-// de planes. El cobro real sigue derivándose de PLAN_PRICING_USD /
-// PLAN_PRICING_ANNUAL_USD: el 50% del primer año se aplica como cupón/manual
-// al dar de alta al partner, no automáticamente.
 export const ANNUAL_DISCOUNT = 0.15
 
-// 50% OFF el primer año para atraer partners pagos. Por ahora solo Growth.
+// ── Promoción de lanzamiento ─────────────────────────────────────────────────
+// El checkout (lib/partners/subscription.ts) aplica esta promo AUTOMÁTICAMENTE:
+// no es un cupón manual. El cupo son los primeros GROWTH_PROMO.maxPartners
+// partners con el PRIMER PAGO acreditado (ver countPaidPartners /
+// isGrowthPromoEligible en subscription.ts), y dura GROWTH_PROMO.months meses
+// desde el alta, después el cobro sube solo a precio standard (cron
+// partners/check-subscriptions → bumpPromoToStandardIfDue). Por ahora solo
+// Growth tiene promo.
+export type PaidPlan = Exclude<Plan, 'starter'>
+
+export const GROWTH_PROMO = {
+  priceUsd: 25, // 50% off
+  standardUsd: 50,
+  maxPartners: 100, // primeros 100 partners pagos
+  months: 12, // dura 12 meses, después → standardUsd
+} as const
+
+/** % de descuento de la promo de lanzamiento (derivado de GROWTH_PROMO: 25/50 = 0.5). */
+export const GROWTH_PROMO_PCT = 1 - GROWTH_PROMO.priceUsd / GROWTH_PROMO.standardUsd
+
+// FIRST_YEAR_PROMO_PCT deriva de GROWTH_PROMO_PCT — una sola fuente de verdad
+// para el % de descuento, no un número duplicado a mano.
 export const FIRST_YEAR_PROMO_PCT: Partial<Record<Plan, number>> = {
-  growth: 0.5,
+  growth: GROWTH_PROMO_PCT,
 }
 
 export function firstYearPromoPct(plan: Plan): number {
   return FIRST_YEAR_PROMO_PCT[plan] ?? 0
+}
+
+/** Precio en USD del plan mensual, contemplando la promo de Growth si aplica. */
+export function resolvePriceUsd(plan: PaidPlan, promoEligible: boolean): number {
+  if (plan === 'growth' && promoEligible) return GROWTH_PROMO.priceUsd
+  return PLAN_PRICING_USD[plan]
+}
+
+/**
+ * Precio ANUAL en USD (pago único), contemplando la promo de primer año de Growth.
+ * El anual de lista (PLAN_PRICING_ANNUAL_USD) ya viene con -15%; la promo aplica
+ * el mismo 50% sobre ese total, SOLO el primer año. Pro nunca tiene promo.
+ * Ej. Growth: $510 → $255 (≈ US$21,25/mes). Renovación = full $510.
+ */
+export function resolveAnnualPriceUsd(plan: PaidPlan, promoEligible: boolean): number {
+  const list = PLAN_PRICING_ANNUAL_USD[plan]
+  if (plan === 'growth' && promoEligible) return Math.round(list * (1 - GROWTH_PROMO_PCT))
+  return list
 }
 
 export const PLAN_NAMES: Record<Plan, string> = {

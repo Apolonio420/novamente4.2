@@ -10,20 +10,19 @@
 import { MercadoPagoConfig, PreApproval } from 'mercadopago'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getUsdToArs } from './currency'
-import { PLAN_PRICING_USD, PLAN_PRICING_ANNUAL_USD, PLAN_NAMES, PLAN_FEATURES } from './plans'
+import { PLAN_NAMES, PLAN_FEATURES, GROWTH_PROMO, GROWTH_PROMO_PCT, resolvePriceUsd, resolveAnnualPriceUsd } from './plans'
 import type { Plan, Tenant } from './types'
+import type { PaidPlan } from './plans'
 
 const db = () => supabaseAdmin as any
 
-export type PaidPlan = Exclude<Plan, 'starter'>
-
-// ── Promo de lanzamiento ───────────────────────────────────────────────────
-export const GROWTH_PROMO = {
-  priceUsd: 25, // 50% off
-  standardUsd: 50,
-  maxPartners: 100, // primeros 100 partners pagos
-  months: 12, // dura 12 meses, después → standardUsd
-} as const
+// GROWTH_PROMO / GROWTH_PROMO_PCT / PaidPlan / resolvePriceUsd / resolveAnnualPriceUsd
+// viven en lib/partners/plans.ts (puros, sin deps de server) para que la UI
+// pueda importarlos sin arrastrar mercadopago/supabase-admin. Re-exportados acá
+// para no romper los imports existentes (este módulo sigue siendo la fuente de
+// verdad para todo lo DB-dependent: cupo real, elegibilidad, alta de suscripción).
+export type { PaidPlan }
+export { GROWTH_PROMO, GROWTH_PROMO_PCT, resolvePriceUsd, resolveAnnualPriceUsd }
 
 export interface PromoLock {
   price_usd: number
@@ -55,33 +54,7 @@ export interface SubscriptionMeta {
 }
 
 // ── Promo eligibility / pricing (puro + testeable) ───────────────────────────
-
-/** Precio en USD del plan mensual, contemplando la promo de Growth si aplica. */
-export function resolvePriceUsd(
-  plan: PaidPlan,
-  promoEligible: boolean,
-): number {
-  if (plan === 'growth' && promoEligible) return GROWTH_PROMO.priceUsd
-  return PLAN_PRICING_USD[plan]
-}
-
-/** % de descuento de la promo de lanzamiento (derivado de GROWTH_PROMO: 25/50 = 0.5). */
-export const GROWTH_PROMO_PCT = 1 - GROWTH_PROMO.priceUsd / GROWTH_PROMO.standardUsd
-
-/**
- * Precio ANUAL en USD (pago único), contemplando la promo de primer año de Growth.
- * El anual de lista (PLAN_PRICING_ANNUAL_USD) ya viene con -15%; la promo aplica
- * el mismo 50% sobre ese total, SOLO el primer año. Pro nunca tiene promo.
- * Ej. Growth: $510 → $255 (≈ US$21,25/mes). Renovación = full $510.
- */
-export function resolveAnnualPriceUsd(
-  plan: PaidPlan,
-  promoEligible: boolean,
-): number {
-  const list = PLAN_PRICING_ANNUAL_USD[plan]
-  if (plan === 'growth' && promoEligible) return Math.round(list * (1 - GROWTH_PROMO_PCT))
-  return list
-}
+// resolvePriceUsd / resolveAnnualPriceUsd / GROWTH_PROMO_PCT: ver plans.ts.
 
 /** Suma `months` meses a una fecha y devuelve ISO. */
 export function addMonths(fromISO: string, months: number): string {
