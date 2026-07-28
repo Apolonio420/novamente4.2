@@ -468,12 +468,32 @@ async function runConfirmedOrderEffects(
     // partner_products): esta tabla trackea SOLO buzo-oversize/remera-oversize
     // en los colores sin reposición. Si un item no matchea las 3 claves
     // (prenda/color/talle), decrement_garment_stock devuelve NULL y no pasa
-    // nada — venta libre, igual que siempre. Guard propio en metadata para no
-    // re-decrementar en un retry idempotente del mismo pedido.
+    // nada — venta libre, igual que siempre.
+    //
+    // Claim ATÓMICO (no read-then-write) sobre la MISMA clave de metadata que
+    // usa el confirm manual del platform (novamente-platform-master
+    // app/api/admin/ventas/confirm/route.ts): UPDATE condicional con
+    // WHERE metadata->>garment_stock_decremented_at IS NULL. Si el UPDATE no
+    // devuelve fila, otro proceso (webhook duplicado, o el confirm manual del
+    // platform corriendo en paralelo) ya reclamó el decremento — skip sin
+    // tocar nada. Evita el doble descuento por carrera del guard read-then-write
+    // anterior.
     if (!meta.garment_stock_decremented_at) {
       try {
-        const items = order.items || []
-        if (items.length) {
+        const stamp = new Date().toISOString()
+        const { data: claimed, error: claimErr } = await (supabaseAdmin as any)
+          .from("orders")
+          .update({ metadata: { ...meta, garment_stock_decremented_at: stamp } })
+          .eq("id", order.id)
+          .filter("metadata->>garment_stock_decremented_at", "is", null)
+          .select("id")
+        if (claimErr) {
+          console.error("❌ Error reclamando claim de garment_stock:", claimErr.message)
+        } else if (claimed?.[0]) {
+          // Reclamado: reflejar el flag en el `meta` en memoria para que los
+          // updateOrder posteriores del mismo flujo (email, etc.) no lo pisen.
+          meta.garment_stock_decremented_at = stamp
+          const items = order.items || []
           for (const it of items as any[]) {
             const productKey = matchGarmentKey(it.product_type || "")
             const color = matchStockColor(it.product_color || "")
@@ -495,8 +515,7 @@ async function runConfirmedOrderEffects(
             }
           }
         }
-        meta.garment_stock_decremented_at = new Date().toISOString()
-        await updateOrder(order.id!, { metadata: meta })
+        // claimed vacío → alguien más lo reclamó primero, no re-decrementar.
       } catch (garmentStockErr: any) {
         console.error("❌ Exception decrementando garment_stock:", garmentStockErr.message)
       }

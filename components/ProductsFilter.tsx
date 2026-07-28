@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCart } from "@/lib/cartStore"
 import { parsePrice, type Product } from "@/lib/products"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
+import { matchGarmentKey, matchStockColor, normalizeStockSize, type LiquidationStockRow } from "@/lib/stock/liquidation"
 
 const CATEGORIES = ["Todos", "Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Mujer", "Remeras Infantiles", "Arte", "Accesorios"] as const
 
@@ -32,6 +33,26 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
   const [addedId, setAddedId] = useState<string | null>(null)
   const addItem = useCart(s => s.addItem)
 
+  // Stock por talle de liquidacion (proveedor viejo, ver lib/stock/liquidation.ts).
+  // Fail-open: si el fetch falla, stockRows queda vacio y no cambia nada visualmente.
+  const [stockRows, setStockRows] = useState<LiquidationStockRow[]>([])
+  useEffect(() => {
+    fetch("/api/stock/liquidation")
+      .then((res) => res.json())
+      .then((data) => setStockRows(Array.isArray(data?.rows) ? data.rows : []))
+      .catch(() => {})
+  }, [])
+
+  const getSizeStock = (product: Product, size: string): LiquidationStockRow | null => {
+    const garmentKey = matchGarmentKey(product.name)
+    const color = matchStockColor(product.color)
+    const normSize = normalizeStockSize(size)
+    if (!garmentKey || !color || !normSize) return null
+    return (
+      stockRows.find((r) => r.productKey === garmentKey && r.color === color && r.size === normSize) || null
+    )
+  }
+
   const filtered = useMemo(() => {
     const range = PRICE_RANGES[activePriceRange]
     return products.filter(p => {
@@ -48,10 +69,13 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
 
   function handleQuickAdd(product: Product) {
     if (quickAddId === product.id) {
+      const stock = getSizeStock(product, selectedSize)
+      if (stock && stock.qty <= 0) return
       const price = parsePrice(product.price)
       addItem({
         id: `${product.id}-${selectedSize}-${Date.now()}`,
         name: product.name,
+        garmentType: product.name,
         color: product.color,
         size: selectedSize,
         price,
@@ -201,19 +225,34 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
                         {/* Quick-add size selector — Accesorios es talle único, no muestra selector */}
                         {quickAddId === product.id && product.category !== "Arte" && product.category !== "Accesorios" && (
                           <div className="flex gap-1 mb-2 flex-wrap">
-                            {(product.category === "Remeras Infantiles" ? KIDS_SIZES : SIZES).map(size => (
-                              <button
-                                key={size}
-                                onClick={() => setSelectedSize(size)}
-                                className={`text-[10px] md:text-xs px-2 py-1 rounded border transition-colors ${
-                                  selectedSize === size
-                                    ? "bg-primary text-white border-primary"
-                                    : "border-border hover:border-primary/50"
-                                }`}
-                              >
-                                {size}
-                              </button>
-                            ))}
+                            {(product.category === "Remeras Infantiles" ? KIDS_SIZES : SIZES).map(size => {
+                              const stock = getSizeStock(product, size)
+                              const outOfStock = !!stock && stock.qty <= 0
+                              const lowStock = !!stock && stock.qty > 0 && stock.qty <= 3
+                              return (
+                                <div key={size} className="flex flex-col items-center">
+                                  <button
+                                    onClick={() => !outOfStock && setSelectedSize(size)}
+                                    disabled={outOfStock}
+                                    className={`text-[10px] md:text-xs px-2 py-1 rounded border transition-colors ${
+                                      outOfStock
+                                        ? "opacity-40 cursor-not-allowed border-border"
+                                        : selectedSize === size
+                                          ? "bg-primary text-white border-primary"
+                                          : "border-border hover:border-primary/50"
+                                    }`}
+                                  >
+                                    {size}
+                                  </button>
+                                  {outOfStock && (
+                                    <span className="text-[9px] text-muted-foreground text-center mt-0.5 leading-tight">Sin stock</span>
+                                  )}
+                                  {lowStock && (
+                                    <span className="text-[9px] text-amber-600 text-center mt-0.5 leading-tight">¡Últimas {stock!.qty}!</span>
+                                  )}
+                                </div>
+                              )
+                            })}
                           </div>
                         )}
 
@@ -231,6 +270,10 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
                           {product.available && product.category !== "Arte" && (
                             <Button
                               size="sm"
+                              disabled={quickAddId === product.id && (() => {
+                                const s = getSizeStock(product, selectedSize)
+                                return !!s && s.qty <= 0
+                              })()}
                               className={`text-xs md:text-sm transition-all ${
                                 addedId === product.id
                                   ? "bg-green-500 hover:bg-green-600"
