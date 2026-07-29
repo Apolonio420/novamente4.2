@@ -14,6 +14,9 @@ const PRODUCT_STOCK_MAP: Record<string, { productKey: LiquidationGarmentKey; col
   "buzo-hoodie-marron": { productKey: "buzo-oversize", color: "marron" },
   "buzo-hoodie-crema": { productKey: "buzo-oversize", color: "crema" },
   "buzo-hoodie-gris": { productKey: "buzo-oversize", color: "gris-melange" },
+  // La Aura Caramel es fisicamente la "Remera Oversized-Marron" del proveedor
+  // viejo (liquidacion) — confirmado por Juan 29/07.
+  "aura-tshirt-caramel": { productKey: "remera-oversize", color: "marron" },
 }
 
 const SIZE_ORDER: LiquidationSize[] = ["S", "M", "L", "XL"]

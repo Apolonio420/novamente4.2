@@ -439,7 +439,8 @@ describe('processPaymentById — decremento de garment_stock (liquidación) con 
       customer_email: null,
       items: [
         { item_name: 'Buzo', product_type: 'buzo-hoodie-unisex', product_color: 'Marrón', product_size: 'M', quantity: 2, unit_price: 60000 },
-        { item_name: 'Aura', product_type: 'aura-oversize-tshirt', product_color: 'Caramel', product_size: 'M', quantity: 1, unit_price: 30000 }, // color con reposición → no trackeado
+        { item_name: 'Aura', product_type: 'aura-oversize-tshirt', product_color: 'Caramel', product_size: 'M', quantity: 1, unit_price: 30000 }, // caramel = remera marron de liquidación → también trackeado
+        { item_name: 'Aura', product_type: 'aura-oversize-tshirt', product_color: 'Negro', product_size: 'M', quantity: 1, unit_price: 30000 }, // color con reposición → no trackeado
       ],
       metadata: {},
     }
@@ -458,10 +459,13 @@ describe('processPaymentById — decremento de garment_stock (liquidación) con 
     expect(h.state.garmentClaimCalls[0].orderId).toBe('order-30')
     expect(h.state.garmentClaimCalls[0].updates?.metadata?.garment_stock_decremented_at).toBeTruthy()
 
-    // Decrementó SOLO el item trackeado, con claves canónicas:
+    // Decrementó SOLO los items trackeados (el Aura Negro no), con claves canónicas:
     const dec = h.state.rpcCalls.filter((c) => c.fn === 'decrement_garment_stock')
-    expect(dec).toHaveLength(1)
-    expect(dec[0].args).toEqual({ p_product_key: 'buzo-oversize', p_color: 'marron', p_size: 'M', p_qty: 2 })
+    expect(dec).toHaveLength(2)
+    expect(dec.map((c) => c.args)).toEqual([
+      { p_product_key: 'buzo-oversize', p_color: 'marron', p_size: 'M', p_qty: 2 },
+      { p_product_key: 'remera-oversize', p_color: 'marron', p_size: 'M', p_qty: 1 },
+    ])
   })
 
   it('si el claim atómico NO gana (otro proceso ya reclamó), no llama la RPC', async () => {

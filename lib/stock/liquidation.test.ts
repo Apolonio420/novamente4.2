@@ -52,8 +52,9 @@ describe("matchStockColor", () => {
     expect(matchStockColor("grey")).toBe("gris-melange")
   })
 
-  it("NO matchea caramel ni chocolate (reposicion permanente)", () => {
-    expect(matchStockColor("Caramel")).toBe(null)
+  it("caramel = marron (Aura Caramel es la remera marron de liquidacion); chocolate NO matchea", () => {
+    expect(matchStockColor("Caramel")).toBe("marron")
+    expect(matchStockColor("caramelo")).toBe("marron")
     expect(matchStockColor("Chocolate")).toBe(null)
   })
 

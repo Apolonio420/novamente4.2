@@ -3,8 +3,12 @@
  *
  * Solo se trackean las combinaciones prenda+color que el proveedor actual NO
  * repone: buzo-oversize en marron/crema/gris-melange y remera-oversize en
- * marron. Todo lo demas (Negro, Blanco, Stone Wash, Caramel, etc.) tiene
+ * marron. Todo lo demas (Negro, Blanco, Stone Wash, Chocolate, etc.) tiene
  * reposicion permanente y NO pasa por aca — vende como siempre.
+ *
+ * "Caramel" ES la remera marron: la Aura Caramel publicada en la web es la
+ * misma prenda fisica que "Remera Oversized-Marron" de la planilla del
+ * proveedor viejo (confirmado por Juan 29/07). Por eso caramel -> marron.
  *
  * Fuente de verdad: tabla `garment_stock` (migrations/20260728_garment_stock_liquidation.sql).
  * Los normalizadores de acá son PUROS (sin I/O) y se usan tanto client-side
@@ -44,10 +48,11 @@ export function matchGarmentKey(text: string): LiquidationGarmentKey | null {
   return null
 }
 
-/** 'marron' | 'crema' | 'gris-melange' | null a partir de texto libre (color). Caramel/chocolate NUNCA matchean. */
+/** 'marron' | 'crema' | 'gris-melange' | null a partir de texto libre (color). Caramel = marron (misma prenda); chocolate NUNCA matchea. */
 export function matchStockColor(text: string): LiquidationColor | null {
   const t = normalizeText(text)
-  if (/marron/.test(t)) return "marron"
+  if (/chocolate/.test(t)) return null
+  if (/marron|caramel/.test(t)) return "marron"
   if (/crema|cream/.test(t)) return "crema"
   if (/melange|gris|gray|grey/.test(t)) return "gris-melange"
   return null
