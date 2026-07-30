@@ -56,6 +56,7 @@ interface BrandingData {
   font_preference: string
   visual_style: string
   tagline: string
+  description: string
   about_text: string
   cta_text: string
   cta_url: string
@@ -71,6 +72,7 @@ const EMPTY_BRANDING: BrandingData = {
   font_preference: 'inter',
   visual_style: 'minimal',
   tagline: '',
+  description: '',
   about_text: '',
   cta_text: '',
   cta_url: '',
@@ -735,6 +737,28 @@ export default function BrandingPage() {
                         }
                       }}
                       className="bg-zinc-800/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                    />
+                  </div>
+
+                  {/* Presentación (description) — subtítulo destacado de "Sobre nosotros" */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="description" className="text-zinc-300">Presentación</Label>
+                      <span className={`text-xs tabular-nums ${branding.description.length > 300 ? 'text-red-400' : 'text-zinc-500'}`}>
+                        {branding.description.length}/300
+                      </span>
+                    </div>
+                    <Textarea
+                      id="description"
+                      placeholder="Una línea que resuma tu marca (aparece destacada arriba de 'Acerca de tu marca')"
+                      value={branding.description}
+                      onChange={(e) => {
+                        if (e.target.value.length <= 300) {
+                          updateField('description', e.target.value)
+                        }
+                      }}
+                      rows={3}
+                      className="bg-zinc-800/50 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 resize-none"
                     />
                   </div>
 
