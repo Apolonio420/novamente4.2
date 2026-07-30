@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { JsonLd } from '@/components/partners/json-ld'
 import { ProductCardImage } from '@/components/partners/product-card-image'
 import ImageGalleryClient from './ImageGalleryClient'
+import ProductMediaBuy from './ProductMediaBuy'
 import {
   generateProductSchema,
   generateBreadcrumbSchema,
@@ -159,14 +160,258 @@ export default async function ProductDetailPage({ params }: PageProps) {
   // nunca aparecía y la prenda se veía "en un solo color").
   const rawColors = (product.metadata as any)?.colors
   const legacyColors = (product.metadata as any)?.available_colors
-  const availableColors: { name: string; code: string }[] | undefined =
+  // parsedColors conserva las images (front/back) de cada color además de
+  // name/code — availableColors (lo que consume AddToCartButtons) sigue
+  // siendo exactamente { name, code }[], sin cambios respecto a antes.
+  const parsedColors:
+    | { name: string; code: string; images?: { front?: string; back?: string } }[]
+    | undefined =
     Array.isArray(rawColors) && rawColors.length > 0
       ? rawColors
           .filter((c: any) => c && typeof c.name === 'string' && c.name.trim())
-          .map((c: any) => ({ name: c.name, code: c.hex || c.code || '#000000' }))
+          .map((c: any) => ({
+            name: c.name,
+            code: c.hex || c.code || '#000000',
+            images:
+              c.images && typeof c.images === 'object'
+                ? {
+                    front:
+                      typeof c.images.front === 'string' && c.images.front
+                        ? c.images.front
+                        : undefined,
+                    back:
+                      typeof c.images.back === 'string' && c.images.back
+                        ? c.images.back
+                        : undefined,
+                  }
+                : undefined,
+          }))
+      : undefined
+  const availableColors: { name: string; code: string }[] | undefined =
+    parsedColors && parsedColors.length > 0
+      ? parsedColors.map(({ name, code }) => ({ name, code }))
       : Array.isArray(legacyColors) && legacyColors.length > 0
         ? legacyColors
         : undefined
+
+  // Mapa color -> { front, back } — solo entradas con al menos una imagen
+  // válida. Si queda vacío (la gran mayoría de productos: DROP 002/003 y el
+  // resto de los ~130 partners), hasColorImages es false y la página usa el
+  // árbol de siempre, sin pasar por ProductMediaBuy.
+  const colorImagesMap: Record<string, { front?: string; back?: string }> = parsedColors
+    ? Object.fromEntries(
+        parsedColors
+          .filter((c) => c.images && (c.images.front || c.images.back))
+          .map((c) => [c.name, c.images!])
+      )
+    : {}
+  const hasColorImages = Object.keys(colorImagesMap).length > 0
+  const defaultColorMeta = (product.metadata as any)?.color ?? undefined
+  // Misma fórmula que AddToCartButtons usa para su initialColor interno —
+  // se duplica acá solo para inicializar el estado de ProductMediaBuy con el
+  // mismo valor que el picker mostraría de entrada.
+  const initialColorForGallery =
+    defaultColorMeta && availableColors?.some((c) => c.name === defaultColorMeta)
+      ? defaultColorMeta
+      : (availableColors?.[0]?.name ?? '')
+
+  // ---------------------------------------------------------------------
+  // JSX compartido entre el árbol original (sin colors-con-images) y el
+  // árbol con ProductMediaBuy (con colors-con-images). Se computan UNA vez
+  // acá y se insertan en la rama que corresponda — así no hay dos copias
+  // del mismo markup que puedan desincronizarse.
+  // ---------------------------------------------------------------------
+  const hotSaleBadge = hotSaleOffer ? (
+    <div className="pointer-events-none absolute left-4 top-4 z-10 flex items-center gap-2">
+      <span className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-orange-500 to-red-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-orange-500/30">
+        <Flame className="h-3.5 w-3.5" />
+        Hot Sale
+      </span>
+      <span className="inline-flex items-center rounded-md bg-black/60 px-2.5 py-1.5 text-xs font-bold text-orange-400 backdrop-blur-sm">
+        -{getDiscountPercent(hotSaleOffer)}%
+      </span>
+    </div>
+  ) : null
+
+  const infoTop = (
+    <>
+      <div>
+        {product.category && (
+          <span className="mb-2 inline-block text-xs uppercase tracking-wider text-zinc-500">
+            {product.category}
+          </span>
+        )}
+        <h1 className="text-3xl font-bold text-white md:text-4xl">
+          {product.name}
+        </h1>
+      </div>
+
+      {/* Price */}
+      {product.price != null && (
+        <div
+          className={
+            hotSaleOffer
+              ? 'rounded-xl border border-orange-500/40 bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent p-4'
+              : ''
+          }
+        >
+          {hotSaleOffer && (
+            <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-orange-400">
+              <Flame className="h-3.5 w-3.5" />
+              Precio Hot Sale
+            </div>
+          )}
+          <div className="flex items-baseline gap-3 flex-wrap">
+            {(product.metadata as any)?.size_prices && (
+              <span className="text-base text-zinc-400">Desde</span>
+            )}
+            <span
+              className={
+                hotSaleOffer
+                  ? 'text-3xl font-bold text-orange-400 md:text-4xl'
+                  : 'text-3xl font-bold text-white'
+              }
+            >
+              {formatPrice(product.price, product.currency || tenant.currency)}
+            </span>
+            {product.compare_at_price != null &&
+              product.compare_at_price > product.price && (
+                <>
+                  <span className="text-lg text-zinc-500 line-through">
+                    {formatPrice(
+                      product.compare_at_price,
+                      product.currency || tenant.currency
+                    )}
+                  </span>
+                  <Badge
+                    className={
+                      hotSaleOffer
+                        ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white border-0'
+                        : 'bg-red-600 text-white'
+                    }
+                  >
+                    -
+                    {Math.round(
+                      ((product.compare_at_price - product.price) /
+                        product.compare_at_price) *
+                        100
+                    )}
+                    %
+                  </Badge>
+                </>
+              )}
+          </div>
+          {hotSaleOffer && hotSaleEndsAt && (
+            <p className="mt-2 text-xs text-zinc-400">
+              Promo por tiempo limitado — vigente hasta el {hotSaleEndsAt}.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Availability */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge
+          variant="outline"
+          className={
+            comingSoon
+              ? 'border-amber-700 text-amber-400'
+              : product.stock === 0 ||
+                  (product.stock == null && product.availability === 'out_of_stock')
+                ? 'border-red-800 text-red-400'
+                : 'border-green-800 text-green-400'
+          }
+        >
+          {comingSoon
+            ? 'Próximamente'
+            : product.stock === 0
+              ? 'Sin stock'
+              : product.stock == null && product.availability === 'out_of_stock'
+                ? 'Sin stock'
+                : product.availability === 'preorder'
+                  ? 'Pre-orden'
+                  : 'Disponible'}
+        </Badge>
+        {!comingSoon && product.stock != null && product.stock > 0 && (
+          <Badge
+            variant="outline"
+            className={
+              product.stock <= 5
+                ? 'border-amber-700 text-amber-400'
+                : 'border-zinc-700 text-zinc-400'
+            }
+          >
+            Quedan {product.stock} unidades
+          </Badge>
+        )}
+      </div>
+
+      {/* Description */}
+      {product.description && (
+        <p className="leading-relaxed text-zinc-400">
+          {product.description}
+        </p>
+      )}
+
+      {/* Tags */}
+      {product.tags && product.tags.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {product.tags.map((tag) => (
+            <Badge
+              key={tag}
+              variant="secondary"
+              className="border-zinc-700 bg-zinc-800 text-zinc-400"
+            >
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      )}
+    </>
+  )
+
+  const comingSoonNotice = (
+    <div className="rounded-lg border border-amber-700/50 bg-amber-950/20 px-4 py-4 text-center">
+      <p className="text-sm font-semibold text-amber-300">Próximamente</p>
+      <p className="mt-1 text-xs text-zinc-400">
+        Esta pieza estará disponible muy pronto. Seguinos para enterarte del lanzamiento.
+      </p>
+    </div>
+  )
+
+  const backLink = (
+    <Link
+      href={`/p/${tenant.slug}`}
+      className="mt-2 inline-flex items-center text-sm text-zinc-500 transition hover:text-zinc-300"
+    >
+      &larr; Volver a {tenant.name}
+    </Link>
+  )
+
+  // Props de AddToCartButtons — idénticas a las que se pasaban inline antes.
+  // Se agrupan acá para poder reusarlas tanto en el árbol original (spread,
+  // sin selectedColor/onSelectColor) como en ProductMediaBuy (que le agrega
+  // el modo controlado).
+  const addToCartProps = {
+    productId: product.id,
+    productName: product.name,
+    brandName: tenant.name,
+    tenantId: tenant.id,
+    brandSlug: tenant.slug,
+    category: product.category ?? null,
+    price: product.price ?? 0,
+    sizePrices: (product.metadata as any)?.size_prices ?? undefined,
+    sizeLabel: (product.metadata as any)?.size_prices ? "Medida" : undefined,
+    imageUrl: product.images?.[0] ?? null,
+    sizes: Array.isArray((product.metadata as any)?.sizes) ? (product.metadata as any).sizes : undefined,
+    sizing: (product.metadata as any)?.sizing ?? undefined,
+    sizeGuideUrl: (product.metadata as any)?.size_prices ? "" : "/guia-de-talles-novamente.pdf",
+    availableColors,
+    defaultColor: defaultColorMeta,
+    fallbackWhatsappUrl: ctaHref ?? undefined,
+    whatsappLabel: ctaUsesFallback ? "Consultar a Novamente por WhatsApp" : `Consultar a ${tenant.name} por WhatsApp`,
+    primaryColor: tenant.primary_color,
+  }
 
   return (
     <main
@@ -227,200 +472,48 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
       {/* Product Detail */}
       <section className="mx-auto max-w-7xl px-6 pb-16 pt-4">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-          {/* Image Gallery */}
-          <div className="relative">
-            <ImageGallery product={product} />
-            {hotSaleOffer && (
-              <div className="pointer-events-none absolute left-4 top-4 z-10 flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-orange-500 to-red-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-orange-500/30">
-                  <Flame className="h-3.5 w-3.5" />
-                  Hot Sale
-                </span>
-                <span className="inline-flex items-center rounded-md bg-black/60 px-2.5 py-1.5 text-xs font-bold text-orange-400 backdrop-blur-sm">
-                  -{getDiscountPercent(hotSaleOffer)}%
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Product Info */}
-          <div className="flex flex-col gap-6">
-            <div>
-              {product.category && (
-                <span className="mb-2 inline-block text-xs uppercase tracking-wider text-zinc-500">
-                  {product.category}
-                </span>
-              )}
-              <h1 className="text-3xl font-bold text-white md:text-4xl">
-                {product.name}
-              </h1>
+        {hasColorImages ? (
+          // Producto con metadata.colors[].images válidas: la galería
+          // reacciona al color elegido en el picker. Estado compartido vive
+          // en ProductMediaBuy (client component).
+          <ProductMediaBuy
+            images={product.images || []}
+            productName={product.name}
+            colorImages={colorImagesMap}
+            initialColor={initialColorForGallery}
+            hotSaleBadge={hotSaleBadge}
+            infoTop={infoTop}
+            comingSoon={comingSoon}
+            comingSoonNotice={comingSoonNotice}
+            addToCartProps={addToCartProps}
+            backLink={backLink}
+          />
+        ) : (
+          // Sin colors-con-images (la gran mayoría de los productos, en esta
+          // tienda y en el resto de los ~130 partners): árbol EXACTAMENTE
+          // igual al de siempre — galería con product.images, AddToCartButtons
+          // sin controlar (su propio useState interno).
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
+            {/* Image Gallery */}
+            <div className="relative">
+              <ImageGallery product={product} />
+              {hotSaleBadge}
             </div>
 
-            {/* Price */}
-            {product.price != null && (
-              <div
-                className={
-                  hotSaleOffer
-                    ? 'rounded-xl border border-orange-500/40 bg-gradient-to-br from-orange-500/10 via-orange-500/5 to-transparent p-4'
-                    : ''
-                }
-              >
-                {hotSaleOffer && (
-                  <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-orange-400">
-                    <Flame className="h-3.5 w-3.5" />
-                    Precio Hot Sale
-                  </div>
-                )}
-                <div className="flex items-baseline gap-3 flex-wrap">
-                  {(product.metadata as any)?.size_prices && (
-                    <span className="text-base text-zinc-400">Desde</span>
-                  )}
-                  <span
-                    className={
-                      hotSaleOffer
-                        ? 'text-3xl font-bold text-orange-400 md:text-4xl'
-                        : 'text-3xl font-bold text-white'
-                    }
-                  >
-                    {formatPrice(product.price, product.currency || tenant.currency)}
-                  </span>
-                  {product.compare_at_price != null &&
-                    product.compare_at_price > product.price && (
-                      <>
-                        <span className="text-lg text-zinc-500 line-through">
-                          {formatPrice(
-                            product.compare_at_price,
-                            product.currency || tenant.currency
-                          )}
-                        </span>
-                        <Badge
-                          className={
-                            hotSaleOffer
-                              ? 'bg-gradient-to-r from-orange-500 to-red-600 text-white border-0'
-                              : 'bg-red-600 text-white'
-                          }
-                        >
-                          -
-                          {Math.round(
-                            ((product.compare_at_price - product.price) /
-                              product.compare_at_price) *
-                              100
-                          )}
-                          %
-                        </Badge>
-                      </>
-                    )}
-                </div>
-                {hotSaleOffer && hotSaleEndsAt && (
-                  <p className="mt-2 text-xs text-zinc-400">
-                    Promo por tiempo limitado — vigente hasta el {hotSaleEndsAt}.
-                  </p>
-                )}
-              </div>
-            )}
+            {/* Product Info */}
+            <div className="flex flex-col gap-6">
+              {infoTop}
 
-            {/* Availability */}
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge
-                variant="outline"
-                className={
-                  comingSoon
-                    ? 'border-amber-700 text-amber-400'
-                    : product.stock === 0 ||
-                        (product.stock == null && product.availability === 'out_of_stock')
-                      ? 'border-red-800 text-red-400'
-                      : 'border-green-800 text-green-400'
-                }
-              >
-                {comingSoon
-                  ? 'Próximamente'
-                  : product.stock === 0
-                    ? 'Sin stock'
-                    : product.stock == null && product.availability === 'out_of_stock'
-                      ? 'Sin stock'
-                      : product.availability === 'preorder'
-                        ? 'Pre-orden'
-                        : 'Disponible'}
-              </Badge>
-              {!comingSoon && product.stock != null && product.stock > 0 && (
-                <Badge
-                  variant="outline"
-                  className={
-                    product.stock <= 5
-                      ? 'border-amber-700 text-amber-400'
-                      : 'border-zinc-700 text-zinc-400'
-                  }
-                >
-                  Quedan {product.stock} unidades
-                </Badge>
-              )}
+              {/* CTA — carrito + buy now (Novamente checkout). El WhatsApp queda como
+                  fallback de consulta para clientes que prefieren ese canal.
+                  Para piezas "Próximamente" mostramos un aviso en vez del botón de compra. */}
+              {comingSoon ? comingSoonNotice : <AddToCartButtons {...addToCartProps} />}
+
+              {/* Back to storefront */}
+              {backLink}
             </div>
-
-            {/* Description */}
-            {product.description && (
-              <p className="leading-relaxed text-zinc-400">
-                {product.description}
-              </p>
-            )}
-
-            {/* Tags */}
-            {product.tags && product.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {product.tags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="secondary"
-                    className="border-zinc-700 bg-zinc-800 text-zinc-400"
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-            {/* CTA — carrito + buy now (Novamente checkout). El WhatsApp queda como
-                fallback de consulta para clientes que prefieren ese canal.
-                Para piezas "Próximamente" mostramos un aviso en vez del botón de compra. */}
-            {comingSoon ? (
-              <div className="rounded-lg border border-amber-700/50 bg-amber-950/20 px-4 py-4 text-center">
-                <p className="text-sm font-semibold text-amber-300">Próximamente</p>
-                <p className="mt-1 text-xs text-zinc-400">
-                  Esta pieza estará disponible muy pronto. Seguinos para enterarte del lanzamiento.
-                </p>
-              </div>
-            ) : (
-              <AddToCartButtons
-                productId={product.id}
-                productName={product.name}
-                brandName={tenant.name}
-                tenantId={tenant.id}
-                brandSlug={tenant.slug}
-                category={product.category ?? null}
-                price={product.price ?? 0}
-                sizePrices={(product.metadata as any)?.size_prices ?? undefined}
-                sizeLabel={(product.metadata as any)?.size_prices ? "Medida" : undefined}
-                imageUrl={product.images?.[0] ?? null}
-                sizes={Array.isArray((product.metadata as any)?.sizes) ? (product.metadata as any).sizes : undefined}
-                sizing={(product.metadata as any)?.sizing ?? undefined}
-                sizeGuideUrl={(product.metadata as any)?.size_prices ? "" : "/guia-de-talles-novamente.pdf"}
-                availableColors={availableColors}
-                defaultColor={(product.metadata as any)?.color ?? undefined}
-                fallbackWhatsappUrl={ctaHref ?? undefined}
-                whatsappLabel={ctaUsesFallback ? "Consultar a Novamente por WhatsApp" : `Consultar a ${tenant.name} por WhatsApp`}
-                primaryColor={tenant.primary_color}
-              />
-            )}
-
-            {/* Back to storefront */}
-            <Link
-              href={`/p/${tenant.slug}`}
-              className="mt-2 inline-flex items-center text-sm text-zinc-500 transition hover:text-zinc-300"
-            >
-              &larr; Volver a {tenant.name}
-            </Link>
           </div>
-        </div>
+        )}
       </section>
 
       {/* Related Products */}

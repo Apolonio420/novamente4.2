@@ -763,8 +763,8 @@ export default function CheckoutPage() {
                 </div>
                 {subtotal < shippingThreshold && (
                   <div className="bg-blue-50 p-2 rounded space-y-1.5">
-                    <p className="text-xs text-muted-foreground">
-                      Te faltan {formatCurrency(shippingThreshold - subtotal)} para envio gratuito
+                    <p className="text-xs font-medium text-blue-900">
+                      Te faltan {formatCurrency(shippingThreshold - subtotal)} para envío gratuito
                     </p>
                     <div className="w-full bg-blue-200 rounded-full h-1.5">
                       <div

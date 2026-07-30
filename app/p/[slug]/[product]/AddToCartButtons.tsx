@@ -15,7 +15,7 @@ interface ColorOption {
   code: string
 }
 
-interface AddToCartButtonsProps {
+export interface AddToCartButtonsProps {
   productId: string
   productName: string
   brandName: string
@@ -49,6 +49,12 @@ interface AddToCartButtonsProps {
   fallbackWhatsappUrl?: string
   whatsappLabel?: string
   primaryColor: string
+  // Modo controlado (opcional) — cuando el color elegido debe sincronizarse con
+  // otro componente (ej. la galería de imágenes en ProductMediaBuy.tsx, que
+  // muestra las fotos del color activo). Si no vienen, el componente usa su
+  // useState interno tal cual antes — no rompe a los callers existentes.
+  selectedColor?: string
+  onSelectColor?: (color: string) => void
 }
 
 export function AddToCartButtons({
@@ -70,6 +76,8 @@ export function AddToCartButtons({
   fallbackWhatsappUrl,
   whatsappLabel = "Consultar por WhatsApp",
   primaryColor,
+  selectedColor: selectedColorProp,
+  onSelectColor,
 }: AddToCartButtonsProps) {
   const availableSizes = sizes && sizes.length > 0 ? sizes : DEFAULT_SIZES
   const [selectedSize, setSelectedSize] = useState<string>(availableSizes[0])
@@ -79,7 +87,12 @@ export function AddToCartButtons({
   const initialColor = defaultColor && availableColors?.some(c => c.name === defaultColor)
     ? defaultColor
     : (availableColors?.[0]?.name ?? "")
-  const [selectedColor, setSelectedColor] = useState<string>(initialColor)
+  // Estado interno (uncontrolled) — se usa siempre que el caller no pase
+  // selectedColor/onSelectColor. Si los pasa (modo controlado), esos props
+  // ganan y este estado queda sin usar (no se pierde nada al no controlarlo).
+  const [internalSelectedColor, setInternalSelectedColor] = useState<string>(initialColor)
+  const selectedColor = selectedColorProp !== undefined ? selectedColorProp : internalSelectedColor
+  const setSelectedColor = onSelectColor ?? setInternalSelectedColor
   const [adding, setAdding] = useState(false)
   const { addItem } = useCart()
   const { toast } = useToast()
