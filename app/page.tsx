@@ -377,6 +377,38 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Serie Malvinas — banner destacado */}
+      <section className="border-t border-white/10 bg-[#0c0c10] px-4 py-10 md:py-12">
+        <div className="container mx-auto">
+          <Link
+            href="/malvinas"
+            className="group flex flex-col items-center gap-6 overflow-hidden rounded-2xl border border-sky-400/20 bg-sky-400/[0.03] p-4 transition hover:border-sky-400/40 sm:flex-row sm:p-6"
+          >
+            <div className="relative aspect-[4/5] w-full max-w-[220px] shrink-0 overflow-hidden rounded-xl sm:aspect-square sm:w-40">
+              <Image
+                src="/marketing/malvinas/trapo-negra-lifestyle.jpg"
+                alt="Serie Malvinas Novamente — Las Malvinas son argentinas, remera negra con bandera estampada"
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                sizes="(max-width: 640px) 220px, 160px"
+              />
+            </div>
+            <div className="flex flex-1 flex-col items-center gap-2 text-center sm:items-start sm:text-left">
+              <p className="inline-flex rounded-full border border-sky-400/30 bg-sky-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-sky-200">
+                Serie Malvinas
+              </p>
+              <h2 className="text-2xl font-semibold text-white md:text-3xl">Las Malvinas son argentinas</h2>
+              <p className="max-w-xl text-sm text-white/60 md:text-base">
+                Serie Malvinas — diseñada y estampada en Argentina. Siete diseños en remeras, buzos y hoodies.
+              </p>
+            </div>
+            <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-950 transition group-hover:bg-zinc-100">
+              Ver la serie
+            </span>
+          </Link>
+        </div>
+      </section>
+
       {/* Hot Sale — ofertas activas. Si no hay campania vigente, la seccion no aparece. */}
       {activeOffers.length > 0 && (
       <section className="py-16 md:py-20 border-t border-orange-500/20 bg-gradient-to-b from-orange-500/[0.04] via-transparent to-transparent">

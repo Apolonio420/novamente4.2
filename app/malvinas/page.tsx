@@ -1,0 +1,284 @@
+import type { Metadata } from "next"
+import Link from "next/link"
+import Image from "next/image"
+import { Badge } from "@/components/ui/badge"
+import { getWhatsAppLink, INTERNAL_LINKS } from "@/lib/config/links"
+
+export const metadata: Metadata = {
+  title: "Serie Malvinas — Las Malvinas son argentinas | Novamente",
+  description:
+    "Serie Malvinas de Novamente: remeras, buzos y hoodies diseñados y estampados en Argentina. Las Malvinas son argentinas. Pedí el tuyo por WhatsApp.",
+  openGraph: {
+    title: "Serie Malvinas — Las Malvinas son argentinas | Novamente",
+    description:
+      "Remeras, buzos y hoodies de la Serie Malvinas. Diseñada y estampada en Argentina. Las Malvinas son argentinas.",
+    url: "https://www.novamente.ar/malvinas",
+    type: "website",
+    images: [
+      {
+        url: "https://www.novamente.ar/marketing/malvinas/trapo-negra-lifestyle.jpg",
+        width: 896,
+        height: 1200,
+        alt: "Las Malvinas son argentinas — Serie Malvinas Novamente, remera negra con bandera estampada",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Serie Malvinas — Las Malvinas son argentinas | Novamente",
+    description:
+      "Remeras, buzos y hoodies de la Serie Malvinas. Diseñada y estampada en Argentina.",
+    images: ["https://www.novamente.ar/marketing/malvinas/trapo-negra-lifestyle.jpg"],
+  },
+  alternates: { canonical: "https://www.novamente.ar/malvinas" },
+}
+
+interface MalvinasDesign {
+  slug: string
+  name: string
+  garment: string
+  blurb: string
+  packshot: string
+  lifestyle: string
+  waText: string
+}
+
+const DESIGNS: MalvinasDesign[] = [
+  {
+    slug: "trapo-negra",
+    name: "El trapo",
+    garment: "Remera negra",
+    blurb: "La bandera que se vio en la cancha, estampada al frente.",
+    packshot: "/marketing/malvinas/trapo-negra-packshot.jpg",
+    lifestyle: "/marketing/malvinas/trapo-negra-lifestyle.jpg",
+    waText:
+      "Hola Novamente! Quiero la remera de la Serie Malvinas (trapo sobre negra). Me pasan info? (ref · NV-MALVINAS)",
+  },
+  {
+    slug: "tipografica-negra",
+    name: "Tipográfica",
+    garment: "Remera negra",
+    blurb: "La frase, directa y sin vueltas.",
+    packshot: "/marketing/malvinas/tipografica-negra-packshot.jpg",
+    lifestyle: "/marketing/malvinas/tipografica-negra-lifestyle.jpg",
+    waText:
+      "Hola Novamente! Quiero la remera de la Serie Malvinas (tipográfica sobre negra). Me pasan info? (ref · NV-MALVINAS)",
+  },
+  {
+    slug: "badge-beige",
+    name: "Escudo",
+    garment: "Remera beige",
+    blurb: "Sello circular con el mapa de las islas.",
+    packshot: "/marketing/malvinas/badge-beige-packshot.jpg",
+    lifestyle: "/marketing/malvinas/badge-beige-lifestyle.jpg",
+    waText:
+      "Hola Novamente! Quiero la remera de la Serie Malvinas (escudo sobre beige). Me pasan info? (ref · NV-MALVINAS)",
+  },
+  {
+    slug: "pincel-blanca",
+    name: "Pincelada",
+    garment: "Remera blanca",
+    blurb: "Trazo suelto, en blanco y negro.",
+    packshot: "/marketing/malvinas/pincel-blanca-packshot.jpg",
+    lifestyle: "/marketing/malvinas/pincel-blanca-lifestyle.jpg",
+    waText:
+      "Hola Novamente! Quiero la remera de la Serie Malvinas (pincelada sobre blanca). Me pasan info? (ref · NV-MALVINAS)",
+  },
+  {
+    slug: "islas-minimal-blanca",
+    name: "Islas",
+    garment: "Remera blanca",
+    blurb: "Silueta minimalista de las islas.",
+    packshot: "/marketing/malvinas/islas-minimal-blanca-packshot.jpg",
+    lifestyle: "/marketing/malvinas/islas-minimal-blanca-lifestyle.jpg",
+    waText:
+      "Hola Novamente! Quiero la remera de la Serie Malvinas (islas minimalista sobre blanca). Me pasan info? (ref · NV-MALVINAS)",
+  },
+  {
+    slug: "bandera-hoodie",
+    name: "Bandera",
+    garment: "Hoodie negro",
+    blurb: "Celeste y blanca, al frente del hoodie.",
+    packshot: "/marketing/malvinas/bandera-hoodie-packshot.jpg",
+    lifestyle: "/marketing/malvinas/bandera-hoodie-lifestyle.jpg",
+    waText:
+      "Hola Novamente! Quiero el hoodie de la Serie Malvinas (bandera). Me pasan info? (ref · NV-MALVINAS)",
+  },
+  {
+    slug: "carta-nautica-buzo",
+    name: "Carta náutica",
+    garment: "Buzo",
+    blurb: "Mapa técnico de las islas, estilo carta de navegación.",
+    packshot: "/marketing/malvinas/carta-nautica-buzo-packshot.jpg",
+    lifestyle: "/marketing/malvinas/carta-nautica-buzo-lifestyle.jpg",
+    waText:
+      "Hola Novamente! Quiero el buzo de la Serie Malvinas (carta náutica). Me pasan info? (ref · NV-MALVINAS)",
+  },
+]
+
+const WA_GENERIC = getWhatsAppLink(
+  "Hola Novamente! Vi la Serie Malvinas en la web y quiero saber más. (ref · NV-MALVINAS)",
+)
+
+export default function MalvinasPage() {
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Inicio", item: "https://www.novamente.ar" },
+      { "@type": "ListItem", position: 2, name: "Serie Malvinas", item: "https://www.novamente.ar/malvinas" },
+    ],
+  }
+
+  return (
+    <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-[#08080b] px-4 py-16 md:py-20">
+        <div className="absolute inset-x-0 top-0 h-px bg-white/10" />
+        <div className="container relative z-10 mx-auto grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="max-w-2xl">
+            <p className="mb-5 inline-flex rounded-full border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-sky-200">
+              Serie Malvinas
+            </p>
+            <h1 className="mb-6 text-4xl font-semibold leading-[1.05] tracking-tight text-white sm:text-6xl md:text-7xl">
+              Las Malvinas son argentinas
+            </h1>
+            <p className="mb-4 text-lg md:text-xl text-white/70 max-w-xl">
+              Serie Malvinas — diseñada y estampada en Argentina.
+            </p>
+            <p className="mb-10 text-base text-white/50 max-w-xl">
+              La bandera que se vio en la cancha, ahora en remeras, buzos y hoodies. Siete diseños propios,
+              producidos bajo demanda.
+            </p>
+
+            <div className="mb-8 flex flex-wrap gap-4">
+              <a
+                href="#disenos"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-base font-semibold text-zinc-950 transition hover:bg-zinc-100"
+              >
+                Ver los diseños
+              </a>
+              <Link
+                href={INTERNAL_LINKS.generator}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-8 py-4 text-base font-medium text-white/80 transition hover:border-white/50 hover:text-white"
+              >
+                ¿Querés tu propia versión? Diseñala en el Studio
+              </Link>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute -inset-4 rounded-[2rem] border border-white/10 bg-white/[0.03]" />
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-zinc-900">
+              <div className="relative aspect-[4/5] sm:aspect-[3/4]">
+                <Image
+                  src="/marketing/malvinas/trapo-negra-lifestyle.jpg"
+                  alt="Las Malvinas son argentinas — remera negra Serie Malvinas, diseño trapo, foto lifestyle en Argentina"
+                  fill
+                  priority
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 45vw"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Grid de diseños */}
+      <section id="disenos" className="scroll-mt-20 bg-[#08080b] px-4 py-16 md:py-20 border-t border-white/10">
+        <div className="container mx-auto">
+          <div className="mb-12 max-w-2xl">
+            <h2 className="novamente-heading text-2xl md:text-3xl text-white mb-4">La serie</h2>
+            <p className="text-white/60 text-base md:text-lg">
+              Siete diseños propios de la Serie Malvinas. Cada uno estampado con DTG premium sobre algodón,
+              bajo demanda.
+            </p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {DESIGNS.map((d) => (
+              <div
+                key={d.slug}
+                className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900"
+              >
+                <div className="grid grid-cols-2 gap-px bg-white/10">
+                  <div className="relative aspect-[4/5] bg-zinc-950">
+                    <Image
+                      src={d.packshot}
+                      alt={`${d.name} — ${d.garment} Serie Malvinas Novamente, packshot`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+                    />
+                  </div>
+                  <div className="relative aspect-[4/5] bg-zinc-950">
+                    <Image
+                      src={d.lifestyle}
+                      alt={`${d.name} — ${d.garment} Serie Malvinas Novamente, foto lifestyle`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+                    />
+                  </div>
+                </div>
+                <div className="p-5">
+                  <h3 className="text-lg font-semibold text-white">{d.name}</h3>
+                  <p className="text-xs uppercase tracking-widest text-white/40 mt-1 mb-3">{d.garment}</p>
+                  <p className="text-sm text-white/60 mb-5">{d.blurb}</p>
+                  <a
+                    href={getWhatsAppLink(d.waText)}
+                    target="_blank"
+                    rel="noopener"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/20 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/5"
+                  >
+                    Pedila por WhatsApp
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-10 text-sm text-white/40 max-w-2xl">
+            Remeras desde $28.600 · Buzos desde $43.000 · Hoodies desde $55.000. El precio final según prenda,
+            color y talle te lo confirmamos por WhatsApp.
+          </p>
+        </div>
+      </section>
+
+      {/* Cierre */}
+      <section className="bg-[#0c0c10] px-4 py-16 md:py-20 border-t border-white/10">
+        <div className="container mx-auto text-center max-w-2xl">
+          <h2 className="novamente-heading text-2xl md:text-3xl text-white mb-4">
+            Las Malvinas son argentinas
+          </h2>
+          <p className="text-white/60 mb-8">
+            Serie Malvinas — diseñada y estampada en Argentina. Consultá tu diseño, prenda y talle por
+            WhatsApp.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <a
+              href={WA_GENERIC}
+              target="_blank"
+              rel="noopener"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-base font-semibold text-zinc-950 transition hover:bg-zinc-100"
+            >
+              Pedila por WhatsApp
+            </a>
+            <Link
+              href={INTERNAL_LINKS.generator}
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-white/20 px-8 py-4 text-base font-medium text-white/80 transition hover:border-white/50 hover:text-white"
+            >
+              Diseñá tu propia versión en el Studio
+            </Link>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
