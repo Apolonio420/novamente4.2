@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Sparkles, Heart, Users, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Palette, Package,
@@ -11,7 +12,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Remeras para Despedidas de Soltero/a — Personalizadas con IA | Novamente",
+  title: "Remeras para Despedidas de Soltero/a con IA",
   description:
     "Remeras y buzos personalizados para despedidas de soltero y soltera. Disenos unicos con IA, cada invitado con su nombre. Desde $28.600. Algodon 100%, estampado DTG premium. Pedidos grupales con descuento. Envios a toda Argentina.",
   keywords: [
@@ -72,12 +73,6 @@ export default function DespedidasPersonalizadas() {
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "67",
-      bestRating: "5",
     },
   }
 
@@ -346,7 +341,7 @@ export default function DespedidasPersonalizadas() {
                 <div className="text-sm text-zinc-400">despedidas equipadas</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-pink-400">4.9/5</div>
+                <div className="text-2xl sm:text-3xl font-bold text-pink-400">{SITE_STATS.averageRating}</div>
                 <div className="text-sm text-zinc-400">calificacion promedio</div>
               </div>
               <div>
@@ -593,7 +588,7 @@ export default function DespedidasPersonalizadas() {
             </div>
 
             <div className="text-center mt-6 text-zinc-500">
-              Calificacion promedio: <span className="text-white font-semibold">4.9/5</span> basado en 67 pedidos de despedidas
+              Calificacion promedio: <span className="text-white font-semibold">{SITE_STATS.averageRating}</span> de nuestros clientes
             </div>
           </div>
         </section>

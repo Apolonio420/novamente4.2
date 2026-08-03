@@ -21,13 +21,20 @@ import { ScrollButton } from "@/components/scroll-button"
 import { INTERNAL_LINKS } from "@/lib/config/links"
 
 export const metadata = {
-  title: "Novamente — Diseñá tu ropa personalizada con inteligencia artificial",
+  title: { absolute: "Novamente — Diseñá tu ropa personalizada con inteligencia artificial" },
   description: "Novamente es la primera marca argentina de indumentaria personalizada con IA. Elegí entre 37 estilos artísticos, diseñá tu remera, hoodie o buzo en minutos con estampado DTG premium. Más de 1.200 diseños creados y envíos a todo el país.",
   openGraph: {
     title: "Novamente — Ropa personalizada con IA en Argentina",
     description: "Diseñá tu prenda única en minutos. 37 estilos artísticos, estampado DTG premium, hoodies desde $55.000 y remeras desde $28.600. Envíos a todo el país.",
     url: "https://www.novamente.ar/",
-    images: [{ url: "https://www.novamente.ar/novamente-logo.png", width: 1200, height: 630, alt: "Novamente — Ropa personalizada con inteligencia artificial" }],
+    images: [
+      {
+        url: "https://www.novamente.ar/marketing/lifestyle/home-carousel-1.webp",
+        width: 1200,
+        height: 630,
+        alt: "Novamente — indumentaria personalizada con inteligencia artificial",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",

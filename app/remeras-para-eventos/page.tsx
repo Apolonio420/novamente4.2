@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Remeras para Eventos — Personalizadas con IA | Novamente",
+  title: "Remeras para Eventos — Personalizadas con IA",
   description:
     "Remeras y buzos personalizados para eventos: maratones, conferencias, festivales, carreras solidarias, team building y mas. Pedidos de 10 a 500+ unidades con descuentos por volumen. Estampado DTG premium, algodon 100%. Envios a toda Argentina.",
   keywords: [
@@ -72,12 +72,6 @@ export default function RemerasParaEventos() {
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      reviewCount: "124",
-      bestRating: "5",
     },
   }
 

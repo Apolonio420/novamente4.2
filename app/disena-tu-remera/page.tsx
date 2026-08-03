@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Sparkles, Palette, Wand2, Shirt, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Zap
@@ -85,12 +86,6 @@ export default function DisenaTuRemera() {
           value: "5500",
         },
       },
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      reviewCount: "95",
-      bestRating: "5",
     },
   }
 
@@ -254,7 +249,7 @@ export default function DisenaTuRemera() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                  4.8/5 rating
+                  {SITE_STATS.averageRating} rating
                 </span>
               </div>
             </div>
@@ -533,9 +528,9 @@ export default function DisenaTuRemera() {
                 <Star key={i} className="w-6 h-6 text-yellow-400 fill-yellow-400" />
               ))}
             </div>
-            <p className="text-2xl font-semibold mb-2">4.8/5 de rating promedio</p>
+            <p className="text-2xl font-semibold mb-2">{SITE_STATS.averageRating} de rating promedio</p>
             <p className="text-muted-foreground">
-              Mas de 1.200 disenos creados por clientes en toda Argentina
+              Mas de {SITE_STATS.designsCreated.replace("+", "")} disenos creados por clientes en toda Argentina
             </p>
           </div>
 

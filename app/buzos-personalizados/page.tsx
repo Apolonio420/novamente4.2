@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Package, Star, Shield, Clock, CheckCircle2,
   Truck, Palette, Sparkles, ArrowRight,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Buzos Personalizados Argentina — Hoodies y Crewnecks con IA y DTG | Novamente",
+  title: "Buzos Personalizados Argentina con IA y DTG",
   description:
     "Buzos personalizados con inteligencia artificial y estampado DTG premium. Hoodies oversize desde $55.000, crewnecks desde $43.000. Algodon 100% frizado, desde 1 unidad. Descuentos por cantidad. Envios a toda Argentina.",
   keywords: [
@@ -78,12 +79,6 @@ export default function BuzosPersonalizados() {
       priceCurrency: "ARS",
       offerCount: 7,
       availability: "https://schema.org/InStock",
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "340",
-      bestRating: "5",
     },
   }
 
@@ -276,7 +271,7 @@ export default function BuzosPersonalizados() {
               <p className="text-sm text-zinc-400">Negro, Crema, Gris, Marron</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-emerald-400">4.9/5</p>
+              <p className="text-3xl font-bold text-emerald-400">{SITE_STATS.averageRating}</p>
               <p className="text-sm text-zinc-400">Rating clientes</p>
             </div>
             <div>

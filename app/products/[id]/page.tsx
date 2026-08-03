@@ -109,7 +109,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const baseUrl = "https://www.novamente.ar"
 
   return {
-    title: `${product.name} — Personalizable con IA | Novamente`,
+    title: `${product.name} — Personalizable con IA`,
     description: `${product.name} a ${product.price}. ${product.description.slice(0, 140)}... Algodon 100% premium con estampado DTG. Personalizalo con inteligencia artificial.`,
     keywords: [
       product.name.toLowerCase(),
@@ -192,19 +192,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       },
       hasMerchantReturnPolicy: { "@id": "https://www.novamente.ar/#return-policy" },
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: avgRating,
-      reviewCount: reviews.length,
-      bestRating: "5",
-      worstRating: "1",
-    },
-    review: reviews.map((r) => ({
-      "@type": "Review",
-      author: { "@type": "Person", name: r.author },
-      reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: "5" },
-      reviewBody: r.text,
-    })),
   }
 
   const breadcrumbJsonLd = {

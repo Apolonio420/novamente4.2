@@ -116,13 +116,6 @@ const organizationJsonLd = {
     "Merchandising personalizado",
     "Ropa personalizada on-demand",
   ],
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: "4.8",
-    reviewCount: "95",
-    bestRating: "5",
-    worstRating: "1",
-  },
   numberOfEmployees: {
     "@type": "QuantitativeValue",
     value: 5,

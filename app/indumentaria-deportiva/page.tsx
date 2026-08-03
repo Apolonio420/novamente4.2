@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Indumentaria Deportiva Personalizada con IA | Novamente",
+  title: "Indumentaria Deportiva Personalizada con IA",
   description:
     "Remeras, musculosas y buzos personalizados para equipos deportivos: futbol, hockey, paddle, running, crossfit y mas. Disena con IA en minutos. Equipos de 10 a 100+ jugadores. Estampado DTG premium, algodon 100%. Envios a toda Argentina.",
   keywords: [
@@ -72,12 +72,6 @@ export default function IndumentariaDeportiva() {
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      reviewCount: "340",
-      bestRating: "5",
     },
   }
 

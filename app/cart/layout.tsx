@@ -2,7 +2,7 @@ import React from 'react'
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Carrito | Novamente",
+  title: "Carrito",
   robots: { index: false, follow: false },
 }
 

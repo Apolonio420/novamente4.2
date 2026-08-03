@@ -85,9 +85,10 @@ export default function BlogDTG() {
     description:
       "Guia completa sobre estampado DTG: como funciona, durabilidad, cuidado de prendas, ventajas y costos en Argentina.",
     author: {
-      "@type": "Organization",
-      name: "Novamente",
-      url: "https://www.novamente.ar",
+      "@type": "Person",
+      "@id": "https://www.novamente.ar/nosotros#founder-nunez",
+      name: "Valentin Nunez",
+      url: "https://www.novamente.ar/nosotros",
     },
     publisher: {
       "@type": "Organization",

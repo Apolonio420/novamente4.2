@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Politica de Privacidad — Novamente Partners',
+  title: 'Politica de Privacidad — Partners',
   description:
     'Politica de privacidad del programa Novamente Partners. Como recopilamos, usamos y protegemos tus datos.',
   alternates: {

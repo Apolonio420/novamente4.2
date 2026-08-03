@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { ArrepentimientoForm } from './form'
 
 export const metadata: Metadata = {
-  title: 'Boton de Arrepentimiento — Novamente',
+  title: 'Boton de Arrepentimiento',
   description:
     'Ejerci tu derecho de arrepentimiento conforme a la Ley 24.240 Art. 34. Formulario de solicitud de devolucion para compras online en Novamente.',
   alternates: { canonical: 'https://www.novamente.ar/arrepentimiento' },

@@ -4,13 +4,14 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Sparkles, Palette, Wand2, Shirt, Star, Truck,
   Shield, Clock, CheckCircle2, Zap, TrendingUp
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Hoodie Personalizado Argentina — Buzo custom con IA | Novamente",
+  title: "Hoodie Personalizado Argentina con IA",
   description:
     "Disena tu hoodie personalizado con inteligencia artificial. Buzo Hoodie Oversize desde $55.000, algodon premium, estampado DTG. 37 estilos artisticos, 6 colores. Envios a todo el pais.",
   keywords: [
@@ -85,12 +86,6 @@ export default function HoodiePersonalizado() {
           value: "5500",
         },
       },
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "67",
-      bestRating: "5",
     },
   }
 
@@ -260,7 +255,7 @@ export default function HoodiePersonalizado() {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                  4.9/5 rating
+                  {SITE_STATS.averageRating} rating
                 </span>
               </div>
             </div>
@@ -643,7 +638,7 @@ export default function HoodiePersonalizado() {
                 <Star key={i} className="w-6 h-6 text-yellow-400 fill-yellow-400" />
               ))}
             </div>
-            <p className="text-2xl font-semibold mb-2">4.9/5 de rating en hoodies</p>
+            <p className="text-2xl font-semibold mb-2">{SITE_STATS.averageRating} de rating promedio</p>
             <p className="text-muted-foreground">
               Mas de 350 hoodies personalizados entregados en toda Argentina
             </p>

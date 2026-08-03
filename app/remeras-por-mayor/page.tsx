@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Package, Star, Shield, Clock, CheckCircle2,
   Truck, Palette, Sparkles, ArrowRight,
@@ -11,7 +12,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Remeras por Mayor Personalizadas — Desde 10 Unidades con Descuento | Novamente",
+  title: "Remeras por Mayor desde 10 Unidades",
   description:
     "Compra remeras por mayor personalizadas con estampado DTG premium. Desde 10 unidades con 5% OFF, 25+ con 10% OFF, 100+ con 15% OFF. Sin minimo de disenos. Envios a todo Argentina. Ideal para revendedores, ferias y showrooms.",
   keywords: [
@@ -72,12 +73,6 @@ export default function RemerasPorMayor() {
       priceCurrency: "ARS",
       offerCount: 6,
       availability: "https://schema.org/InStock",
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "340",
-      bestRating: "5",
     },
   }
 
@@ -388,7 +383,7 @@ export default function RemerasPorMayor() {
                 <div className="text-sm text-zinc-400">dias produccion</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-amber-400">4.9/5</div>
+                <div className="text-2xl sm:text-3xl font-bold text-amber-400">{SITE_STATS.averageRating}</div>
                 <div className="text-sm text-zinc-400">calificacion clientes</div>
               </div>
             </div>
@@ -713,7 +708,7 @@ export default function RemerasPorMayor() {
             </div>
 
             <div className="text-center mt-6 text-zinc-500">
-              Calificacion promedio: <span className="text-white font-semibold">4.9/5</span> basado en 340+ pedidos mayoristas
+              Calificacion promedio: <span className="text-white font-semibold">{SITE_STATS.averageRating}</span> de nuestros clientes
             </div>
           </div>
         </section>

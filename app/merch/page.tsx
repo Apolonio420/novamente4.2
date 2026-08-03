@@ -7,7 +7,7 @@ import { getDirectoryEntries } from "@/lib/partners/unified-directory"
 import MerchFilter from "@/components/MerchFilter"
 
 export const metadata: Metadata = {
-  title: "Merch de tus marcas favoritas | Novamente",
+  title: "Merch de tus marcas favoritas",
   description: "Descubri el merchandising oficial de tus marcas favoritas. Productos unicos, disenos exclusivos y calidad premium DTG. Envios a todo el pais.",
   openGraph: {
     type: "website",

@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Lanza Tu Marca de Ropa — Emprender con Remeras Personalizadas | Novamente",
+  title: "Lanza Tu Marca de Ropa con Remeras Personalizadas",
   description:
     "Crea tu propia marca de ropa personalizada sin inversion inicial. Disena con IA, nosotros producimos y enviamos. Tienda online gratis. Sin stock, sin riesgo. Remeras, buzos y hoodies con estampado DTG premium. Programa Partner de Novamente.",
   keywords: [
@@ -72,12 +72,6 @@ export default function LanzaTuMarca() {
       priceCurrency: "USD",
       offerCount: 3,
       availability: "https://schema.org/InStock",
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      reviewCount: "150",
-      bestRating: "5",
     },
   }
 

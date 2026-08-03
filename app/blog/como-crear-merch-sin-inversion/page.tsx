@@ -85,9 +85,10 @@ export default function BlogComoCrearMerch() {
     description:
       "Guia paso a paso para crear y vender merch personalizado sin invertir un peso. Modelo print-on-demand con IA en Argentina.",
     author: {
-      "@type": "Organization",
-      name: "Novamente",
-      url: "https://www.novamente.ar",
+      "@type": "Person",
+      "@id": "https://www.novamente.ar/nosotros#founder-sambuceti",
+      name: "Juan Ignacio Sambuceti",
+      url: "https://www.novamente.ar/nosotros",
     },
     publisher: {
       "@type": "Organization",

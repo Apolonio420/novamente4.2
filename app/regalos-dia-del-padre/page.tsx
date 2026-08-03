@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Package, Star, Shield, Clock, CheckCircle2,
   Truck, Palette, Sparkles, ArrowRight,
@@ -13,7 +14,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Regalos Dia del Padre 2026 — Remeras y Buzos Personalizados con IA | Novamente",
+  title: "Regalos Dia del Padre — Personalizados con IA",
   description:
     "Regala algo unico este Dia del Padre. Remeras y buzos personalizados con inteligencia artificial y estampado DTG. Diseña un regalo con significado en minutos. Desde $21.800. Envios a toda Argentina.",
   keywords: [
@@ -26,7 +27,6 @@ export const metadata: Metadata = {
     "regalo original dia del padre",
     "remera personalizada para papa",
     "buzo personalizado para papa",
-    "regalo dia del padre 2026",
     "dia del padre argentina",
     "regalos unicos dia del padre",
     "regalo papa personalizado argentina",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     "hoodie personalizado regalo papa",
   ],
   openGraph: {
-    title: "Regalos Dia del Padre 2026 — Personalizados con IA | Novamente",
+    title: "Regalos Dia del Padre — Personalizados con IA | Novamente",
     description:
       "Diseña un regalo unico para papa con inteligencia artificial. Remeras y buzos personalizados con estampado DTG premium. Desde $21.800. Envios a toda Argentina.",
     url: "https://www.novamente.ar/regalos-dia-del-padre",
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Regalos Dia del Padre 2026 — Personalizados con IA | Novamente",
+    title: "Regalos Dia del Padre — Personalizados con IA | Novamente",
     description:
       "Diseña un regalo unico para papa con IA. Remeras y buzos personalizados con estampado DTG. Desde $21.800.",
   },
@@ -78,12 +78,6 @@ export default function RegalosDiaDelPadre() {
       offerCount: 9,
       availability: "https://schema.org/InStock",
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "285",
-      bestRating: "5",
-    },
   }
 
   const faqJsonLd = {
@@ -95,7 +89,7 @@ export default function RegalosDiaDelPadre() {
         name: "Llego a tiempo si pido ahora para el Dia del Padre?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Si. El Dia del Padre 2026 en Argentina es el 21 de junio. Nuestra produccion tarda 2-5 dias habiles y el envio de 3 a 10 dias segun tu zona. Te recomendamos pedir con al menos 10 dias de anticipacion para que llegue sin apuros.",
+          text: "Si. El Dia del Padre en Argentina se celebra el tercer domingo de junio. Nuestra produccion tarda 2-5 dias habiles y el envio de 3 a 10 dias segun tu zona. Te recomendamos pedir con al menos 10 dias de anticipacion para que llegue sin apuros.",
         },
       },
       {
@@ -230,7 +224,7 @@ export default function RegalosDiaDelPadre() {
               alt="Regalo personalizado Novamente para el Día del Padre"
             />
             <Badge className="mb-6 bg-amber-500/20 text-amber-300 border-amber-500/30 text-sm px-4 py-1">
-              <Gift className="w-4 h-4 mr-1" /> Dia del Padre 2026 — 21 de Junio
+              <Gift className="w-4 h-4 mr-1" /> Dia del Padre — tercer domingo de Junio
             </Badge>
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
               Un regalo que solo
@@ -281,7 +275,7 @@ export default function RegalosDiaDelPadre() {
               <p className="text-sm text-zinc-400">Estilos artisticos IA</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-emerald-400">4.9/5</p>
+              <p className="text-3xl font-bold text-emerald-400">{SITE_STATS.averageRating}</p>
               <p className="text-sm text-zinc-400">Rating clientes</p>
             </div>
             <div>
@@ -509,11 +503,11 @@ export default function RegalosDiaDelPadre() {
           <div className="max-w-4xl mx-auto px-4 py-8 text-center">
             <p className="text-lg md:text-xl font-semibold text-amber-300 mb-2">
               <Clock className="w-5 h-5 inline mr-2" />
-              Dia del Padre 2026: 21 de Junio
+              Dia del Padre: tercer domingo de Junio
             </p>
             <p className="text-sm text-zinc-400">
               Produccion: 2-5 dias | Envio: 3-10 dias segun zona.
-              Recomendamos pedir antes del 8 de junio para asegurar la entrega.
+              Recomendamos pedir con al menos 10 dias de anticipacion para asegurar la entrega.
             </p>
           </div>
         </section>
@@ -527,7 +521,7 @@ export default function RegalosDiaDelPadre() {
             {[
               {
                 q: "Llego a tiempo si pido ahora?",
-                a: "Si. El Dia del Padre 2026 es el 21 de junio. Produccion tarda 2-5 dias y envio 3-10 dias segun tu zona. Recomendamos pedir con 10+ dias de anticipacion.",
+                a: "Si. El Dia del Padre en Argentina se celebra el tercer domingo de junio. Produccion tarda 2-5 dias y envio 3-10 dias segun tu zona. Recomendamos pedir con al menos 10 dias de anticipacion.",
               },
               {
                 q: "Puedo usar una foto para el diseno?",

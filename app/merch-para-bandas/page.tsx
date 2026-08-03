@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Sparkles, Users, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Palette, Package,
@@ -11,7 +12,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Merch Personalizado para Vender - Bandas, Creadores y Marcas | Novamente",
+  title: "Merch Personalizado para Bandas y Creadores",
   description:
     "Remeras, buzos y merch personalizado para bandas, creadores, marcas, eventos y empresas. Disena con IA, vende sin stock o produci por cantidad. Desde 1 unidad. Estampado DTG premium. Envios a toda Argentina.",
   keywords: [
@@ -72,12 +73,6 @@ export default function MerchParaBandas() {
       priceCurrency: "ARS",
       offerCount: 26,
       availability: "https://schema.org/InStock",
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "280",
-      bestRating: "5",
     },
   }
 
@@ -362,7 +357,7 @@ export default function MerchParaBandas() {
                 <div className="text-sm text-zinc-400">proyectos con merch</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-purple-400">4.9/5</div>
+                <div className="text-2xl sm:text-3xl font-bold text-purple-400">{SITE_STATS.averageRating}</div>
                 <div className="text-sm text-zinc-400">calificacion promedio</div>
               </div>
               <div>
@@ -671,7 +666,7 @@ export default function MerchParaBandas() {
             </div>
 
             <div className="text-center mt-6 text-zinc-500">
-              Calificacion promedio: <span className="text-white font-semibold">4.9/5</span> basado en 280 proyectos con merch
+              Calificacion promedio: <span className="text-white font-semibold">{SITE_STATS.averageRating}</span> de nuestros clientes
             </div>
           </div>
         </section>

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Package, Star, Shield, Clock, CheckCircle2,
   Truck, Palette, Sparkles, ArrowRight,
@@ -13,7 +14,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Remeras Personalizadas Argentina — Disena con IA, Estampado DTG Premium | Novamente",
+  title: "Remeras Personalizadas Argentina con IA y DTG",
   description:
     "Remeras personalizadas con inteligencia artificial y estampado DTG premium. Desde 1 unidad, sin minimos. Oversize, classic, crop y musculosas en algodon 100%. Descuentos por cantidad. Envios a toda Argentina. Disena online en minutos.",
   keywords: [
@@ -77,12 +78,6 @@ export default function RemerasPersonalizadas() {
       priceCurrency: "ARS",
       offerCount: 9,
       availability: "https://schema.org/InStock",
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "480",
-      bestRating: "5",
     },
   }
 
@@ -379,15 +374,15 @@ export default function RemerasPersonalizadas() {
         <section className="border-y border-zinc-800 bg-zinc-900/50">
           <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div>
-              <p className="text-3xl font-bold text-violet-400">1,500+</p>
-              <p className="text-sm text-zinc-400">Disenos creados</p>
+              <p className="text-3xl font-bold text-violet-400">{SITE_STATS.designsCreated}</p>
+              <p className="text-sm text-zinc-400">{SITE_STATS.designsCreatedLabel}</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-fuchsia-400">37</p>
+              <p className="text-3xl font-bold text-fuchsia-400">{SITE_STATS.artisticStyles}</p>
               <p className="text-sm text-zinc-400">Estilos de IA</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-emerald-400">4.9/5</p>
+              <p className="text-3xl font-bold text-emerald-400">{SITE_STATS.averageRating}</p>
               <p className="text-sm text-zinc-400">Rating clientes</p>
             </div>
             <div>

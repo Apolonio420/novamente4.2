@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { CURRENT_TERMS_VERSION } from '@/lib/partners/terms-version'
 
 export const metadata: Metadata = {
-  title: 'Terminos y Condiciones — Novamente Partners',
+  title: 'Terminos y Condiciones — Partners',
   description:
     'Terminos y condiciones de uso del programa Novamente Partners. Planes, facturacion, derechos y responsabilidades.',
   alternates: {

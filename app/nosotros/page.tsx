@@ -3,9 +3,10 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, MessageCircle, Mail, MapPin, Phone, Sparkles, Users, Palette, Award } from 'lucide-react'
 import { LandingHeroImage } from '@/components/LandingHeroImage'
+import { SITE_STATS } from '@/lib/site-stats'
 
 export const metadata: Metadata = {
-  title: 'Sobre Novamente — Ropa Personalizada con IA en Argentina',
+  title: { absolute: 'Sobre Novamente — Ropa Personalizada con IA en Argentina' },
   description:
     'Novamente es la primera marca argentina de indumentaria personalizada con inteligencia artificial. Fundada en 2024 en Villa Martelli, Buenos Aires. Combinamos IA generativa con estampado DTG premium para crear prendas unicas bajo demanda. 37 estilos artisticos, envios a todo el pais.',
   openGraph: {
@@ -27,20 +28,50 @@ export const metadata: Metadata = {
 }
 
 const STATS = [
-  { value: '1,200+', label: 'Disenos creados', icon: Palette },
-  { value: '95+', label: 'Clientes satisfechos', icon: Users },
-  { value: '37', label: 'Estilos artisticos', icon: Sparkles },
-  { value: '4.8/5', label: 'Rating promedio', icon: Award },
+  { value: SITE_STATS.designsCreated, label: SITE_STATS.designsCreatedLabel, icon: Palette },
+  { value: SITE_STATS.happyCustomers, label: SITE_STATS.happyCustomersLabel, icon: Users },
+  { value: SITE_STATS.artisticStyles, label: SITE_STATS.artisticStylesLabel, icon: Sparkles },
+  { value: SITE_STATS.averageRating, label: SITE_STATS.averageRatingLabel, icon: Award },
 ]
 
 export default function NosotrosPage() {
+  const founderSambuceti = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    '@id': 'https://www.novamente.ar/nosotros#founder-sambuceti',
+    name: 'Juan Ignacio Sambuceti',
+    jobTitle: 'Co-Fundador',
+    worksFor: { '@id': 'https://www.novamente.ar/#organization' },
+    knowsAbout: [
+      'Desarrollo de negocio',
+      'Indumentaria personalizada con IA',
+      'Relacion con clientes',
+      'Estrategia comercial',
+    ],
+  }
+
+  const founderNunez = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    '@id': 'https://www.novamente.ar/nosotros#founder-nunez',
+    name: 'Valentin Nunez',
+    jobTitle: 'Co-Fundador & Desarrollador',
+    worksFor: { '@id': 'https://www.novamente.ar/#organization' },
+    knowsAbout: [
+      'Desarrollo de software',
+      'Arquitectura de plataformas web',
+      'Inteligencia artificial generativa',
+      'Estampado DTG',
+    ],
+  }
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ClothingStore',
-    '@id': 'https://novamente.ar/#organization',
+    '@id': 'https://www.novamente.ar/#organization',
     name: 'Novamente',
-    url: 'https://novamente.ar',
-    logo: 'https://novamente.ar/novamente-logo.png',
+    url: 'https://www.novamente.ar',
+    logo: 'https://www.novamente.ar/novamente-logo.png',
     description: 'Primera marca argentina de indumentaria personalizada con inteligencia artificial',
     foundingDate: '2024',
     address: {
@@ -58,16 +89,9 @@ export default function NosotrosPage() {
     areaServed: { '@type': 'Country', name: 'Argentina' },
     sameAs: ['https://instagram.com/novamente.ar', 'https://twitter.com/Novamentear'],
     founder: [
-      { '@type': 'Person', name: 'Juan Ignacio Sambuceti', jobTitle: 'Co-Fundador' },
-      { '@type': 'Person', name: 'Valentin Nunez', jobTitle: 'Co-Fundador & Desarrollador' },
+      { '@id': 'https://www.novamente.ar/nosotros#founder-sambuceti' },
+      { '@id': 'https://www.novamente.ar/nosotros#founder-nunez' },
     ],
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.8',
-      reviewCount: '95',
-      bestRating: '5',
-      worstRating: '1',
-    },
   }
 
   const webPageJsonLd = {
@@ -97,6 +121,14 @@ export default function NosotrosPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(founderSambuceti) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(founderNunez) }}
       />
       <script
         type="application/ld+json"

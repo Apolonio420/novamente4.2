@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   Package, Star, Shield, Clock, CheckCircle2,
   Truck, Palette, Sparkles, ArrowRight,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Regalos Personalizados con IA — Remeras, Buzos y Hoodies Unicos | Novamente",
+  title: "Regalos Personalizados con IA — Remeras y Buzos",
   description:
     "Regalos personalizados para cualquier ocasion. Remeras, buzos y hoodies con disenos unicos creados con inteligencia artificial y estampado DTG premium. Desde $21.800. Envios a toda Argentina.",
   keywords: [
@@ -83,12 +84,6 @@ export default function RegalosPersonalizados() {
       priceCurrency: "ARS",
       offerCount: 9,
       availability: "https://schema.org/InStock",
-    },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.9",
-      reviewCount: "412",
-      bestRating: "5",
     },
   }
 
@@ -299,15 +294,15 @@ export default function RegalosPersonalizados() {
         <section className="border-y border-zinc-800 bg-zinc-900/50">
           <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             <div>
-              <p className="text-3xl font-bold text-rose-400">1,500+</p>
+              <p className="text-3xl font-bold text-rose-400">{SITE_STATS.designsCreated}</p>
               <p className="text-sm text-zinc-400">Regalos creados</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-amber-400">37 estilos</p>
+              <p className="text-3xl font-bold text-amber-400">{SITE_STATS.artisticStyles} estilos</p>
               <p className="text-sm text-zinc-400">Estilos artisticos IA</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-emerald-400">4.9/5</p>
+              <p className="text-3xl font-bold text-emerald-400">{SITE_STATS.averageRating}</p>
               <p className="text-sm text-zinc-400">Rating clientes</p>
             </div>
             <div>
