@@ -35,6 +35,8 @@ export const metadata: Metadata = {
 
 interface MalvinasDesign {
   slug: string
+  /** slug del producto comprable en /malvinas/[slug] — lib/malvinas-products.ts */
+  productSlug: string
   name: string
   garment: string
   blurb: string
@@ -46,6 +48,7 @@ interface MalvinasDesign {
 const DESIGNS: MalvinasDesign[] = [
   {
     slug: "trapo-negra",
+    productSlug: "trapo-negra",
     name: "El trapo",
     garment: "Remera negra",
     blurb: "La bandera que se vio en la cancha, estampada al frente.",
@@ -56,6 +59,7 @@ const DESIGNS: MalvinasDesign[] = [
   },
   {
     slug: "tipografica-negra",
+    productSlug: "tipografica-negra",
     name: "Tipográfica",
     garment: "Remera negra",
     blurb: "La frase, directa y sin vueltas.",
@@ -66,6 +70,7 @@ const DESIGNS: MalvinasDesign[] = [
   },
   {
     slug: "badge-beige",
+    productSlug: "badge-beige",
     name: "Escudo",
     garment: "Remera beige",
     blurb: "Sello circular con el mapa de las islas.",
@@ -76,6 +81,7 @@ const DESIGNS: MalvinasDesign[] = [
   },
   {
     slug: "pincel-blanca",
+    productSlug: "pincel-blanca",
     name: "Pincelada",
     garment: "Remera blanca",
     blurb: "Trazo suelto, en blanco y negro.",
@@ -86,6 +92,7 @@ const DESIGNS: MalvinasDesign[] = [
   },
   {
     slug: "islas-minimal-blanca",
+    productSlug: "islas-minimal-blanca",
     name: "Islas",
     garment: "Remera blanca",
     blurb: "Silueta minimalista de las islas.",
@@ -96,6 +103,7 @@ const DESIGNS: MalvinasDesign[] = [
   },
   {
     slug: "bandera-hoodie",
+    productSlug: "bandera-hoodie",
     name: "Bandera",
     garment: "Hoodie negro",
     blurb: "Celeste y blanca, al frente del hoodie.",
@@ -106,6 +114,7 @@ const DESIGNS: MalvinasDesign[] = [
   },
   {
     slug: "carta-nautica-buzo",
+    productSlug: "carta-nautica-buzo",
     name: "Carta náutica",
     garment: "Buzo",
     blurb: "Mapa técnico de las islas, estilo carta de navegación.",
@@ -119,10 +128,14 @@ const DESIGNS: MalvinasDesign[] = [
 interface MinimalVariant {
   label: string
   image: string
+  /** slug del producto comprable en /malvinas/[slug] para ESTA variante puntual */
+  productSlug: string
 }
 
 interface MinimalDesign {
   slug: string
+  /** slug del producto "principal" (el que abre el botón Comprar) */
+  productSlug: string
   name: string
   garment: string
   blurb: string
@@ -135,53 +148,52 @@ interface MinimalDesign {
 const MINIMAL_DESIGNS: MinimalDesign[] = [
   {
     slug: "tres-estrellas",
+    productSlug: "tres-estrellas",
     name: "Tres estrellas",
     garment: "Remera oversize",
     blurb: "Las islas y tres estrellas celestes, al frente. Minimalista y directo.",
     hero: "/marketing/malvinas/tresestrellas-lifestyle.jpg",
     heroAlt: "Tres Estrellas — remera oversize negra Serie Malvinas Novamente, foto lifestyle",
     variants: [
-      { label: "Negra oversize", image: "/marketing/malvinas/tresestrellas-negra-packshot.jpg" },
-      { label: "Blanca oversize", image: "/marketing/malvinas/tresestrellas-blanca-packshot.jpg" },
-      { label: "Stone wash", image: "/marketing/malvinas/tresestrellas-stonewash-packshot.jpg" },
+      { label: "Negra oversize", image: "/marketing/malvinas/tresestrellas-negra-packshot.jpg", productSlug: "tres-estrellas" },
+      { label: "Blanca oversize", image: "/marketing/malvinas/tresestrellas-blanca-packshot.jpg", productSlug: "tres-estrellas" },
+      { label: "Stone wash", image: "/marketing/malvinas/tresestrellas-stonewash-packshot.jpg", productSlug: "tres-estrellas" },
     ],
     waText:
       "Hola Novamente! Quiero la remera de la Colección Minimal (Tres Estrellas, negra oversize — también hay blanca y stone wash). Me pasan info? (ref · NV-MALVINAS-MINIMAL)",
   },
   {
     slug: "monograma",
+    productSlug: "monograma",
     name: "Monograma 51°S 59°O",
     garment: "Remera clásica",
     blurb: "Islas chicas, una estrella y las coordenadas exactas de las Malvinas.",
     hero: "/marketing/malvinas/monograma-beige-packshot.jpg",
     heroAlt: "Monograma 51°S 59°O — remera beige Serie Malvinas Novamente, packshot",
     variants: [
-      { label: "Beige", image: "/marketing/malvinas/monograma-beige-packshot.jpg" },
-      { label: "Blanca clásica", image: "/marketing/malvinas/monograma-blanca-packshot.jpg" },
-      { label: "Negra clásica", image: "/marketing/malvinas/monograma-negra-packshot.jpg" },
+      { label: "Beige", image: "/marketing/malvinas/monograma-beige-packshot.jpg", productSlug: "monograma" },
+      { label: "Blanca clásica", image: "/marketing/malvinas/monograma-blanca-packshot.jpg", productSlug: "monograma" },
+      { label: "Negra clásica", image: "/marketing/malvinas/monograma-negra-packshot.jpg", productSlug: "monograma" },
     ],
     waText:
       "Hola Novamente! Quiero la remera de la Colección Minimal (Monograma 51°S 59°O, beige — también hay blanca y negra). Me pasan info? (ref · NV-MALVINAS-MINIMAL)",
   },
   {
     slug: "horizonte",
+    productSlug: "horizonte-buzo",
     name: "Horizonte",
     garment: "Buzo stone wash",
     blurb: "Las islas y el sol saliendo sobre la línea de horizonte.",
     hero: "/marketing/malvinas/horizonte-lifestyle.jpg",
     heroAlt: "Horizonte — buzo stone wash Serie Malvinas Novamente, foto lifestyle",
     variants: [
-      { label: "Buzo stone wash", image: "/marketing/malvinas/horizonte-buzo-packshot.jpg" },
-      { label: "Hoodie negro", image: "/marketing/malvinas/horizonte-hoodie-packshot.jpg" },
+      { label: "Buzo stone wash", image: "/marketing/malvinas/horizonte-buzo-packshot.jpg", productSlug: "horizonte-buzo" },
+      { label: "Hoodie negro", image: "/marketing/malvinas/horizonte-hoodie-packshot.jpg", productSlug: "horizonte-hoodie" },
     ],
     waText:
       "Hola Novamente! Quiero el buzo de la Colección Minimal (Horizonte, stone wash — también hay hoodie negro). Me pasan info? (ref · NV-MALVINAS-MINIMAL)",
   },
 ]
-
-const WA_GENERIC = getWhatsAppLink(
-  "Hola Novamente! Vi la Serie Malvinas en la web y quiero saber más. (ref · NV-MALVINAS)",
-)
 
 export default function MalvinasPage() {
   const breadcrumbJsonLd = {
@@ -270,7 +282,7 @@ export default function MalvinasPage() {
                 key={d.slug}
                 className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900"
               >
-                <div className="grid grid-cols-2 gap-px bg-white/10">
+                <Link href={`/malvinas/${d.productSlug}`} className="grid grid-cols-2 gap-px bg-white/10">
                   <div className="relative aspect-[4/5] bg-zinc-950">
                     <Image
                       src={d.packshot}
@@ -289,18 +301,24 @@ export default function MalvinasPage() {
                       sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
                     />
                   </div>
-                </div>
+                </Link>
                 <div className="p-5">
                   <h3 className="text-lg font-semibold text-white">{d.name}</h3>
                   <p className="text-xs uppercase tracking-widest text-white/40 mt-1 mb-3">{d.garment}</p>
-                  <p className="text-sm text-white/60 mb-5">{d.blurb}</p>
+                  <p className="text-sm text-white/60 mb-4">{d.blurb}</p>
+                  <Link
+                    href={`/malvinas/${d.productSlug}`}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-100"
+                  >
+                    Comprar
+                  </Link>
                   <a
                     href={getWhatsAppLink(d.waText)}
                     target="_blank"
                     rel="noopener"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/20 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/5"
+                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 text-xs text-white/40 transition hover:text-white/70"
                   >
-                    Pedila por WhatsApp
+                    ¿Dudas? Escribinos
                   </a>
                 </div>
               </div>
@@ -308,8 +326,8 @@ export default function MalvinasPage() {
           </div>
 
           <p className="mt-10 text-sm text-white/40 max-w-2xl">
-            Remeras desde $28.600 · Buzos desde $43.000 · Hoodies desde $55.000. El precio final según prenda,
-            color y talle te lo confirmamos por WhatsApp.
+            Remeras desde $28.600 · Buzos desde $43.000 · Hoodies desde $55.000. Elegí color y talle en cada
+            producto y pagá online — o consultanos por WhatsApp si tenés dudas.
           </p>
         </div>
       </section>
@@ -334,7 +352,7 @@ export default function MalvinasPage() {
                 key={d.slug}
                 className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900"
               >
-                <div className="relative aspect-[4/5] bg-zinc-950">
+                <Link href={`/malvinas/${d.productSlug}`} className="relative block aspect-[4/5] bg-zinc-950">
                   <Image
                     src={d.hero}
                     alt={d.heroAlt}
@@ -342,7 +360,7 @@ export default function MalvinasPage() {
                     className="object-cover"
                     sizes="(max-width: 1024px) 100vw, 33vw"
                   />
-                </div>
+                </Link>
 
                 <div
                   className={`grid gap-px bg-white/10 ${
@@ -350,15 +368,20 @@ export default function MalvinasPage() {
                   }`}
                 >
                   {d.variants.map((v) => (
-                    <div key={v.label} className="relative aspect-square bg-zinc-950">
+                    <Link
+                      key={v.label}
+                      href={`/malvinas/${v.productSlug}`}
+                      className="relative block aspect-square bg-zinc-950"
+                      title={`Comprar — ${v.label}`}
+                    >
                       <Image
                         src={v.image}
                         alt={`${d.name} — ${v.label}, Colección Minimal Novamente`}
                         fill
-                        className="object-cover"
+                        className="object-cover transition hover:opacity-80"
                         sizes="(max-width: 640px) 33vw, (max-width: 1024px) 16vw, 11vw"
                       />
-                    </div>
+                    </Link>
                   ))}
                 </div>
 
@@ -368,14 +391,20 @@ export default function MalvinasPage() {
                   <p className="text-xs text-white/40 mb-3">
                     {d.variants.map((v) => v.label).join(" · ")}
                   </p>
-                  <p className="text-sm text-white/60 mb-5">{d.blurb}</p>
+                  <p className="text-sm text-white/60 mb-4">{d.blurb}</p>
+                  <Link
+                    href={`/malvinas/${d.productSlug}`}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-100"
+                  >
+                    Comprar
+                  </Link>
                   <a
                     href={getWhatsAppLink(d.waText)}
                     target="_blank"
                     rel="noopener"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/20 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/5"
+                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 text-xs text-white/40 transition hover:text-white/70"
                   >
-                    Pedila por WhatsApp
+                    ¿Dudas? Escribinos
                   </a>
                 </div>
               </div>
@@ -391,17 +420,15 @@ export default function MalvinasPage() {
             Las Malvinas son argentinas
           </h2>
           <p className="text-white/60 mb-8">
-            Serie Malvinas — diseñada y estampada en Argentina. Consultá tu diseño, prenda y talle por
-            WhatsApp.
+            Serie Malvinas — diseñada y estampada en Argentina. Elegí tu diseño, color y talle, y comprá
+            directo desde la web.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <a
-              href={WA_GENERIC}
-              target="_blank"
-              rel="noopener"
+              href="#disenos"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-4 text-base font-semibold text-zinc-950 transition hover:bg-zinc-100"
             >
-              Pedila por WhatsApp
+              Ver los diseños y comprar
             </a>
             <Link
               href={INTERNAL_LINKS.generator}
