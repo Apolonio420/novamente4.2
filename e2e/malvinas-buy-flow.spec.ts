@@ -8,7 +8,8 @@ import { test, expect } from "@playwright/test"
  */
 
 const SCRATCHPAD =
-  "/private/tmp/claude-501/-Users-sambujuan-novamente-dev-chatbot/ddf326a2-985c-4856-8de5-ba8b782f45b3/scratchpad"
+  process.env.MALVINAS_E2E_SCRATCHPAD ??
+  "/private/tmp/claude-501/-Users-sambujuan-novamente-dev-chatbot/2b80b6a3-e328-46fd-8f35-08a1e70abc95/scratchpad"
 
 const VIEWPORTS = [
   { name: "desktop", width: 1440, height: 900 },
