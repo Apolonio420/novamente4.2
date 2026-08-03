@@ -116,6 +116,69 @@ const DESIGNS: MalvinasDesign[] = [
   },
 ]
 
+interface MinimalVariant {
+  label: string
+  image: string
+}
+
+interface MinimalDesign {
+  slug: string
+  name: string
+  garment: string
+  blurb: string
+  hero: string
+  heroAlt: string
+  variants: MinimalVariant[]
+  waText: string
+}
+
+const MINIMAL_DESIGNS: MinimalDesign[] = [
+  {
+    slug: "tres-estrellas",
+    name: "Tres estrellas",
+    garment: "Remera oversize",
+    blurb: "Las islas y tres estrellas celestes, al frente. Minimalista y directo.",
+    hero: "/marketing/malvinas/tresestrellas-lifestyle.jpg",
+    heroAlt: "Tres Estrellas — remera oversize negra Serie Malvinas Novamente, foto lifestyle",
+    variants: [
+      { label: "Negra oversize", image: "/marketing/malvinas/tresestrellas-negra-packshot.jpg" },
+      { label: "Blanca oversize", image: "/marketing/malvinas/tresestrellas-blanca-packshot.jpg" },
+      { label: "Stone wash", image: "/marketing/malvinas/tresestrellas-stonewash-packshot.jpg" },
+    ],
+    waText:
+      "Hola Novamente! Quiero la remera de la Colección Minimal (Tres Estrellas, negra oversize — también hay blanca y stone wash). Me pasan info? (ref · NV-MALVINAS-MINIMAL)",
+  },
+  {
+    slug: "monograma",
+    name: "Monograma 51°S 59°O",
+    garment: "Remera clásica",
+    blurb: "Islas chicas, una estrella y las coordenadas exactas de las Malvinas.",
+    hero: "/marketing/malvinas/monograma-beige-packshot.jpg",
+    heroAlt: "Monograma 51°S 59°O — remera beige Serie Malvinas Novamente, packshot",
+    variants: [
+      { label: "Beige", image: "/marketing/malvinas/monograma-beige-packshot.jpg" },
+      { label: "Blanca clásica", image: "/marketing/malvinas/monograma-blanca-packshot.jpg" },
+      { label: "Negra clásica", image: "/marketing/malvinas/monograma-negra-packshot.jpg" },
+    ],
+    waText:
+      "Hola Novamente! Quiero la remera de la Colección Minimal (Monograma 51°S 59°O, beige — también hay blanca y negra). Me pasan info? (ref · NV-MALVINAS-MINIMAL)",
+  },
+  {
+    slug: "horizonte",
+    name: "Horizonte",
+    garment: "Buzo stone wash",
+    blurb: "Las islas y el sol saliendo sobre la línea de horizonte.",
+    hero: "/marketing/malvinas/horizonte-lifestyle.jpg",
+    heroAlt: "Horizonte — buzo stone wash Serie Malvinas Novamente, foto lifestyle",
+    variants: [
+      { label: "Buzo stone wash", image: "/marketing/malvinas/horizonte-buzo-packshot.jpg" },
+      { label: "Hoodie negro", image: "/marketing/malvinas/horizonte-hoodie-packshot.jpg" },
+    ],
+    waText:
+      "Hola Novamente! Quiero el buzo de la Colección Minimal (Horizonte, stone wash — también hay hoodie negro). Me pasan info? (ref · NV-MALVINAS-MINIMAL)",
+  },
+]
+
 const WA_GENERIC = getWhatsAppLink(
   "Hola Novamente! Vi la Serie Malvinas en la web y quiero saber más. (ref · NV-MALVINAS)",
 )
@@ -152,7 +215,7 @@ export default function MalvinasPage() {
               Serie Malvinas — diseñada y estampada en Argentina.
             </p>
             <p className="mb-10 text-base text-white/50 max-w-xl">
-              La bandera que se vio en la cancha, ahora en remeras, buzos y hoodies. Siete diseños propios,
+              La bandera que se vio en la cancha, ahora en remeras, buzos y hoodies. Diez diseños propios,
               producidos bajo demanda.
             </p>
 
@@ -248,6 +311,76 @@ export default function MalvinasPage() {
             Remeras desde $28.600 · Buzos desde $43.000 · Hoodies desde $55.000. El precio final según prenda,
             color y talle te lo confirmamos por WhatsApp.
           </p>
+        </div>
+      </section>
+
+      {/* Colección Minimal */}
+      <section className="bg-[#0c0c10] px-4 py-16 md:py-20 border-t border-white/10">
+        <div className="container mx-auto">
+          <div className="mb-12 max-w-2xl">
+            <p className="mb-4 inline-flex rounded-full border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-sky-200">
+              Nueva
+            </p>
+            <h2 className="novamente-heading text-2xl md:text-3xl text-white mb-4">Colección Minimal</h2>
+            <p className="text-white/60 text-base md:text-lg">
+              Tres diseños nuevos, más chicos y más limpios. Misma bandera, otra actitud: estampado sutil,
+              en varios colores por diseño.
+            </p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {MINIMAL_DESIGNS.map((d) => (
+              <div
+                key={d.slug}
+                className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900"
+              >
+                <div className="relative aspect-[4/5] bg-zinc-950">
+                  <Image
+                    src={d.hero}
+                    alt={d.heroAlt}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 33vw"
+                  />
+                </div>
+
+                <div
+                  className={`grid gap-px bg-white/10 ${
+                    d.variants.length === 2 ? "grid-cols-2" : "grid-cols-3"
+                  }`}
+                >
+                  {d.variants.map((v) => (
+                    <div key={v.label} className="relative aspect-square bg-zinc-950">
+                      <Image
+                        src={v.image}
+                        alt={`${d.name} — ${v.label}, Colección Minimal Novamente`}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 33vw, (max-width: 1024px) 16vw, 11vw"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-5">
+                  <h3 className="text-lg font-semibold text-white">{d.name}</h3>
+                  <p className="text-xs uppercase tracking-widest text-white/40 mt-1 mb-1">{d.garment}</p>
+                  <p className="text-xs text-white/40 mb-3">
+                    {d.variants.map((v) => v.label).join(" · ")}
+                  </p>
+                  <p className="text-sm text-white/60 mb-5">{d.blurb}</p>
+                  <a
+                    href={getWhatsAppLink(d.waText)}
+                    target="_blank"
+                    rel="noopener"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/20 px-5 py-3 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/5"
+                  >
+                    Pedila por WhatsApp
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

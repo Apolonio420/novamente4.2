@@ -399,7 +399,7 @@ export default function Home() {
               </p>
               <h2 className="text-2xl font-semibold text-white md:text-3xl">Las Malvinas son argentinas</h2>
               <p className="max-w-xl text-sm text-white/60 md:text-base">
-                Serie Malvinas — diseñada y estampada en Argentina. Siete diseños en remeras, buzos y hoodies.
+                Serie Malvinas — diseñada y estampada en Argentina. Diez diseños en remeras, buzos y hoodies.
               </p>
             </div>
             <span className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-950 transition group-hover:bg-zinc-100">
