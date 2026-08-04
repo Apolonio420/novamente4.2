@@ -74,6 +74,48 @@ test.describe("Serie Malvinas — flujo de compra", () => {
   })
 })
 
+test.describe("Serie Malvinas — Lienzo (selector de Medida en vez de Talle)", () => {
+  test("lienzo-carta-nautica: elegir medida, agregar al carrito, ir a checkout", async ({ page }) => {
+    await page.goto("/malvinas/lienzo-carta-nautica", { waitUntil: "networkidle" })
+
+    // Precio "desde" antes de elegir medida — el más chico de sizeOptions (lib/products.ts:131).
+    await expect(page.getByText(/Desde.*\$\s?34\.000/)).toBeVisible()
+
+    // Selector dice "Medida", no "Talle".
+    await expect(page.getByText("Medida", { exact: true })).toBeVisible()
+
+    // Elegir medida 35×40 cm (precio $41.000)
+    await page.getByRole("button", { name: "35×40 cm" }).click()
+    await expect(page.getByText(/\$\s?41\.000/).first()).toBeVisible()
+
+    // Sin tabla de talles de ropa (ancho/largo cm de prenda) para el lienzo.
+    await expect(page.getByText("Tabla de talles")).toHaveCount(0)
+
+    await page.getByRole("button", { name: /Agregar al carrito/ }).click()
+    await expect(page.getByText("Agregado al carrito")).toBeVisible()
+
+    await page.goto("/cart", { waitUntil: "networkidle" })
+    await expect(page.getByText(/Carta Náutica.*Lienzo/).first()).toBeVisible()
+    // El carrito formatea precio en-US ($41,000.00) mientras la PDP usa es-AR ($41.000) — ambos válidos.
+    await expect(page.getByText(/\$\s?41[.,]000/).first()).toBeVisible()
+
+    await page.getByRole("button", { name: /Finalizar Compra/i }).click()
+    await page.waitForURL("**/checkout", { timeout: 15000 })
+    await expect(page).toHaveURL(/\/checkout$/)
+    await expect(page.getByText(/Carta Náutica.*Lienzo/).first()).toBeVisible()
+  })
+
+  for (const vp of VIEWPORTS) {
+    test(`/malvinas/lienzo-carta-nautica @ ${vp.name}`, async ({ page }) => {
+      await page.setViewportSize({ width: vp.width, height: vp.height })
+      await page.goto("/malvinas/lienzo-carta-nautica", { waitUntil: "networkidle" })
+      await page.getByRole("button", { name: "40×50 cm" }).click()
+      await page.waitForTimeout(400)
+      await page.screenshot({ path: `${SCRATCHPAD}/malvinas-lienzo-product-${vp.name}.png`, fullPage: true })
+    })
+  }
+})
+
 test.describe("Screenshots — desktop + mobile", () => {
   for (const vp of VIEWPORTS) {
     test(`/malvinas @ ${vp.name}`, async ({ page }) => {

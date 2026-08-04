@@ -10,6 +10,13 @@
  * REGLA DE PRECIOS: el precio de cada producto es SIEMPRE el precio base de
  * la prenda en lib/catalog.ts (buscado por garmentType) — nunca un número
  * hardcodeado acá. Si lib/catalog.ts cambia, esto se actualiza solo.
+ *
+ * EXCEPCIÓN — Lienzo: no es ropa (no tiene un único precio por garmentType,
+ * varía por medida) y lib/catalog.ts solo tiene un precio flat ("Lienzo
+ * Premium", $59.900) que no corresponde a la venta por medida. Los precios
+ * por medida del lienzo son los EXACTOS de lib/products.ts:131 (id "lienzo",
+ * único lugar del repo con el desglose de las 3 medidas) — hardcodeados acá
+ * a propósito, ver sizeOptions del producto "lienzo-carta-nautica".
  */
 import { PRODUCTS as CATALOG_PRODUCTS } from "@/lib/catalog"
 
@@ -84,15 +91,28 @@ export interface MalvinasColor {
 export interface MalvinasProduct {
   slug: string
   name: string
-  collection: "La Serie" | "Colección Minimal"
+  collection: "La Serie" | "Colección Minimal" | "Para tu pared"
   /** Descripción corta de la prenda para mostrar bajo el título, ej. "Remera oversize" */
   garmentLabel: string
-  garmentType: SizeChartKey
+  // "lienzo-premium" no tiene SIZE_CHARTS (no es ropa, no aplica ancho/largo en cm de prenda) —
+  // usa sizeOptions/sizeLabel en su lugar (ver abajo).
+  garmentType: SizeChartKey | "lienzo-premium"
   price: number
   /** Foto lifestyle opcional — si existe, es la imagen hero por default */
   lifestyle?: string
   colors: MalvinasColor[]
   blurb: string
+  /**
+   * Tamaños con precio propio — SOLO para productos sin talle de ropa (ej. lienzos).
+   * Si está presente, MalvinasProductClient reemplaza el selector de "Talle" (y su
+   * tabla de medidas de prenda) por un selector de "Medida" con precio variable por
+   * tamaño, y usa el primero como precio "desde" mostrado antes de elegir.
+   * Precios: EXACTOS a los de lib/products.ts (id "lienzo", 3 medidas) — única fuente
+   * pública de precio por medida para este producto en el sitio.
+   */
+  sizeOptions?: { size: string; price: number }[]
+  /** Label del selector de talle/tamaño — default "Talle". Los lienzos usan "Medida". */
+  sizeLabel?: string
 }
 
 export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
@@ -264,6 +284,31 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
       { name: "Stone wash", code: COLOR_HEX["stone wash"], image: "/marketing/malvinas/horizonte-hoodie-stonewash-packshot.jpg" },
     ],
     blurb: "Las islas y el sol saliendo sobre la línea de horizonte, versión hoodie.",
+  },
+
+  // ---------------------------------------------------------------------
+  // Para tu pared — lienzo decorativo (mismo arte que "Carta náutica" buzo)
+  // ---------------------------------------------------------------------
+  {
+    slug: "lienzo-carta-nautica",
+    name: "Carta Náutica — Lienzo",
+    collection: "Para tu pared",
+    garmentLabel: "Lienzo decorativo",
+    garmentType: "lienzo-premium",
+    // "Desde" el precio de la medida más chica — precio real por medida en sizeOptions.
+    price: 34000,
+    lifestyle: "/marketing/malvinas/lienzo-carta-nautica-lifestyle.jpg",
+    colors: [
+      { name: "Personalizable", code: "#1e222c", image: "/marketing/malvinas/lienzo-carta-nautica-packshot.jpg" },
+    ],
+    blurb: "El mismo mapa técnico de las islas, ahora en lienzo para tu pared.",
+    // Precios EXACTOS de lib/products.ts:131 (única fuente de precio por medida del lienzo).
+    sizeOptions: [
+      { size: "20×30 cm", price: 34000 },
+      { size: "35×40 cm", price: 41000 },
+      { size: "40×50 cm", price: 49000 },
+    ],
+    sizeLabel: "Medida",
   },
 ]
 

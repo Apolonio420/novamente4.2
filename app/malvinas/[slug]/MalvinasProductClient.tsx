@@ -39,14 +39,21 @@ export default function MalvinasProductClient({ product }: { product: MalvinasPr
 
   const selectedColor = product.colors[colorIndex]
   const hasColors = product.colors.length > 1
-  const sizeChart = SIZE_CHARTS[product.garmentType]
+  // Lienzo (garmentType "lienzo-premium") no tiene tabla de talles de ropa — usa
+  // sizeOptions (medida + precio propio) en su lugar, ver interfaz MalvinasProduct.
+  const isSizedByPrice = Boolean(product.sizeOptions && product.sizeOptions.length > 0)
+  const sizeChart = product.garmentType !== "lienzo-premium" ? SIZE_CHARTS[product.garmentType] : undefined
+  const sizeLabel = product.sizeLabel ?? "Talle"
+  const currentPrice = isSizedByPrice
+    ? (product.sizeOptions!.find((o) => o.size === size)?.price ?? product.sizeOptions![0].price)
+    : product.price
   const heroImg = showLifestyle && product.lifestyle ? product.lifestyle : selectedColor.image
 
   const ensureSizeSelected = (): boolean => {
     if (!size) {
       toast({
-        title: "Elegí un talle",
-        description: "Antes de seguir, marcá tu talle abajo.",
+        title: `Elegí ${isSizedByPrice ? "una medida" : "un talle"}`,
+        description: `Antes de seguir, marcá ${isSizedByPrice ? "tu medida" : "tu talle"} abajo.`,
         variant: "destructive",
       })
       return false
@@ -60,7 +67,7 @@ export default function MalvinasProductClient({ product }: { product: MalvinasPr
     garmentType: product.garmentType,
     color: selectedColor.name,
     size,
-    price: product.price,
+    price: currentPrice,
     quantity: qty,
     image: selectedColor.image,
     mockupUrl: selectedColor.image,
@@ -72,7 +79,7 @@ export default function MalvinasProductClient({ product }: { product: MalvinasPr
     addItem(buildCartItem())
     toast({
       title: "Agregado al carrito",
-      description: `${product.name} · ${selectedColor.name} · Talle ${size} · ${formatPrice(product.price * qty)}`,
+      description: `${product.name} · ${selectedColor.name} · ${sizeLabel} ${size} · ${formatPrice(currentPrice * qty)}`,
     })
     setTimeout(() => setAdding(false), 800)
   }
@@ -151,9 +158,12 @@ export default function MalvinasProductClient({ product }: { product: MalvinasPr
             <h1 className="mt-3 text-3xl font-bold leading-tight md:text-4xl">{product.name}</h1>
             <p className="mt-1 text-sm text-zinc-400">{product.garmentLabel}</p>
 
-            <div className="mt-5 text-3xl font-bold">{formatPrice(product.price)}</div>
+            <div className="mt-5 text-3xl font-bold">
+              {isSizedByPrice && !size ? "Desde " : ""}
+              {formatPrice(currentPrice)}
+            </div>
             <p className="text-xs text-zinc-500">
-              6 cuotas sin interés de {formatPrice(product.price / 6)} · Estampado DTG incluido
+              6 cuotas sin interés de {formatPrice(currentPrice / 6)} · Estampado DTG incluido
             </p>
 
             <p className="mt-6 leading-relaxed text-zinc-200">{product.blurb}</p>
@@ -196,26 +206,47 @@ export default function MalvinasProductClient({ product }: { product: MalvinasPr
               </div>
             )}
 
-            {/* Talle */}
+            {/* Talle / Medida */}
             <div className="mt-8">
-              <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">Talle</p>
+              <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-zinc-400">{sizeLabel}</p>
               <div className="flex flex-wrap gap-2">
-                {sizeChart.sizes.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setSize(s)}
-                    className={`min-w-[3rem] rounded-md border px-4 py-2 text-sm font-semibold transition ${
-                      size === s
-                        ? "border-white bg-white text-zinc-950"
-                        : "border-zinc-700 text-zinc-200 hover:border-zinc-500"
-                    }`}
-                    aria-pressed={size === s}
-                  >
-                    {s}
-                  </button>
-                ))}
+                {isSizedByPrice
+                  ? product.sizeOptions!.map((opt) => (
+                      <button
+                        key={opt.size}
+                        type="button"
+                        onClick={() => setSize(opt.size)}
+                        className={`min-w-[5rem] rounded-md border px-4 py-2 text-sm font-semibold transition ${
+                          size === opt.size
+                            ? "border-white bg-white text-zinc-950"
+                            : "border-zinc-700 text-zinc-200 hover:border-zinc-500"
+                        }`}
+                        aria-pressed={size === opt.size}
+                      >
+                        {opt.size}
+                      </button>
+                    ))
+                  : sizeChart!.sizes.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setSize(s)}
+                        className={`min-w-[3rem] rounded-md border px-4 py-2 text-sm font-semibold transition ${
+                          size === s
+                            ? "border-white bg-white text-zinc-950"
+                            : "border-zinc-700 text-zinc-200 hover:border-zinc-500"
+                        }`}
+                        aria-pressed={size === s}
+                      >
+                        {s}
+                      </button>
+                    ))}
               </div>
+              {isSizedByPrice && (
+                <p className="mt-2 text-xs text-zinc-500">
+                  Formato enrollado, listo para enmarcar o tensar · lienzo 100% algodón, impresión DTG.
+                </p>
+              )}
             </div>
 
             {/* Cantidad */}
@@ -271,45 +302,47 @@ export default function MalvinasProductClient({ product }: { product: MalvinasPr
               ¿Dudas? Escribinos por WhatsApp
             </a>
 
-            {/* Tabla de talles */}
-            <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-              <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-200">
-                <Ruler className="h-4 w-4 text-sky-300" />
-                Tabla de talles
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-zinc-800 text-zinc-400">
-                      <th className="px-2 py-2 text-left font-semibold">Talle</th>
-                      <th className="px-2 py-2 text-center font-semibold">Ancho (cm)</th>
-                      <th className="px-2 py-2 text-center font-semibold">Largo (cm)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sizeChart.sizes.map((s, i) => (
-                      <tr key={s} className="border-b border-zinc-800/60 last:border-0">
-                        <td className="px-2 py-2 font-bold text-zinc-100">{s}</td>
-                        <td className="px-2 py-2 text-center text-zinc-300">{sizeChart.width[i]}</td>
-                        <td className="px-2 py-2 text-center text-zinc-300">{sizeChart.length[i]}</td>
+            {/* Tabla de talles — solo prendas (el lienzo usa sizeOptions, sin tabla cm ancho/largo de ropa) */}
+            {sizeChart && (
+              <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-zinc-200">
+                  <Ruler className="h-4 w-4 text-sky-300" />
+                  Tabla de talles
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-zinc-800 text-zinc-400">
+                        <th className="px-2 py-2 text-left font-semibold">Talle</th>
+                        <th className="px-2 py-2 text-center font-semibold">Ancho (cm)</th>
+                        <th className="px-2 py-2 text-center font-semibold">Largo (cm)</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {sizeChart.sizes.map((s, i) => (
+                        <tr key={s} className="border-b border-zinc-800/60 last:border-0">
+                          <td className="px-2 py-2 font-bold text-zinc-100">{s}</td>
+                          <td className="px-2 py-2 text-center text-zinc-300">{sizeChart.width[i]}</td>
+                          <td className="px-2 py-2 text-center text-zinc-300">{sizeChart.length[i]}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-3 text-xs text-zinc-500">
+                  * Las medidas pueden variar &plusmn;1 cm. Si dudás entre dos talles, elegí el más grande.
+                </p>
+                <a
+                  href="/guia-de-talles-novamente.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-sky-300 hover:text-sky-200 transition-colors"
+                >
+                  <Ruler className="w-4 h-4" />
+                  Descargar guía de talles completa (PDF)
+                </a>
               </div>
-              <p className="mt-3 text-xs text-zinc-500">
-                * Las medidas pueden variar &plusmn;1 cm. Si dudás entre dos talles, elegí el más grande.
-              </p>
-              <a
-                href="/guia-de-talles-novamente.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-sky-300 hover:text-sky-200 transition-colors"
-              >
-                <Ruler className="w-4 h-4" />
-                Descargar guía de talles completa (PDF)
-              </a>
-            </div>
+            )}
 
             <div className="mt-6 grid grid-cols-3 gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 text-xs text-zinc-300">
               <div>

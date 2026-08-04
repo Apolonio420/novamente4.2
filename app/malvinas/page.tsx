@@ -342,6 +342,67 @@ export default function MalvinasPage() {
         </div>
       </section>
 
+      {/* Para tu pared — lienzo, mismo arte que "Carta náutica" */}
+      <section className="bg-[#0c0c10] px-4 py-16 md:py-20 border-t border-white/10">
+        <div className="container mx-auto">
+          <div className="mb-10 max-w-2xl">
+            <h2 className="novamente-heading text-2xl md:text-3xl text-white mb-4">Para tu pared</h2>
+            <p className="text-white/60 text-base md:text-lg">
+              El mismo mapa técnico de las islas del diseño &quot;Carta náutica&quot;, ahora en lienzo
+              decorativo. Formato enrollado, listo para enmarcar o tensar.
+            </p>
+          </div>
+
+          <div className="mx-auto max-w-md overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 sm:max-w-none">
+            <Link href="/malvinas/lienzo-carta-nautica" className="grid grid-cols-2 gap-px bg-white/10">
+              <div className="relative aspect-[4/5] bg-zinc-950">
+                <Image
+                  src="/marketing/malvinas/lienzo-carta-nautica-packshot.jpg"
+                  alt="Carta Náutica — Lienzo, Serie Malvinas Novamente, foto de producto"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+                />
+              </div>
+              <div className="relative aspect-[4/5] bg-zinc-950">
+                <Image
+                  src="/marketing/malvinas/lienzo-carta-nautica-lifestyle.jpg"
+                  alt="Carta Náutica — Lienzo, Serie Malvinas Novamente, foto lifestyle en living"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+                />
+              </div>
+            </Link>
+            <div className="p-5">
+              <h3 className="text-lg font-semibold text-white">Carta Náutica — Lienzo</h3>
+              <p className="text-xs uppercase tracking-widest text-white/40 mt-1 mb-1">Lienzo decorativo</p>
+              <p className="text-xs text-white/40 mb-3">20×30 cm · 35×40 cm · 40×50 cm — desde $34.000</p>
+              <p className="text-sm text-white/60 mb-4">
+                Mapa técnico de las islas, estilo carta de navegación — mismo diseño que el buzo, pensado para
+                colgar en tu pared.
+              </p>
+              <Link
+                href="/malvinas/lienzo-carta-nautica"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-100"
+              >
+                Comprar
+              </Link>
+              <a
+                href={getWhatsAppLink(
+                  "Hola Novamente! Quiero el lienzo de la Serie Malvinas (carta náutica). Me pasan info? (ref · NV-MALVINAS-LIENZO)"
+                )}
+                target="_blank"
+                rel="noopener"
+                className="mt-2 inline-flex w-full items-center justify-center gap-1.5 text-xs text-white/40 transition hover:text-white/70"
+              >
+                ¿Dudas? Escribinos
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Colección Minimal */}
       <section className="bg-[#0c0c10] px-4 py-16 md:py-20 border-t border-white/10">
         <div className="container mx-auto">
