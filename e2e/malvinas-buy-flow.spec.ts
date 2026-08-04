@@ -55,9 +55,15 @@ test.describe("Serie Malvinas — flujo de compra", () => {
     await expect(page.getByText(/Tres estrellas/).first()).toBeVisible()
   })
 
-  test("producto de un solo color: comprar ahora lleva directo a checkout", async ({ page }) => {
+  test("producto con 2 colores: elegir color, comprar ahora lleva directo a checkout", async ({ page }) => {
     await page.goto("/malvinas/trapo-negra", { waitUntil: "networkidle" })
     await expect(page.getByText(/\$\s?28\.600/)).toBeVisible()
+
+    // trapo-negra tiene Negra + Stone wash (única excepción a 3 colores — tela blanca
+    // no es viable sobre esta prenda). Verificamos el selector antes de comprar.
+    const colorButtons = page.getByRole("button", { name: /^Color / })
+    await expect(colorButtons).toHaveCount(2)
+    await colorButtons.nth(1).click()
 
     await page.getByRole("button", { name: "L", exact: true }).click()
     await page.getByRole("button", { name: /Comprar ahora/ }).click()

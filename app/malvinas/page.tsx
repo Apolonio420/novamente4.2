@@ -43,6 +43,8 @@ interface MalvinasDesign {
   packshot: string
   lifestyle: string
   waText: string
+  /** Labels de color disponibles — reflejan MALVINAS_PRODUCTS[].colors en lib/malvinas-products.ts */
+  colors: string[]
 }
 
 const DESIGNS: MalvinasDesign[] = [
@@ -56,6 +58,7 @@ const DESIGNS: MalvinasDesign[] = [
     lifestyle: "/marketing/malvinas/trapo-negra-lifestyle.jpg",
     waText:
       "Hola Novamente! Quiero la remera de la Serie Malvinas (trapo sobre negra). Me pasan info? (ref · NV-MALVINAS)",
+    colors: ["Negra", "Stone wash"],
   },
   {
     slug: "tipografica-negra",
@@ -67,6 +70,7 @@ const DESIGNS: MalvinasDesign[] = [
     lifestyle: "/marketing/malvinas/tipografica-negra-lifestyle.jpg",
     waText:
       "Hola Novamente! Quiero la remera de la Serie Malvinas (tipográfica sobre negra). Me pasan info? (ref · NV-MALVINAS)",
+    colors: ["Negra", "Blanca", "Stone wash"],
   },
   {
     slug: "badge-beige",
@@ -78,6 +82,7 @@ const DESIGNS: MalvinasDesign[] = [
     lifestyle: "/marketing/malvinas/badge-beige-lifestyle.jpg",
     waText:
       "Hola Novamente! Quiero la remera de la Serie Malvinas (escudo sobre beige). Me pasan info? (ref · NV-MALVINAS)",
+    colors: ["Beige", "Blanca", "Negra"],
   },
   {
     slug: "pincel-blanca",
@@ -89,6 +94,7 @@ const DESIGNS: MalvinasDesign[] = [
     lifestyle: "/marketing/malvinas/pincel-blanca-lifestyle.jpg",
     waText:
       "Hola Novamente! Quiero la remera de la Serie Malvinas (pincelada sobre blanca). Me pasan info? (ref · NV-MALVINAS)",
+    colors: ["Blanca", "Negra", "Beige"],
   },
   {
     slug: "islas-minimal-blanca",
@@ -100,6 +106,7 @@ const DESIGNS: MalvinasDesign[] = [
     lifestyle: "/marketing/malvinas/islas-minimal-blanca-lifestyle.jpg",
     waText:
       "Hola Novamente! Quiero la remera de la Serie Malvinas (islas minimalista sobre blanca). Me pasan info? (ref · NV-MALVINAS)",
+    colors: ["Blanca", "Negra", "Beige"],
   },
   {
     slug: "bandera-hoodie",
@@ -111,6 +118,7 @@ const DESIGNS: MalvinasDesign[] = [
     lifestyle: "/marketing/malvinas/bandera-hoodie-lifestyle.jpg",
     waText:
       "Hola Novamente! Quiero el hoodie de la Serie Malvinas (bandera). Me pasan info? (ref · NV-MALVINAS)",
+    colors: ["Negro", "Blanco", "Stone wash"],
   },
   {
     slug: "carta-nautica-buzo",
@@ -122,6 +130,7 @@ const DESIGNS: MalvinasDesign[] = [
     lifestyle: "/marketing/malvinas/carta-nautica-buzo-lifestyle.jpg",
     waText:
       "Hola Novamente! Quiero el buzo de la Serie Malvinas (carta náutica). Me pasan info? (ref · NV-MALVINAS)",
+    colors: ["Stone wash", "Negro", "Blanco"],
   },
 ]
 
@@ -304,7 +313,8 @@ export default function MalvinasPage() {
                 </Link>
                 <div className="p-5">
                   <h3 className="text-lg font-semibold text-white">{d.name}</h3>
-                  <p className="text-xs uppercase tracking-widest text-white/40 mt-1 mb-3">{d.garment}</p>
+                  <p className="text-xs uppercase tracking-widest text-white/40 mt-1 mb-1">{d.garment}</p>
+                  <p className="text-xs text-white/40 mb-3">{d.colors.join(" · ")}</p>
                   <p className="text-sm text-white/60 mb-4">{d.blurb}</p>
                   <Link
                     href={`/malvinas/${d.productSlug}`}
