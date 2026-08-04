@@ -107,7 +107,10 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
     garmentType: "aldea-classic-tshirt",
     price: basePrice("aldea-classic-tshirt"),
     lifestyle: "/marketing/malvinas/trapo-negra-lifestyle.jpg",
-    colors: [{ name: "Negra", code: COLOR_HEX.negra, image: "/marketing/malvinas/trapo-negra-packshot.jpg" }],
+    colors: [
+      { name: "Negra", code: COLOR_HEX.negra, image: "/marketing/malvinas/trapo-negra-packshot.jpg" },
+      { name: "Stone wash", code: COLOR_HEX["stone wash"], image: "/marketing/malvinas/trapo-stonewash-packshot.jpg" },
+    ],
     blurb: "La bandera que se vio en la cancha, estampada al frente.",
   },
   {
@@ -118,7 +121,11 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
     garmentType: "aldea-classic-tshirt",
     price: basePrice("aldea-classic-tshirt"),
     lifestyle: "/marketing/malvinas/tipografica-negra-lifestyle.jpg",
-    colors: [{ name: "Negra", code: COLOR_HEX.negra, image: "/marketing/malvinas/tipografica-negra-packshot.jpg" }],
+    colors: [
+      { name: "Negra", code: COLOR_HEX.negra, image: "/marketing/malvinas/tipografica-negra-packshot.jpg" },
+      { name: "Blanca", code: COLOR_HEX.blanca, image: "/marketing/malvinas/tipografica-blanca-packshot.jpg" },
+      { name: "Stone wash", code: COLOR_HEX["stone wash"], image: "/marketing/malvinas/tipografica-stonewash-packshot.jpg" },
+    ],
     blurb: "La frase, directa y sin vueltas.",
   },
   {
@@ -129,7 +136,11 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
     garmentType: "aldea-classic-tshirt",
     price: basePrice("aldea-classic-tshirt"),
     lifestyle: "/marketing/malvinas/badge-beige-lifestyle.jpg",
-    colors: [{ name: "Beige", code: COLOR_HEX.beige, image: "/marketing/malvinas/badge-beige-packshot.jpg" }],
+    colors: [
+      { name: "Beige", code: COLOR_HEX.beige, image: "/marketing/malvinas/badge-beige-packshot.jpg" },
+      { name: "Blanca", code: COLOR_HEX.blanca, image: "/marketing/malvinas/badge-blanca-packshot.jpg" },
+      { name: "Negra", code: COLOR_HEX.negra, image: "/marketing/malvinas/badge-negra-packshot.jpg" },
+    ],
     blurb: "Sello circular con el mapa de las islas.",
   },
   {
@@ -140,7 +151,11 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
     garmentType: "aldea-classic-tshirt",
     price: basePrice("aldea-classic-tshirt"),
     lifestyle: "/marketing/malvinas/pincel-blanca-lifestyle.jpg",
-    colors: [{ name: "Blanca", code: COLOR_HEX.blanca, image: "/marketing/malvinas/pincel-blanca-packshot.jpg" }],
+    colors: [
+      { name: "Blanca", code: COLOR_HEX.blanca, image: "/marketing/malvinas/pincel-blanca-packshot.jpg" },
+      { name: "Negra", code: COLOR_HEX.negra, image: "/marketing/malvinas/pincel-negra-packshot.jpg" },
+      { name: "Beige", code: COLOR_HEX.beige, image: "/marketing/malvinas/pincel-beige-packshot.jpg" },
+    ],
     blurb: "Trazo suelto, en blanco y negro.",
   },
   {
@@ -151,7 +166,11 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
     garmentType: "aldea-classic-tshirt",
     price: basePrice("aldea-classic-tshirt"),
     lifestyle: "/marketing/malvinas/islas-minimal-blanca-lifestyle.jpg",
-    colors: [{ name: "Blanca", code: COLOR_HEX.blanca, image: "/marketing/malvinas/islas-minimal-blanca-packshot.jpg" }],
+    colors: [
+      { name: "Blanca", code: COLOR_HEX.blanca, image: "/marketing/malvinas/islas-minimal-blanca-packshot.jpg" },
+      { name: "Negra", code: COLOR_HEX.negra, image: "/marketing/malvinas/islas-minimal-negra-packshot.jpg" },
+      { name: "Beige", code: COLOR_HEX.beige, image: "/marketing/malvinas/islas-minimal-beige-packshot.jpg" },
+    ],
     blurb: "Silueta minimalista de las islas.",
   },
   {
@@ -162,7 +181,11 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
     garmentType: "buzo-hoodie-unisex",
     price: basePrice("buzo-hoodie-unisex"),
     lifestyle: "/marketing/malvinas/bandera-hoodie-lifestyle.jpg",
-    colors: [{ name: "Negro", code: COLOR_HEX.negro, image: "/marketing/malvinas/bandera-hoodie-packshot.jpg" }],
+    colors: [
+      { name: "Negro", code: COLOR_HEX.negro, image: "/marketing/malvinas/bandera-hoodie-packshot.jpg" },
+      { name: "Blanco", code: COLOR_HEX.blanco, image: "/marketing/malvinas/bandera-hoodie-blanco-packshot.jpg" },
+      { name: "Stone wash", code: COLOR_HEX["stone wash"], image: "/marketing/malvinas/bandera-hoodie-stonewash-packshot.jpg" },
+    ],
     blurb: "Celeste y blanca, al frente del hoodie.",
   },
   {
@@ -173,7 +196,11 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
     garmentType: "buzo-cuello-redondo",
     price: basePrice("buzo-cuello-redondo"),
     lifestyle: "/marketing/malvinas/carta-nautica-buzo-lifestyle.jpg",
-    colors: [{ name: "Stone wash", code: COLOR_HEX["stone wash"], image: "/marketing/malvinas/carta-nautica-buzo-packshot.jpg" }],
+    colors: [
+      { name: "Stone wash", code: COLOR_HEX["stone wash"], image: "/marketing/malvinas/carta-nautica-buzo-packshot.jpg" },
+      { name: "Negro", code: COLOR_HEX.negro, image: "/marketing/malvinas/carta-nautica-buzo-negro-packshot.jpg" },
+      { name: "Blanco", code: COLOR_HEX.blanco, image: "/marketing/malvinas/carta-nautica-buzo-blanco-packshot.jpg" },
+    ],
     blurb: "Mapa técnico de las islas, estilo carta de navegación.",
   },
 
@@ -217,7 +244,11 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
     garmentType: "buzo-cuello-redondo",
     price: basePrice("buzo-cuello-redondo"),
     lifestyle: "/marketing/malvinas/horizonte-lifestyle.jpg",
-    colors: [{ name: "Stone wash", code: COLOR_HEX["stone wash"], image: "/marketing/malvinas/horizonte-buzo-packshot.jpg" }],
+    colors: [
+      { name: "Stone wash", code: COLOR_HEX["stone wash"], image: "/marketing/malvinas/horizonte-buzo-packshot.jpg" },
+      { name: "Negro", code: COLOR_HEX.negro, image: "/marketing/malvinas/horizonte-buzo-negro-packshot.jpg" },
+      { name: "Blanco", code: COLOR_HEX.blanco, image: "/marketing/malvinas/horizonte-buzo-blanco-packshot.jpg" },
+    ],
     blurb: "Las islas y el sol saliendo sobre la línea de horizonte.",
   },
   {
@@ -227,7 +258,11 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
     garmentLabel: "Hoodie negro",
     garmentType: "buzo-hoodie-unisex",
     price: basePrice("buzo-hoodie-unisex"),
-    colors: [{ name: "Negro", code: COLOR_HEX.negro, image: "/marketing/malvinas/horizonte-hoodie-packshot.jpg" }],
+    colors: [
+      { name: "Negro", code: COLOR_HEX.negro, image: "/marketing/malvinas/horizonte-hoodie-packshot.jpg" },
+      { name: "Blanco", code: COLOR_HEX.blanco, image: "/marketing/malvinas/horizonte-hoodie-blanco-packshot.jpg" },
+      { name: "Stone wash", code: COLOR_HEX["stone wash"], image: "/marketing/malvinas/horizonte-hoodie-stonewash-packshot.jpg" },
+    ],
     blurb: "Las islas y el sol saliendo sobre la línea de horizonte, versión hoodie.",
   },
 ]
