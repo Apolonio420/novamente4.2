@@ -205,6 +205,16 @@ const nextConfig = {
         destination: '/crear',
         permanent: true,
       },
+      // /products/lienzo-premium es un id huérfano: no existe en lib/products.ts
+      // (PRODUCTS real usa id "lienzo") así que app/products/[id]/page.tsx
+      // devuelve notFound(). El único producto real de lienzo vive en
+      // /products/lienzo (desglose de 3 medidas). 301 para no dejar la URL
+      // vieja (indexada, referenciada en el feed viejo) sirviendo 404.
+      {
+        source: '/products/lienzo-premium',
+        destination: '/products/lienzo',
+        permanent: true,
+      },
       // NOTA: NO redirigir /disena-tu-remera, /quote ni /merchs — son
       // landings SEO con keywords propios distintos a /crear, /cotizador
       // y /merch. Cada una rankea queries específicas. Verificar antes en

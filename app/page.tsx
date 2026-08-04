@@ -741,7 +741,7 @@ export default function Home() {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-3">
                   <h2 className="text-xl font-semibold leading-tight">Lienzo Premium</h2>
-                  <span className="text-2xl font-bold text-primary ml-4">$59.900</span>
+                  <span className="text-2xl font-bold text-primary ml-4">Desde $34.000</span>
                 </div>
 
                 <p className="text-muted-foreground mb-4 text-sm leading-relaxed">

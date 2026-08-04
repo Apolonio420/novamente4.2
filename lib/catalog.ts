@@ -80,9 +80,12 @@ export const PRODUCTS: Product[] = [
     category: 'musculosa',
   },
   {
+    // Precio de entrada (medida 20×30cm). Desglose real por medida en
+    // lib/products.ts:131 (id "lienzo") — fuente de verdad, coincide con el
+    // b2c_web del motor de cotización del bot. Este es el precio "desde".
     name: 'Lienzo Premium',
     garmentType: 'lienzo-premium',
-    price: 59900,
+    price: 34000,
     colors: [],
     image: '/products/lienzo-front.jpeg',
     category: 'lienzo',

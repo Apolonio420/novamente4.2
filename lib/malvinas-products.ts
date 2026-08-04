@@ -13,10 +13,11 @@
  *
  * EXCEPCIÓN — Lienzo: no es ropa (no tiene un único precio por garmentType,
  * varía por medida) y lib/catalog.ts solo tiene un precio flat ("Lienzo
- * Premium", $59.900) que no corresponde a la venta por medida. Los precios
- * por medida del lienzo son los EXACTOS de lib/products.ts:131 (id "lienzo",
- * único lugar del repo con el desglose de las 3 medidas) — hardcodeados acá
- * a propósito, ver sizeOptions del producto "lienzo-carta-nautica".
+ * Premium", precio de entrada — ver comentario en lib/catalog.ts) que no
+ * corresponde a la venta por medida. Los precios por medida del lienzo son
+ * los EXACTOS de lib/products.ts:131 (id "lienzo", único lugar del repo con
+ * el desglose de las 3 medidas) — hardcodeados acá a propósito, ver
+ * sizeOptions del producto "lienzo-carta-nautica".
  */
 import { PRODUCTS as CATALOG_PRODUCTS } from "@/lib/catalog"
 

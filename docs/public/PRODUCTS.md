@@ -60,8 +60,8 @@ Todos los productos son 100% algodón premium, optimizados para impresión DTG d
 ## Arte
 
 ### Lienzo Premium
-- **Precio:** $59,900 ARS
-- **Tamaños:** 40x35cm, 30x20cm, 15x10cm
+- **Precio:** Desde $34,000 ARS (20x30cm $34,000 / 35x40cm $41,000 / 40x50cm $49,000)
+- **Tamaños:** 20x30cm, 35x40cm, 40x50cm
 - **Descripción:** Impresión de tu diseño en lienzo canvas de alta calidad. Ideal para decoración.
 
 ## Información General

@@ -66,7 +66,7 @@ const FAQ_ITEMS = [
     questions: [
       {
         q: "¿Qué productos ofrecen?",
-        a: "Nuestro catálogo incluye: Buzo Hoodie Oversize (desde $55.000), Buzos Cuello Redondo/Crewneck (desde $43.000), Remeras Oversize Aura (desde $31.000), Remeras Classic Fit Aldea (desde $28.600), Remeras Crop Mujer (desde $23.500), Remeras Clásicas Mujer (desde $28.600), Musculosas Bali (desde $21.800) y Lienzos Premium ($59.900). Todos disponibles en múltiples colores.",
+        a: "Nuestro catálogo incluye: Buzo Hoodie Oversize (desde $55.000), Buzos Cuello Redondo/Crewneck (desde $43.000), Remeras Oversize Aura (desde $31.000), Remeras Classic Fit Aldea (desde $28.600), Remeras Crop Mujer (desde $23.500), Remeras Clásicas Mujer (desde $28.600), Musculosas Bali (desde $21.800) y Lienzos Premium (desde $34.000 según medida). Todos disponibles en múltiples colores.",
       },
       {
         q: "¿Cuánto cuesta una remera personalizada con IA?",

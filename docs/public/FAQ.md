@@ -28,7 +28,7 @@ Sí, cada diseño generado es completamente único y te pertenece.
 ## Productos y Precios
 
 ### ¿Qué productos tienen?
-Remeras: Aldea Classic ($28,600), Aura Oversize ($31,000), Clásica Mujer ($28,600), Crop Mujer ($23,500). Musculosa Bali ($21,800). Buzos: Cuello Redondo ($43,000), Buzo Hoodie Oversize ($55,000). Lienzo Premium ($59,900).
+Remeras: Aldea Classic ($28,600), Aura Oversize ($31,000), Clásica Mujer ($28,600), Crop Mujer ($23,500). Musculosa Bali ($21,800). Buzos: Cuello Redondo ($43,000), Buzo Hoodie Oversize ($55,000). Lienzo Premium (desde $34,000 según medida: 20x30 $34,000 / 35x40 $41,000 / 40x50 $49,000).
 
 ### ¿Los precios incluyen el diseño?
 Sí. Incluyen diseño con IA + impresión DTG premium (frente y espalda). Sin cargos adicionales.

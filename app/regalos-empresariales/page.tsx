@@ -122,7 +122,7 @@ export default function RegalosEmpresariales() {
         name: "Que productos estan disponibles para regalos empresariales?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Ofrecemos remeras (Classic Fit desde $28.600, Oversize desde $31.000), hoodies (desde $43.000 hasta $55.000), buzos cuello redondo ($43.000), musculosas ($21.800), remeras crop ($23.500) y lienzos decorativos ($59.900). Todos en algodon 100% con estampado DTG premium.",
+          text: "Ofrecemos remeras (Classic Fit desde $28.600, Oversize desde $31.000), hoodies (desde $43.000 hasta $55.000), buzos cuello redondo ($43.000), musculosas ($21.800), remeras crop ($23.500) y lienzos decorativos (desde $34.000 según medida). Todos en algodon 100% con estampado DTG premium.",
         },
       },
       {
