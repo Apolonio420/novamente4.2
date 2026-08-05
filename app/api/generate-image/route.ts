@@ -13,7 +13,16 @@ import { meterPublicImageGen } from "@/lib/security/meter-usage"
 export const runtime = "nodejs"
 
 // ==== Config ====
-const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image"
+// Override especifico para /crear (iteracion de arte publica, sin intent de
+// compra todavia). GEMINI_IMAGE_MODEL es una variable GLOBAL que pisa el
+// default de muchos endpoints (bot de WhatsApp incluido) — sin este override
+// cualquier cambio ahi (ej. a gemini-3-pro-image) encarece tambien este
+// endpoint sin que nadie lo pida. Mismo patron que GEMINI_STAMP_MODEL /
+// GEMINI_DESIGN_MODEL (ver lib/mockup/perfect-stamp.ts). Auditoria costo
+// Gemini jul-2026: /crear+edit ~US$40/mes en gemini-3-pro-image (US$0.134/img)
+// sin correlacion con ventas → flash (US$0.039/img) ahorra ~US$28/mes.
+const IMAGE_MODEL =
+  process.env.GEMINI_PUBLIC_DESIGN_MODEL || process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image"
 const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-1.5-pro"
 const DEBUG = (process.env.DEBUG_GEMINI || "").toLowerCase() === "true"
 
