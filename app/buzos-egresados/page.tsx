@@ -13,7 +13,7 @@ import { PRODUCTS as CATALOG_PRODUCTS } from "@/lib/catalog"
 import { SHIPPING } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
-  title: "Buzos de Egresados 2026 — Personalizados con IA | Novamente",
+  title: "Buzos de Egresados 2026 — Personalizados con IA",
   description:
     "Buzos y hoodies de egresados personalizados, con diseño incluido (con IA o el tuyo), estampado DTG y envíos a todo el país. Cotizá tu curso por WhatsApp.",
   keywords: [

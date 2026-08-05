@@ -12,7 +12,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Estampar Remeras en Argentina | Novamente",
+  title: "Estampar Remeras en Argentina",
   description:
     "Estampado DTG de remeras, buzos y hoodies, sin mínimos ni matricería. Traé tu diseño o crealo con IA. Cotizá hoy.",
   keywords: [

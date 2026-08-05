@@ -21,7 +21,7 @@ import { ScrollButton } from "@/components/scroll-button"
 import { INTERNAL_LINKS } from "@/lib/config/links"
 
 export const metadata = {
-  title: "Remeras y Buzos Personalizados con IA | Novamente",
+  title: "Remeras y Buzos Personalizados con IA",
   description: "Diseñá remeras, hoodies y buzos con inteligencia artificial. Estampado DTG premium y envíos a todo el país. Empezá gratis.",
   openGraph: {
     title: "Novamente — Ropa personalizada con IA en Argentina",

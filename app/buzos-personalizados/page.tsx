@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Buzos Personalizados con IA en Argentina | Novamente",
+  title: "Buzos Personalizados con IA en Argentina",
   description:
     "Buzos personalizados con IA: hoodies y crewnecks en algodón premium, estampado DTG. Envíos a todo el país. Cotizá el tuyo.",
   keywords: [
