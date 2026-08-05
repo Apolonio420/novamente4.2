@@ -9,10 +9,46 @@
  */
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { MALVINAS_PRODUCTS, getMalvinasProduct } from "@/lib/malvinas-products"
+import { MALVINAS_PRODUCTS, getMalvinasProduct, type MalvinasProduct } from "@/lib/malvinas-products"
 import MalvinasProductClient from "./MalvinasProductClient"
 
 const BASE_URL = "https://www.novamente.ar"
+
+/**
+ * Product JSON-LD — mismo patron que app/products/[id]/page.tsx. Precio
+ * SIEMPRE el de product.price / product.sizeOptions (derivados de
+ * lib/catalog.ts en lib/malvinas-products.ts), nunca hardcodeado aca.
+ */
+function buildOffers(product: MalvinasProduct) {
+  const url = `${BASE_URL}/malvinas/${product.slug}`
+  const base = {
+    "@type": "Offer" as const,
+    url,
+    priceCurrency: "ARS",
+    availability: "https://schema.org/InStock",
+    itemCondition: "https://schema.org/NewCondition",
+    seller: { "@id": `${BASE_URL}/#organization` },
+  }
+  if (product.sizeOptions && product.sizeOptions.length > 0) {
+    return product.sizeOptions.map((opt) => ({ ...base, name: opt.size, price: opt.price }))
+  }
+  return { ...base, price: product.price }
+}
+
+function buildProductJsonLd(product: MalvinasProduct) {
+  const images = product.colors.map((c) => `${BASE_URL}${c.image}`)
+  if (product.lifestyle) images.unshift(`${BASE_URL}${product.lifestyle}`)
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: `${product.name} — Serie Malvinas`,
+    description: `${product.garmentLabel} · ${product.blurb} Estampado DTG, diseñada y producida en Argentina.`,
+    image: images,
+    brand: { "@type": "Brand", name: "Novamente" },
+    category: product.collection,
+    offers: buildOffers(product),
+  }
+}
 
 export async function generateStaticParams() {
   return MALVINAS_PRODUCTS.map((p) => ({ slug: p.slug }))
@@ -59,5 +95,15 @@ export default async function MalvinasProductPage(
   const product = getMalvinasProduct(slug)
   if (!product) notFound()
 
-  return <MalvinasProductClient product={product} />
+  const productJsonLd = buildProductJsonLd(product)
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+      <MalvinasProductClient product={product} />
+    </>
+  )
 }

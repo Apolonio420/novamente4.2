@@ -116,6 +116,26 @@ test.describe("Serie Malvinas — Lienzo (selector de Medida en vez de Talle)", 
   }
 })
 
+test.describe("Serie Malvinas — Product JSON-LD", () => {
+  test("/malvinas/tres-estrellas emite Product JSON-LD con precio real de catalogo", async ({ page }) => {
+    await page.goto("/malvinas/tres-estrellas", { waitUntil: "networkidle" })
+    const jsonLdBlocks = await page.locator('script[type="application/ld+json"]').allTextContents()
+    const product = jsonLdBlocks.map((t) => JSON.parse(t)).find((p) => p["@type"] === "Product")
+    expect(product).toBeTruthy()
+    expect(product.offers.price).toBe(31000) // Aura Oversize T-Shirt, lib/catalog.ts
+    expect(product.offers.priceCurrency).toBe("ARS")
+  })
+
+  test("/malvinas/lienzo-carta-nautica emite un Offer por medida (sizeOptions)", async ({ page }) => {
+    await page.goto("/malvinas/lienzo-carta-nautica", { waitUntil: "networkidle" })
+    const jsonLdBlocks = await page.locator('script[type="application/ld+json"]').allTextContents()
+    const product = jsonLdBlocks.map((t) => JSON.parse(t)).find((p) => p["@type"] === "Product")
+    expect(product).toBeTruthy()
+    expect(Array.isArray(product.offers)).toBe(true)
+    expect(product.offers.length).toBe(3)
+  })
+})
+
 test.describe("Screenshots — desktop + mobile", () => {
   for (const vp of VIEWPORTS) {
     test(`/malvinas @ ${vp.name}`, async ({ page }) => {
