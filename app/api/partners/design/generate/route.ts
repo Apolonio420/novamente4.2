@@ -14,6 +14,7 @@ import type { Plan } from '@/lib/partners/types'
 import { checkPromptModeration, getGeminiSafetySettings } from '@/lib/partners/studio/moderation'
 import { checkUsageLimit, recordUsage } from '@/lib/partners/studio/usage-tracker'
 import { extractBrandEssence, buildBrandAwarePrompt } from '@/lib/partners/studio/prompt-builder'
+import { meterPublicImageGen } from '@/lib/security/meter-usage'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -89,9 +90,10 @@ export async function POST(request: NextRequest) {
     // el preview del 3.1 (que sigue en preview) o setear GEMINI_DESIGN_MODEL
     // explicito en env. Antes hardcodeaba gemini-2.5-flash-image que ya
     // no resuelve = causa del bug "no genera imagenes" reportado.
+    const modelName = process.env.GEMINI_DESIGN_MODEL || process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image'
     const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_DESIGN_MODEL || process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image',
+      model: modelName,
       safetySettings: getGeminiSafetySettings() as any,
     })
 
@@ -152,8 +154,23 @@ export async function POST(request: NextRequest) {
       },
     )
 
-    // Record usage
+    // Record usage (cupo del plan — NO es costo en USD, ver meterPublicImageGen abajo)
     await recordUsage(tenant.id, userId, 'design', sessionId, asset?.id).catch(() => {})
+
+    // Metering de costo real en USD — antes de este cambio este endpoint
+    // (Studio de partners) no escribía ninguna fila en api_usage (auditoría
+    // factura Gemini jul-2026: 16 diseños de partners sin medir ni un
+    // centavo). Mismo patrón que el sibling público
+    // app/api/storefront/[slug]/studio/generate/route.ts. usageMetadata se
+    // pasa porque el modelo default (gemini-3.1-flash-image) factura
+    // "thinking" tokens aparte del precio plano por imagen (ver
+    // lib/security/meter-usage.ts).
+    await meterPublicImageGen({
+      endpoint: 'partners/studio/design',
+      model: modelName,
+      usageMetadata: (response as any).usageMetadata,
+      metadata: { tenantSlug: tenant.slug },
+    })
 
     return NextResponse.json({
       imageUrl: uploadResult.url,

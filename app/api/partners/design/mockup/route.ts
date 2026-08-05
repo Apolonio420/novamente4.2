@@ -13,6 +13,7 @@ import { uploadFile } from '@/lib/cloudflare-r2'
 import { v4 as uuidv4 } from 'uuid'
 import type { Plan } from '@/lib/partners/types'
 import { checkUsageLimit, recordUsage } from '@/lib/partners/studio/usage-tracker'
+import { meterPublicImageGen } from '@/lib/security/meter-usage'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -215,8 +216,24 @@ export async function POST(request: NextRequest) {
       },
     )
 
-    // Record usage
+    // Record usage (cupo del plan — NO es costo en USD, ver meterPublicImageGen abajo)
     await recordUsage(tenant.id, userId, 'mockup', sessionId, asset?.id).catch(() => {})
+
+    // Metering de costo real en USD — antes de este cambio este endpoint
+    // (Studio de partners) no escribía ninguna fila en api_usage (auditoría
+    // factura Gemini jul-2026: 110 mockups de partners sin medir ni un
+    // centavo). units:2 porque generatePerfectStamp hace DOS llamadas Gemini
+    // internas (quitar fondo del diseño + estampado, ver
+    // lib/mockup/perfect-stamp.ts) — contar 1 subestima el costo real a la
+    // mitad. Mismo motor que app/api/storefront/[slug]/studio/mockup/route.ts,
+    // que sí mide pero con units:1 (gap pre-existente, no tocado acá — fuera
+    // del alcance de este cambio).
+    await meterPublicImageGen({
+      endpoint: 'partners/studio/mockup',
+      model: process.env.GEMINI_STAMP_MODEL ?? process.env.GEMINI_IMAGE_MODEL ?? 'gemini-2.5-flash-image',
+      units: 2,
+      metadata: { tenantSlug: tenant.slug },
+    })
 
     return NextResponse.json({
       mockupUrl: uploadResult.url,
