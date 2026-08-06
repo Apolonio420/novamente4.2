@@ -101,12 +101,6 @@ export interface MalvinasProduct {
   price: number
   /** Foto lifestyle opcional — si existe, es la imagen hero por default */
   lifestyle?: string
-  /**
-   * Arranca mostrando el packshot en vez de la lifestyle (la lifestyle sigue disponible como
-   * 2ª foto). Para productos donde la "lifestyle" es un detalle macro de la estampa y como
-   * hero se recorta — ej. los totebags.
-   */
-  heroIsPackshot?: boolean
   colors: MalvinasColor[]
   blurb: string
   /**
@@ -337,8 +331,7 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
     garmentLabel: "Totebag de lona cruda",
     garmentType: "totebag",
     price: 20900,
-    lifestyle: "/marketing/malvinas/totebag-frase-detalle.jpg",
-    heroIsPackshot: true,
+    lifestyle: "/marketing/malvinas/totebag-frase-lifestyle.jpg",
     colors: [{ name: "Crudo", code: "#e8e0cf", image: "/marketing/malvinas/totebag-frase-packshot.jpg" }],
     blurb: "La letra original de la frase, en lona cruda para todos los días.",
     // Precio EXACTO de CATALOG (lib/catalog.ts, garmentType "totebag") — tamaño único.
@@ -352,8 +345,7 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
     garmentLabel: "Totebag de lona cruda",
     garmentType: "totebag",
     price: 20900,
-    lifestyle: "/marketing/malvinas/totebag-monograma-detalle.jpg",
-    heroIsPackshot: true,
+    lifestyle: "/marketing/malvinas/totebag-monograma-lifestyle.jpg",
     colors: [{ name: "Crudo", code: "#e8e0cf", image: "/marketing/malvinas/totebag-monograma-packshot.jpg" }],
     blurb: "Las islas y sus coordenadas. Un logo que se entiende sin explicación.",
     sizeOptions: [{ size: "Único · 35×40 cm", price: 20900 }],

@@ -35,10 +35,7 @@ export default function MalvinasProductClient({ product }: { product: MalvinasPr
   const [size, setSize] = useState<string>("")
   const [qty, setQty] = useState(1)
   const [adding, setAdding] = useState(false)
-  // Por default la hero es la lifestyle. Los productos con heroIsPackshot arrancan mostrando
-  // el packshot: su "lifestyle" es un detalle macro de la estampa (totebags), que como hero
-  // se recorta y no deja ver el producto.
-  const [showLifestyle, setShowLifestyle] = useState(Boolean(product.lifestyle) && !product.heroIsPackshot)
+  const [showLifestyle, setShowLifestyle] = useState(Boolean(product.lifestyle))
 
   const selectedColor = product.colors[colorIndex]
   const hasColors = product.colors.length > 1
