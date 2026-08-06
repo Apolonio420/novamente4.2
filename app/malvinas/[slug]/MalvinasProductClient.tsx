@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ShoppingBag, Zap, MessageCircle, Ruler, Check } from "lucide-react"
-import { SIZE_CHARTS, type MalvinasProduct } from "@/lib/malvinas-products"
+import { SIZE_CHARTS, type MalvinasProduct, type SizeChartKey } from "@/lib/malvinas-products"
 import { getWhatsAppLink } from "@/lib/config/links"
 
 function formatPrice(p: number): string {
@@ -35,14 +35,17 @@ export default function MalvinasProductClient({ product }: { product: MalvinasPr
   const [size, setSize] = useState<string>("")
   const [qty, setQty] = useState(1)
   const [adding, setAdding] = useState(false)
-  const [showLifestyle, setShowLifestyle] = useState(Boolean(product.lifestyle))
+  // Por default la hero es la lifestyle. Los productos con heroIsPackshot arrancan mostrando
+  // el packshot: su "lifestyle" es un detalle macro de la estampa (totebags), que como hero
+  // se recorta y no deja ver el producto.
+  const [showLifestyle, setShowLifestyle] = useState(Boolean(product.lifestyle) && !product.heroIsPackshot)
 
   const selectedColor = product.colors[colorIndex]
   const hasColors = product.colors.length > 1
-  // Lienzo (garmentType "lienzo-premium") no tiene tabla de talles de ropa — usa
-  // sizeOptions (medida + precio propio) en su lugar, ver interfaz MalvinasProduct.
+  // Lo que no es ropa (lienzo, totebag) no tiene tabla de talles: usa sizeOptions
+  // (medida + precio propio) en su lugar, ver interfaz MalvinasProduct.
   const isSizedByPrice = Boolean(product.sizeOptions && product.sizeOptions.length > 0)
-  const sizeChart = product.garmentType !== "lienzo-premium" ? SIZE_CHARTS[product.garmentType] : undefined
+  const sizeChart = isSizedByPrice ? undefined : SIZE_CHARTS[product.garmentType as SizeChartKey]
   const sizeLabel = product.sizeLabel ?? "Talle"
   const currentPrice = isSizedByPrice
     ? (product.sizeOptions!.find((o) => o.size === size)?.price ?? product.sizeOptions![0].price)
@@ -159,7 +162,9 @@ export default function MalvinasProductClient({ product }: { product: MalvinasPr
             <p className="mt-1 text-sm text-zinc-400">{product.garmentLabel}</p>
 
             <div className="mt-5 text-3xl font-bold">
-              {isSizedByPrice && !size ? "Desde " : ""}
+              {/* "Desde" solo si hay más de una medida con precio distinto (lienzo). El totebag
+                  tiene tamaño único: mostrar "Desde $20.900" ahí confunde. */}
+              {isSizedByPrice && !size && product.sizeOptions!.length > 1 ? "Desde " : ""}
               {formatPrice(currentPrice)}
             </div>
             <p className="text-xs text-zinc-500">
@@ -242,9 +247,16 @@ export default function MalvinasProductClient({ product }: { product: MalvinasPr
                       </button>
                     ))}
               </div>
-              {isSizedByPrice && (
+              {/* Nota de ficha técnica: es propia de cada producto sin talle de ropa, NO de
+                  "tiene sizeOptions" — con esa condición la del lienzo se colaba en el totebag. */}
+              {product.garmentType === "lienzo-premium" && (
                 <p className="mt-2 text-xs text-zinc-500">
                   Formato enrollado, listo para enmarcar o tensar · lienzo 100% algodón, impresión DTG.
+                </p>
+              )}
+              {product.garmentType === "totebag" && (
+                <p className="mt-2 text-xs text-zinc-500">
+                  Lona de algodón crudo, asas largas para el hombro · impresión DTG.
                 </p>
               )}
             </div>

@@ -403,6 +403,83 @@ export default function MalvinasPage() {
         </div>
       </section>
 
+      {/* Para llevar — totebags de lona cruda, tamaño único 35×40 */}
+      <section className="bg-[#0c0c10] px-4 py-16 md:py-20 border-t border-white/10">
+        <div className="container mx-auto">
+          <div className="mb-10 max-w-2xl">
+            <h2 className="novamente-heading text-2xl md:text-3xl text-white mb-4">Para llevar</h2>
+            <p className="text-white/60 text-base md:text-lg">
+              Los mismos diseños de la serie, estampados sobre lona de algodón crudo. Tamaño único
+              35×40 cm, asas largas para el hombro.
+            </p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:max-w-3xl">
+            {[
+              {
+                slug: "totebag-frase",
+                name: "Las Malvinas son argentinas",
+                packshot: "/marketing/malvinas/totebag-frase-packshot.jpg",
+                detalle: "/marketing/malvinas/totebag-frase-detalle.jpg",
+                copy: "La letra original de la frase — la misma que se vio en las calles — sobre lona cruda.",
+                wa: "Hola Novamente! Quiero el totebag de la Serie Malvinas (la frase). Me pasan info? (ref · NV-MALVINAS-TOTE)",
+              },
+              {
+                slug: "totebag-monograma",
+                name: "51°S 59°O",
+                packshot: "/marketing/malvinas/totebag-monograma-packshot.jpg",
+                detalle: "/marketing/malvinas/totebag-monograma-detalle.jpg",
+                copy: "Las islas y sus coordenadas. Sobrio, sin explicaciones.",
+                wa: "Hola Novamente! Quiero el totebag de la Serie Malvinas (51°S 59°O). Me pasan info? (ref · NV-MALVINAS-TOTE)",
+              },
+            ].map((t) => (
+              <div key={t.slug} className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900">
+                <Link href={`/malvinas/${t.slug}`} className="grid grid-cols-2 gap-px bg-white/10">
+                  <div className="relative aspect-square bg-zinc-950">
+                    <Image
+                      src={t.packshot}
+                      alt={`${t.name} — Totebag Serie Malvinas Novamente, foto de producto`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 50vw, 25vw"
+                    />
+                  </div>
+                  <div className="relative aspect-square bg-zinc-950">
+                    <Image
+                      src={t.detalle}
+                      alt={`${t.name} — detalle de la estampa sobre lona cruda`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 50vw, 25vw"
+                    />
+                  </div>
+                </Link>
+                <div className="p-5">
+                  <h3 className="text-lg font-semibold text-white">{t.name}</h3>
+                  <p className="text-xs uppercase tracking-widest text-white/40 mt-1 mb-1">Totebag de lona cruda</p>
+                  <p className="text-xs text-white/40 mb-3">Tamaño único 35×40 cm — $20.900</p>
+                  <p className="text-sm text-white/60 mb-4">{t.copy}</p>
+                  <Link
+                    href={`/malvinas/${t.slug}`}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-100"
+                  >
+                    Comprar
+                  </Link>
+                  <a
+                    href={getWhatsAppLink(t.wa)}
+                    target="_blank"
+                    rel="noopener"
+                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 text-xs text-white/40 transition hover:text-white/70"
+                  >
+                    ¿Dudas? Escribinos
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Colección Minimal */}
       <section className="bg-[#0c0c10] px-4 py-16 md:py-20 border-t border-white/10">
         <div className="container mx-auto">

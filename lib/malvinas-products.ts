@@ -92,15 +92,21 @@ export interface MalvinasColor {
 export interface MalvinasProduct {
   slug: string
   name: string
-  collection: "La Serie" | "Colección Minimal" | "Para tu pared"
+  collection: "La Serie" | "Colección Minimal" | "Para tu pared" | "Para llevar"
   /** Descripción corta de la prenda para mostrar bajo el título, ej. "Remera oversize" */
   garmentLabel: string
-  // "lienzo-premium" no tiene SIZE_CHARTS (no es ropa, no aplica ancho/largo en cm de prenda) —
-  // usa sizeOptions/sizeLabel en su lugar (ver abajo).
-  garmentType: SizeChartKey | "lienzo-premium"
+  // "lienzo-premium" y "totebag" no tienen SIZE_CHARTS (no son ropa, no aplica ancho/largo en cm
+  // de prenda) — usan sizeOptions/sizeLabel en su lugar (ver abajo).
+  garmentType: SizeChartKey | "lienzo-premium" | "totebag"
   price: number
   /** Foto lifestyle opcional — si existe, es la imagen hero por default */
   lifestyle?: string
+  /**
+   * Arranca mostrando el packshot en vez de la lifestyle (la lifestyle sigue disponible como
+   * 2ª foto). Para productos donde la "lifestyle" es un detalle macro de la estampa y como
+   * hero se recorta — ej. los totebags.
+   */
+  heroIsPackshot?: boolean
   colors: MalvinasColor[]
   blurb: string
   /**
@@ -314,6 +320,43 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
       { size: "35×40 cm", price: 41000 },
       { size: "40×50 cm", price: 49000 },
     ],
+    sizeLabel: "Medida",
+  },
+
+  // ---------------------------------------------------------------------
+  // Para llevar — totebags de lona cruda (tamaño único 35×40 cm)
+  // Los packshots se componen con sharp DIRECTO sobre la base fotográfica real
+  // (playground/mockups/totebag_crudo_front.png, blend multiply para que el print
+  // agarre la textura de la lona), no se regeneran con IA: el diseño tiene que
+  // quedar pixel-exacto. Script: chatbot/scripts/_build-malvinas-totebags.mjs
+  // ---------------------------------------------------------------------
+  {
+    slug: "totebag-frase",
+    name: "Las Malvinas son argentinas — Totebag",
+    collection: "Para llevar",
+    garmentLabel: "Totebag de lona cruda",
+    garmentType: "totebag",
+    price: 20900,
+    lifestyle: "/marketing/malvinas/totebag-frase-detalle.jpg",
+    heroIsPackshot: true,
+    colors: [{ name: "Crudo", code: "#e8e0cf", image: "/marketing/malvinas/totebag-frase-packshot.jpg" }],
+    blurb: "La letra original de la frase, en lona cruda para todos los días.",
+    // Precio EXACTO de CATALOG (lib/catalog.ts, garmentType "totebag") — tamaño único.
+    sizeOptions: [{ size: "Único · 35×40 cm", price: 20900 }],
+    sizeLabel: "Medida",
+  },
+  {
+    slug: "totebag-monograma",
+    name: "51°S 59°O — Totebag",
+    collection: "Para llevar",
+    garmentLabel: "Totebag de lona cruda",
+    garmentType: "totebag",
+    price: 20900,
+    lifestyle: "/marketing/malvinas/totebag-monograma-detalle.jpg",
+    heroIsPackshot: true,
+    colors: [{ name: "Crudo", code: "#e8e0cf", image: "/marketing/malvinas/totebag-monograma-packshot.jpg" }],
+    blurb: "Las islas y sus coordenadas. Un logo que se entiende sin explicación.",
+    sizeOptions: [{ size: "Único · 35×40 cm", price: 20900 }],
     sizeLabel: "Medida",
   },
 ]
