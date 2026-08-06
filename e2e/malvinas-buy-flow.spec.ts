@@ -57,7 +57,9 @@ test.describe("Serie Malvinas — flujo de compra", () => {
 
   test("producto con 2 colores: elegir color, comprar ahora lleva directo a checkout", async ({ page }) => {
     await page.goto("/malvinas/trapo-negra", { waitUntil: "networkidle" })
-    await expect(page.getByText(/\$\s?28\.600/)).toBeVisible()
+    // Precio de la AURA OVERSIZE: las fotos de este producto siempre fueron de la oversize,
+    // estaba tipado como clásica por error (ver lib/malvinas-products.ts).
+    await expect(page.getByText(/\$\s?31\.000/)).toBeVisible()
 
     // trapo-negra tiene Negra + Stone wash (única excepción a 3 colores — tela blanca
     // no es viable sobre esta prenda). Verificamos el selector antes de comprar.

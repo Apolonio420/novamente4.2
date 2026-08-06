@@ -124,30 +124,35 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
     slug: "trapo-negra",
     name: "El trapo",
     collection: "La Serie",
-    garmentLabel: "Remera negra",
-    garmentType: "aldea-classic-tshirt",
-    price: basePrice("aldea-classic-tshirt"),
+    // Los packshots y el lifestyle de este producto son de la remera OVERSIZE (base
+    // "REM Negra Oversize FRONT"), y los posts de IG lo anuncian como oversize. Estaba tipado
+    // como clásica: eso mostraba la tabla de medidas equivocada (48-60cm en vez de 55-69cm) y
+    // cobraba el precio de la clásica por una prenda oversize. Corregido 06/08.
+    garmentLabel: "Remera oversize",
+    garmentType: "aura-oversize-tshirt",
+    price: basePrice("aura-oversize-tshirt"),
     lifestyle: "/marketing/malvinas/trapo-negra-lifestyle.jpg",
     colors: [
       { name: "Negra", code: COLOR_HEX.negra, image: "/marketing/malvinas/trapo-negra-packshot.jpg" },
       { name: "Stone wash", code: COLOR_HEX["stone wash"], image: "/marketing/malvinas/trapo-stonewash-packshot.jpg" },
     ],
-    blurb: "La bandera que se vio en la cancha, estampada al frente.",
+    blurb: "El trapo de la cancha, con el lettering original pintado a mano.",
   },
   {
     slug: "tipografica-negra",
-    name: "Tipográfica",
+    name: "La frase",
     collection: "La Serie",
-    garmentLabel: "Remera negra",
-    garmentType: "aldea-classic-tshirt",
-    price: basePrice("aldea-classic-tshirt"),
+    // Mismo caso que "El trapo": las fotos siempre fueron de la oversize (ver arriba).
+    garmentLabel: "Remera oversize",
+    garmentType: "aura-oversize-tshirt",
+    price: basePrice("aura-oversize-tshirt"),
     lifestyle: "/marketing/malvinas/tipografica-negra-lifestyle.jpg",
     colors: [
       { name: "Negra", code: COLOR_HEX.negra, image: "/marketing/malvinas/tipografica-negra-packshot.jpg" },
       { name: "Blanca", code: COLOR_HEX.blanca, image: "/marketing/malvinas/tipografica-blanca-packshot.jpg" },
       { name: "Stone wash", code: COLOR_HEX["stone wash"], image: "/marketing/malvinas/tipografica-stonewash-packshot.jpg" },
     ],
-    blurb: "La frase, directa y sin vueltas.",
+    blurb: "El lettering original, tal cual se pintó a mano. Grande, al frente.",
   },
   {
     slug: "badge-beige",
@@ -166,9 +171,9 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
   },
   {
     slug: "pincel-blanca",
-    name: "Pincelada",
+    name: "La frase · clásica",
     collection: "La Serie",
-    garmentLabel: "Remera blanca",
+    garmentLabel: "Remera clásica",
     garmentType: "aldea-classic-tshirt",
     price: basePrice("aldea-classic-tshirt"),
     lifestyle: "/marketing/malvinas/pincel-blanca-lifestyle.jpg",
@@ -177,7 +182,7 @@ export const MALVINAS_PRODUCTS: MalvinasProduct[] = [
       { name: "Negra", code: COLOR_HEX.negra, image: "/marketing/malvinas/pincel-negra-packshot.jpg" },
       { name: "Beige", code: COLOR_HEX.beige, image: "/marketing/malvinas/pincel-beige-packshot.jpg" },
     ],
-    blurb: "Trazo suelto, en blanco y negro.",
+    blurb: "El mismo lettering original, en remera de corte clásico.",
   },
   {
     slug: "islas-minimal-blanca",
