@@ -27,6 +27,22 @@ function setDismissed(days: number) {
   )
 }
 
+// Don't interrupt the main conversion surfaces.
+// `/p/*` (tiendas del partner) es la MÁS importante: este modal tapaba los
+// productos del partner a los 45s y le quedaba con el mail de SU cliente, bajo
+// la marca Novamente. Reportado por Impulso (16/07). El gate principal vive en
+// GlobalChrome (no monta nada de Novamente sobre /p/); esto es la red de
+// seguridad por si el popup se monta desde otro lado.
+// `/checkout` y `/malvinas` (09/08): el modal interceptaba el click a
+// "Confirmar y Pagar" en mobile — nunca debe pisar el flujo de compra.
+const EXCLUDED_PREFIXES = ["/p/", "/crear", "/design", "/workspace", "/admin", "/checkout", "/malvinas"]
+
+function isExcludedPath(): boolean {
+  if (typeof window === "undefined") return true
+  const path = window.location.pathname
+  return path === "/" || EXCLUDED_PREFIXES.some((p) => path.startsWith(p))
+}
+
 export function EmailCapturePopup() {
   const [visible, setVisible] = useState(false)
   const [email, setEmail] = useState("")
@@ -35,24 +51,15 @@ export function EmailCapturePopup() {
 
   useEffect(() => {
     if (isDismissed()) return
-    // Don't interrupt the main conversion surfaces.
-    // `/p/*` (tiendas del partner) es la MÁS importante de todas y faltaba: este
-    // modal tapaba los productos del partner a los 45s y le quedaba con el mail
-    // de SU cliente, bajo la marca Novamente. Reportado por Impulso (16/07):
-    // "si un cliente quiere ver los productos para comprar, pide subscripción,
-    // así no se puede trabajar". El gate principal vive en GlobalChrome (no
-    // monta nada de Novamente sobre /p/); esto es la red de seguridad por si el
-    // popup se monta desde otro lado.
-    if (
-      window.location.pathname === "/" ||
-      window.location.pathname.startsWith("/p/") ||
-      window.location.pathname.startsWith("/crear") ||
-      window.location.pathname.startsWith("/design") ||
-      window.location.pathname.startsWith("/workspace") ||
-      window.location.pathname.startsWith("/admin")
-    ) return
-
-    const timer = setTimeout(() => setVisible(true), SHOW_DELAY_MS)
+    if (isExcludedPath()) return
+    const timer = setTimeout(() => {
+      // Re-chequear la ruta AL DISPARAR, no solo al montar: el componente vive
+      // en GlobalChrome y sobrevive a las navegaciones client-side, así que un
+      // timer armado en una página permitida puede vencer con el usuario ya en
+      // /checkout (09/08: el modal tapó "Confirmar y Pagar" en mobile — 8 días
+      // sin órdenes web).
+      if (!isExcludedPath()) setVisible(true)
+    }, SHOW_DELAY_MS)
     return () => clearTimeout(timer)
   }, [])
 
