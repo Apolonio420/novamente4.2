@@ -26,6 +26,11 @@ const IMAGE_MODEL_COST_USD: Record<string, number> = {
   "gemini-2.5-flash-image": 0.039, // salida 1024×1024, sin componente de thinking separado
   "gemini-3-pro-image": 0.134, // salida 1K/2K — 4K sería 0.24, no usado hoy
   "gemini-3.1-flash-image": 0.067, // salida 1K — antes 0.04 (mal). Fuente: ai.google.dev/gemini-api/docs/pricing, 2026-08-05
+  // Modelos legacy/preview ausentes de esta tabla hasta hoy → medían
+  // cost_usd=0 pese a llamar a Gemini de verdad (auditoría 2026-08-09).
+  "gemini-2.0-flash-exp": 0.039, // bg-removal en app/api/process-design/route.ts ("Nano Banana" original, salida imagen 1024×1024). Nunca tuvo precio oficial publicado (era free-tier preview) y ya no figura en la pricing page vigente → APROX = tarifa del equivalente GA gemini-2.5-flash-image (misma clase de salida). Fuente: ai.google.dev/gemini-api/docs/pricing, 2026-08-09.
+  "gemini-2.0-flash": 0.0008, // NO genera imagen en este repo — solo texto+vision-input (partners/onboarding/extract, partners/catalog/copy, lib/rag/*chat.ts). APROX por tokens, no por imagen: última tarifa oficial standard $0.10/1M input + $0.40/1M output (modelo deprecado, shutdown oficial 01/06/2026 según la pricing page — sigue en uso en el repo, ver hallazgo aparte), asumiendo ~6K tokens input (screenshot+markdown) + ~600 output por call. Fuente: ai.google.dev/gemini-api/docs/pricing, 2026-08-09.
+  "gemini-2.5-flash-preview-05-20": 0.039, // fallback de imagen en app/api/public/design/try-on/route.ts cuando el modelo primario falla. No listado en la pricing page vigente (preview retirado) → APROX = tarifa del equivalente GA gemini-2.5-flash-image (mismo tier, salida 1024×1024). Fuente: ai.google.dev/gemini-api/docs/pricing, 2026-08-09.
 }
 
 /**

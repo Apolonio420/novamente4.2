@@ -104,7 +104,15 @@ export async function POST(req: NextRequest) {
     const key = `v1/lifestyle/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.png`
     const { url: lifestyleUrl } = await uploadFile(buffer, key, "image/png")
 
-    await meterPublicImageGen({ endpoint: "public/design/lifestyle", model: modelName })
+    // usageMetadata real de la respuesta de Gemini — este modelo puede
+    // facturar "thinking" tokens aparte del precio plano por imagen (ver
+    // lib/security/meter-usage.ts). Mismo patrón que
+    // app/api/partners/design/generate/route.ts.
+    await meterPublicImageGen({
+      endpoint: "public/design/lifestyle",
+      model: modelName,
+      usageMetadata: (result.response as any)?.usageMetadata,
+    })
 
     return ok({ lifestyleUrl, scenario })
   } catch (e: any) {

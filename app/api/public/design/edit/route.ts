@@ -133,7 +133,15 @@ export async function POST(req: NextRequest) {
     const key = `v1/edited-designs/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.png`
     const { url } = await uploadFile(buffer, key, "image/png")
 
-    await meterPublicImageGen({ endpoint: "public/design/edit", model: IMAGE_MODEL })
+    // usageMetadata real de la respuesta de Gemini — este modelo puede
+    // facturar "thinking" tokens aparte del precio plano por imagen (ver
+    // lib/security/meter-usage.ts). Mismo patrón que
+    // app/api/partners/design/generate/route.ts.
+    await meterPublicImageGen({
+      endpoint: "public/design/edit",
+      model: IMAGE_MODEL,
+      usageMetadata: (result.response as any)?.usageMetadata,
+    })
 
     return ok({
       success: true,

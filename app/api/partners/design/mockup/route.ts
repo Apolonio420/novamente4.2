@@ -225,9 +225,9 @@ export async function POST(request: NextRequest) {
     // centavo). units:2 porque generatePerfectStamp hace DOS llamadas Gemini
     // internas (quitar fondo del diseño + estampado, ver
     // lib/mockup/perfect-stamp.ts) — contar 1 subestima el costo real a la
-    // mitad. Mismo motor que app/api/storefront/[slug]/studio/mockup/route.ts,
-    // que sí mide pero con units:1 (gap pre-existente, no tocado acá — fuera
-    // del alcance de este cambio).
+    // mitad. Mismo motor que app/api/storefront/[slug]/studio/mockup/route.ts
+    // — ese archivo tenía el mismo gap (medía con units:1 implícito), ya
+    // cerrado con el mismo fix (auditoría 2026-08-09).
     await meterPublicImageGen({
       endpoint: 'partners/studio/mockup',
       model: process.env.GEMINI_STAMP_MODEL ?? process.env.GEMINI_IMAGE_MODEL ?? 'gemini-2.5-flash-image',

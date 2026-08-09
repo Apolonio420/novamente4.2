@@ -184,12 +184,17 @@ export async function POST(
 
     await recordUsage(tenant.id, 'storefront-customer', 'mockup', undefined, assetId).catch(() => {})
 
-    // generatePerfectStamp hace >=1 llamada interna a Gemini (bg-removal +
-    // estampado) — metering aproximado con el modelo de estampado default,
-    // no desglosa cada sub-llamada. Ver comentario arriba sobre el motor.
+    // generatePerfectStamp hace DOS llamadas Gemini internas (quitar fondo
+    // del diseño + estampado, ver lib/mockup/perfect-stamp.ts) — units:2,
+    // mismo fix ya aplicado al motor gemelo
+    // app/api/partners/design/mockup/route.ts (auditoría 2026-08-09: acá
+    // seguía en units:1 implícito, subcontando el costo real a la mitad;
+    // ese archivo ya documentaba este gap como "pre-existente, no tocado" —
+    // ahora cerrado).
     await meterPublicImageGen({
       endpoint: 'storefront/studio/mockup',
       model: process.env.GEMINI_STAMP_MODEL ?? process.env.GEMINI_IMAGE_MODEL ?? 'gemini-2.5-flash-image',
+      units: 2,
       metadata: { tenantSlug: slug },
     })
 

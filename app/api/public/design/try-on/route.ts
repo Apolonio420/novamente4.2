@@ -68,7 +68,9 @@ export async function POST(req: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey)
 
-    async function attemptGeneration(modelId: string): Promise<string | null> {
+    async function attemptGeneration(
+      modelId: string,
+    ): Promise<{ imageBase64: string; usageMetadata?: unknown } | null> {
       const model = genAI.getGenerativeModel({ model: modelId })
       const result = await model.generateContent([
         {
@@ -93,7 +95,7 @@ export async function POST(req: NextRequest) {
           // @ts-ignore
           if (inline?.mimeType?.startsWith("image/") && typeof inline?.data === "string") {
             // @ts-ignore
-            return inline.data as string
+            return { imageBase64: inline.data as string, usageMetadata: (result.response as any)?.usageMetadata }
           }
         }
       }
@@ -104,22 +106,31 @@ export async function POST(req: NextRequest) {
     const primaryModel = process.env.GEMINI_DESIGN_MODEL || "gemini-3.1-flash-image"
     const fallbackModel = "gemini-2.5-flash-preview-05-20"
     let usedModel = primaryModel
-    let imageBase64 = await attemptGeneration(primaryModel).catch(() => null)
+    let attempt = await attemptGeneration(primaryModel).catch(() => null)
 
-    if (!imageBase64) {
+    if (!attempt) {
       usedModel = fallbackModel
-      imageBase64 = await attemptGeneration(fallbackModel).catch(() => null)
+      attempt = await attemptGeneration(fallbackModel).catch(() => null)
     }
 
-    if (!imageBase64) {
+    if (!attempt) {
       return ok({ error: "Gemini did not return an image. Try again." }, 502)
     }
 
+    const imageBase64 = attempt.imageBase64
     const buffer = Buffer.from(imageBase64, "base64")
     const key = `v1/try-on/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.png`
     const { url: tryOnUrl } = await uploadFile(buffer, key, "image/png")
 
-    await meterPublicImageGen({ endpoint: "public/design/try-on", model: usedModel })
+    // usageMetadata real de la respuesta de Gemini — modelo default
+    // (gemini-3.1-flash-image) factura "thinking" tokens aparte del precio
+    // plano por imagen (ver lib/security/meter-usage.ts). Mismo patrón que
+    // app/api/partners/design/generate/route.ts.
+    await meterPublicImageGen({
+      endpoint: "public/design/try-on",
+      model: usedModel,
+      usageMetadata: attempt.usageMetadata as any,
+    })
 
     // The selfie is not stored here — it was downloaded from the pre-signed R2 URL provided
     // by the client and used only for this generation. The client calls

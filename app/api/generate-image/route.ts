@@ -200,12 +200,12 @@ export async function POST(req: NextRequest) {
         if (imagesBase64.length >= n) break
       }
       const fallbackText = res.text
-      return { imagesBase64, fallbackText }
+      return { imagesBase64, fallbackText, usageMetadata: res.usageMetadata }
     }
 
     // 4) Primer intento
     const tGen0 = Date.now()
-    let { imagesBase64, fallbackText } = await runOnce(finalPrompt)
+    let { imagesBase64, fallbackText, usageMetadata } = await runOnce(finalPrompt)
     const tGen1 = Date.now()
 
     // 5) Si vino texto en vez de imagen, reintentar reforzando
@@ -220,6 +220,7 @@ export async function POST(req: NextRequest) {
       const tGen3 = Date.now()
       imagesBase64 = retry.imagesBase64
       fallbackText = retry.fallbackText
+      usageMetadata = retry.usageMetadata
       console.log("GEN-IMG retry", { ms: tGen3 - tGen2, gotImages: !!imagesBase64.length })
     }
 
@@ -249,7 +250,10 @@ export async function POST(req: NextRequest) {
               Math.max(1, stats2.channels.length)
             console.log("GEN-IMG retry stdev:", avg2.toFixed(1))
             // Solo reemplaza si el retry es mejor
-            if (avg2 > avgStdev) imagesBase64 = retry2.imagesBase64
+            if (avg2 > avgStdev) {
+              imagesBase64 = retry2.imagesBase64
+              usageMetadata = retry2.usageMetadata
+            }
           }
         }
       } catch (e) {
@@ -333,10 +337,19 @@ export async function POST(req: NextRequest) {
     // de arriba (una promesa sin await pierde la carrera contra el freeze
     // post-response en serverless). meterPublicImageGen nunca tira: falla
     // en silencio y jamas rompe esta respuesta.
+    // usageMetadata real de la respuesta de Gemini (SDK @google/genai, no el
+    // usageMetadata de result.response del SDK viejo — misma forma de campos,
+    // ver GenerateContentResponseUsageMetadata en @google/genai). Este es el
+    // TOP de gasto real (gemini-3-pro-image en prod) y hasta ahora era el
+    // único de los 5 endpoints públicos de imagen que NO pasaba
+    // usageMetadata — el componente de "thinking" tokens (facturado aparte
+    // del precio plano por imagen, ver lib/security/meter-usage.ts) se
+    // perdía acá. Mismo patrón que app/api/partners/design/generate/route.ts.
     await meterPublicImageGen({
       endpoint: "public/generate-image",
       model: IMAGE_MODEL,
       units: out.filter((img) => !(img as { isFallback?: boolean }).isFallback).length || out.length,
+      usageMetadata: usageMetadata as any,
     })
 
     return ok({

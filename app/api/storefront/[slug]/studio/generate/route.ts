@@ -162,9 +162,14 @@ export async function POST(
     // Record usage (no userId for public — use 'storefront-customer')
     await recordUsage(tenant.id, 'storefront-customer', 'design', undefined, assetId).catch(() => {})
 
+    // usageMetadata real de la respuesta de Gemini — modelo default
+    // (gemini-3.1-flash-image) factura "thinking" tokens aparte del precio
+    // plano por imagen (ver lib/security/meter-usage.ts). Mismo patrón que
+    // app/api/partners/design/generate/route.ts.
     await meterPublicImageGen({
       endpoint: 'storefront/studio/generate',
       model: modelName,
+      usageMetadata: (response as any)?.usageMetadata,
       metadata: { tenantSlug: slug },
     })
 
