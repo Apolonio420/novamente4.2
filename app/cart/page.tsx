@@ -137,7 +137,9 @@ export default function CartPage() {
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Visor grande */}
-        <div className="lg:col-span-2 space-y-4">
+        {/* min-w-0: sin esto, los nombres largos con truncate inflan el min-content
+            de la columna y toda la página desborda el viewport en mobile */}
+        <div className="lg:col-span-2 space-y-4 min-w-0">
           {selectedItem && (
             <Card>
               <CardContent className="p-6">
@@ -270,7 +272,8 @@ export default function CartPage() {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    {/* flex-wrap: en mobile no entran cantidad + precio + eliminar en una línea */}
+                    <div className="flex flex-wrap items-center justify-between gap-y-2">
                       {/* Controles de cantidad */}
                       <div className="flex items-center gap-2">
                         <Button
@@ -351,7 +354,7 @@ export default function CartPage() {
         </div>
 
         {/* Resumen del pedido */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 min-w-0">
           <Card className="sticky top-4">
             <CardHeader>
               <CardTitle>Resumen del Pedido</CardTitle>

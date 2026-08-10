@@ -375,7 +375,9 @@ export default function CheckoutPage() {
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Información del cliente */}
-        <div className="space-y-6">
+        {/* min-w-0: sin esto, los nombres largos con truncate inflan el min-content
+            de la columna y toda la página desborda el viewport en mobile */}
+        <div className="space-y-6 min-w-0">
           <Card>
             <CardHeader>
               <CardTitle>Información de Contacto</CardTitle>
@@ -583,7 +585,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* Resumen del pedido */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           {/* Imagen grande de las prendas */}
           {items.length > 0 && selectedItem && (
             <Card>
