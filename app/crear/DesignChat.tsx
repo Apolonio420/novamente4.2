@@ -1702,7 +1702,7 @@ export function DesignChat({
         {/* Orientation selector — visible siempre que no haya imagen previa
             (cuando hay design previo el aspect ratio ya está definido) */}
         {!session.currentDesignUrl && !pendingAttachment && (
-          <div className="px-4 pt-1 pb-2 border-t border-zinc-800 flex items-center gap-2">
+          <div className="px-4 pt-1 pb-2 border-t border-zinc-800 flex flex-wrap items-center gap-2">
             <span className="text-xs text-zinc-500">Orientación:</span>
             {(["vertical", "horizontal", "cuadrado"] as const).map((o) => {
               const isActive = orientation === o

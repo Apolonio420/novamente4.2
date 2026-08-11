@@ -167,9 +167,11 @@ export default function CrearPage() {
 
         {/* Trust signals — single compact row, scrollable on mobile */}
         <div className="border-t border-white/5 bg-zinc-950/60">
-          <div className="mx-auto max-w-7xl">
+          {/* La cinta se scrollea, pero con la scrollbar oculta el último claim
+              parecía cortado en vez de deslizable: el fade de la derecha lo aclara. */}
+          <div className="mx-auto max-w-7xl relative after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:w-6 after:bg-gradient-to-l after:from-zinc-950/90 after:to-transparent">
             <div
-              className="flex items-center gap-4 overflow-x-auto px-3 sm:px-4 py-1.5 text-[10.5px] text-zinc-500 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              className="flex items-center gap-2 sm:gap-4 overflow-x-auto px-3 sm:px-4 py-1.5 text-[9.5px] sm:text-[10.5px] text-zinc-500 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               role="list"
             >
               <span className="shrink-0 whitespace-nowrap" role="listitem">
