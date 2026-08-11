@@ -20,6 +20,7 @@ import Image from "next/image"
 import { ScrollButton } from "@/components/scroll-button"
 import { INTERNAL_LINKS } from "@/lib/config/links"
 import { shippingSummaryWithFreeThreshold } from "@/lib/shipping-config"
+import { PRODUCTS as CATALOG_PRODUCTS, formatPrice as formatCatalogPrice } from "@/lib/catalog"
 
 export const metadata = {
   title: "Remeras y Buzos Personalizados con IA",
@@ -43,6 +44,18 @@ export default function Home() {
   // Ofertas activas — respeta startsAt/endsAt definido en lib/offers.ts.
   // Si no hay activas, la seccion completa de Hot Sale no se renderiza.
   const activeOffers = getActiveOffers()
+
+  // REGLA DE PRECIOS: las tarjetas de producto derivan de lib/catalog.ts, nunca
+  // un numero a mano. Estaban hardcodeadas y habian quedado desincronizadas:
+  // el hoodie decia $55.500 (catalogo $55.000) y la Aura $37.000 (catalogo
+  // $31.000, o sea $6.000 de mas en la home).
+  const catalogPrice = (garmentType: string) => {
+    const item = CATALOG_PRODUCTS.find((p) => p.garmentType === garmentType)
+    if (!item) {
+      throw new Error(`[home] garmentType "${garmentType}" no existe en lib/catalog.ts — precio no derivable.`)
+    }
+    return formatCatalogPrice(item.price)
+  }
 
   // El MerchantReturnPolicy se movio a app/layout.tsx: todas las fichas de
   // producto lo referencian por @id y el nodo tiene que estar en cada pagina,
@@ -609,7 +622,7 @@ export default function Home() {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-3">
                   <h2 className="text-xl font-semibold leading-tight">Buzo Hoodie Oversize</h2>
-                  <span className="text-2xl font-bold text-primary ml-4">$55.500</span>
+                  <span className="text-2xl font-bold text-primary ml-4">{catalogPrice("buzo-hoodie-unisex")}</span>
                 </div>
 
                 <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
@@ -669,7 +682,7 @@ export default function Home() {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-3">
                   <h2 className="text-xl font-semibold leading-tight">Aura Oversize T-Shirt</h2>
-                  <span className="text-2xl font-bold text-primary ml-4">$37.000</span>
+                  <span className="text-2xl font-bold text-primary ml-4">{catalogPrice("aura-oversize-tshirt")}</span>
                 </div>
 
                 <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
@@ -729,7 +742,7 @@ export default function Home() {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-3">
                   <h2 className="text-xl font-semibold leading-tight">Lienzo Premium</h2>
-                  <span className="text-2xl font-bold text-primary ml-4">Desde $34.000</span>
+                  <span className="text-2xl font-bold text-primary ml-4">Desde {catalogPrice("lienzo-premium")}</span>
                 </div>
 
                 <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
