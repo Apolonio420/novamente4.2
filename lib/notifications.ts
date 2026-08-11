@@ -300,6 +300,82 @@ export async function notifySubscriptionSuspended(tenant: { name: string; plan: 
 }
 
 /**
+ * Escapa entities de HTML antes de interpolar texto arbitrario (nombre de
+ * tenant, slug) en un mensaje enviado con parse_mode: 'HTML' (ver
+ * sendToTelegram arriba). Sin esto, un nombre con `&`, `<` o `>` puede romper
+ * el parseo de Telegram — y Telegram devuelve error `ok:false` en vez de
+ * lanzar, así que sin chequear el resultado el cron reporta éxito con el
+ * aviso nunca entregado (nos pasó antes con Markdown y `_` en nombres; acá
+ * usamos HTML pero la misma clase de bug aplica igual si no se escapa).
+ */
+export function escapeTelegramHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+export interface StorefrontHealthAlert {
+  deadSilent: Array<{ slug: string; name: string; publishedProducts: number }>
+  brokenLive: Array<{ slug: string; name: string; reason: string; detail: string }>
+  emptyStorefrontCount: number
+}
+
+/**
+ * Construye el texto del aviso de healthcheck (pura, sin I/O — separada de
+ * notifyStorefrontHealthIssues siguiendo el mismo patrón que
+ * buildSubscriptionExpiringEmail/buildOrderShippingEmail en este repo: el
+ * armado del mensaje se testea sin mockear fetch ni depender de env vars de
+ * Telegram). Nombres y slugs de tenant se escapan porque viajan con
+ * parse_mode: 'HTML' (ver sendToTelegram) — sin escapar, un nombre con
+ * `&`/`<`/`>` puede romper el parseo y Telegram responde `ok:false` en vez
+ * de lanzar, tragándose el aviso en silencio.
+ */
+export function buildStorefrontHealthMessage(alert: StorefrontHealthAlert): string {
+  const lines: string[] = ['🏚️ <b>HEALTHCHECK DE TIENDAS PARTNER</b>', '']
+
+  if (alert.deadSilent.length > 0) {
+    lines.push(
+      `🔴 <b>Tiendas muertas silenciosas</b> (${alert.deadSilent.length}) — tienen producto(s) publicado(s) pero la tienda está apagada, nadie las ve:`,
+    )
+    for (const t of alert.deadSilent) {
+      lines.push(`• ${escapeTelegramHtml(t.name)} (<code>${escapeTelegramHtml(t.slug)}</code>) — ${t.publishedProducts} producto(s)`)
+    }
+    lines.push('')
+  }
+
+  if (alert.brokenLive.length > 0) {
+    lines.push(`⚠️ <b>Tiendas publicadas que NO cargan</b> (${alert.brokenLive.length}):`)
+    for (const t of alert.brokenLive) {
+      lines.push(`• ${escapeTelegramHtml(t.name)} (<code>${escapeTelegramHtml(t.slug)}</code>) — ${escapeTelegramHtml(t.reason)}: ${escapeTelegramHtml(t.detail)}`)
+    }
+    lines.push('')
+  }
+
+  if (alert.emptyStorefrontCount > 0) {
+    lines.push(`📭 <i>${alert.emptyStorefrontCount} tienda(s) publicada(s) sin productos (vidriera vacía, no es un bug — señal comercial).</i>`)
+  }
+
+  return lines.join('\n').trim()
+}
+
+/**
+ * Alerta del healthcheck diario de storefronts partner (ver
+ * app/api/cron/partners/storefront-health/route.ts). Caso Orlando (08/2026):
+ * su tienda estuvo en 404 público un mes y nos enteramos porque se quejó por
+ * WhatsApp — esta es la red que reemplaza "que el partner se queje" por un
+ * aviso proactivo. Solo se llama cuando hay hallazgos ACCIONABLES (tiendas
+ * muertas o caídas, ya filtradas de exclusiones por el caller); "vidriera
+ * vacía" nunca dispara el envío por sí sola, solo viaja como una línea extra
+ * de contexto cuando el mensaje ya se está mandando por otro motivo.
+ *
+ * Devuelve lo mismo que sendToTelegram (el payload de Telegram, o null si
+ * faltaba config o la API respondió error) para que el caller pueda reflejar
+ * el resultado real del envío en el JSON de respuesta del cron — un 200 del
+ * cron NO prueba que el mensaje llegó.
+ */
+export async function notifyStorefrontHealthIssues(alert: StorefrontHealthAlert) {
+  return sendToTelegram(ERRORS_CHAT_ID, buildStorefrontHealthMessage(alert), ERRORS_BOT_TOKEN)
+}
+
+/**
  * Notifies a new lead from a partner storefront
  */
 export async function notifyNewLead(lead: {

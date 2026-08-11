@@ -5,6 +5,7 @@
     { "path": "/api/cron/abandoned-checkout", "schedule": "0 13 * * *" },
     { "path": "/api/cron/cleanup-tryon-selfies", "schedule": "0 8 * * *" },
     { "path": "/api/cron/partners/check-subscriptions", "schedule": "23 9 * * *" },
-    { "path": "/api/cron/partners/pending-subscription-followup", "schedule": "47 10 * * *" }
+    { "path": "/api/cron/partners/pending-subscription-followup", "schedule": "47 10 * * *" },
+    { "path": "/api/cron/partners/storefront-health", "schedule": "30 12 * * *" }
   ]
 }
