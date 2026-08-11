@@ -3,7 +3,11 @@
  *
  * ALL product data lives here. PublicAssistant, public-chat system prompt,
  * and any future consumer should import from this file.
+ *
+ * Excepción: los costos de envío NO viven acá, viven en lib/shipping-config.ts
+ * (única fuente de verdad, la misma que cobra el checkout).
  */
+import { SHIPPING, SHIPPING_ZONES_PUBLIC } from './shipping-config'
 
 export interface Product {
   name: string
@@ -102,11 +106,12 @@ export const PRODUCTS: Product[] = [
 
 export const SIZES = ['S', 'M', 'L', 'XL', 'XXL'] as const
 
-export const SHIPPING_ZONES = [
-  { zone: 'AMBA', price: 5500, days: '3-5' },
-  { zone: 'Interior BA', price: 7000, days: '5-7' },
-  { zone: 'Resto del pais', price: 9000, days: '7-10' },
-] as const
+/**
+ * Zonas de envío para el prompt del bot. Derivadas de lib/shipping-config.ts:
+ * antes tenía su propia tabla (AMBA 5500 / Interior BA 7000 / Resto 9000) y el
+ * bot cotizaba un precio que el checkout no cobraba.
+ */
+export const SHIPPING_ZONES = SHIPPING_ZONES_PUBLIC
 
 export const PRODUCTION_DAYS = '2-5'
 
@@ -126,5 +131,5 @@ export function buildProductListForPrompt(): string {
 /** Generate shipping info for AI system prompts */
 export function buildShippingForPrompt(): string {
   const zones = SHIPPING_ZONES.map(z => `${z.zone} ${formatPrice(z.price)}`).join(' | ')
-  return `ENVIO: ${zones}\nPRODUCCION: ${PRODUCTION_DAYS} dias habiles | ENTREGA: 3-10 dias habiles segun zona`
+  return `ENVIO: ${zones} | GRATIS desde ${formatPrice(SHIPPING.FREE_THRESHOLD)}\nPRODUCCION: ${PRODUCTION_DAYS} dias habiles | ENTREGA: 3-10 dias habiles segun zona`
 }

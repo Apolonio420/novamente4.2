@@ -12,6 +12,7 @@ import {
   GraduationCap, Briefcase, PartyPopper,
   Trophy, Music, Heart
 } from "lucide-react"
+import { shippingZonesDetailLine, shippingSummaryLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Buzos Personalizados con IA en Argentina",
@@ -136,7 +137,7 @@ export default function BuzosPersonalizados() {
         name: "Cuanto tarda la produccion y el envio?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Produccion: 2-5 dias habiles. Envio: AMBA 3-5 dias ($5.500), Interior BA 5-7 dias ($7.000), Resto del pais 7-10 dias ($9.000). Total desde que confirmas hasta que lo recibi: 5-15 dias habiles segun tu zona.",
+          text: `Produccion: 2-5 dias habiles. Envio: ${shippingZonesDetailLine()}. Total desde que confirmas hasta que lo recibi: 5-15 dias habiles segun tu zona.`,
         },
       },
     ],
@@ -347,7 +348,7 @@ export default function BuzosPersonalizados() {
                 { number: "01", icon: Sparkles, title: "Disena con IA o subi tu arte", description: "Describe tu idea y la IA genera el diseno. O subi tu PNG, JPG o SVG. 37 estilos artisticos disponibles." },
                 { number: "02", icon: Shirt, title: "Elegi tu buzo", description: "Buzo Hoodie Oversize o crewneck. 6 colores, talles S a XXL. Algodon 100% frizado." },
                 { number: "03", icon: Layers, title: "Estampado DTG", description: "Impresion directa sobre la tela con tintas de agua. Colores vibrantes, tacto suave, 50+ lavados." },
-                { number: "04", icon: Truck, title: "Envio a tu puerta", description: "Produccion en 2-5 dias. Envio a todo el pais: AMBA $5.500, Interior BA $7.000, Resto $9.000." },
+                { number: "04", icon: Truck, title: "Envio a tu puerta", description: `Produccion en 2-5 dias. Envio a todo el pais: ${shippingSummaryLine()}.` },
               ].map((step) => (
                 <Card key={step.number} className="bg-zinc-900 border-zinc-800 hover:border-indigo-500/50 transition-all">
                   <CardContent className="p-6 text-center">
@@ -573,7 +574,7 @@ export default function BuzosPersonalizados() {
                 },
                 {
                   q: "Cuanto tarda la produccion?",
-                  a: "2-5 dias habiles de produccion. Envio: AMBA 3-5 dias ($5.500), Interior BA 5-7 dias ($7.000), Resto del pais 7-10 dias ($9.000).",
+                  a: `2-5 dias habiles de produccion. Envio: ${shippingZonesDetailLine()}.`,
                 },
               ].map((faq) => (
                 <Card key={faq.q} className="bg-zinc-900 border-zinc-800">

@@ -8,6 +8,8 @@ import {
   Sparkles, Palette, Wand2, Shirt, Star, Truck,
   Shield, Clock, CheckCircle2, Zap, TrendingUp
 } from "lucide-react"
+import { shippingDetailsJsonLd, RETURN_POLICY_REF, shippingSummaryWithFreeThreshold } from "@/lib/shipping-config"
+import { PRODUCTS as CATALOG_PRODUCTS } from "@/lib/catalog"
 
 export const metadata: Metadata = {
   title: "Hoodie Personalizado Argentina — Buzo custom con IA | Novamente",
@@ -50,6 +52,16 @@ export const metadata: Metadata = {
 }
 
 export default function HoodiePersonalizado() {
+  // REGLA DE PRECIOS: igual que app/buzos-egresados — el precio sale SIEMPRE
+  // de lib/catalog.ts, nunca hardcodeado. Antes decia 55000 a mano y quedaba
+  // desincronizado cuando cambiaba el catalogo.
+  const hoodie = CATALOG_PRODUCTS.find((p) => p.garmentType === "buzo-hoodie-unisex")
+  if (!hoodie) {
+    throw new Error(
+      '[hoodie-personalizado] garmentType "buzo-hoodie-unisex" no existe en lib/catalog.ts — precio no derivable.'
+    )
+  }
+
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -65,26 +77,20 @@ export default function HoodiePersonalizado() {
     brand: { "@type": "Brand", name: "Novamente" },
     category: "Buzos y Hoodies Personalizados",
     material: "Algodon premium",
+    // Offer y no AggregateOffer: es un solo producto a un solo precio, y
+    // schema.org no define shippingDetails dentro de AggregateOffer (Google lo
+    // ignoraba, por eso la ficha quedaba incompleta).
     offers: {
-      "@type": "AggregateOffer",
-      lowPrice: 55000,
-      highPrice: 55000,
+      "@type": "Offer",
+      url: "https://www.novamente.ar/hoodie-personalizado",
       priceCurrency: "ARS",
-      offerCount: 1,
+      price: hoodie.price,
       availability: "https://schema.org/InStock",
+      itemCondition: "https://schema.org/NewCondition",
+      priceValidUntil: "2026-12-31",
       seller: { "@id": "https://www.novamente.ar/#organization" },
-      shippingDetails: {
-        "@type": "OfferShippingDetails",
-        shippingDestination: {
-          "@type": "DefinedRegion",
-          addressCountry: "AR",
-        },
-        shippingRate: {
-          "@type": "MonetaryAmount",
-          currency: "ARS",
-          value: "5500",
-        },
-      },
+      shippingDetails: shippingDetailsJsonLd(),
+      hasMerchantReturnPolicy: RETURN_POLICY_REF,
     },
     aggregateRating: {
       "@type": "AggregateRating",
@@ -120,14 +126,6 @@ export default function HoodiePersonalizado() {
         acceptedAnswer: {
           "@type": "Answer",
           text: "El Buzo Hoodie Oversize viene en negro, blanco, stone-wash, marron, crema y gris melange.",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "Cuanto margen puedo sacar vendiendo hoodies?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "Los hoodies son el producto con mayor margen. Un Buzo Hoodie Oversize cuesta $55.000 y se vende a $95.000-110.000. Eso es un margen del 60-80% por unidad.",
         },
       },
       {
@@ -627,7 +625,7 @@ export default function HoodiePersonalizado() {
               </div>
               <h3 className="font-semibold mb-2">Todo el pais</h3>
               <p className="text-sm text-muted-foreground">
-                AMBA $5.500 · Interior BA $7.000 · Resto del pais $9.000. En 5-10 dias habiles.
+                {shippingSummaryWithFreeThreshold()} En 5-10 dias habiles.
               </p>
             </div>
           </div>

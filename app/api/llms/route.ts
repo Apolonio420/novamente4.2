@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getPublishedTenants } from '@/lib/partners/tenant'
+import { SHIPPING, SHIPPING_ZONES_PUBLIC, formatShippingARS } from '@/lib/shipping-config'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600 // 1 hour
@@ -72,9 +73,8 @@ Todos los productos incluyen el diseño con IA y estampado DTG. No hay costo ext
 Anime, Art Deco, Bauhaus, Botanical, Brutalist, Chibi, Comic, Cyberpunk, Dark Fantasy, Doodle, Engraving, Flat Design, Geometric, Glitch, Graffiti, Isometric, Kawaii, Line Art, Low Poly, Mandala, Memphis, Minimalist, Neo-Tokyo, Pixel Art, Pop Art, Psychedelic, Retro Gaming, Risograph, Sticker, Surreal, Synthwave, Tattoo Flash, Tribal, Ukiyo-e, Vaporwave, Vintage, Watercolor
 
 ## Envíos a todo Argentina
-- AMBA: 3-5 días hábiles ($5.500)
-- Buenos Aires Interior: 5-7 días hábiles ($7.000)
-- Resto del país: 7-10 días hábiles ($9.000)
+${SHIPPING_ZONES_PUBLIC.map((z) => `- ${z.zone}: ${z.days} (${formatShippingARS(z.price)})`).join('\n')}
+- Envío gratis en pedidos desde ${formatShippingARS(SHIPPING.FREE_THRESHOLD)}
 
 ## Pagos
 - MercadoPago (tarjetas de crédito/débito, efectivo en rapipago/pagofacil)

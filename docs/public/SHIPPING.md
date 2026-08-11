@@ -6,11 +6,15 @@
 - **Tiempo total estimado:** 5-10 días hábiles (producción + envío)
 
 ## Costos de Envío
+> Estos montos tienen que coincidir con `lib/shipping-config.ts`, que es lo que
+> cobra el checkout. Si cambiás uno, cambiá el otro.
+
 | Zona | Costo | Tiempo estimado |
 |------|-------|-----------------|
-| AMBA (Capital y GBA) | $5,500 ARS | 24-72 horas hábiles |
-| Interior Buenos Aires | $7,000 ARS | 2-4 días hábiles |
-| Resto del país | $9,000 ARS | 2-4 días hábiles |
+| CABA y GBA | $10.000 ARS | 3-5 días hábiles |
+| Resto del país | $15.000 ARS | 5-10 días hábiles |
+
+**Envío gratis** en pedidos desde $150.000 ARS.
 
 ## Transportista
 - **Andreani:** Envío a todo el país con seguimiento

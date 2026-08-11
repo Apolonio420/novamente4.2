@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Sparkles, Pencil, User, Camera, ArrowLeft, ShoppingCart } from "lucide-react"
 import { useCart } from "@/lib/cartStore"
+import { shippingSummaryLine } from "@/lib/shipping-config"
 
 // Client-side only — Konva no funciona en SSR
 const DesignChat = dynamic(() => import("./DesignChat").then(m => m.DesignChat), { ssr: false })
@@ -178,7 +179,7 @@ export default function CrearPage() {
                 🇦🇷 100% argentino
               </span>
               <span className="shrink-0 whitespace-nowrap" role="listitem">
-                🚚 Envío BA $7.000 · Resto $9.000
+                🚚 Envío {shippingSummaryLine()}
               </span>
               <span className="shrink-0 whitespace-nowrap" role="listitem">
                 💳 Mercado Pago

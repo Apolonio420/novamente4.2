@@ -10,7 +10,7 @@ import {
   Camera, PartyPopper, Flame, Music, Trophy, Shirt
 } from "lucide-react"
 import { PRODUCTS as CATALOG_PRODUCTS } from "@/lib/catalog"
-import { SHIPPING } from "@/lib/shipping-config"
+import { SHIPPING, shippingDetailsJsonLd, RETURN_POLICY_REF } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Buzos de Egresados 2026 — Personalizados con IA",
@@ -129,6 +129,8 @@ export default function BuzosEgresados() {
       itemCondition: "https://schema.org/NewCondition",
       priceValidUntil: "2026-12-31",
       seller: { "@id": "https://www.novamente.ar/#organization" },
+      shippingDetails: shippingDetailsJsonLd(),
+      hasMerchantReturnPolicy: RETURN_POLICY_REF,
     },
   }))
 

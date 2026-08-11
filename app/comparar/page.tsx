@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, MessageCircle, CheckCircle, XCircle, ArrowRight } from 'lucide-react'
 
+import { SHIPPING, formatShippingARS } from "@/lib/shipping-config"
 export const metadata: Metadata = {
   title: 'Novamente vs Printful vs Printify — Comparativa para Argentina 2026',
   description:
@@ -100,7 +101,7 @@ export default function CompararPage() {
                 </tr>
                 <tr className="border-b border-white/5 bg-white/[0.02]">
                   <td className="py-3 px-4 font-medium">Envio nacional</td>
-                  <td className="py-3 px-4 text-center text-green-400">5-10 dias / $5,500-9,000</td>
+                  <td className="py-3 px-4 text-center text-green-400">{`5-10 dias / ${formatShippingARS(SHIPPING.BA)}-${formatShippingARS(SHIPPING.RESTO)}`}</td>
                   <td className="py-3 px-4 text-center text-red-400/70">15-30 dias / $15,000+</td>
                   <td className="py-3 px-4 text-center text-red-400/70">15-30 dias / $15,000+</td>
                 </tr>
@@ -211,7 +212,7 @@ export default function CompararPage() {
                 Novamente despacha desde Villa Martelli (CP 1603) con envios a todo el pais. Los
                 tiempos de entrega son de 5 a 10 dias habiles dependiendo de la zona: AMBA en 3-5
                 dias, interior de Buenos Aires en 5-7 dias, y resto del pais en 7-10 dias. Los
-                costos de envio van de $5,500 (AMBA) a $9,000 (resto del pais).
+                {`costos de envio van de ${formatShippingARS(SHIPPING.BA)} (CABA y GBA) a ${formatShippingARS(SHIPPING.RESTO)} (resto del pais).`}
               </p>
               <p>
                 Con Printful y Printify, un envio a Argentina demora tipicamente entre 15 y 30 dias

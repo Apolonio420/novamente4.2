@@ -1,4 +1,5 @@
 import type { Tenant, PartnerProduct } from './types'
+import { SHIPPING } from '../shipping-config'
 
 const BASE_URL = 'https://www.novamente.ar'
 
@@ -89,7 +90,9 @@ export function generateProductSchema(
         shippingRate: {
           '@type': 'MonetaryAmount',
           currency: 'ARS',
-          value: '5500',
+          // Derivado de shipping-config: antes decía '5500', que ya no es lo
+          // que cobra el checkout.
+          value: SHIPPING.RESTO,
         },
         deliveryTime: {
           '@type': 'ShippingDeliveryTime',

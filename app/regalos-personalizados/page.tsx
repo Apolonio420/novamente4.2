@@ -12,6 +12,7 @@ import {
   Users, PartyPopper, Music, Trophy,
   Briefcase, Calendar
 } from "lucide-react"
+import { shippingZonesDetailLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Regalos Personalizados con IA — Remeras, Buzos y Hoodies Unicos | Novamente",
@@ -125,7 +126,7 @@ export default function RegalosPersonalizados() {
         name: "Cuanto tarda la produccion y el envio?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Produccion: 2-5 dias habiles. Envio: AMBA $5.500 (3-5 dias), Interior Buenos Aires $7.000 (5-7 dias), Resto del pais $9.000 (7-10 dias). Total aproximado: 5-15 dias segun tu zona.",
+          text: `Produccion: 2-5 dias habiles. Envio: ${shippingZonesDetailLine()}. Total aproximado: 5-15 dias segun tu zona.`,
         },
       },
       {
@@ -599,7 +600,7 @@ export default function RegalosPersonalizados() {
               },
               {
                 q: "Cuanto tarda en llegar?",
-                a: "Produccion: 2-5 dias habiles. Envio: AMBA $5.500 (3-5 dias), Interior BA $7.000 (5-7 dias), Resto del pais $9.000 (7-10 dias). Recomendamos pedir con 10+ dias de anticipacion.",
+                a: `Produccion: 2-5 dias habiles. Envio: ${shippingZonesDetailLine()}. Recomendamos pedir con 10+ dias de anticipacion.`,
               },
               {
                 q: "Puedo pedir 1 sola unidad?",

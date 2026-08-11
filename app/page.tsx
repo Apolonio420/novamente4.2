@@ -19,6 +19,7 @@ import Image from "next/image"
 // Image history now fetches via /api/images/history (session-based)
 import { ScrollButton } from "@/components/scroll-button"
 import { INTERNAL_LINKS } from "@/lib/config/links"
+import { shippingSummaryWithFreeThreshold } from "@/lib/shipping-config"
 
 export const metadata = {
   title: "Remeras y Buzos Personalizados con IA",
@@ -43,18 +44,9 @@ export default function Home() {
   // Si no hay activas, la seccion completa de Hot Sale no se renderiza.
   const activeOffers = getActiveOffers()
 
-  // MerchantReturnPolicy JSON-LD
-  const returnPolicyJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "MerchantReturnPolicy",
-    "@id": "https://www.novamente.ar/#return-policy",
-    name: "Politica de devoluciones Novamente",
-    applicableCountry: "AR",
-    returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
-    merchantReturnDays: 10,
-    returnMethod: "https://schema.org/ReturnByMail",
-    returnFees: "https://schema.org/FreeReturn",
-  }
+  // El MerchantReturnPolicy se movio a app/layout.tsx: todas las fichas de
+  // producto lo referencian por @id y el nodo tiene que estar en cada pagina,
+  // no solo en el home.
 
   // HowTo JSON-LD for design process
   const howToJsonLd = {
@@ -127,7 +119,7 @@ export default function Home() {
         name: "¿Hacen envíos a todo el país?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Sí, realizamos envíos a toda la Argentina. AMBA $5.500, Interior de Buenos Aires $7.000 y resto del país $9.000. Despachamos desde Villa Martelli, Buenos Aires.",
+          text: `Sí, realizamos envíos a toda la Argentina. ${shippingSummaryWithFreeThreshold()} Despachamos desde Villa Martelli, Buenos Aires.`,
         },
       },
       {
@@ -169,10 +161,6 @@ export default function Home() {
 
   return (
     <div>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(returnPolicyJsonLd) }}
-      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(howToJsonLd) }}
@@ -1024,7 +1012,7 @@ export default function Home() {
                 <span className="text-primary group-open:rotate-45 transition-transform text-2xl">+</span>
               </summary>
               <p className="mt-4 text-muted-foreground leading-relaxed">
-                Sí, realizamos envíos a toda la Argentina. Los costos son: AMBA $5.500, Interior de Buenos Aires $7.000 y resto del país $9.000. Despachamos desde Villa Martelli, Buenos Aires. El tiempo de producción y envío es de 5 a 10 días hábiles.
+                Sí, realizamos envíos a toda la Argentina. Los costos son: {shippingSummaryWithFreeThreshold()} Despachamos desde Villa Martelli, Buenos Aires. El tiempo de producción y envío es de 5 a 10 días hábiles.
               </p>
             </details>
 

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { PRODUCTS, parsePrice } from "@/lib/products"
 import ProductsFilter from "@/components/ProductsFilter"
+import { shippingDetailsJsonLd, RETURN_POLICY_REF } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Catálogo de Productos — Remeras, Hoodies y Buzos personalizados",
@@ -46,17 +47,8 @@ function generateProductsJsonLd() {
         itemCondition: "https://schema.org/NewCondition",
         priceValidUntil: "2026-12-31",
         seller: { "@id": "https://www.novamente.ar/#organization" },
-        shippingDetails: {
-          "@type": "OfferShippingDetails",
-          shippingDestination: { "@type": "DefinedRegion", addressCountry: "AR" },
-          shippingRate: { "@type": "MonetaryAmount", currency: "ARS", value: "5500" },
-          deliveryTime: {
-            "@type": "ShippingDeliveryTime",
-            handlingTime: { "@type": "QuantitativeValue", minValue: 1, maxValue: 3, unitCode: "DAY" },
-            transitTime: { "@type": "QuantitativeValue", minValue: 3, maxValue: 7, unitCode: "DAY" },
-          },
-        },
-        hasMerchantReturnPolicy: { "@id": "https://www.novamente.ar/#return-policy" },
+        shippingDetails: shippingDetailsJsonLd(),
+        hasMerchantReturnPolicy: RETURN_POLICY_REF,
       },
     }
   })

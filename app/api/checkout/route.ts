@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { MercadoPagoConfig, Preference } from "mercadopago"
 import { createOrder, findRecentDuplicateOrder } from "@/lib/db"
 import { toPublicR2Url } from "@/lib/r2"
+import { shippingCostFor } from "@/lib/shipping-config"
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -63,12 +64,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Price validation failed" }, { status: 400 })
     }
 
-    // Calcular subtotal y shipping si no vienen.
-    // Fallback por zona: BA $7.000 · Resto $9.000 · gratis >= $85.000
+    // Calcular subtotal y shipping si no vienen. El fallback sale de
+    // lib/shipping-config (antes tenía los montos hardcodeados acá y quedaba
+    // desincronizado del carrito cuando cambiaba la tarifa).
     const finalSubtotal = subtotal || calculatedTotal
-    const fallbackShipping = calculatedTotal >= 85000
-      ? 0
-      : (shippingZone === 'RESTO' ? 9000 : 7000)
+    const fallbackShipping = shippingCostFor(calculatedTotal, shippingZone === 'RESTO' ? 'RESTO' : 'BA')
     const finalShippingCost = typeof shippingCost === 'number' ? shippingCost : fallbackShipping
     const finalTotal = finalSubtotal + finalShippingCost
 

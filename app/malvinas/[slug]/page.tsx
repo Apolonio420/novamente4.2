@@ -10,6 +10,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { MALVINAS_PRODUCTS, getMalvinasProduct, type MalvinasProduct } from "@/lib/malvinas-products"
+import { shippingDetailsJsonLd, RETURN_POLICY_REF } from "@/lib/shipping-config"
 import MalvinasProductClient from "./MalvinasProductClient"
 
 const BASE_URL = "https://www.novamente.ar"
@@ -28,6 +29,8 @@ function buildOffers(product: MalvinasProduct) {
     availability: "https://schema.org/InStock",
     itemCondition: "https://schema.org/NewCondition",
     seller: { "@id": `${BASE_URL}/#organization` },
+    shippingDetails: shippingDetailsJsonLd(),
+    hasMerchantReturnPolicy: RETURN_POLICY_REF,
   }
   if (product.sizeOptions && product.sizeOptions.length > 0) {
     return product.sizeOptions.map((opt) => ({ ...base, name: opt.size, price: opt.price }))

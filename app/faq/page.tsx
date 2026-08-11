@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
+import { shippingSummaryWithFreeThreshold } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Preguntas Frecuentes — Ropa personalizada con IA",
@@ -104,7 +105,7 @@ const FAQ_ITEMS = [
     questions: [
       {
         q: "¿Hacen envíos a todo el país?",
-        a: "Sí, realizamos envíos a toda la Argentina. Los costos de envío son: AMBA (área metropolitana) $5.500, Interior de Buenos Aires $7.000 y resto del país $9.000. Despachamos desde Villa Martelli, Buenos Aires.",
+        a: `Sí, realizamos envíos a toda la Argentina. Los costos de envío son: ${shippingSummaryWithFreeThreshold()} Despachamos desde Villa Martelli, Buenos Aires.`,
       },
       {
         q: "¿Cuánto tarda en llegar mi pedido?",

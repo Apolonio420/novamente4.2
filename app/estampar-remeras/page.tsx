@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
+import { SHIPPING_ZONES_PUBLIC, formatShippingARS, shippingZonesDetailLine } from "@/lib/shipping-config"
 import {
   Package, Star, Shield, Clock, CheckCircle2,
   Truck, Palette, Sparkles, ArrowRight,
@@ -126,7 +127,7 @@ export default function EstamparRemeras() {
         name: "Cuanto tarda el servicio de estampado?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Produccion: 2-5 dias habiles. Envio: AMBA 3-5 dias ($5.500), Interior BA 5-7 dias ($7.000), Resto del pais 7-10 dias ($9.000). Total desde que confirmas hasta que lo recibi: 5-15 dias habiles segun zona.",
+          text: `Produccion: 2-5 dias habiles. Envio: ${shippingZonesDetailLine()}. Total desde que confirmas hasta que lo recibi: 5-15 dias habiles segun zona.`,
         },
       },
       {
@@ -219,7 +220,7 @@ export default function EstamparRemeras() {
       number: "04",
       icon: Truck,
       title: "Te lo enviamos",
-      description: "Produccion en 2-5 dias. Envio AMBA 3-5 dias ($5.500), Interior BA 5-7 dias ($7.000), Resto del pais 7-10 dias ($9.000).",
+      description: `Produccion en 2-5 dias. Envio: ${shippingZonesDetailLine()}.`,
     },
   ]
 
@@ -620,7 +621,7 @@ export default function EstamparRemeras() {
                 },
                 {
                   q: "Cuanto tarda?",
-                  a: "Produccion: 2-5 dias habiles. Envio: AMBA 3-5 dias ($5.500), Interior BA 5-7 dias ($7.000), Resto del pais 7-10 dias ($9.000).",
+                  a: `Produccion: 2-5 dias habiles. Envio: ${shippingZonesDetailLine()}.`,
                 },
                 {
                   q: "DTG es mejor que serigrafia?",

@@ -130,6 +130,27 @@ const organizationJsonLd = {
   slogan: "Diseñá tu ropa personalizada con inteligencia artificial",
 }
 
+/**
+ * MerchantReturnPolicy — va en el layout, NO en una página suelta.
+ *
+ * Todas las fichas de producto lo referencian por `@id`
+ * (`hasMerchantReturnPolicy: { "@id": ".../#return-policy" }`), y una
+ * referencia por @id solo resuelve si el nodo está en la MISMA página. Cuando
+ * este nodo vivía solo en app/page.tsx, la referencia quedaba colgando en
+ * /products, /malvinas, /buzos-egresados y las tiendas partner.
+ */
+const returnPolicyJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "MerchantReturnPolicy",
+  "@id": "https://www.novamente.ar/#return-policy",
+  name: "Politica de devoluciones Novamente",
+  applicableCountry: "AR",
+  returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+  merchantReturnDays: 10,
+  returnMethod: "https://schema.org/ReturnByMail",
+  returnFees: "https://schema.org/FreeReturn",
+}
+
 const websiteJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebSite",
@@ -173,6 +194,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(returnPolicyJsonLd) }}
         />
         <Script id="gtm-script" strategy="afterInteractive">
           {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':

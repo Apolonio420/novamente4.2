@@ -11,6 +11,7 @@ import {
   Heart, Gift, Coffee, Wrench,
   Gamepad2, Music, Trophy, Users
 } from "lucide-react"
+import { shippingZonesDetailLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Regalos Dia del Padre 2026 — Remeras y Buzos Personalizados con IA | Novamente",
@@ -135,7 +136,7 @@ export default function RegalosDiaDelPadre() {
         name: "Tienen envio a todo el pais?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Si. Envios a toda Argentina: AMBA $5.500 (3-5 dias), Interior Buenos Aires $7.000 (5-7 dias), Resto del pais $9.000 (7-10 dias). Produccion: 2-5 dias habiles adicionales.",
+          text: `Si. Envios a toda Argentina: ${shippingZonesDetailLine()}. Produccion: 2-5 dias habiles adicionales.`,
         },
       },
     ],
@@ -547,7 +548,7 @@ export default function RegalosDiaDelPadre() {
               },
               {
                 q: "Como es el envio?",
-                a: "AMBA $5.500 (3-5 dias), Interior BA $7.000 (5-7 dias), Resto del pais $9.000 (7-10 dias). Produccion: 2-5 dias habiles adicionales.",
+                a: `${shippingZonesDetailLine()}. Produccion: 2-5 dias habiles adicionales.`,
               },
             ].map((faq) => (
               <Card key={faq.q} className="bg-zinc-900 border-zinc-800">

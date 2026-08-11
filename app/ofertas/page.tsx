@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Flame, Clock, MessageCircle } from "lucide-react"
 import { getActiveOffers, formatARS, getDiscountPercent, type Offer } from "@/lib/offers"
+import { shippingDetailsJsonLd, RETURN_POLICY_REF } from "@/lib/shipping-config"
 
 export const revalidate = 1800 // ISR: 30 min
 
@@ -62,6 +63,9 @@ function buildOffersSchema(offers: Offer[]) {
             availability: "https://schema.org/InStock",
             itemCondition: "https://schema.org/NewCondition",
             url: o.url,
+            seller: { "@id": `${baseUrl}/#organization` },
+            shippingDetails: shippingDetailsJsonLd(),
+            hasMerchantReturnPolicy: RETURN_POLICY_REF,
           },
         },
       })),

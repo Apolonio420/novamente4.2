@@ -9,6 +9,7 @@ import {
   Shield, Clock, CheckCircle2, Zap, Package, Palette,
   Gift, BadgePercent, Shirt, HeartHandshake
 } from "lucide-react"
+import { shippingSummaryLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Regalos Empresariales Personalizados con IA — Remeras y Hoodies Corporativos",
@@ -130,7 +131,7 @@ export default function RegalosEmpresariales() {
         name: "Hacen envios a todo el pais para pedidos corporativos?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Si, realizamos envios a toda la Argentina. Para pedidos corporativos de 25+ unidades, el envio es bonificado dentro de AMBA. Envios regulares: AMBA $5.500, Interior BA $7.000, resto del pais $9.000.",
+          text: `Si, realizamos envios a toda la Argentina. Para pedidos corporativos de 25+ unidades, el envio es bonificado dentro de AMBA. Envios regulares: ${shippingSummaryLine()}.`,
         },
       },
     ],

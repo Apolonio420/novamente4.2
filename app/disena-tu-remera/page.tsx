@@ -8,6 +8,7 @@ import {
   Sparkles, Palette, Wand2, Shirt, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Zap
 } from "lucide-react"
+import { shippingDetailsJsonLd, RETURN_POLICY_REF, shippingSummaryWithFreeThreshold } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Remera Personalizada Argentina — Disena tu remera online con IA",
@@ -73,18 +74,8 @@ export default function DisenaTuRemera() {
       availability: "https://schema.org/InStock",
       itemCondition: "https://schema.org/NewCondition",
       seller: { "@id": "https://www.novamente.ar/#organization" },
-      shippingDetails: {
-        "@type": "OfferShippingDetails",
-        shippingDestination: {
-          "@type": "DefinedRegion",
-          addressCountry: "AR",
-        },
-        shippingRate: {
-          "@type": "MonetaryAmount",
-          currency: "ARS",
-          value: "5500",
-        },
-      },
+      shippingDetails: shippingDetailsJsonLd(),
+      hasMerchantReturnPolicy: RETURN_POLICY_REF,
     },
     aggregateRating: {
       "@type": "AggregateRating",
@@ -127,7 +118,7 @@ export default function DisenaTuRemera() {
         name: "Cuanto tarda en llegar mi remera personalizada?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "El tiempo total es de 5 a 10 dias habiles: 1-3 dias de produccion y estampado DTG, mas 3-7 dias de envio. Realizamos envios a toda la Argentina: AMBA $5.500, Interior de Buenos Aires $7.000, resto del pais $9.000.",
+          text: `El tiempo total es de 5 a 10 dias habiles: 1-3 dias de produccion y estampado DTG, mas 3-7 dias de envio. Realizamos envios a toda la Argentina: ${shippingSummaryWithFreeThreshold()}`,
         },
       },
       {
@@ -517,7 +508,7 @@ export default function DisenaTuRemera() {
               </div>
               <h3 className="font-semibold mb-2">Todo el pais</h3>
               <p className="text-sm text-muted-foreground">
-                AMBA $5.500 · Interior BA $7.000 · Resto del pais $9.000. En 5-10 dias habiles.
+                {shippingSummaryWithFreeThreshold()} En 5-10 dias habiles.
               </p>
             </div>
           </div>

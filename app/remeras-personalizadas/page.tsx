@@ -11,6 +11,7 @@ import {
   Trophy, Briefcase, GraduationCap, ShoppingBag,
   Shirt, Paintbrush, Layers
 } from "lucide-react"
+import { shippingZonesDetailLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Remeras Personalizadas Argentina — Disena con IA, Estampado DTG Premium | Novamente",
@@ -119,7 +120,7 @@ export default function RemerasPersonalizadas() {
         name: "Cuanto tarda en llegar mi remera personalizada?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "La produccion tarda 2-5 dias habiles. El envio depende de la zona: AMBA 3-5 dias ($5.500), Interior BA 5-7 dias ($7.000), Resto del pais 7-10 dias ($9.000). Total desde que pedis hasta que llega: 5-15 dias habiles segun zona.",
+          text: `La produccion tarda 2-5 dias habiles. El envio depende de la zona: ${shippingZonesDetailLine()}. Total desde que pedis hasta que llega: 5-15 dias habiles segun zona.`,
         },
       },
       {
@@ -293,7 +294,7 @@ export default function RemerasPersonalizadas() {
       number: "04",
       icon: Truck,
       title: "Envio a todo el pais",
-      description: "Produccion en 2-5 dias. Envio AMBA 3-5 dias ($5.500), Interior BA 5-7 dias ($7.000), Resto del pais 7-10 dias ($9.000).",
+      description: `Produccion en 2-5 dias. Envio: ${shippingZonesDetailLine()}.`,
     },
   ]
 
@@ -652,7 +653,7 @@ export default function RemerasPersonalizadas() {
               },
               {
                 q: "Cuanto tarda en llegar?",
-                a: "Produccion: 2-5 dias. Envio: AMBA 3-5 dias ($5.500), Interior BA 5-7 dias ($7.000), Resto del pais 7-10 dias ($9.000).",
+                a: `Produccion: 2-5 dias. Envio: ${shippingZonesDetailLine()}.`,
               },
               {
                 q: "Que es DTG y cuanto dura?",

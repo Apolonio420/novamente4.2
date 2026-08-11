@@ -14,6 +14,7 @@ import {
 import { PRODUCTS, parsePrice } from "@/lib/products"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 import { StockPerSize } from "@/components/StockPerSize"
+import { shippingDetailsJsonLd, RETURN_POLICY_REF, SHIPPING, SHIPPING_ZONES_PUBLIC, formatShippingARS } from "@/lib/shipping-config"
 
 // Size data — keyed by chart key. T-Shirts split into Aura/Aldea (different charts despite same category)
 type SizeChart = { sizes: string[]; width: string[]; length: string[] }
@@ -180,17 +181,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       itemCondition: "https://schema.org/NewCondition",
       priceValidUntil: "2026-12-31",
       seller: { "@id": "https://www.novamente.ar/#organization" },
-      shippingDetails: {
-        "@type": "OfferShippingDetails",
-        shippingDestination: { "@type": "DefinedRegion", addressCountry: "AR" },
-        shippingRate: { "@type": "MonetaryAmount", currency: "ARS", value: "5500" },
-        deliveryTime: {
-          "@type": "ShippingDeliveryTime",
-          handlingTime: { "@type": "QuantitativeValue", minValue: 2, maxValue: 5, unitCode: "DAY" },
-          transitTime: { "@type": "QuantitativeValue", minValue: 3, maxValue: 10, unitCode: "DAY" },
-        },
-      },
-      hasMerchantReturnPolicy: { "@id": "https://www.novamente.ar/#return-policy" },
+      shippingDetails: shippingDetailsJsonLd(),
+      hasMerchantReturnPolicy: RETURN_POLICY_REF,
     },
     aggregateRating: {
       "@type": "AggregateRating",
@@ -381,11 +373,14 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   <Truck className="w-4 h-4 text-primary" />
                   <span className="font-medium text-sm">Envios</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-muted-foreground">
-                  <div>AMBA: $5.500 (3-5 dias)</div>
-                  <div>Interior BA: $7.000 (5-7 dias)</div>
-                  <div>Resto del pais: $9.000 (7-10 dias)</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  {SHIPPING_ZONES_PUBLIC.map((z) => (
+                    <div key={z.zone}>{`${z.zone}: ${formatShippingARS(z.price)} (${z.days})`}</div>
+                  ))}
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {`Envio gratis desde ${formatShippingARS(SHIPPING.FREE_THRESHOLD)}`}
+                </p>
                 <p className="text-xs text-muted-foreground mt-2">Produccion: 2-5 dias habiles</p>
               </CardContent>
             </Card>

@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, Truck, Package, RefreshCw } from 'lucide-react'
+import { SHIPPING_ZONES_PUBLIC, formatShippingARS } from '@/lib/shipping-config'
 
 export const metadata: Metadata = {
   title: 'Envios y Devoluciones — Novamente',
@@ -9,26 +10,14 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://www.novamente.ar/envios' },
 }
 
-const SHIPPING_ZONES = [
-  {
-    zone: 'AMBA',
-    description: 'Capital Federal y Gran Buenos Aires',
-    price: '$5.500',
-    time: '3-5 dias habiles',
-  },
-  {
-    zone: 'Interior Buenos Aires',
-    description: 'Resto de provincia de Buenos Aires',
-    price: '$7.000',
-    time: '5-7 dias habiles',
-  },
-  {
-    zone: 'Resto del pais',
-    description: 'Todas las demas provincias',
-    price: '$9.000',
-    time: '7-10 dias habiles',
-  },
-]
+// Derivado de lib/shipping-config: esta página tenía su propia tabla y
+// mostraba tarifas viejas que el checkout ya no cobraba.
+const SHIPPING_ZONES = SHIPPING_ZONES_PUBLIC.map((z) => ({
+  zone: z.zone,
+  description: z.description,
+  price: formatShippingARS(z.price),
+  time: z.days,
+}))
 
 const SIZE_CHART = [
   { size: 'S', chest: '96 cm', length: '70 cm' },
