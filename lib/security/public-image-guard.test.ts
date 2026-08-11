@@ -27,6 +27,7 @@ const h = vi.hoisted(() => {
     from: () => chain,
     select: () => chain,
     eq: () => chain,
+    in: () => chain,
     gt: () =>
       Promise.resolve(
         state.forceError
@@ -58,9 +59,9 @@ function makeReq(headers: Record<string, string> = {}): NextRequest {
   return { headers: new Headers({ "x-forwarded-for": "1.2.3.4", ...headers }) } as unknown as NextRequest
 }
 
-/** Encola [minuteCount, dayIpCount, dayGlobalCount] para la proxima llamada. */
-function queueCounts(minute: number, dayIp: number, dayGlobal: number) {
-  h.state.countQueue.push(minute, dayIp, dayGlobal)
+/** Encola [minuteCount, dayIpCount, dayGlobalCount, weekIpCount] para la proxima llamada. */
+function queueCounts(minute: number, dayIp: number, dayGlobal: number, weekIp = 0) {
+  h.state.countQueue.push(minute, dayIp, dayGlobal, weekIp)
 }
 
 /** Encola una "pagina" de filas api_usage (una llamada a `.range()`) con los cost_usd dados. */
@@ -350,5 +351,65 @@ describe("guardPublicImageGen — PUBLIC_BUDGET_EPOCH (gasto pre-epoch no cuenta
 
     expect(result.allowed).toBe(true)
     expect(h.state.gteCalls[0]).toEqual(["created_at", "2026-07-17T00:00:00.000Z"])
+  })
+})
+
+describe("guardPublicImageGen — cupo semanal por visitante (PUBLIC_IMAGEGEN_WEEKLY_PER_VISITOR)", () => {
+  it("blocks the visitor at the weekly quota without blocking anybody else", async () => {
+    queueCounts(0, 0, 0, 20)
+
+    const result = await guardPublicImageGen(makeReq(), "generate-image")
+
+    expect(result.allowed).toBe(false)
+    if (!result.allowed) {
+      expect(result.status).toBe(429)
+      // El mensaje tiene que hablarle a ESE visitante, no sonar a tope global.
+      expect(result.message).toMatch(/20 diseños de esta semana/i)
+    }
+    expect(h.state.insertCalls).toHaveLength(0)
+  })
+
+  it("allows the design just under the weekly quota", async () => {
+    queueCounts(0, 0, 0, 19)
+
+    const result = await guardPublicImageGen(makeReq(), "generate-image")
+
+    expect(result.allowed).toBe(true)
+    expect(h.state.insertCalls).toHaveLength(1)
+  })
+
+  it("counts generating and editing against the same weekly quota", async () => {
+    queueCounts(0, 0, 0, 20)
+
+    const result = await guardPublicImageGen(makeReq(), "design-edit")
+
+    expect(result.allowed).toBe(false)
+  })
+
+  it("does NOT apply the weekly quota to accessory families like try-on", async () => {
+    queueCounts(0, 0, 0, 999)
+
+    const result = await guardPublicImageGen(makeReq(), "try-on")
+
+    expect(result.allowed).toBe(true)
+  })
+
+  it("respects the PUBLIC_IMAGEGEN_WEEKLY_PER_VISITOR override", async () => {
+    process.env.PUBLIC_IMAGEGEN_WEEKLY_PER_VISITOR = "3"
+    queueCounts(0, 0, 0, 3)
+
+    const result = await guardPublicImageGen(makeReq(), "generate-image")
+
+    expect(result.allowed).toBe(false)
+    if (!result.allowed) expect(result.message).toMatch(/3 diseños/i)
+  })
+
+  it("PUBLIC_IMAGEGEN_WEEKLY_PER_VISITOR <= 0 disables the weekly quota entirely", async () => {
+    process.env.PUBLIC_IMAGEGEN_WEEKLY_PER_VISITOR = "0"
+    queueCounts(0, 0, 0, 5000)
+
+    const result = await guardPublicImageGen(makeReq(), "generate-image")
+
+    expect(result.allowed).toBe(true)
   })
 })

@@ -8,9 +8,15 @@ import { meterPublicImageGen } from "@/lib/security/meter-usage"
 
 export const runtime = "nodejs"
 
-// Mismo override que app/api/generate-image/route.ts — ver comentario ahi.
+// Editar tiene su PROPIA variable, antes que la de generar: el A/B ciego de
+// 17/07 dio pro ganador para edicion (6-3-10) mientras que para generar habia
+// empatado (6-5-9). O sea que mover /crear a flash NO implica mover edicion:
+// sin GEMINI_PUBLIC_EDIT_MODEL esta ruta sigue la cadena de siempre.
 const IMAGE_MODEL =
-  process.env.GEMINI_PUBLIC_DESIGN_MODEL || process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image"
+  process.env.GEMINI_PUBLIC_EDIT_MODEL ||
+  process.env.GEMINI_PUBLIC_DESIGN_MODEL ||
+  process.env.GEMINI_IMAGE_MODEL ||
+  "gemini-2.5-flash-image"
 
 export async function OPTIONS(req: NextRequest) {
   return preflightResponse(req)

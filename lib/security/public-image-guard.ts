@@ -70,7 +70,24 @@ export interface ImageGuardResult {
 }
 
 const DAILY_CAP_DEFAULT = 400
-const MONTHLY_BUDGET_USD_DEFAULT = 25
+
+// El tope mensual en USD es la RED DE EMERGENCIA, no el limitador de todos los
+// dias: es global y compartido, asi que cuando salta corta /crear para TODO el
+// mundo hasta el 1ro del mes que viene. Quien reparte el uso de forma justa es
+// el cupo semanal por visitante (abajo). Por eso este numero tiene que quedar
+// lo bastante alto como para que solo se dispare ante una anomalia real.
+const MONTHLY_BUDGET_USD_DEFAULT = 60
+
+// Cupo por visitante, ventana rodante de 7 dias. Mismo criterio que el plan
+// Starter de partners (20/semana): es personal, se explica solo y no castiga
+// a alguien que entra por primera vez por lo que consumio otro.
+const WEEKLY_PER_VISITOR_DEFAULT = 20
+
+// Solo las familias que producen un DISEÑO cuentan para el cupo semanal, y
+// cuentan juntas: generar y editar son las dos caras de la misma tarea (igual
+// que en partners, donde diseños y mockups suman al mismo contador). El resto
+// (try-on, remove-bg, lifestyle) son accesorias y ya tienen sus topes por IP.
+const WEEKLY_QUOTA_FAMILIES = ["generate-image", "design-edit"]
 
 // Dedupe muy simple para no floodear Telegram: solo alerta una vez cada 15
 // min por instancia tibia. No es cross-instancia (best-effort), ver TODO.
@@ -121,6 +138,12 @@ function hasInternalBypass(request: NextRequest): boolean {
 function getMonthlyBudgetUsd(): number {
   const raw = Number(process.env.PUBLIC_GEMINI_BUDGET_USD ?? MONTHLY_BUDGET_USD_DEFAULT)
   return Number.isFinite(raw) ? raw : MONTHLY_BUDGET_USD_DEFAULT
+}
+
+/** <= 0 desactiva el cupo semanal por visitante. */
+function getWeeklyPerVisitor(): number {
+  const raw = Number(process.env.PUBLIC_IMAGEGEN_WEEKLY_PER_VISITOR ?? WEEKLY_PER_VISITOR_DEFAULT)
+  return Number.isFinite(raw) ? raw : WEEKLY_PER_VISITOR_DEFAULT
 }
 
 /** "YYYY-MM" en UTC — clave del mes calendario en curso. */
@@ -284,7 +307,9 @@ export async function guardPublicImageGen(
         return {
           allowed: false,
           status: 429,
-          message: "Alcanzamos el limite de generacion de imagenes de este mes. Volvé el mes que viene o escribinos por WhatsApp.",
+          // Ojo con el "vos" implicito: este tope es de la PLATAFORMA y lo puede
+          // ver alguien que entra por primera vez. Decir "tu limite" ahi espanta.
+          message: "Llegamos al tope de generaciones de la plataforma por este mes. Escribinos por WhatsApp y te lo diseñamos a mano.",
         }
       }
       if (spentUsd >= budgetUsd * 0.8) {
@@ -307,7 +332,11 @@ export async function guardPublicImageGen(
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     const startOfUtcDay = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00.000Z").toISOString()
 
-    const [minuteRes, dayIpRes, dayGlobalRes] = await Promise.all([
+    const weeklyQuota = getWeeklyPerVisitor()
+    const weeklyApplies = weeklyQuota > 0 && WEEKLY_QUOTA_FAMILIES.includes(endpointFamily)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+    const [minuteRes, dayIpRes, dayGlobalRes, weekIpRes] = await Promise.all([
       supabaseAdmin
         .from("public_imagegen_requests")
         .select("id", { count: "exact", head: true })
@@ -324,11 +353,23 @@ export async function guardPublicImageGen(
         .from("public_imagegen_requests")
         .select("id", { count: "exact", head: true })
         .gt("created_at", startOfUtcDay),
+      weeklyApplies
+        ? supabaseAdmin
+            .from("public_imagegen_requests")
+            .select("id", { count: "exact", head: true })
+            .eq("ip_hash", ipHash)
+            .in("endpoint_family", WEEKLY_QUOTA_FAMILIES)
+            .gt("created_at", sevenDaysAgo)
+        : Promise.resolve({ count: 0, error: null }),
     ])
 
-    if (minuteRes.error || dayIpRes.error || dayGlobalRes.error) {
+    if (minuteRes.error || dayIpRes.error || dayGlobalRes.error || weekIpRes.error) {
       throw new Error(
-        minuteRes.error?.message || dayIpRes.error?.message || dayGlobalRes.error?.message || "unknown",
+        minuteRes.error?.message ||
+          dayIpRes.error?.message ||
+          dayGlobalRes.error?.message ||
+          weekIpRes.error?.message ||
+          "unknown",
       )
     }
 
@@ -361,6 +402,16 @@ export async function guardPublicImageGen(
         allowed: false,
         status: 429,
         message: "Alcanzaste el limite diario de generaciones desde tu conexion. Probá de nuevo mañana.",
+      }
+    }
+
+    // Cupo semanal por visitante: es el que reparte de forma justa. Va DESPUES
+    // de los topes de abuso (minuto/dia) porque es el mas alto de los tres.
+    if (weeklyApplies && (weekIpRes.count ?? 0) >= weeklyQuota) {
+      return {
+        allowed: false,
+        status: 429,
+        message: `Llegaste a los ${weeklyQuota} diseños de esta semana. Se van liberando día a día — o escribinos por WhatsApp y lo diseñamos con vos.`,
       }
     }
 
