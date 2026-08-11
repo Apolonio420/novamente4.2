@@ -40,6 +40,7 @@ import { QuickStartCard } from '@/components/workspace/QuickStartCard'
 import { QuickDesignUpload } from '@/components/workspace/QuickDesignUpload'
 import { DailyAttention } from '@/components/workspace/DailyAttention'
 import { isPartnersCockpitEnabled } from '@/lib/partners/feature-flags'
+import type { StorefrontHiddenReason } from '@/lib/partners/auto-publish'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,6 +49,7 @@ import { isPartnersCockpitEnabled } from '@/lib/partners/feature-flags'
 interface DashboardData {
   products: number
   publishedProducts: number
+  storefrontHiddenReason: StorefrontHiddenReason | null
   leads: number
   orders: number
   score: number
@@ -537,13 +539,36 @@ function UsageWarningBar({
 // publico 2 productos y su /p/<slug> quedo en 404 un mes sin ningun aviso.
 // ---------------------------------------------------------------------------
 
+// Copy del banner por motivo. Nombra CONCRETAMENTE lo que falta — nunca un
+// generico "completa tu perfil" — y nunca menciona "storefront_published" ni
+// "flag": el que lee es un emprendedor, no un dev.
+const HIDDEN_REASON_COPY: Record<
+  Exclude<StorefrontHiddenReason, 'ready_not_published'>,
+  { title: string; body: string }
+> = {
+  missing_logo: {
+    title: 'Tu tienda todavía no se puede publicar',
+    body: 'Para publicar tu tienda te falta cargar tu logo.',
+  },
+  missing_cover_or_description: {
+    title: 'Tu tienda todavía no se puede publicar',
+    body: 'Para publicar tu tienda te falta una portada, una frase de marca o una descripción.',
+  },
+  hidden_manually: {
+    title: 'Tu tienda está oculta porque la ocultaste desde Configuración',
+    body: 'Cuando quieras, la podés volver a publicar.',
+  },
+}
+
 function StorefrontVisibilityBanner({
   slug,
   published,
+  reason,
   onPublished,
 }: {
   slug: string
   published: boolean
+  reason: StorefrontHiddenReason | null
   onPublished: () => void
 }) {
   const [publishing, setPublishing] = useState(false)
@@ -562,7 +587,7 @@ function StorefrontVisibilityBanner({
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}) as { error?: string })
-        throw new Error(err?.error || 'No se pudo publicar la tienda. Intenta de nuevo.')
+        throw new Error(err?.error || 'No se pudo publicar la tienda. Intentá de nuevo.')
       }
       onPublished()
     } catch (e) {
@@ -580,6 +605,8 @@ function StorefrontVisibilityBanner({
     } catch {}
   }
 
+  // Tienda publicada: mostrar el link copiable (estado final tras publicar,
+  // o el que corresponde si ya estaba publicada de antes).
   if (published) {
     return (
       <div className="relative rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-600/10 via-zinc-900/60 to-zinc-900/60 p-5">
@@ -590,7 +617,7 @@ function StorefrontVisibilityBanner({
             </div>
             <div className="min-w-0">
               <h3 className="text-sm font-semibold text-zinc-100">
-                Tu tienda ya esta publicada y visible
+                Tu tienda ya está publicada y visible
               </h3>
               <p className="text-xs text-zinc-400 mt-0.5 font-mono truncate">{url}</p>
             </div>
@@ -619,6 +646,73 @@ function StorefrontVisibilityBanner({
     )
   }
 
+  // Falta branding minimo: mandamos a completar la marca, NO ofrecemos
+  // "Publicar tienda" — publicarla incompleta la deja peor (auto-publish
+  // tampoco se va a disparar solo hasta que esto se resuelva).
+  if (reason === 'missing_logo' || reason === 'missing_cover_or_description') {
+    const copy = HIDDEN_REASON_COPY[reason]
+    return (
+      <div className="relative rounded-xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-600/10 via-orange-600/5 to-zinc-900/60 p-5 shadow-lg shadow-amber-950/10">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-11 h-11 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+              <EyeOff className="w-5 h-5 text-amber-400" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-zinc-100">{copy.title}</h3>
+              <p className="text-xs text-zinc-400 mt-0.5">{copy.body}</p>
+            </div>
+          </div>
+          <Button asChild className="shrink-0 bg-amber-600 hover:bg-amber-500 text-white border-0">
+            <Link href="/workspace/branding">
+              <Palette className="w-4 h-4 mr-2" />
+              {reason === 'missing_logo' ? 'Cargar mi logo' : 'Completar mi marca'}
+            </Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // La ocultaste vos: tono neutro, sin regañar — fue una decision a proposito.
+  if (reason === 'hidden_manually') {
+    const copy = HIDDEN_REASON_COPY.hidden_manually
+    return (
+      <div className="relative rounded-xl border border-zinc-700 bg-zinc-900/60 p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-11 h-11 rounded-xl bg-zinc-800 flex items-center justify-center shrink-0">
+              <EyeOff className="w-5 h-5 text-zinc-400" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-zinc-100">{copy.title}</h3>
+              <p className="text-xs text-zinc-400 mt-0.5">{copy.body}</p>
+              {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
+            </div>
+          </div>
+          <Button
+            onClick={handlePublish}
+            disabled={publishing}
+            variant="outline"
+            className="shrink-0 border-zinc-600 text-zinc-200 hover:bg-zinc-800"
+          >
+            {publishing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Publicando...
+              </>
+            ) : (
+              'Volver a publicarla'
+            )}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // reason === 'ready_not_published': tiene branding minimo, nadie la oculto
+  // a proposito — deberia estar publicada y no lo esta (el caso original,
+  // Orlando). El mas urgente de los cuatro.
   return (
     <div className="relative rounded-xl border-2 border-red-500/40 bg-gradient-to-r from-red-600/10 via-orange-600/5 to-zinc-900/60 p-5 shadow-lg shadow-red-950/10">
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -628,10 +722,10 @@ function StorefrontVisibilityBanner({
           </div>
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-zinc-100">
-              Tu tienda esta oculta — nadie puede verla todavia
+              Tu tienda está lista pero todavía no es visible
             </h3>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Tenes productos publicados, pero tu storefront todavia no es visible al publico.
+              Tenés productos publicados y tu marca está completa — solo falta publicar la tienda.
             </p>
             {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
           </div>
@@ -881,6 +975,7 @@ export default function WorkspaceDashboard() {
         <StorefrontVisibilityBanner
           slug={data.tenant.slug}
           published={data.tenant.storefront_published || storefrontJustPublished}
+          reason={data.storefrontHiddenReason}
           onPublished={() => {
             setStorefrontJustPublished(true)
             setData((prev) =>

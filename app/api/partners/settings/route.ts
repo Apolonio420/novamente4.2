@@ -67,6 +67,22 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Marca/limpia el apagado manual del storefront. computeAutoPublishUpdates
+    // (lib/partners/auto-publish.ts) respeta esta marca para no volver a
+    // prender sola una tienda que el partner apago a proposito. `metadata` es
+    // JSON y tambien guarda datos de suscripcion (pending_plan,
+    // subscription_type, last_mp_payment_id, etc. — camino de plata): SIEMPRE
+    // read-modify-write, nunca pisar el objeto entero.
+    if ('storefront_published' in updates) {
+      const currentMetadata = ((tenant as any).metadata ?? {}) as Record<string, unknown>
+      if (updates.storefront_published === false && tenant.storefront_published === true) {
+        updates.metadata = { ...currentMetadata, storefront_hidden_manually: true }
+      } else if (updates.storefront_published === true && currentMetadata.storefront_hidden_manually) {
+        const { storefront_hidden_manually: _drop, ...rest } = currentMetadata
+        updates.metadata = rest
+      }
+    }
+
     // Special handling for status transitions (only active <-> paused)
     if ('status' in body) {
       const currentStatus = tenant.status

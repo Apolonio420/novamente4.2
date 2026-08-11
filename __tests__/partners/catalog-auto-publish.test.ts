@@ -102,6 +102,7 @@ const baseTenant = {
   about_text: null as string | null,
   storefront_published: false,
   status: 'onboarding',
+  metadata: null as Record<string, unknown> | null,
 }
 
 const baseProduct = {
@@ -200,6 +201,23 @@ describe('PUT /api/partners/catalog/[id] — auto-publish del storefront', () =>
 
     expect(body.auto_published).toBe(false)
     expect(h.updateTenantMock).not.toHaveBeenCalled()
+  })
+
+  it('(b) tienda apagada a proposito (metadata.storefront_hidden_manually) => auto-publish NO la republica aunque el branding este completo', async () => {
+    h.tenant.logo_url = 'https://cdn/logo.png'
+    h.tenant.tagline = 'Ropa con onda'
+    h.tenant.storefront_published = false
+    h.tenant.status = 'active'
+    h.tenant.metadata = { storefront_hidden_manually: true, subscription_type: 'recurring' }
+
+    const res = await PUT(makeRequest({ status: 'published' }), { params })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+
+    expect(body.auto_published).toBe(false)
+    expect(h.updateTenantMock).not.toHaveBeenCalled()
+    const storefrontAtWrite = h.tenantWriteCalls.find((c) => 'storefront_published_at' in c.vals)
+    expect(storefrontAtWrite).toBeUndefined()
   })
 
   it('producto que no toca status (solo precio) nunca dispara auto-publish', async () => {

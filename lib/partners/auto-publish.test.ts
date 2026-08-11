@@ -5,7 +5,12 @@
 // regla y quedaba con storefront_published=false invisible en /p/<slug> por un mes
 // sin ningun aviso. Este archivo cubre el helper que ahora comparten AMBOS endpoints.
 import { describe, it, expect } from 'vitest'
-import { hasMinimumBranding, computeAutoPublishUpdates } from './auto-publish'
+import {
+  hasMinimumBranding,
+  isHiddenManually,
+  computeAutoPublishUpdates,
+  computeStorefrontHiddenReason,
+} from './auto-publish'
 
 function tenant(overrides: Partial<{
   logo_url: string | null
@@ -14,6 +19,7 @@ function tenant(overrides: Partial<{
   about_text: string | null
   storefront_published: boolean
   status: string
+  metadata: Record<string, unknown> | null
 }> = {}) {
   return {
     logo_url: null,
@@ -22,6 +28,7 @@ function tenant(overrides: Partial<{
     about_text: null,
     storefront_published: false,
     status: 'onboarding',
+    metadata: null,
     ...overrides,
   } as any
 }
@@ -88,5 +95,97 @@ describe('computeAutoPublishUpdates', () => {
       tenant({ storefront_published: true, status: 'active' }),
     )
     expect(updates).toBeNull()
+  })
+
+  // Caso pedido por el dueño tras el hallazgo Orlando: si el partner apago la
+  // tienda A PROPOSITO desde Configuracion (metadata.storefront_hidden_manually),
+  // publicar un producto o editar branding NO debe volver a prenderla sola.
+  it('branding minimo + tienda apagada + apagado MANUAL → null, no la republica', () => {
+    const updates = computeAutoPublishUpdates(
+      tenant({
+        logo_url: 'x',
+        tagline: 'y',
+        storefront_published: false,
+        status: 'active',
+        metadata: { storefront_hidden_manually: true, subscription_type: 'recurring' },
+      }),
+    )
+    expect(updates).toBeNull()
+  })
+
+  it('branding minimo + tienda apagada + metadata SIN la marca (o null) → publica normal', () => {
+    expect(
+      computeAutoPublishUpdates(
+        tenant({ logo_url: 'x', tagline: 'y', storefront_published: false, metadata: null }),
+      ),
+    ).toEqual({ storefront_published: true, status: 'active' })
+    expect(
+      computeAutoPublishUpdates(
+        tenant({
+          logo_url: 'x',
+          tagline: 'y',
+          storefront_published: false,
+          metadata: { subscription_type: 'recurring' },
+        }),
+      ),
+    ).toEqual({ storefront_published: true, status: 'active' })
+  })
+})
+
+describe('isHiddenManually', () => {
+  it('metadata.storefront_hidden_manually === true → true', () => {
+    expect(isHiddenManually({ storefront_hidden_manually: true })).toBe(true)
+  })
+  it('metadata sin la clave → false', () => {
+    expect(isHiddenManually({ subscription_type: 'recurring' })).toBe(false)
+  })
+  it('metadata null/undefined → false (no explota)', () => {
+    expect(isHiddenManually(null)).toBe(false)
+    expect(isHiddenManually(undefined)).toBe(false)
+  })
+  it('valor truthy pero no === true (ej. string "true") → false, exige booleano estricto', () => {
+    expect(isHiddenManually({ storefront_hidden_manually: 'true' as any })).toBe(false)
+  })
+})
+
+// Motivo que el banner del workspace muestra al partner (app/workspace/page.tsx)
+// para explicar por que su tienda no es visible, en vez de un aviso generico.
+describe('computeStorefrontHiddenReason', () => {
+  it('tienda ya publicada → null (nada que explicar)', () => {
+    expect(
+      computeStorefrontHiddenReason(tenant({ logo_url: 'x', tagline: 'y', storefront_published: true })),
+    ).toBeNull()
+  })
+
+  it('apagado manual tiene PRIORIDAD sobre branding incompleto — no regañamos por branding si fue decision del partner', () => {
+    const reason = computeStorefrontHiddenReason(
+      tenant({
+        logo_url: null, // branding tambien incompleto
+        storefront_published: false,
+        metadata: { storefront_hidden_manually: true },
+      }),
+    )
+    expect(reason).toBe('hidden_manually')
+  })
+
+  it('sin logo (branding incompleto, no oculto a proposito) → missing_logo', () => {
+    const reason = computeStorefrontHiddenReason(
+      tenant({ logo_url: null, banner_url: 'x', storefront_published: false }),
+    )
+    expect(reason).toBe('missing_logo')
+  })
+
+  it('con logo pero sin banner/tagline/about_text → missing_cover_or_description', () => {
+    const reason = computeStorefrontHiddenReason(
+      tenant({ logo_url: 'x', banner_url: null, tagline: null, about_text: null, storefront_published: false }),
+    )
+    expect(reason).toBe('missing_cover_or_description')
+  })
+
+  it('branding minimo completo, no oculto a proposito, tienda apagada → ready_not_published', () => {
+    const reason = computeStorefrontHiddenReason(
+      tenant({ logo_url: 'x', tagline: 'y', storefront_published: false }),
+    )
+    expect(reason).toBe('ready_not_published')
   })
 })

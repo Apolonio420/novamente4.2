@@ -5,6 +5,7 @@ import { countProducts, countPublishedProducts } from '@/lib/partners/catalog'
 import { countLeadsThisMonth } from '@/lib/partners/leads'
 import { countOrdersByTenant } from '@/lib/partners/orders'
 import { getDashboardTrends } from '@/lib/partners/analytics'
+import { computeStorefrontHiddenReason } from '@/lib/partners/auto-publish'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET(request: NextRequest) {
@@ -37,6 +38,11 @@ export async function GET(request: NextRequest) {
 
     const score = calculateCompletenessScore(tenant)
 
+    // Motivo por el que el storefront no esta visible (null si ya lo esta) —
+    // calculado del lado del server reusando la MISMA regla que decide el
+    // auto-publish, asi el UI no reimplementa el criterio de branding minimo.
+    const storefrontHiddenReason = computeStorefrontHiddenReason(tenant)
+
     // Set first_login_at once. IMPORTANTE: awaited — en serverless (Vercel) el
     // proceso puede congelarse apenas se devuelve la response, y una promesa
     // "fire-and-forget" sin await pierde la carrera contra ese freeze: nunca
@@ -56,6 +62,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       products,
       publishedProducts,
+      storefrontHiddenReason,
       leads,
       orders,
       score,
