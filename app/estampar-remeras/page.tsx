@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
-import { SHIPPING_ZONES_PUBLIC, formatShippingARS, shippingZonesDetailLine } from "@/lib/shipping-config"
+import { SHIPPING_ZONES_PUBLIC, formatShippingARS, productionLine, shippingZonesDetailLine, totalDeliveryLine } from "@/lib/shipping-config"
 import {
   Package, Star, Shield, Clock, CheckCircle2,
   Truck, Palette, Sparkles, ArrowRight,
@@ -127,7 +127,7 @@ export default function EstamparRemeras() {
         name: "Cuanto tarda el servicio de estampado?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `Produccion: 2-5 dias habiles. Envio: ${shippingZonesDetailLine()}. Total desde que confirmas hasta que lo recibi: 5-15 dias habiles segun zona.`,
+          text: `Produccion: ${productionLine()}. Envio: ${shippingZonesDetailLine()}. Total desde que confirmas hasta que lo recibi: ${totalDeliveryLine()} segun zona.`,
         },
       },
       {

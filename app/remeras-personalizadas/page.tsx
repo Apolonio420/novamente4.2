@@ -11,7 +11,7 @@ import {
   Trophy, Briefcase, GraduationCap, ShoppingBag,
   Shirt, Paintbrush, Layers
 } from "lucide-react"
-import { shippingZonesDetailLine } from "@/lib/shipping-config"
+import { productionLine, shippingZonesDetailLine, totalDeliveryLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Remeras Personalizadas Argentina — Disena con IA, Estampado DTG Premium | Novamente",
@@ -120,7 +120,7 @@ export default function RemerasPersonalizadas() {
         name: "Cuanto tarda en llegar mi remera personalizada?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `La produccion tarda 2-5 dias habiles. El envio depende de la zona: ${shippingZonesDetailLine()}. Total desde que pedis hasta que llega: 5-15 dias habiles segun zona.`,
+          text: `La produccion tarda ${productionLine()}. El envio depende de la zona: ${shippingZonesDetailLine()}. Total desde que pedis hasta que llega: ${totalDeliveryLine()} segun zona.`,
         },
       },
       {

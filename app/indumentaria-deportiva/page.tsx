@@ -9,6 +9,7 @@ import {
   Shield, Clock, CheckCircle2, Palette, Package,
   Trophy, Dumbbell, Target, Timer, Bike, Swords
 } from "lucide-react"
+import { totalDeliveryLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Indumentaria Deportiva Personalizada con IA | Novamente",
@@ -306,7 +307,7 @@ export default function IndumentariaDeportiva() {
               <div className="flex flex-wrap gap-3 text-sm text-zinc-400 mb-8">
                 <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-green-400" /> Nombre y numero por prenda</span>
                 <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-green-400" /> Escudo/logo con IA o propio</span>
-                <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-green-400" /> Entrega en 5-10 dias</span>
+                <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-green-400" /> Entrega en {totalDeliveryLine()}</span>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -352,7 +353,7 @@ export default function IndumentariaDeportiva() {
                 <div className="text-sm text-zinc-400">calificacion promedio</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-green-400">5-10 dias</div>
+                <div className="text-2xl sm:text-3xl font-bold text-green-400">{totalDeliveryLine()}</div>
                 <div className="text-sm text-zinc-400">produccion standard</div>
               </div>
               <div>

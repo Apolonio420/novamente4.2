@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, MessageCircle, CheckCircle, XCircle, ArrowRight } from 'lucide-react'
 
-import { SHIPPING, formatShippingARS } from "@/lib/shipping-config"
+import { SHIPPING, formatShippingARS, productionLine, shippingZonesDetailLine, totalDeliveryLine } from "@/lib/shipping-config"
 export const metadata: Metadata = {
   title: 'Novamente vs Printful vs Printify — Comparativa para Argentina 2026',
   description:
@@ -68,7 +68,7 @@ export default function CompararPage() {
             tres opciones principales: Novamente (produccion local con diseno IA), Printful
             (proveedor global con envio internacional) y Printify (marketplace de proveedores). La
             diferencia clave es que Novamente produce localmente en Argentina con precios en pesos y
-            envio en 5-10 dias, mientras que Printful y Printify importan desde el exterior con
+            envio en {totalDeliveryLine()}, mientras que Printful y Printify importan desde el exterior con
             tiempos de 15-30 dias y costos significativamente mayores.
           </blockquote>
         </header>
@@ -101,7 +101,7 @@ export default function CompararPage() {
                 </tr>
                 <tr className="border-b border-white/5 bg-white/[0.02]">
                   <td className="py-3 px-4 font-medium">Envio nacional</td>
-                  <td className="py-3 px-4 text-center text-green-400">{`5-10 dias / ${formatShippingARS(SHIPPING.BA)}-${formatShippingARS(SHIPPING.RESTO)}`}</td>
+                  <td className="py-3 px-4 text-center text-green-400">{`${totalDeliveryLine()} / ${formatShippingARS(SHIPPING.BA)}-${formatShippingARS(SHIPPING.RESTO)}`}</td>
                   <td className="py-3 px-4 text-center text-red-400/70">15-30 dias / $15,000+</td>
                   <td className="py-3 px-4 text-center text-red-400/70">15-30 dias / $15,000+</td>
                 </tr>
@@ -209,10 +209,8 @@ export default function CompararPage() {
             <h2 className="text-2xl font-bold text-purple-400 mb-4">Tiempos de envio y logistica</h2>
             <div className="text-white/80 leading-relaxed space-y-3">
               <p>
-                Novamente despacha desde Villa Martelli (CP 1603) con envios a todo el pais. Los
-                tiempos de entrega son de 5 a 10 dias habiles dependiendo de la zona: AMBA en 3-5
-                dias, interior de Buenos Aires en 5-7 dias, y resto del pais en 7-10 dias. Los
-                {`costos de envio van de ${formatShippingARS(SHIPPING.BA)} (CABA y GBA) a ${formatShippingARS(SHIPPING.RESTO)} (resto del pais).`}
+                Novamente despacha desde Villa Martelli (CP 1603) con envios a todo el pais.
+                {` El total de punta a punta es de ${totalDeliveryLine()}: ${productionLine()} de produccion mas el envio segun zona (${shippingZonesDetailLine()}). Envio gratis en pedidos desde ${formatShippingARS(SHIPPING.FREE_THRESHOLD)}.`}
               </p>
               <p>
                 Con Printful y Printify, un envio a Argentina demora tipicamente entre 15 y 30 dias

@@ -9,6 +9,7 @@ import {
   Shield, Clock, CheckCircle2, Palette, Package,
   Youtube, Twitch, Instagram, Mic, Gamepad2, Pen
 } from "lucide-react"
+import { totalDeliveryLine, productionLine, shippingZonesDetailLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Merch para Creadores de Contenido — YouTubers, Streamers e Influencers | Novamente",
@@ -130,7 +131,7 @@ export default function MerchParaCreadores() {
         name: "Cuanto demora la produccion y envio?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Produccion en 2-5 dias habiles con estampado DTG. Envio de 3-10 dias segun la zona (AMBA mas rapido). Total: 5-15 dias desde el pedido hasta la puerta del comprador.",
+          text: `Produccion en ${productionLine()} con estampado DTG. Envio: ${shippingZonesDetailLine()}. Total: ${totalDeliveryLine()} desde el pedido hasta la puerta del comprador.`,
         },
       },
     ],

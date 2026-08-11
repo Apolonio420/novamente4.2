@@ -34,6 +34,40 @@ export function formatShippingARS(n: number): string {
 }
 
 /**
+ * PRODUCCIÓN — 24-48h hábiles desde que se confirma diseño y pago.
+ *
+ * Es lo que declaran docs/public/SHIPPING.md y el bot de WhatsApp
+ * (novamente_b2b_bot_config.json > shipping.delivery_times.produccion).
+ * lib/catalog.ts tenía su propio '2-5' que no coincidía con ninguno de los dos.
+ */
+export const PRODUCTION_DAYS = { min: 1, max: 2 } as const
+
+/** "1 a 2 dias habiles" */
+export function productionLine(): string {
+  return `${PRODUCTION_DAYS.min} a ${PRODUCTION_DAYS.max} dias habiles`
+}
+
+/**
+ * TOTAL de punta a punta = producción + envío, del caso más rápido (CABA) al
+ * más lento (interior). NO se escribe a mano en ningún lado: durante meses las
+ * landings decían "5-10" o "5-15 días" mientras la operación prometía 24-48h de
+ * producción + 24-72h/2-4 días de envío.
+ */
+export function totalDeliveryDays(): { min: number; max: number } {
+  const transits = SHIPPING_ZONES_PUBLIC.map((z) => z.transitDays)
+  return {
+    min: PRODUCTION_DAYS.min + Math.min(...transits.map((t) => t.min)),
+    max: PRODUCTION_DAYS.max + Math.max(...transits.map((t) => t.max)),
+  }
+}
+
+/** "2 a 6 dias habiles" */
+export function totalDeliveryLine(): string {
+  const { min, max } = totalDeliveryDays()
+  return `${min} a ${max} dias habiles`
+}
+
+/**
  * Tabla pública de zonas — la que se muestra en /envios, /faq y el copy de las
  * landings. Dos zonas, las mismas que cobra el checkout.
  */

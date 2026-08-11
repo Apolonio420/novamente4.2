@@ -7,7 +7,12 @@
  * Excepción: los costos de envío NO viven acá, viven en lib/shipping-config.ts
  * (única fuente de verdad, la misma que cobra el checkout).
  */
-import { SHIPPING, SHIPPING_ZONES_PUBLIC } from './shipping-config'
+import {
+  SHIPPING,
+  SHIPPING_ZONES_PUBLIC,
+  PRODUCTION_DAYS as PROD_DAYS,
+  totalDeliveryLine,
+} from './shipping-config'
 
 export interface Product {
   name: string
@@ -113,7 +118,12 @@ export const SIZES = ['S', 'M', 'L', 'XL', 'XXL'] as const
  */
 export const SHIPPING_ZONES = SHIPPING_ZONES_PUBLIC
 
-export const PRODUCTION_DAYS = '2-5'
+/**
+ * Derivado de shipping-config: acá decía '2-5' mientras SHIPPING.md y el bot de
+ * WhatsApp decían 24-48h. El chat de la tienda prometía un plazo distinto al
+ * que promete todo lo demás.
+ */
+export const PRODUCTION_DAYS = `${PROD_DAYS.min}-${PROD_DAYS.max}`
 
 export function formatPrice(n: number): string {
   return `$${n.toLocaleString('es-AR')}`
@@ -131,5 +141,6 @@ export function buildProductListForPrompt(): string {
 /** Generate shipping info for AI system prompts */
 export function buildShippingForPrompt(): string {
   const zones = SHIPPING_ZONES.map(z => `${z.zone} ${formatPrice(z.price)}`).join(' | ')
-  return `ENVIO: ${zones} | GRATIS desde ${formatPrice(SHIPPING.FREE_THRESHOLD)}\nPRODUCCION: ${PRODUCTION_DAYS} dias habiles | ENTREGA: 3-10 dias habiles segun zona`
+  const entrega = SHIPPING_ZONES_PUBLIC.map(z => `${z.zone} ${z.days}`).join(' | ')
+  return `ENVIO: ${zones} | GRATIS desde ${formatPrice(SHIPPING.FREE_THRESHOLD)}\nPRODUCCION: ${PRODUCTION_DAYS} dias habiles | ENTREGA: ${entrega} | TOTAL: ${totalDeliveryLine()}`
 }

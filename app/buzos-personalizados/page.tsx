@@ -12,7 +12,7 @@ import {
   GraduationCap, Briefcase, PartyPopper,
   Trophy, Music, Heart
 } from "lucide-react"
-import { shippingZonesDetailLine, shippingSummaryLine } from "@/lib/shipping-config"
+import { productionLine, shippingSummaryLine, shippingZonesDetailLine, totalDeliveryLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Buzos Personalizados con IA en Argentina",
@@ -137,7 +137,7 @@ export default function BuzosPersonalizados() {
         name: "Cuanto tarda la produccion y el envio?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `Produccion: 2-5 dias habiles. Envio: ${shippingZonesDetailLine()}. Total desde que confirmas hasta que lo recibi: 5-15 dias habiles segun tu zona.`,
+          text: `Produccion: ${productionLine()}. Envio: ${shippingZonesDetailLine()}. Total desde que confirmas hasta que lo recibi: ${totalDeliveryLine()} segun tu zona.`,
         },
       },
     ],

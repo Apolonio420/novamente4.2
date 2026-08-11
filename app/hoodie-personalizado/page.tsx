@@ -8,7 +8,7 @@ import {
   Sparkles, Palette, Wand2, Shirt, Star, Truck,
   Shield, Clock, CheckCircle2, Zap, TrendingUp
 } from "lucide-react"
-import { shippingDetailsJsonLd, RETURN_POLICY_REF, shippingSummaryWithFreeThreshold } from "@/lib/shipping-config"
+import { RETURN_POLICY_REF, productionLine, shippingDetailsJsonLd, shippingSummaryWithFreeThreshold, totalDeliveryLine } from "@/lib/shipping-config"
 import { PRODUCTS as CATALOG_PRODUCTS } from "@/lib/catalog"
 
 export const metadata: Metadata = {
@@ -363,7 +363,7 @@ export default function HoodiePersonalizado() {
                 <h3 className="text-xl font-semibold mb-3">Pedilo</h3>
                 <p className="text-muted-foreground">
                   Elegi talle y color. Paga con MercadoPago o transferencia.
-                  Te llega a tu casa en 5-10 dias habiles.
+                  Te llega a tu casa en {totalDeliveryLine()}.
                 </p>
               </CardContent>
             </Card>
@@ -625,7 +625,7 @@ export default function HoodiePersonalizado() {
               </div>
               <h3 className="font-semibold mb-2">Todo el pais</h3>
               <p className="text-sm text-muted-foreground">
-                {shippingSummaryWithFreeThreshold()} En 5-10 dias habiles.
+                {shippingSummaryWithFreeThreshold()} En {totalDeliveryLine()}.
               </p>
             </div>
           </div>
@@ -718,7 +718,7 @@ export default function HoodiePersonalizado() {
               },
               {
                 q: "Cuanto tarda en llegar?",
-                a: "El tiempo total es de 5 a 10 dias habiles: 2-5 dias de produccion y estampado DTG, mas 3-7 dias de envio segun zona. Enviamos a toda Argentina.",
+                a: `El tiempo total es de ${totalDeliveryLine()}: ${productionLine()} de produccion y estampado DTG, mas el envio segun zona. Enviamos a toda Argentina.`,
               },
               {
                 q: "El estampado se banca los lavados?",
@@ -788,7 +788,7 @@ export default function HoodiePersonalizado() {
             </span>
             <span className="flex items-center gap-1.5">
               <Truck className="w-4 h-4" />
-              5-10 dias habiles
+              {totalDeliveryLine()}
             </span>
           </div>
         </div>

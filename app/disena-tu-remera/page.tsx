@@ -8,7 +8,7 @@ import {
   Sparkles, Palette, Wand2, Shirt, ArrowRight, Star, Truck,
   Shield, Clock, CheckCircle2, Zap
 } from "lucide-react"
-import { shippingDetailsJsonLd, RETURN_POLICY_REF, shippingSummaryWithFreeThreshold } from "@/lib/shipping-config"
+import { RETURN_POLICY_REF, productionLine, shippingDetailsJsonLd, shippingSummaryWithFreeThreshold, totalDeliveryLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Remera Personalizada Argentina — Disena tu remera online con IA",
@@ -118,7 +118,7 @@ export default function DisenaTuRemera() {
         name: "Cuanto tarda en llegar mi remera personalizada?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `El tiempo total es de 5 a 10 dias habiles: 1-3 dias de produccion y estampado DTG, mas 3-7 dias de envio. Realizamos envios a toda la Argentina: ${shippingSummaryWithFreeThreshold()}`,
+          text: `El tiempo total es de ${totalDeliveryLine()}: ${productionLine()} de produccion y estampado DTG, mas el envio segun zona. Realizamos envios a toda la Argentina: ${shippingSummaryWithFreeThreshold()}`,
         },
       },
       {
@@ -350,7 +350,7 @@ export default function DisenaTuRemera() {
                 <h3 className="text-xl font-semibold mb-3">Pedila</h3>
                 <p className="text-muted-foreground">
                   Elegi modelo, color y talle. Pagá con MercadoPago o transferencia.
-                  Te llega a tu casa en 5-10 dias habiles.
+                  Te llega a tu casa en {totalDeliveryLine()}.
                 </p>
               </CardContent>
             </Card>
@@ -508,7 +508,7 @@ export default function DisenaTuRemera() {
               </div>
               <h3 className="font-semibold mb-2">Todo el pais</h3>
               <p className="text-sm text-muted-foreground">
-                {shippingSummaryWithFreeThreshold()} En 5-10 dias habiles.
+                {shippingSummaryWithFreeThreshold()} En {totalDeliveryLine()}.
               </p>
             </div>
           </div>
@@ -601,7 +601,7 @@ export default function DisenaTuRemera() {
               },
               {
                 q: "Cuanto tarda en llegar?",
-                a: "El tiempo total es de 5 a 10 dias habiles: 1-3 dias de produccion y estampado, mas 3-7 dias de envio. Enviamos a toda Argentina.",
+                a: `El tiempo total es de ${totalDeliveryLine()}: ${productionLine()} de produccion y estampado, mas el envio segun zona. Enviamos a toda Argentina.`,
               },
               {
                 q: "El estampado se sale con los lavados?",
@@ -671,7 +671,7 @@ export default function DisenaTuRemera() {
             </span>
             <span className="flex items-center gap-1.5">
               <Truck className="w-4 h-4" />
-              5-10 dias habiles
+              {totalDeliveryLine()}
             </span>
           </div>
         </div>

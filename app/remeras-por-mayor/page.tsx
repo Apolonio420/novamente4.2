@@ -9,6 +9,7 @@ import {
   Truck, Palette, Sparkles, ArrowRight,
   Users, Zap, Store, TrendingUp, ShoppingBag, Boxes
 } from "lucide-react"
+import { shippingZonesDetailLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Remeras por Mayor Personalizadas — Desde 10 Unidades con Descuento | Novamente",
@@ -540,7 +541,7 @@ export default function RemerasPorMayor() {
                 { step: "1", icon: Zap, title: "Cotiza por WhatsApp", desc: "Contanos que necesitas: productos, cantidades, y si tenes disenos o queres usar nuestra IA. Te mandamos presupuesto en minutos." },
                 { step: "2", icon: Palette, title: "Manda tus disenos", desc: "Subis tus archivos o los generamos con nuestra IA (37 estilos). Aprobas los mockups antes de producir." },
                 { step: "3", icon: Package, title: "Producimos con DTG", desc: "Estampamos cada prenda con tecnologia DTG. Calidad fotografica, colores ilimitados, sin setup por diseno." },
-                { step: "4", icon: Truck, title: "Entrega en tu puerta", desc: "Enviamos a todo Argentina. AMBA 3-5 dias. Interior 5-10 dias. Retiro en Villa Martelli disponible." },
+                { step: "4", icon: Truck, title: "Entrega en tu puerta", desc: `Enviamos a todo Argentina: ${shippingZonesDetailLine()}. Retiro en Villa Martelli disponible.` },
               ].map((s) => (
                 <div key={s.step} className="text-center">
                   <div className="w-14 h-14 rounded-full bg-amber-500/20 flex items-center justify-center mx-auto mb-4">

@@ -12,7 +12,7 @@ import {
   Users, PartyPopper, Music, Trophy,
   Briefcase, Calendar
 } from "lucide-react"
-import { shippingZonesDetailLine } from "@/lib/shipping-config"
+import { productionLine, shippingZonesDetailLine, totalDeliveryLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Regalos Personalizados con IA — Remeras, Buzos y Hoodies Unicos | Novamente",
@@ -126,7 +126,7 @@ export default function RegalosPersonalizados() {
         name: "Cuanto tarda la produccion y el envio?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `Produccion: 2-5 dias habiles. Envio: ${shippingZonesDetailLine()}. Total aproximado: 5-15 dias segun tu zona.`,
+          text: `Produccion: ${productionLine()}. Envio: ${shippingZonesDetailLine()}. Total aproximado: ${totalDeliveryLine()} segun tu zona.`,
         },
       },
       {

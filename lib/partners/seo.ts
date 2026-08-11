@@ -1,6 +1,6 @@
 import type { Tenant, PartnerProduct } from './types'
 import type { ReviewStats } from './reviews'
-import { SHIPPING } from '../shipping-config'
+import { SHIPPING, shippingZonesDetailLine } from "../shipping-config"
 
 const BASE_URL = 'https://www.novamente.ar'
 
@@ -242,7 +242,7 @@ export function getDefaultPartnerFAQs(tenantName: string): { question: string; a
     },
     {
       question: `¿Cuánto tarda el envío de ${tenantName}?`,
-      answer: 'Los envíos se realizan a todo el país. AMBA: 3-5 días hábiles. Interior: 5-10 días hábiles. Todos los productos se fabrican a pedido con la mejor calidad.',
+      answer: `Los envíos se realizan a todo el país. ${shippingZonesDetailLine()}. Todos los productos se fabrican a pedido con la mejor calidad.`,
     },
     {
       question: `¿Los productos de ${tenantName} tienen garantía?`,

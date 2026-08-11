@@ -3,7 +3,7 @@
 ## Tiempos de Producción
 - **Producción:** 24-48 horas hábiles desde la confirmación del diseño y el pago
 - **Prendas negras:** Pueden demorar un poco más por tratamiento especial
-- **Tiempo total estimado:** 5-10 días hábiles (producción + envío)
+- **Tiempo total estimado:** 2 a 6 días hábiles (producción + envío)
 
 ## Costos de Envío
 > Estos montos tienen que coincidir con `lib/shipping-config.ts`, que es lo que

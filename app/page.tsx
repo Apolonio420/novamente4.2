@@ -19,7 +19,7 @@ import Image from "next/image"
 // Image history now fetches via /api/images/history (session-based)
 import { ScrollButton } from "@/components/scroll-button"
 import { INTERNAL_LINKS } from "@/lib/config/links"
-import { shippingSummaryWithFreeThreshold } from "@/lib/shipping-config"
+import { shippingSummaryWithFreeThreshold, totalDeliveryLine } from "@/lib/shipping-config"
 import { PRODUCTS as CATALOG_PRODUCTS, formatPrice as formatCatalogPrice } from "@/lib/catalog"
 
 export const metadata = {
@@ -1025,7 +1025,7 @@ export default function Home() {
                 <span className="text-primary group-open:rotate-45 transition-transform text-2xl">+</span>
               </summary>
               <p className="mt-4 text-muted-foreground leading-relaxed">
-                Sí, realizamos envíos a toda la Argentina. Los costos son: {shippingSummaryWithFreeThreshold()} Despachamos desde Villa Martelli, Buenos Aires. El tiempo de producción y envío es de 5 a 10 días hábiles.
+                Sí, realizamos envíos a toda la Argentina. Los costos son: {shippingSummaryWithFreeThreshold()} Despachamos desde Villa Martelli, Buenos Aires. El tiempo de producción y envío es de {totalDeliveryLine()}.
               </p>
             </details>
 

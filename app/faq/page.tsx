@@ -4,7 +4,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
-import { shippingSummaryWithFreeThreshold } from "@/lib/shipping-config"
+import { shippingSummaryWithFreeThreshold, totalDeliveryLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Preguntas Frecuentes — Ropa personalizada con IA",
@@ -109,7 +109,7 @@ const FAQ_ITEMS = [
       },
       {
         q: "¿Cuánto tarda en llegar mi pedido?",
-        a: "El tiempo total desde que hacés el pedido hasta recibirlo es de 5 a 10 días hábiles. Esto incluye la producción (estampado DTG) y el envío. Cada prenda se produce on-demand al recibir el pedido.",
+        a: `El tiempo total desde que hacés el pedido hasta recibirlo es de ${totalDeliveryLine()}. Esto incluye la producción (estampado DTG) y el envío. Cada prenda se produce on-demand al recibir el pedido.`,
       },
       {
         q: "¿Cómo pago?",
