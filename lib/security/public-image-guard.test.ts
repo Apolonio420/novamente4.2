@@ -177,7 +177,11 @@ describe("guardPublicImageGen", () => {
     expect(result.allowed).toBe(false)
     if (!result.allowed) {
       expect(result.status).toBe(429)
-      expect(result.message).toMatch(/generacion de imagenes/i)
+      // Es un tope NUESTRO: al visitante le tiene que llegar un error comun,
+      // sin numeros ni "llegaste al tope", y con la salida por WhatsApp.
+      expect(result.message).toMatch(/no pudimos generar/i)
+      expect(result.message).toMatch(/escribinos/i)
+      expect(result.message).not.toMatch(/tope|limite|límite/i)
     }
     expect(h.state.insertCalls).toHaveLength(0)
   })
@@ -236,7 +240,11 @@ describe("guardPublicImageGen — tope mensual USD (PUBLIC_GEMINI_BUDGET_USD)", 
     expect(result.allowed).toBe(false)
     if (!result.allowed) {
       expect(result.status).toBe(429)
-      expect(result.message).toMatch(/este mes/i)
+      // Idem: nada de "de este mes" — a alguien que entra por primera vez le
+      // suena a que el limite es suyo, y encima no es su culpa.
+      expect(result.message).toMatch(/no pudimos generar/i)
+      expect(result.message).not.toMatch(/este mes/i)
+      expect(result.message).not.toMatch(/tope|limite|límite/i)
     }
     // No debe haber insertado fila de request-cap: cortamos antes de esas queries.
     expect(h.state.insertCalls).toHaveLength(0)

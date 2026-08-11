@@ -24,7 +24,7 @@ import { rateLimit as memoryRateLimit } from "@/lib/rate-limit"
  *     endpoint: 10/min, 60/dia.
  *  4. Tope global diario cross-instancia (PUBLIC_IMAGEGEN_DAILY_CAP,
  *     default 400) sobre TODOS los endpoints publicos combinados.
- *  5. Tope MENSUAL en dolares (PUBLIC_GEMINI_BUDGET_USD, default 25) sobre
+ *  5. Tope MENSUAL en dolares (PUBLIC_GEMINI_BUDGET_USD, default 60) sobre
  *     el gasto real (cost_usd) de TODOS los endpoints publicos combinados,
  *     contado desde max(inicio del mes calendario UTC, PUBLIC_BUDGET_EPOCH
  *     — default 2026-07-17, dia del deploy). El epoch evita que el gasto
@@ -69,6 +69,11 @@ export interface ImageGuardResult {
   message?: string
 }
 
+// Lo que ve el visitante cuando el que se quedo sin cupo es EL SISTEMA, no el.
+// Un error comun y corriente: nadie tiene por que enterarse de nuestros topes.
+const PLATFORM_SIDE_ERROR =
+  "No pudimos generar el diseño en este momento. Probá de nuevo en un rato; si sigue pasando, escribinos y lo diseñamos con vos."
+
 const DAILY_CAP_DEFAULT = 400
 
 // El tope mensual en USD es la RED DE EMERGENCIA, no el limitador de todos los
@@ -100,7 +105,7 @@ const CAP_ALERT_THROTTLE_MS = 15 * 60 * 1000
 let lastBudgetAlertAt = 0
 
 // Cache en memoria del proceso para no sumar toda `api_usage` en cada
-// request (a $25/mes con generate-image gratis eso puede ser cientos de
+// request (a $60/mes con generate-image gratis eso puede ser cientos de
 // requests/dia). TTL corto: el overshoot maximo posible es "gasto de 60s
 // de trafico" antes de que el tope se entere de que ya se paso.
 const BUDGET_CACHE_TTL_MS = 60_000
@@ -307,9 +312,10 @@ export async function guardPublicImageGen(
         return {
           allowed: false,
           status: 429,
-          // Ojo con el "vos" implicito: este tope es de la PLATAFORMA y lo puede
-          // ver alguien que entra por primera vez. Decir "tu limite" ahi espanta.
-          message: "Llegamos al tope de generaciones de la plataforma por este mes. Escribinos por WhatsApp y te lo diseñamos a mano.",
+          // Los topes GLOBALES los puede ver alguien que entra por primera vez y
+          // no hizo nada: no le contamos el limite interno, le damos un error
+          // normal y la salida por WhatsApp (el boton lo pone la UI del chat).
+          message: PLATFORM_SIDE_ERROR,
         }
       }
       if (spentUsd >= budgetUsd * 0.8) {
@@ -381,7 +387,7 @@ export async function guardPublicImageGen(
       return {
         allowed: false,
         status: 429,
-        message: "Alcanzamos el limite diario de generacion de imagenes. Probá de nuevo mañana o escribinos por WhatsApp.",
+        message: PLATFORM_SIDE_ERROR,
       }
     }
 

@@ -19,7 +19,9 @@ import {
   Sparkles,
   X,
   ChevronDown,
+  MessageCircle,
 } from "lucide-react"
+import { getWhatsAppLink } from "@/lib/config/links"
 import { GarmentCatalog } from "./GarmentCatalog"
 import { DoubleSidePreview } from "./DoubleSidePreview"
 import { hasBackTemplate } from "./garment-templates"
@@ -359,9 +361,25 @@ export function DesignChat({
   // Rota escenarios cuando el user pide "cambiá el mockup / otra foto"
   const scenarioRef = useRef<number>(0)
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom on new messages. Bajamos A MANO el panel del chat en vez
+  // de scrollIntoView: ese arrastraba tambien la PAGINA (en desktop, donde el
+  // chat tiene su propio scroll, el layout quedaba corrido hacia abajo cada vez
+  // que llegaba un mensaje). Si no hay contenedor con scroll propio —el caso
+  // del celular, donde scrollea la pagina— caemos al comportamiento de antes.
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    const end = messagesEndRef.current
+    if (!end) return
+    let box: HTMLElement | null = end.parentElement
+    while (box && box !== document.body) {
+      const overflowY = getComputedStyle(box).overflowY
+      // Alcanza con que el panel TENGA scroll propio. Si ademas exigieramos que
+      // ya este desbordado, con pocos mensajes no lo encontrariamos y caeriamos
+      // al fallback, que es justo el que corre la pagina.
+      if (overflowY === "auto" || overflowY === "scroll") break
+      box = box.parentElement
+    }
+    if (box && box !== document.body) box.scrollTo({ top: box.scrollHeight, behavior: "smooth" })
+    else end.scrollIntoView({ behavior: "smooth", block: "nearest" })
   }, [messages])
 
   // Rotating subtext durante el loading — 30s se sienten como 3s con feedback
@@ -1548,19 +1566,33 @@ export function DesignChat({
                     />
                   </button>
                 )}
-                {/* Retry button cuando el mensaje es un error con prompt guardado */}
+                {/* Error: reintentar, y si sigue fallando que lo terminemos por WhatsApp
+                    (el prompt viaja en el mensaje, asi no lo tiene que reescribir) */}
                 {msg.retryPrompt && !loading && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (msg.retryAttachment) setPendingAttachment(msg.retryAttachment)
-                      handleSend(msg.retryPrompt!)
-                    }}
-                    className="mt-2 inline-flex items-center gap-1.5 text-xs bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-1.5 rounded-md transition"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    Reintentar
-                  </button>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (msg.retryAttachment) setPendingAttachment(msg.retryAttachment)
+                        handleSend(msg.retryPrompt!)
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-1.5 rounded-md transition"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Reintentar
+                    </button>
+                    <a
+                      href={getWhatsAppLink(
+                        `Hola Novamente! Quise crear un diseno en la web y no me salio. Lo que queria es: "${msg.retryPrompt}". Me ayudan? (ref - NV-CREAR)`,
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-md transition"
+                    >
+                      <MessageCircle className="w-3 h-3" />
+                      Seguir por WhatsApp
+                    </a>
+                  </div>
                 )}
               </div>
             </div>
