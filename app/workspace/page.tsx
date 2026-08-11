@@ -25,6 +25,10 @@ import {
   Rocket,
   HelpCircle,
   X,
+  EyeOff,
+  Copy,
+  Check,
+  Loader2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -43,6 +47,7 @@ import { isPartnersCockpitEnabled } from '@/lib/partners/feature-flags'
 
 interface DashboardData {
   products: number
+  publishedProducts: number
   leads: number
   orders: number
   score: number
@@ -522,6 +527,135 @@ function UsageWarningBar({
 }
 
 // ---------------------------------------------------------------------------
+// Storefront Visibility Banner — productos publicados pero tienda apagada.
+//
+// Publicar un producto NO publica la tienda (ver lib/partners/auto-publish.ts
+// para la red de auto-publish del lado del servidor). Este banner cubre el
+// resto de los casos: branding insuficiente para el auto-publish, o un
+// partner que apago la tienda a proposito y despues siguio agregando
+// productos. Caso real: Orlando completo onboarding + cargo branding +
+// publico 2 productos y su /p/<slug> quedo en 404 un mes sin ningun aviso.
+// ---------------------------------------------------------------------------
+
+function StorefrontVisibilityBanner({
+  slug,
+  published,
+  onPublished,
+}: {
+  slug: string
+  published: boolean
+  onPublished: () => void
+}) {
+  const [publishing, setPublishing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const url = `www.novamente.ar/p/${slug}`
+
+  const handlePublish = async () => {
+    setPublishing(true)
+    setError(null)
+    try {
+      const res = await authFetch('/api/partners/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storefront_published: true }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}) as { error?: string })
+        throw new Error(err?.error || 'No se pudo publicar la tienda. Intenta de nuevo.')
+      }
+      onPublished()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al publicar la tienda.')
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(`https://${url}`)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {}
+  }
+
+  if (published) {
+    return (
+      <div className="relative rounded-xl border border-emerald-500/30 bg-gradient-to-r from-emerald-600/10 via-zinc-900/60 to-zinc-900/60 p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-11 h-11 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-zinc-100">
+                Tu tienda ya esta publicada y visible
+              </h3>
+              <p className="text-xs text-zinc-400 mt-0.5 font-mono truncate">{url}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              onClick={handleCopy}
+              variant="outline"
+              className="border-zinc-700 text-zinc-200 hover:bg-zinc-800"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-4 h-4 mr-2 text-emerald-400" />
+                  Copiado
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copiar link
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative rounded-xl border-2 border-red-500/40 bg-gradient-to-r from-red-600/10 via-orange-600/5 to-zinc-900/60 p-5 shadow-lg shadow-red-950/10">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-11 h-11 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0">
+            <EyeOff className="w-5 h-5 text-red-400" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-zinc-100">
+              Tu tienda esta oculta — nadie puede verla todavia
+            </h3>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              Tenes productos publicados, pero tu storefront todavia no es visible al publico.
+            </p>
+            {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
+          </div>
+        </div>
+        <Button
+          onClick={handlePublish}
+          disabled={publishing}
+          className="shrink-0 bg-red-600 hover:bg-red-500 text-white border-0"
+        >
+          {publishing ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Publicando...
+            </>
+          ) : (
+            'Publicar tienda'
+          )}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
@@ -533,6 +667,7 @@ export default function WorkspaceDashboard() {
   const [welcomeDismissed, setWelcomeDismissed] = useState(false)
   const [showScoreTooltip, setShowScoreTooltip] = useState(false)
   const [showUploadCard, setShowUploadCard] = useState(true)
+  const [storefrontJustPublished, setStorefrontJustPublished] = useState(false)
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -736,6 +871,23 @@ export default function WorkspaceDashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ================================================================= */}
+      {/* STOREFRONT OCULTA — productos publicados pero tienda apagada      */}
+      {/* ================================================================= */}
+      {data.tenant.slug
+        && ((!data.tenant.storefront_published && data.publishedProducts >= 1) || storefrontJustPublished) && (
+        <StorefrontVisibilityBanner
+          slug={data.tenant.slug}
+          published={data.tenant.storefront_published || storefrontJustPublished}
+          onPublished={() => {
+            setStorefrontJustPublished(true)
+            setData((prev) =>
+              prev ? { ...prev, tenant: { ...prev.tenant, storefront_published: true } } : prev,
+            )
+          }}
+        />
       )}
 
       {/* ================================================================= */}

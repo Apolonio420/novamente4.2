@@ -8,6 +8,8 @@ import {
   resolveProductCost,
   validateProductForPublish,
 } from '@/lib/partners/variants'
+import { updateTenant } from '@/lib/partners/tenant'
+import { computeAutoPublishUpdates } from '@/lib/partners/auto-publish'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 async function getProductById(productId: string) {
@@ -110,16 +112,38 @@ export async function PUT(
       return NextResponse.json({ error: 'No se pudo actualizar el producto' }, { status: 500 })
     }
 
-    // Fire-and-forget: set first_product_published_at once
+    let autoPublished = false
+
     if (updates.status === 'published') {
+      // Fire-and-forget: set first_product_published_at once
       ;(supabaseAdmin as any)
         .from('tenants')
         .update({ first_product_published_at: new Date().toISOString() })
         .eq('id', auth.tenant.id)
         .is('first_product_published_at', null)
+
+      // AUTO-PUBLISH: publicar el primer producto no publica la tienda por si
+      // sola — si el tenant ya tiene branding minimo cargado pero el
+      // storefront sigue apagado (caso Orlando: onboarding cargo branding,
+      // publico productos, y su /p/<slug> quedo en 404 un mes sin aviso),
+      // lo publicamos automaticamente. Misma regla que branding/route.ts —
+      // ver lib/partners/auto-publish.ts.
+      const autoPublishUpdates = computeAutoPublishUpdates(auth.tenant)
+      if (autoPublishUpdates) {
+        const updatedTenant = await updateTenant(auth.tenant.id, autoPublishUpdates)
+        if (updatedTenant) {
+          autoPublished = true
+          const now = new Date().toISOString()
+          ;(supabaseAdmin as any)
+            .from('tenants')
+            .update({ storefront_published_at: now })
+            .eq('id', auth.tenant.id)
+            .is('storefront_published_at', null)
+        }
+      }
     }
 
-    return NextResponse.json({ product })
+    return NextResponse.json({ product, auto_published: autoPublished })
   } catch (error) {
     console.error('PUT /api/partners/catalog/[id] error:', error)
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })

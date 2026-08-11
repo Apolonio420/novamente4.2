@@ -4,6 +4,7 @@ import { updateTenant } from '@/lib/partners/tenant'
 import { getPlanFeatures } from '@/lib/partners/plans'
 import type { Plan } from '@/lib/partners/types'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { computeAutoPublishUpdates } from '@/lib/partners/auto-publish'
 
 const BRANDING_FIELDS = [
   'logo_url',
@@ -84,13 +85,12 @@ export async function PUT(request: NextRequest) {
     // AUTO-PUBLISH: si el partner ya tiene branding minimo cargado (logo
     // + tagline o banner) y todavia esta en 'onboarding'/sin publicar, lo
     // activamos automaticamente. Sino se queda atascado sin storefront
-    // visible aunque haya cargado todo el branding (caso DUB SHIRTS).
+    // visible aunque haya cargado todo el branding (caso DUB SHIRTS). Regla
+    // compartida con catalog/[id]/route.ts — ver lib/partners/auto-publish.ts.
     const merged = { ...tenant, ...updates } as typeof tenant
-    const hasMinimumBranding =
-      !!merged.logo_url && (!!merged.banner_url || !!merged.tagline || !!merged.about_text)
-    if (hasMinimumBranding && (!tenant.storefront_published || tenant.status !== 'active')) {
-      updates.storefront_published = true
-      if (tenant.status === 'onboarding') updates.status = 'active'
+    const autoPublish = computeAutoPublishUpdates(merged)
+    if (autoPublish) {
+      Object.assign(updates, autoPublish)
     }
 
     const updated = await updateTenant(tenant.id, updates)

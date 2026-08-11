@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRequestTenant } from '@/lib/partners/auth'
 import { calculateCompletenessScore } from '@/lib/partners/tenant'
-import { countProducts } from '@/lib/partners/catalog'
+import { countProducts, countPublishedProducts } from '@/lib/partners/catalog'
 import { countLeadsThisMonth } from '@/lib/partners/leads'
 import { countOrdersByTenant } from '@/lib/partners/orders'
 import { getDashboardTrends } from '@/lib/partners/analytics'
@@ -21,8 +21,9 @@ export async function GET(request: NextRequest) {
     const { tenant } = result
 
     // Fetch metrics and trends in parallel
-    const [products, leads, orders, trends, designsResult] = await Promise.all([
+    const [products, publishedProducts, leads, orders, trends, designsResult] = await Promise.all([
       countProducts(tenant.id),
+      countPublishedProducts(tenant.id),
       countLeadsThisMonth(tenant.id),
       countOrdersByTenant(tenant.id),
       getDashboardTrends(tenant.id),
@@ -54,6 +55,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       products,
+      publishedProducts,
       leads,
       orders,
       score,

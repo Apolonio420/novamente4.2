@@ -174,3 +174,18 @@ export async function countProducts(tenantId: string): Promise<number> {
   if (error) return 0
   return count || 0
 }
+
+// Usado por el dashboard para decidir si mostrar el aviso "tienda oculta":
+// countProducts() cuenta TODOS los productos (draft/hidden/etc incluidos), y
+// eso no basta — un partner puede tener productos published pero el
+// storefront apagado (caso Orlando, ver lib/partners/auto-publish.ts).
+export async function countPublishedProducts(tenantId: string): Promise<number> {
+  const { count, error } = await db()
+    .from('partner_products')
+    .select('*', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .eq('status', 'published')
+
+  if (error) return 0
+  return count || 0
+}
