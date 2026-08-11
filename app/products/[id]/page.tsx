@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog"
 import {
   Sparkles, ChevronRight, Truck, ShieldCheck, Ruler,
-  ZoomIn, Star, Shirt, Droplets, ThermometerSnowflake,
+  ZoomIn, Shirt, Droplets, ThermometerSnowflake,
   WashingMachine, ArrowLeft
 } from "lucide-react"
 import { PRODUCTS, parsePrice } from "@/lib/products"
@@ -74,26 +74,13 @@ const CARE_INSTRUCTIONS = [
   { icon: Shirt, title: "Planchar al reves", desc: "Temperatura baja" },
 ]
 
-function generateReviews(productName: string, category: string) {
-  const reviewSets: Record<string, Array<{ author: string; rating: number; text: string }>> = {
-    "Hoodies": [
-      { author: "Martina L.", rating: 5, text: "Increible la calidad del hoodie. El estampado quedo perfecto y ya lo lave varias veces sin perder color." },
-      { author: "Lucas P.", rating: 5, text: "Super comodo y abrigado. El diseno que hice con la IA quedo exactamente como lo imagine." },
-      { author: "Sofia R.", rating: 4, text: "Muy buena calidad de tela. El unico detalle es que tarda unos dias la produccion, pero vale la pena la espera." },
-    ],
-    "T-Shirts": [
-      { author: "Juan M.", rating: 5, text: "La mejor remera personalizada que compre. La tela es gruesa y el estampado es increible." },
-      { author: "Camila G.", rating: 5, text: "Me encanto el proceso. Describe tu idea, la IA la crea y te llega una remera unica." },
-      { author: "Tomas B.", rating: 4, text: "Excelente calidad. La oversize tiene un fit perfecto, ni muy grande ni muy chica." },
-    ],
-    default: [
-      { author: "Valeria N.", rating: 5, text: "Producto de excelente calidad. El diseno personalizado con IA es una experiencia unica." },
-      { author: "Diego F.", rating: 5, text: "Superó mis expectativas. La impresion DTG es de primera y la tela es muy buena." },
-      { author: "Carolina S.", rating: 4, text: "Muy contenta con mi compra. Lo recomiendo para regalo, queda espectacular." },
-    ],
-  }
-  return reviewSets[category] || reviewSets.default
-}
+// Nota: acá vivía generateReviews(), que fabricaba reseñas con nombres y textos
+// inventados. Se renderizaban como si fueran de clientes reales y además salían
+// al JSON-LD como aggregateRating + review. Eso incumple las políticas de review
+// snippets de Google (riesgo de acción manual sobre todo el dominio) y engaña al
+// comprador. Las reseñas reales viven en product_reviews y se muestran en las
+// tiendas partner (/p/[slug]/[product]); estas páginas usan el catálogo estático
+// PRODUCTS, cuyos ids no son UUID, así que todavía no están conectadas al sistema.
 
 export async function generateStaticParams() {
   return PRODUCTS.filter(p => p.available).map((product) => ({
@@ -143,8 +130,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   const numericPrice = parsePrice(product.price)
   const baseUrl = "https://www.novamente.ar"
-  const reviews = generateReviews(product.name, product.category)
-  const avgRating = (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1)
   const sizeChart = SIZE_CHARTS[getSizeChartKey(product.id, product.category)]
 
   // Related products: same category, different product
@@ -184,19 +169,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       shippingDetails: shippingDetailsJsonLd(),
       hasMerchantReturnPolicy: RETURN_POLICY_REF,
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: avgRating,
-      reviewCount: reviews.length,
-      bestRating: "5",
-      worstRating: "1",
-    },
-    review: reviews.map((r) => ({
-      "@type": "Review",
-      author: { "@type": "Person", name: r.author },
-      reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: "5" },
-      reviewBody: r.text,
-    })),
   }
 
   const breadcrumbJsonLd = {
@@ -303,16 +275,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </div>
 
             <h1 className="text-3xl md:text-4xl font-bold mb-2" data-speakable>{product.name}</h1>
-
-            {/* Rating */}
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <Star key={s} className={`w-4 h-4 ${s <= Math.round(Number(avgRating)) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`} />
-                ))}
-              </div>
-              <span className="text-sm text-muted-foreground">{avgRating}/5 ({reviews.length} reviews)</span>
-            </div>
 
             {anchorPriceLabel(product.price) && (
               <p className="text-base text-muted-foreground/60 line-through -mb-1">{anchorPriceLabel(product.price)}</p>
@@ -482,30 +444,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       </section>
 
       {/* Reviews */}
-      <section className="bg-muted/30 py-12">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Star className="w-6 h-6 text-yellow-400 fill-yellow-400" />
-            Reviews de Clientes
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {reviews.map((review, i) => (
-              <Card key={i}>
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-1 mb-3">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Star key={s} className={`w-4 h-4 ${s <= review.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`} />
-                    ))}
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3 italic">&quot;{review.text}&quot;</p>
-                  <p className="text-sm font-semibold">{review.author}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Related Products */}
       {relatedProducts.length > 0 && (
         <section className="container mx-auto px-4 py-12">

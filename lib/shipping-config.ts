@@ -42,13 +42,16 @@ export const SHIPPING_ZONES_PUBLIC = [
     zone: 'CABA y GBA',
     description: 'Capital Federal y Gran Buenos Aires',
     price: SHIPPING.BA,
-    days: '3-5 dias habiles',
+    days: '24 a 72 horas habiles',
+    /** Solo transito, sin produccion — para el deliveryTime del JSON-LD. */
+    transitDays: { min: 1, max: 3 },
   },
   {
     zone: 'Resto del pais',
     description: 'Todas las demas provincias',
     price: SHIPPING.RESTO,
-    days: '5-10 dias habiles',
+    days: '2 a 4 dias habiles',
+    transitDays: { min: 2, max: 4 },
   },
 ] as const
 
@@ -65,8 +68,8 @@ export function shippingSummaryWithFreeThreshold(): string {
 }
 
 /**
- * "CABA y GBA $10.000 (3-5 dias habiles), Resto del pais $15.000 (5-10 dias
- * habiles)" — para las FAQ de las landings, que además del precio dan el plazo.
+ * "CABA y GBA $10.000 (24 a 72 horas habiles), Resto del pais $15.000 (2 a 4
+ * dias habiles)" — para las FAQ de las landings, que dan precio y plazo.
  */
 export function shippingZonesDetailLine(): string {
   return SHIPPING_ZONES_PUBLIC
@@ -75,14 +78,31 @@ export function shippingZonesDetailLine(): string {
 }
 
 /**
- * Tiempos de entrega para JSON-LD. Producción on-demand (DTG): la prenda se
- * estampa después de la compra, por eso el handling no es 0-1 días.
+ * handlingTime = producción. On-demand (DTG): la prenda se estampa después de
+ * la compra, son 24-48h hábiles. NO es 0-1 días.
+ *
+ * El transitTime va por zona (ver SHIPPING_ZONES_PUBLIC.transitDays): son los
+ * mismos plazos que declara el bot de WhatsApp y docs/public/SHIPPING.md.
  */
-const DELIVERY_TIME_JSONLD = {
-  '@type': 'ShippingDeliveryTime',
-  handlingTime: { '@type': 'QuantitativeValue', minValue: 2, maxValue: 5, unitCode: 'DAY' },
-  transitTime: { '@type': 'QuantitativeValue', minValue: 3, maxValue: 10, unitCode: 'DAY' },
+const HANDLING_TIME_JSONLD = {
+  '@type': 'QuantitativeValue',
+  minValue: 1,
+  maxValue: 2,
+  unitCode: 'DAY',
 } as const
+
+function deliveryTimeJsonLd(transit: { min: number; max: number }) {
+  return {
+    '@type': 'ShippingDeliveryTime',
+    handlingTime: HANDLING_TIME_JSONLD,
+    transitTime: {
+      '@type': 'QuantitativeValue',
+      minValue: transit.min,
+      maxValue: transit.max,
+      unitCode: 'DAY',
+    },
+  }
+}
 
 /**
  * `offers.shippingDetails` para schema.org / Google Merchant listings.
@@ -102,14 +122,14 @@ export function shippingDetailsJsonLd() {
         addressRegion: 'AR-C',
       },
       shippingRate: { '@type': 'MonetaryAmount', currency: 'ARS', value: SHIPPING.BA },
-      deliveryTime: DELIVERY_TIME_JSONLD,
+      deliveryTime: deliveryTimeJsonLd(SHIPPING_ZONES_PUBLIC[0].transitDays),
     },
     {
       '@type': 'OfferShippingDetails',
       name: 'Resto del país',
       shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'AR' },
       shippingRate: { '@type': 'MonetaryAmount', currency: 'ARS', value: SHIPPING.RESTO },
-      deliveryTime: DELIVERY_TIME_JSONLD,
+      deliveryTime: deliveryTimeJsonLd(SHIPPING_ZONES_PUBLIC[1].transitDays),
     },
   ] as const
 }

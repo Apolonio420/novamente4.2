@@ -8,6 +8,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { verifyReviewToken } from '@/lib/partners/review-token'
 
 export const runtime = 'nodejs'
 
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
   const title = body.title ? String(body.title).trim().slice(0, 120) : null
   const text = body.body ? String(body.body).trim().slice(0, 1500) : null
   const email = body.email ? String(body.email).trim().slice(0, 120) : null
+  const token = body.token ? String(body.token).slice(0, 64) : null
 
   if (!tenantSlug || !/^[0-9a-f-]{36}$/i.test(productId)) {
     return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
@@ -86,9 +88,15 @@ export async function POST(request: NextRequest) {
   const tenantId = await tenantIdFromSlug(tenantSlug)
   if (!tenantId) return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404 })
 
-  // verified_purchase: el email coincide con una orden confirmada del tenant
-  let verified = false
-  if (email) {
+  // verified_purchase, por dos caminos:
+  //  1) token firmado del link post-entrega (el caso real: los clientes de las
+  //     tiendas partner cierran por WhatsApp y no pasan por el checkout web);
+  //  2) el email coincide con una orden confirmada del tenant (checkout web).
+  // El token es por (tenant, producto), no por persona: quien tenga el link puede
+  // dejar una reseña verificada. Es aceptable porque nada se publica sin que el
+  // partner lo apruebe en /workspace/reviews.
+  let verified = verifyReviewToken(token, tenantSlug, productId)
+  if (!verified && email) {
     const { data: order } = await (supabaseAdmin as any)
       .from('orders')
       .select('id')

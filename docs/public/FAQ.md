@@ -50,7 +50,7 @@ Colores ilimitados, detalles fotorrealistas, sin costos de setup, tintas que pen
 ## Envíos
 
 ### ¿Hacen envíos a todo el país?
-Sí por Andreani: CABA y GBA $10.000 (3-5 días hábiles), Resto del país $15.000 (5-10 días hábiles). Envío gratis en pedidos desde $150.000.
+Sí por Andreani: CABA y GBA $10.000 (24 a 72 horas hábiles), Resto del país $15.000 (2 a 4 días hábiles). Envío gratis en pedidos desde $150.000.
 
 ### ¿Cuánto tarda?
 5-10 días hábiles total (24-48h producción + envío según zona).

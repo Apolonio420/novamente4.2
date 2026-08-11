@@ -1,4 +1,5 @@
 import type { Tenant, PartnerProduct } from './types'
+import type { ReviewStats } from './reviews'
 import { SHIPPING } from '../shipping-config'
 
 const BASE_URL = 'https://www.novamente.ar'
@@ -32,9 +33,9 @@ export function generateOrganizationSchema(tenant: Tenant, baseRoute = '/p/') {
 export function generateProductSchema(
   product: PartnerProduct,
   tenant: Tenant,
-  options: { baseRoute?: string; enhanced?: boolean } = {},
+  options: { baseRoute?: string; enhanced?: boolean; reviews?: ReviewStats | null } = {},
 ) {
-  const { baseRoute = '/p/', enhanced = false } = options
+  const { baseRoute = '/p/', enhanced = false, reviews = null } = options
   const productUrl = `${BASE_URL}${baseRoute}${tenant.slug}/${product.slug}`
 
   // Build images array
@@ -119,6 +120,36 @@ export function generateProductSchema(
     }
 
     schema.offers = offers
+  }
+
+  // Rating: SOLO con reseñas reales aprobadas y visibles en la misma página.
+  // Google exige que el aggregateRating se corresponda con contenido que el
+  // usuario pueda ver; emitir un promedio sin reseñas publicadas es causa de
+  // acción manual sobre el dominio entero.
+  if (reviews && reviews.count > 0) {
+    schema.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: reviews.avg,
+      reviewCount: reviews.count,
+      bestRating: 5,
+      worstRating: 1,
+    }
+
+    const withText = reviews.top.filter((r) => r.body && r.body.trim().length > 0)
+    if (withText.length > 0) {
+      schema.review = withText.map((r) => ({
+        '@type': 'Review',
+        author: { '@type': 'Person', name: r.author },
+        reviewRating: {
+          '@type': 'Rating',
+          ratingValue: r.rating,
+          bestRating: 5,
+          worstRating: 1,
+        },
+        datePublished: r.createdAt.slice(0, 10),
+        reviewBody: r.body,
+      }))
+    }
   }
 
   return schema

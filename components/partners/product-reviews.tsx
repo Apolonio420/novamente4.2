@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Star, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,7 +37,16 @@ function Stars({ value, size = 16, onChange }: { value: number; size?: number; o
   )
 }
 
-export function ProductReviews({ tenantSlug, productId }: { tenantSlug: string; productId: string }) {
+export function ProductReviews({
+  tenantSlug,
+  productId,
+  /** El server ya validó el ?t= del link: solo entonces prometemos el badge. */
+  tokenVerified = false,
+}: {
+  tenantSlug: string
+  productId: string
+  tokenVerified?: boolean
+}) {
   const [reviews, setReviews] = useState<Review[]>([])
   const [avg, setAvg] = useState<number | null>(null)
   const [loaded, setLoaded] = useState(false)
@@ -45,11 +54,29 @@ export function ProductReviews({ tenantSlug, productId }: { tenantSlug: string; 
   const [sent, setSent] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** Token de compra verificada que viene en el link que le mandamos al cliente. */
+  const [token, setToken] = useState<string | null>(null)
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [rating, setRating] = useState(5)
   const [text, setText] = useState("")
+  const [honeypot, setHoneypot] = useState("")
+
+  const sectionRef = useRef<HTMLElement | null>(null)
+  const scrolledRef = useRef(false)
+
+  // El link que se manda por WhatsApp / QR de la tarjeta trae ?review=1 (abre el
+  // formulario directo, sin que el cliente tenga que buscar el botón) y ?t=<token>
+  // (marca la reseña como compra verificada). Leemos de window.location en vez de
+  // useSearchParams para no arrastrar un <Suspense> a la página de producto.
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("review") === "1") setShowForm(true)
+    const t = params.get("t")
+    if (t) setToken(t)
+  }, [])
 
   useEffect(() => {
     fetch(`/api/public/reviews?tenant=${encodeURIComponent(tenantSlug)}&product=${encodeURIComponent(productId)}`)
@@ -59,6 +86,14 @@ export function ProductReviews({ tenantSlug, productId }: { tenantSlug: string; 
       .finally(() => setLoaded(true))
   }, [tenantSlug, productId])
 
+  // Una vez montado con el formulario abierto por deep-link, llevamos la vista
+  // hasta acá: el cliente llega desde el celular y la sección está al final.
+  useEffect(() => {
+    if (!loaded || !showForm || scrolledRef.current) return
+    scrolledRef.current = true
+    sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [loaded, showForm])
+
   const submit = async () => {
     setSending(true)
     setError(null)
@@ -66,7 +101,7 @@ export function ProductReviews({ tenantSlug, productId }: { tenantSlug: string; 
       const res = await fetch("/api/public/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenantSlug, productId, name, email, rating, body: text, website: "" }),
+        body: JSON.stringify({ tenantSlug, productId, name, email, rating, body: text, token, website: honeypot }),
       })
       const d = await res.json()
       if (!res.ok) throw new Error(d.error || "Error")
@@ -81,7 +116,7 @@ export function ProductReviews({ tenantSlug, productId }: { tenantSlug: string; 
   if (!loaded) return null
 
   return (
-    <section className="mt-12 border-t border-white/10 pt-8">
+    <section ref={sectionRef} id="opiniones" className="mt-12 border-t border-white/10 pt-8 scroll-mt-24">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-bold">Opiniones</h2>
@@ -104,13 +139,19 @@ export function ProductReviews({ tenantSlug, productId }: { tenantSlug: string; 
         </div>
       ) : showForm ? (
         <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3 mb-6">
+          {tokenVerified && (
+            <p className="flex items-center gap-1.5 text-xs text-emerald-400">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Tu reseña va a figurar como compra verificada
+            </p>
+          )}
           <div className="flex items-center gap-3">
             <span className="text-sm text-zinc-300">Tu puntuación:</span>
             <Stars value={rating} size={22} onChange={setRating} />
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
             <Input placeholder="Tu nombre *" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
-            <Input placeholder="Email (si compraste, valida tu reseña)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} />
+            <Input placeholder="Email (opcional)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} />
           </div>
           <textarea
             placeholder="Contanos qué te pareció (calidad, talle, estampa…)"
@@ -120,8 +161,17 @@ export function ProductReviews({ tenantSlug, productId }: { tenantSlug: string; 
             rows={3}
             className="w-full rounded-md border border-white/10 bg-transparent px-3 py-2 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/30"
           />
-          {/* honeypot */}
-          <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+          {/* honeypot: invisible para el usuario, los bots lo completan */}
+          <input
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+            className="hidden"
+            aria-hidden="true"
+          />
           {error && <p className="text-sm text-red-400">{error}</p>}
           <div className="flex gap-2">
             <Button onClick={submit} disabled={sending || name.trim().length < 2} size="sm">
