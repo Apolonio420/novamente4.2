@@ -48,6 +48,46 @@ export function productionLine(): string {
 }
 
 /**
+ * PRODUCCIÓN POR VOLUMEN (B2B) — números de Juan, 2026-08-12:
+ * "50 unidades ponele mínimo 5 días, de 50 a 100 son 5 días aprox, y después
+ * para arriba más o menos haciendo una proporción".
+ *
+ * Había SEIS tablas distintas en las landings (3-5/5-10, 5-7/7-10, 5-7/7-10/10-15…)
+ * y el bot prometía 24-48h para cualquier cantidad — o sea le decía lo mismo a un
+ * pedido de 1 unidad que a uno de 200.
+ */
+export const PRODUCTION_VOLUME = {
+  /** Desde acá el pedido deja de ser on-demand y entra como tanda. */
+  VOLUME_FROM_QTY: 50,
+  /** Piso: ningún pedido de 50+ sale en menos de esto. */
+  MIN_DAYS: 5,
+  /** Ritmo de la tanda: 100 unidades ≈ 5 días hábiles. */
+  UNITS_PER_DAY: 20,
+} as const
+
+/** Días hábiles de PRODUCCIÓN (sin envío) para un pedido de `qty` unidades. */
+export function productionDaysForQty(qty: number): number {
+  if (!(qty > 0) || qty < PRODUCTION_VOLUME.VOLUME_FROM_QTY) return PRODUCTION_DAYS.max
+  return Math.max(
+    PRODUCTION_VOLUME.MIN_DAYS,
+    Math.ceil(qty / PRODUCTION_VOLUME.UNITS_PER_DAY),
+  )
+}
+
+/** Tabla de producción por volumen para el copy de las landings B2B. */
+export function productionVolumeLine(): string {
+  const v = PRODUCTION_VOLUME
+  const cien = productionDaysForQty(100)
+  const doscientos = productionDaysForQty(200)
+  return (
+    `hasta ${v.VOLUME_FROM_QTY} unidades, hasta ${v.MIN_DAYS} dias habiles; ` +
+    `de ${v.VOLUME_FROM_QTY} a 100 unidades, ${cien} dias habiles; ` +
+    `y de ahi en adelante sumamos 1 dia habil cada ${v.UNITS_PER_DAY} unidades ` +
+    `(200 unidades ≈ ${doscientos} dias)`
+  )
+}
+
+/**
  * TOTAL de punta a punta = producción + envío, del caso más rápido (CABA) al
  * más lento (interior). NO se escribe a mano en ningún lado: durante meses las
  * landings decían "5-10" o "5-15 días" mientras la operación prometía 24-48h de

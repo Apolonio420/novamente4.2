@@ -9,6 +9,7 @@ import {
   Shield, Clock, CheckCircle2, Palette, Package,
   CalendarDays, Dumbbell, Music, Building2, Heart, GraduationCap
 } from "lucide-react"
+import { PRODUCTION_VOLUME, productionDaysForQty, productionVolumeLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Remeras para Eventos — Personalizadas con IA | Novamente",
@@ -106,7 +107,7 @@ export default function RemerasParaEventos() {
         name: "Cuanto tiempo demora un pedido grande?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Pedidos de hasta 50 unidades: 5-7 dias habiles. Pedidos de 50-200 unidades: 7-10 dias habiles. Pedidos de 200+: 10-15 dias habiles. Recomendamos pedir con 3-4 semanas de anticipacion al evento. Pedidos urgentes consultar por WhatsApp.",
+          text: `Produccion segun cantidad: ${productionVolumeLine()}. Recomendamos pedir con 3-4 semanas de anticipacion al evento. Pedidos urgentes consultar por WhatsApp.`,
         },
       },
       {
@@ -522,9 +523,9 @@ export default function RemerasParaEventos() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
               {[
-                { range: "Hasta 50 un.", time: "5-7 dias", tip: "Ideal para team building y torneos chicos" },
-                { range: "50-200 un.", time: "7-10 dias", tip: "Conferencias y carreras medianas" },
-                { range: "200+ un.", time: "10-15 dias", tip: "Maratones y festivales grandes" },
+                { range: "Hasta 50 un.", time: `hasta ${productionDaysForQty(PRODUCTION_VOLUME.VOLUME_FROM_QTY)} dias`, tip: "Ideal para team building y torneos chicos" },
+                { range: "50-100 un.", time: `${productionDaysForQty(100)} dias`, tip: "Conferencias y carreras medianas" },
+                { range: "200+ un.", time: `${productionDaysForQty(200)} dias o mas`, tip: "Maratones y festivales grandes" },
               ].map((t) => (
                 <Card key={t.range} className="bg-zinc-800/50 border-zinc-700 text-center">
                   <CardContent className="p-6">

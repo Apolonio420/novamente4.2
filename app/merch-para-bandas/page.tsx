@@ -9,6 +9,7 @@ import {
   Shield, Clock, CheckCircle2, Palette, Package,
   Music, Mic2, Radio, Disc3, Guitar, HeadphonesIcon
 } from "lucide-react"
+import { PRODUCTION_VOLUME, productionDaysForQty, productionVolumeLine, shippingZonesDetailLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Merch Personalizado para Vender - Bandas, Creadores y Marcas | Novamente",
@@ -122,7 +123,7 @@ export default function MerchParaBandas() {
         name: "Cuanto tardan en llegar?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Produccion de 5-7 dias habiles para pedidos de hasta 50 unidades. Para pedidos grandes (50-100+), 7-10 dias habiles. Envio a todo el pais en 2-5 dias adicionales. Si tenes un show importante, consulta por produccion express.",
+          text: `Produccion segun cantidad: ${productionVolumeLine()}. Envio aparte segun zona: ${shippingZonesDetailLine()}. Si tenes un show importante, consulta por produccion express.`,
         },
       },
       {
@@ -302,7 +303,7 @@ export default function MerchParaBandas() {
               <div className="flex flex-wrap gap-3 text-sm text-zinc-400 mb-8">
                 <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-purple-400" /> Sin minimo de unidades</span>
                 <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-purple-400" /> Diseno con IA o subi tu arte</span>
-                <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-purple-400" /> Listo en 5-7 dias</span>
+                <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-purple-400" /> Listo en hasta {productionDaysForQty(PRODUCTION_VOLUME.VOLUME_FROM_QTY)} dias</span>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -366,7 +367,7 @@ export default function MerchParaBandas() {
                 <div className="text-sm text-zinc-400">calificacion promedio</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-purple-400">5-7 dias</div>
+                <div className="text-2xl sm:text-3xl font-bold text-purple-400">hasta {productionDaysForQty(PRODUCTION_VOLUME.VOLUME_FROM_QTY)} dias</div>
                 <div className="text-sm text-zinc-400">produccion standard</div>
               </div>
               <div>

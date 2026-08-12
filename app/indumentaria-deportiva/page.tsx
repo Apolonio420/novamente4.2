@@ -9,7 +9,7 @@ import {
   Shield, Clock, CheckCircle2, Palette, Package,
   Trophy, Dumbbell, Target, Timer, Bike, Swords
 } from "lucide-react"
-import { totalDeliveryLine } from "@/lib/shipping-config"
+import { productionVolumeLine, shippingZonesDetailLine, totalDeliveryLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Indumentaria Deportiva Personalizada con IA | Novamente",
@@ -123,7 +123,7 @@ export default function IndumentariaDeportiva() {
         name: "Cuanto tardan en estar listas?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Produccion de 5-7 dias habiles para equipos de hasta 50 unidades. Para equipos grandes (50-100+), 7-10 dias habiles. Envio a todo el pais en 2-5 dias adicionales. Pedidos urgentes consultar por WhatsApp.",
+          text: `Produccion segun cantidad: ${productionVolumeLine()}. Envio aparte segun zona: ${shippingZonesDetailLine()}. Pedidos urgentes consultar por WhatsApp.`,
         },
       },
       {

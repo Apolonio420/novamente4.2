@@ -9,7 +9,7 @@ import {
   Truck, Palette, Sparkles, ArrowRight,
   Users, Zap, Store, TrendingUp, ShoppingBag, Boxes
 } from "lucide-react"
-import { shippingZonesDetailLine } from "@/lib/shipping-config"
+import { PRODUCTION_VOLUME, productionDaysForQty, productionVolumeLine, shippingZonesDetailLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Remeras por Mayor Personalizadas — Desde 10 Unidades con Descuento | Novamente",
@@ -107,7 +107,7 @@ export default function RemerasPorMayor() {
         name: "Cuanto tardan los pedidos por mayor?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Pedidos de hasta 50 unidades: 5-7 dias habiles. De 50 a 200 unidades: 7-10 dias. Mas de 200 unidades: 10-15 dias habiles. Los tiempos incluyen produccion y no incluyen el envio.",
+          text: `Produccion segun cantidad: ${productionVolumeLine()}. Estos tiempos son de produccion y no incluyen el envio.`,
         },
       },
       {
@@ -666,9 +666,9 @@ export default function RemerasPorMayor() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
               {[
-                { range: "10 — 50 unidades", time: "5-7 dias habiles", icon: Clock },
-                { range: "50 — 200 unidades", time: "7-10 dias habiles", icon: Clock },
-                { range: "200+ unidades", time: "10-15 dias habiles", icon: Clock },
+                { range: "Hasta 50 unidades", time: `hasta ${productionDaysForQty(PRODUCTION_VOLUME.VOLUME_FROM_QTY)} dias habiles`, icon: Clock },
+                { range: "50 — 100 unidades", time: `${productionDaysForQty(100)} dias habiles`, icon: Clock },
+                { range: "200+ unidades", time: `${productionDaysForQty(200)} dias habiles o mas`, icon: Clock },
               ].map((t) => (
                 <Card key={t.range} className="bg-zinc-900/50 border-zinc-800 text-center">
                   <CardContent className="p-6">

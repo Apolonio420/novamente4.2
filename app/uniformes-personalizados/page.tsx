@@ -11,7 +11,7 @@ import {
   UtensilsCrossed, Stethoscope, GraduationCap, Dumbbell,
   Store, Laptop, Repeat, BadgePercent, Shirt
 } from "lucide-react"
-import { shippingZonesDetailLine } from "@/lib/shipping-config"
+import { productionVolumeLine, shippingZonesDetailLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Uniformes Personalizados con IA — Remeras y Buzos para tu Equipo | Novamente",
@@ -109,7 +109,7 @@ export default function UniformesPersonalizados() {
         name: "Cuanto tiempo demoran los uniformes?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `Produccion de 3-5 dias habiles para pedidos de hasta 50 unidades, 5-10 dias para pedidos mayores. Envio adicional segun la zona: ${shippingZonesDetailLine()}. Para aperturas o eventos, recomendamos pedir con 15 dias de anticipacion.`,
+          text: `Produccion segun cantidad: ${productionVolumeLine()}. Envio adicional segun la zona: ${shippingZonesDetailLine()}. Para aperturas o eventos, recomendamos pedir con 15 dias de anticipacion.`,
         },
       },
       {

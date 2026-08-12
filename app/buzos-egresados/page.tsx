@@ -10,7 +10,7 @@ import {
   Camera, PartyPopper, Flame, Music, Trophy, Shirt
 } from "lucide-react"
 import { PRODUCTS as CATALOG_PRODUCTS } from "@/lib/catalog"
-import { SHIPPING, shippingDetailsJsonLd, RETURN_POLICY_REF } from "@/lib/shipping-config"
+import { PRODUCTION_VOLUME, RETURN_POLICY_REF, SHIPPING, productionDaysForQty, shippingDetailsJsonLd } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Buzos de Egresados 2026 — Personalizados con IA",
@@ -167,7 +167,7 @@ export default function BuzosEgresados() {
         name: "Cuanto tiempo demora el pedido de buzos de egresados?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Produccion de 5 a 7 dias habiles para pedidos de curso (20 a 50 unidades), mas el envio. Para el acto o el viaje de egresados recomendamos pedir con anticipacion.",
+          text: `Un pedido de curso (20 a 50 unidades) sale en hasta ${productionDaysForQty(PRODUCTION_VOLUME.VOLUME_FROM_QTY)} dias habiles de produccion, mas el envio. Para el acto o el viaje de egresados recomendamos pedir con anticipacion.`,
         },
       },
       {
@@ -548,7 +548,7 @@ export default function BuzosEgresados() {
                 { icon: Sparkles, title: "Diseno IA exclusivo", desc: "Disenos que ningun otro lugar puede hacer. Tu promo con su propia identidad visual generada por IA.", color: "text-cyan-400" },
                 { icon: Flame, title: "Cada buzo es unico", desc: "No hay 30 buzos iguales. Cada alumno con su nombre, numero o apodo. Sin costo extra.", color: "text-amber-400" },
                 { icon: Shield, title: "Calidad DTG premium", desc: "Algodon 100%, estampado DTG que resiste 50+ lavados. No se despega, no se craquela.", color: "text-emerald-400" },
-                { icon: Clock, title: "Rapido y simple", desc: "De WhatsApp al buzo en 5-7 dias habiles. Sin reuniones, sin ir a ningun lado.", color: "text-violet-400" },
+                { icon: Clock, title: "Rapido y simple", desc: `De WhatsApp al buzo en hasta ${productionDaysForQty(PRODUCTION_VOLUME.VOLUME_FROM_QTY)} dias habiles de produccion, mas el envio. Sin reuniones, sin ir a ningun lado.`, color: "text-violet-400" },
               ].map((f) => (
                 <Card key={f.title} className="bg-zinc-800/50 border-zinc-700">
                   <CardContent className="p-6 text-center">

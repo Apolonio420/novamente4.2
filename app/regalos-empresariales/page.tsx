@@ -9,7 +9,7 @@ import {
   Shield, Clock, CheckCircle2, Zap, Package, Palette,
   Gift, BadgePercent, Shirt, HeartHandshake
 } from "lucide-react"
-import { shippingSummaryLine, shippingZonesDetailLine } from "@/lib/shipping-config"
+import { productionVolumeLine, shippingSummaryLine, shippingZonesDetailLine } from "@/lib/shipping-config"
 
 export const metadata: Metadata = {
   title: "Regalos Empresariales Personalizados con IA — Remeras y Hoodies Corporativos",
@@ -107,7 +107,7 @@ export default function RegalosEmpresariales() {
         name: "Cuanto tiempo demora un pedido corporativo?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `El tiempo de produccion es de 3-5 dias habiles para pedidos de hasta 50 unidades, y 5-10 dias habiles para pedidos mayores. A eso se suma el envio segun la zona: ${shippingZonesDetailLine()}. Para eventos con fecha fija, recomendamos pedir con 15 dias de anticipacion.`,
+          text: `El tiempo de produccion va segun la cantidad: ${productionVolumeLine()}. A eso se suma el envio segun la zona: ${shippingZonesDetailLine()}. Para eventos con fecha fija, recomendamos pedir con 15 dias de anticipacion.`,
         },
       },
       {
@@ -601,7 +601,7 @@ export default function RegalosEmpresariales() {
               },
               {
                 q: "Cuanto demora un pedido corporativo?",
-                a: `3-5 dias habiles de produccion para hasta 50 unidades, 5-10 dias para pedidos mayores. Suma el envio: ${shippingZonesDetailLine()}. Para eventos, recomendamos 15 dias de anticipacion.`,
+                a: `Produccion segun cantidad: ${productionVolumeLine()}. Suma el envio: ${shippingZonesDetailLine()}. Para eventos, recomendamos 15 dias de anticipacion.`,
               },
               {
                 q: "Emiten factura para empresas?",
