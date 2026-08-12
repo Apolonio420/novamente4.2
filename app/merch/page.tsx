@@ -6,6 +6,12 @@ import { ArrowRight, Rocket, Package, Palette, Truck } from "lucide-react"
 import { getDirectoryEntries } from "@/lib/partners/unified-directory"
 import MerchFilter from "@/components/MerchFilter"
 
+// ISR: 1h — mismo criterio que /marcas, el otro directorio de tiendas. Sin
+// esto la página quedaba prerenderizada en el build para siempre: publicar o
+// pausar un storefront no se veía acá hasta el próximo deploy (12/08/2026,
+// tras pausar 9 vidrieras vacías y seguir viéndolas listadas).
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: "Merch de tus marcas favoritas | Novamente",
   description: "Descubri el merchandising oficial de tus marcas favoritas. Productos unicos, disenos exclusivos y calidad premium DTG. Envios a todo el pais.",
