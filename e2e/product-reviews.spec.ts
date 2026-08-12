@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { createReviewToken } from '../lib/partners/review-token'
+import { OWN_CATALOG_TENANT_SLUG, staticProductUuid } from '../lib/partners/catalog-reviews'
 
 /**
  * Reseñas reales en la página de producto de una tienda partner.
@@ -138,4 +139,87 @@ test('token de otro producto no otorga compra verificada', async ({ page }) => {
   const rows = await findTestReviews()
   expect(rows).toHaveLength(1)
   expect(rows[0].verified_purchase).toBe(false)
+})
+
+// ---------------------------------------------------------------------------
+// Catálogo propio de Novamente (/products/[id])
+//
+// Estas páginas son estáticas y usan ids que no son UUID, así que las reseñas
+// cuelgan de un UUID derivado (lib/partners/catalog-reviews) bajo el tenant
+// novamente-internal — el único de los candidatos con miembros que puedan moderar.
+// ---------------------------------------------------------------------------
+
+const OWN_PRODUCT_ID = 'aura-tshirt-blanco'
+const OWN_PRODUCT_UUID = staticProductUuid(OWN_PRODUCT_ID)
+
+async function ownTenantId(): Promise<string> {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/tenants?select=id&slug=eq.${OWN_CATALOG_TENANT_SLUG}`,
+    { headers: dbHeaders },
+  )
+  const rows = (await res.json()) as any[]
+  return rows[0].id
+}
+
+test('catálogo propio: la sección se ve y no emite rating sin reseñas', async ({ page }) => {
+  await page.goto(`/products/${OWN_PRODUCT_ID}`, { timeout: 120_000 })
+
+  await expect(page.getByRole('heading', { name: 'Opiniones' })).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText('Todavía no hay reseñas de este producto')).toBeVisible()
+
+  const schemas = await page.locator('script[type="application/ld+json"]').allTextContents()
+  const productSchema: any = schemas.map((s) => JSON.parse(s)).find((s: any) => s['@type'] === 'Product')
+  expect(productSchema).toBeTruthy()
+  expect(productSchema.aggregateRating).toBeUndefined()
+})
+
+test('catálogo propio: el link post-entrega deja la reseña verificada y moderable', async ({ page }) => {
+  const token = createReviewToken(OWN_CATALOG_TENANT_SLUG, OWN_PRODUCT_UUID)
+  await page.goto(`/products/${OWN_PRODUCT_ID}?review=1&t=${token}`, { timeout: 120_000 })
+
+  await expect(page.getByText('Tu reseña va a figurar como compra verificada')).toBeVisible({ timeout: 30_000 })
+  await page.getByPlaceholder('Tu nombre *').fill(MARKER)
+  await page.getByPlaceholder(/Contanos qué te pareció/).fill('Reseña E2E del catálogo propio.')
+  await page.getByRole('button', { name: 'Publicar reseña' }).click()
+  await expect(page.getByText(/Tu reseña se publica apenas la revise la marca/)).toBeVisible({ timeout: 30_000 })
+
+  const rows = await findTestReviews()
+  expect(rows).toHaveLength(1)
+  expect(rows[0].verified_purchase).toBe(true)
+  expect(rows[0].status).toBe('pending')
+
+  // Tiene que quedar colgada del tenant que sí se puede moderar
+  const full = await fetch(
+    `${SUPABASE_URL}/rest/v1/product_reviews?select=tenant_id,product_id&customer_name=eq.${encodeURIComponent(MARKER)}`,
+    { headers: dbHeaders },
+  ).then((r) => r.json())
+  expect(full[0].tenant_id).toBe(await ownTenantId())
+  expect(full[0].product_id).toBe(OWN_PRODUCT_UUID)
+})
+
+test('catálogo propio: reseña aprobada ⇒ visible + aggregateRating', async ({ page }) => {
+  const insert = await fetch(`${SUPABASE_URL}/rest/v1/product_reviews`, {
+    method: 'POST',
+    headers: { ...dbHeaders, Prefer: 'return=minimal' },
+    body: JSON.stringify({
+      tenant_id: await ownTenantId(),
+      product_id: OWN_PRODUCT_UUID,
+      customer_name: MARKER,
+      rating: 5,
+      body: 'La remera quedó impecable, el algodón es muy bueno.',
+      verified_purchase: true,
+      status: 'approved',
+    }),
+  })
+  expect(insert.ok).toBe(true)
+
+  await page.goto(`/products/${OWN_PRODUCT_ID}`, { timeout: 120_000 })
+  await expect(page.getByText('La remera quedó impecable, el algodón es muy bueno.')).toBeVisible({ timeout: 30_000 })
+
+  const schemas = await page.locator('script[type="application/ld+json"]').allTextContents()
+  const productSchema: any = schemas.map((s) => JSON.parse(s)).find((s: any) => s['@type'] === 'Product')
+  expect(productSchema.aggregateRating).toMatchObject({ ratingValue: 5, reviewCount: 1 })
+  expect(productSchema.review[0].reviewBody).toBe('La remera quedó impecable, el algodón es muy bueno.')
+
+  await page.screenshot({ path: 'test-results/reviews-catalogo-propio.png' })
 })

@@ -15,6 +15,10 @@ import { PRODUCTS, parsePrice } from "@/lib/products"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 import { StockPerSize } from "@/components/StockPerSize"
 import { shippingDetailsJsonLd, RETURN_POLICY_REF, SHIPPING, SHIPPING_ZONES_PUBLIC, formatShippingARS } from "@/lib/shipping-config"
+import { ProductReviews } from "@/components/partners/product-reviews"
+import { getApprovedReviewStats } from "@/lib/partners/reviews"
+import { getTenantBySlug } from "@/lib/partners/tenant"
+import { OWN_CATALOG_TENANT_SLUG, staticProductUuid } from "@/lib/partners/catalog-reviews"
 
 // Size data — keyed by chart key. T-Shirts split into Aura/Aldea (different charts despite same category)
 type SizeChart = { sizes: string[]; width: string[]; length: string[] }
@@ -78,9 +82,12 @@ const CARE_INSTRUCTIONS = [
 // inventados. Se renderizaban como si fueran de clientes reales y además salían
 // al JSON-LD como aggregateRating + review. Eso incumple las políticas de review
 // snippets de Google (riesgo de acción manual sobre todo el dominio) y engaña al
-// comprador. Las reseñas reales viven en product_reviews y se muestran en las
-// tiendas partner (/p/[slug]/[product]); estas páginas usan el catálogo estático
-// PRODUCTS, cuyos ids no son UUID, así que todavía no están conectadas al sistema.
+// comprador. Ahora estas páginas muestran las reseñas REALES de product_reviews,
+// vía lib/partners/catalog-reviews (UUID determinístico del id estático).
+
+// Estas páginas son estáticas (generateStaticParams). Con ISR, una reseña recién
+// aprobada entra al aggregateRating dentro de la hora, sin esperar un deploy.
+export const revalidate = 3600
 
 export async function generateStaticParams() {
   return PRODUCTS.filter(p => p.available).map((product) => ({
@@ -132,6 +139,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const baseUrl = "https://www.novamente.ar"
   const sizeChart = SIZE_CHARTS[getSizeChartKey(product.id, product.category)]
 
+  // Reseñas reales del catálogo propio. Si el tenant no resuelve (o la DB falla)
+  // queda null y la página sale sin rating, igual que antes: nunca inventado.
+  const reviewProductId = staticProductUuid(product.id)
+  const ownTenant = await getTenantBySlug(OWN_CATALOG_TENANT_SLUG)
+  const reviewStats = ownTenant ? await getApprovedReviewStats(ownTenant.id, reviewProductId) : null
+
   // Related products: same category, different product
   const relatedProducts = PRODUCTS
     .filter((p) => p.category === product.category && p.id !== product.id && p.available)
@@ -169,6 +182,32 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       shippingDetails: shippingDetailsJsonLd(),
       hasMerchantReturnPolicy: RETURN_POLICY_REF,
     },
+    // Rating SOLO con reseñas reales aprobadas y visibles más abajo en esta misma
+    // página. Sin reseñas no se emite nada.
+    ...(reviewStats && reviewStats.count > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: reviewStats.avg,
+            reviewCount: reviewStats.count,
+            bestRating: 5,
+            worstRating: 1,
+          },
+          ...(reviewStats.top.some((r) => r.body && r.body.trim())
+            ? {
+                review: reviewStats.top
+                  .filter((r) => r.body && r.body.trim())
+                  .map((r) => ({
+                    "@type": "Review",
+                    author: { "@type": "Person", name: r.author },
+                    reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+                    datePublished: r.createdAt.slice(0, 10),
+                    reviewBody: r.body,
+                  })),
+              }
+            : {}),
+        }
+      : {}),
   }
 
   const breadcrumbJsonLd = {
@@ -443,7 +482,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         </p>
       </section>
 
-      {/* Reviews */}
+      {/* Opiniones reales — el link post-entrega (?review=1&t=…) aterriza acá */}
+      <section className="container mx-auto px-4">
+        <ProductReviews tenantSlug={OWN_CATALOG_TENANT_SLUG} productId={reviewProductId} />
+      </section>
+
       {/* Related Products */}
       {relatedProducts.length > 0 && (
         <section className="container mx-auto px-4 py-12">

@@ -36,10 +36,15 @@ async function tenantIdFromSlug(slug: string): Promise<string | null> {
 export async function GET(request: NextRequest) {
   const tenant = request.nextUrl.searchParams.get('tenant') || ''
   const product = request.nextUrl.searchParams.get('product') || ''
+  // El widget reenvía acá el ?t= del link post-entrega: así la validación del
+  // token vive en el server sin obligar a la página a leer searchParams (lo que
+  // volvería dinámicas las páginas estáticas del catálogo propio), y sin pagar
+  // un request extra: es el mismo fetch que ya trae las reseñas.
+  const tokenValid = verifyReviewToken(request.nextUrl.searchParams.get('t'), tenant, product)
   if (!tenant || !product) return NextResponse.json({ error: 'tenant y product requeridos' }, { status: 400 })
 
   const tenantId = await tenantIdFromSlug(tenant)
-  if (!tenantId) return NextResponse.json({ reviews: [], avg: null, count: 0 })
+  if (!tenantId) return NextResponse.json({ reviews: [], avg: null, count: 0, tokenValid: false })
 
   const { data } = await (supabaseAdmin as any)
     .from('product_reviews')
@@ -55,7 +60,7 @@ export async function GET(request: NextRequest) {
     ? Math.round((reviews.reduce((s: number, r: any) => s + r.rating, 0) / reviews.length) * 10) / 10
     : null
   return NextResponse.json(
-    { reviews, avg, count: reviews.length },
+    { reviews, avg, count: reviews.length, tokenValid },
     { headers: { 'Cache-Control': 's-maxage=300, stale-while-revalidate=600' } },
   )
 }

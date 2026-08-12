@@ -37,25 +37,27 @@ function Stars({ value, size = 16, onChange }: { value: number; size?: number; o
   )
 }
 
-export function ProductReviews({
-  tenantSlug,
-  productId,
-  /** El server ya validó el ?t= del link: solo entonces prometemos el badge. */
-  tokenVerified = false,
-}: {
-  tenantSlug: string
-  productId: string
-  tokenVerified?: boolean
-}) {
+/** Lee un parámetro de la URL en el primer render (sin efecto: evita un repintado). */
+function initialParam(key: string): string | null {
+  if (typeof window === "undefined") return null
+  return new URLSearchParams(window.location.search).get(key)
+}
+
+export function ProductReviews({ tenantSlug, productId }: { tenantSlug: string; productId: string }) {
   const [reviews, setReviews] = useState<Review[]>([])
   const [avg, setAvg] = useState<number | null>(null)
   const [loaded, setLoaded] = useState(false)
-  const [showForm, setShowForm] = useState(false)
+  // El link post-entrega trae ?review=1 (abre el formulario) y ?t=<token>
+  // (compra verificada). Se leen en el primer render; como el componente
+  // devuelve null hasta `loaded`, server y cliente pintan lo mismo y no hay
+  // desajuste de hidratación.
+  const [showForm, setShowForm] = useState(() => initialParam("review") === "1")
+  const [token] = useState<string | null>(() => initialParam("t"))
+  /** Lo dice el server en la respuesta del GET — no alcanza con que haya token. */
+  const [tokenValid, setTokenValid] = useState(false)
   const [sent, setSent] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  /** Token de compra verificada que viene en el link que le mandamos al cliente. */
-  const [token, setToken] = useState<string | null>(null)
 
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -66,25 +68,19 @@ export function ProductReviews({
   const sectionRef = useRef<HTMLElement | null>(null)
   const scrolledRef = useRef(false)
 
-  // El link que se manda por WhatsApp / QR de la tarjeta trae ?review=1 (abre el
-  // formulario directo, sin que el cliente tenga que buscar el botón) y ?t=<token>
-  // (marca la reseña como compra verificada). Leemos de window.location en vez de
-  // useSearchParams para no arrastrar un <Suspense> a la página de producto.
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const params = new URLSearchParams(window.location.search)
-    if (params.get("review") === "1") setShowForm(true)
-    const t = params.get("t")
-    if (t) setToken(t)
-  }, [])
-
-  useEffect(() => {
-    fetch(`/api/public/reviews?tenant=${encodeURIComponent(tenantSlug)}&product=${encodeURIComponent(productId)}`)
+    const qs = new URLSearchParams({ tenant: tenantSlug, product: productId })
+    if (token) qs.set("t", token)
+    fetch(`/api/public/reviews?${qs.toString()}`)
       .then((r) => r.json())
-      .then((d) => { setReviews(d.reviews || []); setAvg(d.avg ?? null) })
+      .then((d) => {
+        setReviews(d.reviews || [])
+        setAvg(d.avg ?? null)
+        setTokenValid(d.tokenValid === true)
+      })
       .catch(() => {})
       .finally(() => setLoaded(true))
-  }, [tenantSlug, productId])
+  }, [tenantSlug, productId, token])
 
   // Una vez montado con el formulario abierto por deep-link, llevamos la vista
   // hasta acá: el cliente llega desde el celular y la sección está al final.
@@ -139,7 +135,7 @@ export function ProductReviews({
         </div>
       ) : showForm ? (
         <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3 mb-6">
-          {tokenVerified && (
+          {tokenValid && (
             <p className="flex items-center gap-1.5 text-xs text-emerald-400">
               <CheckCircle2 className="h-3.5 w-3.5" />
               Tu reseña va a figurar como compra verificada

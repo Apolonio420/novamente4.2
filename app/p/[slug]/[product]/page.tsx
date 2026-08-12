@@ -20,7 +20,6 @@ import { StorefrontTracker } from '@/components/partners/storefront-tracker'
 import { StoreWhatsAppButton } from '@/components/StoreWhatsAppButton'
 import { ProductReviews } from '@/components/partners/product-reviews'
 import { getApprovedReviewStats } from '@/lib/partners/reviews'
-import { verifyReviewToken } from '@/lib/partners/review-token'
 import { AddToCartButtons } from './AddToCartButtons'
 import { Flame } from 'lucide-react'
 import { getActiveOfferForProduct, getDiscountPercent } from '@/lib/offers'
@@ -30,10 +29,7 @@ import { getActiveOfferForProduct, getDiscountPercent } from '@/lib/offers'
 // ---------------------------------------------------------------------------
 
 const BASE_URL = 'https://www.novamente.ar'
-type PageProps = {
-  params: Promise<{ slug: string; product: string }>
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
-}
+type PageProps = { params: Promise<{ slug: string; product: string }> }
 
 // ---------------------------------------------------------------------------
 // Metadata
@@ -103,7 +99,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // Page
 // ---------------------------------------------------------------------------
 
-export default async function ProductDetailPage({ params, searchParams }: PageProps) {
+export default async function ProductDetailPage({ params }: PageProps) {
   const { slug, product: productSlug } = await params
   const tenant = await getTenantBySlug(slug)
 
@@ -132,16 +128,6 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
   // pinta las estrellas en el resultado de Google. El widget de más abajo las
   // vuelve a pedir desde el cliente (endpoint cacheado) para renderizar la lista.
   const reviewStats = await getApprovedReviewStats(tenant.id, product.id)
-
-  // El token del link post-entrega se valida acá, en el server: así el formulario
-  // solo promete "compra verificada" cuando la API efectivamente la va a marcar
-  // (un link vencido o de otro producto no muestra el badge).
-  const rawToken = (await searchParams)?.t
-  const reviewTokenValid = verifyReviewToken(
-    Array.isArray(rawToken) ? rawToken[0] : rawToken,
-    tenant.slug,
-    product.id,
-  )
 
   // Related products: same category, excluding current, max 4
   const allProducts = await getPublishedProducts(tenant.id)
@@ -540,11 +526,7 @@ export default async function ProductDetailPage({ params, searchParams }: PagePr
 
       {/* Opiniones — el link post-entrega (?review=1&t=…) aterriza acá */}
       <div className="mx-auto max-w-7xl px-6">
-        <ProductReviews
-          tenantSlug={tenant.slug}
-          productId={product.id}
-          tokenVerified={reviewTokenValid}
-        />
+        <ProductReviews tenantSlug={tenant.slug} productId={product.id} />
       </div>
 
       {/* Related Products */}

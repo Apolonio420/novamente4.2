@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { staticProductNamesByUuid } from '@/lib/partners/catalog-reviews'
 
 export async function GET(request: NextRequest) {
   const auth = await requireTenantPermission(request, 'marketing:read')
@@ -20,11 +21,17 @@ export async function GET(request: NextRequest) {
     .limit(100)
 
   // nombre de producto para mostrar
-  const ids = [...new Set((reviews || []).map((r: any) => r.product_id))]
+  const ids: string[] = [...new Set<string>((reviews || []).map((r: any) => String(r.product_id)))]
   let names: Record<string, string> = {}
   if (ids.length) {
     const { data: prods } = await sb.from('partner_products').select('id, name').in('id', ids)
     for (const p of prods || []) names[p.id] = p.name
+    // Las reseñas del catálogo propio de Novamente usan un UUID derivado del id
+    // estático (lib/partners/catalog-reviews) y no tienen fila en
+    // partner_products: sin esto la pantalla mostraría "—" y no se sabría de qué
+    // producto es la reseña que estás moderando.
+    const staticNames = staticProductNamesByUuid()
+    for (const id of ids) if (!names[id] && staticNames[id]) names[id] = staticNames[id]
   }
   return NextResponse.json({
     reviews: (reviews || []).map((r: any) => ({ ...r, product_name: names[r.product_id] || '—' })),
