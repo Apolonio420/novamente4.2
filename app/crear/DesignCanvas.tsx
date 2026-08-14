@@ -27,6 +27,7 @@ import {
   ChevronDown,
   Lock,
   Unlock,
+  AlertTriangle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/lib/cartStore"
@@ -1020,6 +1021,14 @@ export function DesignCanvas({
           {activeLayer.kind === "text" ? "Tocá fuera para deseleccionar · doble click no editable acá (usá el panel)" : "Pellizcá o arrastrá las esquinas para escalar · arrastrá el centro para mover"}
         </p>
       )}
+
+      {/* Aviso de area de impresion */}
+      <div className="w-full max-w-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-200/90 text-[11px] px-3 py-2 rounded-lg flex items-start gap-2">
+        <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-yellow-500" />
+        <p>
+          <strong>Atención:</strong> El área de estampado es de 35 x 40 cm (marcada por las guías). Todo diseño que quede fuera de este recuadro, como en mangas u hombros, no será estampado.
+        </p>
+      </div>
 
       {/* Canvas */}
       <div className="relative rounded-xl overflow-hidden border border-zinc-800 shadow-xl bg-white">
