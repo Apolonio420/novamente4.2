@@ -289,6 +289,27 @@ export async function POST(req: NextRequest) {
         } catch (e) {
           console.warn("GEN-IMG white-bg removal failed:", (e as Error).message)
         }
+        // SIEMPRE después del pase blanco corre el pase de damero — no solo
+        // cuando el blanco "falló". Gemini pinta la transparencia falsa como
+        // grilla de celdas grises (206-243) y claras (234-254): las claras
+        // pueden superar el umbral blanco (235), con lo que el pase blanco
+        // muerde el anillo del borde, reporta "removió" y deja el resto del
+        // damero intacto. Caso real 15/08: león de un cliente de partner llegó
+        // al mockup con el damero impreso. Sobre un fondo blanco legítimo ya
+        // removido este segundo pase es no-op (guardrails: sin gris en el
+        // borde o fracción fuera de 2-97% ⇒ devuelve la imagen intacta).
+        try {
+          const { removeCheckerboardBackground } = await import("@/lib/designer/remove-checkerboard-bg")
+          const chk = await removeCheckerboardBackground(buffer)
+          if (chk.removed) {
+            buffer = chk.buffer as typeof buffer
+            b64 = buffer.toString('base64')
+            bgRemoved = true
+          }
+          console.log(`GEN-IMG checkerboard removal: ${chk.removed ? `OK (${(chk.frac * 100).toFixed(0)}% del canvas)` : `skipped (${chk.reason})`}`)
+        } catch (e) {
+          console.warn("GEN-IMG checkerboard removal failed:", (e as Error).message)
+        }
       }
       const timestamp = Date.now()
       const storageKey = `v1/raw-designs/${timestamp}-${Math.random().toString(36).substring(2, 7)}.png`

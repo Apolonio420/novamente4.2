@@ -135,7 +135,36 @@ export async function POST(req: NextRequest) {
     }
 
     // Upload to R2
-    const buffer = Buffer.from(imageBase64, "base64")
+    let buffer = Buffer.from(imageBase64, "base64")
+
+    // Limpieza de fondo ANTES de subir. Este endpoint no limpiaba nada, y su
+    // propio prompt le pide a Gemini "output a transparent PNG" cuando el
+    // usuario dice "sin fondo" — que es exactamente lo que Gemini no puede
+    // hacer: pinta el damero de transparencia como píxeles opacos y acá se
+    // subía tal cual (caso real 15/08: león de un cliente de partner llegó al
+    // mockup con el damero impreso). Gate: modo raw (diseño para estampa,
+    // siempre se quiere el sujeto aislado) o instrucción que hable del fondo.
+    // NO corre en ediciones de foto comunes ("más brillo") para no comerle el
+    // fondo real a una foto.
+    const wantsIsolation = rawMode || /fondo|background|transparen|png/i.test(instruction)
+    if (wantsIsolation) {
+      try {
+        const { removeWhiteBackground } = await import("@/lib/designer/remove-white-bg")
+        const white = await removeWhiteBackground(buffer)
+        if (white.removed) buffer = white.buffer as typeof buffer
+        // El pase de damero corre SIEMPRE después del blanco: las celdas
+        // claras del damero superan el umbral blanco y el primer pase puede
+        // morder solo el anillo del borde y reportar "removió" dejando el
+        // resto del damero. Sobre un fondo ya limpio es no-op por guardrails.
+        const { removeCheckerboardBackground } = await import("@/lib/designer/remove-checkerboard-bg")
+        const chk = await removeCheckerboardBackground(buffer)
+        if (chk.removed) buffer = chk.buffer as typeof buffer
+        console.log(`EDIT bg cleanup: white=${white.removed ? "OK" : "skipped"}, checkerboard=${chk.removed ? `OK (${(chk.frac * 100).toFixed(0)}%)` : `skipped (${chk.reason})`}`)
+      } catch (e) {
+        console.warn("EDIT bg cleanup failed:", (e as Error).message)
+      }
+    }
+
     const key = `v1/edited-designs/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.png`
     const { url } = await uploadFile(buffer, key, "image/png")
 
