@@ -45,13 +45,12 @@ import { rateLimit as memoryRateLimit } from "@/lib/rate-limit"
  * El tope 5 (USD) lee de `api_usage` (lib/security/meter-usage.ts), que
  * registra el COSTO REAL despues de una generacion exitosa (provider
  * siempre "gemini" para estos endpoints — es el unico writer de esa tabla
- * hoy en todo el ecosistema, ver comentario en meter-usage.ts). OJO: el
- * campo `operation` NO tiene el prefijo "public/" de forma consistente
- * (ej. "generate-stamp", "storefront/studio/generate", "magic-remove-bg"
- * no lo tienen; "public/generate-image", "public/design/edit" si) — por
- * eso el tope 5 suma TODO api_usage con provider='gemini' del mes, sin
- * filtrar por prefijo de `operation` (filtrar por "public/%" subcontaria
- * ~la mitad del gasto real y el tope quedaria de adorno).
+ * hoy en todo el ecosistema, ver comentario en meter-usage.ts). Desde
+ * agosto 2026 esa tabla tambien registra trafico INTERNO (bot/*, manual/*,
+ * partners/studio/*), asi que el tope filtra por una allowlist de
+ * operations PUBLICAS (ver PUBLIC_OPERATION_FILTER junto a
+ * fetchMonthlySpendUsd) — sumar todo sobrecontaba ~40% y cortaba /crear
+ * por gasto que no era de visitantes.
  */
 
 // Shape PLANO a proposito (no discriminated union): con strict:false el
@@ -194,6 +193,17 @@ function startOfBudgetWindowIso(): string {
  * real. Sin filtro por `operation`: ver comentario arriba del archivo (el
  * prefijo "public/" no es consistente entre endpoints).
  */
+// Qué cuenta contra el tope PÚBLICO. Hasta 24/08 esto sumaba TODO api_usage
+// con provider='gemini' (el miedo de entonces: ops públicas viejas sin prefijo
+// "public/" quedarían afuera). Pero desde agosto también se miden bot/*,
+// manual/* y partners/studio/* (tráfico INTERNO), y el sin-filtro pasó a
+// SOBREcontar: la alerta del 93% del 24/08 era $56.21 de los cuales $22.80
+// (40.6%) eran bot de WhatsApp, tests manuales y Studio de partners logueados.
+// Allowlist explícita: los prefijos públicos actuales + los nombres legacy
+// públicos que menciona el comentario histórico de arriba, por si reaparecen.
+const PUBLIC_OPERATION_FILTER =
+  "operation.like.public/*,operation.like.storefront/*,operation.in.(generate-stamp,magic-remove-bg)"
+
 async function fetchMonthlySpendUsd(): Promise<number> {
   const startIso = startOfBudgetWindowIso()
   let total = 0
@@ -203,6 +213,7 @@ async function fetchMonthlySpendUsd(): Promise<number> {
       .from("api_usage")
       .select("cost_usd")
       .eq("provider", "gemini")
+      .or(PUBLIC_OPERATION_FILTER)
       .gte("created_at", startIso)
       .range(from, from + BUDGET_PAGE_SIZE - 1)
     if (error) throw new Error(error.message)
