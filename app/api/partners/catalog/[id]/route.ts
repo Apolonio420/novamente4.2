@@ -11,6 +11,8 @@ import {
 import { updateTenant } from '@/lib/partners/tenant'
 import { computeAutoPublishUpdates } from '@/lib/partners/auto-publish'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { sendEmail } from '@/lib/email'
+import { buildStorefrontReactivatedEmail } from '@/lib/partners/storefront-reactivated-email'
 
 async function getProductById(productId: string) {
   const { data, error } = await (supabaseAdmin as any)
@@ -139,6 +141,18 @@ export async function PUT(
             .update({ storefront_published_at: now })
             .eq('id', auth.tenant.id)
             .is('storefront_published_at', null)
+
+          // Best-effort: avisar al partner que su tienda volvio a estar online.
+          // Nunca debe romper la respuesta del endpoint si falla el envio.
+          try {
+            const { subject, html } = buildStorefrontReactivatedEmail({
+              tenantName: auth.tenant.name,
+              slug: auth.tenant.slug,
+            })
+            await sendEmail({ to: auth.tenant.email, subject, html })
+          } catch (emailError) {
+            console.error('Error enviando email de reactivacion de tienda:', emailError)
+          }
         }
       }
     }
