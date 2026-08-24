@@ -4,6 +4,8 @@ export interface StudioMessage {
   content: string
   imageUrl?: string
   attachedImageUrl?: string
+  /** Procedencia de la imagen del mensaje: subida por el partner vs generada con IA */
+  source?: 'upload' | 'ai'
   type: 'text' | 'design' | 'mockup'
   styleApplied?: string
   styleName?: string

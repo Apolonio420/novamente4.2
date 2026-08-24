@@ -183,6 +183,10 @@ export default function DesignStudioPage() {
   // Default OFF: la "esencia de marca" influia demasiado en el prompt. El partner
   // la activa explicitamente si quiere que los disenos hereden su paleta/tono.
   const [useBrandEssence, setUseBrandEssence] = useState(false)
+  // Última imagen subida por el partner en esta sesión — usable como referencia
+  // para que "Generar con IA" haga VARIACIONES de su diseño en vez de ignorarlo.
+  const [referenceImage, setReferenceImage] = useState<string | null>(null)
+  const [useReference, setUseReference] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Usage
@@ -427,11 +431,13 @@ export default function DesignStudioPage() {
       const sessionId = await ensureRemoteSession()
       const assistantMsg = createStudioMessage(
         'assistant',
-        'Diseño subido. Click en la imagen → ícono remera para aplicarlo a una prenda Novamente.',
-        { type: 'design', imageUrl: uploadedUrl, isLoading: false },
+        'Diseño subido. Click en la imagen → ícono remera para aplicarlo a una prenda, o escribí abajo qué querés cambiarle y generá una variación con IA.',
+        { type: 'design', imageUrl: uploadedUrl, isLoading: false, source: 'upload' },
       )
       updateMessages(msgs => [...msgs, assistantMsg])
       if (sessionId) saveStudioMessage(sessionId, assistantMsg).catch(() => {})
+      setReferenceImage(uploadedUrl)
+      setUseReference(true)
 
       // Limpiar el query param para no re-inyectar en refresh/navegación
       const url = new URL(window.location.href)
@@ -478,6 +484,7 @@ export default function DesignStudioPage() {
           garmentType: selectedGarment,
           sessionId,
           useBrandEssence,
+          attachedImageUrl: useReference && referenceImage ? referenceImage : undefined,
         }),
       })
 
@@ -491,6 +498,7 @@ export default function DesignStudioPage() {
         type: 'design',
         isLoading: false,
         imageUrl: data.imageUrl,
+        source: 'ai',
         timestamp: Date.now(),
         styleApplied: selectedStyle,
       }
@@ -623,14 +631,17 @@ export default function DesignStudioPage() {
       const assistantMsg: StudioMessage = {
         id: placeholderId,
         role: 'assistant',
-        content: 'Diseño subido. Click en la imagen → ícono remera para aplicarlo a una prenda Novamente.',
+        content: 'Diseño subido. Click en la imagen → ícono remera para aplicarlo a una prenda, o escribí abajo qué querés cambiarle y generá una variación con IA.',
         type: 'design',
         isLoading: false,
         imageUrl: data.url,
+        source: 'upload',
         timestamp: Date.now(),
       }
       updateMessages(msgs => msgs.map(m => m.id === placeholderId ? assistantMsg : m))
       if (sessionId) saveStudioMessage(sessionId, assistantMsg).catch(() => {})
+      setReferenceImage(data.url)
+      setUseReference(true)
     } catch (err: any) {
       updateMessages(msgs =>
         msgs.map(m => m.id === placeholderId ? { ...m, isLoading: false, error: err.message } : m)
@@ -965,6 +976,20 @@ export default function DesignStudioPage() {
             <Palette className="h-3 w-3" />
             Esencia
           </button>
+
+          {/* Reference Image Toggle — aparece cuando el partner subió una imagen */}
+          {referenceImage && (
+            <button
+              onClick={() => setUseReference(!useReference)}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors ${
+                useReference ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-600/30' : 'bg-zinc-800 text-zinc-500'
+              }`}
+              title="Usar tu imagen subida como referencia: la IA genera variaciones de tu diseño en vez de crear uno nuevo desde cero"
+            >
+              <ImageIcon className="h-3 w-3" />
+              Mi imagen
+            </button>
+          )}
         </div>
 
         {/* Upload panel (when studioMode === 'upload') */}
@@ -1902,6 +1927,17 @@ function ChatBubble({
               className="max-w-full rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
               onClick={() => onZoom(msg.imageUrl!)}
             />
+            {/* Procedencia: distingue el eco de un upload de un diseño generado por IA
+                (sin esto se confunden — el partner cree que la IA "le devolvió" su misma imagen) */}
+            {msg.source && msg.type === 'design' && (
+              <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                msg.source === 'upload'
+                  ? 'bg-zinc-900/80 text-zinc-300'
+                  : 'bg-violet-600/80 text-white'
+              }`}>
+                {msg.source === 'upload' ? 'Tu imagen subida' : 'Generado con IA'}
+              </span>
+            )}
             {/* Action buttons — boton primario destacado segun el tipo */}
             <div className="absolute bottom-3 right-3 flex flex-wrap gap-2 justify-end">
               {/* Boton primario destacado: depende del tipo de mensaje */}

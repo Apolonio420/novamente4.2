@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { prompt, style, garmentColor, garmentType, sessionId, useBrandEssence } = body
+    const { prompt, style, garmentColor, garmentType, sessionId, useBrandEssence, attachedImageUrl } = body
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
       return NextResponse.json({ error: 'El prompt es obligatorio' }, { status: 400 })
@@ -97,7 +97,19 @@ export async function POST(request: NextRequest) {
       safetySettings: getGeminiSafetySettings() as any,
     })
 
-    const geminiResult = await model.generateContent([optimizedPrompt])
+    // Imagen de referencia opcional (img2img): el partner subió su propio diseño
+    // y quiere VARIACIONES, no una copia. Sin esto, la generación era texto-a-imagen
+    // pura y la imagen subida nunca llegaba al modelo (bug reportado: "me devuelve
+    // siempre la misma imagen" — en realidad veía el eco de su upload en el chat).
+    const referenceImage = await fetchReferenceImage(attachedImageUrl, request)
+    const geminiParts: any[] = referenceImage
+      ? [
+          referenceImage,
+          `${optimizedPrompt}\n\nThe attached image is the user's OWN artwork, provided as a reference. Create a NEW rendition of it following the instructions above: preserve the subject, composition, lettering and overall identity of the reference, but apply the requested transformation (style, color, finish). Do NOT return an identical or near-identical copy of the reference image.`,
+        ]
+      : [optimizedPrompt]
+
+    const geminiResult = await model.generateContent(geminiParts)
     const response = await geminiResult.response
 
     // Check for safety blocks
@@ -151,6 +163,7 @@ export async function POST(request: NextRequest) {
         garmentType: garmentType || null,
         optimizedPrompt: optimizedPrompt.substring(0, 200),
         sessionId: sessionId || null,
+        attachedImageUrl: attachedImageUrl || null,
       },
     )
 
@@ -184,5 +197,75 @@ export async function POST(request: NextRequest) {
       { error: error.message || 'Error generando diseno' },
       { status: 500 },
     )
+  }
+}
+
+/**
+ * Descarga la imagen de referencia y la devuelve como part inlineData para
+ * Gemini, o null si no hay/no se pudo. Mismos casos de URL que soporta el
+ * pipeline de mockup (app/api/partners/design/mockup/route.ts): data: URI,
+ * /api/proxy-image?key= (lectura directa de R2, evita self-fetch), absoluta
+ * y relativa. Falla soft (null + warn): una referencia caída no debe romper
+ * la generación — degrada a texto-a-imagen.
+ */
+async function fetchReferenceImage(
+  attachedImageUrl: unknown,
+  request: NextRequest,
+): Promise<{ inlineData: { data: string; mimeType: string } } | null> {
+  if (!attachedImageUrl || typeof attachedImageUrl !== 'string') return null
+  const url = attachedImageUrl.trim()
+  if (!url) return null
+
+  try {
+    if (url.startsWith('data:image/')) {
+      const m = url.match(/^data:(image\/[^;]+);base64,(.+)$/)
+      if (!m) return null
+      return { inlineData: { data: m[2], mimeType: m[1] } }
+    }
+
+    if (url.startsWith('/api/proxy-image')) {
+      const u = new URL(url, 'http://localhost')
+      const key = u.searchParams.get('key')
+      if (!key) return null
+      const { r2Client, BUCKET_NAME } = await import('@/lib/cloudflare-r2')
+      const { GetObjectCommand } = await import('@aws-sdk/client-s3')
+      const { normalizeR2Key } = await import('@/lib/r2')
+      const normalizedKey = normalizeR2Key(decodeURIComponent(key))
+      if (!normalizedKey) return null
+      const resp = await r2Client.send(new GetObjectCommand({ Bucket: BUCKET_NAME, Key: normalizedKey }))
+      const body = resp.Body as any
+      const bytes = typeof body.transformToByteArray === 'function'
+        ? await body.transformToByteArray()
+        : await (async () => {
+            const chunks: Buffer[] = []
+            for await (const chunk of body) chunks.push(Buffer.from(chunk))
+            return Buffer.concat(chunks)
+          })()
+      const mimeType = resp.ContentType?.startsWith('image/') ? resp.ContentType : 'image/png'
+      return { inlineData: { data: Buffer.from(bytes).toString('base64'), mimeType } }
+    }
+
+    const host = request.headers.get('host')
+    const proto = request.headers.get('x-forwarded-proto') || 'https'
+    const origin = host
+      ? `${proto}://${host}`
+      : process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : 'http://localhost:3000'
+    const absoluteUrl = url.startsWith('http')
+      ? url
+      : `${origin}${url.startsWith('/') ? '' : '/'}${url}`
+    const imgResp = await fetch(absoluteUrl)
+    if (!imgResp.ok) {
+      console.warn(`[design-engine] referencia no descargable (${imgResp.status}): ${absoluteUrl}`)
+      return null
+    }
+    const contentType = imgResp.headers.get('content-type') || ''
+    const mimeType = contentType.startsWith('image/') ? contentType.split(';')[0] : 'image/png'
+    const buf = await imgResp.arrayBuffer()
+    return { inlineData: { data: Buffer.from(buf).toString('base64'), mimeType } }
+  } catch (err: any) {
+    console.warn('[design-engine] error descargando imagen de referencia:', err?.message)
+    return null
   }
 }
