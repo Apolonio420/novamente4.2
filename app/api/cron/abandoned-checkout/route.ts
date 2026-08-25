@@ -33,6 +33,8 @@ function recoveryHtml(opts: {
   total: number
   payUrl: string
   brandName?: string | null
+  /** true si la orden se creó por el checkout de TRANSFERENCIA → recordarle esa vía */
+  transferencia?: boolean
 }): string {
   const store = opts.brandName || 'Novamente'
   const itemsHtml = opts.items
@@ -53,6 +55,10 @@ function recoveryHtml(opts: {
         <a href="${opts.payUrl}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;font-size:15px;font-weight:bold;padding:13px 30px;border-radius:8px">
           Completar mi compra →
         </a>
+        ${opts.transferencia ? `<p style="font-size:13px;color:#555;line-height:1.5;margin:16px 0 0">
+          Si preferís seguir con la <b>transferencia</b> que habías elegido: ${fmt(opts.total)} al alias
+          <b>novamente</b> (Mercado Pago, titular Valentin Nuñez). Respondé este mail con el comprobante y listo.
+        </p>` : ''}
         <p style="font-size:12px;color:#999;margin:22px 0 0;line-height:1.5">
           ¿Tuviste algún problema con el pago? Respondé este mail o escribinos por
           <a href="https://wa.me/5492235169720" style="color:#666">WhatsApp</a> y te ayudamos.
@@ -84,7 +90,11 @@ export async function GET(request: NextRequest) {
     .from('orders')
     .select('*')
     .eq('status', 'pending')
-    .eq('payment_method', 'mercadopago')
+    // 25/08 (caso Marcelo NOV-20260813-7038): el checkout de TRANSFERENCIA
+    // también se abandona (elige transferir y nunca manda el comprobante) y
+    // quedaba invisible para este recupero. El mail que le mandamos sirve
+    // igual: link de MP nuevo + la opción de transferir que ya había elegido.
+    .in('payment_method', ['mercadopago', 'transferencia'])
     .gte('created_at', from)
     .lte('created_at', to)
     .order('created_at', { ascending: false })
@@ -163,6 +173,7 @@ export async function GET(request: NextRequest) {
           total: Number(o.total) || 0,
           payUrl,
           brandName: null,
+          transferencia: o.payment_method === 'transferencia',
         }),
       })
       if (!sent.ok) { results.push({ order: o.order_number, status: `email error: ${sent.error}` }); continue }
