@@ -15,7 +15,21 @@ interface ColorOption {
   code: string
 }
 
+/** Con qué se estampa cada lado — viene de partner_products.metadata.print */
+export interface PrintSpec {
+  designUrl?: string | null
+  stampMode?: 'large' | 'medium' | 'chest-logo' | null
+  placement?: string | null
+  widthCm?: number | null
+}
+
 export interface AddToCartButtonsProps {
+  /**
+   * Arte y medida reales del producto. Sin esto, al proveedor le llega sólo la
+   * foto del mockup y tiene que adivinar qué imprimir y de qué tamaño.
+   */
+  printFront?: PrintSpec | null
+  printBack?: PrintSpec | null
   productId: string
   productName: string
   brandName: string
@@ -78,6 +92,8 @@ export function AddToCartButtons({
   primaryColor,
   selectedColor: selectedColorProp,
   onSelectColor,
+  printFront,
+  printBack,
 }: AddToCartButtonsProps) {
   const availableSizes = sizes && sizes.length > 0 ? sizes : DEFAULT_SIZES
   const [selectedSize, setSelectedSize] = useState<string>(availableSizes[0])
@@ -112,6 +128,10 @@ export function AddToCartButtons({
     })
   }, [productId, productName, brandName, category, price])
 
+  /** 'Chico / Logo' | 'Mediano' | 'Grande' → el R1/R2/R3 que ya usa fulfillment. */
+  const stampSizeCode = (mode?: string | null): 'R1' | 'R2' | 'R3' | undefined =>
+    mode === 'chest-logo' ? 'R1' : mode === 'medium' ? 'R2' : mode === 'large' ? 'R3' : undefined
+
   const doAdd = () => {
     addItem({
       id: `${productId}-${selectedSize}-${selectedColor || 'def'}-${Date.now()}`,
@@ -126,6 +146,16 @@ export function AddToCartButtons({
       tenantId,
       brandSlug,
       brandName,
+      // lo que se imprime, separado de la foto que se muestra
+      frontDesign: printFront?.designUrl || undefined,
+      backDesign: printBack?.designUrl || undefined,
+      frontStampSize: stampSizeCode(printFront?.stampMode),
+      backStampSize: stampSizeCode(printBack?.stampMode),
+      doble_estampa: printFront?.designUrl && printBack?.designUrl ? 'Si' : 'No',
+      metadata: {
+        print_front: printFront || null,
+        print_back: printBack || null,
+      },
     })
     fpixel.event("AddToCart", {
       content_ids: [productId],

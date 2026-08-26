@@ -30,6 +30,12 @@ export interface CartItem {
   backStampPosition?: 'center' | 'left'
   /** Doble estampado (frente + espalda en la misma prenda) — va a fulfillment. */
   doble_estampa?: 'Si' | 'No'
+  /**
+   * Datos extra que viajan tal cual a order_items.metadata (ver
+   * app/api/checkout/route.ts). Acá van placement y medida en cm de la estampa,
+   * que no tienen columna propia.
+   */
+  metadata?: Record<string, unknown>
   customDesign?: {
     image: string
     position: { x: number; y: number }

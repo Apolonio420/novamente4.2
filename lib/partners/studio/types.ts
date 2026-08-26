@@ -15,6 +15,14 @@ export interface StudioMessage {
   garmentColor?: string
   /** Lado del estampado ('front' | 'back') — usado para doble estampa */
   side?: 'front' | 'back'
+  /**
+   * Con qué se hizo este mockup. Va a la ficha de producción: el mockup es una
+   * foto, el que se imprime es este diseño en esta medida.
+   */
+  designImageUrl?: string
+  stampMode?: 'large' | 'medium' | 'chest-logo'
+  placement?: string
+  stampWidthCm?: number
   moderationStatus?: 'passed' | 'blocked' | 'flagged'
   error?: string
   isLoading?: boolean

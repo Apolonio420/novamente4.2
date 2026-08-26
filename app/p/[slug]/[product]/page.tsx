@@ -410,6 +410,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
     sizePrices: (product.metadata as any)?.size_prices ?? undefined,
     sizeLabel: (product.metadata as any)?.size_prices ? "Medida" : undefined,
     imageUrl: product.images?.[0] ?? null,
+    // arte y medida reales — el mockup de arriba es sólo la foto
+    printFront: (product.metadata as any)?.print?.front ?? null,
+    printBack: (product.metadata as any)?.print?.back ?? null,
     sizes: Array.isArray((product.metadata as any)?.sizes) ? (product.metadata as any).sizes : undefined,
     sizing: (product.metadata as any)?.sizing ?? undefined,
     sizeGuideUrl: (product.metadata as any)?.size_prices ? "" : "/guia-de-talles-novamente.pdf",

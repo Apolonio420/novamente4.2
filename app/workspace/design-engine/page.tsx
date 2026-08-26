@@ -289,6 +289,9 @@ export default function DesignStudioPage() {
     color?: string
     /** Si se setea, el producto se crea con 2 imagenes (frente + espalda) */
     backImageUrl?: string
+    /** Diseño y medida de cada lado — para que producción no dependa del mockup */
+    frontPrint?: PrintSpec
+    backPrint?: PrintSpec
   } | null>(null)
   const [catalogProductName, setCatalogProductName] = useState('')
   const [catalogProductPrice, setCatalogProductPrice] = useState('')
@@ -303,12 +306,27 @@ export default function DesignStudioPage() {
   // Cuando el partner afianza frente y espalda DE LA MISMA prenda+color, aparece
   // un panel "Producto doble estampa listo" que permite crear un producto con
   // las 2 imagenes (frente como principal, espalda como secundaria).
+  /** Con qué se generó una estampa. Viaja hasta la ficha del proveedor. */
+  interface PrintSpec {
+    designUrl?: string
+    stampMode?: 'large' | 'medium' | 'chest-logo'
+    placement?: string
+    widthCm?: number
+  }
+  const printSpecOf = (m: StudioMessage): PrintSpec => ({
+    designUrl: m.designImageUrl,
+    stampMode: m.stampMode,
+    placement: m.placement,
+    widthCm: m.stampWidthCm,
+  })
+
   interface PinnedSide {
     imageUrl: string
     garmentKey: string
     garmentColor: string
     side: 'front' | 'back'
     pinnedAt: number
+    print?: PrintSpec
   }
   const [pinnedFront, setPinnedFront] = useState<PinnedSide | null>(null)
   const [pinnedBack, setPinnedBack] = useState<PinnedSide | null>(null)
@@ -642,6 +660,11 @@ export default function DesignStudioPage() {
         garmentKey: selectedGarment,
         garmentColor: selectedColor,
         side: selectedSide,
+        // con qué se hizo — es lo que después necesita producción
+        designImageUrl,
+        stampMode: selectedStampMode,
+        placement: selectedPlacement,
+        stampWidthCm: selectedStampMode === 'chest-logo' ? logoCm : undefined,
       }
 
       updateMessages(msgs => msgs.map(m => m.id === placeholderId ? assistantMsg : m))
@@ -744,6 +767,7 @@ export default function DesignStudioPage() {
       garmentColor: msg.garmentColor || 'black',
       side: msg.side,
       pinnedAt: Date.now(),
+      print: printSpecOf(msg),
     }
 
     // Si el partner cambia de prenda o color, invalidamos lo afianzado del otro lado
@@ -775,6 +799,8 @@ export default function DesignStudioPage() {
     setCatalogProductName(cat ? `${cat.name} ${COLOR_LABELS[pinnedFront.garmentColor] || ''} doble estampa` : 'Producto doble estampa')
     setCatalogProductPrice(cat ? String(Math.round(cat.retailARS * 1.1)) : '32000') // +10% por doble estampa
     setCatalogModal({
+      frontPrint: pinnedFront.print,
+      backPrint: pinnedBack.print,
       imageUrl: pinnedFront.imageUrl,
       garmentKey: pinnedFront.garmentKey,
       color: pinnedFront.garmentColor,
@@ -828,6 +854,15 @@ export default function DesignStudioPage() {
             sizes: cat?.sizes || ['S', 'M', 'L', 'XL', 'XXL'],
             source: 'design-engine',
             dualSide: isDualSide,
+            /**
+             * Con qué se estampa de verdad. El mockup es una FOTO: si esto no
+             * viaja, cuando alguien compra en la tienda al proveedor le llega
+             * sólo esa foto, sin el arte ni la medida, y termina interpretando.
+             */
+            print: {
+              front: catalogModal.frontPrint || null,
+              back: catalogModal.backPrint || null,
+            },
           },
         }),
       })
@@ -1118,7 +1153,12 @@ export default function DesignStudioPage() {
                   const cat = CATALOG_PRODUCTS.find(p => p.key === garmentKey)
                   setCatalogProductName(cat ? `${cat.name} ${COLOR_LABELS[garmentColor] || garmentColor}` : 'Producto Novamente')
                   setCatalogProductPrice(cat ? String(cat.retailARS) : '28600')
-                  setCatalogModal({ imageUrl: url, garmentKey, color: garmentColor })
+                  setCatalogModal({
+                    imageUrl: url, garmentKey, color: garmentColor,
+                    ...(msg.side === 'back'
+                      ? { backPrint: printSpecOf(msg) }
+                      : { frontPrint: printSpecOf(msg) }),
+                  })
                 }}
                 onPinSide={handlePinSide}
                 isPinned={
