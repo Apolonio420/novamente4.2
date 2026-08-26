@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
 import {
-  Sparkles, GraduationCap, ArrowRight, Star, Truck,
+  Sparkles, GraduationCap, ArrowRight, Truck,
   Shield, Clock, CheckCircle2, Palette, Heart,
   Camera, PartyPopper, Flame, Music, Trophy, Shirt
 } from "lucide-react"
@@ -554,53 +554,6 @@ export default function BuzosEgresados() {
                     <f.icon className={`w-8 h-8 ${f.color} mx-auto mb-3`} />
                     <h3 className="text-lg font-semibold text-white mb-2">{f.title}</h3>
                     <p className="text-sm text-zinc-400">{f.desc}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials */}
-        <section className="py-16 sm:py-20 bg-zinc-900/50">
-          <div className="max-w-6xl mx-auto px-4">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-12">
-              Lo que dicen las promos que nos eligieron
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                {
-                  quote: "Los buzos quedaron espectaculares. Cada pibe con su nombre atras y el diseno de la promo en el frente. La IA nos genero algo que ningun otro lugar podia hacer.",
-                  name: "Valentina M.",
-                  role: "Delegada promo 2025, Colegio San Martin, CABA",
-                  rating: 5,
-                },
-                {
-                  quote: "Pedimos 35 hoodies y 35 remeras para el viaje. Los buzos llegaron en 6 dias y la calidad es impresionante. Despues de Bariloche siguen como nuevos.",
-                  name: "Tomas R.",
-                  role: "Padre organizador, promo 2025, La Plata",
-                  rating: 5,
-                },
-                {
-                  quote: "La mejor decision fue usar la IA para el diseno. Los chicos estaban emocionados viendo como quedaba. Mucho mas original que los buzos tipicos de serigrafia.",
-                  name: "Carolina S.",
-                  role: "Profesora tutora, promo 2025, Rosario",
-                  rating: 5,
-                },
-              ].map((t) => (
-                <Card key={t.name} className="bg-zinc-900/50 border-zinc-800">
-                  <CardContent className="p-6">
-                    <div className="flex gap-0.5 mb-3">
-                      {Array.from({ length: t.rating }).map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-cyan-400 text-cyan-400" />
-                      ))}
-                    </div>
-                    <p className="text-zinc-300 mb-4 italic">&quot;{t.quote}&quot;</p>
-                    <div>
-                      <div className="text-white font-semibold">{t.name}</div>
-                      <div className="text-sm text-zinc-500">{t.role}</div>
-                    </div>
                   </CardContent>
                 </Card>
               ))}
