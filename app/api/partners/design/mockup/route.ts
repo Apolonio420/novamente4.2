@@ -188,6 +188,7 @@ export async function POST(request: NextRequest) {
         imprint: mapping?.coordinates ?? { x: 112, y: 175, width: 180, height: 145 },
         side: sideChoice,
         stampSize,
+        placement,
       })
       mockupBase64 = mockupBuffer.toString('base64')
     } catch (e) {
@@ -211,6 +212,10 @@ export async function POST(request: NextRequest) {
         garmentType,
         garmentColor: color,
         side: sideChoice,
+        // stampMode + placement quedan guardados para poder reconstruir DÓNDE
+        // cayó la estampa de un mockup viejo (sin esto no hay forma de saberlo).
+        stampMode: stampMode || null,
+        placement: placement || null,
         designImageUrl,
         sessionId: sessionId || null,
       },

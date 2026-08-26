@@ -110,8 +110,91 @@ export async function removeDesignBackground(designBuffer: Buffer): Promise<Buff
   }
 }
 
+/**
+ * Rects de cada posición de estampa, en FRACCIONES de la caja imprimible (0..1).
+ * fx/fy = esquina superior izquierda, fw/fh = tamaño. Todos respetan
+ * fx+fw <= 1 y fy+fh <= 1, así el cuadro rojo nunca se sale del área de 35×40 cm.
+ *
+ * Convención de lados — la misma que los cuadros rojos pre-renderizados que ya
+ * usa la tienda (public/garments/red-square/*_Frente_R1I.png, medidos: centro en
+ * x≈0.61 del ancho): "sobre el corazón" es el pecho izquierdo DEL QUE LA USA, que
+ * en una foto de FRENTE cae a la DERECHA de quien mira. En el DORSO no se espeja:
+ * el hombro izquierdo del que la usa queda a la izquierda de quien mira.
+ *
+ * Los tamaños (R1 0.38×0.30, R2 0.70×0.70) son los históricos: acá se corrige
+ * DÓNDE cae la estampa, no cuán grande es.
+ */
+const R1_W = 0.38, R1_H = 0.30
+const R2_W = 0.70, R2_H = 0.70
+
+interface PlacementRect { fx: number; fy: number; fw: number; fh: number }
+
+/**
+ * Clave: `${tamaño}:${lado}:${posición}` — las posiciones del menú del Studio
+ * (app/workspace/design-engine/page.tsx → getPlacementOptions).
+ *
+ * El lado va en la clave a propósito: "centro alto" existe en el frente Y en el
+ * dorso y NO es el mismo lugar (esternón vs. zona alta de la espalda), y en el
+ * dorso tiene que quedar distinguible de "nuca / cuello".
+ */
+const PLACEMENT_RECTS: Record<string, PlacementRect> = {
+  // R1 · logo chico · FRENTE — se espeja
+  'R1:front:left-chest':  { fx: 0.58, fy: 0.04, fw: R1_W, fh: R1_H },
+  'R1:front:right-chest': { fx: 0.04, fy: 0.04, fw: R1_W, fh: R1_H },
+  'R1:front:center-high': { fx: 0.31, fy: 0.04, fw: R1_W, fh: R1_H },
+  'R1:front:pocket':      { fx: 0.58, fy: 0.24, fw: R1_W, fh: R1_H },
+  'R1:front:hem-left':    { fx: 0.58, fy: 0.66, fw: R1_W, fh: R1_H },
+  'R1:front:hem-right':   { fx: 0.04, fy: 0.66, fw: R1_W, fh: R1_H },
+  // R1 · logo chico · DORSO — NO se espeja
+  'R1:back:upper-center': { fx: 0.31, fy: 0.00, fw: R1_W, fh: R1_H },
+  'R1:back:upper-left':   { fx: 0.04, fy: 0.06, fw: R1_W, fh: R1_H },
+  'R1:back:upper-right':  { fx: 0.58, fy: 0.06, fw: R1_W, fh: R1_H },
+  'R1:back:center-high':  { fx: 0.31, fy: 0.14, fw: R1_W, fh: R1_H },
+  'R1:back:hem-center':   { fx: 0.31, fy: 0.66, fw: R1_W, fh: R1_H },
+  // R2 · estampa mediana · FRENTE
+  'R2:front:center':      { fx: 0.15, fy: 0.15, fw: R2_W, fh: R2_H },
+  'R2:front:center-high': { fx: 0.15, fy: 0.02, fw: R2_W, fh: R2_H },
+  'R2:front:chest-wide':  { fx: 0.04, fy: 0.06, fw: 0.92, fh: 0.55 },
+  // R2 · estampa mediana · DORSO
+  'R2:back:center':          { fx: 0.15, fy: 0.15, fw: R2_W, fh: R2_H },
+  'R2:back:center-high':     { fx: 0.15, fy: 0.02, fw: R2_W, fh: R2_H },
+  'R2:back:shoulder-blades': { fx: 0.15, fy: 0.10, fw: R2_W, fh: R2_H },
+}
+
+/** Posición por defecto = la primera opción del menú para ese tamaño y lado. */
+const DEFAULT_PLACEMENT: Record<StampSize, Record<GarmentSide, string>> = {
+  R1: { front: 'left-chest', back: 'upper-center' },
+  R2: { front: 'center', back: 'center' },
+  R3: { front: 'center', back: 'center' },
+}
+
+export type GarmentSide = 'front' | 'back'
+
+/**
+ * Rect para (tamaño, lado, posición).
+ * R3 (grande) ocupa toda la caja imprimible, así que no tiene variantes.
+ * Una posición desconocida cae al default del tamaño en vez de romper.
+ */
+function resolvePlacementRect(
+  size: StampSize,
+  side: GarmentSide,
+  placement?: string,
+): PlacementRect | null {
+  if (size === 'R3') return null
+  const fallback = DEFAULT_PLACEMENT[size][side]
+  return (
+    PLACEMENT_RECTS[`${size}:${side}:${placement}`]
+    ?? PLACEMENT_RECTS[`${size}:${side}:${fallback}`]
+    ?? null
+  )
+}
+
+/** Todas las posiciones conocidas — usado por los tests para cubrir el menú entero. */
+export const PLACEMENT_KEYS = Object.keys(PLACEMENT_RECTS)
+export { PLACEMENT_RECTS, resolvePlacementRect }
+
 /** Dibuja el cuadro rojo dinámico sobre la prenda base en el área de impresión. */
-export async function buildDynamicRedSquare(baseGarmentBuffer: Buffer, imprint: ImprintBox, size: StampSize): Promise<Buffer> {
+export async function buildDynamicRedSquare(baseGarmentBuffer: Buffer, imprint: ImprintBox, size: StampSize, side: GarmentSide = 'front', placement?: string): Promise<Buffer> {
   const meta = await sharp(baseGarmentBuffer).metadata()
   const W = meta.width || 1000, H = meta.height || 1000
   const baseW = imprint.baseW ?? 400, baseH = imprint.baseH ?? 500
@@ -123,9 +206,14 @@ export async function buildDynamicRedSquare(baseGarmentBuffer: Buffer, imprint: 
   let by = offY + imprint.y * s
   let bw = imprint.width * s
   let bh = imprint.height * s
-  if (size === 'R2') { const f = 0.7; const nw = bw * f, nh = bh * f; bx += (bw - nw) / 2; by += (bh - nh) / 2; bw = nw; bh = nh }
-  else if (size === 'R1') { const nw = bw * 0.38, nh = bh * 0.30; bx += bw * 0.06; by += bh * 0.04; bw = nw; bh = nh }
-  // R3 = caja completa
+  const rect = resolvePlacementRect(size, side, placement)
+  if (rect) {
+    bx += bw * rect.fx
+    by += bh * rect.fy
+    bw = bw * rect.fw
+    bh = bh * rect.fh
+  }
+  // R3 (o rect nulo) = caja completa
   const r = (n: number) => Math.round(n)
   const svg = `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg"><rect x="${r(bx)}" y="${r(by)}" width="${r(bw)}" height="${r(bh)}" fill="#ED1C24"/></svg>`
   return sharp(baseGarmentBuffer).composite([{ input: Buffer.from(svg), top: 0, left: 0 }]).png().toBuffer()
@@ -137,19 +225,21 @@ export interface PerfectStampOptions {
   imprint: ImprintBox
   side?: 'front' | 'back'
   stampSize?: StampSize
+  /** Posición elegida en el Studio (left-chest, center-high, ...). Ver PLACEMENT_RECTS. */
+  placement?: string
   /** Quitar fondo del diseño antes (default true). Para arte full-bleed/escenas → false. */
   removeBg?: boolean
 }
 
 /** Genera el mockup "perfecto" y devuelve el PNG (sin subir). */
 export async function generatePerfectStamp(opts: PerfectStampOptions): Promise<Buffer> {
-  const { baseGarmentBuffer, imprint, stampSize = 'R3', removeBg = true } = opts
+  const { baseGarmentBuffer, imprint, stampSize = 'R3', side = 'front', placement, removeBg = true } = opts
   // 1. diseño (cap 1024) + quitar fondo
   let designBuffer = await sharp(opts.designBuffer)
     .resize({ width: 1024, height: 1024, fit: 'inside', withoutEnlargement: true }).png().toBuffer()
   if (removeBg) designBuffer = await removeDesignBackground(designBuffer)
   // 2. cuadro rojo dinámico
-  const redSquare = await buildDynamicRedSquare(baseGarmentBuffer, imprint, stampSize)
+  const redSquare = await buildDynamicRedSquare(baseGarmentBuffer, imprint, stampSize, side, placement)
   // 3. estampar con STAMP_MODEL (default gemini-2.5-flash-image, ver header)
   const genAI = getClient()
   const result = await genAI.models.generateContent({
