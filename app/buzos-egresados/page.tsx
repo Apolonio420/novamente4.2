@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import WhatsAppLeadLink from "@/components/WhatsAppLeadLink"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LandingHeroImage } from "@/components/LandingHeroImage"
@@ -360,15 +361,13 @@ export default function BuzosEgresados() {
                   size="lg"
                   className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white text-lg px-8 py-6"
                 >
-                  <a
+                  <WhatsAppLeadLink
                     href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    data-cta="hero-buzos-egresados"
+                    source="hero-buzos-egresados"
                   >
                     Cotizar buzos por WhatsApp
                     <ArrowRight className="ml-2 w-5 h-5" />
-                  </a>
+                  </WhatsAppLeadLink>
                 </Button>
                 <Button
                   asChild
@@ -666,15 +665,13 @@ export default function BuzosEgresados() {
                     size="lg"
                     className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white text-lg px-8 py-6"
                   >
-                    <a
+                    <WhatsAppLeadLink
                       href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      data-cta="final-cta-buzos-egresados"
+                      source="final-cta-buzos-egresados"
                     >
                       Cotizar buzos por WhatsApp
                       <ArrowRight className="ml-2 w-5 h-5" />
-                    </a>
+                    </WhatsAppLeadLink>
                   </Button>
                   <Button
                     asChild
