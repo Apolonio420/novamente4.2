@@ -29,6 +29,57 @@ import {
 } from '@/lib/partners/studio/session-service'
 
 // ---------------------------------------------------------------------------
+// Anti-413 (25/08, caso Pablo/Origen): Vercel corta cualquier request >4.5MB
+// con "Request Entity Too Large" en TEXTO PLANO — res.json() explotaba con
+// `Unexpected token 'R'...` y el partner veía ese jeroglífico. Dos capas:
+// comprimir la imagen en el navegador ANTES de subir (una foto de celular de
+// 8MB entra sobrada resizada a 2048px), y si el server igual responde no-JSON,
+// traducirlo a un error humano.
+// ---------------------------------------------------------------------------
+
+const MAX_UPLOAD_BYTES = 3_000_000
+const MAX_IMAGE_SIDE = 2048
+
+async function parseApiResponse(res: Response): Promise<any> {
+  const raw = await res.text()
+  try { return JSON.parse(raw) } catch {
+    if (res.status === 413) {
+      throw new Error('La imagen es muy pesada para subir 😅 Probá con una versión más liviana (ideal menos de 3 MB).')
+    }
+    throw new Error(`El servidor respondió con un error (${res.status}). Probá de nuevo en un momento.`)
+  }
+}
+
+async function compressImageIfNeeded(file: File): Promise<File> {
+  if (file.size <= MAX_UPLOAD_BYTES || !file.type.startsWith('image/')) return file
+  try {
+    const bmp = await createImageBitmap(file)
+    const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(bmp.width, bmp.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(bmp.width * scale))
+    canvas.height = Math.max(1, Math.round(bmp.height * scale))
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return file
+    ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height)
+    const isPng = file.type === 'image/png'
+    // PNG se re-exporta PNG (preserva transparencia, clave en diseños).
+    let out: Blob | null = await new Promise(r => canvas.toBlob(r, isPng ? 'image/png' : 'image/jpeg', 0.85))
+    if (!out) return file
+    // Un PNG fotográfico que ni resizado baja de 3MB casi nunca usa alpha:
+    // último recurso JPEG antes de dejar que el server lo rebote.
+    if (out.size > MAX_UPLOAD_BYTES && isPng) {
+      const jpeg: Blob | null = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.85))
+      if (jpeg && jpeg.size < out.size) out = jpeg
+    }
+    if (out.size >= file.size) return file
+    const ext = out.type === 'image/png' ? '.png' : '.jpg'
+    return new File([out], file.name.replace(/\.[a-z0-9]+$/i, '') + ext, { type: out.type })
+  } catch {
+    return file // fail-open: mejor intentar subir el original que bloquear
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -488,7 +539,7 @@ export default function DesignStudioPage() {
         }),
       })
 
-      const data = await res.json()
+      const data = await parseApiResponse(res)
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
 
       const assistantMsg: StudioMessage = {
@@ -623,9 +674,9 @@ export default function DesignStudioPage() {
 
     try {
       const fd = new FormData()
-      fd.append('file', file)
+      fd.append('file', await compressImageIfNeeded(file))
       const res = await authFetch('/api/partners/design/upload', { method: 'POST', body: fd })
-      const data = await res.json()
+      const data = await parseApiResponse(res)
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
 
       const assistantMsg: StudioMessage = {
