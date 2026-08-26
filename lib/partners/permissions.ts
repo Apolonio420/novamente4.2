@@ -211,7 +211,11 @@ export interface TenantAuthResult {
 }
 
 const FAILURE_MESSAGES: Record<401 | 403 | 404, string> = {
-  401: 'No autenticado o sin tenant asociado',
+  // El 401 casi siempre es una sesión vencida, no una cuenta rota. El texto
+  // viejo ("No autenticado o sin tenant asociado") daba a entender que el
+  // partner había perdido su tienda: ORIGEN lo reportó asustado el 26/08/2026
+  // teniendo la cuenta y el plan perfectamente en orden.
+  401: 'Se venció tu sesión. Volvé a entrar en /partners/login y seguí donde estabas.',
   403: 'No tenés permiso para esta acción',
   404: 'No encontrado',
 }

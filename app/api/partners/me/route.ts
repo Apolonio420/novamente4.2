@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
 
     if (!result) {
       return NextResponse.json(
-        { error: 'No autenticado o sin tenant asociado' },
+        { error: 'Se venció tu sesión. Volvé a entrar en /partners/login y seguí donde estabas.' },
         { status: 401 },
       )
     }

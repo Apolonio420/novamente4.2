@@ -15,22 +15,59 @@ function ensureListener() {
   })
 }
 
+/**
+ * ¿Al token le queda vida? Se lee el `exp` del JWT sin verificar firma — sólo
+ * nos interesa la fecha, la validación real la hace el servidor.
+ *
+ * Devuelve false también si no se puede leer: ante la duda, pedir uno nuevo.
+ */
+function tokenVigente(token: string | null): boolean {
+  if (!token) return false
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    if (!payload?.exp) return false
+    // 60s de colchón: no queremos mandar un token que vence en el viaje
+    return payload.exp * 1000 - Date.now() > 60_000
+  } catch {
+    return false
+  }
+}
+
 async function getAccessToken(): Promise<string | null> {
   ensureListener()
 
-  // 1. Return cached token if available
-  if (cachedToken) return cachedToken
+  // 1. Cache, PERO sólo si el token todavía sirve.
+  //
+  //    Antes esto devolvía el cacheado sin mirar el vencimiento, y como
+  //    getSession() —que es lo que dispara la renovación— nunca se volvía a
+  //    llamar, un token vencido se quedaba pegado y TODAS las requests daban
+  //    401 hasta recargar la página. Pasaba con el Studio abierto un rato
+  //    largo, sobre todo en el navegador interno de WhatsApp, donde el
+  //    temporizador de refresh de Supabase no corre en segundo plano.
+  //    (ORIGEN, 26/08/2026: 3 h con la pestaña abierta → "No autenticado o sin
+  //    tenant asociado" con la cuenta perfectamente en orden.)
+  if (tokenVigente(cachedToken)) return cachedToken
+  cachedToken = null
 
-  // 2. Try getSession
+  // 2. getSession() renueva solo si hace falta — por eso hay que llegar acá
   try {
     const { data } = await supabase.auth.getSession()
-    if (data.session?.access_token) {
-      cachedToken = data.session.access_token
+    if (tokenVigente(data.session?.access_token ?? null)) {
+      cachedToken = data.session!.access_token
       return cachedToken
     }
   } catch {}
 
-  // 3. Last resort: read directly from localStorage
+  // 3. Forzar la renovación con el refresh token (el timer pudo no correr)
+  try {
+    const { data } = await supabase.auth.refreshSession()
+    if (tokenVigente(data.session?.access_token ?? null)) {
+      cachedToken = data.session!.access_token
+      return cachedToken
+    }
+  } catch {}
+
+  // 4. Último recurso: leerlo directo de localStorage
   if (typeof window !== 'undefined') {
     try {
       for (let i = 0; i < localStorage.length; i++) {
@@ -41,7 +78,7 @@ async function getAccessToken(): Promise<string | null> {
           const parsed = JSON.parse(raw)
           // Supabase stores as { access_token, ... } or as the session object
           const token = parsed?.access_token || parsed?.currentSession?.access_token
-          if (token) {
+          if (tokenVigente(token)) {
             cachedToken = token
             return cachedToken
           }
@@ -50,12 +87,12 @@ async function getAccessToken(): Promise<string | null> {
     } catch {}
   }
 
-  // 4. Wait a bit and retry once (session may still be loading)
+  // 5. Esperar y reintentar una vez (la sesión puede estar cargando todavía)
   await new Promise(r => setTimeout(r, 500))
   try {
     const { data } = await supabase.auth.getSession()
-    if (data.session?.access_token) {
-      cachedToken = data.session.access_token
+    if (tokenVigente(data.session?.access_token ?? null)) {
+      cachedToken = data.session!.access_token
       return cachedToken
     }
   } catch {}
