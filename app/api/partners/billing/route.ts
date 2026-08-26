@@ -122,6 +122,30 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      // Cancelar EN MERCADOPAGO primero. Antes de esto el handler sólo marcaba
+      // el tenant como pausado y el débito automático seguía corriendo: el
+      // partner leía "Suscripción cancelada" y le seguían cobrando la tarjeta
+      // todos los meses, y se enteraba por el resumen bancario.
+      //
+      // Si MP falla NO se marca nada como cancelado: es preferible que el
+      // partner vea un error y reintente, a decirle que canceló mientras le
+      // cobramos.
+      const preapprovalId = (tenant as any).mp_subscription_id as string | null
+      if (preapprovalId) {
+        const { cancelExistingPreapproval } = await import('@/lib/partners/subscription')
+        const cancelled = await cancelExistingPreapproval(preapprovalId)
+        if (!cancelled.ok) {
+          console.error('[billing] no se pudo cancelar el preapproval', preapprovalId, (cancelled as { error: string }).error)
+          return NextResponse.json(
+            {
+              error:
+                'No pudimos cancelar el débito automático en MercadoPago. No te cancelamos la suscripción para no dejarte pagando sin servicio — probá de nuevo o escribinos.',
+            },
+            { status: 502 },
+          )
+        }
+      }
+
       const updated = await updateTenant(tenant.id, {
         status: 'paused',
       })

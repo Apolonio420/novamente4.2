@@ -162,7 +162,7 @@ export interface CreateRecurringResult {
  * 'ya cancelado / no encontrado' como éxito (nada que cancelar); cualquier otro
  * error de la API se propaga para abortar la creación del nuevo PreApproval.
  */
-async function cancelExistingPreapproval(preapprovalId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function cancelExistingPreapproval(preapprovalId: string): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const current: any = await new PreApproval(mpClient()).get({ id: preapprovalId })
     if (current?.status === 'cancelled') return { ok: true }

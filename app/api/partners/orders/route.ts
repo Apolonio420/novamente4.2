@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getOrdersByTenant, createOrder, countOrdersByTenant } from '@/lib/partners/orders'
 import { sendToProduction } from '@/lib/partners/production'
-import { notifyPartnerOrder, notifyTeamManualSale, type ManualOrderItemNotice } from '@/lib/notifications'
+import { notifyPartnerOrder, notifyTeamManualSale, type ManualOrderItemNotice, notifyError } from '@/lib/notifications'
 import { guessGarmentKey } from '@/lib/partners/ledger'
 import { getPartnerPlanPrice, type GrowthTier } from '@/lib/partners/garment-pricing.server'
 
@@ -175,6 +175,9 @@ export async function POST(request: NextRequest) {
     // Notificaciones + producción después de responder (no bloquear al partner).
     after(async () => {
       let pedidoNumero: string | undefined
+      // Si el partner pidió producir, esto dice si REALMENTE se produjo.
+      // Antes se le avisaba según lo que había pedido, no según lo que pasó.
+      let producidoOk = false
 
       if (body.produce) {
         const prod = await sendToProduction({
@@ -197,8 +200,18 @@ export async function POST(request: NextRequest) {
           })),
         })
         pedidoNumero = prod.pedido_numero
+        producidoOk = !!prod.ok
         if (!prod.ok) {
+          // Esto antes era SÓLO un console.error: el pedido no entraba a
+          // producción, al partner le llegaba "se envió a producción" igual, y
+          // nadie se enteraba hasta que el cliente reclamaba la entrega.
           console.error('[POST /api/partners/orders] producción falló:', prod.error)
+          await notifyError({
+            area: 'Pedidos de partners',
+            endpoint: 'POST /api/partners/orders → sendToProduction',
+            message: `${tenant.name}: el pedido de ${body.customer_name} NO entró a producción (${body.items.length} item/s). Hay que cargarlo a mano. Detalle: ${prod.error || 'sin detalle'}`,
+            debugId: order.id,
+          }).catch(() => null)
         }
         // El aviso al equipo con economía completa lo manda platform-master.
       } else {
@@ -218,7 +231,8 @@ export async function POST(request: NextRequest) {
         items: noticeItems,
         pvpTotal,
         partnerTotal,
-        produce: body.produce,
+        // nunca afirmar una producción que no ocurrió
+        produce: body.produce && producidoOk,
         pedidoNumero,
       }).catch(() => null)
     })
