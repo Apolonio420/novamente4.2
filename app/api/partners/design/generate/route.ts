@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
       imageUrl: uploadResult.url,
       imageBase64: `data:image/png;base64,${imageBase64}`,
       assetId: asset?.id || assetId,
-      usage: { used: usage.used + 1, limit: usage.limit, resetLabel: usage.resetLabel },
+      usage: { used: usage.used + 1, limit: usage.limit, resetLabel: usage.resetLabel, unlimited: usage.unlimited },
     })
   } catch (error: any) {
     console.error('POST /api/partners/design/generate error:', error)

@@ -244,7 +244,7 @@ export async function POST(request: NextRequest) {
       mockupUrl: uploadResult.url,
       mockupBase64: `data:image/png;base64,${mockupBase64}`,
       assetId: asset?.id || assetId,
-      usage: { used: usage.used + 1, limit: usage.limit, resetLabel: usage.resetLabel },
+      usage: { used: usage.used + 1, limit: usage.limit, resetLabel: usage.resetLabel, unlimited: usage.unlimited },
     })
   } catch (error: any) {
     console.error('POST /api/partners/design/mockup error:', error)

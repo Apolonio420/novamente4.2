@@ -93,8 +93,62 @@ async function magentaKey(buf: Buffer): Promise<Buffer> {
   return sharp(data, { raw: { width: info.width, height: info.height, channels: ch } }).png().toBuffer()
 }
 
-/** Quitar fondo del diseño (igual que platform/lib/mockup/remove-bg.ts). */
+/**
+ * ¿Tiene transparencia REAL? Gemini no emite alpha: cuando le pedís que quite
+ * el fondo devuelve un PNG OPACO con el damero gris/blanco PINTADO como
+ * píxeles. Eso se veía como un rectángulo blanco estampado sobre la prenda
+ * (caso ORIGEN 26/08/2026). Medido sobre los diseños reales del partner:
+ * hasAlpha=false, 0 píxeles transparentes de 1.048.576.
+ */
+async function hasRealAlpha(buf: Buffer): Promise<boolean> {
+  try {
+    const meta = await sharp(buf).metadata()
+    if (!meta.hasAlpha) return false
+    const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+    let transparent = 0
+    for (let i = 3; i < data.length; i += info.channels) if (data[i] === 0) transparent++
+    return transparent / (info.width * info.height) >= 0.02
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Sacar el fondo sin modelo: flood-fill de blanco desde los bordes + pase de
+ * damero. Es el mismo par que ya usa /api/generate-image; acá faltaba cablearlo.
+ * Si ninguno muerde (ej. fondo negro), devuelve el diseño intacto — sobre una
+ * prenda oscura el fondo oscuro se funde igual.
+ */
+async function knockoutBackground(buf: Buffer): Promise<Buffer> {
+  let out = buf
+  try {
+    const { removeWhiteBackground } = await import('@/lib/designer/remove-white-bg')
+    const r = await removeWhiteBackground(out)
+    if (r.removed) out = r.buffer
+  } catch (e) {
+    console.warn('[perfect-stamp] knockout blanco falló:', (e as Error)?.message)
+  }
+  try {
+    const { removeCheckerboardBackground } = await import('@/lib/designer/remove-checkerboard-bg')
+    const c = await removeCheckerboardBackground(out)
+    if (c.removed) out = c.buffer
+  } catch (e) {
+    console.warn('[perfect-stamp] knockout damero falló:', (e as Error)?.message)
+  }
+  return out
+}
+
+/**
+ * Quitar fondo del diseño.
+ *
+ * Se intenta con Gemini, pero su salida SOLO se acepta si trajo transparencia
+ * real. Cuando no la trae no alcanza con ignorar el alpha: el modelo además
+ * re-renderiza el arte (en el caso de ORIGEN dio vuelta el texto de blanco a
+ * negro — el "negativo" que reportó el partner nacía acá). Por eso se descarta
+ * la salida del modelo y se recorta el fondo del diseño ORIGINAL.
+ */
 export async function removeDesignBackground(designBuffer: Buffer): Promise<Buffer> {
+  let fromModel: Buffer | null = null
   try {
     const genAI = getClient()
     const result = await genAI.models.generateContent({
@@ -102,12 +156,16 @@ export async function removeDesignBackground(designBuffer: Buffer): Promise<Buff
       contents: [{ text: REMOVE_BG_PROMPT }, { inlineData: { data: designBuffer.toString('base64'), mimeType: 'image/png' } }] as any,
     })
     const b64 = extractImage(result)
-    if (!b64) return designBuffer
-    return await magentaKey(Buffer.from(b64, 'base64'))
+    if (b64) fromModel = await magentaKey(Buffer.from(b64, 'base64'))
+    else console.warn('[perfect-stamp] removeBg: el modelo no devolvió imagen')
   } catch (e) {
-    console.warn('[perfect-stamp] removeBg falló, uso diseño original:', (e as Error)?.message)
-    return designBuffer
+    console.warn('[perfect-stamp] removeBg falló:', (e as Error)?.message)
   }
+
+  if (fromModel && (await hasRealAlpha(fromModel))) return fromModel
+
+  console.warn('[perfect-stamp] removeBg sin alpha real → recorte determinístico sobre el original')
+  return await knockoutBackground(designBuffer)
 }
 
 /**

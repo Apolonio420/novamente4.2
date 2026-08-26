@@ -183,6 +183,26 @@ function getPlacementOptions(
 // Component
 // ---------------------------------------------------------------------------
 
+/**
+ * El servidor manda `limit: 0` + `unlimited: true` para los planes pagos
+ * (growth/pro = ilimitado). Si una respuesta se olvida el flag, `limit 0` hace
+ * que `used >= limit` y el partner ve "Llegaste al límite (1/0 generaciones)"
+ * teniendo plan ilimitado — le pasó a ORIGEN el 26/08/2026, porque las APIs de
+ * generate y mockup recortaban el campo al responder.
+ *
+ * Acá tratamos `limit <= 0` como ilimitado SIEMPRE, así el cartel no puede
+ * volver a aparecer por un campo que falte río arriba.
+ */
+function normalizeUsage(u: any): UsageInfo {
+  const limit = Number(u?.limit)
+  const unlimited = Boolean(u?.unlimited) || !(limit > 0)
+  return {
+    ...u,
+    unlimited,
+    percentUsed: unlimited ? 0 : Math.round((Number(u?.used) / limit) * 100),
+  }
+}
+
 export default function DesignStudioPage() {
   // Studio mode: 'ai' = generate with AI, 'upload' = upload your own design
   // Nota: cuando se llega con ?uploadedDesignUrl=, el diseño se inyecta como
@@ -348,7 +368,7 @@ export default function DesignStudioPage() {
   }, [])
 
   useEffect(() => {
-    fetchUsageStats().then((u) => { if (u) setUsage(u) }).catch(() => {})
+    fetchUsageStats().then((u) => { if (u) setUsage(normalizeUsage(u)) }).catch(() => {})
   }, [])
 
   // Auto-scroll on new messages
@@ -558,7 +578,7 @@ export default function DesignStudioPage() {
 
       // Save assistant message + update usage
       if (sessionId) saveStudioMessage(sessionId, assistantMsg).catch(() => {})
-      if (data.usage) setUsage({ ...data.usage, percentUsed: data.usage.unlimited ? 0 : Math.round((data.usage.used / data.usage.limit) * 100) })
+      if (data.usage) setUsage(normalizeUsage(data.usage))
     } catch (err: any) {
       updateMessages(msgs =>
         msgs.map(m => m.id === placeholderId ? { ...m, isLoading: false, error: err.message } : m)
@@ -617,7 +637,7 @@ export default function DesignStudioPage() {
 
       updateMessages(msgs => msgs.map(m => m.id === placeholderId ? assistantMsg : m))
       if (sessionId) saveStudioMessage(sessionId, assistantMsg).catch(() => {})
-      if (data.usage) setUsage({ ...data.usage, percentUsed: data.usage.unlimited ? 0 : Math.round((data.usage.used / data.usage.limit) * 100) })
+      if (data.usage) setUsage(normalizeUsage(data.usage))
     } catch (err: any) {
       updateMessages(msgs =>
         msgs.map(m => m.id === placeholderId ? { ...m, isLoading: false, error: err.message } : m)
@@ -1301,7 +1321,7 @@ export default function DesignStudioPage() {
             <div className="mb-3 text-sm text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5 flex items-start gap-2">
               <span className="shrink-0 mt-0.5">⚠️</span>
               <div>
-                <p className="font-medium">Llegaste al límite semanal ({usage.used}/{usage.limit} generaciones)</p>
+                <p className="font-medium">Llegaste al límite de generaciones ({usage.used}/{usage.limit})</p>
                 <p className="text-xs text-amber-300/80 mt-0.5">
                   {usage.resetLabel}.{' '}
                   <a href="/workspace/billing" className="underline hover:text-amber-200">Pasá a Growth y generá sin límite.</a>
