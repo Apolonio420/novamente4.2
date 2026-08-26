@@ -142,7 +142,7 @@ function getPlacementOptions(
 ): PlacementOption[] {
   if (mode === 'chest-logo' && side === 'front') {
     return [
-      { key: 'left-chest',  label: 'Sobre el corazón',  hint: 'Logo pequeño en el pecho izquierdo (~10×10 cm)' },
+      { key: 'left-chest',  label: 'Sobre el corazón',  hint: 'Logo chico en el pecho izquierdo, del ancho que elijas' },
       { key: 'right-chest', label: 'Pecho derecho',     hint: 'Logo pequeño en el lado derecho del pecho, espejado al corazón' },
       { key: 'center-high', label: 'Centro alto',       hint: 'Logo centrado a la altura del esternón' },
       { key: 'pocket',      label: 'Sobre el bolsillo', hint: 'Si la prenda tiene bolsillo, aplicalo encima (si no, fallback a pecho izquierdo)' },
@@ -236,6 +236,14 @@ export default function DesignStudioPage() {
   const [selectedColor, setSelectedColor] = useState('black')
   const [selectedSide, setSelectedSide] = useState<'front' | 'back'>('front')
   const [selectedStampMode, setSelectedStampMode] = useState<'large' | 'medium' | 'chest-logo'>('large')
+  /**
+   * Ancho del logo en cm. Sólo aplica a 'Chico / Logo', que es donde la medida
+   * importa y donde el motor la respeta exacto (compone la estampa en vez de
+   * dejársela decidir al modelo). 10 es lo que promete la etiqueta del botón.
+   */
+  const [logoCm, setLogoCm] = useState(10)
+  const LOGO_CM_MIN = 4
+  const LOGO_CM_MAX = 20
   const [selectedPlacement, setSelectedPlacement] = useState<string>('center')
   const [placementMenuOpen, setPlacementMenuOpen] = useState(false)
   const [placementMenuPos, setPlacementMenuPos] = useState<{ left: number; bottom: number } | null>(null)
@@ -615,6 +623,7 @@ export default function DesignStudioPage() {
           side: selectedSide,
           stampMode: selectedStampMode,
           placement: selectedPlacement,
+          stampWidthCm: selectedStampMode === 'chest-logo' ? logoCm : undefined,
           sessionId,
         }),
       })
@@ -1232,7 +1241,7 @@ export default function DesignStudioPage() {
             <button
               onClick={() => setSelectedStampMode('chest-logo')}
               className={`px-3 py-1.5 whitespace-nowrap transition-all duration-150 active:scale-[0.96] ${selectedStampMode === 'chest-logo' ? 'bg-violet-600 text-white shadow-inner' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/60'}`}
-              title="Logo pequeño en pecho o espalda (~10×10 cm)"
+              title="Logo chico en pecho o espalda. La medida la elegís vos, al centímetro."
             >
               Chico / Logo
             </button>
@@ -1251,6 +1260,34 @@ export default function DesignStudioPage() {
               Grande
             </button>
           </div>
+
+          {/* Medida exacta del logo — el motor la respeta al cm */}
+          {selectedStampMode === 'chest-logo' && (
+            <div
+              className="flex items-center flex-shrink-0 bg-zinc-800 rounded-lg overflow-hidden text-xs border border-zinc-700/60 divide-x divide-zinc-700/50"
+              title="Ancho del logo. Podés ajustarlo al centímetro."
+            >
+              <button
+                onClick={() => setLogoCm(c => Math.max(LOGO_CM_MIN, c - 1))}
+                disabled={logoCm <= LOGO_CM_MIN}
+                aria-label="Achicar el logo un centímetro"
+                className="px-2.5 py-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/60 transition-all duration-150 active:scale-[0.96] disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                −
+              </button>
+              <span className="px-2.5 py-1.5 tabular-nums text-zinc-200 whitespace-nowrap select-none">
+                {logoCm} cm
+              </span>
+              <button
+                onClick={() => setLogoCm(c => Math.min(LOGO_CM_MAX, c + 1))}
+                disabled={logoCm >= LOGO_CM_MAX}
+                aria-label="Agrandar el logo un centímetro"
+                className="px-2.5 py-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700/60 transition-all duration-150 active:scale-[0.96] disabled:opacity-30 disabled:hover:bg-transparent"
+              >
+                +
+              </button>
+            </div>
+          )}
 
           {/* Placement dropdown — depende de stampMode + side */}
           {(() => {
