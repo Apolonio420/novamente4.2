@@ -20,6 +20,9 @@ import sharp from 'sharp'
 import { GoogleGenAI } from '@google/genai'
 
 export type StampSize = 'R1' | 'R2' | 'R3'
+
+/** El área imprimible de Novamente mide 35 cm de ancho. Traduce cm ↔ píxeles. */
+const AREA_IMPRIMIBLE_CM = 35
 export interface ImprintBox { x: number; y: number; width: number; height: number; baseW?: number; baseH?: number }
 
 const STAMP_MODEL = process.env.GEMINI_STAMP_MODEL ?? process.env.GEMINI_IMAGE_MODEL ?? 'gemini-2.5-flash-image'
@@ -50,6 +53,20 @@ OUTPUT FORMAT — CRITICAL:
 - No trace of the red rectangle, guide lines or bounding boxes.
 
 🚨 IF THE RED RECTANGLE, ANY GUIDE LINE, ANY TEXT/LABEL, OR MORE THAN ONE GARMENT IS VISIBLE, THE TASK IS FAILED. Output ONLY the single finished product photo.`
+
+const BLEND_PROMPT = `You are a product retoucher. The artwork is ALREADY printed on this garment, at exactly the right size and in exactly the right place.
+
+YOUR ONLY JOB: make that existing print look like a real DTG print on fabric.
+- Slightly absorb it into the cotton texture. It must follow the fabric's folds, wrinkles and shadows.
+- NOT glossy, NOT vinyl, NOT a sticker, no drop shadow, no glow, no outline.
+
+ABSOLUTELY FORBIDDEN - these ruin the job:
+- DO NOT move the print. DO NOT resize it, not even slightly. DO NOT re-center it.
+- DO NOT redraw, restyle or re-letter the artwork. Every letter and shape stays exactly as it is.
+- DO NOT change the garment: same color, same shape, same collar, sleeves, hem, same studio background and lighting.
+- DO NOT add text, labels, watermarks, borders or a second garment.
+
+Output ONE photograph of ONE garment, framed exactly like the input.`
 
 const REMOVE_BG_PROMPT = `MASKING TASK: Remove the background from this image.
 
@@ -328,6 +345,79 @@ function resolvePlacementRect(
 export const PLACEMENT_KEYS = Object.keys(PLACEMENT_RECTS)
 export { PLACEMENT_RECTS, resolvePlacementRect }
 
+/** Caja imprimible en píxeles de la foto, con el letterbox del frame de referencia. */
+async function cajaEnPx(baseGarmentBuffer: Buffer, imprint: ImprintBox) {
+  const meta = await sharp(baseGarmentBuffer).metadata()
+  const W = meta.width || 1000, H = meta.height || 1000
+  const baseW = imprint.baseW ?? 400, baseH = imprint.baseH ?? 500
+  const s = Math.min(W / baseW, H / baseH)
+  return {
+    W, H,
+    x: (W - baseW * s) / 2 + imprint.x * s,
+    y: (H - baseH * s) / 2 + imprint.y * s,
+    w: imprint.width * s,
+    h: imprint.height * s,
+  }
+}
+
+/**
+ * Estampa de TAMAÑO EXACTO: se pega el diseño con sharp en la medida pedida y
+ * después Gemini sólo la funde en la tela (BLEND_PROMPT).
+ *
+ * El camino del cuadro rojo no sirve cuando la medida importa: el modelo la usa
+ * como sugerencia y escala según lo que interpreta del arte. Medido sobre el
+ * mismo diseño: pedido a 8 cm por el cuadro rojo salía a 21 cm; por este camino
+ * sale a 8 cm con ~6% de deriva.
+ */
+async function estampaExacta(
+  designBuffer: Buffer,
+  baseGarmentBuffer: Buffer,
+  imprint: ImprintBox,
+  anchoCm: number,
+  size: StampSize,
+  side: GarmentSide,
+  placement: string | undefined,
+  stats?: PerfectStampStats,
+): Promise<Buffer> {
+  const box = await cajaEnPx(baseGarmentBuffer, imprint)
+  const pxPorCm = box.w / AREA_IMPRIMIBLE_CM
+
+  // no dejamos que se pase del área imprimible
+  const anchoPx = Math.max(24, Math.round(Math.min(anchoCm * pxPorCm, box.w)))
+  const dm = await sharp(designBuffer).metadata()
+  const ratio = (dm.height || 1) / (dm.width || 1)
+  let altoPx = Math.round(anchoPx * ratio)
+  let wPx = anchoPx
+  if (altoPx > box.h) { altoPx = Math.round(box.h); wPx = Math.round(altoPx / ratio) }
+
+  const estampa = await sharp(designBuffer).resize(wPx, altoPx, { fit: 'inside' }).png().toBuffer()
+
+  // centro del rect de la posición elegida (para R3 el rect es toda la caja)
+  const rect = resolvePlacementRect(size, side, placement) ?? { fx: 0, fy: 0, fw: 1, fh: 1 }
+  const cx = box.x + (rect.fx + rect.fw / 2) * box.w
+  const cy = box.y + (rect.fy + rect.fh / 2) * box.h
+  const left = Math.round(Math.min(Math.max(cx - wPx / 2, box.x), box.x + box.w - wPx))
+  const top = Math.round(Math.min(Math.max(cy - altoPx / 2, box.y), box.y + box.h - altoPx))
+
+  const plano = await sharp(baseGarmentBuffer).composite([{ input: estampa, left, top }]).png().toBuffer()
+
+  try {
+    const genAI = getClient()
+    if (stats) stats.geminiCalls++
+    const result = await genAI.models.generateContent({
+      model: STAMP_MODEL,
+      contents: [{ text: BLEND_PROMPT }, { inlineData: { data: plano.toString('base64'), mimeType: 'image/png' } }] as any,
+    })
+    const b64 = extractImage(result)
+    if (b64) return Buffer.from(b64, 'base64')
+    console.warn('[perfect-stamp] fundido: el modelo no devolvió imagen, va el pegado plano')
+  } catch (e) {
+    console.warn('[perfect-stamp] fundido falló, va el pegado plano:', (e as Error)?.message)
+  }
+  // sin fundido la estampa igual está en el lugar y la medida correctos
+  return plano
+}
+
 /** Dibuja el cuadro rojo dinámico sobre la prenda base en el área de impresión. */
 export async function buildDynamicRedSquare(baseGarmentBuffer: Buffer, imprint: ImprintBox, size: StampSize, side: GarmentSide = 'front', placement?: string): Promise<Buffer> {
   const meta = await sharp(baseGarmentBuffer).metadata()
@@ -369,6 +459,15 @@ export interface PerfectStampOptions {
   removeBg?: boolean
   /** Si se pasa, se le suma 1 por cada llamada a Gemini efectivamente hecha. */
   stats?: PerfectStampStats
+  /**
+   * Ancho exacto de la estampa en cm. Cuando se pasa, la estampa se compone
+   * acá (sharp) en esa medida y a Gemini sólo se le pide fundirla en la tela.
+   *
+   * Es el único camino con tamaño garantizado: con el cuadro rojo el modelo
+   * decide la escala según lo que "le parece" el arte — medido, un póster
+   * pedido como logo chico salía a 21 cm en vez de 10.
+   */
+  stampWidthCm?: number
 }
 
 /** Genera el mockup "perfecto" y devuelve el PNG (sin subir). */
@@ -378,7 +477,12 @@ export async function generatePerfectStamp(opts: PerfectStampOptions): Promise<B
   let designBuffer = await sharp(opts.designBuffer)
     .resize({ width: 1024, height: 1024, fit: 'inside', withoutEnlargement: true }).png().toBuffer()
   if (removeBg) designBuffer = await removeDesignBackground(designBuffer, stats)
-  // 2. cuadro rojo dinámico
+  // 2a. tamaño exacto pedido → se compone acá, no lo decide el modelo
+  if (opts.stampWidthCm && opts.stampWidthCm > 0) {
+    return await estampaExacta(designBuffer, baseGarmentBuffer, imprint, opts.stampWidthCm, stampSize, side, placement, stats)
+  }
+
+  // 2b. cuadro rojo dinámico
   const redSquare = await buildDynamicRedSquare(baseGarmentBuffer, imprint, stampSize, side, placement)
   // 3. estampar con STAMP_MODEL (default gemini-2.5-flash-image, ver header)
   const genAI = getClient()

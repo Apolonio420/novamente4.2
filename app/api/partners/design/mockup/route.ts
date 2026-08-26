@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { designImageUrl, garmentType, garmentColor, side, stampMode, placement, sessionId } = body
+    const { designImageUrl, garmentType, garmentColor, side, stampMode, placement, stampWidthCm, sessionId } = body
 
     if (!designImageUrl) {
       return NextResponse.json({ error: 'Se requiere designImageUrl' }, { status: 400 })
@@ -179,6 +179,18 @@ export async function POST(request: NextRequest) {
     }
     const stampSize: 'R1' | 'R2' | 'R3' =
       stampMode === 'chest-logo' ? 'R1' : stampMode === 'medium' ? 'R2' : 'R3'
+
+    // Tamaño exacto en cm. El cuadro rojo es sólo una sugerencia para el modelo:
+    // medido sobre un póster pedido como logo chico, salía a 21 cm en vez de los
+    // ~10 que promete la UI. Cuando la medida importa se compone acá.
+    //
+    // 'Chico / Logo' arranca en los 10 cm de su propia etiqueta; el cliente puede
+    // pedir otra medida mandando stampWidthCm. Mediano y grande siguen por el
+    // cuadro rojo, donde el tamaño es menos crítico.
+    const anchoCm =
+      Number(stampWidthCm) > 0 ? Number(stampWidthCm)
+      : stampSize === 'R1' ? 10
+      : undefined
     const { generatePerfectStamp } = await import('@/lib/mockup/perfect-stamp')
     let mockupBase64: string
     const stampStats = { geminiCalls: 0 }
@@ -191,6 +203,7 @@ export async function POST(request: NextRequest) {
         side: sideChoice,
         stampSize,
         placement,
+        stampWidthCm: anchoCm,
       })
       mockupBase64 = mockupBuffer.toString('base64')
     } catch (e) {
@@ -218,6 +231,7 @@ export async function POST(request: NextRequest) {
         // cayó la estampa de un mockup viejo (sin esto no hay forma de saberlo).
         stampMode: stampMode || null,
         placement: placement || null,
+        stampWidthCm: anchoCm ?? null,
         designImageUrl,
         sessionId: sessionId || null,
       },
