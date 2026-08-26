@@ -332,7 +332,7 @@ export default function BuzosEgresados() {
             <div className="max-w-3xl">
               <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 mb-6">
                 <GraduationCap className="w-3 h-3 mr-1" />
-                Promo 2026
+                Promos 2026 y 2027
               </Badge>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
