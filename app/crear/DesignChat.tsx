@@ -683,6 +683,7 @@ export function DesignChat({
                     garmentColor: prev.garmentColor,
                     side: prev.side,
                     designUrl: prev.currentDesignUrl ?? "",
+                    printArea: prev.printArea,
                   },
                 }))
                 toast({ title: "Mockup listo", description: "Tu foto en la prenda 👇" })
@@ -990,8 +991,15 @@ export function DesignChat({
       quantity: 1,
       image: session.currentMockupUrl,
       mockupUrl: session.currentMockupUrl,
+      // por lado, que es lo que mira la vista grande del carrito
+      frontMockup: session.side === "front" ? session.currentMockupUrl ?? undefined : undefined,
+      backMockup: session.side === "back" ? session.currentMockupUrl ?? undefined : undefined,
       frontDesign: doble ? session.frontDesignUrl ?? undefined : session.side === "front" ? session.currentDesignUrl ?? undefined : undefined,
       backDesign: doble ? session.backDesignUrl ?? undefined : session.side === "back" ? session.currentDesignUrl ?? undefined : undefined,
+      // La medida elegida no viajaba: el pedido llegaba a producción sin tamaño
+      // y se imprimía a criterio de quien estampa.
+      frontStampSize: doble || session.side === "front" ? session.printArea : undefined,
+      backStampSize: doble || session.side === "back" ? session.printArea : undefined,
       doble_estampa: doble ? "Si" : "No",
     })
     // Pixel events para que Meta+Google puedan optimizar el funnel
@@ -1075,7 +1083,8 @@ export function DesignChat({
       (session.mockupGeneratedFor.garmentType !== session.garmentType ||
         session.mockupGeneratedFor.garmentColor !== session.garmentColor ||
         session.mockupGeneratedFor.side !== session.side ||
-        session.mockupGeneratedFor.designUrl !== session.currentDesignUrl)
+        session.mockupGeneratedFor.designUrl !== session.currentDesignUrl ||
+        (session.mockupGeneratedFor.printArea ?? session.printArea) !== session.printArea)
     if (session.currentMockupUrl && !isStale) {
       window.localStorage.setItem(
         "novamente:abandoned-design",
@@ -1192,7 +1201,9 @@ export function DesignChat({
     (session.mockupGeneratedFor.garmentType !== session.garmentType ||
       session.mockupGeneratedFor.garmentColor !== session.garmentColor ||
       session.mockupGeneratedFor.side !== session.side ||
-      session.mockupGeneratedFor.designUrl !== session.currentDesignUrl)
+      session.mockupGeneratedFor.designUrl !== session.currentDesignUrl ||
+      // el tamaño faltaba: cambiarlo dejaba la misma foto en pantalla
+      (session.mockupGeneratedFor.printArea ?? session.printArea) !== session.printArea)
 
   return (
     <>
@@ -1916,7 +1927,10 @@ export function DesignChat({
           </div>
           {mockupIsStale && (
             <div className="px-3 py-2 bg-amber-950/20 border-b border-amber-800/30 text-[11px] text-amber-300 leading-snug">
-              Cambiaste de prenda/color desde el último mockup. Tocá "Probar en {garmentLabel(session.garmentType)} {colorLabel(session.garmentType, session.garmentColor)}" para regenerar.
+              {(session.mockupGeneratedFor?.printArea ?? session.printArea) !== session.printArea
+                ? "Cambiaste el tamaño de la estampa desde el último mockup."
+                : "Cambiaste de prenda/color desde el último mockup."}{" "}
+              Tocá "Probar en {garmentLabel(session.garmentType)} {colorLabel(session.garmentType, session.garmentColor)}" para regenerar.
             </div>
           )}
 
@@ -2122,7 +2136,11 @@ export function DesignChat({
                   key={pa.key}
                   type="button"
                   onClick={() =>
-                    setSession((prev) => ({ ...prev, printArea: pa.key, currentMockupUrl: prev.mockupGeneratedFor?.designUrl === prev.currentDesignUrl ? prev.currentMockupUrl : prev.currentMockupUrl }))
+                    // Las dos ramas del ternario que había acá devolvían lo
+                    // mismo, así que cambiar el tamaño no hacía nada: quedaba
+                    // en pantalla la foto del tamaño anterior. Se conserva el
+                    // mockup y `mockupIsStale` lo marca como desactualizado.
+                    setSession((prev) => ({ ...prev, printArea: pa.key }))
                   }
                   title={pa.desc}
                   className={`text-xs rounded border py-1.5 px-1 transition flex flex-col items-center ${

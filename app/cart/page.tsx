@@ -57,8 +57,15 @@ export default function CartPage() {
       image: selectedItem.image
     })
     
-    // Priorizar mockups sobre diseños
-    const mockups = [selectedItem.frontMockup, selectedItem.backMockup].filter(Boolean)
+    // Priorizar mockups sobre diseños.
+    // `mockupUrl` va en la lista porque /crear setea ESE campo y no
+    // frontMockup/backMockup: sin él, la vista grande caía al arte suelto y el
+    // cliente no veía dónde queda la estampa sobre la prenda.
+    const mockups = [
+      selectedItem.frontMockup,
+      selectedItem.backMockup,
+      selectedItem.frontMockup || selectedItem.backMockup ? null : selectedItem.mockupUrl,
+    ].filter(Boolean)
     const designs = [selectedItem.frontDesign, selectedItem.backDesign].filter(Boolean)
     
     console.log("🛒 Cart - mockups y designs:", { mockups, designs })

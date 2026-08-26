@@ -25,6 +25,8 @@ export type DesignSession = {
     garmentColor: string
     side: "front" | "back"
     designUrl: string
+    /** Tamaño con el que se generó. Sin esto, cambiarlo no invalidaba la foto. */
+    printArea?: string
   } | null
   designHistory: string[]
   garmentType: string

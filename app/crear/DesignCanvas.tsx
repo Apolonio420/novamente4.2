@@ -861,7 +861,11 @@ export function DesignCanvas({
         quantity: 1,
         image: mockupUrl,
         mockupUrl,
+        // por lado, que es lo que mira la vista grande del carrito
+        [session.side === "back" ? "backMockup" : "frontMockup"]: mockupUrl,
         [sideKey]: session.currentDesignUrl ?? undefined,
+        // la medida elegida tiene que llegar a producción
+        [session.side === "back" ? "backStampSize" : "frontStampSize"]: session.printArea,
       })
 
       fpixel.event("AddToCart", {

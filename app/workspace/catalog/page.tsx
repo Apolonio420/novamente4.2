@@ -410,26 +410,39 @@ export default function CatalogPage() {
       const images = formImages.filter((u): u is string => u !== null)
 
       // Build rich metadata
-      const metadata: Record<string, unknown> = {}
-      if (formColors.length > 0) {
-        metadata.colors = formColors.map((c) => ({
-          name: c.name,
-          value: c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'default',
-          hex: c.hex,
-          images: { front: c.frontImage, back: c.backImage },
-        }))
+      //
+      // OJO: se parte de la metadata que YA tiene el producto, no de un objeto
+      // vacío. Este formulario conoce sólo una parte de las claves; el resto las
+      // escriben otros lugares (el Studio guarda `print` con el diseño y los cm,
+      // el alta de productos guarda size_prices, sizing, cost_ars, source...).
+      // Arrancando de cero, editar el precio de un producto borraba en silencio
+      // el arte que se manda a producción y los precios por talle.
+      //
+      // Cada clave que el form SÍ maneja se setea o se BORRA explícitamente, así
+      // vaciar un campo lo sigue eliminando como antes.
+      const metadata: Record<string, unknown> = {
+        ...((formMode === 'edit' && (editingProduct?.metadata as Record<string, unknown> | null)) || {}),
       }
-      if (formSizes.length > 0) metadata.sizes = formSizes
-      if (formFeatures.length > 0) metadata.features = formFeatures.filter(Boolean)
-      if (formDetailedDesc.trim()) metadata.detailedDescription = formDetailedDesc.trim()
-      if (formCardDesc.trim()) metadata.cardDescription = formCardDesc.trim()
-      if (formBrandValues.trim()) metadata.brandValues = formBrandValues.trim()
-      if (formGarmentKey.trim()) metadata.garmentKey = formGarmentKey.trim()
+      const setOrDelete = (key: string, value: unknown, keep: boolean) => {
+        if (keep) metadata[key] = value
+        else delete metadata[key]
+      }
+
+      setOrDelete('colors', formColors.map((c) => ({
+        name: c.name,
+        value: c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'default',
+        hex: c.hex,
+        images: { front: c.frontImage, back: c.backImage },
+      })), formColors.length > 0)
+      setOrDelete('sizes', formSizes, formSizes.length > 0)
+      setOrDelete('features', formFeatures.filter(Boolean), formFeatures.length > 0)
+      setOrDelete('detailedDescription', formDetailedDesc.trim(), !!formDetailedDesc.trim())
+      setOrDelete('cardDescription', formCardDesc.trim(), !!formCardDesc.trim())
+      setOrDelete('brandValues', formBrandValues.trim(), !!formBrandValues.trim())
+      setOrDelete('garmentKey', formGarmentKey.trim(), !!formGarmentKey.trim())
       // Arte print-ready (no se expone en la tienda — lo saca stripSensitiveMetadata)
-      if (formPrintReadyUrl.trim()) {
-        metadata.print_ready_url = formPrintReadyUrl.trim()
-        metadata.print_side = formPrintSide
-      }
+      setOrDelete('print_ready_url', formPrintReadyUrl.trim(), !!formPrintReadyUrl.trim())
+      setOrDelete('print_side', formPrintSide, !!formPrintReadyUrl.trim())
 
       const body: Record<string, unknown> = {
         name: formName.trim(),
