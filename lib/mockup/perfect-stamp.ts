@@ -114,12 +114,71 @@ async function hasRealAlpha(buf: Buffer): Promise<boolean> {
 }
 
 /**
+ * ¿Este diseño TIENE un fondo que sacar, o es arte de borde a borde?
+ *
+ * Se mira sólo el borde de 1px, que es de donde siembra el flood-fill. Dos
+ * formas válidas de fondo:
+ *   · PLANO — casi todo el borde es el mismo color (fondo liso blanco, negro,
+ *     crema...). Se mide como fracción de píxeles cerca del promedio.
+ *   · DAMERO — el cuadriculado falso que pinta Gemini: alterna dos grises, así
+ *     que NO es plano, pero sí es neutro (sin color) y de rango angosto.
+ *
+ * Cualquier otra cosa es arte que llega al borde: una foto, una placa de redes,
+ * un póster full-bleed. Ahí no hay fondo que sacar y recortar lo arruina.
+ *
+ * Esto no es cosmético. Sin el gate, removeCheckerboardBackground degenera
+ * sobre fotos: su rango sale del percentil de los grises del borde, y cuando el
+ * borde no es un damero real ese rango se abre hasta significar "borrá
+ * cualquier píxel casi-neutro pegado al borde". Medido sobre los 326 diseños
+ * reales del bucket: mordía en 298, y a 64 les borraba más del 25% de la
+ * imagen. Caso visto: una foto familiar con las caras agujereadas.
+ */
+interface PerfilBorde { plano: number; neutro: number }
+
+async function perfilDelBorde(buf: Buffer): Promise<PerfilBorde> {
+  const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  const { width: w, height: h, channels: c } = info
+  const px: number[][] = []
+  for (let x = 0; x < w; x++) for (const y of [0, h - 1]) { const i = (y * w + x) * c; px.push([data[i], data[i + 1], data[i + 2]]) }
+  for (let y = 0; y < h; y++) for (const x of [0, w - 1]) { const i = (y * w + x) * c; px.push([data[i], data[i + 1], data[i + 2]]) }
+  if (!px.length) return { plano: 0, neutro: 0 }
+
+  const avg = [0, 1, 2].map(k => px.reduce((s, p) => s + p[k], 0) / px.length)
+  const plano = px.filter(p => [0, 1, 2].every(k => Math.abs(p[k] - avg[k]) < 28)).length / px.length
+
+  // neutro = sin color (los grises del damero, el negro y el blanco lo son)
+  const neutro = px.filter(p => Math.max(...p) - Math.min(...p) <= 18).length / px.length
+
+  return { plano, neutro }
+}
+
+/** Fondo liso: casi todo el borde es del mismo color. */
+const BORDE_PLANO_MIN = 0.90
+/**
+ * Damero pintado: no es plano (alterna dos grises) pero el borde entero es
+ * gris — sin una gota de color. Una foto nunca llega ahí: medidas reales de
+ * bordes fotográficos dan 0.02, 0.05, 0.26, 0.65.
+ */
+const BORDE_NEUTRO_MIN = 0.98
+
+/**
  * Sacar el fondo sin modelo: flood-fill de blanco desde los bordes + pase de
- * damero. Es el mismo par que ya usa /api/generate-image; acá faltaba cablearlo.
- * Si ninguno muerde (ej. fondo negro), devuelve el diseño intacto — sobre una
- * prenda oscura el fondo oscuro se funde igual.
+ * damero. Es el mismo par que ya usa /api/generate-image.
+ *
+ * Sólo corre si el borde parece un fondo de verdad (ver perfilDelBorde). Si es
+ * arte de borde a borde, el diseño se devuelve intacto.
  */
 async function knockoutBackground(buf: Buffer): Promise<Buffer> {
+  const { plano, neutro } = await perfilDelBorde(buf)
+  const esFondo = plano >= BORDE_PLANO_MIN || neutro >= BORDE_NEUTRO_MIN
+  if (!esFondo) {
+    console.warn(`[perfect-stamp] arte de borde a borde (plano ${plano.toFixed(2)} · neutro ${neutro.toFixed(2)}) → no se recorta`)
+    return buf
+  }
+  return await knockoutFondoPlano(buf)
+}
+
+async function knockoutFondoPlano(buf: Buffer): Promise<Buffer> {
   let out = buf
   try {
     const { removeWhiteBackground } = await import('@/lib/designer/remove-white-bg')

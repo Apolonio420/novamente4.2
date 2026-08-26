@@ -47,6 +47,39 @@ async function fraccionTransparente(buf: Buffer) {
   return t / (info.width * info.height)
 }
 
+/** Foto: cada lado del borde tiene colores distintos y con saturación. */
+async function fotoFullBleed() {
+  const px = Buffer.alloc(W * H * 4)
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const o = (y * W + x) * 4
+    px[o] = 40 + ((x * 7 + y * 3) % 180)          // r
+    px[o + 1] = 30 + ((y * 5) % 150)              // g
+    px[o + 2] = 90 + ((x * 3) % 120)              // b
+    px[o + 3] = 255
+  }
+  return sharp(px, { raw: { width: W, height: H, channels: 4 } }).png().toBuffer()
+}
+
+describe('el recorte NO toca arte de borde a borde', () => {
+  it('una foto full-bleed sale intacta (no se le hacen agujeros)', async () => {
+    const foto = await fotoFullBleed()
+    const out = await removeDesignBackground(foto)
+    // sin fondo plano ni damero: se devuelve tal cual, 0 transparencia
+    expect(await fraccionTransparente(out)).toBe(0)
+  })
+
+  it('el damero pintado SÍ se recorta aunque el borde no sea plano', async () => {
+    // borde 100% neutro (los dos grises del damero) → es fondo, no arte
+    const out = await removeDesignBackground(await conDameroPintado())
+    expect(await fraccionTransparente(out)).toBeGreaterThan(0.5)
+  })
+
+  it('un fondo liso se sigue recortando', async () => {
+    const out = await removeDesignBackground(await posterFondoBlanco())
+    expect(await fraccionTransparente(out)).toBeGreaterThan(0.5)
+  })
+})
+
 describe('recorte de fondo sin depender del modelo', () => {
   it('el fondo blanco del póster se vuelve transparente de verdad', async () => {
     const antes = await posterFondoBlanco()
