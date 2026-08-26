@@ -155,8 +155,10 @@ export async function POST(
     }
     const { generatePerfectStamp } = await import('@/lib/mockup/perfect-stamp')
     let mockupBase64: string
+    const stampStats = { geminiCalls: 0 }
     try {
       const mockupBuffer = await generatePerfectStamp({
+        stats: stampStats,
         designBuffer: Buffer.from(designBase64, 'base64'),
         baseGarmentBuffer: Buffer.from(garmentBase64, 'base64'),
         imprint: mapping?.coordinates ?? { x: 112, y: 175, width: 180, height: 145 },
@@ -184,17 +186,15 @@ export async function POST(
 
     await recordUsage(tenant.id, 'storefront-customer', 'mockup', undefined, assetId).catch(() => {})
 
-    // generatePerfectStamp hace DOS llamadas Gemini internas (quitar fondo
-    // del diseño + estampado, ver lib/mockup/perfect-stamp.ts) — units:2,
-    // mismo fix ya aplicado al motor gemelo
-    // app/api/partners/design/mockup/route.ts (auditoría 2026-08-09: acá
-    // seguía en units:1 implícito, subcontando el costo real a la mitad;
-    // ese archivo ya documentaba este gap como "pre-existente, no tocado" —
-    // ahora cerrado).
+    // units sale del contador real del motor: la llamada de quitar fondo ya no
+    // se hace siempre (el recorte es determinístico), así que un 2 fijo
+    // sobrecontaría. Mismo criterio que el motor gemelo
+    // app/api/partners/design/mockup/route.ts (viene de la auditoría
+    // 2026-08-09, que cerró el subconteo; esto evita el error simétrico).
     await meterPublicImageGen({
       endpoint: 'storefront/studio/mockup',
       model: process.env.GEMINI_STAMP_MODEL ?? process.env.GEMINI_IMAGE_MODEL ?? 'gemini-2.5-flash-image',
-      units: 2,
+      units: stampStats.geminiCalls,
       metadata: { tenantSlug: slug },
     })
 

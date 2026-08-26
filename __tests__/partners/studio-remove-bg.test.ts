@@ -12,6 +12,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import sharp from 'sharp'
+import { removeDesignBackground } from '@/lib/mockup/perfect-stamp'
 import { removeWhiteBackground } from '@/lib/designer/remove-white-bg'
 import { removeCheckerboardBackground } from '@/lib/designer/remove-checkerboard-bg'
 
@@ -73,6 +74,13 @@ describe('recorte de fondo sin depender del modelo', () => {
     const { data, info } = await sharp(buffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
     const centro = ((H / 2 | 0) * info.width + (W / 2 | 0)) * info.channels
     expect(data[centro + 3]).toBe(255)
+  })
+
+  it('con fondo recortable NO se llama a Gemini (el recorte va primero)', async () => {
+    const stats = { geminiCalls: 0 }
+    const out = await removeDesignBackground(await posterFondoBlanco(), stats)
+    expect(stats.geminiCalls).toBe(0)                       // gratis y ~200ms
+    expect(await fraccionTransparente(out)).toBeGreaterThan(0.5)
   })
 
   it('un diseño que YA viene con alpha no se toca', async () => {

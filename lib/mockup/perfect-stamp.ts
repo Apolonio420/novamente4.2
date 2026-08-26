@@ -141,13 +141,30 @@ async function knockoutBackground(buf: Buffer): Promise<Buffer> {
 /**
  * Quitar fondo del diseño.
  *
- * Se intenta con Gemini, pero su salida SOLO se acepta si trajo transparencia
- * real. Cuando no la trae no alcanza con ignorar el alpha: el modelo además
- * re-renderiza el arte (en el caso de ORIGEN dio vuelta el texto de blanco a
- * negro — el "negativo" que reportó el partner nacía acá). Por eso se descarta
- * la salida del modelo y se recorta el fondo del diseño ORIGINAL.
+ * ORDEN: primero el recorte determinístico, que es gratis, instantáneo y
+ * siempre da el mismo resultado. Sólo si NO encuentra fondo recortable se
+ * prueba con Gemini.
+ *
+ * Por qué en ese orden: `gemini-2.5-flash-image` no emite alpha. Cuando le
+ * pedís que quite el fondo devuelve un PNG OPACO con el damero de
+ * transparencia PINTADO como píxeles, y encima re-renderiza el arte (en el
+ * caso de ORIGEN dio vuelta el texto de blanco a negro — el "negativo" que
+ * reportó el partner). Medido sobre 18 diseños reales de clientes: 0 de 18
+ * trajeron transparencia real, o sea que su salida se descartaba SIEMPRE y la
+ * llamada era plata tirada.
+ *
+ * Se deja el intento como respaldo para los diseños donde el recorte no muerde
+ * (fondos oscuros o fotográficos): hoy tampoco sirve, pero si Google llega a
+ * emitir alpha lo aprovecha sin volver a tocar esto. Su salida se acepta SÓLO
+ * con transparencia real: sin eso el arte viene corrupto.
  */
-export async function removeDesignBackground(designBuffer: Buffer): Promise<Buffer> {
+export async function removeDesignBackground(
+  designBuffer: Buffer,
+  stats?: PerfectStampStats,
+): Promise<Buffer> {
+  const det = await knockoutBackground(designBuffer)
+  if (await hasRealAlpha(det)) return det
+
   let fromModel: Buffer | null = null
   try {
     const genAI = getClient()
@@ -155,6 +172,7 @@ export async function removeDesignBackground(designBuffer: Buffer): Promise<Buff
       model: REMOVE_BG_MODEL,
       contents: [{ text: REMOVE_BG_PROMPT }, { inlineData: { data: designBuffer.toString('base64'), mimeType: 'image/png' } }] as any,
     })
+    if (stats) stats.geminiCalls++
     const b64 = extractImage(result)
     if (b64) fromModel = await magentaKey(Buffer.from(b64, 'base64'))
     else console.warn('[perfect-stamp] removeBg: el modelo no devolvió imagen')
@@ -164,8 +182,8 @@ export async function removeDesignBackground(designBuffer: Buffer): Promise<Buff
 
   if (fromModel && (await hasRealAlpha(fromModel))) return fromModel
 
-  console.warn('[perfect-stamp] removeBg sin alpha real → recorte determinístico sobre el original')
-  return await knockoutBackground(designBuffer)
+  // Sin fondo recortable: se estampa tal cual, igual que antes de este cambio.
+  return designBuffer
 }
 
 /**
@@ -277,6 +295,9 @@ export async function buildDynamicRedSquare(baseGarmentBuffer: Buffer, imprint: 
   return sharp(baseGarmentBuffer).composite([{ input: Buffer.from(svg), top: 0, left: 0 }]).png().toBuffer()
 }
 
+/** Cuántas llamadas a Gemini terminó haciendo de verdad (para medir el costo). */
+export interface PerfectStampStats { geminiCalls: number }
+
 export interface PerfectStampOptions {
   designBuffer: Buffer
   baseGarmentBuffer: Buffer
@@ -287,19 +308,22 @@ export interface PerfectStampOptions {
   placement?: string
   /** Quitar fondo del diseño antes (default true). Para arte full-bleed/escenas → false. */
   removeBg?: boolean
+  /** Si se pasa, se le suma 1 por cada llamada a Gemini efectivamente hecha. */
+  stats?: PerfectStampStats
 }
 
 /** Genera el mockup "perfecto" y devuelve el PNG (sin subir). */
 export async function generatePerfectStamp(opts: PerfectStampOptions): Promise<Buffer> {
-  const { baseGarmentBuffer, imprint, stampSize = 'R3', side = 'front', placement, removeBg = true } = opts
+  const { baseGarmentBuffer, imprint, stampSize = 'R3', side = 'front', placement, removeBg = true, stats } = opts
   // 1. diseño (cap 1024) + quitar fondo
   let designBuffer = await sharp(opts.designBuffer)
     .resize({ width: 1024, height: 1024, fit: 'inside', withoutEnlargement: true }).png().toBuffer()
-  if (removeBg) designBuffer = await removeDesignBackground(designBuffer)
+  if (removeBg) designBuffer = await removeDesignBackground(designBuffer, stats)
   // 2. cuadro rojo dinámico
   const redSquare = await buildDynamicRedSquare(baseGarmentBuffer, imprint, stampSize, side, placement)
   // 3. estampar con STAMP_MODEL (default gemini-2.5-flash-image, ver header)
   const genAI = getClient()
+  if (stats) stats.geminiCalls++
   const result = await genAI.models.generateContent({
     model: STAMP_MODEL,
     contents: [

@@ -181,8 +181,10 @@ export async function POST(request: NextRequest) {
       stampMode === 'chest-logo' ? 'R1' : stampMode === 'medium' ? 'R2' : 'R3'
     const { generatePerfectStamp } = await import('@/lib/mockup/perfect-stamp')
     let mockupBase64: string
+    const stampStats = { geminiCalls: 0 }
     try {
       const mockupBuffer = await generatePerfectStamp({
+        stats: stampStats,
         designBuffer: Buffer.from(designBase64, 'base64'),
         baseGarmentBuffer: Buffer.from(garmentBase64, 'base64'),
         imprint: mapping?.coordinates ?? { x: 112, y: 175, width: 180, height: 145 },
@@ -224,19 +226,20 @@ export async function POST(request: NextRequest) {
     // Record usage (cupo del plan — NO es costo en USD, ver meterPublicImageGen abajo)
     await recordUsage(tenant.id, userId, 'mockup', sessionId, asset?.id).catch(() => {})
 
-    // Metering de costo real en USD — antes de este cambio este endpoint
-    // (Studio de partners) no escribía ninguna fila en api_usage (auditoría
-    // factura Gemini jul-2026: 110 mockups de partners sin medir ni un
-    // centavo). units:2 porque generatePerfectStamp hace DOS llamadas Gemini
-    // internas (quitar fondo del diseño + estampado, ver
-    // lib/mockup/perfect-stamp.ts) — contar 1 subestima el costo real a la
-    // mitad. Mismo motor que app/api/storefront/[slug]/studio/mockup/route.ts
-    // — ese archivo tenía el mismo gap (medía con units:1 implícito), ya
-    // cerrado con el mismo fix (auditoría 2026-08-09).
+    // Metering de costo real en USD — antes de esto el Studio de partners no
+    // escribía ninguna fila en api_usage (auditoría factura Gemini jul-2026:
+    // 110 mockups sin medir ni un centavo).
+    //
+    // units sale del CONTADOR REAL, no de un número fijo. Antes era 2 fijo
+    // porque el motor siempre hacía dos llamadas (quitar fondo + estampar).
+    // Desde que el recorte de fondo se hace determinísticamente, la de quitar
+    // fondo sólo se dispara cuando el recorte no muerde — o sea 1 llamada en
+    // la mayoría de los mockups. Dejar el 2 fijo sobrecontaría el costo, que
+    // es el mismo error de la auditoría 2026-08-09 pero al revés.
     await meterPublicImageGen({
       endpoint: 'partners/studio/mockup',
       model: process.env.GEMINI_STAMP_MODEL ?? process.env.GEMINI_IMAGE_MODEL ?? 'gemini-2.5-flash-image',
-      units: 2,
+      units: stampStats.geminiCalls,
       metadata: { tenantSlug: tenant.slug },
     })
 
