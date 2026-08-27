@@ -9,8 +9,7 @@
  * así que no se dispara junto con la lifestyle.
  */
 import { NextRequest, NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
+import { headers } from "next/headers"
 import { uploadFile } from "@/lib/cloudflare-r2"
 import { corsHeaders, preflightResponse } from "@/lib/security/cors"
 import { guardPublicImageGen } from "@/lib/security/public-image-guard"
@@ -82,12 +81,25 @@ export async function POST(req: NextRequest) {
       designBuffer = Buffer.from(await r.arrayBuffer())
     }
 
-    // Prenda base
-    const rutaPrenda = path.join(process.cwd(), "public", mapping.garmentPath.replace(/^\//, ""))
-    if (!fs.existsSync(rutaPrenda)) {
-      return ok({ error: "No se pudo cargar la prenda base" }, 500)
-    }
-    const baseBuffer = fs.readFileSync(rutaPrenda)
+    // Prenda base: se baja por HTTP, NO se lee del disco.
+    //
+    // Leerla con fs.readFileSync(process.cwd()/public/...) hace que el tracer de
+    // Vercel meta TODO el directorio public/ en el bundle de la función: la
+    // primera versión de esta ruta pesaba 884 MB contra un límite de 250 y el
+    // deploy fallaba antes de compilar. Es el mismo patrón que usan las otras
+    // rutas de mockup.
+    const h = await headers()
+    const host = h.get("host")
+    const proto = h.get("x-forwarded-proto") || "https"
+    const origin =
+      (host ? `${proto}://${host}` : null) ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+      "http://localhost:3000"
+
+    const garmentUrl = `${origin}/${mapping.garmentPath.replace(/^\//, "")}`
+    const gResp = await fetch(garmentUrl)
+    if (!gResp.ok) return ok({ error: "No se pudo cargar la prenda base" }, 500)
+    const baseBuffer = Buffer.from(await gResp.arrayBuffer())
 
     const stats = { geminiCalls: 0 }
     const png = await generatePerfectStamp({
