@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import { LockedFeature } from '@/components/partners/locked-feature'
+import { PlanUnavailable } from '@/components/partners/PlanUnavailable'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -53,7 +54,8 @@ interface StepConfig {
 // ---------------------------------------------------------------------------
 
 export default function MetaBusinessPage() {
-  const [plan, setPlan] = useState<string>('starter')
+  // '' = todavía no sabemos qué plan tiene (≠ plan gratis)
+  const [plan, setPlan] = useState<string>('')
   const [progress, setProgress] = useState<SetupProgress>(DEFAULT_PROGRESS)
   const [pixelId, setPixelId] = useState('')
   const [openStep, setOpenStep] = useState<number | null>(null)
@@ -69,7 +71,7 @@ export default function MetaBusinessPage() {
         const dashRes = await authFetch('/api/partners/dashboard')
         if (dashRes.ok) {
           const dash = await dashRes.json()
-          setPlan(dash.tenant?.plan || 'starter')
+          setPlan(dash.tenant?.plan || '')
           setTenantSlug(dash.tenant?.slug || null)
         }
 
@@ -140,6 +142,8 @@ export default function MetaBusinessPage() {
   const progressPct = Math.round((completedSteps / totalSteps) * 100)
 
   // Non-Pro locked state
+  if (!loading && !plan) return <PlanUnavailable />
+
   if (!loading && plan !== 'pro') {
     return (
       <div className="max-w-3xl">

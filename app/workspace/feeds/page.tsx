@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import { LockedFeature } from '@/components/partners/locked-feature'
+import { PlanUnavailable } from '@/components/partners/PlanUnavailable'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -128,7 +129,10 @@ export default function FeedsPage() {
   }
 
   // Non-Pro locked state
-  if (!tenant || tenant.plan !== 'pro') {
+  // tenant en null = no se pudo cargar; no es "plan gratis"
+  if (!tenant) return <PlanUnavailable />
+
+  if (tenant.plan !== 'pro') {
     return (
       <div className="max-w-3xl">
         <LockedFeature

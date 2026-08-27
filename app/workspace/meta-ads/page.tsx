@@ -30,6 +30,7 @@ import {
   type AdTemplate,
 } from '@/lib/partners/ad-templates'
 import { generateUtmUrl } from '@/lib/partners/utm-generator'
+import { PlanUnavailable } from '@/components/partners/PlanUnavailable'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -132,6 +133,9 @@ export default function MetaAdsPage() {
   }, [])
 
   // Non-Pro locked state
+  // tenant en null = no se pudo cargar; no es "plan gratis"
+  if (!loading && !tenant) return <PlanUnavailable />
+
   if (!loading && tenant?.plan !== 'pro') {
     return (
       <div className="max-w-3xl">

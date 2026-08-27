@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import { LockedFeature } from '@/components/partners/locked-feature'
+import { PlanUnavailable } from '@/components/partners/PlanUnavailable'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,8 +59,11 @@ export default function ChatbotPage() {
   useEffect(() => {
     authFetch('/api/partners/dashboard')
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setPlan(data?.tenant?.plan || 'starter'))
-      .catch(() => setPlan('starter'))
+      // null = NO SE PUDO AVERIGUAR. Antes esto caía a 'starter' y le mostraba
+      // a un Pro el cartel para comprar el plan que ya tiene (basta un 401 por
+      // sesión vencida para dispararlo).
+      .then((data) => setPlan(data?.tenant?.plan ?? null))
+      .catch(() => setPlan(null))
       .finally(() => setPlanLoading(false))
   }, [])
 
@@ -149,6 +153,8 @@ export default function ChatbotPage() {
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
+
+  if (!planLoading && !plan) return <PlanUnavailable />
 
   if (!planLoading && plan !== 'pro') {
     return (
