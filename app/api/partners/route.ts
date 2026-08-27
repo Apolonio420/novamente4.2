@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+// supabaseAdmin y no el cliente anónimo: esta ruta corre en el servidor y la
+// tabla guarda datos de contacto de quien se postula. Mientras usara el cliente
+// anon, `anon` necesitaba permiso sobre partner_applications — y con eso
+// cualquiera podía leer las postulaciones enteras desde el navegador.
+import { supabaseAdmin } from "@/lib/supabase-admin"
 import { notifyPartnerApplication } from "@/lib/notifications"
 
 export async function POST(request: Request) {
@@ -12,7 +16,7 @@ export async function POST(request: Request) {
         }
 
         // 1. Insert into Supabase
-        const { data, error } = await (supabase.from("partner_applications") as any)
+        const { data, error } = await (supabaseAdmin.from("partner_applications") as any)
             .insert([
                 {
                     full_name: fullName,
