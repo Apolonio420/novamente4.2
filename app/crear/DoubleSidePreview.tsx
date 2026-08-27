@@ -4,6 +4,17 @@ import { useEffect, useState } from "react"
 import { Check } from "lucide-react"
 import { resolveGarmentTemplate, printAreaPct, hasBackTemplate } from "./garment-templates"
 
+/**
+ * Qué fracción del área imprimible ocupa cada tamaño. Son las mismas
+ * proporciones que usa el motor de mockups (lib/mockup/perfect-stamp.ts), para
+ * que este preview no prometa algo distinto de lo que después se genera.
+ */
+const RECT_POR_TAMANO: Record<"R1" | "R2" | "R3", { w: number; h: number; y: number }> = {
+  R1: { w: 0.38, h: 0.30, y: 0.04 },
+  R2: { w: 0.70, h: 0.70, y: 0.15 },
+  R3: { w: 1, h: 1, y: 0 },
+}
+
 /** <img> que cae a la siguiente URL candidata si una falla (jpeg → png, etc). */
 function FallbackImg({
   candidates,
@@ -38,6 +49,8 @@ function GarmentPanel({
   active,
   anchor,
   rotation,
+  printArea,
+  placement,
   onSelect,
 }: {
   garmentType: string
@@ -48,15 +61,30 @@ function GarmentPanel({
   active: boolean
   anchor: "left" | "right"
   rotation: number
+  printArea?: "R1" | "R2" | "R3"
+  placement?: "left-chest" | "center" | "right-chest"
   onSelect: () => void
 }) {
   const templates = resolveGarmentTemplate(garmentType, garmentColor, side)
   const pa = printAreaPct(garmentType, side)
+
+  // La estampa se dibujaba SIEMPRE ocupando toda el área imprimible: elegías
+  // "chico" y en este preview seguía viéndose grande, contradiciendo lo que
+  // después salía en la foto real.
+  const rect = RECT_POR_TAMANO[printArea ?? "R3"]
+  const fx =
+    printArea === "R1" && placement === "center"
+      ? (1 - rect.w) / 2
+      : printArea === "R1" && placement === "right-chest"
+        ? 0.04
+        : printArea === "R1"
+          ? 0.58            // sobre el corazón = derecha de quien mira
+          : (1 - rect.w) / 2
   const designStyle = {
-    left: `${pa.left * 100}%`,
-    top: `${pa.top * 100}%`,
-    width: `${pa.width * 100}%`,
-    height: `${pa.height * 100}%`,
+    left: `${(pa.left + fx * pa.width) * 100}%`,
+    top: `${(pa.top + rect.y * pa.height) * 100}%`,
+    width: `${rect.w * pa.width * 100}%`,
+    height: `${rect.h * pa.height * 100}%`,
   }
 
   // Ambas prendas comparten el recuadro: se solapan ~14% (las estampas quedan
@@ -134,6 +162,8 @@ export function DoubleSidePreview({
   activeSide,
   onSelectSide,
   className,
+  printArea,
+  placement,
 }: {
   garmentType: string
   garmentColor: string
@@ -142,6 +172,8 @@ export function DoubleSidePreview({
   activeSide: "front" | "back"
   onSelectSide: (side: "front" | "back") => void
   className?: string
+  printArea?: "R1" | "R2" | "R3"
+  placement?: "left-chest" | "center" | "right-chest"
 }) {
   if (!hasBackTemplate(garmentType)) return null
 
@@ -177,6 +209,8 @@ export function DoubleSidePreview({
           active={activeSide === "back"}
           anchor="left"
           rotation={-4}
+          printArea={printArea}
+          placement={placement}
           onSelect={() => onSelectSide("back")}
         />
         <GarmentPanel
@@ -188,6 +222,8 @@ export function DoubleSidePreview({
           active={activeSide === "front"}
           anchor="right"
           rotation={4}
+          printArea={printArea}
+          placement={placement}
           onSelect={() => onSelectSide("front")}
         />
       </div>

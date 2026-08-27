@@ -909,6 +909,46 @@ export function DesignChat({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialImage])
 
+  // ---- Mockup PLANO (la prenda sola) ----
+  // Aparte del lifestyle a propósito: cada generación cuesta, así que sólo se
+  // dispara si el cliente lo pide. La foto lifestyle enamora, pero no deja ver
+  // bien dónde queda la estampa ni de qué tamaño — para eso está esta.
+  const [prendaLoading, setPrendaLoading] = useState(false)
+  const handleMockupPrenda = useCallback(async () => {
+    if (!session.currentDesignUrl || prendaLoading) return
+    setPrendaLoading(true)
+    try {
+      const res = await fetch("/api/public/design/mockup-prenda", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          designImageUrl: session.currentDesignUrl,
+          garmentType: session.garmentType,
+          garmentColor: session.garmentColor,
+          side: session.side,
+          printArea: session.printArea,
+          placement: session.placement,
+        }),
+      })
+      const data = await res.json()
+      const url = data.publicUrl ?? data.mockupUrl
+      if (!res.ok || !url) throw new Error(data.error ?? "No se pudo generar")
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: `La prenda sola, ${session.side === "back" ? "espalda" : "frente"} · ${PRINT_AREA_LABEL[session.printArea] ?? session.printArea}. Acá se ve bien dónde queda la estampa.`,
+          imageUrl: url,
+        },
+      ])
+      toast({ title: "Listo", description: "Te dejé la prenda sola en el chat 👇" })
+    } catch (e: any) {
+      toast({ title: "No se pudo generar", description: e?.message ?? "Probá de nuevo", variant: "destructive" })
+    } finally {
+      setPrendaLoading(false)
+    }
+  }, [session.currentDesignUrl, session.garmentType, session.garmentColor, session.side, session.printArea, session.placement, prendaLoading, toast])
+
   // ---- Generate mockup LIFESTYLE ----
   // Usa Gemini para generar foto realista de persona con la prenda. Reemplaza
   // el compositor canvas estático que tenía problemas de transparencia
@@ -2142,6 +2182,8 @@ export function DesignChat({
               frontDesign={session.frontDesignUrl}
               backDesign={session.backDesignUrl}
               activeSide={session.side}
+              printArea={session.printArea}
+              placement={session.placement}
               onSelectSide={(side) =>
                 setSession((prev) => ({
                   ...prev,
@@ -2317,6 +2359,17 @@ export function DesignChat({
                 </>
               )}
             </Button>
+
+            {/* La prenda sola. Es una generación aparte porque cuesta: sólo se
+                gasta si el cliente la pide. */}
+            <button
+              type="button"
+              onClick={handleMockupPrenda}
+              disabled={!session.currentDesignUrl || prendaLoading}
+              className="mt-1.5 w-full text-[11px] text-zinc-400 hover:text-zinc-200 disabled:opacity-40 disabled:hover:text-zinc-400 transition py-1.5"
+            >
+              {prendaLoading ? "Generando la prenda sola…" : "Ver la prenda sola, sin escenario"}
+            </button>
           </div>
         </div>
 

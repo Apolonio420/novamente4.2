@@ -561,6 +561,14 @@ export function DesignCanvas({
   const history = historyPorLado[lado]
   const histIdx = histIdxPorLado[lado]
 
+  /** Qué lados ya tienen algo puesto. Sin esto no había forma de saber si el
+   *  otro lado quedó guardado o si estaba vacío. */
+  const tieneDiseno = (l: LadoCanvas) => {
+    const h = historyPorLado[l]
+    const i = histIdxPorLado[l]
+    return (h[i]?.layers.length ?? 0) > 0
+  }
+
   // Se mantienen los nombres de siempre para que el resto del componente no
   // tenga que saber que ahora hay dos pilas.
   const setHistory = useCallback(
@@ -632,6 +640,84 @@ export function DesignCanvas({
     [session.garmentType, session.garmentColor, session.side],
   )
   const garmentImg = useKonvaImageFallback(garmentUrl)
+
+  /**
+   * Mete una imagen en el lienzo del lado ACTUAL, centrada en el área
+   * imprimible y escalada para entrar.
+   *
+   * Se usa desde el auto-agregado (el diseño que viene del chat) y desde el
+   * panel de "tus diseños": antes no había forma de traer al lienzo un diseño
+   * ya creado, así que el lado vacío se quedaba vacío.
+   */
+  const agregarImagenAlLienzo = useCallback((url: string) => {
+    const pa = getPrintArea(session.garmentType, session.side)
+    const newId = uid()
+    const base: CanvasLayer = {
+      id: newId,
+      kind: "image",
+      imageUrl: url,
+      x: pa.x + pa.w / 2,
+      y: pa.y + pa.h / 2,
+      scaleX: 0.3,
+      scaleY: 0.3,
+      rotation: 0,
+      opacity: 1,
+    }
+    const probe = new window.Image()
+    probe.crossOrigin = "anonymous"
+    probe.onload = () => {
+      const targetMax = Math.min(pa.w, pa.h) * 0.7
+      const fit = clamp(targetMax / Math.max(probe.naturalWidth || 200, probe.naturalHeight || 200), MIN_SCALE, MAX_SCALE)
+      commitSnapshot((current) => ({
+        layers: [...current.layers, { ...base, scaleX: fit, scaleY: fit }],
+        activeId: newId,
+      }))
+    }
+    probe.onerror = () => {
+      commitSnapshot((current) => ({ layers: [...current.layers, base], activeId: newId }))
+    }
+    probe.src = url
+  }, [session.garmentType, session.side, commitSnapshot])
+
+  /**
+   * Crear un diseño NUEVO sin salir del lienzo.
+   *
+   * Antes, para poner algo en el lado vacío había que volver al chat, generar,
+   * y recién ahí volver: se perdía el hilo de lo que estabas armando.
+   */
+  const [promptNuevo, setPromptNuevo] = useState("")
+  const [generando, setGenerando] = useState(false)
+  const crearDisenoNuevo = useCallback(async () => {
+    const texto = promptNuevo.trim()
+    if (!texto || generando) return
+    setGenerando(true)
+    try {
+      const res = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: texto,
+          raw: true,
+          garmentColor: session.garmentColor,
+          printArea: session.printArea,
+          sessionId: session.sessionId,
+        }),
+      })
+      const data = await res.json()
+      const url = data?.images?.[0]?.url
+      if (!res.ok || !url) throw new Error(data?.error ?? "No se pudo generar")
+      agregarImagenAlLienzo(url)
+      setSession((prev) => ({
+        ...prev,
+        designHistory: [url, ...(prev.designHistory ?? [])].slice(0, 20),
+      }))
+      setPromptNuevo("")
+    } catch (e) {
+      console.warn("[canvas] no se pudo generar el diseño:", (e as Error)?.message)
+    } finally {
+      setGenerando(false)
+    }
+  }, [promptNuevo, generando, session.garmentColor, session.printArea, session.sessionId, agregarImagenAlLienzo, setSession])
 
   // Auto-add design from chat as image layer when first loaded
   const initializedDesignRef = useRef<string | null>(null)
@@ -1021,6 +1107,14 @@ export function DesignCanvas({
                 }`}
               >
                 {s === "front" ? "Frente" : "Espalda"}
+                {tieneDiseno(s) && (
+                  <span
+                    className={`ml-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${
+                      session.side === s ? "bg-emerald-600" : "bg-emerald-400"
+                    }`}
+                    title="Este lado ya tiene diseño"
+                  />
+                )}
               </button>
             )})}
           </div>
@@ -1081,6 +1175,54 @@ export function DesignCanvas({
           <strong>Atención:</strong> El área de estampado es de 35 x 40 cm (marcada por las guías). Todo diseño que quede fuera de este recuadro, como en mangas u hombros, no será estampado.
         </p>
       </div>
+
+      {/* Tus diseños — para traerlos al lado que estás editando.
+          Antes no había forma de meter en el lienzo un diseño ya creado, así
+          que si pasabas al dorso te quedabas sin nada para poner. */}
+      {(
+        <div className="w-full max-w-lg rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] uppercase tracking-wider text-zinc-500">
+              Diseños para {session.side === "back" ? "la espalda" : "el frente"}
+            </p>
+            {(session.designHistory?.length ?? 0) > 0 && (
+              <p className="text-[10px] text-zinc-500">Tocá uno para agregarlo</p>
+            )}
+          </div>
+          <div className="mt-2 flex gap-2">
+            <input
+              value={promptNuevo}
+              onChange={(e) => setPromptNuevo(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); crearDisenoNuevo() } }}
+              placeholder={`Crear otro diseño para ${session.side === "back" ? "la espalda" : "el frente"}…`}
+              className="flex-1 min-w-0 rounded-lg border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-[12px] text-zinc-200 placeholder:text-zinc-600 focus:border-violet-500 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={crearDisenoNuevo}
+              disabled={!promptNuevo.trim() || generando}
+              className="shrink-0 rounded-lg bg-violet-600 px-3 py-1.5 text-[12px] font-medium text-white transition hover:bg-violet-500 disabled:opacity-40"
+            >
+              {generando ? "Creando…" : "Crear"}
+            </button>
+          </div>
+
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {session.designHistory.slice(0, 12).map((url, i) => (
+              <button
+                key={`${url}-${i}`}
+                type="button"
+                onClick={() => agregarImagenAlLienzo(url)}
+                title={`Agregar al ${session.side === "back" ? "dorso" : "frente"}`}
+                className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-zinc-700 bg-zinc-800 transition hover:border-violet-500 active:scale-95"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt={`Diseño ${i + 1}`} className="h-full w-full object-contain" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Canvas */}
       <div className="relative rounded-xl overflow-hidden border border-zinc-800 shadow-xl bg-white">
