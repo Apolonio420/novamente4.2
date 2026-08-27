@@ -67,18 +67,22 @@ export default function CartPage() {
       selectedItem.frontMockup || selectedItem.backMockup ? null : selectedItem.mockupUrl,
     ].filter(Boolean)
     const designs = [selectedItem.frontDesign, selectedItem.backDesign].filter(Boolean)
+    // Sin esto la galería repetía la MISMA foto dos veces (el mockup del lado
+    // que se generó llegaba por dos caminos), y parecía que mostraba frente y
+    // dorso cuando en realidad era la misma imagen.
+    const sinRepetir = (xs: (string | undefined)[]) => Array.from(new Set(xs.filter(Boolean) as string[]))
     
     console.log("🛒 Cart - mockups y designs:", { mockups, designs })
     
     // Si hay mockups, mostrarlos primero
     if (mockups.length > 0) {
-      const result = [...mockups, ...designs].map((s) => normalizeSrc(s as string))
+      const result = sinRepetir([...mockups, ...designs] as string[]).map((s) => normalizeSrc(s))
       console.log("🛒 Cart - previewImages (con mockups):", result)
       return result
     }
     
     // Si no hay mockups, mostrar diseños
-    const result = designs.map((s) => normalizeSrc(s as string))
+    const result = sinRepetir(designs as string[]).map((s) => normalizeSrc(s))
     console.log("🛒 Cart - previewImages (solo diseños):", result)
     return result
   }, [selectedItem])
@@ -275,6 +279,13 @@ export default function CartPage() {
                       {item.backStampSize && (
                         <Badge variant="outline">
                           Estampado trasero: {item.backStampSize} {item.backStampPosition && `(${item.backStampPosition === 'center' ? 'Centro' : 'Izquierda'})`}
+                        </Badge>
+                      )}
+                      {/* Doble estampa: sin esto no había forma de ver de un
+                          vistazo que la prenda se estampa de los dos lados. */}
+                      {(item.doble_estampa === 'Si' || (!!item.frontDesign && !!item.backDesign)) && (
+                        <Badge className="bg-violet-600 hover:bg-violet-600 text-white border-0">
+                          Doble estampado · frente y espalda
                         </Badge>
                       )}
                     </div>

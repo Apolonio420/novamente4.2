@@ -14,6 +14,7 @@ import { uploadFile } from "@/lib/cloudflare-r2"
 import { corsHeaders, preflightResponse } from "@/lib/security/cors"
 import { guardPublicImageGen } from "@/lib/security/public-image-guard"
 import { meterPublicImageGen } from "@/lib/security/meter-usage"
+import { resolveAbsoluteUrl } from "@/lib/absolute-url"
 import { getGarmentMapping } from "@/lib/garment-mappings"
 import { generatePerfectStamp } from "@/lib/mockup/perfect-stamp"
 
@@ -76,7 +77,11 @@ export async function POST(req: NextRequest) {
     if (body.designImageUrl.startsWith("data:")) {
       designBuffer = Buffer.from(body.designImageUrl.replace(/^data:image\/[^;]+;base64,/, ""), "base64")
     } else {
-      const r = await fetch(body.designImageUrl)
+      // El diseño llega como URL RELATIVA (/api/proxy-image?key=...): el upload
+      // devuelve rutas relativas para no exponer las keys de R2. Un fetch sobre
+      // eso desde el servidor tira, y era la causa del 500 al pedir la prenda
+      // sola. El helper ya existía; había que usarlo.
+      const r = await fetch(resolveAbsoluteUrl(body.designImageUrl, req))
       if (!r.ok) return ok({ error: "No se pudo leer el diseño" }, 400)
       designBuffer = Buffer.from(await r.arrayBuffer())
     }
@@ -124,7 +129,10 @@ export async function POST(req: NextRequest) {
       units: stats.geminiCalls,
     })
 
-    return ok({ publicUrl: subida.url, mockupUrl: subida.url })
+    // Absoluta: el <Image> del chat no puede optimizar una ruta relativa
+    // (/_next/image?url=%2Fapi%2Fproxy-image... da 404) y la foto salía rota.
+    const urlAbsoluta = resolveAbsoluteUrl(subida.url, req)
+    return ok({ publicUrl: urlAbsoluta, mockupUrl: urlAbsoluta })
   } catch (e: any) {
     console.error("[public/design/mockup-prenda]", e?.message || e)
     return ok({ error: "No se pudo generar la foto de la prenda" }, 500)

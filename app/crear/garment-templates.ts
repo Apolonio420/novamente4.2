@@ -16,9 +16,28 @@ export const CANVAS_H = 600
 export const PRINT_AREAS: Record<string, { front: PrintBox; back?: PrintBox }> = {
   tshirt: { front: { x: 185, y: 170, w: 230, h: 270 }, back: { x: 180, y: 150, w: 240, h: 290 } },
   hoodie: { front: { x: 160, y: 140, w: 280, h: 215 }, back: { x: 165, y: 245, w: 270, h: 215 } },
-  crew: { front: { x: 195, y: 195, w: 210, h: 240 } },
-  clasica: { front: { x: 195, y: 195, w: 210, h: 230 } },
-  crop: { front: { x: 195, y: 185, w: 210, h: 200 } },
+  // Estas tres tenían las fotos de dorso en public/garments desde siempre, pero
+  // sin `back` acá hasBackTemplate() daba false y el doble estampado quedaba
+  // deshabilitado. Las cajas de dorso salen de la misma relación que ya tenía
+  // la remera (front {185,170,230,270} → back {180,150,240,290}): la espalda
+  // arranca un poco más arriba y es algo más ancha, porque no tiene el escote.
+  //
+  // Verificado que existe el dorso para TODOS los colores de cada una.
+  crew: {
+    front: { x: 195, y: 195, w: 210, h: 240 },
+    back: { x: 190, y: 175, w: 220, h: 260 },
+  },
+  clasica: {
+    front: { x: 195, y: 195, w: 210, h: 230 },
+    back: { x: 190, y: 175, w: 220, h: 250 },
+  },
+  crop: {
+    front: { x: 195, y: 185, w: 210, h: 200 },
+    back: { x: 190, y: 165, w: 220, h: 220 },
+  },
+  // musculosa NO lleva back: falta la foto de dorso en negro
+  // (hay musculosa-bali-{gray,white}-back.png pero no black), y habilitarla
+  // rompería esa combinación.
   musculosa: { front: { x: 220, y: 230, w: 160, h: 210 } },
 }
 

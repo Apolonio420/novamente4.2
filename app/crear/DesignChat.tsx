@@ -1640,11 +1640,19 @@ export function DesignChat({
                     aria-label="Ver diseño en grande"
                     className="mt-2 block rounded-xl overflow-hidden border border-white/10 cursor-zoom-in hover:border-violet-500/50 transition-colors"
                   >
+                    {/* unoptimized a propósito: estas imágenes se acaban de
+                        subir a R2 y el optimizador de Next las pide enseguida.
+                        Si todavía no están disponibles devuelve 404 y lo
+                        CACHEA, así que la foto quedaba rota aunque después
+                        existiera — por eso "aparecía más abajo al scrollear".
+                        Son PNG ya generados por nosotros: no hay nada que
+                        optimizar. */}
                     <Image
                       src={msg.imageUrl}
                       alt="Diseño generado"
                       width={280}
                       height={280}
+                      unoptimized
                       className="object-contain bg-white/5"
                     />
                   </button>
