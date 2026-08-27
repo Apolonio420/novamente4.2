@@ -933,6 +933,22 @@ export function DesignChat({
       const data = await res.json()
       const url = data.publicUrl ?? data.mockupUrl
       if (!res.ok || !url) throw new Error(data.error ?? "No se pudo generar")
+      // Esto también cuenta como "ya viste tu prenda": antes los botones de
+      // comprar sólo aparecían con la foto lifestyle, así que generabas la
+      // prenda sola y no podías seguir al checkout.
+      setSession((prev) => ({
+        ...prev,
+        currentMockupUrl: url,
+        mockupGeneratedFor: {
+          garmentType: prev.garmentType,
+          garmentColor: prev.garmentColor,
+          side: prev.side,
+          designUrl: prev.currentDesignUrl ?? "",
+          printArea: prev.printArea,
+          placement: prev.placement,
+        },
+        ...(session.side === "back" ? { backMockupUrl: url } : { frontMockupUrl: url }),
+      }))
       setMessages((prev) => [
         ...prev,
         {
@@ -2190,12 +2206,15 @@ export function DesignChat({
               frontDesign={session.frontDesignUrl}
               backDesign={session.backDesignUrl}
               activeSide={session.side}
-              printArea={session.printArea}
-              placement={session.placement}
+              printAreaPorLado={session.printAreaPorLado}
+              placementPorLado={session.placementPorLado}
               onSelectSide={(side) =>
                 setSession((prev) => ({
                   ...prev,
                   side,
+                  // cada lado recuerda su propio tamaño y posición
+                  printArea: prev.printAreaPorLado?.[side] ?? prev.printArea,
+                  placement: prev.placementPorLado?.[side] ?? prev.placement,
                   currentDesignUrl:
                     side === "front"
                       ? prev.frontDesignUrl ?? prev.currentDesignUrl
@@ -2222,7 +2241,11 @@ export function DesignChat({
                     // mismo, así que cambiar el tamaño no hacía nada: quedaba
                     // en pantalla la foto del tamaño anterior. Se conserva el
                     // mockup y `mockupIsStale` lo marca como desactualizado.
-                    setSession((prev) => ({ ...prev, printArea: pa.key }))
+                    setSession((prev) => ({
+                      ...prev,
+                      printArea: pa.key,
+                      printAreaPorLado: { ...prev.printAreaPorLado, [prev.side]: pa.key },
+                    }))
                   }
                   title={pa.desc}
                   className={`text-xs rounded border py-1.5 px-1 transition flex flex-col items-center ${
@@ -2255,7 +2278,13 @@ export function DesignChat({
                       <button
                         key={op.key}
                         type="button"
-                        onClick={() => setSession((prev) => ({ ...prev, placement: op.key }))}
+                        onClick={() =>
+                          setSession((prev) => ({
+                            ...prev,
+                            placement: op.key,
+                            placementPorLado: { ...prev.placementPorLado, [prev.side]: op.key },
+                          }))
+                        }
                         className={`text-[11px] rounded border py-1.5 px-1 transition ${
                           session.placement === op.key
                             ? "border-violet-500 bg-violet-600/15 text-white"

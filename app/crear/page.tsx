@@ -41,9 +41,16 @@ export type DesignSession = {
   garmentType: string
   garmentColor: string
   side: "front" | "back"
+  /** Tamaño y posición del lado que se está editando ahora. */
   printArea: "R1" | "R2" | "R3"
   /** Dónde va el logo cuando el tamaño es chico (R1). */
   placement: "left-chest" | "center" | "right-chest"
+  /**
+   * Lo elegido para CADA lado. Antes había un solo valor compartido: cambiar el
+   * tamaño en el frente se lo cambiaba también a la espalda, y al revés.
+   */
+  printAreaPorLado: Record<"front" | "back", "R1" | "R2" | "R3">
+  placementPorLado: Record<"front" | "back", "left-chest" | "center" | "right-chest">
   /** Doble estampado: el cliente estampa frente Y espalda en la misma prenda. */
   dobleEstampa: boolean
 }
@@ -70,6 +77,8 @@ export default function CrearPage() {
     side: "front",
     printArea: "R2",
     placement: "left-chest",
+    printAreaPorLado: { front: "R2", back: "R2" },
+    placementPorLado: { front: "left-chest", back: "left-chest" },
     dobleEstampa: false,
   }))
   const [tryOnOpen, setTryOnOpen] = useState(false)

@@ -382,15 +382,31 @@ async function estampaExacta(
   const box = await cajaEnPx(baseGarmentBuffer, imprint)
   const pxPorCm = box.w / AREA_IMPRIMIBLE_CM
 
+  // Recortar el aire transparente que rodea al arte ANTES de escalar.
+  //
+  // Sin esto los cm se aplican al CANVAS del diseño, no a lo que se ve: un
+  // arte con mucho margen alrededor pedido a 35 cm salía visiblemente mucho
+  // más chico, porque buena parte de esos 35 cm eran transparencia. Ahora la
+  // medida es la del dibujo, que es lo que la persona está pidiendo.
+  let arte = designBuffer
+  try {
+    const recortado = await sharp(designBuffer).trim({ threshold: 1 }).png().toBuffer()
+    const rm = await sharp(recortado).metadata()
+    // guardarraíl: si el recorte deja algo ridículo, se usa el original
+    if ((rm.width ?? 0) >= 16 && (rm.height ?? 0) >= 16) arte = recortado
+  } catch {
+    // trim falla sobre imágenes sin bordes uniformes: se sigue con el original
+  }
+
   // no dejamos que se pase del área imprimible
   const anchoPx = Math.max(24, Math.round(Math.min(anchoCm * pxPorCm, box.w)))
-  const dm = await sharp(designBuffer).metadata()
+  const dm = await sharp(arte).metadata()
   const ratio = (dm.height || 1) / (dm.width || 1)
   let altoPx = Math.round(anchoPx * ratio)
   let wPx = anchoPx
   if (altoPx > box.h) { altoPx = Math.round(box.h); wPx = Math.round(altoPx / ratio) }
 
-  const estampa = await sharp(designBuffer).resize(wPx, altoPx, { fit: 'inside' }).png().toBuffer()
+  const estampa = await sharp(arte).resize(wPx, altoPx, { fit: 'inside' }).png().toBuffer()
 
   // centro del rect de la posición elegida (para R3 el rect es toda la caja)
   const rect = resolvePlacementRect(size, side, placement) ?? { fx: 0, fy: 0, fw: 1, fh: 1 }

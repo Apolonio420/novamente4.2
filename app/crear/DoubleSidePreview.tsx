@@ -162,8 +162,8 @@ export function DoubleSidePreview({
   activeSide,
   onSelectSide,
   className,
-  printArea,
-  placement,
+  printAreaPorLado,
+  placementPorLado,
 }: {
   garmentType: string
   garmentColor: string
@@ -172,8 +172,9 @@ export function DoubleSidePreview({
   activeSide: "front" | "back"
   onSelectSide: (side: "front" | "back") => void
   className?: string
-  printArea?: "R1" | "R2" | "R3"
-  placement?: "left-chest" | "center" | "right-chest"
+  /** Tamaño y posición de CADA lado: cada uno tiene los suyos. */
+  printAreaPorLado?: Record<"front" | "back", "R1" | "R2" | "R3">
+  placementPorLado?: Record<"front" | "back", "left-chest" | "center" | "right-chest">
 }) {
   if (!hasBackTemplate(garmentType)) return null
 
@@ -209,8 +210,8 @@ export function DoubleSidePreview({
           active={activeSide === "back"}
           anchor="left"
           rotation={-4}
-          printArea={printArea}
-          placement={placement}
+          printArea={printAreaPorLado?.back}
+          placement={placementPorLado?.back}
           onSelect={() => onSelectSide("back")}
         />
         <GarmentPanel
@@ -222,8 +223,8 @@ export function DoubleSidePreview({
           active={activeSide === "front"}
           anchor="right"
           rotation={4}
-          printArea={printArea}
-          placement={placement}
+          printArea={printAreaPorLado?.front}
+          placement={placementPorLado?.front}
           onSelect={() => onSelectSide("front")}
         />
       </div>
