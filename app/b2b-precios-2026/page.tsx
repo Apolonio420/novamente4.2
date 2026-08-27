@@ -74,6 +74,38 @@ export default function B2BPricesPage() {
         </div>
       </section>
 
+      {/* Calidad de estampa — que el diferencial se lea ANTES que el precio.
+          (Pedido de Juan 27/08: los leads B2B comparan solo por numero y no
+          saben que DTG y DTF no son lo mismo.) */}
+      <section className="mb-14">
+        <h2 className="novamente-heading text-2xl text-center mb-3">
+          Estampamos con DTG, no con transfer
+        </h2>
+        <p className="text-sm text-muted-foreground text-center max-w-2xl mx-auto mb-6">
+          El DTG inyecta la tinta <strong className="text-foreground">dentro de la fibra</strong>{" "}
+          del algodon, no la apoya encima. Es como tatuar la tela: el diseno queda parte de la
+          prenda. Va incluido en todos los precios de esta lista.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { t: "No se cuartea ni se despega", d: "No es una lamina pegada: no se descascara con los lavados como el vinilo o el DTF." },
+            { t: "No se siente al tacto", d: "Pasas la mano y sentis la tela, no un plastico encima del diseno." },
+            { t: "Full color y detalle fino", d: "Gradientes, fotorrealismo y trazos finos sin limite de colores ni costo extra." },
+            { t: "Desde 1 unidad", d: "Sin planchas ni minimos: por eso el print on demand es posible sin stock." },
+          ].map((c) => (
+            <div key={c.t} className="rounded-xl border border-border bg-card p-5">
+              <p className="font-semibold text-sm mb-2">{c.t}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{c.d}</p>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground text-center mt-5 max-w-2xl mx-auto">
+          Prendas de produccion propia, 100% algodon peinado premium — remeras 250 g/m2 y
+          buzos 300 g/m2. Area de estampa hasta 35x40 cm, frente y dorso, sin costo extra por
+          la segunda estampa.
+        </p>
+      </section>
+
       <B2BCatalog growthByModel={growthByModel} />
 
       <UnifiedPriceTable growthByModel={growthByModel} />
