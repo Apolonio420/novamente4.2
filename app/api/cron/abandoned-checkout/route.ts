@@ -9,7 +9,7 @@
  * webhook de MP existente la confirma sola (cero código extra).
  *
  * Corre por Vercel cron (vercel.json). Auth: Bearer CRON_SECRET o header
- * x-vercel-cron (invocación nativa de Vercel). ?dry=1 para previsualizar.
+ * Bearer CRON_SECRET (Vercel lo manda solo). ?dry=1 para previsualizar.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Preference } from 'mercadopago'
@@ -73,10 +73,15 @@ function recoveryHtml(opts: {
 
 export async function GET(request: NextRequest) {
   // Auth: cron nativo de Vercel o Bearer CRON_SECRET
-  const isVercelCron = !!request.headers.get('x-vercel-cron')
   const secret = process.env.CRON_SECRET
   const bearerOk = !!secret && request.headers.get('authorization') === `Bearer ${secret}`
-  if (!isVercelCron && !bearerOk) {
+  // El header x-vercel-cron lo puede mandar CUALQUIERA con un curl: no es una
+  // credencial, es una etiqueta. Mientras CRON_SECRET no existiera, aceptarlo
+  // era la única forma de que el cron corriera — pero también dejaba que
+  // cualquiera lo disparara (uno de estos suspende partners y les manda mail).
+  // CRON_SECRET ya está seteado en producción y Vercel lo manda solo en el
+  // header Authorization, así que ahora se exige de verdad.
+  if (!bearerOk) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   const dry = request.nextUrl.searchParams.get('dry') === '1'

@@ -24,14 +24,19 @@ const db = () => supabaseAdmin as any
 export async function GET(request: NextRequest) {
   // Verify cron secret
   const authHeader = request.headers.get('authorization')
-  // Auth: cron nativo de Vercel (header x-vercel-cron) o Bearer CRON_SECRET —
+  // Auth: Bearer CRON_SECRET, que Vercel manda solo en el cron nativo —
   // mismo patrón que abandoned-checkout. Solo-Bearer dejaría el cron en 401
   // silencioso si CRON_SECRET no está seteado en el proyecto de Vercel.
-  const isVercelCron = !!request.headers.get('x-vercel-cron')
   const cronSecret = process.env.CRON_SECRET
   const bearerOk = !!cronSecret && authHeader === `Bearer ${cronSecret}`
 
-  if (!isVercelCron && !bearerOk) {
+  // El header x-vercel-cron lo puede mandar CUALQUIERA con un curl: no es una
+  // credencial, es una etiqueta. Mientras CRON_SECRET no existiera, aceptarlo
+  // era la única forma de que el cron corriera — pero también dejaba que
+  // cualquiera lo disparara (uno de estos suspende partners y les manda mail).
+  // CRON_SECRET ya está seteado en producción y Vercel lo manda solo en el
+  // header Authorization, así que ahora se exige de verdad.
+  if (!bearerOk) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

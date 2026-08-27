@@ -11,7 +11,7 @@ import { listR2Objects, deleteFromR2 } from '@/lib/cloudflare-r2'
  * usuario es solo para procesar, no para retener).
  *
  * Corre por Vercel cron (vercel.json). Auth: Bearer CRON_SECRET o header
- * x-vercel-cron (invocación nativa de Vercel).
+ * Bearer CRON_SECRET (Vercel lo manda solo).
  */
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -21,10 +21,15 @@ const MAX_AGE_MS = 24 * 3600_000 // 24h
 
 export async function GET(request: NextRequest) {
   // Auth: cron nativo de Vercel o Bearer CRON_SECRET
-  const isVercelCron = !!request.headers.get('x-vercel-cron')
   const secret = process.env.CRON_SECRET
   const bearerOk = !!secret && request.headers.get('authorization') === `Bearer ${secret}`
-  if (!isVercelCron && !bearerOk) {
+  // El header x-vercel-cron lo puede mandar CUALQUIERA con un curl: no es una
+  // credencial, es una etiqueta. Mientras CRON_SECRET no existiera, aceptarlo
+  // era la única forma de que el cron corriera — pero también dejaba que
+  // cualquiera lo disparara (uno de estos suspende partners y les manda mail).
+  // CRON_SECRET ya está seteado en producción y Vercel lo manda solo en el
+  // header Authorization, así que ahora se exige de verdad.
+  if (!bearerOk) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

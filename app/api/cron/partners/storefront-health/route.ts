@@ -39,7 +39,7 @@ import {
  *
  * Auth y runtime siguen el mismo patrón que
  * app/api/cron/partners/check-subscriptions/route.ts: acepta el header
- * nativo de Vercel cron (x-vercel-cron) O Bearer CRON_SECRET — solo-Bearer
+ * Bearer CRON_SECRET, que Vercel manda solo en el cron nativo — solo-Bearer
  * dejaría el cron en 401 silencioso si CRON_SECRET no está seteado en el
  * proyecto de Vercel.
  */
@@ -56,11 +56,16 @@ const HTTP_CHECK_TIMEOUT_MS = 15_000
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
-  const isVercelCron = !!request.headers.get('x-vercel-cron')
   const cronSecret = process.env.CRON_SECRET
   const bearerOk = !!cronSecret && authHeader === `Bearer ${cronSecret}`
 
-  if (!isVercelCron && !bearerOk) {
+  // El header x-vercel-cron lo puede mandar CUALQUIERA con un curl: no es una
+  // credencial, es una etiqueta. Mientras CRON_SECRET no existiera, aceptarlo
+  // era la única forma de que el cron corriera — pero también dejaba que
+  // cualquiera lo disparara (uno de estos suspende partners y les manda mail).
+  // CRON_SECRET ya está seteado en producción y Vercel lo manda solo en el
+  // header Authorization, así que ahora se exige de verdad.
+  if (!bearerOk) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
