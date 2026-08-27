@@ -18,6 +18,12 @@ vi.mock("@/lib/partners/tenant", () => ({
 
 vi.mock("@/lib/partners/plans", () => ({
   getPlanFeatures: vi.fn().mockReturnValue({ storefrontDesigner: true }),
+  // Las features se reparten por el plan EFECTIVO (el contratado sólo si la
+  // cuenta está al día). Acá se replica esa regla para no cambiar lo que el
+  // test verifica: con un tenant activo sigue siendo su propio plan.
+  effectivePlan: vi.fn((t: any) =>
+    t?.status === "active" || t?.status === "onboarding" || !t?.status ? t?.plan ?? "starter" : "starter",
+  ),
 }))
 
 vi.mock("@/lib/partners/design-engine", () => ({

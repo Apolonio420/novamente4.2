@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getTenantBySlug } from '@/lib/partners/tenant'
-import { getPlanFeatures } from '@/lib/partners/plans'
+import { getPlanFeatures, effectivePlan } from '@/lib/partners/plans'
 import {
   getDesignConfig,
   buildTenantPrompt,
@@ -70,13 +70,13 @@ export async function POST(
     // IP para telemetria de saveDesignAsset (no para rate-limit — eso ya lo cubre el guard de arriba)
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
 
-    const features = getPlanFeatures(tenant.plan as Plan)
+    const features = getPlanFeatures(effectivePlan(tenant))
     if (!features.storefrontDesigner) {
       return NextResponse.json({ error: 'No disponible en este plan' }, { status: 403, headers: ch })
     }
 
     // Tenant usage limit
-    const { allowed, usage } = await checkUsageLimit(tenant.id, tenant.plan)
+    const { allowed, usage } = await checkUsageLimit(tenant.id, effectivePlan(tenant))
     if (!allowed) {
       return NextResponse.json(
         { error: 'La tienda alcanzó su límite de generaciones. Volvé pronto.' },

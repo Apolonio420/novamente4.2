@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getTenantBySlug } from '@/lib/partners/tenant'
-import { getPlanFeatures } from '@/lib/partners/plans'
+import { getPlanFeatures, effectivePlan } from '@/lib/partners/plans'
 import {
   getDesignConfig,
   getAvailableStyles,
@@ -24,7 +24,7 @@ export async function GET(
       return NextResponse.json({ error: 'Tienda no encontrada' }, { status: 404 })
     }
 
-    const features = getPlanFeatures(tenant.plan as Plan)
+    const features = getPlanFeatures(effectivePlan(tenant))
     if (!features.storefrontDesigner) {
       return NextResponse.json({ error: 'No disponible en este plan' }, { status: 403 })
     }

@@ -84,6 +84,34 @@ export function getPlanFeatures(plan: Plan): PlanFeatures {
   return PLAN_FEATURES[plan]
 }
 
+/**
+ * El plan que el partner puede USAR HOY, que no es lo mismo que el que
+ * contrató.
+ *
+ * `tenant.plan` guarda lo contratado y se conserva para poder reactivar sin
+ * perder el historial. Pero mientras la cuenta no esté al día, las features
+ * son las del plan gratis — que es lo que promete /studio/planes para Starter.
+ *
+ * Antes esto no existía: el cron de suscripciones suspendía al partner
+ * (status='suspended') sin tocar `plan`, y como todos los gates preguntan por
+ * `tenant.plan`, alguien que dejó de pagar seguía con generaciones ilimitadas
+ * de IA, analytics, feeds y chatbot. Novamente pagaba la factura de Gemini de
+ * un cliente que ya no pagaba.
+ *
+ * 'onboarding' cuenta como al día: es el partner que todavía está entrando.
+ */
+export function effectivePlan(tenant: { plan: Plan | string; status?: string | null }): Plan {
+  const alDia = tenant.status === 'active' || tenant.status === 'onboarding' || !tenant.status
+  if (!alDia) return 'starter'
+  const p = tenant.plan as Plan
+  return p in PLAN_FEATURES ? p : 'starter'
+}
+
+/** Features realmente disponibles hoy para este tenant. */
+export function featuresDelTenant(tenant: { plan: Plan | string; status?: string | null }): PlanFeatures {
+  return PLAN_FEATURES[effectivePlan(tenant)]
+}
+
 export function hasFeature(plan: Plan, feature: keyof PlanFeatures): boolean {
   const features = PLAN_FEATURES[plan]
   const value = features[feature]

@@ -29,6 +29,149 @@ export function shippingCostFor(subtotal: number, zone: ShippingZone): number {
   return zone === 'BA' ? SHIPPING.BA : SHIPPING.RESTO
 }
 
+// ---------------------------------------------------------------------------
+// Envío por distancia (números de Juan, 2026-08-27)
+//
+//   "CABA y AMBA entre 8500 y 12000. Más lejos, de 13500 para arriba los más
+//    cercanos, y cuanto más se aleja más. Pero no cobremos más de 16000."
+//
+// Los despachos salen de Villa Martelli (Vicente López), CP 1603. La distancia
+// se estima por CÓDIGO POSTAL, que es el único dato de ubicación que el
+// checkout ya pide. No pretende ser exacta: es un rango honesto para cobrar.
+// ---------------------------------------------------------------------------
+
+export const ENVIO_DISTANCIA = {
+  /** AMBA: del piso al techo, según qué tan lejos del depósito. */
+  AMBA_MIN: 8500,
+  AMBA_MAX: 12000,
+  /** Interior: arranca acá el más cercano... */
+  INTERIOR_MIN: 13500,
+  /** ...y nunca pasa de acá, por lejos que sea. */
+  TOPE: 16000,
+  /** Hasta acá se considera AMBA. */
+  AMBA_KM: 70,
+  /** Distancia del punto más lejano del país (Ushuaia), para escalar. */
+  KM_MAX: 3000,
+} as const
+
+/**
+ * Kilómetros aproximados desde Villa Martelli según el código postal.
+ *
+ * Los CP argentinos tienen una estructura geográfica gruesa. Cada rango lleva
+ * la distancia por ruta a una ciudad representativa. Es una aproximación
+ * deliberada: sirve para ubicar el envío en su franja de precio, no para
+ * liquidar un flete.
+ */
+const KM_POR_CP: Array<{ desde: number; hasta: number; km: number; donde: string }> = [
+  { desde: 1000, hasta: 1499, km: 15, donde: 'CABA' },
+  { desde: 1600, hasta: 1665, km: 10, donde: 'Vicente López / San Isidro / San Martín' },
+  { desde: 1666, hasta: 1749, km: 35, donde: 'Tigre / Morón / oeste del GBA' },
+  { desde: 1750, hasta: 1849, km: 40, donde: 'La Matanza / sur del GBA' },
+  { desde: 1850, hasta: 1899, km: 45, donde: 'Quilmes / Berazategui' },
+  { desde: 1900, hasta: 1999, km: 60, donde: 'La Plata y alrededores' },
+  { desde: 2000, hasta: 2199, km: 300, donde: 'Rosario / sur de Santa Fe' },
+  { desde: 2200, hasta: 2499, km: 400, donde: 'Santa Fe' },
+  { desde: 2500, hasta: 2999, km: 500, donde: 'Córdoba este / Santa Fe oeste' },
+  { desde: 3000, hasta: 3299, km: 480, donde: 'Entre Ríos' },
+  { desde: 3300, hasta: 3399, km: 1000, donde: 'Misiones' },
+  { desde: 3400, hasta: 3599, km: 800, donde: 'Corrientes' },
+  { desde: 3600, hasta: 3799, km: 950, donde: 'Chaco / Formosa' },
+  { desde: 3800, hasta: 3999, km: 1100, donde: 'Santiago del Estero' },
+  { desde: 4000, hasta: 4199, km: 1300, donde: 'Tucumán' },
+  { desde: 4200, hasta: 4399, km: 1150, donde: 'Santiago del Estero norte' },
+  { desde: 4400, hasta: 4599, km: 1600, donde: 'Salta' },
+  { desde: 4600, hasta: 4799, km: 1750, donde: 'Jujuy' },
+  { desde: 4800, hasta: 4999, km: 1150, donde: 'Catamarca / La Rioja' },
+  { desde: 5000, hasta: 5299, km: 700, donde: 'Córdoba' },
+  { desde: 5300, hasta: 5499, km: 1150, donde: 'La Rioja' },
+  { desde: 5500, hasta: 5799, km: 1050, donde: 'Mendoza' },
+  { desde: 5800, hasta: 5999, km: 800, donde: 'San Luis' },
+  { desde: 6000, hasta: 6499, km: 400, donde: 'oeste de Buenos Aires' },
+  { desde: 6500, hasta: 6999, km: 550, donde: 'La Pampa / oeste bonaerense' },
+  { desde: 7000, hasta: 7399, km: 350, donde: 'Tandil / centro bonaerense' },
+  { desde: 7400, hasta: 7999, km: 400, donde: 'Mar del Plata / costa' },
+  { desde: 8000, hasta: 8299, km: 700, donde: 'Bahía Blanca' },
+  { desde: 8300, hasta: 8499, km: 1150, donde: 'Neuquén' },
+  { desde: 8500, hasta: 8799, km: 1000, donde: 'Río Negro' },
+  { desde: 8800, hasta: 8999, km: 800, donde: 'sur bonaerense' },
+  { desde: 9000, hasta: 9299, km: 1500, donde: 'Chubut' },
+  { desde: 9300, hasta: 9399, km: 2200, donde: 'Santa Cruz norte' },
+  { desde: 9400, hasta: 9999, km: 3000, donde: 'Tierra del Fuego' },
+]
+
+export interface EnvioEstimado {
+  costo: number
+  km: number
+  zona: 'AMBA' | 'INTERIOR'
+  donde: string
+  /** true si no se pudo leer el CP y se usó el fallback. */
+  estimado: boolean
+}
+
+/** Extrae los 4 dígitos del CP, tolerando formato CPA (ej. "B1603ABC"). */
+export function normalizarCP(cp: string | null | undefined): number | null {
+  if (!cp) return null
+  const m = String(cp).match(/\d{4}/)
+  if (!m) return null
+  const n = parseInt(m[0], 10)
+  return n >= 1000 && n <= 9999 ? n : null
+}
+
+export function kmDesdeDeposito(cp: string | null | undefined): { km: number; donde: string } | null {
+  const n = normalizarCP(cp)
+  if (n === null) return null
+  const fila = KM_POR_CP.find((f) => n >= f.desde && n <= f.hasta)
+  return fila ? { km: fila.km, donde: fila.donde } : null
+}
+
+/**
+ * Costo de envío estimado por distancia. Si no hay CP legible cae a la zona
+ * gruesa de siempre, así un checkout sin código postal nunca queda sin precio.
+ */
+export function envioPorDistancia(
+  subtotal: number,
+  cp: string | null | undefined,
+  zonaFallback: ShippingZone = 'BA',
+): EnvioEstimado {
+  const ubic = kmDesdeDeposito(cp)
+
+  if (!ubic) {
+    const costo = subtotal >= SHIPPING.FREE_THRESHOLD ? 0 : (zonaFallback === 'BA' ? SHIPPING.BA : SHIPPING.RESTO)
+    return {
+      costo,
+      km: zonaFallback === 'BA' ? ENVIO_DISTANCIA.AMBA_KM : 500,
+      zona: zonaFallback === 'BA' ? 'AMBA' : 'INTERIOR',
+      donde: zonaFallback === 'BA' ? 'CABA / GBA' : 'Interior',
+      estimado: true,
+    }
+  }
+
+  const { km, donde } = ubic
+  const zona: 'AMBA' | 'INTERIOR' = km <= ENVIO_DISTANCIA.AMBA_KM ? 'AMBA' : 'INTERIOR'
+
+  if (subtotal >= SHIPPING.FREE_THRESHOLD) {
+    return { costo: 0, km, zona, donde, estimado: false }
+  }
+
+  let costo: number
+  if (zona === 'AMBA') {
+    // 8500 pegado al depósito → 12000 en el borde del AMBA
+    const t = Math.min(1, Math.max(0, km / ENVIO_DISTANCIA.AMBA_KM))
+    costo = ENVIO_DISTANCIA.AMBA_MIN + t * (ENVIO_DISTANCIA.AMBA_MAX - ENVIO_DISTANCIA.AMBA_MIN)
+  } else {
+    // 13500 apenas se sale del AMBA → 16000 en el extremo del país
+    const t = Math.min(
+      1,
+      Math.max(0, (km - ENVIO_DISTANCIA.AMBA_KM) / (ENVIO_DISTANCIA.KM_MAX - ENVIO_DISTANCIA.AMBA_KM)),
+    )
+    costo = ENVIO_DISTANCIA.INTERIOR_MIN + t * (ENVIO_DISTANCIA.TOPE - ENVIO_DISTANCIA.INTERIOR_MIN)
+  }
+
+  // redondeo a $100 para que no queden precios con centavos raros
+  costo = Math.min(ENVIO_DISTANCIA.TOPE, Math.round(costo / 100) * 100)
+  return { costo, km, zona, donde, estimado: false }
+}
+
 export function formatShippingARS(n: number): string {
   return `$${n.toLocaleString('es-AR')}`
 }

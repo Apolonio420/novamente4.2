@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { MercadoPagoConfig, Preference } from "mercadopago"
 import { createOrder, findRecentDuplicateOrder } from "@/lib/db"
 import { toPublicR2Url } from "@/lib/r2"
-import { shippingCostFor } from "@/lib/shipping-config"
+import { shippingCostFor, envioPorDistancia } from "@/lib/shipping-config"
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -103,7 +103,13 @@ export async function POST(request: NextRequest) {
     // lib/shipping-config (antes tenía los montos hardcodeados acá y quedaba
     // desincronizado del carrito cuando cambiaba la tarifa).
     const finalSubtotal = subtotal || calculatedTotal
-    const fallbackShipping = shippingCostFor(calculatedTotal, shippingZone === 'RESTO' ? 'RESTO' : 'BA')
+    // Mismo cálculo por distancia que muestra el checkout, para que el server
+    // nunca cobre un envío distinto del que vio el cliente.
+    const fallbackShipping = envioPorDistancia(
+      calculatedTotal,
+      customer?.postalCode,
+      shippingZone === 'RESTO' ? 'RESTO' : 'BA',
+    ).costo
     const finalShippingCost = typeof shippingCost === 'number' ? shippingCost : fallbackShipping
     const finalTotal = finalSubtotal + finalShippingCost
 

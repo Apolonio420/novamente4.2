@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { getTenantBySlug } from '@/lib/partners/tenant'
-import { getPlanFeatures } from '@/lib/partners/plans'
+import { getPlanFeatures, effectivePlan } from '@/lib/partners/plans'
 import {
   getDesignConfig,
   getAvailableGarments,
@@ -66,12 +66,12 @@ export async function POST(
 
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
 
-    const features = getPlanFeatures(tenant.plan as Plan)
+    const features = getPlanFeatures(effectivePlan(tenant))
     if (!features.storefrontDesigner) {
       return NextResponse.json({ error: 'No disponible en este plan' }, { status: 403, headers: ch })
     }
 
-    const { allowed, usage } = await checkUsageLimit(tenant.id, tenant.plan)
+    const { allowed, usage } = await checkUsageLimit(tenant.id, effectivePlan(tenant))
     if (!allowed) {
       return NextResponse.json(
         { error: 'La tienda alcanzó su límite de generaciones. Volvé pronto.' },

@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from 'uuid'
 import type { Plan } from '@/lib/partners/types'
 import { checkUsageLimit, recordUsage } from '@/lib/partners/studio/usage-tracker'
 import { meterPublicImageGen } from '@/lib/security/meter-usage'
+import { effectivePlan } from '@/lib/partners/plans'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     // Validate access
     const access = validateDesignAccess(
       resolveDesignEngineMode(tenant),
-      tenant.plan as Plan,
+      effectivePlan(tenant),
       'mockup',
     )
 
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Usage limit check
-    const { allowed, usage } = await checkUsageLimit(tenant.id, tenant.plan)
+    const { allowed, usage } = await checkUsageLimit(tenant.id, effectivePlan(tenant))
     if (!allowed) {
       const upsell =
         tenant.plan === 'starter'

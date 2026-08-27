@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createOrder } from "@/lib/db"
 import { toPublicR2Url } from "@/lib/r2"
-import { shippingCostFor } from "@/lib/shipping-config"
+import { shippingCostFor, envioPorDistancia } from "@/lib/shipping-config"
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,7 +28,8 @@ export async function POST(request: NextRequest) {
 
     // Calcular subtotal y shipping si no vienen (fallback zona BA — fuente de verdad compartida)
     const finalSubtotal = subtotal || items.reduce((sum: number, item: any) => sum + (item.price || 0) * (item.quantity || 1), 0)
-    const finalShippingCost = shippingCost ?? shippingCostFor(finalSubtotal, 'BA')
+    const finalShippingCost =
+      shippingCost ?? envioPorDistancia(finalSubtotal, (customer as any)?.postalCode, 'BA').costo
     const finalTotal = finalSubtotal + finalShippingCost
 
     // Preparar items del pedido desde items del carrito

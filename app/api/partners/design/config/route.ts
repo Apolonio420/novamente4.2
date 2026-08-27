@@ -11,6 +11,7 @@ import {
 } from '@/lib/partners/design-engine'
 import { getAllPublicGarmentPricing } from '@/lib/partners/garment-pricing.server'
 import type { Plan } from '@/lib/partners/types'
+import { effectivePlan } from '@/lib/partners/plans'
 
 // Plan del tenant puede venir en variantes (mayusculas, etc.) — normalizar al
 // tipo que espera el pricing engine, igual que ya hacian los componentes cliente.
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
     // Check access
     const access = validateDesignAccess(
       resolveDesignEngineMode(tenant),
-      tenant.plan as Plan,
+      effectivePlan(tenant),
       'config',
     )
 

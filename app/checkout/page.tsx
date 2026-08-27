@@ -16,7 +16,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Separator } from "@/components/ui/separator"
 import { DiscountInput } from "@/components/checkout/DiscountInput"
-import { SHIPPING, shippingCostFor } from "@/lib/shipping-config"
+import { SHIPPING, shippingCostFor, envioPorDistancia, ENVIO_DISTANCIA as SHIPPING_RANGO } from "@/lib/shipping-config"
 import { StoreBrandBar } from "@/components/checkout/StoreBrandBar"
 
 interface CustomerData {
@@ -79,7 +79,10 @@ export default function CheckoutPage() {
   // Calcular totales usando exactamente los precios del carrito
   const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0)
   const shippingThreshold = SHIPPING.FREE_THRESHOLD
-  const shippingCost = shippingCostFor(subtotal, shippingZone)
+  // El envío se calcula por DISTANCIA usando el código postal que el cliente ya
+  // carga. Si todavía no lo escribió, cae a la zona gruesa que eligió.
+  const envio = envioPorDistancia(subtotal, customerInfo.postalCode, shippingZone)
+  const shippingCost = envio.costo
 
   // Estimación llegada — días hábiles desde hoy: BA 3-5, Resto 5-7
   // (incluye producción on-demand DTG ~2 días + envío)
@@ -456,7 +459,11 @@ export default function CheckoutPage() {
                 >
                   <div className="font-medium">Buenos Aires</div>
                   <div className="text-sm text-muted-foreground">
-                    {subtotal >= shippingThreshold ? 'Gratis' : '$7.000'}
+                    {subtotal >= shippingThreshold
+                      ? 'Gratis'
+                      : shippingZone === 'BA' && !envio.estimado
+                        ? `$${envio.costo.toLocaleString('es-AR')}`
+                        : `$${SHIPPING_RANGO.AMBA_MIN.toLocaleString('es-AR')} a $${SHIPPING_RANGO.AMBA_MAX.toLocaleString('es-AR')}`}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">CABA + GBA · llega en 3-5 días hábiles</div>
                 </button>
@@ -472,7 +479,11 @@ export default function CheckoutPage() {
                 >
                   <div className="font-medium">Resto del país</div>
                   <div className="text-sm text-muted-foreground">
-                    {subtotal >= shippingThreshold ? 'Gratis' : '$9.000'}
+                    {subtotal >= shippingThreshold
+                      ? 'Gratis'
+                      : shippingZone === 'RESTO' && !envio.estimado
+                        ? `$${envio.costo.toLocaleString('es-AR')}`
+                        : `desde $${SHIPPING_RANGO.INTERIOR_MIN.toLocaleString('es-AR')}`}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">Interior · llega en 5-7 días hábiles</div>
                 </button>
