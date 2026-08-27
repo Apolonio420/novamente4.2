@@ -143,6 +143,63 @@ function isLikelyNewConcept(prompt: string, lastPrompt: string): boolean {
 // Component
 // ============================================================
 
+/**
+ * Barra de progreso de la foto, en el chat.
+ *
+ * La generación tarda ~10-25 s y no hay forma de saber cuánto falta, así que la
+ * barra avanza rápido al principio y se va frenando: llega al 92% y espera ahí.
+ * Nunca promete el 100% antes de tiempo — cuando la foto llega, este bloque
+ * desaparece y en su lugar aparece la imagen.
+ */
+function ProgresoFoto({ tipo }: { tipo: "lifestyle" | "prenda" }) {
+  const [pct, setPct] = useState(4)
+  const ETAPAS =
+    tipo === "prenda"
+      ? ["Ubicando la estampa en su medida…", "Fundiéndola en la tela…", "Últimos detalles…"]
+      : ["Preparando la prenda con tu diseño…", "Buscando la escena…", "Revelando la foto…"]
+  const [etapa, setEtapa] = useState(0)
+
+  useEffect(() => {
+    const t0 = Date.now()
+    const esperado = tipo === "prenda" ? 22_000 : 16_000
+    const id = setInterval(() => {
+      const t = (Date.now() - t0) / esperado
+      // asintótica: se acerca al 92% sin llegar nunca sola
+      setPct(Math.min(92, Math.round(92 * (1 - Math.exp(-2.2 * t)))))
+      setEtapa(t < 0.35 ? 0 : t < 0.75 ? 1 : 2)
+    }, 200)
+    return () => clearInterval(id)
+  }, [tipo])
+
+  return (
+    <div className="flex gap-3 justify-start">
+      <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center shrink-0 mt-1">
+        <Sparkles className="w-3.5 h-3.5 text-white" />
+      </div>
+      <div className="bg-zinc-800 rounded-2xl rounded-bl-sm px-4 py-3 text-sm text-zinc-300 w-[min(320px,80%)]">
+        <div className="flex items-center justify-between gap-2 font-medium">
+          <span>{tipo === "prenda" ? "Armando la prenda sola" : "Armando tu foto"}</span>
+          <span className="text-xs tabular-nums text-zinc-500">{pct}%</span>
+        </div>
+        <div
+          className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-700"
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Generando la foto"
+        >
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-200 ease-out"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <div className="mt-1.5 text-xs text-zinc-500">{ETAPAS[etapa]}</div>
+      </div>
+    </div>
+  )
+}
+
 export function DesignChat({
   session,
   setSession,
@@ -171,6 +228,13 @@ export function DesignChat({
   const [loadingLabel, setLoadingLabel] = useState<string>("Generando diseño...")
   const [loadingSubtext, setLoadingSubtext] = useState<string>("Esto puede tardar unos segundos...")
   const [mockupLoading, setMockupLoading] = useState(false)
+  /**
+   * Qué se está armando ahora, para la barra del chat. Antes generar la foto
+   * sólo cambiaba el texto de un botón del panel derecho (y la prenda sola, un
+   * renglón gris de 11px): pasaban ~20 segundos sin nada que mirar y parecía
+   * colgado.
+   */
+  const [fotoEnCurso, setFotoEnCurso] = useState<null | "lifestyle" | "prenda">(null)
 
   // P6-02: Prefetch /checkout para reducir perceived latency en Buy Now.
   // Solo cuando hay mockup listo (usuario probablemente cerca de comprar).
@@ -202,6 +266,10 @@ export function DesignChat({
     setSession((prev) => ({
       ...prev,
       currentDesignUrl: d.url,
+      // También al slot del lado actual: si no, recuperabas un diseño y el
+      // doble estampado seguía mostrando ese lado vacío.
+      frontDesignUrl: prev.side === "front" ? d.url : prev.frontDesignUrl,
+      backDesignUrl: prev.side === "back" ? d.url : prev.backDesignUrl,
       designHistory: [...prev.designHistory, d.url],
     }))
     setMessages((prev) => [
@@ -917,6 +985,7 @@ export function DesignChat({
   const handleMockupPrenda = useCallback(async () => {
     if (!session.currentDesignUrl || prendaLoading) return
     setPrendaLoading(true)
+    setFotoEnCurso("prenda")
     try {
       const res = await fetch("/api/public/design/mockup-prenda", {
         method: "POST",
@@ -962,6 +1031,7 @@ export function DesignChat({
       toast({ title: "No se pudo generar", description: e?.message ?? "Probá de nuevo", variant: "destructive" })
     } finally {
       setPrendaLoading(false)
+      setFotoEnCurso(null)
     }
   }, [session.currentDesignUrl, session.garmentType, session.garmentColor, session.side, session.printArea, session.placement, prendaLoading, toast])
 
@@ -976,6 +1046,7 @@ export function DesignChat({
   }) => {
     if (!session.currentDesignUrl || mockupLoading) return
     setMockupLoading(true)
+    setFotoEnCurso("lifestyle")
     const effSide = overrides?.side ?? session.side
     const effPrintArea = overrides?.printArea ?? session.printArea
     try {
@@ -1046,6 +1117,7 @@ export function DesignChat({
       toast({ title: "No se pudo generar el mockup", description: e.message, variant: "destructive" })
     } finally {
       setMockupLoading(false)
+      setFotoEnCurso(null)
     }
   }, [session, setSession, mockupLoading, toast])
 
@@ -1080,8 +1152,11 @@ export function DesignChat({
       backDesign: doble ? session.backDesignUrl ?? undefined : session.side === "back" ? session.currentDesignUrl ?? undefined : undefined,
       // La medida elegida no viajaba: el pedido llegaba a producción sin tamaño
       // y se imprimía a criterio de quien estampa.
-      frontStampSize: doble || session.side === "front" ? session.printArea : undefined,
-      backStampSize: doble || session.side === "back" ? session.printArea : undefined,
+      // La medida de CADA lado. Usaba session.printArea (la del lado activo)
+      // para los dos: en doble estampado el pedido salía con la misma medida
+      // en frente y dorso aunque el cliente hubiera elegido distintas.
+      frontStampSize: doble || session.side === "front" ? session.printAreaPorLado?.front ?? session.printArea : undefined,
+      backStampSize: doble || session.side === "back" ? session.printAreaPorLado?.back ?? session.printArea : undefined,
       doble_estampa: doble ? "Si" : "No",
     })
     // Pixel events para que Meta+Google puedan optimizar el funnel
@@ -1120,8 +1195,16 @@ export function DesignChat({
       quantity: 1,
       image: session.currentMockupUrl,
       mockupUrl: session.currentMockupUrl,
+      // Comprar ahora saltea el carrito, pero el pedido tiene que llevar lo
+      // MISMO que por "Agregar al carrito": las dos fotos y las dos medidas.
+      // Sin esto, quien compraba directo llegaba al checkout con una sola cara
+      // y el pedido salía a producción sin la medida de la estampa.
+      frontMockup: session.frontMockupUrl ?? (session.side === "front" ? session.currentMockupUrl ?? undefined : undefined),
+      backMockup: session.backMockupUrl ?? (session.side === "back" ? session.currentMockupUrl ?? undefined : undefined),
       frontDesign: doble ? session.frontDesignUrl ?? undefined : session.side === "front" ? session.currentDesignUrl ?? undefined : undefined,
       backDesign: doble ? session.backDesignUrl ?? undefined : session.side === "back" ? session.currentDesignUrl ?? undefined : undefined,
+      frontStampSize: doble || session.side === "front" ? session.printAreaPorLado?.front ?? session.printArea : undefined,
+      backStampSize: doble || session.side === "back" ? session.printAreaPorLado?.back ?? session.printArea : undefined,
       doble_estampa: doble ? "Si" : "No",
     })
     // Pixel: ambos eventos juntos para señal completa de intent
@@ -1705,6 +1788,9 @@ export function DesignChat({
             </div>
           ))}
 
+          {/* La foto tarda ~20s: sin esto el chat se quedaba mudo */}
+          {fotoEnCurso && <ProgresoFoto tipo={fotoEnCurso} />}
+
           {/* Loading indicator */}
           {loading && (
             <div className="flex gap-3 justify-start">
@@ -2164,7 +2250,22 @@ export function DesignChat({
           {hasBackTemplate(session.garmentType) && (
             <button
               type="button"
-              onClick={() => setSession((prev) => ({ ...prev, dobleEstampa: !prev.dobleEstampa }))}
+              onClick={() =>
+                setSession((prev) => {
+                  const prendiendo = !prev.dobleEstampa
+                  // Al prender el doble estampado, el lado que ya venías
+                  // diseñando tiene que aparecer YA con tu diseño. Antes las dos
+                  // miniaturas salían vacías aunque acabaras de generar una
+                  // imagen, y parecía que se había perdido.
+                  const seed =
+                    prendiendo && prev.currentDesignUrl
+                      ? prev.side === "front"
+                        ? { frontDesignUrl: prev.frontDesignUrl ?? prev.currentDesignUrl }
+                        : { backDesignUrl: prev.backDesignUrl ?? prev.currentDesignUrl }
+                      : {}
+                  return { ...prev, dobleEstampa: prendiendo, ...seed }
+                })
+              }
               aria-pressed={session.dobleEstampa}
               className={`mt-4 flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
                 session.dobleEstampa

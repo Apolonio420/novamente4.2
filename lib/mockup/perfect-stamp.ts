@@ -369,15 +369,29 @@ async function cajaEnPx(baseGarmentBuffer: Buffer, imprint: ImprintBox) {
  * mismo diseño: pedido a 8 cm por el cuadro rojo salía a 21 cm; por este camino
  * sale a 8 cm con ~6% de deriva.
  */
-async function estampaExacta(
+/**
+ * Pega la estampa sobre la prenda en la MEDIDA y el LUGAR exactos, sin tocar
+ * Gemini. Es el único paso donde el tamaño está garantizado, y por eso lo usan
+ * dos caminos distintos:
+ *
+ *  · la prenda plana (estampaExacta, que después le pide a Gemini el fundido)
+ *  · la foto lifestyle, que lo usa como IMAGEN DE REFERENCIA
+ *
+ * El lifestyle antes describía la medida sólo con palabras ("medium 20×20 cm",
+ * "large 35×40 cm"). Gemini no tiene escala: devolvía la misma estampa de medio
+ * pecho para las dos, y el cliente elegía mediano o grande y veía lo mismo.
+ * Pasándole esta imagen, la proporción viaja en los píxeles y no en el texto.
+ *
+ * Cuesta 0 llamadas al modelo: es todo sharp.
+ */
+export async function pegarEstampaPlana(
   designBuffer: Buffer,
   baseGarmentBuffer: Buffer,
   imprint: ImprintBox,
   anchoCm: number,
   size: StampSize,
   side: GarmentSide,
-  placement: string | undefined,
-  stats?: PerfectStampStats,
+  placement?: string,
 ): Promise<Buffer> {
   const box = await cajaEnPx(baseGarmentBuffer, imprint)
   const pxPorCm = box.w / AREA_IMPRIMIBLE_CM
@@ -415,7 +429,20 @@ async function estampaExacta(
   const left = Math.round(Math.min(Math.max(cx - wPx / 2, box.x), box.x + box.w - wPx))
   const top = Math.round(Math.min(Math.max(cy - altoPx / 2, box.y), box.y + box.h - altoPx))
 
-  const plano = await sharp(baseGarmentBuffer).composite([{ input: estampa, left, top }]).png().toBuffer()
+  return await sharp(baseGarmentBuffer).composite([{ input: estampa, left, top }]).png().toBuffer()
+}
+
+async function estampaExacta(
+  designBuffer: Buffer,
+  baseGarmentBuffer: Buffer,
+  imprint: ImprintBox,
+  anchoCm: number,
+  size: StampSize,
+  side: GarmentSide,
+  placement: string | undefined,
+  stats?: PerfectStampStats,
+): Promise<Buffer> {
+  const plano = await pegarEstampaPlana(designBuffer, baseGarmentBuffer, imprint, anchoCm, size, side, placement)
 
   try {
     const genAI = getClient()

@@ -6,6 +6,9 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 import { uploadFile } from "@/lib/cloudflare-r2"
 import { resolveAbsoluteUrl } from "@/lib/absolute-url"
 import { getCatalogProduct, getCatalogProductColor } from "@/lib/catalog/products"
+import { headers } from "next/headers"
+import { getGarmentMapping } from "@/lib/garment-mappings"
+import { pegarEstampaPlana } from "@/lib/mockup/perfect-stamp"
 import { corsHeaders, preflightResponse } from "@/lib/security/cors"
 import { guardPublicImageGen } from "@/lib/security/public-image-guard"
 import { meterPublicImageGen } from "@/lib/security/meter-usage"
@@ -20,6 +23,65 @@ export const maxDuration = 60
 // generate-image (diseño desde cero) — este endpoint no debería tocarla salvo
 // que no exista GEMINI_STAMP_MODEL.
 const IMAGE_MODEL = process.env.GEMINI_STAMP_MODEL || process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image"
+
+/** cm de ancho de la estampa según el tamaño elegido en /crear. */
+const ANCHO_CM: Record<string, number> = { R1: 10, R2: 20, R3: 35 }
+
+/** Las posiciones de /crear, traducidas a las del motor de mockups. */
+const POSICION: Record<string, string> = {
+  "left-chest": "left-chest",
+  center: "center-high",
+  "right-chest": "right-chest",
+}
+
+/**
+ * Arma la prenda plana con la estampa ya en su medida exacta, para pasársela a
+ * Gemini como REFERENCIA.
+ *
+ * Por qué: describir la medida con palabras no alcanza. Medido sobre el mismo
+ * diseño y el mismo escenario, "medium chest print (20×20 cm)" y "large
+ * full-front print (35×40 cm)" devolvían estampas del mismo tamaño — el
+ * cliente elegía mediano o grande y veía lo mismo. Con la referencia la
+ * proporción viaja en los píxeles.
+ *
+ * No cuesta ninguna llamada extra al modelo: el pegado es todo sharp.
+ * Si algo falla se devuelve null y el mockup sigue por el camino de siempre.
+ */
+async function referenciaConMedida(
+  designBuffer: Buffer,
+  garmentType: string,
+  garmentColor: string,
+  side: "front" | "back",
+  printArea: "R1" | "R2" | "R3",
+  placement: string,
+  origin: string,
+): Promise<Buffer | null> {
+  try {
+    const mapping = getGarmentMapping(garmentType, garmentColor, side)
+    if (!mapping || mapping.garmentPath === "fallback") return null
+
+    // La prenda base se baja por HTTP, NO se lee del disco: leerla con
+    // fs.readFileSync(process.cwd()/public/...) mete TODO public/ en el bundle
+    // de la función (884 MB contra un límite de 250) y el deploy falla antes
+    // de compilar.
+    const gResp = await fetch(`${origin}/${mapping.garmentPath.replace(/^\//, "")}`)
+    if (!gResp.ok) return null
+    const base = Buffer.from(await gResp.arrayBuffer())
+
+    return await pegarEstampaPlana(
+      designBuffer,
+      base,
+      mapping.coordinates,
+      ANCHO_CM[printArea] ?? 20,
+      printArea,
+      side,
+      POSICION[placement] ?? "left-chest",
+    )
+  } catch (e) {
+    console.warn("[mockup-lifestyle] sin referencia con medida:", (e as Error)?.message)
+    return null
+  }
+}
 
 export async function OPTIONS(req: NextRequest) {
   return preflightResponse(req)
@@ -127,16 +189,18 @@ export async function POST(req: NextRequest) {
     // elegía tamaño chico y sólo podía estamparlo sobre el corazón, sin opción
     // de centrarlo.
     const placement = body.placement ?? "left-chest"
+    const chico =
+      "a SMALL logo-sized print about 10 cm wide — roughly ONE EIGHTH of the garment's width, about the size of the wearer's palm. It must read as a discreet logo, NOT as a graphic"
     const logoChicoFrente =
       placement === "center"
-        ? "small print (10×10 cm) centered high on the chest, at sternum height"
+        ? `${chico}, centred high on the chest at sternum height`
         : placement === "right-chest"
-          ? "small print (10×10 cm) on the wearer's right chest (viewer's left)"
-          : "small print (10×10 cm) on the left chest area"
+          ? `${chico}, on the wearer's right chest (viewer's left)`
+          : `${chico}, on the left chest area`
     const logoChicoDorso =
       placement === "center"
-        ? "small print (10×10 cm) centered at the upper back, just below the collar"
-        : "small print (10×10 cm) at the upper back, between the shoulder blades"
+        ? `${chico}, centred at the upper back just below the collar`
+        : `${chico}, at the upper back between the shoulder blades`
 
     const printAreaDesc =
       printArea === "R1"
@@ -145,35 +209,71 @@ export async function POST(req: NextRequest) {
           : logoChicoDorso
         : printArea === "R3"
           ? side === "front"
-            ? "large full-front print (35×40 cm), covering most of the chest area from collar down"
-            : "large full-back print (35×40 cm), covering most of the back from shoulders to waist"
+            ? "an OVERSIZED full-front graphic about 35 cm wide — as wide as the wearer's whole chest, from armpit seam to armpit seam, running from just below the collar down past the ribs. It must DOMINATE the garment, with only a narrow margin of plain fabric at each side. This is a big statement print, NOT a medium chest print"
+            : "an OVERSIZED full-back graphic about 35 cm wide — as wide as the wearer's whole back, from shoulder to shoulder and down past the waist. It must DOMINATE the garment"
           : side === "front"
-            ? "medium centered chest print (20×20 cm), positioned on the upper-mid chest"
-            : "medium centered back print (20×20 cm), positioned on the upper-mid back"
+            ? "a MEDIUM centred chest print about 20 cm wide — roughly HALF the width of the garment's front, clearly smaller than a full-front graphic, leaving a wide band of plain fabric visible on BOTH sides of the print"
+            : "a MEDIUM centred back print about 20 cm wide — roughly HALF the width of the garment's back, leaving plain fabric visible on both sides"
     const sideText = printAreaDesc
     const scenarioIdx =
       typeof body.scenario === "number" ? body.scenario % SCENARIOS.length : Math.floor(Math.random() * SCENARIOS.length)
     const scenario = SCENARIOS[scenarioIdx]
 
-    const prompt = [
-      `Generate a photorealistic lifestyle photo of a young Argentinian person (20-30 years old, friendly natural expression, diverse looks) wearing a ${colorNatural} ${garmentDesc}.`,
-      `The garment shows the EXACT design from the input image printed on the ${sideText}, with realistic DTG print quality (slight fabric texture, natural ink absorption, no shiny edges).`,
-      `Setting: ${scenario}.`,
-      "Composition: medium shot showing the upper body and the printed design clearly. Hyperrealistic, 4K, cinematic depth of field, natural skin tones.",
-      "CRITICAL: reproduce the FULL input image EXACTLY as the print — same colors, same composition, same content. If the input is a photo, print the WHOLE photo. Do NOT extract a single element from it, do NOT simplify it into a logo, icon or emblem, do NOT replace it with a generic mark. Do not redesign, do not stylize, do not crop.",
-      "Do not add logos, watermarks, or extra text. Do not show a flat mockup, hanger or studio backdrop.",
-      "Respond ONLY with the image (inlineData). No text.",
-    ].join(" ")
+    // Referencia con la medida ya resuelta (0 llamadas al modelo). Si sale,
+    // Gemini copia la proporción de ahí en vez de interpretarla del texto.
+    const h = await headers()
+    const host = h.get("host")
+    const proto = h.get("x-forwarded-proto") || "https"
+    const origin =
+      (host ? `${proto}://${host}` : null) ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+      "http://localhost:3000"
+    const referencia = await referenciaConMedida(
+      imgBuffer,
+      body.garmentType,
+      body.garmentColor,
+      side,
+      printArea,
+      placement,
+      origin,
+    )
+
+    const prompt = referencia
+      ? [
+          "The input image is a flat product photo of the garment with the print ALREADY applied at its EXACT final size and position.",
+          `Generate a photorealistic lifestyle photo of a young Argentinian person (20-30 years old, friendly natural expression, diverse looks) WEARING THAT EXACT ${colorNatural} ${garmentDesc}.`,
+          "CRITICAL: the print must keep the SAME SIZE RELATIVE TO THE GARMENT and the SAME POSITION as in the reference. Measure it against the shirt: if it covers a small part of the chest in the reference, it must cover a small part of the chest on the person; if it spans nearly the whole chest, it must span nearly the whole chest. Do NOT resize, re-center or re-scale the print.",
+          "Reproduce the artwork EXACTLY — same colors, same composition, same content. Do NOT extract a single element from it, do NOT simplify it into a logo or emblem, do not redesign, do not stylize, do not crop.",
+          "Render it as a real DTG print: it follows the fabric's folds and shadows, slightly absorbed into the cotton, not glossy, no sticker edge.",
+          `Setting: ${scenario}.`,
+          "Composition: medium shot showing the upper body and the printed design clearly. Hyperrealistic, 4K, cinematic depth of field, natural skin tones.",
+          "Do not add logos, watermarks, or extra text. Do not show a flat mockup, hanger or studio backdrop.",
+          "Respond ONLY with the image (inlineData). No text.",
+        ].join(" ")
+      : [
+          // Sin referencia (prenda sin base, o falló el pegado) se vuelve al
+          // camino de siempre: la medida va descrita en palabras.
+          `Generate a photorealistic lifestyle photo of a young Argentinian person (20-30 years old, friendly natural expression, diverse looks) wearing a ${colorNatural} ${garmentDesc}.`,
+          `The garment shows the EXACT design from the input image printed on the ${sideText}, with realistic DTG print quality (slight fabric texture, natural ink absorption, no shiny edges).`,
+          "The SIZE of the print relative to the garment is a CRITICAL requirement: match the described proportion exactly. Do not default to a medium chest print.",
+          `Setting: ${scenario}.`,
+          "Composition: medium shot showing the upper body and the printed design clearly. Hyperrealistic, 4K, cinematic depth of field, natural skin tones.",
+          "CRITICAL: reproduce the FULL input image EXACTLY as the print — same colors, same composition, same content. If the input is a photo, print the WHOLE photo. Do NOT extract a single element from it, do NOT simplify it into a logo, icon or emblem, do NOT replace it with a generic mark. Do not redesign, do not stylize, do not crop.",
+          "Do not add logos, watermarks, or extra text. Do not show a flat mockup, hanger or studio backdrop.",
+          "Respond ONLY with the image (inlineData). No text.",
+        ].join(" ")
 
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({ model: IMAGE_MODEL })
 
     const result = await model.generateContent([
       {
-        inlineData: {
-          mimeType: mimeType as "image/png" | "image/jpeg" | "image/webp",
-          data: base64,
-        },
+        inlineData: referencia
+          ? { mimeType: "image/png" as const, data: referencia.toString("base64") }
+          : {
+              mimeType: mimeType as "image/png" | "image/jpeg" | "image/webp",
+              data: base64,
+            },
       },
       prompt,
     ])
