@@ -542,10 +542,45 @@ export function DesignCanvas({
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  // --- History (snapshots completos) ---
-  const [history, setHistory] = useState<CanvasSnapshot[]>([emptySnapshot()])
-  const [histIdx, setHistIdx] = useState(0)
-  const snap = history[histIdx]
+  // --- History (snapshots completos), UNA PILA POR LADO ---
+  //
+  // Antes había una sola lista de capas para toda la sesión y el botón
+  // Frente/Espalda no la tocaba: los dos diseños terminaban apilados en la
+  // misma cara, y al pasar a un lado se "perdía" el otro. Ahora cada lado tiene
+  // su propia pila (con su propio deshacer), así se puede estampar frente Y
+  // dorso sin pisar nada.
+  type LadoCanvas = 'front' | 'back'
+  const lado: LadoCanvas = session.side === 'back' ? 'back' : 'front'
+
+  const [historyPorLado, setHistoryPorLado] = useState<Record<LadoCanvas, CanvasSnapshot[]>>({
+    front: [emptySnapshot()],
+    back: [emptySnapshot()],
+  })
+  const [histIdxPorLado, setHistIdxPorLado] = useState<Record<LadoCanvas, number>>({ front: 0, back: 0 })
+
+  const history = historyPorLado[lado]
+  const histIdx = histIdxPorLado[lado]
+
+  // Se mantienen los nombres de siempre para que el resto del componente no
+  // tenga que saber que ahora hay dos pilas.
+  const setHistory = useCallback(
+    (v: CanvasSnapshot[] | ((prev: CanvasSnapshot[]) => CanvasSnapshot[])) =>
+      setHistoryPorLado((prev) => ({
+        ...prev,
+        [lado]: typeof v === 'function' ? (v as (p: CanvasSnapshot[]) => CanvasSnapshot[])(prev[lado]) : v,
+      })),
+    [lado],
+  )
+  const setHistIdx = useCallback(
+    (v: number | ((prev: number) => number)) =>
+      setHistIdxPorLado((prev) => ({
+        ...prev,
+        [lado]: typeof v === 'function' ? (v as (p: number) => number)(prev[lado]) : v,
+      })),
+    [lado],
+  )
+
+  const snap = history[histIdx] ?? emptySnapshot()
   const layers = snap.layers
   const activeId = snap.activeId
   const activeLayer = layers.find(l => l.id === activeId) ?? null
@@ -842,9 +877,20 @@ export function DesignCanvas({
         mockupUrl = json.url ?? dataUrl
       }
 
-      setSession((prev) => ({ ...prev, currentMockupUrl: mockupUrl }))
+      // Guardar el diseño de ESTE lado en la sesión: así, si después el cliente
+      // trabaja el otro lado, los dos siguen disponibles para el carrito.
+      setSession((prev) => ({
+        ...prev,
+        currentMockupUrl: mockupUrl,
+        ...(session.side === "back" ? { backDesignUrl: mockupUrl } : { frontDesignUrl: mockupUrl }),
+      }))
 
-      const sideKey = session.side === "front" ? "frontDesign" : "backDesign"
+      // Lo que va al carrito toma el lado actual recién exportado y CONSERVA el
+      // otro si ya se había hecho. Antes se mandaba sólo el lado activo y la
+      // doble estampa se perdía al agregar.
+      const disenoFrente = session.side === "front" ? mockupUrl : session.frontDesignUrl ?? undefined
+      const disenoDorso = session.side === "back" ? mockupUrl : session.backDesignUrl ?? undefined
+      const esDoble = Boolean(disenoFrente && disenoDorso)
       const product = getCatalogProduct(session.garmentType)
       const price = product?.retailARS ?? 35000
       const productName = `${product?.name ?? "Remera"} Custom — Novamente`
@@ -863,7 +909,9 @@ export function DesignCanvas({
         mockupUrl,
         // por lado, que es lo que mira la vista grande del carrito
         [session.side === "back" ? "backMockup" : "frontMockup"]: mockupUrl,
-        [sideKey]: session.currentDesignUrl ?? undefined,
+        frontDesign: disenoFrente,
+        backDesign: disenoDorso,
+        doble_estampa: esDoble ? "Si" : "No",
         // la medida elegida tiene que llegar a producción
         [session.side === "back" ? "backStampSize" : "frontStampSize"]: session.printArea,
       })

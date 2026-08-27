@@ -1522,7 +1522,12 @@ export function DesignChat({
         </div>
       )}
 
-    <div className="flex flex-col lg:flex-row gap-6 min-h-[70vh]">
+    {/* En desktop la fila se acota a la altura de la ventana (el header sticky
+        mide ~11rem). Sin tope de alto, la columna derecha —preview, catálogo,
+        doble estampa, tamaño, talle, CTA, historial— estiraba toda la fila, el
+        overflow-y-auto del chat nunca se activaba y había que scrollear la
+        página entera para llegar a los botones. */}
+    <div className="flex flex-col lg:flex-row gap-6 min-h-[70vh] lg:h-[calc(100vh-11rem)] lg:min-h-0 lg:overflow-hidden">
       {/* ========== LEFT: Chat ========== */}
       <div className="flex flex-col flex-1 min-w-0 bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
         {/* Messages */}
@@ -1912,7 +1917,7 @@ export function DesignChat({
       </div>
 
       {/* ========== RIGHT: Preview + Controls ========== */}
-      <div className="w-full lg:w-80 xl:w-96 shrink-0 flex flex-col gap-4">
+      <div className="w-full lg:w-80 xl:w-96 shrink-0 flex flex-col gap-4 lg:overflow-y-auto lg:min-h-0 lg:pr-1">
         {/* Preview card */}
         <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
           <div className="p-3 border-b border-zinc-800 flex items-center justify-between gap-2">
