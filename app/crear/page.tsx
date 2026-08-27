@@ -20,6 +20,13 @@ export type DesignSession = {
   frontDesignUrl: string | null
   backDesignUrl: string | null
   currentMockupUrl: string | null
+  /**
+   * La foto de cada lado, guardada aparte. Sin esto el carrito sólo podía
+   * mostrar la última generada y no había forma de que el cliente viera cómo
+   * quedaba el frente si lo último que había probado era la espalda.
+   */
+  frontMockupUrl: string | null
+  backMockupUrl: string | null
   mockupGeneratedFor: {
     garmentType: string
     garmentColor: string
@@ -27,12 +34,16 @@ export type DesignSession = {
     designUrl: string
     /** Tamaño con el que se generó. Sin esto, cambiarlo no invalidaba la foto. */
     printArea?: string
+    /** Y dónde se ubicó el logo chico. */
+    placement?: string
   } | null
   designHistory: string[]
   garmentType: string
   garmentColor: string
   side: "front" | "back"
   printArea: "R1" | "R2" | "R3"
+  /** Dónde va el logo cuando el tamaño es chico (R1). */
+  placement: "left-chest" | "center" | "right-chest"
   /** Doble estampado: el cliente estampa frente Y espalda en la misma prenda. */
   dobleEstampa: boolean
 }
@@ -50,12 +61,15 @@ export default function CrearPage() {
     frontDesignUrl: null,
     backDesignUrl: null,
     currentMockupUrl: null,
+    frontMockupUrl: null,
+    backMockupUrl: null,
     mockupGeneratedFor: null,
     designHistory: [],
     garmentType: "aldea-classic-tshirt",
     garmentColor: "black",
     side: "front",
     printArea: "R2",
+    placement: "left-chest",
     dobleEstampa: false,
   }))
   const [tryOnOpen, setTryOnOpen] = useState(false)

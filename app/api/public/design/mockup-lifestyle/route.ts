@@ -100,6 +100,8 @@ export async function POST(req: NextRequest) {
       side?: "front" | "back"
       scenario?: number
       printArea?: "R1" | "R2" | "R3"
+      /** Dónde va el logo chico. Sólo aplica a R1. */
+      placement?: "left-chest" | "center" | "right-chest"
     }
 
     if (!body.designImageUrl || !body.garmentType || !body.garmentColor) {
@@ -121,11 +123,26 @@ export async function POST(req: NextRequest) {
     const side = body.side ?? "front"
     const printArea = body.printArea ?? "R2"
     // Descripción del tamaño + ubicación del print area para Gemini
+    // Dónde va el logo chico. Antes estaba fijo en "left chest": el cliente
+    // elegía tamaño chico y sólo podía estamparlo sobre el corazón, sin opción
+    // de centrarlo.
+    const placement = body.placement ?? "left-chest"
+    const logoChicoFrente =
+      placement === "center"
+        ? "small print (10×10 cm) centered high on the chest, at sternum height"
+        : placement === "right-chest"
+          ? "small print (10×10 cm) on the wearer's right chest (viewer's left)"
+          : "small print (10×10 cm) on the left chest area"
+    const logoChicoDorso =
+      placement === "center"
+        ? "small print (10×10 cm) centered at the upper back, just below the collar"
+        : "small print (10×10 cm) at the upper back, between the shoulder blades"
+
     const printAreaDesc =
       printArea === "R1"
         ? side === "front"
-          ? "small print (10×10 cm) on the left chest area"
-          : "small print (10×10 cm) at the upper back, between the shoulder blades"
+          ? logoChicoFrente
+          : logoChicoDorso
         : printArea === "R3"
           ? side === "front"
             ? "large full-front print (35×40 cm), covering most of the chest area from collar down"

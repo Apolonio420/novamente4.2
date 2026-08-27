@@ -30,6 +30,13 @@ import { hasBackTemplate } from "./garment-templates"
 // Types
 // ============================================================
 
+/** Etiqueta legible del tamaño de estampa, para los mensajes del chat. */
+const PRINT_AREA_LABEL: Record<string, string> = {
+  R1: 'chico (10×10 cm)',
+  R2: 'mediano (20×25 cm)',
+  R3: 'grande (35×40 cm)',
+}
+
 type Msg = {
   role: "user" | "assistant"
   text: string
@@ -925,6 +932,7 @@ export function DesignChat({
           garmentColor: session.garmentColor,
           side: effSide,
           printArea: effPrintArea,
+          placement: session.placement,
           ...(typeof overrides?.scenario === "number" ? { scenario: overrides.scenario } : {}),
         }),
       })
@@ -948,9 +956,25 @@ export function DesignChat({
           garmentColor: prev.garmentColor,
           side: effSide,
           designUrl: prev.currentDesignUrl ?? "",
+          printArea: effPrintArea,
+          placement: prev.placement,
         },
+        // guardar la foto del lado que se probó, para el carrito y el dorso
+        ...(effSide === "back" ? { backMockupUrl: mockupUrl } : { frontMockupUrl: mockupUrl }),
       }))
-      toast({ title: "Mockup listo", description: "Tu prenda en una foto lifestyle 👇" })
+
+      // La foto también va AL CHAT. Antes sólo aparecía en el panel derecho, que
+      // scrollea aparte: se generaba, se podía descargar, pero no se veía —
+      // había que adivinar que estaba más arriba.
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: `Así queda en ${garmentLabel(session.garmentType)} ${colorLabel(session.garmentType, session.garmentColor)} · ${effSide === "back" ? "espalda" : "frente"} · ${PRINT_AREA_LABEL[effPrintArea] ?? effPrintArea}`,
+          imageUrl: mockupUrl,
+        },
+      ])
+      toast({ title: "Mockup listo", description: "Te lo dejé en el chat 👇" })
     } catch (e: any) {
       // Si el mockup que quedó en pantalla no coincide con la selección actual,
       // lo limpiamos para NO mostrar una prenda/color de un intento anterior (bug stale).
@@ -991,9 +1015,11 @@ export function DesignChat({
       quantity: 1,
       image: session.currentMockupUrl,
       mockupUrl: session.currentMockupUrl,
-      // por lado, que es lo que mira la vista grande del carrito
-      frontMockup: session.side === "front" ? session.currentMockupUrl ?? undefined : undefined,
-      backMockup: session.side === "back" ? session.currentMockupUrl ?? undefined : undefined,
+      // La foto de CADA lado, no sólo la del último que se probó. Antes, si lo
+      // último era la espalda, el carrito no tenía forma de mostrar cómo había
+      // quedado el frente.
+      frontMockup: session.frontMockupUrl ?? (session.side === "front" ? session.currentMockupUrl ?? undefined : undefined),
+      backMockup: session.backMockupUrl ?? (session.side === "back" ? session.currentMockupUrl ?? undefined : undefined),
       frontDesign: doble ? session.frontDesignUrl ?? undefined : session.side === "front" ? session.currentDesignUrl ?? undefined : undefined,
       backDesign: doble ? session.backDesignUrl ?? undefined : session.side === "back" ? session.currentDesignUrl ?? undefined : undefined,
       // La medida elegida no viajaba: el pedido llegaba a producción sin tamaño
@@ -1203,7 +1229,8 @@ export function DesignChat({
       session.mockupGeneratedFor.side !== session.side ||
       session.mockupGeneratedFor.designUrl !== session.currentDesignUrl ||
       // el tamaño faltaba: cambiarlo dejaba la misma foto en pantalla
-      (session.mockupGeneratedFor.printArea ?? session.printArea) !== session.printArea)
+      (session.mockupGeneratedFor.printArea ?? session.printArea) !== session.printArea ||
+      (session.mockupGeneratedFor.placement ?? session.placement) !== session.placement)
 
   return (
     <>
@@ -2159,6 +2186,38 @@ export function DesignChat({
                 </button>
               ))}
             </div>
+
+            {/* Dónde va el logo chico. Antes el tamaño chico estaba fijo sobre
+                el corazón: no había forma de centrarlo. */}
+            {session.printArea === "R1" && (
+              <div className="pt-1.5">
+                <label className="text-[10px] text-zinc-500 uppercase tracking-wider">
+                  {session.side === "back" ? "Dónde en la espalda" : "Dónde en el pecho"}
+                </label>
+                <div className="grid grid-cols-3 gap-1.5 mt-1">
+                  {([
+                    { key: "left-chest", label: session.side === "back" ? "Omóplatos" : "Corazón" },
+                    { key: "center", label: session.side === "back" ? "Nuca" : "Centro" },
+                    { key: "right-chest", label: session.side === "back" ? "Omóplatos" : "Derecha" },
+                  ] as const)
+                    .filter((op) => !(session.side === "back" && op.key === "right-chest"))
+                    .map((op) => (
+                      <button
+                        key={op.key}
+                        type="button"
+                        onClick={() => setSession((prev) => ({ ...prev, placement: op.key }))}
+                        className={`text-[11px] rounded border py-1.5 px-1 transition ${
+                          session.placement === op.key
+                            ? "border-violet-500 bg-violet-600/15 text-white"
+                            : "border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
+                        }`}
+                      >
+                        {op.label}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Size selector — siempre visible para que el user lo elija desde temprano */}
