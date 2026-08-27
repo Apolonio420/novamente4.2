@@ -64,6 +64,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Price validation failed" }, { status: 400 })
     }
 
+    // La comparación de arriba mira `total` contra la suma de `unit_price` —
+    // los dos vienen del NAVEGADOR. O sea: validaba la aritmética del cliente
+    // contra sus propios números. Con postear `unit_price: 1` alcanzaba para
+    // pagar $1 un buzo de $55.000, porque ese mismo valor viajaba después a la
+    // preferencia de MercadoPago.
+    //
+    // Acá se resuelve el precio REAL contra el catálogo y la fila del producto.
+    // Sólo se rechaza si el cliente manda MENOS que el precio real; si manda de
+    // más, se deja pasar (no vamos a bloquear a alguien que paga de más) y los
+    // ítems de un flujo que no conocemos tampoco frenan la compra.
+    const { validarPrecios } = await import('@/lib/checkout/precio-real')
+    const chequeo = await validarPrecios(
+      (cartItems && cartItems.length ? cartItems : items) as any[],
+    )
+    if (!chequeo.ok) {
+      console.error('❌ Precio por debajo del real:', chequeo.subfacturados)
+      const { notifyError } = await import('@/lib/notifications')
+      await notifyError({
+        area: 'Checkout',
+        endpoint: 'POST /api/checkout',
+        message:
+          `Intento de compra por debajo del precio real (${customer?.email || 'sin email'}): ` +
+          chequeo.subfacturados
+            .map((s) => `${s.item} cobrado ${s.cobrado} vs real ${s.real}`)
+            .join(' · '),
+      }).catch(() => null)
+      return NextResponse.json(
+        { success: false, error: 'Los precios del carrito no coinciden. Recargá la página y probá de nuevo.' },
+        { status: 400 },
+      )
+    }
+    if (chequeo.sinVerificar > 0) {
+      console.warn(`[checkout] ${chequeo.sinVerificar} item(s) sin precio verificable`)
+    }
+
     // Calcular subtotal y shipping si no vienen. El fallback sale de
     // lib/shipping-config (antes tenía los montos hardcodeados acá y quedaba
     // desincronizado del carrito cuando cambiaba la tarifa).
