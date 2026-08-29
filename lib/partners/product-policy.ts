@@ -31,6 +31,11 @@ export const ALLOWED_PARTNER_CATEGORIES = [
   "Buzo Cuello Redondo",
   // Otros
   "Arte",
+  // Bahía totebag — producto propio del catálogo (desbloqueada 29/08)
+  "Totebag",
+  "Tote Bag",
+  "Accesorio",
+  "Accesorios",
 ] as const
 
 const ALLOWED_SET = new Set<string>(ALLOWED_PARTNER_CATEGORIES.map(c => c.toLowerCase()))
@@ -48,6 +53,9 @@ const CATEGORY_ROOT_TOKENS = [
   "musculosa",
   "crop",
   "arte",
+  "totebag",
+  "tote",
+  "accesorio",
 ]
 
 /**
@@ -91,8 +99,9 @@ const FORBIDDEN_KEYWORDS = [
   "billetera",
   "rinonera",
   "riñonera",
-  "tote bag",
-  "totebag",
+  // ("tote bag"/"totebag" salieron 29/08: la Bahía es producto PROPIO del catálogo
+  // desde el 13/07 y este filtro — anterior a su alta — bloqueaba a los partners
+  // publicar algo que nosotros mismos producimos. 1 sola tote en 502 productos.)
   "gorra",
   "gorro",
   "sombrero",

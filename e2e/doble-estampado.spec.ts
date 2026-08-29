@@ -4,7 +4,8 @@ import path from 'path'
 // Usa baseURL de playwright.config (localhost:3000 / webServer en CI),
 // o E2E_BASE si se corre contra un dev server en otro puerto.
 const BASE = process.env.E2E_BASE ?? ''
-const PRICE_ALDEA_TSHIRT_ARS = 28600 // lib/catalog/products.ts — sin recargo por doble estampado
+const PRICE_ALDEA_TSHIRT_ARS = 28600 // lib/catalog/products.ts
+const RECARGO_DOBLE_ESTAMPA_ARS = 3500 // política 29/08 — el dorso se cobra (mismo número que el bot y el checkout)
 
 async function skipOnboarding(page: import('@playwright/test').Page) {
   await page.addInitScript(() => {
@@ -17,7 +18,7 @@ async function skipOnboarding(page: import('@playwright/test').Page) {
 }
 
 test.describe('Doble estampado — flujo completo', () => {
-  test('genera frente + espalda reales, ambos lados listos, carrito con los dos diseños y sin recargo', async ({ page }) => {
+  test('genera frente + espalda reales, ambos lados listos, carrito con los dos diseños y el recargo del dorso', async ({ page }) => {
     test.setTimeout(60000)
     await skipOnboarding(page)
 
@@ -77,7 +78,7 @@ test.describe('Doble estampado — flujo completo', () => {
     expect(item.frontDesign).toBeTruthy()
     expect(item.backDesign).toBeTruthy()
     expect(item.frontDesign).not.toBe(item.backDesign) // dos diseños distintos, no el mismo repetido
-    expect(item.price).toBe(PRICE_ALDEA_TSHIRT_ARS) // SIN recargo — el precio ya incluye las dos estampas
+    expect(item.price).toBe(PRICE_ALDEA_TSHIRT_ARS + RECARGO_DOBLE_ESTAMPA_ARS) // precio base + recargo por dorso (29/08)
   })
 
   test('guard: no deja agregar al carrito si falta un lado', async ({ page }) => {

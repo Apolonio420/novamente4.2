@@ -66,8 +66,18 @@ function colorLabel(productKey: string, colorKey: string) {
   return getCatalogProductColor(productKey, colorKey)?.name ?? colorKey
 }
 function getPrice(key: string) {
-  // El precio del producto ya incluye las dos estampas (doble estampado sin recargo).
   return getCatalogProduct(key)?.retailARS ?? 35000
+}
+// Política 29/08: el dorso se cobra — $3.500 por prenda ($5.000 la totebag).
+// MISMO número que valida el server (lib/checkout/precio-real.ts) y que cotiza
+// el bot; si estos divergen, el checkout rechaza la compra con 400.
+const RECARGO_DORSO_ARS = 3500
+const RECARGO_DORSO_TOTE_ARS = 5000
+function recargoDorso(key: string) {
+  return key.toLowerCase().includes('tote') ? RECARGO_DORSO_TOTE_ARS : RECARGO_DORSO_ARS
+}
+function getPriceConDorso(key: string, doble: boolean) {
+  return getPrice(key) + (doble ? recargoDorso(key) : 0)
 }
 
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -561,7 +571,7 @@ export function DesignChat({
         content_name: `Variante AI — ${session.garmentType}`,
         content_type: "product",
         content_category: session.garmentType,
-        value: getPrice(session.garmentType),
+        value: getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType))),
         currency: "ARS",
       })
     } catch (e: any) {
@@ -922,7 +932,7 @@ export function DesignChat({
         content_name: `Diseño AI — ${session.garmentType}`,
         content_type: "product",
         content_category: session.garmentType,
-        value: getPrice(session.garmentType),
+        value: getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType))),
         currency: "ARS",
       })
     } catch (e: any) {
@@ -1130,7 +1140,7 @@ export function DesignChat({
       toast({ title: "Falta un lado", description: "Diseñá el frente y la espalda antes de agregar al carrito.", variant: "destructive" })
       return
     }
-    const price = getPrice(session.garmentType)
+    const price = getPriceConDorso(session.garmentType, !!doble)
     const name = `${garmentLabel(session.garmentType)} Custom — Novamente`
     addItem({
       id,
@@ -1182,7 +1192,7 @@ export function DesignChat({
       toast({ title: "Falta un lado", description: "Diseñá el frente y la espalda antes de comprar.", variant: "destructive" })
       return
     }
-    const price = getPrice(session.garmentType)
+    const price = getPriceConDorso(session.garmentType, !!doble)
     const name = `${garmentLabel(session.garmentType)} Custom — Novamente`
     addItem({
       id,
@@ -2276,8 +2286,8 @@ export function DesignChat({
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1.5 text-sm font-semibold text-white">
                   Doble estampado
-                  <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
-                    Sin costo extra
+                  <span className="rounded-full bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-bold text-violet-300">
+                    +${recargoDorso(session.garmentType).toLocaleString("es-AR")}
                   </span>
                 </span>
                 <span className="mt-0.5 block text-[11px] text-zinc-400">
@@ -2670,13 +2680,13 @@ export function DesignChat({
               </span>
               <details className="group">
                 <summary className="cursor-pointer list-none text-white font-semibold flex items-center gap-1 hover:text-violet-300 transition">
-                  ${(getPrice(session.garmentType)).toLocaleString("es-AR")}
+                  ${(getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType)))).toLocaleString("es-AR")}
                   <span className="text-[10px] text-zinc-500 group-open:rotate-180 transition-transform">▼</span>
                 </summary>
                 <div className="absolute right-3 mt-1 z-10 bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-xs space-y-1.5 shadow-xl min-w-[220px]">
                   <p className="text-zinc-400 text-[10px] uppercase tracking-wider mb-1">Desglose</p>
                   {(() => {
-                    const total = getPrice(session.garmentType)
+                    const total = getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType)))
                     // Estimacion: 65% prenda + 25% estampa DTG + 10% margen
                     const prenda = Math.round(total * 0.65)
                     const estampa = Math.round(total * 0.25)
@@ -2708,7 +2718,7 @@ export function DesignChat({
             </div>
             {/* Price comparison vs competidor — para mostrar valor */}
             {(() => {
-              const ours = getPrice(session.garmentType)
+              const ours = getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType)))
               // Comparativa estimada — Printful + envío AR es ~50% más caro
               const competitor = Math.round(ours * 1.45)
               const savings = competitor - ours
@@ -2760,9 +2770,9 @@ export function DesignChat({
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-white font-semibold text-base">
-                ${getPrice(session.garmentType).toLocaleString("es-AR")}
+                ${getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType))).toLocaleString("es-AR")}
               </span>
-              <span className="text-[10px] text-emerald-400">o 3x ${Math.round(getPrice(session.garmentType) / 3).toLocaleString("es-AR")}</span>
+              <span className="text-[10px] text-emerald-400">o 3x ${Math.round(getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType))) / 3).toLocaleString("es-AR")}</span>
             </div>
           </div>
           <Button

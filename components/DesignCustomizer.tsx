@@ -127,7 +127,9 @@ const SIZES_BY_GARMENT: Record<string, string[]> = {
 }
 const DEFAULT_SIZES = ["S", "M", "L", "XL"]
 
-const DOUBLE_STAMPING_EXTRA = 7000
+// Política 29/08: el dorso vale $3.500 en todos los canales (mismo número que
+// cobra el bot y que valida el checkout server-side en lib/checkout/precio-real.ts).
+const DOUBLE_STAMPING_EXTRA = 3500
 
 export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initialImageUrl, imageId, onImageSelect }, ref) => {
   const { addItem } = useCart()

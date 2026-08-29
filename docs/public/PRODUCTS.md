@@ -66,7 +66,8 @@ Todos los productos son 100% algodón premium, optimizados para impresión DTG d
 
 ## Información General
 
-- **Todos los precios incluyen:** Diseño con IA + impresión DTG premium (2 estampas: frente y espalda)
+- **Todos los precios incluyen:** Diseño con IA + impresión DTG premium (una estampa: frente o espalda, del tamaño que sea)
+- **Estampa en ambas caras (frente + espalda):** +$3.500 por prenda (totebag: +$5.000). Incluida sin cargo en los planes Growth y Pro.
 - **Sin cargos adicionales** por diseño, colores o complejidad
 - **Producción:** 24-48 horas hábiles desde confirmación
 - **Impresión DTG:** Tintas a base de agua que penetran la fibra del algodón. Colores vibrantes que resisten 50+ lavados.

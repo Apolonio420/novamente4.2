@@ -797,7 +797,7 @@ export default function DesignStudioPage() {
     }
     const cat = CATALOG_PRODUCTS.find(p => p.key === pinnedFront.garmentKey)
     setCatalogProductName(cat ? `${cat.name} ${COLOR_LABELS[pinnedFront.garmentColor] || ''} doble estampa` : 'Producto doble estampa')
-    setCatalogProductPrice(cat ? String(Math.round(cat.retailARS * 1.1)) : '32000') // +10% por doble estampa
+    setCatalogProductPrice(cat ? String(cat.retailARS + 3500) : '32000') // +$3.500 por doble estampa (política 29/08, mismo número que cobra Novamente)
     setCatalogModal({
       frontPrint: pinnedFront.print,
       backPrint: pinnedBack.print,

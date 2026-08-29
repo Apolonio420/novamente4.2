@@ -978,7 +978,10 @@ export function DesignCanvas({
       const disenoDorso = session.side === "back" ? mockupUrl : session.backDesignUrl ?? undefined
       const esDoble = Boolean(disenoFrente && disenoDorso)
       const product = getCatalogProduct(session.garmentType)
-      const price = product?.retailARS ?? 35000
+      // Política 29/08: el dorso se cobra — $3.500 ($5.000 tote). Mismo número
+      // que valida el checkout server-side; si difieren, la compra rebota con 400.
+      const recargoDorso = esDoble ? (session.garmentType.toLowerCase().includes('tote') ? 5000 : 3500) : 0
+      const price = (product?.retailARS ?? 35000) + recargoDorso
       const productName = `${product?.name ?? "Remera"} Custom — Novamente`
       const itemId = `custom-canvas-${Date.now()}`
 

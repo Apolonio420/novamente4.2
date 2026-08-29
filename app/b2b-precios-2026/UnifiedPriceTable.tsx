@@ -23,7 +23,8 @@ export default function UnifiedPriceTable({
       <div className="text-center mb-6">
         <h2 className="novamente-heading text-2xl mb-2">Tabla de Precios Unificados</h2>
         <p className="text-sm text-muted-foreground">
-          Precios finales por unidad en Pesos (ARS), incluyen estampa estandar.
+          Precios finales por unidad en Pesos (ARS), incluyen una estampa (frente o dorso, del tamaño que sea).
+          Estampa en ambas caras: +$3.500 por prenda (totebag +$5.000) — incluida sin cargo en los planes Growth y Pro.
         </p>
       </div>
 

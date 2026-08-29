@@ -16,8 +16,21 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
  * camino conocido queda cerrado.
  */
 
-/** Recargo por estampar también el dorso (mismo valor que usa /crear). */
-export const RECARGO_DOBLE_ESTAMPA = 7000
+/**
+ * Recargo por estampar también el dorso — política 29/08: $3.500 por prenda,
+ * el MISMO número que cotiza el bot y que muestra /crear. (El $7.000 anterior
+ * era un valor que /crear nunca cobró: el front mandaba el precio pelado y
+ * este guard rechazaba TODA compra con doble estampado con un 400.)
+ * La totebag Bahía lleva $5.000 (la 2da cara es otra pasada completa).
+ */
+export const RECARGO_DOBLE_ESTAMPA = 3500
+export const RECARGO_DOBLE_ESTAMPA_TOTE = 5000
+
+/** Recargo por dorso según prenda ($5.000 tote · $3.500 el resto). */
+export function recargoDorsoPara(garmentKey: string | null | undefined): number {
+  const k = String(garmentKey ?? '').toLowerCase()
+  return k.includes('tote') || k.includes('bahia') ? RECARGO_DOBLE_ESTAMPA_TOTE : RECARGO_DOBLE_ESTAMPA
+}
 
 /** Margen de redondeo tolerado al comparar. */
 export const TOLERANCIA_ARS = 1
@@ -61,7 +74,7 @@ async function precioDeProductoPartner(id: string, talle?: string | null): Promi
 function precioDePrendaPropia(garmentKey: string, dobleEstampa: boolean): number | null {
   const producto = getCatalogProduct(garmentKey)
   if (!producto || typeof producto.retailARS !== 'number') return null
-  return producto.retailARS + (dobleEstampa ? RECARGO_DOBLE_ESTAMPA : 0)
+  return producto.retailARS + (dobleEstampa ? recargoDorsoPara(garmentKey) : 0)
 }
 
 export async function precioRealDelItem(item: ItemAValidar): Promise<number | null> {

@@ -101,8 +101,9 @@ export default function B2BPricesPage() {
         </div>
         <p className="text-xs text-muted-foreground text-center mt-5 max-w-2xl mx-auto">
           Prendas de produccion propia, 100% algodon peinado premium — remeras 250 g/m2 y
-          buzos 300 g/m2. Area de estampa hasta 35x40 cm, frente y dorso, sin costo extra por
-          la segunda estampa.
+          buzos 300 g/m2. Area de estampa hasta 35x40 cm, frente y/o dorso. La segunda
+          estampa (ambas caras) suma $3.500 por prenda — incluida sin cargo en los planes
+          Growth y Pro.
         </p>
       </section>
 

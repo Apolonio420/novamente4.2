@@ -40,6 +40,9 @@ export function getGrowthPrice(
 ): number | null {
   const pricing = ALL_GARMENT_PRICING[garmentKey]
   if (!pricing) return null
+  // La tote tiene override: su costo real varía por cantidad y `cost + delta`
+  // daba una tabla derivada de un costo irreal (ver growth_override en data).
+  if (pricing.growth_override) return pricing.growth_override[tier]
   return pricing.cost + GROWTH_TIER_DELTA_ARS[tier]
 }
 

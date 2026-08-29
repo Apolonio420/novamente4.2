@@ -35,6 +35,13 @@ export interface GarmentPricing {
   b2b_bulk: number
   /** Suggested retail price (B2C web). What Starter plan partners pay. */
   b2c_suggested: number
+  /**
+   * Override de la tabla Growth/Pro cuando `cost + delta` NO aplica. Único caso
+   * hoy: la totebag, cuyo costo real varía por cantidad (16.000 / 12.000 /
+   * 9.000) mientras `cost` acá es un escalar — la fórmula daba precios de un
+   * costo irreal. El override respeta la regla del 8% (growth = tier B2B −8%).
+   */
+  growth_override?: Record<'partner' | 'starter' | 'pro' | 'drop' | 'bulk', number>
 }
 
 // ---------------------------------------------------------------------------
@@ -182,16 +189,21 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
   // Bahía totebag (alta 2026-07-13). La entrada nació en garment-pricing.ts
   // pre-extracción; movida acá al resolver el merge con el fix del hallazgo [1]
   // (el catálogo con `cost` vive solo en este módulo server-only).
+  // 29/08: escalera de 3 escalones reales del proveedor de totes (1-9u / 10-99u /
+  // 100u+) — on_demand=starter y pro=drop A PROPÓSITO (el costo no baja entre esos
+  // tiers: 16.000 / 12.000 / 9.000 con una estampa). `cost` = minorista 1-9u.
+  // Doble cara en tote: +$5.000 SIEMPRE (todos los planes) — es pass-through del costo.
   'totebag': {
     key: 'totebag',
     name: 'Bahía Totebag',
     cost: 16000,
-    on_demand: 18500,
-    b2b_starter: 18000,
-    b2b_pro: 17500,
-    b2b_drop: 17000,
-    b2b_bulk: 16600,
+    on_demand: 19900,
+    b2b_starter: 19900,
+    b2b_pro: 16900,
+    b2b_drop: 16900,
+    b2b_bulk: 14500,
     b2c_suggested: 20900,
+    growth_override: { partner: 18300, starter: 18300, pro: 15500, drop: 15500, bulk: 13300 },
   },
 }
 

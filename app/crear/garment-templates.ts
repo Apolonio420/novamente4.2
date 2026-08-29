@@ -39,6 +39,12 @@ export const PRINT_AREAS: Record<string, { front: PrintBox; back?: PrintBox }> =
   // (hay musculosa-bali-{gray,white}-back.png pero no black), y habilitarla
   // rompería esa combinación.
   musculosa: { front: { x: 220, y: 230, w: 160, h: 210 } },
+  // Bahía (totebag): caja centrada en el panel de tela, debajo de las asas —
+  // misma fracción que canonical-print-zones de platform ([0.30, 0.45, 0.70,
+  // 0.78] sobre 600px). SIN `back` a propósito: el pipeline no sabe renderizar
+  // el dorso de la bolsa todavía; antes caía al default `tshirt` y ofrecía
+  // "doble estampado" dibujando la caja de una remera sobre una tote.
+  totebag: { front: { x: 180, y: 270, w: 240, h: 198 } },
 }
 
 export function garmentKind(garmentType: string): keyof typeof PRINT_AREAS {
@@ -47,6 +53,7 @@ export function garmentKind(garmentType: string): keyof typeof PRINT_AREAS {
   if (g.includes("cuello-redondo") || g.includes("crew")) return "crew"
   if (g.includes("crop")) return "crop"
   if (g.includes("musculosa") || g.includes("bali")) return "musculosa"
+  if (g.includes("tote") || g.includes("bahia")) return "totebag"
   if (g.includes("clasica-mujer")) return "clasica"
   return "tshirt"
 }

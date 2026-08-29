@@ -365,7 +365,9 @@ export const MODELS: B2BModel[] = [
     fabric: "Algodón crudo resistente · asas largas · estampado DTG",
     sizes: ["Único"],
     measurementsChart: "/products/totebag-crudo/front.jpg",
-    prices: { partner: 18500, starter: 18000, pro: 17500, drop: 17000, bulk: 16600 },
+    // 29/08: la tote escala en 3 escalones reales (1-9u / 10-99u / 100u+) —
+    // partner=starter y pro=drop a propósito. Espejo del CATALOG del bot.
+    prices: { partner: 19900, starter: 19900, pro: 16900, drop: 16900, bulk: 14500 },
     colors: [
       {
         name: "Crudo",
