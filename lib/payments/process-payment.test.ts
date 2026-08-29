@@ -279,6 +279,98 @@ describe('processPaymentById — guard de idempotencia PASO 3', () => {
   })
 })
 
+// Síntoma [2] de la auditoría de idempotencia de webhooks MP (2026-08-29):
+// "un payment.approved posterior pisa una orden ya confirmada". El guard de
+// PASO 3 solo cubre el reintento del MISMO paymentId — acá se prueba el guard
+// de PASO 3.5, que cubre un paymentId DISTINTO llegando sobre una orden que
+// otro pago ya confirmó.
+describe('processPaymentById — guard PASO 3.5: no pisar una orden confirmada con OTRO pago', () => {
+  it('un SEGUNDO payment_id (distinto), approved, sobre una orden ya confirmada: se ignora sin tocar la orden', async () => {
+    h.state.order = {
+      id: 'order-40',
+      order_number: 'NM-040',
+      status: 'confirmed',
+      payment_id: 'pay-original', // el pago que YA confirmó esta orden
+      payment_status: 'approved',
+      tenant_id: 'tenant-40',
+      customer_email: 'cliente@example.com',
+      items: [{ item_name: 'Buzo', quantity: 1, unit_price: 60000 }],
+      metadata: {},
+    }
+    h.state.paymentGet = {
+      id: 'pay-nuevo', // un pago DISTINTO (doble intento, replay de un id viejo, etc.)
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 60000,
+      external_reference: 'ext-40',
+    }
+
+    const result = await processPaymentById('pay-nuevo')
+
+    expect(result.reason).toBe('confirmed_with_different_payment_ignored')
+    expect(result.orderStatus).toBe('confirmed')
+    // No se reclamó ninguna transición de la orden (PASO 6 no corre en este camino):
+    expect(h.state.claimCalls.length).toBe(0)
+    // No se re-ejecutó NINGÚN efecto de plata/notificación con el pago nuevo:
+    expect(creditOrderMarginMock).not.toHaveBeenCalled()
+    expect(notifySaleMock).not.toHaveBeenCalled()
+    expect(notifyPartnerOrderMock).not.toHaveBeenCalled()
+  })
+
+  it('un SEGUNDO payment_id (distinto), rejected, sobre una orden ya confirmada: NO la degrada a cancelled', async () => {
+    // Caso más peligroso: un intento de pago fallido y no relacionado (mismo
+    // checkout, doble click) no debe poder cancelar un pedido que YA está pagado.
+    h.state.order = {
+      id: 'order-41',
+      order_number: 'NM-041',
+      status: 'confirmed',
+      payment_id: 'pay-original',
+      payment_status: 'approved',
+      tenant_id: 'tenant-41',
+      items: [],
+      metadata: {},
+    }
+    h.state.paymentGet = {
+      id: 'pay-fallido',
+      status: 'rejected',
+      status_detail: 'cc_rejected_other_reason',
+      transaction_amount: 60000,
+      external_reference: 'ext-41',
+    }
+
+    const result = await processPaymentById('pay-fallido')
+
+    expect(result.reason).toBe('confirmed_with_different_payment_ignored')
+    expect(result.orderStatus).toBe('confirmed') // sigue confirmada, NO se degrada
+    expect(h.state.claimCalls.length).toBe(0)
+    expect(reverseOrderMarginMock).not.toHaveBeenCalled()
+  })
+
+  it('el MISMO payment_id sigue funcionando igual que antes (no rompe el guard de PASO 3 existente)', async () => {
+    h.state.order = {
+      id: 'order-42',
+      order_number: 'NM-042',
+      status: 'confirmed',
+      payment_id: 'pay-42',
+      payment_status: 'approved',
+      tenant_id: null,
+      items: [],
+      metadata: {},
+    }
+    h.state.paymentGet = {
+      id: 'pay-42',
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 1000,
+      external_reference: 'ext-42',
+    }
+
+    const result = await processPaymentById('pay-42')
+
+    expect(result.reason).toBe('already_confirmed') // no 'confirmed_with_different_payment_ignored'
+  })
+})
+
 // Hallazgos [10]/[11] del review: dos invocaciones concurrentes de
 // processPaymentById para el MISMO pago (webhook + /api/payments/confirm
 // llegando casi al mismo tiempo, o dos reintentos de MP) leen la orden con el

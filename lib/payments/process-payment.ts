@@ -20,6 +20,7 @@ import { MercadoPagoConfig, Payment } from "mercadopago"
 import { creditOrderMargin, reverseOrderMargin } from "@/lib/partners/ledger"
 import { sendEmail } from "@/lib/email"
 import { matchGarmentKey, matchStockColor, normalizeStockSize } from "@/lib/stock/liquidation"
+import { registrarUsoDescuento } from "@/lib/checkout/discount-guard"
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -179,6 +180,41 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
       orderNumber: order.order_number || undefined,
       orderStatus: "confirmed",
       paymentStatus: "approved",
+    }
+  }
+
+  // PASO 3.5: Guard — no pisar una orden ya CONFIRMADA con un pago DISTINTO
+  // (auditoría de idempotencia de webhooks, hallazgo del webhook de la tienda:
+  // "un payment.approved posterior pisa una orden ya confirmada"). El guard de
+  // PASO 3 de arriba solo cubre el reintento del MISMO paymentId; acá cubrimos
+  // el caso de un paymentId DIFERENTE llegando sobre una orden que otro pago ya
+  // confirmó (dos intentos de pago del mismo checkout, doble click, replay de
+  // un id viejo de otro intento, etc.). Sin este guard, tryClaimOrderTransition
+  // de PASO 6 matchea igual (WHERE status='confirmed' sigue siendo cierto) y:
+  //   (a) pisa order.payment_id/metadata con el pago NUEVO, perdiendo la
+  //       referencia del pago que realmente confirmó la orden (rompe
+  //       reconciliación y un futuro refund/chargeback del pago original), y
+  //   (b) si este segundo evento fuera rejected/cancelled, DEGRADARÍA a
+  //       "cancelled" una orden que YA está pagada, por un intento fallido
+  //       no relacionado.
+  // Se ignora sin importar el status que reporte este segundo pago — no es el
+  // pago que confirmó esta orden, así que no debe tocarla. Se responde 200
+  // igual (MP no debe reintentar) y se loguea para auditoría manual.
+  if (order.status === "confirmed" && order.payment_id && order.payment_id !== String(paymentId)) {
+    console.warn("⚠️ Segundo payment_id distinto sobre orden ya confirmada — IGNORANDO, no se pisa la orden:", {
+      orderId: order.id,
+      orderNumber: order.order_number,
+      confirmedPaymentId: order.payment_id,
+      newPaymentId: paymentId,
+      newPaymentStatus: paymentDetails.status,
+    })
+    return {
+      ok: true,
+      reason: "confirmed_with_different_payment_ignored",
+      orderId: String(order.id),
+      orderNumber: order.order_number || undefined,
+      orderStatus: order.status,
+      paymentStatus: order.payment_status,
     }
   }
 
@@ -460,6 +496,28 @@ async function runConfirmedOrderEffects(
         }
       } catch (stockErr: any) {
         console.error("❌ Exception decrementando stock:", stockErr.message)
+      }
+    }
+
+    // Registrar el USO del código de descuento (si se aplicó uno al submit —
+    // ver app/api/checkout/route.ts). Recién acá, con el pago YA aprobado, para
+    // no gastar un uso de un carrito que nunca se pagó. Incremento atómico vía
+    // RPC (increment_discount_code_uses): si el código ya llegó al tope no
+    // rompe la venta, sólo no suma. Guard en metadata — no re-contar en un
+    // retry idempotente del mismo pedido.
+    const discountCodeId = (order as any)?.metadata?.discount_code_id
+    if (discountCodeId && !meta.discount_usage_recorded_at) {
+      try {
+        const result = await registrarUsoDescuento(discountCodeId)
+        if (result !== null) {
+          meta.discount_usage_recorded_at = new Date().toISOString()
+          await updateOrder(order.id!, { metadata: meta })
+          console.log("✅ Uso de código de descuento registrado:", discountCodeId, "→ uses_count:", result)
+        } else {
+          console.warn("⚠️ No se registró el uso del descuento (código en tope o inexistente):", discountCodeId)
+        }
+      } catch (discountErr: any) {
+        console.error("❌ Exception registrando uso de descuento:", discountErr.message)
       }
     }
 

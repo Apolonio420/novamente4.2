@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { items, customer, total, cartItems, subtotal, shippingCost, shippingZone, tenantId } = await request.json()
+    const { items, customer, total, cartItems, subtotal, shippingCost, shippingZone, tenantId, discountCode } =
+      await request.json()
 
     console.log("🛒 Checkout API received:", {
       itemsCount: items?.length || 0,
@@ -53,18 +54,22 @@ export async function POST(request: NextRequest) {
     // Validar que el total calculado coincida con la suma de items
     const calculatedTotal = items.reduce((sum: number, item: any) => sum + item.unit_price * item.quantity, 0)
 
-    console.log("💰 Price validation:", {
-      receivedTotal: total,
-      calculatedTotal,
-      matches: Math.abs(total - calculatedTotal) < 1, // Permitir diferencia mínima por redondeo
-    })
+    const itemsParaValidar = (cartItems && cartItems.length ? cartItems : items) as any[]
 
-    if (Math.abs(total - calculatedTotal) > 1) {
-      console.error("❌ Price mismatch:", { receivedTotal: total, calculatedTotal })
-      return NextResponse.json({ success: false, error: "Price validation failed" }, { status: 400 })
+    // Stock: rechazar ACÁ (antes de crear la orden / cobrar) un talle agotado.
+    // Convención: SIN fila en garment_stock / stock=NULL en partner_products =
+    // stock libre — sólo se bloquea si hay un tope cargado y no alcanza.
+    const { validarStock, mensajeStockAgotado } = await import('@/lib/checkout/stock-guard')
+    const stockCheck = await validarStock(itemsParaValidar)
+    if (!stockCheck.ok) {
+      console.error('❌ Stock insuficiente:', stockCheck.agotados)
+      return NextResponse.json(
+        { success: false, error: mensajeStockAgotado(stockCheck.agotados), agotados: stockCheck.agotados },
+        { status: 400 },
+      )
     }
 
-    // La comparación de arriba mira `total` contra la suma de `unit_price` —
+    // La comparación original acá miraba `total` contra la suma de `unit_price` —
     // los dos vienen del NAVEGADOR. O sea: validaba la aritmética del cliente
     // contra sus propios números. Con postear `unit_price: 1` alcanzaba para
     // pagar $1 un buzo de $55.000, porque ese mismo valor viajaba después a la
@@ -75,9 +80,7 @@ export async function POST(request: NextRequest) {
     // más, se deja pasar (no vamos a bloquear a alguien que paga de más) y los
     // ítems de un flujo que no conocemos tampoco frenan la compra.
     const { validarPrecios } = await import('@/lib/checkout/precio-real')
-    const chequeo = await validarPrecios(
-      (cartItems && cartItems.length ? cartItems : items) as any[],
-    )
+    const chequeo = await validarPrecios(itemsParaValidar)
     if (!chequeo.ok) {
       console.error('❌ Precio por debajo del real:', chequeo.subfacturados)
       const { notifyError } = await import('@/lib/notifications')
@@ -111,7 +114,35 @@ export async function POST(request: NextRequest) {
       shippingZone === 'RESTO' ? 'RESTO' : 'BA',
     ).costo
     const finalShippingCost = typeof shippingCost === 'number' ? shippingCost : fallbackShipping
-    const finalTotal = finalSubtotal + finalShippingCost
+
+    // Código de descuento: se vuelve a resolver EN EL SERVIDOR contra
+    // partner_discount_codes — nunca se confía en el discountId/discountARS
+    // que mande el navegador. Un código inválido/vencido/agotado/de otro
+    // tenant da discountARS: 0, así que NUNCA baja el total por default.
+    const { validarDescuento } = await import('@/lib/checkout/discount-guard')
+    const descuento = await validarDescuento(discountCode, finalSubtotal)
+    if (discountCode && !descuento.valid) {
+      console.warn('[checkout] código de descuento no aplicado:', discountCode, descuento.reason)
+    }
+
+    const finalTotal = Math.max(0, finalSubtotal - descuento.discountARS) + finalShippingCost
+
+    console.log("💰 Price validation:", {
+      receivedTotal: total,
+      finalTotal,
+      discountARS: descuento.discountARS,
+      matches: Math.abs(total - finalTotal) < 1, // Permitir diferencia mínima por redondeo
+    })
+
+    // Gate de consistencia: el total que mandó el navegador tiene que coincidir
+    // con el total que calculó el servidor (subtotal real + envío - descuento
+    // válido). Ya no compara la aritmética del cliente contra sí misma: usa el
+    // descuento resuelto server-side, así un código legítimo no rompe esta
+    // comparación (antes CUALQUIER descuento hacía fallar el checkout acá).
+    if (Math.abs(total - finalTotal) > 1) {
+      console.error("❌ Price mismatch:", { receivedTotal: total, finalTotal })
+      return NextResponse.json({ success: false, error: "Price validation failed" }, { status: 400 })
+    }
 
     // Preparar items del pedido desde cartItems si están disponibles, sino desde items simplificados
     let orderItems: any[] = []
@@ -205,6 +236,13 @@ export async function POST(request: NextRequest) {
         status: 'pending',
         tenant_id: validTenantId,
         items: orderItems,
+        metadata: descuento.valid
+          ? {
+              discount_code_id: descuento.discountId,
+              discount_code: descuento.discountCode,
+              discount_ars: descuento.discountARS,
+            }
+          : undefined,
       })
     }
 
@@ -221,8 +259,17 @@ export async function POST(request: NextRequest) {
     // Crear preferencia de MercadoPago con precios exactos
     const preference = new Preference(client)
 
+    // El descuento se reparte entre los items de PRODUCTO (nunca el envío):
+    // MercadoPago no acepta un item con unit_price <= 0, así que en vez de una
+    // línea de "descuento" en negativo se reduce proporcionalmente cada item —
+    // así lo que MP efectivamente cobra coincide con finalTotal.
+    const { aplicarDescuentoAItemsMP } = await import('@/lib/checkout/discount-guard')
+    const mpItemsProducto = items.filter((item: any) => item.id !== 'shipping')
+    const mpItemShipping = items.filter((item: any) => item.id === 'shipping')
+    const mpItemsFinal = [...aplicarDescuentoAItemsMP(mpItemsProducto, descuento.discountARS), ...mpItemShipping]
+
     const preferenceData = {
-      items: items.map((item: any) => ({
+      items: mpItemsFinal.map((item: any) => ({
         id: item.id,
         title: item.title,
         quantity: item.quantity,

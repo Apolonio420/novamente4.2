@@ -42,3 +42,26 @@ export function isSuspectedDoubleCharge(
   if (!expiresAt) return false
   return new Date(expiresAt).getTime() > new Date(nowISO).getTime()
 }
+
+/**
+ * Guard de idempotencia para el COBRO RECURRENTE MENSUAL (evento
+ * `subscription_authorized_payment`, débito automático de la tarjeta ya
+ * autorizada). Síntoma [1] de la auditoría de idempotencia de webhooks MP
+ * (2026-08-29): a diferencia del pago único (isPaymentAlreadyProcessed arriba)
+ * y de subscription_preapproval (isGenuinePreapprovalActivation en
+ * lib/partners/subscription.ts), este evento NO tenía ningún guard — si MP
+ * reenvía el mismo authorized_payment id (reintento webhook, notificación
+ * duplicada), registerRecurringCharge corría de nuevo y sumaba OTRO mes a
+ * subscription_expires_at sin que hubiera un segundo cobro real: un mes gratis
+ * por cada reenvío. Se usa una clave de metadata separada
+ * (last_mp_authorized_payment_id) de la del pago único (last_mp_payment_id)
+ * porque son dos conceptos de MP distintos (payment id vs authorized_payment
+ * id) y un tenant no debería mezclar ambas semánticas de idempotencia.
+ */
+export function isAuthorizedPaymentAlreadyProcessed(
+  tenantMetadata: Record<string, unknown> | null | undefined,
+  authorizedPaymentId: string,
+): boolean {
+  const lastProcessed = (tenantMetadata as any)?.last_mp_authorized_payment_id
+  return lastProcessed != null && String(lastProcessed) === String(authorizedPaymentId)
+}

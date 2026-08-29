@@ -18,6 +18,11 @@ const h = vi.hoisted(() => ({
   // activateRecurringTenant/registerRecurringCharge (lib/partners/subscription.ts)
   // escriben directo con `db()` = supabaseAdmin, no con updateTenant.
   tenantsUpdate: vi.fn(),
+  // Resultado devuelto por `.from('tenants').select(...).eq(...).single()` —
+  // usado por handleAuthorizedPaymentEvent (busca el tenant por
+  // mp_subscription_id) y por registerRecurringCharge (lee subscription_expires_at
+  // + metadata). Configurable por test; default abajo en beforeEach.
+  tenantsSelectSingleResult: null as any,
 }))
 
 vi.mock('mercadopago', () => ({
@@ -59,7 +64,7 @@ vi.mock('@/lib/supabase-admin', () => ({
           },
           select: () => ({
             eq: () => ({
-              single: async () => ({ data: { subscription_expires_at: null } }),
+              single: async () => ({ data: h.tenantsSelectSingleResult ?? { subscription_expires_at: null } }),
               maybeSingle: async () => ({ data: null }),
             }),
           }),
@@ -73,7 +78,7 @@ vi.mock('@/lib/supabase-admin', () => ({
 }))
 
 import { POST } from './route'
-import { isPaymentAlreadyProcessed, isSuspectedDoubleCharge } from '@/lib/partners/webhook-guards'
+import { isPaymentAlreadyProcessed, isSuspectedDoubleCharge, isAuthorizedPaymentAlreadyProcessed } from '@/lib/partners/webhook-guards'
 
 function webhookRequest(paymentId: string) {
   return new NextRequest('http://localhost/api/partners/webhook/mercadopago', {
@@ -101,6 +106,7 @@ beforeEach(() => {
   h.notifyPossibleDoubleCharge.mockResolvedValue(undefined)
   h.notifySubscriptionActivatedEmails.mockResolvedValue(undefined)
   h.sendCapiPurchase.mockResolvedValue({ ok: true })
+  h.tenantsSelectSingleResult = null
 })
 
 describe('isPaymentAlreadyProcessed (unidad)', () => {
@@ -399,5 +405,137 @@ describe('POST /api/partners/webhook/mercadopago — subscription_preapproval no
     const res = await POST(preapprovalWebhookRequest(preapprovalId))
     expect(res.status).toBe(200)
     expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
+  })
+})
+
+// Síntoma [1] de la auditoría de idempotencia de webhooks MP (2026-08-29):
+// "webhook duplicado de suscripción = mes gratis". A diferencia de
+// subscription_preapproval (isGenuinePreapprovalActivation, ya cubierto arriba)
+// y del pago único (isPaymentAlreadyProcessed), el cobro recurrente mensual
+// (subscription_authorized_payment → registerRecurringCharge) no tenía NINGÚN
+// guard: un reenvío del mismo authorized_payment id extendía
+// subscription_expires_at otra vez sin que hubiera un segundo cobro real.
+describe('isAuthorizedPaymentAlreadyProcessed (unidad)', () => {
+  it('sin metadata previa → no procesado', () => {
+    expect(isAuthorizedPaymentAlreadyProcessed(null, 'ap-1')).toBe(false)
+    expect(isAuthorizedPaymentAlreadyProcessed({}, 'ap-1')).toBe(false)
+  })
+  it('mismo authorized_payment id ya registrado → procesado', () => {
+    expect(isAuthorizedPaymentAlreadyProcessed({ last_mp_authorized_payment_id: 'ap-1' }, 'ap-1')).toBe(true)
+  })
+  it('authorized_payment id distinto (mes siguiente) → no procesado', () => {
+    expect(isAuthorizedPaymentAlreadyProcessed({ last_mp_authorized_payment_id: 'ap-1' }, 'ap-2')).toBe(false)
+  })
+})
+
+describe('POST /api/partners/webhook/mercadopago — subscription_authorized_payment (cobro recurrente mensual)', () => {
+  function authorizedPaymentWebhookRequest(id: string) {
+    return new NextRequest('http://localhost/api/partners/webhook/mercadopago', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'subscription_authorized_payment', data: { id } }),
+    })
+  }
+
+  const preapprovalId = 'preapproval-recurring-1'
+
+  function mockAuthorizedPaymentFetch(opts: { approved: boolean }) {
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        preapproval_id: preapprovalId,
+        payment: { status: opts.approved ? 'approved' : 'rejected' },
+        status: opts.approved ? 'processed' : 'rejected',
+      }),
+    })) as any
+  }
+
+  it('primer cobro recurrente aprobado: extiende vencimiento y persiste el authorized_payment id', async () => {
+    mockAuthorizedPaymentFetch({ approved: true })
+    h.tenantsSelectSingleResult = {
+      id: 'tenant-1',
+      name: 'Marca Test',
+      metadata: {},
+      subscription_expires_at: '2026-07-29T00:00:00.000Z',
+      payment_failures: 1,
+    }
+
+    const res = await POST(authorizedPaymentWebhookRequest('ap-aug'))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.already_processed).toBeUndefined()
+
+    // registerRecurringCharge hace 1 solo UPDATE a tenants (lee con .single(),
+    // escribe con .update()) — el guard de arriba no debe haber cortado.
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
+    const [updates] = h.tenantsUpdate.mock.calls[0]
+    expect(updates.status).toBe('active')
+    expect(updates.payment_failures).toBe(0)
+    expect(updates.metadata.last_mp_authorized_payment_id).toBe('ap-aug')
+    expect(new Date(updates.subscription_expires_at).getTime()).toBeGreaterThan(
+      new Date('2026-07-29T00:00:00.000Z').getTime(),
+    )
+  })
+
+  it('MP reenvía el MISMO authorized_payment id (retry/duplicado): NO vuelve a extender — no regala un mes gratis', async () => {
+    mockAuthorizedPaymentFetch({ approved: true })
+    const expiresBefore = '2026-08-29T00:00:00.000Z'
+    h.tenantsSelectSingleResult = {
+      id: 'tenant-1',
+      name: 'Marca Test',
+      // Ya procesamos este mismo id en un webhook anterior (efecto de la
+      // invocación previa que sí llegó a registerRecurringCharge).
+      metadata: { last_mp_authorized_payment_id: 'ap-aug' },
+      subscription_expires_at: expiresBefore,
+      payment_failures: 0,
+    }
+
+    const res = await POST(authorizedPaymentWebhookRequest('ap-aug'))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.already_processed).toBe(true)
+
+    // No debe haber tocado el tenant en absoluto: ni extendido vencimiento
+    // (mes gratis), ni refrescado last_payment_at.
+    expect(h.tenantsUpdate).not.toHaveBeenCalled()
+  })
+
+  it('cobro del MES SIGUIENTE con un authorized_payment id distinto: SÍ extiende de nuevo (no es un duplicado)', async () => {
+    mockAuthorizedPaymentFetch({ approved: true })
+    h.tenantsSelectSingleResult = {
+      id: 'tenant-1',
+      name: 'Marca Test',
+      metadata: { last_mp_authorized_payment_id: 'ap-aug' }, // procesado el mes pasado
+      subscription_expires_at: '2026-08-29T00:00:00.000Z',
+      payment_failures: 0,
+    }
+
+    const res = await POST(authorizedPaymentWebhookRequest('ap-sep'))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.already_processed).toBeUndefined()
+
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
+    const [updates] = h.tenantsUpdate.mock.calls[0]
+    expect(updates.metadata.last_mp_authorized_payment_id).toBe('ap-sep')
+  })
+
+  it('cobro recurrente RECHAZADO: suma una falla, no toca la idempotencia del guard aprobado', async () => {
+    mockAuthorizedPaymentFetch({ approved: false })
+    h.tenantsSelectSingleResult = {
+      id: 'tenant-1',
+      name: 'Marca Test',
+      metadata: {},
+      subscription_expires_at: '2026-08-29T00:00:00.000Z',
+      payment_failures: 0,
+    }
+
+    const res = await POST(authorizedPaymentWebhookRequest('ap-failed'))
+    expect(res.status).toBe(200)
+
+    // El camino rechazado usa updateTenant (no el `db()` directo de registerRecurringCharge).
+    expect(h.updateTenant).toHaveBeenCalledTimes(1)
+    const [, updates] = h.updateTenant.mock.calls[0]
+    expect(updates.payment_failures).toBe(1)
   })
 })

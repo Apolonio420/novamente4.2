@@ -5,7 +5,7 @@ import { shippingCostFor, envioPorDistancia } from "@/lib/shipping-config"
 
 export async function POST(request: NextRequest) {
   try {
-    const { customer, items, subtotal, shippingCost, total } = await request.json()
+    const { customer, items, subtotal, shippingCost, total, discountCode } = await request.json()
 
     console.log("🔄 Transfer checkout API received:", {
       itemsCount: items?.length || 0,
@@ -26,11 +26,48 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid total amount" }, { status: 400 })
     }
 
+    // Stock: rechazar ACÁ un talle agotado (misma convención que /api/checkout:
+    // sin fila/stock null = libre, sólo bloquea si hay tope cargado y no alcanza).
+    const { validarStock, mensajeStockAgotado } = await import('@/lib/checkout/stock-guard')
+    const stockCheck = await validarStock(items as any[])
+    if (!stockCheck.ok) {
+      console.error('❌ Stock insuficiente (transferencia):', stockCheck.agotados)
+      return NextResponse.json(
+        { success: false, error: mensajeStockAgotado(stockCheck.agotados), agotados: stockCheck.agotados },
+        { status: 400 },
+      )
+    }
+
+    // Precio real: mismo guard server-side que /api/checkout — nunca confiar en
+    // el unit_price/price que manda el navegador para transferencia tampoco.
+    const { validarPrecios } = await import('@/lib/checkout/precio-real')
+    const chequeoPrecio = await validarPrecios(items as any[])
+    if (!chequeoPrecio.ok) {
+      console.error('❌ Precio por debajo del real (transferencia):', chequeoPrecio.subfacturados)
+      return NextResponse.json(
+        { success: false, error: 'Los precios del carrito no coinciden. Recargá la página y probá de nuevo.' },
+        { status: 400 },
+      )
+    }
+
     // Calcular subtotal y shipping si no vienen (fallback zona BA — fuente de verdad compartida)
     const finalSubtotal = subtotal || items.reduce((sum: number, item: any) => sum + (item.price || 0) * (item.quantity || 1), 0)
     const finalShippingCost =
       shippingCost ?? envioPorDistancia(finalSubtotal, (customer as any)?.postalCode, 'BA').costo
-    const finalTotal = finalSubtotal + finalShippingCost
+
+    // Código de descuento: se vuelve a resolver EN EL SERVIDOR — nunca se confía
+    // en el discountId/discountARS que mande el navegador. Un código inválido
+    // da discountARS: 0, así que NUNCA baja el total por default. En
+    // transferencia el descuento SÍ se resta del monto a transferir (no hay
+    // pasarela de pago que lo tenga que reflejar, es lo que el cliente
+    // efectivamente transfiere).
+    const { validarDescuento } = await import('@/lib/checkout/discount-guard')
+    const descuento = await validarDescuento(discountCode, finalSubtotal)
+    if (discountCode && !descuento.valid) {
+      console.warn('[checkout/transfer] código de descuento no aplicado:', discountCode, descuento.reason)
+    }
+
+    const finalTotal = Math.max(0, finalSubtotal - descuento.discountARS) + finalShippingCost
 
     // Preparar items del pedido desde items del carrito
     const orderItems = items.map((item: any) => ({
@@ -85,6 +122,13 @@ export async function POST(request: NextRequest) {
       status: 'pending',
       notes: 'Esperando comprobante de transferencia bancaria',
       items: orderItems,
+      metadata: descuento.valid
+        ? {
+            discount_code_id: descuento.discountId,
+            discount_code: descuento.discountCode,
+            discount_ars: descuento.discountARS,
+          }
+        : undefined,
     })
 
     if (!newOrder) {

@@ -224,6 +224,7 @@ export default function CheckoutPage() {
           shippingCost: shippingCost,
           shippingZone: shippingZone, // 'BA' | 'RESTO'
           tenantId: tenantId,
+          discountCode: appliedDiscount?.code ?? null, // el server lo revalida contra partner_discount_codes
         }
 
         console.log("📤 Request body:", JSON.stringify(requestBody, null, 2))
@@ -300,6 +301,7 @@ export default function CheckoutPage() {
             shippingCost: shippingCost,
             shippingZone: shippingZone,
             total: total,
+            discountCode: appliedDiscount?.code ?? null,
           }),
         })
 
@@ -333,7 +335,11 @@ export default function CheckoutPage() {
       }
     } catch (error) {
       console.error("❌ Checkout error:", error)
-      alert("Error al procesar el pago. Por favor intenta nuevamente.")
+      // Mensajes específicos del servidor (stock agotado, precio no coincide,
+      // etc.) tienen que llegarle al cliente tal cual — antes acá se pisaban
+      // con un genérico y el motivo real del rechazo se perdía.
+      const message = error instanceof Error && error.message ? error.message : "Error al procesar el pago. Por favor intenta nuevamente."
+      alert(message)
     } finally {
       setIsProcessing(false)
     }

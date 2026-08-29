@@ -5,7 +5,7 @@ import { PLAN_FEATURES, PLAN_PRICING_USD } from '@/lib/partners/plans'
 import { activateRecurringTenant, registerRecurringCharge, getAuthorizedPayment, computeRenewalExpiration, isGenuinePreapprovalActivation } from '@/lib/partners/subscription'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import type { Plan } from '@/lib/partners/types'
-import { isPaymentAlreadyProcessed, isSuspectedDoubleCharge } from '@/lib/partners/webhook-guards'
+import { isPaymentAlreadyProcessed, isSuspectedDoubleCharge, isAuthorizedPaymentAlreadyProcessed } from '@/lib/partners/webhook-guards'
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -184,7 +184,17 @@ async function handleAuthorizedPaymentEvent(body: any, request: NextRequest) {
 
     const now = new Date().toISOString()
     if (ap.approved) {
-      await registerRecurringCharge(tenant.id, now)
+      // Guard de idempotencia (síntoma [1] auditoría MP 2026-08-29): MP puede
+      // reenviar el mismo subscription_authorized_payment (reintento webhook,
+      // notificación duplicada). Sin este guard, registerRecurringCharge corría
+      // de nuevo y extendía subscription_expires_at otro mes gratis por cada
+      // reenvío — a diferencia del pago único y de subscription_preapproval,
+      // que ya tenían guards análogos.
+      if (isAuthorizedPaymentAlreadyProcessed(tenant.metadata, id)) {
+        console.log('Authorized payment ya procesado, saltando — no se extiende de nuevo:', id, tenant.name)
+        return NextResponse.json({ received: true, already_processed: true })
+      }
+      await registerRecurringCharge(tenant.id, now, id)
       console.log('Cobro recurrente OK:', tenant.name)
     } else {
       await updateTenant(tenant.id, { payment_failures: (tenant.payment_failures || 0) + 1 } as any)

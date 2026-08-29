@@ -401,23 +401,36 @@ export async function activateRecurringTenant(tenant: Tenant, preapprovalId: str
  * Registra un cobro recurrente exitoso: extiende el período y limpia fallas.
  * Usa computeRenewalExpiration para no robarle días al partner que paga antes
  * de vencer (hallazgo [19]) — necesita leer el vencimiento vigente del tenant.
+ *
+ * `authorizedPaymentId` (síntoma [1] de la auditoría de idempotencia de MP,
+ * 2026-08-29): si se pasa, se persiste en metadata.last_mp_authorized_payment_id
+ * — el caller (handleAuthorizedPaymentEvent) debe chequear
+ * isAuthorizedPaymentAlreadyProcessed ANTES de llamar a esta función; acá solo
+ * se guarda la marca para que el próximo reenvío del mismo id sea detectable.
+ * Opcional (no rompe callers existentes) para no afectar otros usos de esta
+ * función si los hubiera.
  */
-export async function registerRecurringCharge(tenantId: string, nowISO: string): Promise<void> {
+export async function registerRecurringCharge(tenantId: string, nowISO: string, authorizedPaymentId?: string): Promise<void> {
   const { data: tenant } = await db()
     .from('tenants')
-    .select('subscription_expires_at')
+    .select('subscription_expires_at, metadata')
     .eq('id', tenantId)
     .single()
 
+  const updates: Record<string, any> = {
+    status: 'active',
+    last_payment_at: nowISO,
+    subscription_expires_at: computeRenewalExpiration(tenant?.subscription_expires_at, nowISO, 1),
+    payment_failures: 0,
+    updated_at: nowISO,
+  }
+  if (authorizedPaymentId) {
+    updates.metadata = { ...(tenant?.metadata ?? {}), last_mp_authorized_payment_id: String(authorizedPaymentId) }
+  }
+
   await db()
     .from('tenants')
-    .update({
-      status: 'active',
-      last_payment_at: nowISO,
-      subscription_expires_at: computeRenewalExpiration(tenant?.subscription_expires_at, nowISO, 1),
-      payment_failures: 0,
-      updated_at: nowISO,
-    })
+    .update(updates)
     .eq('id', tenantId)
 }
 
