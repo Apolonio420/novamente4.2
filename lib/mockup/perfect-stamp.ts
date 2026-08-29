@@ -98,7 +98,7 @@ function extractImage(result: any): string | null {
 }
 
 /** Si Gemini devolvió fondo magenta en vez de alpha, lo keyeamos a transparente. */
-async function magentaKey(buf: Buffer): Promise<Buffer> {
+export async function magentaKey(buf: Buffer): Promise<Buffer> {
   const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
   const ch = info.channels
   let keyed = 0
@@ -117,7 +117,7 @@ async function magentaKey(buf: Buffer): Promise<Buffer> {
  * (caso ORIGEN 26/08/2026). Medido sobre los diseños reales del partner:
  * hasAlpha=false, 0 píxeles transparentes de 1.048.576.
  */
-async function hasRealAlpha(buf: Buffer): Promise<boolean> {
+export async function hasRealAlpha(buf: Buffer): Promise<boolean> {
   try {
     const meta = await sharp(buf).metadata()
     if (!meta.hasAlpha) return false
