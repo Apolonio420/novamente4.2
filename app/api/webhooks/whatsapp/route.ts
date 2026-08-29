@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { whatsAppClient } from "@/lib/whatsapp/client"
 import { supabaseAdmin } from "@/lib/supabase-admin"
+import { verifyMetaWebhookSignature } from "@/lib/whatsapp/verify-signature"
 
 const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN
 
@@ -24,7 +25,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json()
+        // El HMAC de Meta va sobre el body CRUDO — hay que leerlo como texto
+        // ANTES de parsearlo, si no la firma nunca matchea.
+        const rawBody = await request.text()
+
+        const signatureHeader = request.headers.get("x-hub-signature-256")
+        const verification = verifyMetaWebhookSignature(rawBody, signatureHeader, process.env.META_APP_SECRET)
+        if (!verification.ok) {
+            console.error("❌ WhatsApp webhook: firma inválida o ausente:", verification.reason)
+            return new NextResponse("Unauthorized", { status: 401 })
+        }
+
+        const body = JSON.parse(rawBody)
 
         // Log basic entry
         const messageEntry = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]
