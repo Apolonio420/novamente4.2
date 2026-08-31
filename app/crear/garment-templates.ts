@@ -35,10 +35,17 @@ export const PRINT_AREAS: Record<string, { front: PrintBox; back?: PrintBox }> =
     front: { x: 195, y: 185, w: 210, h: 200 },
     back: { x: 190, y: 165, w: 220, h: 220 },
   },
-  // musculosa NO lleva back: falta la foto de dorso en negro
-  // (hay musculosa-bali-{gray,white}-back.png pero no black), y habilitarla
-  // rompería esa combinación.
-  musculosa: { front: { x: 220, y: 230, w: 160, h: 210 } },
+  // musculosa: el "falta el dorso en negro" que la tenía deshabilitada era un
+  // bloqueo fantasma — la Bali se vende SOLO en blanca y gris (ver
+  // lib/catalog/products.ts) y esos dos dorsos existen, con sus entradas
+  // mapeadas a mano en garment-mappings.json. La caja del dorso sale de
+  // aplicarle a la caja afinada del frente el mismo delta frente→dorso de ese
+  // mapping (el dorso es más angosto entre los breteles), verificada
+  // visualmente sobre las dos fotos.
+  musculosa: {
+    front: { x: 220, y: 230, w: 160, h: 210 },
+    back: { x: 238, y: 236, w: 124, h: 198 },
+  },
   // Bahía (totebag): caja centrada en el panel de tela, debajo de las asas —
   // misma fracción que canonical-print-zones de platform ([0.30, 0.45, 0.70,
   // 0.78] sobre 600px). El dorso usa la MISMA caja: las fotos de frente y dorso
