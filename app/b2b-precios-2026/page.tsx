@@ -115,7 +115,7 @@ export default function B2BPricesPage() {
         <h2 className="novamente-heading text-2xl text-center mb-6">
           Consideraciones Comerciales
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="rounded-xl border border-border bg-card p-5">
             <p className="text-sm text-muted-foreground">
               El precio de la muestra es igual al precio del{" "}
@@ -132,6 +132,15 @@ export default function B2BPricesPage() {
             <p className="text-sm text-muted-foreground">
               Envio bonificado a partir de{" "}
               <strong className="text-foreground">$150.000</strong>.
+            </p>
+          </div>
+          <div className="rounded-xl border border-primary/25 bg-primary/5 p-5">
+            <p className="text-sm text-muted-foreground">
+              Los precios incluyen <strong className="text-foreground">una estampa</strong>{" "}
+              (frente o dorso, del tamano que sea). Estampar{" "}
+              <strong className="text-foreground">ambas caras suma $3.500 por prenda</strong>{" "}
+              (totebag $5.000) — y en los planes{" "}
+              <strong className="text-foreground">Growth y Pro va incluida sin cargo</strong>.
             </p>
           </div>
         </div>
