@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge"
 import { ShoppingBag, Zap, MessageCircle, Ruler, Check } from "lucide-react"
 import { SIZE_CHARTS, type MalvinasProduct, type SizeChartKey } from "@/lib/malvinas-products"
 import { getWhatsAppLink } from "@/lib/config/links"
+import { ProductViewPixel } from "@/components/product-view-pixel"
+import { SHIPPING, ENVIO_DISTANCIA } from "@/lib/shipping-config"
 
 function formatPrice(p: number): string {
   return new Intl.NumberFormat("es-AR", {
@@ -95,6 +97,8 @@ export default function MalvinasProductClient({ product }: { product: MalvinasPr
   )
 
   return (
+    <>
+    <ProductViewPixel id={product.slug} name={product.name} price={product.price} category="malvinas" />
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
       <div className="mx-auto max-w-7xl px-4 py-8 md:py-12">
         <Link
@@ -364,12 +368,16 @@ export default function MalvinasProductClient({ product }: { product: MalvinasPr
               </div>
               <div>
                 <p className="font-semibold text-zinc-100">Envíos AR</p>
-                <p className="mt-1">AMBA en 3-5 días, resto del país 7-10.</p>
+                <p className="mt-1">
+                  AMBA 3-5 días desde ${ENVIO_DISTANCIA.AMBA_MIN.toLocaleString("es-AR")} · resto 7-10 días.
+                  Gratis desde ${SHIPPING.FREE_THRESHOLD.toLocaleString("es-AR")}.
+                </p>
               </div>
             </div>
           </div>
         </div>
       </div>
     </main>
+  </>
   )
 }

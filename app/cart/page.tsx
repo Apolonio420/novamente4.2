@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { formatCurrency } from "@/lib/utils"
-import { SHIPPING } from "@/lib/shipping-config"
+import { SHIPPING , ENVIO_DISTANCIA } from "@/lib/shipping-config"
 import { StoreBrandBar } from "@/components/checkout/StoreBrandBar"
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, Loader2 } from "lucide-react"
 import Image from "next/image"
@@ -396,7 +396,7 @@ export default function CartPage() {
                 <div className="flex justify-between">
                   <span>Envio</span>
                   <span className="text-green-600">
-                    {getTotalPrice() >= SHIPPING.FREE_THRESHOLD ? "Gratis" : `desde ${formatCurrency(SHIPPING.BA)}`}
+                    {getTotalPrice() >= SHIPPING.FREE_THRESHOLD ? "Gratis" : `desde ${formatCurrency(ENVIO_DISTANCIA.AMBA_MIN)} (exacto por CP en el checkout)`}
                   </span>
                 </div>
                 {getTotalPrice() >= SHIPPING.FREE_THRESHOLD && (

@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { ProductViewPixel } from "@/components/product-view-pixel"
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -222,6 +223,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="min-h-screen">
+      <ProductViewPixel id={product.id} name={product.name} price={parsePrice(product.price)} category="catalogo" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
