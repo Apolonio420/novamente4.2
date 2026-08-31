@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { cardSurchargeAmount } from "@/lib/payment-config"
 import { MercadoPagoConfig, Preference } from "mercadopago"
 import { createOrder, findRecentDuplicateOrder } from "@/lib/db"
 import { toPublicR2Url } from "@/lib/r2"
@@ -144,6 +145,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Price validation failed" }, { status: 400 })
     }
 
+    // ── Recargo por tarjeta (regla 31/08/2026, igual que el bot) ────────────
+    // El gate de arriba valida el total BASE que vio el cliente. El recargo se
+    // aplica ACÁ, server-side, para que un cliente modificado no pueda esquivarlo:
+    // la orden y la preferencia de MP se crean con el total recargado.
+    const cardSurcharge = cardSurchargeAmount(finalTotal)
+    const chargeTotal = finalTotal + cardSurcharge
+
     // Preparar items del pedido desde cartItems si están disponibles, sino desde items simplificados
     let orderItems: any[] = []
     if (cartItems && Array.isArray(cartItems) && cartItems.length > 0) {
@@ -205,7 +213,7 @@ export async function POST(request: NextRequest) {
     // así el checkout/MP nunca se rompe.
     let newOrder = await findRecentDuplicateOrder({
       customer_email: customer.email,
-      total: finalTotal,
+      total: chargeTotal,
     })
 
     // Reusar el external_reference del pedido existente para que el webhook de
@@ -231,18 +239,22 @@ export async function POST(request: NextRequest) {
         external_reference: externalReference,
         subtotal: finalSubtotal,
         shipping_cost: finalShippingCost,
-        total: finalTotal,
+        total: chargeTotal,
         currency: 'ARS',
         status: 'pending',
         tenant_id: validTenantId,
         items: orderItems,
-        metadata: descuento.valid
-          ? {
-              discount_code_id: descuento.discountId,
-              discount_code: descuento.discountCode,
-              discount_ars: descuento.discountARS,
-            }
-          : undefined,
+        metadata: {
+          card_surcharge_ars: cardSurcharge,
+          base_total_ars: finalTotal,
+          ...(descuento.valid
+            ? {
+                discount_code_id: descuento.discountId,
+                discount_code: descuento.discountCode,
+                discount_ars: descuento.discountARS,
+              }
+            : {}),
+        },
       })
     }
 
@@ -267,6 +279,18 @@ export async function POST(request: NextRequest) {
     const mpItemsProducto = items.filter((item: any) => item.id !== 'shipping')
     const mpItemShipping = items.filter((item: any) => item.id === 'shipping')
     const mpItemsFinal = [...aplicarDescuentoAItemsMP(mpItemsProducto, descuento.discountARS), ...mpItemShipping]
+
+    // Línea propia de recargo: MP no acepta multiplicar el total, así que va
+    // como item explícito — de paso el cliente ve el porqué en la pantalla de pago.
+    if (cardSurcharge > 0) {
+      mpItemsFinal.push({
+        id: 'card-surcharge',
+        title: 'Recargo pago con tarjeta (10%)',
+        quantity: 1,
+        unit_price: cardSurcharge,
+        description: 'Pagando por transferencia bancaria este recargo no aplica',
+      })
+    }
 
     const preferenceData = {
       items: mpItemsFinal.map((item: any) => ({

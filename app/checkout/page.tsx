@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCart } from "@/lib/cartStore"
+import { cardSurchargeAmount, MP_CARD_SURCHARGE } from "@/lib/payment-config"
 import * as fpixel from "@/lib/fpixel"
 import { setPixelUser } from "@/lib/pixel-user"
 import { trackBeginCheckout } from "@/lib/analytics"
@@ -121,6 +122,11 @@ export default function CheckoutPage() {
 
   const discountARS = appliedDiscount?.discountARS ?? 0
   const total = Math.max(0, subtotal + shippingCost - discountARS)
+  // Recargo por tarjeta: solo MercadoPago. La transferencia paga el precio de
+  // lista — misma regla que el bot (ver lib/payment-config.ts). Al servidor se
+  // manda el total BASE; el recargo lo recalcula y aplica el backend.
+  const cardSurcharge = paymentMethod === 'mercadopago' ? cardSurchargeAmount(total) : 0
+  const totalAPagar = total + cardSurcharge
 
   console.log("💰 Checkout totals:", {
     subtotal,
@@ -563,7 +569,7 @@ export default function CheckoutPage() {
                     <div>
                       <h3 className="font-medium">MercadoPago</h3>
                       <p className="text-sm text-muted-foreground">
-                        Tarjetas de crédito, débito, efectivo y más
+                        Tarjetas de crédito, débito, efectivo y más · +10% de recargo
                       </p>
                     </div>
                   </div>
@@ -591,7 +597,7 @@ export default function CheckoutPage() {
                     <div>
                       <h3 className="font-medium">Transferencia Bancaria</h3>
                       <p className="text-sm text-muted-foreground">
-                        Transferencia directa desde tu banco
+                        Transferencia directa desde tu banco · sin recargo
                       </p>
                     </div>
                   </div>
@@ -812,10 +818,21 @@ export default function CheckoutPage() {
 
               <Separator className="my-4" />
 
+              {cardSurcharge > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Recargo pago con tarjeta (10%)</span>
+                  <span className="text-muted-foreground">+{formatCurrency(cardSurcharge)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-semibold text-lg">
                 <span>Total</span>
-                <span className="text-xl text-green-600">{formatCurrency(total)}</span>
+                <span className="text-xl text-green-600">{formatCurrency(totalAPagar)}</span>
               </div>
+              {cardSurcharge > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Pagando por transferencia: {formatCurrency(total)}
+                </p>
+              )}
             </CardContent>
           </Card>
 
