@@ -284,6 +284,10 @@ function resolveGarmentTemplate(garmentType: string, color: string, side: "front
     case "buzo-cuello-redondo":
       candidates.push(`/garments/buzo-cuello-redondo-${c}-${s}.png`)
       break
+    case "totebag":
+      // Bahía: hay foto real de frente Y dorso (mismo encuadre, 1500×1500).
+      candidates.push(`/garments/totebag-${c}-${s}.jpeg`)
+      break
     case "buzo-hoodie-unisex":
       candidates.push(`/garments/buzo-hoodie-unisex-${c}-${s}.png`, `/garments/buzo-hoodie-unisex-${c}-${s}.jpeg`)
       break
@@ -292,6 +296,7 @@ function resolveGarmentTemplate(garmentType: string, color: string, side: "front
       else if (garmentType.includes("buzo")) candidates.push(`/garments/buzo-cuello-redondo-${c}-${s}.png`)
       else if (garmentType.includes("crop")) candidates.push(`/garments/remera-crop-mujer-${c}-${s}.png`)
       else if (garmentType.includes("musculosa")) candidates.push(`/garments/musculosa-bali-${c}-${s}.png`)
+      else if (garmentType.includes("tote")) candidates.push(`/garments/totebag-${c}-${s}.jpeg`)
       else candidates.push(`/garments/tshirt-${c}-classic-${s}.jpeg`)
   }
   return candidates

@@ -41,10 +41,13 @@ export const PRINT_AREAS: Record<string, { front: PrintBox; back?: PrintBox }> =
   musculosa: { front: { x: 220, y: 230, w: 160, h: 210 } },
   // Bahía (totebag): caja centrada en el panel de tela, debajo de las asas —
   // misma fracción que canonical-print-zones de platform ([0.30, 0.45, 0.70,
-  // 0.78] sobre 600px). SIN `back` a propósito: el pipeline no sabe renderizar
-  // el dorso de la bolsa todavía; antes caía al default `tshirt` y ofrecía
-  // "doble estampado" dibujando la caja de una remera sobre una tote.
-  totebag: { front: { x: 180, y: 270, w: 240, h: 198 } },
+  // 0.78] sobre 600px). El dorso usa la MISMA caja: las fotos de frente y dorso
+  // (totebag-crudo-{front,back}.jpeg) tienen idéntico encuadre, igual que sus
+  // entradas en lib/garment-mappings.json (coordenadas idénticas por lado).
+  totebag: {
+    front: { x: 180, y: 270, w: 240, h: 198 },
+    back: { x: 180, y: 270, w: 240, h: 198 },
+  },
 }
 
 export function garmentKind(garmentType: string): keyof typeof PRINT_AREAS {
@@ -105,6 +108,10 @@ export function resolveGarmentTemplate(garmentType: string, color: string, side:
     case "buzo-cuello-redondo":
       candidates.push(`/garments/buzo-cuello-redondo-${c}-${s}.png`)
       break
+    case "totebag":
+      // Bahía: hay foto real de frente Y dorso (mismo encuadre, 1500×1500).
+      candidates.push(`/garments/totebag-${c}-${s}.jpeg`)
+      break
     case "buzo-hoodie-unisex":
       candidates.push(`/garments/buzo-hoodie-unisex-${c}-${s}.png`, `/garments/buzo-hoodie-unisex-${c}-${s}.jpeg`)
       break
@@ -113,6 +120,7 @@ export function resolveGarmentTemplate(garmentType: string, color: string, side:
       else if (garmentType.includes("buzo")) candidates.push(`/garments/buzo-cuello-redondo-${c}-${s}.png`)
       else if (garmentType.includes("crop")) candidates.push(`/garments/remera-crop-mujer-${c}-${s}.png`)
       else if (garmentType.includes("musculosa")) candidates.push(`/garments/musculosa-bali-${c}-${s}.png`)
+      else if (garmentType.includes("tote")) candidates.push(`/garments/totebag-${c}-${s}.jpeg`)
       else candidates.push(`/garments/tshirt-${c}-classic-${s}.jpeg`)
   }
   return candidates
