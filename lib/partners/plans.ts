@@ -65,6 +65,10 @@ export const PLAN_FEATURES: Record<Plan, PlanFeatures> = {
     seoIndexable: true,
     geoOptimized: true,
     semReady: true,
+    // OJO: hoy 'full_brand_fit' se comporta IGUAL que 'presets' — nada en
+    // design-engine.ts distingue los dos modos (auditoría 27/08/2026). Se
+    // conserva como marcador de un futuro diferenciador Pro; el copy público
+    // ya NO lo vende (31/08/2026: las cards venden la cuota, que es real).
     designEngine: 'full_brand_fit',
     storefrontDesigner: true,
     chatbot: true,

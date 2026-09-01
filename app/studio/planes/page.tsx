@@ -88,7 +88,7 @@ const faqSchema = {
       name: "¿Cuál es la diferencia entre Starter, Growth y Pro?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Starter es gratis: storefront propio, diseño con IA, hasta 10 productos y 20 leads/mes, prendas a precio partner (mismo precio que /b2b-precios-2026). Growth (USD$50/mes) suma productos y leads ilimitados, SEO completo, Design Engine, analytics y un precio aún más bajo por prenda. Pro (USD$100/mes) suma chatbot WhatsApp + Instagram DM, automatización de contenido IG/FB/X, setup Meta Business, plantillas de Meta Ads y onboarding 1:1.",
+        text: "Starter es gratis: storefront propio, diseño con IA, hasta 10 productos y 20 leads/mes, prendas a precio partner (mismo precio que /b2b-precios-2026). Growth (USD$50/mes) suma productos y leads ilimitados, SEO completo, generaciones de IA ilimitadas (Starter: 20/semana), analytics y un precio aún más bajo por prenda. Pro (USD$100/mes) suma chatbot WhatsApp + Instagram DM, automatización de contenido IG/FB/X, setup Meta Business, plantillas de Meta Ads y onboarding 1:1.",
       },
     },
     {

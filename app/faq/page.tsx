@@ -126,7 +126,7 @@ const FAQ_ITEMS = [
       },
       {
         q: "¿Cuánto cuesta ser Partner?",
-        a: "Hay 3 planes: Starter (gratis, hasta 10 productos y 20 leads/mes, prendas a precio retail). Growth (USD$50/mes — con 50% OFF el primer año para los primeros 100 partners, queda en USD$25/mes — productos ilimitados, SEO completo, Design Engine, analytics y prendas al costo). Pro (USD$100/mes, todo lo de Growth + chatbot WhatsApp/Instagram, automatización de contenido para IG/FB/X, Meta Ads, onboarding 1:1).",
+        a: "Hay 3 planes: Starter (gratis, hasta 10 productos y 20 leads/mes, prendas a precio retail). Growth (USD$50/mes — con 50% OFF el primer año para los primeros 100 partners, queda en USD$25/mes — productos ilimitados, SEO completo, generaciones de IA ilimitadas, analytics y prendas al costo). Pro (USD$100/mes, todo lo de Growth + chatbot WhatsApp/Instagram, automatización de contenido para IG/FB/X, Meta Ads, onboarding 1:1).",
       },
       {
         q: "¿Hacen pedidos mayoristas para empresas?",

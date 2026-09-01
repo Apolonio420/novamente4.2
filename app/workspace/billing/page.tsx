@@ -58,7 +58,7 @@ const PLAN_LABELS: Record<string, string> = {
 
 const PLAN_DESCRIPTIONS: Record<string, string> = {
   starter: 'Ideal para empezar. Storefront con logo, colores y acceso a precios mayoristas.',
-  growth: 'Para marcas que quieren crecer. SEO, branding avanzado y Design Engine.',
+  growth: 'Para marcas que quieren crecer. SEO, branding avanzado y generaciones de IA ilimitadas.',
   pro: 'La experiencia completa. Chatbot, Meta Ads, soporte premium y mas.',
 }
 

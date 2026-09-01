@@ -90,7 +90,7 @@ export default function LanzaTuMarca() {
         name: "Cuanto cuesta crear mi marca de ropa con Novamente?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "El plan Starter es 100% gratis: tenes tienda online, diseno con IA, y produccion on-demand sin costo fijo. Solo pagas cuando vendes (prendas a precio partner B2B). El plan Growth (USD$50/mes, -15% en plan anual) suma SEO completo, analytics, Design Engine y prendas a un precio aun mas competitivo para que tu margen sea mucho mayor. El plan Pro (USD$100/mes, -15% en plan anual) suma chatbot WhatsApp + Instagram, automatizacion de contenido IG/FB/X, Meta Ads y onboarding 1:1.",
+          text: "El plan Starter es 100% gratis: tenes tienda online, diseno con IA, y produccion on-demand sin costo fijo. Solo pagas cuando vendes (prendas a precio partner B2B). El plan Growth (USD$50/mes, -15% en plan anual) suma SEO completo, analytics, generaciones de IA ilimitadas y prendas a un precio aun mas competitivo para que tu margen sea mucho mayor. El plan Pro (USD$100/mes, -15% en plan anual) suma chatbot WhatsApp + Instagram, automatizacion de contenido IG/FB/X, Meta Ads y onboarding 1:1.",
         },
       },
       {
@@ -230,7 +230,7 @@ export default function LanzaTuMarca() {
         "Prendas al costo Novamente (margen alto para vos)",
         "Productos y leads ilimitados",
         "Branding avanzado + SEO completo",
-        "Design Engine (mockups + estilos)",
+        "Generaciones de IA ilimitadas (mockups + estilos)",
         "Analytics y metricas",
         "Destacado en /marcas",
         "Soporte prioritario por email",
