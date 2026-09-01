@@ -200,6 +200,11 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/ayuda" className="text-white/60 hover:text-white">
+                    Mesa de Ayuda
+                  </Link>
+                </li>
+                <li>
                   <Link href="/nosotros" className="text-white/60 hover:text-white">
                     Nosotros
                   </Link>

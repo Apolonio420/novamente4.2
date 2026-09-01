@@ -112,6 +112,7 @@ export function Navbar() {
     { label: "MARCAS", href: "/marcas" },
     { label: "EMPRESAS", href: "/empresas" },
     { label: "FAQ", href: "/faq" },
+    { label: "AYUDA", href: "/ayuda" },
   ]
 
   return (
