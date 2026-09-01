@@ -76,14 +76,25 @@ export function computeAutoPublishUpdates(
  * cubierto) pero lo cubrimos igual con 'ready_not_published'.
  */
 export type StorefrontHiddenReason =
+  | 'suspended'
   | 'hidden_manually'
   | 'missing_logo'
   | 'missing_cover_or_description'
   | 'ready_not_published'
 
+/**
+ * `status==='suspended'` es SOLO la suspensión MANUAL (fraude/abuso, acción
+ * de admin) — el impago dejó de suspender cuentas (cron
+ * check-subscriptions degrada a Starter en vez de suspender), así que llegar
+ * acá con status suspended ya no puede ser por falta de pago. Se chequea
+ * primero: ni el branding ni el apagado manual importan si la cuenta está
+ * suspendida, y app/p/[slug]/page.tsx igual hace notFound() para
+ * status !== 'active', así que este motivo nunca compite con storefront_published.
+ */
 export function computeStorefrontHiddenReason(
   tenant: BrandingFields & PublishState & MetadataField,
 ): StorefrontHiddenReason | null {
+  if (tenant.status === 'suspended') return 'suspended'
   if (tenant.storefront_published) return null
   if (isHiddenManually(tenant.metadata)) return 'hidden_manually'
   if (!tenant.logo_url) return 'missing_logo'

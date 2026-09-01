@@ -143,3 +143,59 @@ export function shouldSendSuspensionEmail(
   if (!expiresAtISO) return false
   return metadata?.suspension_email_sent_for !== expiresAtISO
 }
+
+// ---------------------------------------------------------------------------
+// 3. Degradado a Starter — 3 fallas de pago (freemium: el impago ya NO
+// suspende, degrada features. La tienda sigue online). Reemplaza al email de
+// suspensión de arriba en el flujo del cron; ese queda solo para la
+// suspensión MANUAL por fraude/abuso.
+// ---------------------------------------------------------------------------
+
+export function subscriptionDegradedSubject(): string {
+  return 'Tu plan pasó a Starter por un problema con el pago'
+}
+
+export function subscriptionDegradedHtml(opts: { tenantName: string; plan: string; billingUrl: string }): string {
+  return shell(`
+    <p style="font-size:17px;color:#111;margin:0 0 6px"><b>Hola ${opts.tenantName},</b></p>
+    <p style="font-size:14px;color:#555;line-height:1.5;margin:0 0 18px">
+      No pudimos procesar el pago de tu plan <b>${planName(opts.plan)}</b> después de varios intentos,
+      así que tu cuenta pasó al plan <b>Starter</b> (gratis). Tu tienda <b>sigue online</b> — nada se
+      perdió — pero con las funciones de Starter: hasta 10 productos publicados, sin SEO avanzado
+      ni las demás funciones de tu plan pago.
+    </p>
+    <p style="font-size:14px;color:#555;line-height:1.5;margin:0 0 18px">
+      Para recuperar todo, solo tenés que poner el pago al día.
+    </p>
+    <a href="${opts.billingUrl}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;font-size:15px;font-weight:bold;padding:13px 30px;border-radius:8px">
+      Reactivar mi plan →
+    </a>
+    <p style="font-size:12px;color:#999;margin:22px 0 0;line-height:1.5">
+      Si tuviste un problema con la tarjeta o el pago, respondé este mail o escribinos por
+      <a href="https://wa.me/5492235169720" style="color:#666">WhatsApp</a> y lo resolvemos juntos.
+    </p>
+  `)
+}
+
+export function buildSubscriptionDegradedEmail(tenant: { name: string; plan: string }): {
+  subject: string
+  html: string
+} {
+  return {
+    subject: subscriptionDegradedSubject(),
+    html: subscriptionDegradedHtml({
+      tenantName: tenant.name,
+      plan: tenant.plan,
+      billingUrl: SUBSCRIPTION_LIFECYCLE_BILLING_URL,
+    }),
+  }
+}
+
+/** Mismo esquema de dedupe que los otros emails del ciclo de vida. */
+export function shouldSendDegradedEmail(
+  metadata: Record<string, unknown> | null | undefined,
+  expiresAtISO: string | null | undefined,
+): boolean {
+  if (!expiresAtISO) return false
+  return metadata?.degraded_email_sent_for !== expiresAtISO
+}

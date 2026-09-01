@@ -283,7 +283,12 @@ export async function notifySubscriptionExpiring(tenant: { name: string; plan: s
 }
 
 /**
- * Notifies a partner has been suspended for non-payment
+ * Notifies a partner has been suspended for non-payment.
+ *
+ * Ya NO la usa el cron de impago (check-subscriptions degrada a Starter en
+ * vez de suspender — ver notifySubscriptionDegraded abajo). Se conserva para
+ * la suspensión MANUAL por fraude/abuso, que sigue existiendo como acción de
+ * admin (tenant.status='suspended').
  */
 export async function notifySubscriptionSuspended(tenant: { name: string; plan: string; email: string }) {
     const message = `
@@ -295,6 +300,26 @@ export async function notifySubscriptionSuspended(tenant: { name: string; plan: 
 <b>Motivo:</b> 3+ pagos fallidos
 
 ⛔ <i>Storefront desactivado. Contactar para resolver.</i>
+  `.trim();
+    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
+}
+
+/**
+ * Notifica que un partner fue DEGRADADO a Starter por impago (freemium: el
+ * impago ya no suspende la cuenta, degrada features — ver
+ * app/api/cron/partners/check-subscriptions/route.ts). A diferencia de la
+ * suspensión, la tienda sigue online.
+ */
+export async function notifySubscriptionDegraded(tenant: { name: string; plan: string; email: string }) {
+    const message = `
+🟡 <b>PARTNER DEGRADADO A STARTER</b>
+
+<b>Partner:</b> ${tenant.name}
+<b>Plan contratado:</b> ${tenant.plan.toUpperCase()}
+<b>Email:</b> ${tenant.email}
+<b>Motivo:</b> 3+ pagos fallidos
+
+ℹ️ <i>Tienda sigue online con features de plan gratis. Contactar para reactivar el plan pago.</i>
   `.trim();
     return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
 }

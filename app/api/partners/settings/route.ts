@@ -67,6 +67,18 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Guard: una cuenta SUSPENDIDA (fraude/abuso — la única suspensión que
+    // queda; el impago ya no suspende, degrada a Starter, ver cron
+    // check-subscriptions) no puede republicarse a si misma. Sin esto el
+    // partner podia esquivar la suspension con un PUT directo a este endpoint
+    // aunque el UI no le ofrezca el boton.
+    if (updates.storefront_published === true && tenant.status === 'suspended') {
+      return NextResponse.json(
+        { error: 'Tu cuenta está suspendida. Contactanos para reactivarla.' },
+        { status: 403 },
+      )
+    }
+
     // Marca/limpia el apagado manual del storefront. computeAutoPublishUpdates
     // (lib/partners/auto-publish.ts) respeta esta marca para no volver a
     // prender sola una tienda que el partner apago a proposito. `metadata` es

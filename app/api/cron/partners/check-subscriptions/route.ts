@@ -2,13 +2,14 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { updateTenant } from '@/lib/partners/tenant'
 import { bumpPromoToStandardIfDue } from '@/lib/partners/subscription'
-import { notifyError, notifySubscriptionExpiring, notifySubscriptionSuspended } from '@/lib/notifications'
+import { PLAN_FEATURES } from '@/lib/partners/plans'
+import { notifyError, notifySubscriptionExpiring, notifySubscriptionDegraded } from '@/lib/notifications'
 import { sendEmail } from '@/lib/email'
 import {
   buildSubscriptionExpiringEmail,
-  buildSubscriptionSuspendedEmail,
+  buildSubscriptionDegradedEmail,
   shouldSendExpiryEmail,
-  shouldSendSuspensionEmail,
+  shouldSendDegradedEmail,
 } from '@/lib/partners/subscription-lifecycle-emails'
 
 // Nunca corrió por Vercel cron hasta ahora (no estaba en vercel.json — ver
@@ -43,10 +44,10 @@ export async function GET(request: NextRequest) {
   const results = {
     expired_checked: 0,
     grace_period: 0,
-    suspended: 0,
+    degraded: 0,
     dunning_sent: 0,
     dunning_email_sent: 0,
-    suspension_email_sent: 0,
+    degraded_email_sent: 0,
     promo_bumped: 0,
     pending_stale: 0,
     errors: [] as string[],
@@ -98,48 +99,82 @@ export async function GET(request: NextRequest) {
 
             console.log(`Tenant ${tenant.name}: payment failure ${currentFailures + 1}/3 (grace period)`)
           } else {
-            // 3+ failures: suspend
-            await updateTenant(tenant.id, {
-              status: 'suspended',
-              storefront_published: false,
-            } as any)
-            results.suspended++
+            // 3+ failures: DEGRADAR a Starter, NO suspender. Freemium: el
+            // impago ya no tira la cuenta offline (caso real: Pablo/Origen
+            // terminó en 404 con banners confusos) — degrada las features al
+            // plan gratis y listo. `status` y `storefront_published` quedan
+            // TAL CUAL están: la tienda sigue publicada, con el cap de
+            // productos y el resto de las features de Starter (ver
+            // effectivePlan / PLAN_FEATURES.starter en lib/partners/plans.ts,
+            // y el cap en app/p/[slug]/page.tsx).
+            //
+            // El resultado es el mismo tanto para el tenant que nunca llegó a
+            // pagar (recurring_pending abandonado) como para el que pagaba y
+            // dejó de hacerlo: plan='starter' activo. La reactivación (pagar
+            // de nuevo) es la que sube el plan — no hay nada especial que
+            // distinguir acá.
+            //
+            // metadata: se limpia subscription_type/pending_plan (mismo
+            // criterio que se aplicó a mano hoy con el tenant 'origen') para
+            // que NO seleccionar 'recurring_pending' en la reconciliación del
+            // bloque 4 mas abajo, que si no re-alertaría cada corrida.
+            const currentMeta = (tenant.metadata as Record<string, unknown>) || {}
+            const { pending_plan: _droppedPendingPlan, pending_since: _droppedPendingSince, ...restMeta } = currentMeta as any
+            const degradedFeatures = PLAN_FEATURES.starter
 
-            console.log(`Tenant ${tenant.name}: SUSPENDED (${currentFailures}+ payment failures)`)
+            await updateTenant(tenant.id, {
+              plan: 'starter',
+              max_products: degradedFeatures.maxProducts,
+              max_leads_per_month: degradedFeatures.maxLeadsPerMonth,
+              design_engine_mode: degradedFeatures.designEngine,
+              seo_indexable: degradedFeatures.seoIndexable,
+              metadata: {
+                ...restMeta,
+                subscription_type: 'cancelled',
+                degraded_at: now,
+                degraded_reason: 'payment_failures',
+              },
+            } as any)
+            results.degraded++
+
+            console.log(`Tenant ${tenant.name}: DEGRADADO a starter (${currentFailures}+ payment failures)`)
 
             // Send Telegram notification (equipo)
             try {
-              await notifySubscriptionSuspended({
+              await notifySubscriptionDegraded({
                 name: tenant.name,
                 plan: tenant.plan,
                 email: tenant.email,
               })
             } catch (e) {
-              console.error('Failed to send suspension notification:', e)
+              console.error('Failed to send degraded notification:', e)
             }
 
-            // Email al PARTNER (tono empático, no punitivo — la tienda quedó
-            // offline pero nada se perdió). Aislado: si falla, la suspensión ya
-            // se aplicó arriba y no debe revertirse. Dedupe por
-            // subscription_expires_at para no reenviar en cada corrida del cron
-            // mientras el partner sigue suspendido con el mismo vencimiento.
-            if (tenant.email && shouldSendSuspensionEmail(tenant.metadata as any, tenant.subscription_expires_at)) {
+            // Email al PARTNER (tono empático, no punitivo — la tienda sigue
+            // online, solo bajaron las funciones). Aislado: si falla, la
+            // degradación ya se aplicó arriba y no debe revertirse. Dedupe
+            // por subscription_expires_at para no reenviar en cada corrida
+            // del cron mientras siga con el mismo vencimiento.
+            if (tenant.email && shouldSendDegradedEmail(tenant.metadata as any, tenant.subscription_expires_at)) {
               try {
-                const { subject, html } = buildSubscriptionSuspendedEmail({ name: tenant.name, plan: tenant.plan })
+                const { subject, html } = buildSubscriptionDegradedEmail({ name: tenant.name, plan: tenant.plan })
                 const sent = await sendEmail({ to: tenant.email, subject, html })
                 if (sent.ok) {
                   await updateTenant(tenant.id, {
                     metadata: {
-                      ...((tenant.metadata as Record<string, unknown>) || {}),
-                      suspension_email_sent_for: tenant.subscription_expires_at,
+                      ...restMeta,
+                      subscription_type: 'cancelled',
+                      degraded_at: now,
+                      degraded_reason: 'payment_failures',
+                      degraded_email_sent_for: tenant.subscription_expires_at,
                     },
                   } as any)
-                  results.suspension_email_sent++
+                  results.degraded_email_sent++
                 } else {
-                  results.errors.push(`Suspension email ${tenant.id}: ${sent.error}`)
+                  results.errors.push(`Degraded email ${tenant.id}: ${sent.error}`)
                 }
               } catch (e: any) {
-                results.errors.push(`Suspension email ${tenant.id}: ${e.message}`)
+                results.errors.push(`Degraded email ${tenant.id}: ${e.message}`)
               }
             }
           }
@@ -239,8 +274,8 @@ export async function GET(request: NextRequest) {
     // humano: (a) el partner autorizó pero el webhook de suscripción nunca llegó
     // (URL de tópicos subscription_* mal apuntada en el dashboard de MP → MP
     // cobra y el tenant nunca se activa), o (b) abandonó el checkout (inofensivo,
-    // el cron ya lo suspende por vencimiento — bloque 1). No podemos distinguir
-    // (a) de (b) sin consultar MP, así que solo alertamos para revisión manual.
+    // el cron ya lo degrada a starter por vencimiento — bloque 1). No podemos
+    // distinguir (a) de (b) sin consultar MP, así que solo alertamos para revisión manual.
     const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
     const { data: stalePending, error: stalePendingError } = await db()
       .from('tenants')

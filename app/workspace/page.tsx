@@ -49,6 +49,7 @@ import type { StorefrontHiddenReason } from '@/lib/partners/auto-publish'
 interface DashboardData {
   products: number
   publishedProducts: number
+  maxProducts: number
   storefrontHiddenReason: StorefrontHiddenReason | null
   leads: number
   orders: number
@@ -546,6 +547,10 @@ const HIDDEN_REASON_COPY: Record<
   Exclude<StorefrontHiddenReason, 'ready_not_published'>,
   { title: string; body: string }
 > = {
+  suspended: {
+    title: 'Tu cuenta está suspendida',
+    body: 'Contactanos para resolverlo — mientras tanto no podés publicar ni despublicar tu tienda.',
+  },
   missing_logo: {
     title: 'Tu tienda todavía no se puede publicar',
     body: 'Para publicar tu tienda te falta cargar tu logo.',
@@ -603,6 +608,27 @@ function StorefrontVisibilityBanner({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {}
+  }
+
+  // Cuenta suspendida (fraude/abuso — acción MANUAL de admin, el impago ya no
+  // suspende). Copy honesto, sin boton de publicar: el PUT de settings
+  // rechaza storefront_published:true mientras esté suspendida (ver
+  // app/api/partners/settings/route.ts).
+  if (reason === 'suspended') {
+    const copy = HIDDEN_REASON_COPY.suspended
+    return (
+      <div className="relative rounded-xl border-2 border-red-500/40 bg-gradient-to-r from-red-600/10 via-orange-600/5 to-zinc-900/60 p-5 shadow-lg shadow-red-950/10">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-11 h-11 rounded-xl bg-red-500/20 flex items-center justify-center shrink-0">
+            <EyeOff className="w-5 h-5 text-red-400" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-zinc-100">{copy.title}</h3>
+            <p className="text-xs text-zinc-400 mt-0.5">{copy.body}</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Tienda publicada: mostrar el link copiable (estado final tras publicar,
@@ -744,6 +770,56 @@ function StorefrontVisibilityBanner({
             'Publicar tienda'
           )}
         </Button>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Plan Cap Banner — más productos publicados que el cupo del plan efectivo.
+//
+// La vidriera pública (app/p/[slug]/page.tsx) y este mismo dashboard
+// (/api/partners/dashboard) recortan a maxProducts del plan EFECTIVO (ver
+// effectivePlan en lib/partners/plans.ts) — cubre tanto al que siempre fue
+// Starter y publicó de más como al que bajó de plan por impago (freemium:
+// el impago ya no suspende la cuenta, degrada features — ver
+// app/api/cron/partners/check-subscriptions/route.ts). Sin este aviso el
+// partner no se entera de que parte de su catálogo dejó de verse.
+// ---------------------------------------------------------------------------
+
+function PlanCapBanner({ publishedProducts, maxProducts }: { publishedProducts: number; maxProducts: number }) {
+  if (publishedProducts <= maxProducts) return null
+  const hiddenCount = publishedProducts - maxProducts
+
+  return (
+    <div className="relative rounded-xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-600/10 via-orange-600/5 to-zinc-900/60 p-5 shadow-lg shadow-amber-950/10">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-11 h-11 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-5 h-5 text-amber-400" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-zinc-100">
+              Tu tienda muestra {maxProducts} de {publishedProducts} productos publicados
+            </h3>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              Tu plan actual tiene un límite de {maxProducts} productos visibles en la tienda pública.
+              Quedaron {hiddenCount} {hiddenCount === 1 ? 'producto oculto' : 'productos ocultos'} para tus clientes.
+              Elegí cuáles mostrar o actualizá tu plan para mostrarlos todos.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button asChild variant="outline" className="border-amber-600/40 text-amber-200 hover:bg-amber-500/10">
+            <Link href="/workspace/catalog">
+              <Package className="w-4 h-4 mr-2" />
+              Elegir productos
+            </Link>
+          </Button>
+          <Button asChild className="bg-amber-600 hover:bg-amber-500 text-white border-0">
+            <Link href="/workspace/billing">Actualizar plan</Link>
+          </Button>
+        </div>
       </div>
     </div>
   )
@@ -971,7 +1047,9 @@ export default function WorkspaceDashboard() {
       {/* STOREFRONT OCULTA — productos publicados pero tienda apagada      */}
       {/* ================================================================= */}
       {data.tenant.slug
-        && ((!data.tenant.storefront_published && data.publishedProducts >= 1) || storefrontJustPublished) && (
+        && (data.storefrontHiddenReason === 'suspended'
+          || (!data.tenant.storefront_published && data.publishedProducts >= 1)
+          || storefrontJustPublished) && (
         <StorefrontVisibilityBanner
           slug={data.tenant.slug}
           published={data.tenant.storefront_published || storefrontJustPublished}
@@ -984,6 +1062,11 @@ export default function WorkspaceDashboard() {
           }}
         />
       )}
+
+      {/* ================================================================= */}
+      {/* CUPO DE PLAN — más productos publicados que el límite del plan     */}
+      {/* ================================================================= */}
+      <PlanCapBanner publishedProducts={data.publishedProducts} maxProducts={data.maxProducts} />
 
       {/* ================================================================= */}
       {/* KPI OVERVIEW — Performance ultimos 30 dias                        */}

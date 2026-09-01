@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getTenantBySlug } from '@/lib/partners/tenant'
 import { getPublishedProducts } from '@/lib/partners/catalog'
-import { PLAN_FEATURES, getPlanFeatures } from '@/lib/partners/plans'
+import { PLAN_FEATURES, getPlanFeatures, effectivePlan } from '@/lib/partners/plans'
 import type { Tenant, PartnerProduct } from '@/lib/partners/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -100,8 +100,19 @@ export default async function PartnerStorefrontPage({ params, searchParams }: Pa
     notFound()
   }
 
-  const products = await getPublishedProducts(tenant.id)
+  const allPublishedProducts = await getPublishedProducts(tenant.id)
   const features = getPlanFeatures(tenant.plan)
+
+  // Cap freemium: la vidriera pública muestra como máximo maxProducts del
+  // plan EFECTIVO (no el contratado — un tenant degradado por impago ya tiene
+  // tenant.plan='starter', pero effectivePlan() es la fuente de verdad para
+  // "qué puede usar hoy", igual que el resto de los gates de features). Los
+  // planes con cupo ilimitado (growth/pro, PLAN_FEATURES.*.maxProducts =
+  // 999999) nunca se recortan en la práctica — ningún tenant real llega a esa
+  // cantidad de productos. Se muestran los primeros N según el orden actual
+  // de la query (sort_order, ver getPublishedProducts).
+  const maxVisibleProducts = getPlanFeatures(effectivePlan(tenant)).maxProducts
+  const products = allPublishedProducts.slice(0, maxVisibleProducts)
 
   // SEM UTM tracking (Pro only)
   const utmRef = features.semReady

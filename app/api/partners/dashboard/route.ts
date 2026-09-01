@@ -6,6 +6,7 @@ import { countLeadsThisMonth } from '@/lib/partners/leads'
 import { countOrdersByTenant } from '@/lib/partners/orders'
 import { getDashboardTrends } from '@/lib/partners/analytics'
 import { computeStorefrontHiddenReason } from '@/lib/partners/auto-publish'
+import { getPlanFeatures, effectivePlan } from '@/lib/partners/plans'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET(request: NextRequest) {
@@ -43,6 +44,12 @@ export async function GET(request: NextRequest) {
     // auto-publish, asi el UI no reimplementa el criterio de branding minimo.
     const storefrontHiddenReason = computeStorefrontHiddenReason(tenant)
 
+    // Cap freemium (ver app/p/[slug]/page.tsx, mismo criterio): cuántos
+    // productos publicados se muestran realmente en la vidriera pública según
+    // el plan EFECTIVO, para que el workspace pueda avisar cuando hay más
+    // publicados que cupo (ver StorefrontVisibilityBanner en workspace/page.tsx).
+    const maxProducts = getPlanFeatures(effectivePlan(tenant)).maxProducts
+
     // Set first_login_at once. IMPORTANTE: awaited — en serverless (Vercel) el
     // proceso puede congelarse apenas se devuelve la response, y una promesa
     // "fire-and-forget" sin await pierde la carrera contra ese freeze: nunca
@@ -62,6 +69,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       products,
       publishedProducts,
+      maxProducts,
       storefrontHiddenReason,
       leads,
       orders,
