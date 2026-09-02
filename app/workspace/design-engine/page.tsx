@@ -1601,13 +1601,13 @@ export default function DesignStudioPage() {
                                 {formatGarmentPrice(myPrice)}
                               </span>
                               {retail > myPrice && (
-                                <span className="text-[10px] text-zinc-500">
+                                <span className="text-[10px] text-zinc-500" data-testid="garment-retail-price">
                                   retail {formatGarmentPrice(retail)}
                                 </span>
                               )}
                             </div>
                             {planKey === 'starter' && growthSavings > 0 && (
-                              <p className="text-[10px] text-emerald-400 mt-0.5 font-medium">
+                              <p className="text-[10px] text-emerald-400 mt-0.5 font-medium" data-testid="garment-margin-upsell">
                                 ↑ Plan Growth: +{formatGarmentPrice(growthSavings)} de margen
                               </p>
                             )}
@@ -1764,7 +1764,7 @@ export default function DesignStudioPage() {
               const myPrice = garmentPricing[selectedGarment].myPrice ?? 0
               const retail = garmentPricing[selectedGarment].b2c_suggested
               return (
-              <div className="rounded-xl border border-zinc-800 bg-zinc-800/30 p-3">
+              <div className="rounded-xl border border-zinc-800 bg-zinc-800/30 p-3" data-testid="garment-margin-hint-box">
                 <p className="text-xs text-zinc-400">
                   <span className="font-medium text-zinc-300">Precio sugerido de venta:</span>{' '}
                   {formatGarmentPrice(retail)}
@@ -1934,7 +1934,7 @@ export default function DesignStudioPage() {
                   onChange={e => setCatalogProductPrice(e.target.value)}
                   className="w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-700 rounded-md text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-violet-500"
                 />
-                <p className="text-[10px] text-zinc-500 mt-1">
+                <p className="text-[10px] text-zinc-500 mt-1" data-testid="garment-retail-price-hint">
                   Sugerencia: usar el precio retail. Vas a poder editarlo despues desde /workspace/catalog.
                 </p>
               </div>

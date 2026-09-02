@@ -739,7 +739,7 @@ export default function CatalogPage() {
       {/* Base garment costs reference                                     */}
       {/* ============================================================== */}
       {!loading && products.length > 0 && (
-        <details className="mb-4 rounded-xl border border-zinc-800/50 bg-zinc-900/40">
+        <details className="mb-4 rounded-xl border border-zinc-800/50 bg-zinc-900/40" data-testid="catalog-garment-cost-panel">
           <summary className="flex items-center gap-2 px-4 py-3 text-sm text-zinc-400 cursor-pointer hover:text-zinc-300 transition-colors select-none">
             <ShoppingBag className="h-4 w-4 text-emerald-400" />
             <span className="font-medium">Costo base de prendas Novamente</span>
@@ -1086,7 +1086,7 @@ export default function CatalogPage() {
               </div>
 
               {/* Garment key + Margin breakdown */}
-              <div className="space-y-2">
+              <div className="space-y-2" data-testid="catalog-form-margin-breakdown">
                 <Label className="text-zinc-300 text-sm font-medium">
                   Prenda base{' '}
                   <span className="text-zinc-600 font-normal text-xs">(opcional, para calcular tu margen)</span>

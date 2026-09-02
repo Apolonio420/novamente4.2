@@ -186,7 +186,7 @@ export function Navbar() {
         <div className="flex items-center gap-4">
           {user ? (
             <div className="flex items-center gap-2">
-              <span className="text-sm hidden md:inline-block">
+              <span className="text-sm hidden md:inline-block" data-testid="navbar-user-handle">
                 {user.email ? user.email.split("@")[0] : "Usuario"}
               </span>
               <Button variant="ghost" size="icon" onClick={handleSignOut} title="Cerrar sesión">

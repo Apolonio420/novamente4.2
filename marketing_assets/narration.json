@@ -1,0 +1,73 @@
+{
+  "studio": [
+    {
+      "file": "audio_openai_1.mp3",
+      "text": "Bienvenidos a Novamente Studio. Este es tu panel de control.",
+      "duration": 3.62
+    },
+    {
+      "file": "audio_openai_2.mp3",
+      "text": "Escribimos lo que queremos diseñar en el chat y la IA hace el resto.",
+      "duration": 3.98
+    },
+    {
+      "file": "audio_openai_3.mp3",
+      "text": "Hacemos clic en Aprender triple para ver cómo queda.",
+      "duration": 3.29
+    },
+    {
+      "file": "audio_openai_4.mp3",
+      "text": "¡Se ve genial! Ahora solo tenemos que agregarlo al catálogo.",
+      "duration": 3.53
+    },
+    {
+      "file": "audio_openai_5.mp3",
+      "text": "Le ponemos nombre, lo guardamos y listo para vender.",
+      "duration": 3.17
+    }
+  ],
+  "catalog": [
+    {
+      "file": "audio_openai_catalog_1.mp3",
+      "text": "En la pestaña Catálogo de tu estudio, vas a encontrar todos tus diseños.",
+      "duration": 4.54
+    },
+    {
+      "file": "audio_openai_catalog_2.mp3",
+      "text": "Acá puedes ver el stock, editar el precio de venta y administrar todo lo que ofreces en tu tienda.",
+      "duration": 5.81
+    },
+    {
+      "file": "audio_openai_catalog_3.mp3",
+      "text": "Mantener tu catálogo actualizado es clave para atraer más clientes.",
+      "duration": 4.22
+    }
+  ],
+  "b2c": [
+    {
+      "file": "audio_openai_b2c_1.mp3",
+      "text": "el servicio ambiental es muy fácil.",
+      "duration": 2.42
+    },
+    {
+      "file": "audio_openai_b2c_2.mp3",
+      "text": "Primero, entra la opción Diseñar tu prenda.",
+      "duration": 2.76
+    },
+    {
+      "file": "audio_openai_b2c_3.mp3",
+      "text": "Describí lo que tenés en mente en el chat y la Inteligencia Artificial hace el resto.",
+      "duration": 5.02
+    },
+    {
+      "file": "audio_openai_b2c_4.mp3",
+      "text": "Elegí el tipo de prenda, el talle y tu color favorito.",
+      "duration": 3.19
+    },
+    {
+      "file": "audio_openai_b2c_5.mp3",
+      "text": "Complete este programa de forma segura y recibe los tuyos de custodia.",
+      "duration": 3.43
+    }
+  ]
+}

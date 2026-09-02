@@ -513,11 +513,11 @@ export default function WorkspaceLayout({
           </div>
           {!sidebarCollapsed && (
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-zinc-200 truncate">
+              <p className="text-sm font-medium text-zinc-200 truncate" data-testid="workspace-user-handle">
                 {displayEmail.split('@')[0] || displayName}
               </p>
               {displayEmail && (
-                <p className="text-xs text-zinc-500 truncate">{displayEmail}</p>
+                <p className="text-xs text-zinc-500 truncate" data-testid="workspace-user-email">{displayEmail}</p>
               )}
             </div>
           )}
@@ -607,7 +607,7 @@ export default function WorkspaceLayout({
                     <User className="w-3.5 h-3.5 text-zinc-300" />
                   </div>
                 )}
-                <span className="hidden sm:block text-xs text-zinc-400">
+                <span className="hidden sm:block text-xs text-zinc-400" data-testid="workspace-user-handle-topbar">
                   {displayEmail.split('@')[0]}
                 </span>
               </button>
@@ -616,7 +616,7 @@ export default function WorkspaceLayout({
                 <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-zinc-800 bg-zinc-900 py-1 shadow-xl z-50">
                   <div className="px-3 py-2 border-b border-zinc-800">
                     <p className="text-sm font-medium text-zinc-200 truncate">{displayName}</p>
-                    <p className="text-xs text-zinc-500 truncate">{displayEmail}</p>
+                    <p className="text-xs text-zinc-500 truncate" data-testid="workspace-user-email-dropdown">{displayEmail}</p>
                   </div>
                   <Link
                     href="/workspace/settings"

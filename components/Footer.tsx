@@ -38,6 +38,7 @@ const SOLUTIONS = {
   "Recursos & técnica": [
     { href: "/blog", label: "Blog" },
     { href: "/faq", label: "Preguntas frecuentes" },
+    { href: "/ayuda", label: "Mesa de Ayuda" },
     { href: "/dtg-vs-serigrafia", label: "DTG vs serigrafía" },
     { href: "/estampar-remeras", label: "Cómo estampamos" },
     { href: "/guia-estampado", label: "Guía de estampado" },
@@ -197,11 +198,6 @@ export function Footer() {
                 <li>
                   <Link href="/privacidad" className="text-white/60 hover:text-white">
                     Política de privacidad
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/ayuda" className="text-white/60 hover:text-white">
-                    Mesa de Ayuda
                   </Link>
                 </li>
                 <li>

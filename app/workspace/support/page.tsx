@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import SupportFaq from '@/components/workspace/SupportFaq'
 
 // --- Types ---
 
@@ -268,6 +269,9 @@ export default function SupportPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* FAQ */}
+      <SupportFaq />
 
       {/* New ticket form */}
       {showForm && (

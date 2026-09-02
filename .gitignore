@@ -50,3 +50,8 @@ autopilot-session-*.log
 # one-off scripts y logs locales (2026-07-02)
 scripts/_*
 scripts/out/
+
+# raw sources for /ayuda tutorial videos — big binaries, not for the repo
+marketing_assets/video_*_raw/
+marketing_assets/*.mp4
+marketing_assets/*.log

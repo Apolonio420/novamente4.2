@@ -52,7 +52,7 @@ export function BusinessModelBanner({ tenantId }: BusinessModelBannerProps) {
   ]
 
   return (
-    <div className="relative rounded-xl border border-emerald-800/40 bg-emerald-950/30 p-5">
+    <div className="relative rounded-xl border border-emerald-800/40 bg-emerald-950/30 p-5" data-testid="business-model-banner">
       <div className="flex items-start gap-4">
         <div className="shrink-0 w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center">
           <Info className="w-4 h-4 text-emerald-400" />
