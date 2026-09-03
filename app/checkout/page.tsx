@@ -153,15 +153,19 @@ export default function CheckoutPage() {
   }
 
   const validateForm = () => {
-    // Express checkout: solo lo mínimo para procesar el pago + poder contactarte
-    // después si falta la dirección. Pedimos calle/ciudad después del pago en /checkout/success
-    const required = ["email", "firstName", "lastName", "phone"]
+    // Los datos de envío son OBLIGATORIOS antes de pagar (decisión 03/09/2026,
+    // caso Marcelo NOV-20260813-7038: el "express checkout" dejaba pagar sin
+    // dirección confiando en que el cliente la cargara después en
+    // /checkout/success — si no volvía, el pedido quedaba pago y sin adónde
+    // despachar). /checkout/success + shipping-info quedan como backfill de
+    // pedidos viejos, no como camino normal.
+    const required = ["email", "firstName", "lastName", "phone", "address", "city", "postalCode"]
     return required.every((field) => customerInfo[field as keyof typeof customerInfo].trim() !== "")
   }
 
   const handleCheckout = async () => {
     if (!validateForm()) {
-      alert("Por favor completa todos los campos requeridos")
+      alert("Por favor completá todos los campos, incluidos los datos de envío (dirección, ciudad y código postal) — los necesitamos para despachar tu pedido.")
       return
     }
 
@@ -502,42 +506,51 @@ export default function CheckoutPage() {
               </div>
 
               {/* Dirección opcional pre-pago — se completa post-pago si la dejan vacía */}
-              <details className="rounded-lg border border-dashed border-gray-300 p-3">
-                <summary className="cursor-pointer text-sm text-muted-foreground">
-                  Agregar dirección ahora (opcional) — si no, te la pedimos después del pago
-                </summary>
-                <div className="mt-3 space-y-3">
+              {/* Datos de envío OBLIGATORIOS antes de pagar. Antes era un
+                  <details> "opcional — te la pedimos después del pago": el pedido
+                  quedaba PENDIENTE_POST_PAGO y si el cliente no volvía a la página
+                  de éxito no había adónde despachar (caso Marcelo NOV-20260813-7038,
+                  pagó por transferencia 20 días después y no hay dirección). */}
+              <div className="rounded-lg border border-gray-300 p-3">
+                <p className="text-sm font-medium mb-1">Datos de envío</p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Los necesitamos para despachar tu pedido por Andreani.
+                </p>
+                <div className="space-y-3">
                   <div>
-                    <Label htmlFor="address">Dirección</Label>
+                    <Label htmlFor="address">Dirección (calle y número) *</Label>
                     <Input
                       id="address"
                       value={customerInfo.address}
                       onChange={(e) => handleInputChange("address", e.target.value)}
-                      placeholder="Av. Corrientes 1234"
+                      placeholder="Av. Corrientes 1234, piso/depto"
+                      required
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label htmlFor="city">Ciudad</Label>
+                      <Label htmlFor="city">Ciudad *</Label>
                       <Input
                         id="city"
                         value={customerInfo.city}
                         onChange={(e) => handleInputChange("city", e.target.value)}
                         placeholder="Buenos Aires"
+                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="postalCode">Código Postal</Label>
+                      <Label htmlFor="postalCode">Código Postal *</Label>
                       <Input
                         id="postalCode"
                         value={customerInfo.postalCode}
                         onChange={(e) => handleInputChange("postalCode", e.target.value)}
                         placeholder="1000"
+                        required
                       />
                     </div>
                   </div>
                 </div>
-              </details>
+              </div>
             </CardContent>
           </Card>
 

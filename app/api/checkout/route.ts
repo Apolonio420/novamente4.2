@@ -48,6 +48,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Customer information required" }, { status: 400 })
     }
 
+    // 🚫 Datos de envío OBLIGATORIOS antes de poder pagar (03/09/2026, mismo
+    // guard que /api/checkout/transfer — caso Marcelo NOV-20260813-7038). El
+    // "express checkout" que completaba la dirección post-pago en
+    // /checkout/success dependía de que el cliente volviera; si no volvía, el
+    // pedido quedaba pago y sin adónde despachar. shipping-info queda solo como
+    // backfill de pedidos viejos.
+    const addrMp = String(customer.address || "").trim()
+    const cityMp = String(customer.city || "").trim()
+    if (!addrMp || !cityMp || /pendiente/i.test(addrMp)) {
+      return NextResponse.json(
+        { success: false, error: "Completá los datos de envío (dirección y ciudad) antes de pagar — los necesitamos para despachar tu pedido." },
+        { status: 400 },
+      )
+    }
+
     if (!total || total <= 0) {
       return NextResponse.json({ success: false, error: "Invalid total amount" }, { status: 400 })
     }

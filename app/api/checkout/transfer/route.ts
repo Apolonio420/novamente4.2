@@ -22,6 +22,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Customer information required" }, { status: 400 })
     }
 
+    // 🚫 Datos de envío OBLIGATORIOS antes de poder pagar (03/09/2026, caso
+    // Marcelo NOV-20260813-7038: pedido pago por transferencia sin dirección —
+    // el placeholder PENDIENTE_POST_PAGO confiaba en que el cliente volviera a
+    // /checkout/success, y no volvió). Guard server-side: el form ya los exige,
+    // esto evita que cualquier caller viejo/cacheado los saltee.
+    const addr = String(customer.address || "").trim()
+    const city = String(customer.city || "").trim()
+    if (!addr || !city || /pendiente/i.test(addr)) {
+      return NextResponse.json(
+        { success: false, error: "Completá los datos de envío (dirección y ciudad) antes de pagar — los necesitamos para despachar tu pedido." },
+        { status: 400 },
+      )
+    }
+
     if (!total || total <= 0) {
       return NextResponse.json({ success: false, error: "Invalid total amount" }, { status: 400 })
     }
@@ -184,6 +198,36 @@ export async function POST(request: NextRequest) {
       }).catch((e: any) => console.error("❌ Exception email transferencia:", e?.message))
     } catch (notifErr: any) {
       console.error("❌ Aviso de pedido por transferencia falló (no bloquea):", notifErr?.message)
+    }
+
+    // 📧 Confirmación de PEDIDO al cliente con los datos para transferir.
+    // Antes el único lugar con el CVU/alias era /checkout/transfer (localStorage):
+    // si cerraba la pestaña perdía los datos y el pedido moría. El mail le da
+    // registro permanente + confianza. La confirmación de PAGO llega aparte
+    // cuando verificamos la transferencia.
+    try {
+      const { sendEmail } = await import("@/lib/email")
+      const itemsHtmlCliente = orderItems
+        .map((it: any) => `<li><b>${it.item_name}</b> x${it.quantity} — Talle ${it.product_size || "-"} · ${it.product_color || "-"}</li>`)
+        .join("")
+      void sendEmail({
+        to: customer.email,
+        subject: `Tu pedido ${newOrder.order_number || ""} — datos para transferir 💳`,
+        html: `<h2>¡Gracias por tu pedido, ${customer.firstName || ""}!</h2>
+<p>Registramos tu pedido <b>${newOrder.order_number || newOrder.id}</b>. Para confirmarlo, transferí <b>$${finalTotal.toLocaleString("es-AR")}</b> a:</p>
+<p style="background:#f4f4f4;padding:12px;border-radius:8px">
+<b>Alias:</b> novamente<br/>
+<b>CVU:</b> 0000003100011214870727<br/>
+<b>Banco:</b> Mercado Pago</p>
+<ul>${itemsHtmlCliente}</ul>
+<p><b>Envío a:</b> ${addr}, ${city}${customer.postalCode ? ` (CP ${customer.postalCode})` : ""}</p>
+<p>Cuando transfieras, <b>respondé este mail con el comprobante</b> y arrancamos la producción (24-48 h hábiles). Cualquier duda, escribinos por acá o por WhatsApp.</p>
+<p>— Equipo Novamente · novamente.ar</p>`,
+      }).then((sent) => {
+        if (!sent.ok) console.error("❌ Email de pedido al cliente falló:", sent.error)
+      }).catch((e: any) => console.error("❌ Exception email cliente transferencia:", e?.message))
+    } catch (e: any) {
+      console.error("❌ Email al cliente (transfer) no se pudo preparar:", e?.message)
     }
 
     return NextResponse.json({
