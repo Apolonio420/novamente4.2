@@ -141,6 +141,51 @@ export async function POST(request: NextRequest) {
 
     console.log("✅ Transfer order created in database:", newOrder.id, "Number:", newOrder.order_number)
 
+    // 🔔 Aviso a Novamente al CREARSE el pedido por transferencia (Telegram + email).
+    // Una transferencia directa a la cuenta MP no dispara ningún webhook, así que
+    // este es el ÚNICO momento en que el sistema puede avisar. Caso Marcelo
+    // NOV-20260813-7038 (13/08→02/09/2026): pedido de $41.000 creado sin aviso,
+    // el cliente transfirió 20 días después y Juan se enteró por el ingreso en MP.
+    // Fire-and-forget: un fallo acá nunca rompe el checkout del cliente.
+    try {
+      const [{ notifySale }, { sendEmail }] = await Promise.all([
+        import("@/lib/notifications"),
+        import("@/lib/email"),
+      ])
+      void notifySale({
+        orderNumber: `🟡 TRANSFERENCIA PENDIENTE — ${newOrder.order_number || newOrder.id}`,
+        total: finalTotal,
+        email: customer.email,
+        items: orderItems.map((it: any) => ({
+          name: it.item_name,
+          quantity: it.quantity,
+          size: it.product_size,
+          color: it.product_color,
+          price: it.unit_price,
+          imageUrl: it.image_url || it.mockup_url || undefined,
+        })),
+      }).catch((e: any) => console.error("❌ notifySale (transfer) falló:", e?.message))
+      const salesEmail = process.env.SALES_NOTIFY_EMAIL || "juan@novamente.ar"
+      const itemsHtml = orderItems
+        .map((it: any) => `<li><b>${it.item_name}</b> x${it.quantity} — Talle ${it.product_size || "-"} · ${it.product_color || "-"}</li>`)
+        .join("")
+      void sendEmail({
+        to: salesEmail,
+        subject: `🟡 PEDIDO POR TRANSFERENCIA ${newOrder.order_number || ""} — $${finalTotal.toLocaleString("es-AR")} (${customer.firstName || ""} ${customer.lastName || ""})`,
+        html: `<h2>Pedido por transferencia creado — esperando el pago 🟡</h2>
+<p>Cuando entre una transferencia de <b>$${finalTotal.toLocaleString("es-AR")}</b> en Mercado Pago, es este pedido.</p>
+<p><b>Pedido:</b> ${newOrder.order_number || newOrder.id}<br/>
+<b>Cliente:</b> ${customer.firstName || ""} ${customer.lastName || ""} · ${customer.email} · ${customer.phone || "-"}<br/>
+<b>Envío:</b> ${customer.address || "-"}, ${customer.city || "-"} (CP ${customer.postalCode || "-"})</p>
+<ul>${itemsHtml}</ul>
+<p>Si en unos días no llega el pago, el pedido queda pending y lo persigue el rescate. Ficha: admin.novamente.ar/dashboard/orders/fichas</p>`,
+      }).then((sent) => {
+        if (!sent.ok) console.error("❌ Email de pedido por transferencia falló:", sent.error)
+      }).catch((e: any) => console.error("❌ Exception email transferencia:", e?.message))
+    } catch (notifErr: any) {
+      console.error("❌ Aviso de pedido por transferencia falló (no bloquea):", notifErr?.message)
+    }
+
     return NextResponse.json({
       success: true,
       order_id: newOrder.id,
