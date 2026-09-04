@@ -134,6 +134,12 @@ export async function ensureWorkspacePath(
 //   - garment-margin-upsell             -> app/workspace/design-engine/page.tsx (~1611)
 //   - catalog-garment-cost-panel        -> app/workspace/catalog/page.tsx (~745)
 //   - workspace-user-handle*/-email*    -> app/workspace/layout.tsx (sidebar + topbar + dropdown)
+//   - branding-live-preview             -> app/workspace/branding/page.tsx (~128) — el mini navegador
+//     simulado deriva su texto SOLO del slug (`slug.replace(/-/g,' ')...`, nunca de
+//     tenant.name), tanto en la "url" falsa como en el nombre de marca de fallback —
+//     con el slug fixture "e2e-partner-test" eso imprime literalmente "E2e Partner
+//     Test" / "novamente.ar/p/e2e-partner-test" en pantalla, disparando
+//     /E2E/i y /e2e-partner/i de LEAK_PATTERNS (grabación de record-branding-video).
 const HIDDEN_LEAK_TESTIDS = [
   'garment-retail-price',
   'garment-retail-price-hint',
@@ -147,6 +153,10 @@ const HIDDEN_LEAK_TESTIDS = [
   'business-model-banner', // components/workspace/BusinessModelBanner.tsx — explica "PVP - costo Novamente" a partners nuevos
   'garment-margin-hint-box', // app/workspace/design-engine/page.tsx (~1767) — "Precio sugerido de venta" + "Margen estimado"
   'catalog-form-margin-breakdown', // app/workspace/catalog/page.tsx (~1089) — selector de prenda base + <MarginBreakdown>
+  'branding-live-preview', // app/workspace/branding/page.tsx (~128) — ver comentario arriba
+  'order-customer-email', // app/workspace/orders/page.tsx — mailto del detalle + email bajo el nombre en la fila de la tabla;
+  // el pedido fixture usa cliente@novamente.test, que SÍ matchea el patrón genérico de email de LEAK_PATTERNS
+  // (ver STORYBOARDS.md sección 3 y record-orders-video.spec.ts)
 ]
 
 const HIDE_LEAKS_CSS = HIDDEN_LEAK_TESTIDS.map(id => `[data-testid="${id}"]`).join(',') + '{display:none!important}'
@@ -323,6 +333,42 @@ export async function moveCursorTo(page: Page, locator: Locator): Promise<{ x: n
   await page.evaluate(({ x, y }) => (window as any).__moveCursor?.(x, y), { x, y })
   await delay(450)
   return { x, y }
+}
+
+/**
+ * Mueve el cursor falso hacia `target` en varios pasos chicos (en vez de un
+ * salto instantáneo de moveCursorTo) — para que un tramo largo de narración
+ * sin ninguna otra acción en pantalla tenga movimiento real y visible en vez
+ * de quedar como un frame estático (encontrado en un review frame-by-frame
+ * independiente de share-link/branding: tramos de 5-7s totalmente quietos
+ * bajo narración). Termina con el cursor centrado en `target`.
+ */
+export async function driftCursorTo(page: Page, target: Locator, steps: number, stepDelayMs: number): Promise<void> {
+  const box = await target.boundingBox().catch(() => null)
+  if (!box) return
+  const tx = box.x + box.width / 2
+  const ty = box.y + box.height / 2
+  const start = await page.evaluate(() => {
+    const c = document.getElementById('playwright-cursor')
+    const left = c ? parseFloat(c.style.left || '640') : 640
+    const top = c ? parseFloat(c.style.top || '360') : 360
+    return { x: left, y: top }
+  })
+  for (let i = 1; i <= steps; i++) {
+    const x = start.x + (tx - start.x) * (i / steps)
+    const y = start.y + (ty - start.y) * (i / steps)
+    await page.evaluate(({ x, y }) => (window as any).__moveCursor?.(x, y), { x, y })
+    await delay(stepDelayMs)
+  }
+}
+
+/** Scroll continuo en pasos chicos (en vez de un solo wheel grande) durante `totalMs`. */
+export async function slowContinuousScroll(page: Page, totalMs: number, pxPerStep = 55, stepDelayMs = 480): Promise<void> {
+  const steps = Math.max(1, Math.round(totalMs / stepDelayMs))
+  for (let i = 0; i < steps; i++) {
+    await page.mouse.wheel(0, pxPerStep)
+    await delay(stepDelayMs)
+  }
 }
 
 export async function clickWithRipple(page: Page, locator: Locator): Promise<void> {

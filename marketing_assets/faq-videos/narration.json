@@ -1,0 +1,49 @@
+{
+  "share-link": {
+    "voice": "coral",
+    "clips": [
+      { "n": 1, "text": "Compartir tu tienda es facilísimo." },
+      { "n": 2, "text": "Desde el Dashboard, tocás \"Ver tienda\", arriba a la derecha." },
+      { "n": 3, "text": "Se abre tu vidriera pública, con tu logo y tus productos." },
+      { "n": 4, "text": "Ese es el link de tu tienda: compartilo por WhatsApp o redes." },
+      { "n": 5, "text": "También lo encontrás en el menú, en \"Ver mi storefront\"." }
+    ]
+  },
+  "branding": {
+    "voice": "coral",
+    "clips": [
+      { "n": 1, "text": "Antes de publicar tu tienda, completá tu marca en Branding." },
+      { "n": 2, "text": "Subí tu logo en la sección Imágenes de tu marca." },
+      { "n": 3, "text": "Elegí una paleta de colores que te represente." },
+      { "n": 4, "text": "Tocás Guardar y listo." },
+      { "n": 5, "text": "Tu storefront queda publicado al instante." }
+    ]
+  },
+  "orders": {
+    "voice": "coral",
+    "clips": [
+      { "n": 1, "text": "Cuando entra un pedido, lo ves acá, en Pedidos." },
+      { "n": 2, "text": "Cada pedido muestra el cliente, los productos y el total." },
+      { "n": 3, "text": "El estado te dice en qué etapa está: nuevo, en producción o entregado." },
+      { "n": 4, "text": "Vos hacés el seguimiento, nosotros producimos y enviamos." }
+    ]
+  },
+  "pricing": {
+    "voice": "coral",
+    "clips": [
+      { "n": 1, "text": "Cambiar precios es rápido, uno por uno o todos juntos." },
+      { "n": 2, "text": "Tocás un producto, editás el precio y guardás." },
+      { "n": 3, "text": "Para cambios grandes, usá \"Cambio masivo de precios\"." },
+      { "n": 4, "text": "Elegís la categoría, el ajuste, y se aplica a todos." }
+    ]
+  },
+  "support-ticket": {
+    "voice": "coral",
+    "clips": [
+      { "n": 1, "text": "¿Tenés una duda o un problema? Creá un ticket en Soporte." },
+      { "n": 2, "text": "Tocás \"Nuevo ticket\" y contás tu consulta." },
+      { "n": 3, "text": "Elegís una categoría y describís el detalle." },
+      { "n": 4, "text": "Enviás el ticket y nuestro equipo te responde." }
+    ]
+  }
+}

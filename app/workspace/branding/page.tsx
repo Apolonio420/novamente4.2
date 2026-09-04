@@ -125,7 +125,7 @@ function LivePreview({ branding, slug }: { branding: BrandingData; slug: string 
   const brandColor = branding.primary_color === '#000000' ? '#e4e4e7' : branding.primary_color
 
   return (
-    <div className="rounded-xl border border-zinc-700/50 bg-zinc-900/80 overflow-hidden shadow-2xl">
+    <div data-testid="branding-live-preview" className="rounded-xl border border-zinc-700/50 bg-zinc-900/80 overflow-hidden shadow-2xl">
       {/* Browser chrome bar */}
       <div className="px-3 py-2 border-b border-zinc-800 flex items-center gap-2">
         <div className="flex gap-1.5">

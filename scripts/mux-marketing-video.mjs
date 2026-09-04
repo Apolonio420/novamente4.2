@@ -9,10 +9,13 @@
  * 1) Modo compuesto (default) — para los tutoriales grabados con Playwright
  *    (Studio, Catálogo): mezcla N clips de audio en sus offsets exactos
  *    (marketing_assets/sync_{studio,catalog}.json, escritos por los specs
- *    e2e/record-*-video.spec.ts) y superpone la placa de texto de cada clip
- *    (marketing_assets/overlay_*.png), recortando la placa de "capítulo" que
- *    esas imágenes traen pegada arriba (choca con el logo del navbar) y
- *    dejando solo el subtítulo de abajo.
+ *    e2e/record-*-video.spec.ts) y quema el subtítulo de cada clip, con
+ *    UNO de estos dos flags (mutuamente excluyentes):
+ *
+ *    a) --overlay-prefix: superpone la placa de texto pre-renderizada de
+ *       cada clip (marketing_assets/overlay_*.png), recortando la placa de
+ *       "capítulo" que esas imágenes traen pegada arriba (choca con el logo
+ *       del navbar) y dejando solo el subtítulo de abajo.
  *
  *      node scripts/mux-marketing-video.mjs \
  *        --video marketing_assets/video_studio_raw/latest.webm \
@@ -20,6 +23,19 @@
  *        --audio-prefix marketing_assets/audio_openai_ \
  *        --overlay-prefix marketing_assets/overlay_ \
  *        --out public/ayuda/studio.mp4
+ *
+ *    b) --captions <path.json>: quema el subtítulo de cada clip directo con
+ *       ffmpeg drawtext (sin PNG pre-renderizado). El JSON es un array plano
+ *       de `{"n": <mismo n que los events del sync.json>, "text": "..."}`,
+ *       ej. `[{"n":1,"text":"Bienvenidos a..."}, {"n":2,"text":"..."}]` — se
+ *       arma a mano o mapeando marketing_assets/narration.json[key].clips.
+ *
+ *      node scripts/mux-marketing-video.mjs \
+ *        --video marketing_assets/video_catalog_raw/latest.webm \
+ *        --sync marketing_assets/sync_catalog.json \
+ *        --audio-prefix marketing_assets/audio_openai_catalog_ \
+ *        --captions marketing_assets/captions_catalog.json \
+ *        --out public/ayuda/catalog.mp4
  *
  * 2) Modo remux (--remux-only) — para reempaquetar un mp4 ya mezclado
  *    (ej. marketing_assets/MARKETING_B2C_OPENAI_POLISHED.mp4) con faststart,
@@ -43,6 +59,7 @@
  */
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 
 function parseArgs(argv) {
@@ -182,6 +199,76 @@ function remuxOnly(args) {
   console.log(`OK -> ${previewPath}`)
 }
 
+// ── Subtítulos quemados con drawtext (--captions, alternativa a --overlay-prefix) ──
+
+function findFontFile() {
+  // Sin fontconfig: pasamos fontfile= explícito a drawtext. Helvetica.ttc es
+  // el estándar en toda instalación de macOS; los otros dos son fallbacks
+  // por si corre en una Mac rara (managed profile, etc.) sin esa fuente.
+  const candidates = [
+    '/System/Library/Fonts/Helvetica.ttc',
+    '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
+    '/Library/Fonts/Arial.ttf',
+  ]
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c
+  }
+  throw new Error(`No se encontró ninguna fuente de sistema para drawtext. Probé: ${candidates.join(', ')}`)
+}
+
+function ffmpegQuoteFilterValue(value) {
+  // Envolvemos el valor en comillas simples (protege ':' del parser del
+  // filtergraph — necesario porque textfile=/fontfile= son paths de
+  // filesystem) y solo escapamos una comilla simple literal si apareciera
+  // (cierre+escape+reapertura). NO escapamos ':' con backslash porque eso
+  // rompería el path real una vez dentro de las comillas.
+  return value.replace(/'/g, `'\\''`)
+}
+
+function wrapCaptionText(text, maxCharsPerLine = 40) {
+  // drawtext no hace word-wrap solo — lo hacemos acá. Regla: llenamos la
+  // línea 1 en base a límite de caracteres cortando en espacios; todo lo que
+  // sobra va entero a la línea 2 (sin volver a cortar), así el resultado
+  // nunca supera 2 líneas — preferimos una línea 2 más larga que una 3ra
+  // línea que se saldría del cuadro o un texto truncado que pierda sentido.
+  const words = text.trim().split(/\s+/).filter(Boolean)
+  const lines = []
+  let current = ''
+  for (const word of words) {
+    if (lines.length >= 1) {
+      current = current ? `${current} ${word}` : word
+      continue
+    }
+    const candidate = current ? `${current} ${word}` : word
+    if (candidate.length > maxCharsPerLine && current) {
+      lines.push(current)
+      current = word
+    } else {
+      current = candidate
+    }
+  }
+  lines.push(current)
+  return lines
+}
+
+function loadCaptions(captionsPath) {
+  // Formato: array plano de {n, text} — n es el mismo índice que usan los
+  // events del sync JSON (events[].n / clip.n). Se arma a mano o mapeando
+  // marketing_assets/narration.json["<key>"].clips (que ya trae {n, text}).
+  const raw = JSON.parse(fs.readFileSync(captionsPath, 'utf-8'))
+  if (!Array.isArray(raw)) {
+    throw new Error(`--captions debe ser un array de {n, text}: ${captionsPath}`)
+  }
+  const map = new Map()
+  for (const item of raw) {
+    if (typeof item.n !== 'number' || typeof item.text !== 'string') {
+      throw new Error(`--captions: entrada inválida (se espera {n:number, text:string}): ${JSON.stringify(item)}`)
+    }
+    map.set(item.n, item.text)
+  }
+  return map
+}
+
 // ── Modo compuesto (Studio / Catálogo) ──────────────────────────────────────
 
 function composite(args) {
@@ -189,10 +276,15 @@ function composite(args) {
   const syncPath = args.sync
   const audioPrefix = args['audio-prefix']
   const overlayPrefix = args['overlay-prefix']
+  const captionsPath = args['captions']
   const out = args.out
-  if (!videoIn || !syncPath || !audioPrefix || !overlayPrefix || !out) {
-    throw new Error('Modo compuesto requiere --video --sync --audio-prefix --overlay-prefix --out')
+  if (overlayPrefix && captionsPath) {
+    throw new Error('--overlay-prefix y --captions son mutuamente excluyentes — elegí uno de los dos modos de subtítulo')
   }
+  if (!videoIn || !syncPath || !audioPrefix || !out || (!overlayPrefix && !captionsPath)) {
+    throw new Error('Modo compuesto requiere --video --sync --audio-prefix --out, y --overlay-prefix o --captions')
+  }
+  const captionsMap = captionsPath ? loadCaptions(captionsPath) : null
 
   const syncRaw = JSON.parse(fs.readFileSync(syncPath, 'utf-8'))
   // Formato nuevo: {events, cuts, end}. Compat con el formato viejo (array
@@ -206,12 +298,18 @@ function composite(args) {
 
   const clips = events.map(ev => {
     const audioFile = `${audioPrefix}${ev.n}.mp3`
-    const overlayFile = `${overlayPrefix}${ev.n}.png`
     if (!fs.existsSync(audioFile)) throw new Error(`falta audio: ${audioFile}`)
-    if (!fs.existsSync(overlayFile)) throw new Error(`falta overlay: ${overlayFile}`)
     const dur = ffprobeDuration(audioFile)
     if (dur == null) throw new Error(`no se pudo leer duración de ${audioFile}`)
-    return { n: ev.n, atOriginal: ev.at, audioFile, overlayFile, dur }
+    const clip = { n: ev.n, atOriginal: ev.at, audioFile, dur }
+    if (overlayPrefix) {
+      const overlayFile = `${overlayPrefix}${ev.n}.png`
+      if (!fs.existsSync(overlayFile)) throw new Error(`falta overlay: ${overlayFile}`)
+      clip.overlayFile = overlayFile
+    } else if (!captionsMap.has(ev.n)) {
+      throw new Error(`--captions: falta texto para el clip n=${ev.n} (${captionsPath})`)
+    }
+    return clip
   })
 
   // ── Recortar el tramo inicial mudo/skeleton ──
@@ -243,12 +341,22 @@ function composite(args) {
 
   const lastClip = clips[clips.length - 1]
   const lastAudioEnd = lastClip.at + lastClip.dur
-  const target = Math.round(Math.max(lastAudioEnd + 1.0, endShifted ?? 0) * 100) / 100
+  // El hold() final de cada spec de grabación (e2e/fixtures/video-recording.ts)
+  // existe SOLO para darle tiempo real al encoder de screencast de Playwright
+  // de ponerse al día (ver comentario de esa función) — no es contenido que el
+  // video final deba conservar. El output SIEMPRE termina 1.5s después del
+  // último audio, ignorando el marker de sync.end() para la duración final; el
+  // marker solo se usa más abajo como TECHO de cuánto metraje de la fuente
+  // original pedimos (protección contra pedir de más si el hold real quedó
+  // corto, no para estirar la salida).
+  const tailSec = args.tail != null ? Number(args.tail) : 1.5
+  if (!Number.isFinite(tailSec) || tailSec < 0) throw new Error(`--tail inválido: ${args.tail}`)
+  const target = Math.round((lastAudioEnd + tailSec) * 100) / 100
   const cutsTotal = cuts.reduce((s, c) => s + (c.to - c.from), 0)
 
   console.log(
     `[composite] ${clips.length} clips, leadIn ${leadIn.toFixed(2)}s, ${cuts.length} corte(s) (${cutsTotal.toFixed(2)}s), ` +
-    `último audio termina en ${lastAudioEnd.toFixed(2)}s${endShifted != null ? `, end marker en ${endShifted.toFixed(2)}s` : ''} -> target ${target}s`,
+    `último audio termina en ${lastAudioEnd.toFixed(2)}s${endShifted != null ? ` (end marker en ${endShifted.toFixed(2)}s, usado solo como techo de metraje)` : ''} -> target ${target}s`,
   )
 
   // ── Segmentos a conservar del video ORIGINAL (sin cortar todavía): arranca
@@ -261,7 +369,15 @@ function composite(args) {
   // generoso de abajo + el -t target final del comando cubren cualquier
   // faltante clonando el último frame real — que es justo lo que se pidió:
   // terminar en un frame estático de la pantalla final en vez de fallar. ──
-  const originalContentEnd = target + leadIn + cutsTotal
+  const naturalContentEnd = target + leadIn + cutsTotal
+  // Techo: si el marker de end() (en clock original) es MÁS CHICO que lo que
+  // pediríamos naturalmente, no vayamos a buscar metraje más allá de lo que
+  // el spec realmente sostuvo — evita pedirle a ffmpeg frames de un tramo que
+  // nunca se grabó a propósito. Si el marker es más grande (caso típico ahora,
+  // porque el hold final real dura más que target-lastAudioEnd), no lo usamos
+  // para nada: el output ya quedó fijado en target = lastAudioEnd + 1.5s.
+  const originalContentEnd =
+    endShifted != null ? Math.min(naturalContentEnd, endShifted + leadIn + cutsTotal) : naturalContentEnd
   const segments = []
   let cursor = leadIn
   for (const cut of cuts) {
@@ -272,10 +388,14 @@ function composite(args) {
 
   // ── Construir filter_complex ──
   const N = clips.length
-  // inputs: 0=video, 1..N=audio, N+1..2N=overlay images (mismo orden que clips)
+  // inputs: 0=video, 1..N=audio, y si es modo --overlay-prefix N+1..2N=overlay
+  // images (mismo orden que clips). El modo --captions no agrega inputs —
+  // drawtext lee el texto de un archivo vía textfile=, no como -i de ffmpeg.
   const inputArgs = ['-i', videoIn]
   for (const c of clips) inputArgs.push('-i', c.audioFile)
-  for (const c of clips) inputArgs.push('-loop', '1', '-i', c.overlayFile)
+  if (overlayPrefix) {
+    for (const c of clips) inputArgs.push('-loop', '1', '-i', c.overlayFile)
+  }
 
   const filters = []
 
@@ -297,16 +417,66 @@ function composite(args) {
   filters.push(`[vraw]tpad=stop_mode=clone:stop_duration=20,scale=1280:720,format=yuv420p[vbase0]`)
 
   let prevLabel = 'vbase0'
-  clips.forEach((c, idx) => {
-    const overlayInputIdx = 1 + N + idx
-    const cropLabel = `ov${idx}`
-    const nextLabel = `vbase${idx + 1}`
-    const start = c.at
-    const end = c.at + c.dur
-    filters.push(`[${overlayInputIdx}:v]crop=1280:580:0:140[${cropLabel}]`)
-    filters.push(`[${prevLabel}][${cropLabel}]overlay=x=0:y=140:enable='between(t,${start},${end})'[${nextLabel}]`)
-    prevLabel = nextLabel
-  })
+  let captionsTmpDir = null
+  if (overlayPrefix) {
+    // Las placas viejas (overlay_*.png de studio/catalog/b2c) traen una placa
+    // de "capítulo" pegada arriba que choca con el logo del navbar — por eso
+    // el modo default recorta esa franja (crop 1280x580 arrancando en y=140,
+    // reinsertada en la misma posición) y solo deja pasar el subtítulo de
+    // abajo. Los overlays nuevos (scripts/render-captions.mjs) son PNG
+    // 1280x720 transparentes con SOLO el subtítulo en el tercio inferior —
+    // nada que recortar arriba — así que --overlay-no-crop superpone la
+    // imagen completa sin el filtro `crop` intermedio.
+    const noCrop = !!args['overlay-no-crop']
+    clips.forEach((c, idx) => {
+      const overlayInputIdx = 1 + N + idx
+      const nextLabel = `vbase${idx + 1}`
+      const start = c.at
+      const end = c.at + c.dur
+      let overlayLabel = `${overlayInputIdx}:v`
+      if (!noCrop) {
+        const cropLabel = `ov${idx}`
+        filters.push(`[${overlayInputIdx}:v]crop=1280:580:0:140[${cropLabel}]`)
+        overlayLabel = cropLabel
+      }
+      const overlayY = noCrop ? 0 : 140
+      filters.push(`[${prevLabel}][${overlayLabel}]overlay=x=0:y=${overlayY}:enable='between(t,${start},${end})'[${nextLabel}]`)
+      prevLabel = nextLabel
+    })
+  } else {
+    // --captions: un drawtext encadenado por clip, visible solo en su
+    // ventana [c.at, c.at+c.dur] — misma lógica de enable que el overlay de
+    // PNG de arriba. El texto de cada clip se escribe a un .txt temporal
+    // (UTF-8) y se referencia con textfile= en vez de text= inline: evita
+    // tener que escapear ':' ',' '\'' etc. a mano en un string con acentos
+    // (á é í ó ú ñ ¿ ¡) dentro de la sintaxis de filtergraph de ffmpeg.
+    const fontFile = findFontFile()
+    const escapedFontFile = ffmpegQuoteFilterValue(fontFile)
+    captionsTmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mux-captions-'))
+    clips.forEach((c, idx) => {
+      const nextLabel = `vbase${idx + 1}`
+      const start = c.at
+      const end = c.at + c.dur
+      const lines = wrapCaptionText(captionsMap.get(c.n))
+      const txtPath = path.join(captionsTmpDir, `caption_${c.n}.txt`)
+      fs.writeFileSync(txtPath, lines.join('\n'), 'utf-8')
+      const escapedTxtPath = ffmpegQuoteFilterValue(txtPath)
+      // y=h-140 (h=720 -> y=580, tope del texto): con fontsize 36 +
+      // line_spacing 6, 2 líneas miden ~92px + boxborderw 14 arriba/abajo
+      // -> el box queda ~y=566..686. Cae de lleno en el tercio inferior
+      // (480-720), con margen hasta el borde real (720) y lejísimos del
+      // navbar (y=0..~90) — mismo rango donde caía el subtítulo de las
+      // placas PNG (pegado al borde inferior de su recorte 1280x580@y=140).
+      filters.push(
+        `[${prevLabel}]drawtext=fontfile='${escapedFontFile}':textfile='${escapedTxtPath}':` +
+        `fontcolor=white:fontsize=36:line_spacing=6:` +
+        `box=1:boxcolor=black@0.6:boxborderw=14:` +
+        `x=(w-text_w)/2:y=h-140:` +
+        `enable='between(t,${start},${end})'[${nextLabel}]`,
+      )
+      prevLabel = nextLabel
+    })
+  }
   const vOutLabel = prevLabel
 
   // Audio: cada clip retrasado a su offset (adelay en ms), mezclados sin
@@ -324,27 +494,34 @@ function composite(args) {
   const filterComplex = filters.join(';')
 
   ensureDir(out)
-  run(
-    'ffmpeg',
-    [
-      '-y',
-      ...inputArgs,
-      '-filter_complex', filterComplex,
-      '-map', `[${vOutLabel}]`,
-      '-map', '[aout]',
-      '-t', String(target),
-      '-c:v', 'libx264',
-      '-preset', 'medium',
-      '-crf', '20',
-      '-pix_fmt', 'yuv420p',
-      '-c:a', 'aac',
-      '-ar', '48000',
-      '-b:a', '160k',
-      '-movflags', '+faststart',
-      out,
-    ],
-    'ffmpeg composite',
-  )
+  try {
+    run(
+      'ffmpeg',
+      [
+        '-y',
+        ...inputArgs,
+        '-filter_complex', filterComplex,
+        '-map', `[${vOutLabel}]`,
+        '-map', '[aout]',
+        '-t', String(target),
+        '-c:v', 'libx264',
+        '-preset', 'medium',
+        '-crf', '20',
+        '-pix_fmt', 'yuv420p',
+        '-c:a', 'aac',
+        '-ar', '48000',
+        '-b:a', '160k',
+        '-movflags', '+faststart',
+        out,
+      ],
+      'ffmpeg composite',
+    )
+  } finally {
+    // Los .txt de subtítulos (--captions) son puramente insumo del comando
+    // ffmpeg de arriba — se borran corra bien o falle, no hace falta
+    // conservarlos.
+    if (captionsTmpDir) fs.rmSync(captionsTmpDir, { recursive: true, force: true })
+  }
 
   const previewPath = buildPreviewPath(out)
   makePreview(out, previewPath)

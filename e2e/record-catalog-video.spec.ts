@@ -114,12 +114,6 @@ test('grabar tutorial Catálogo', async ({ page }) => {
   await hold(page, 5600) // resto del audio 2 (hover se sostiene)
   await assertNoLeaks(page, 'catalog-hover')
 
-  // START AUDIO 3: "Mantener tu catálogo actualizado es clave para atraer más clientes."
-  sync.mark(3)
-  const addBtn = page.getByRole('button', { name: /Agregar producto/i }).first()
-  await clickWithRipple(page, addBtn)
-  await delay(700)
-
   // ── Cargar el form (nombre + precio) para que no se vea en blanco/sin
   // tocar, pero NO terminar ahí: ese form tiene un campo "Prenda base
   // (opcional, para calcular tu margen)" con su propio texto de margen que
@@ -127,7 +121,21 @@ test('grabar tutorial Catálogo', async ({ page }) => {
   // enviar (es para subir diseño propio, fuera de alcance del video).
   // Mejor: cargar, cancelar, y terminar en la grilla con el producto real
   // visible — matchea igual la narración ("mantener tu catálogo
-  // actualizado") sin abrir superficie de leak nueva. ──
+  // actualizado") sin abrir superficie de leak nueva.
+  //
+  // Sin marker propio (transición sin narración dedicada, mismo patrón que
+  // otros specs de este batch) — el marker 3 se dispara MÁS ABAJO, recién
+  // cuando estamos de vuelta en la grilla. Antes estaba acá mismo (justo al
+  // abrir el form) y el mux (target = último audio + 1.5s, ver
+  // scripts/mux-marketing-video.mjs) cortaba el video ANTES de que la acción
+  // real de cancelar/volver a la grilla llegara a pasar en el crudo — el
+  // video final quedaba congelado a mitad del form, violando la regla de
+  // "terminar en un estado de éxito" (encontrado en un review frame-by-frame
+  // tras re-mux-ear con la regla de cola actual). ──
+  const addBtn = page.getByRole('button', { name: /Agregar producto/i }).first()
+  await clickWithRipple(page, addBtn)
+  await delay(700)
+
   const newProductName = page.locator('#product-name')
   if (await newProductName.isVisible().catch(() => false)) {
     await fillAndVerify(page, newProductName, 'Segunda Colección')
@@ -136,7 +144,7 @@ test('grabar tutorial Catálogo', async ({ page }) => {
       await fillAndVerify(page, newProductPrice, '32000')
     }
   }
-  await hold(page, 1200) // se ve el form cargado (acortado: mas tiempo para la grilla final)
+  await hold(page, 1200) // se ve el form cargado
   console.log('[record-catalog-video] form cargado, sigue con cancelar')
   await assertNoLeaks(page, 'catalog-add-form-filled')
 
@@ -155,6 +163,11 @@ test('grabar tutorial Catálogo', async ({ page }) => {
   }
   console.log('[record-catalog-video] de vuelta en la grilla, confirmando producto visible')
   await knownProductName.waitFor({ state: 'visible', timeout: 10_000 })
+
+  // START AUDIO 3: "Mantener tu catálogo actualizado es clave para atraer más clientes."
+  // Recién ACÁ, sobre la grilla final ya confirmada — así el mux nunca corta
+  // antes de que el crudo llegue a este punto.
+  sync.mark(3)
   // El encoder del screencast de Playwright se va atrasando respecto al reloj
   // real bajo carga sostenida (verificado: a esta altura de la grabación el
   // .webm crudo terminaba SIEMPRE congelado en el form, aunque el test ya

@@ -370,6 +370,7 @@ function OrderDetail({
               </div>
               {order.customer_email && (
                 <a
+                  data-testid="order-customer-email"
                   href={`mailto:${order.customer_email}`}
                   className="flex items-center gap-2.5 text-sm text-violet-400 hover:text-violet-300 transition-colors"
                 >
@@ -921,7 +922,7 @@ export default function OrdersPage() {
                         <div className="min-w-0">
                           <p className="text-sm text-zinc-200 truncate max-w-[200px]">{customerDisplay}</p>
                           {order.customer_email && order.customer_name && (
-                            <p className="text-xs text-zinc-500 truncate max-w-[200px]">{order.customer_email}</p>
+                            <p data-testid="order-customer-email" className="text-xs text-zinc-500 truncate max-w-[200px]">{order.customer_email}</p>
                           )}
                         </div>
                       </td>

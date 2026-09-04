@@ -28,26 +28,40 @@ test('la FAQ de Soporte muestra los tutoriales de partner', async ({ page }) => 
 
   const details = faq.locator('details')
   await expect(details.first()).toBeVisible()
-  expect(await details.count()).toBeGreaterThanOrEqual(4)
+  await expect(details).toHaveCount(7)
 
+  // 7 preguntas, 7 videos (studio, catalog, pricing, branding, share-link,
+  // orders, support-ticket — ver components/workspace/SupportFaq.tsx).
   const faqVideos = page.getByTestId('support-faq-video')
-  await expect(faqVideos).toHaveCount(2)
+  await expect(faqVideos).toHaveCount(7)
 
   const screenshotDir = path.join(__dirname, 'screenshots')
   fs.mkdirSync(screenshotDir, { recursive: true })
 
-  // Abrir la pregunta del Studio y confirmar que revela el video correcto.
-  const studioQuestion = faq.getByText('¿Cómo creo un producto con el Studio?')
-  await studioQuestion.click()
+  // Abrir la pregunta del Studio (<details> completo, no solo el <summary>,
+  // para poder buscar el botón "Reproducir" que vive en el contenido
+  // hermano) y confirmar que revela el video correcto.
+  const studioDetails = details.filter({ hasText: '¿Cómo creo un producto con el Studio?' })
+  await studioDetails.locator('summary').click()
 
   // VideoCard solo monta el <video> real (controls, src=studio.mp4) al
   // activarlo con el botón Reproducir — antes de eso lo que hay en el DOM
-  // es el <video> mudo de preview (studio-preview.mp4).
-  await faq.getByRole('button', { name: /Reproducir/i }).click()
-  const studioVideo = faq.locator('video').first()
+  // es el <video> mudo de preview (studio-preview.mp4). Con 7 preguntas ya
+  // puede haber más de un botón "Reproducir" en pantalla (uno por card de
+  // preview de cada pregunta abierta) — nos quedamos con el de la pregunta
+  // del Studio.
+  await studioDetails.getByRole('button', { name: /Reproducir/i }).click()
+  const studioVideo = studioDetails.locator('video').first()
   await expect(studioVideo).toBeVisible()
   const studioSrc = await studioVideo.getAttribute('src')
   expect(studioSrc).toMatch(/\/ayuda\/studio\.mp4$/)
+
+  // También abrimos la pregunta de Pedidos (6ta, uno de los videos nuevos de
+  // este batch) para que el screenshot final muestre, además del de Studio
+  // ya reproduciéndose, un video nuevo con su poster + bullets.
+  const ordersDetails = details.filter({ hasText: '¿Qué pasa cuando entra un pedido?' })
+  await ordersDetails.locator('summary').click()
+  await expect(ordersDetails.getByTestId('support-faq-video')).toBeVisible()
 
   await page.screenshot({ path: path.join(screenshotDir, 'workspace-support-faq.png'), fullPage: true })
 })

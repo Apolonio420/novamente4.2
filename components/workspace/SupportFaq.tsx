@@ -24,7 +24,7 @@ const FAQ_ITEMS: FaqItem[] = [
       poster: '/ayuda/studio-poster.jpg',
       preview: '/ayuda/studio-preview.mp4',
       title: 'Recorrido por el Studio',
-      duration: '0:51',
+      duration: '0:45',
     },
     answer: (
       <>
@@ -44,7 +44,7 @@ const FAQ_ITEMS: FaqItem[] = [
       poster: '/ayuda/catalog-poster.jpg',
       preview: '/ayuda/catalog-preview.mp4',
       title: 'Cómo administrar tu Catálogo',
-      duration: '0:15',
+      duration: '0:28',
     },
     answer: (
       <p>
@@ -54,7 +54,51 @@ const FAQ_ITEMS: FaqItem[] = [
     ),
   },
   {
+    question: '¿Cómo cambio los precios de mis productos?',
+    video: {
+      src: '/ayuda/pricing.mp4',
+      poster: '/ayuda/pricing-poster.jpg',
+      preview: '/ayuda/pricing-preview.mp4',
+      title: 'Cómo cambiar tus precios',
+      duration: '0:28',
+    },
+    answer: (
+      <ol className="list-decimal list-inside space-y-1.5">
+        <li>Tocá un producto en el Catálogo, editá el precio y guardá.</li>
+        <li>
+          Para cambios grandes, usá &quot;Cambio masivo de precios&quot;: elegís una categoría y
+          aplicás un ajuste fijo o por porcentaje a todos los productos de esa categoría a la vez.
+        </li>
+      </ol>
+    ),
+  },
+  {
+    question: '¿Cómo cargo mi logo y la identidad de marca?',
+    video: {
+      src: '/ayuda/branding.mp4',
+      poster: '/ayuda/branding-poster.jpg',
+      preview: '/ayuda/branding-preview.mp4',
+      title: 'Tu marca en Branding',
+      duration: '0:34',
+    },
+    answer: (
+      <ol className="list-decimal list-inside space-y-1.5">
+        <li>Entrá a Branding y subí tu logo en la pestaña Imágenes.</li>
+        <li>Elegí una paleta de colores en la pestaña Colores y tipografía.</li>
+        <li>Cargá tu tagline en Textos de marca.</li>
+        <li>Tocá Guardar: tu storefront queda publicado al instante.</li>
+      </ol>
+    ),
+  },
+  {
     question: '¿Cómo comparto el link de mi tienda?',
+    video: {
+      src: '/ayuda/share-link.mp4',
+      poster: '/ayuda/share-link-poster.jpg',
+      preview: '/ayuda/share-link-preview.mp4',
+      title: 'Cómo compartir tu tienda',
+      duration: '0:32',
+    },
     answer: (
       <p>
         Tu tienda está en <code className="text-xs bg-zinc-800 px-1.5 py-0.5 rounded">novamente.ar/p/tu-marca</code>{' '}
@@ -64,15 +108,34 @@ const FAQ_ITEMS: FaqItem[] = [
     ),
   },
   {
-    question: '¿Qué pasa con la producción, el envío y la atención al cliente?',
+    question: '¿Qué pasa cuando entra un pedido?',
+    video: {
+      src: '/ayuda/orders.mp4',
+      poster: '/ayuda/orders-poster.jpg',
+      preview: '/ayuda/orders-preview.mp4',
+      title: 'Qué pasa con un pedido',
+      duration: '0:27',
+    },
     answer: (
-      <p>
-        Nosotros nos encargamos de la producción, el empaque y el envío a todo el país. Vos te concentrás en diseñar y hacer crecer tu marca.
-      </p>
+      <ol className="list-decimal list-inside space-y-1.5">
+        <li>Cuando entra un pedido lo ves en Pedidos, con el cliente, los productos y el total.</li>
+        <li>El estado te dice en qué etapa está: nuevo, en producción, entregado (y más).</li>
+        <li>
+          Nosotros nos encargamos de la producción, el empaque y el envío a todo el país. Vos
+          hacés el seguimiento.
+        </li>
+      </ol>
     ),
   },
   {
     question: '¿Cómo pido ayuda si tengo un problema?',
+    video: {
+      src: '/ayuda/support-ticket.mp4',
+      poster: '/ayuda/support-ticket-poster.jpg',
+      preview: '/ayuda/support-ticket-preview.mp4',
+      title: 'Cómo pedir ayuda',
+      duration: '0:25',
+    },
     answer: (
       <p>
         Creá un ticket acá abajo, en esta misma sección de Soporte, contándonos tu consulta. Si

@@ -9,14 +9,45 @@ interno, filtrando badge PRO/Admin, precio retail y el email interno).
 ## 1. Seed del tenant fixture
 
 ```bash
-npx tsx scripts/seed-e2e-partner.ts --with-products
+npx tsx scripts/seed-e2e-partner.ts --with-products --with-branding --with-orders
 ```
 
-Crea (idempotente, por slug) el tenant `e2e-partner-test` con 3 productos
-reales publicados (Remera Dragon Neon, Buzo Aurora, Tote Botánica) — así el
-catálogo no muestra skeletons ni imágenes rotas. Requiere en `.env.local`:
-`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `E2E_PARTNER_EMAIL`,
-`E2E_PARTNER_PASSWORD`.
+Crea (idempotente, por slug) el tenant `e2e-partner-test` con:
+- `--with-products`: 3 productos reales publicados (Remera Dragon Neon, Buzo
+  Aurora, Tote Botánica) — así el catálogo no muestra skeletons ni imágenes
+  rotas.
+- `--with-branding`: logo (`public/branding/aurora-estudio-logo.png`),
+  banner, colores y tagline/descripción — así desaparece el banner naranja
+  "te falta cargar tu logo" y el storefront queda auto-publicado. **Ojo**: el
+  video `branding` (sección 6 abajo) necesita mostrar el estado SIN branding
+  — ver la nota dentro de `marketing_assets/faq-videos/STORYBOARDS.md`
+  sección 2 antes de correr este flag si todavía no se grabó ese video.
+- `--with-orders`: 3 pedidos demo (`Cliente de Prueba`,
+  `cliente@novamente.test`, `metadata.fixture: true`) en los estados
+  Pendiente / En producción / Entregado, para que `/workspace/orders` no
+  esté vacío. Insertado directo en `partner_orders` via service-role
+  (bypassea `POST /api/partners/orders`, así que no dispara el aviso de
+  Telegram/email que sí dispara ese endpoint — ver
+  `app/api/partners/orders/README.md`).
+
+Requiere en `.env.local`: `NEXT_PUBLIC_SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`, `E2E_PARTNER_EMAIL`, `E2E_PARTNER_PASSWORD`.
+
+**Pendiente de limpieza manual** (no lo pudo hacer ningún agente — el
+auto-clasificador de permisos de Claude Code bloquea un DELETE contra
+`partner_orders` desde este flujo): quedan 3 filas viejas y ajenas a este
+seed, "Cliente Test E2E" / Cancelado, huérfanas de corridas anteriores de
+`e2e/partner-load-order.spec.ts` (ese spec crea un pedido de prueba y solo
+lo cancela, nunca lo borra). Van a aparecer mezcladas con los 3 pedidos
+fixture de arriba en `/workspace/orders` y "Cliente Test E2E" es justamente
+el tipo de texto que `assertNoLeaks` rechaza (matchea `/E2E/i`) — hay que
+borrarlas a mano antes de grabar el video `orders`:
+
+```sql
+delete from partner_orders
+where tenant_id = '8778ec9f-680d-4d84-a3d6-527057834e46'
+  and customer_name = 'Cliente Test E2E'
+```
 
 Nota: `e2e/record-studio-video.spec.ts` crea un producto nuevo ("Remera Dragon
 Neon") cada vez que corre (no es idempotente esa parte del flujo — es la app
@@ -142,3 +173,89 @@ ffprobe -v trace public/ayuda/studio.mp4 2>&1 | grep -m2 -E "type:'(moov|mdat)'"
 # visible, mockup completado, plates sin tapar el navbar)
 ffmpeg -i public/ayuda/studio.mp4 -vf "fps=1/3" /tmp/frames/f%02d.png
 ```
+
+## 6. Videos del FAQ del workspace (7 en total)
+
+`/workspace/support` → `components/workspace/SupportFaq.tsx` embebe 7
+tutoriales, uno por pregunta, en este orden: **studio, catalog, pricing,
+branding, share-link, orders, support-ticket**. Los primeros dos (`studio`,
+`catalog`) son los tutoriales originales de `/ayuda` movidos adentro del
+workspace (sección 1-5 de este archivo); los otros 5 (`pricing`, `branding`,
+`share-link`, `orders`, `support-ticket`) se agregaron después, en dos
+tandas. Todo lo necesario para re-grabarlos vive en
+`marketing_assets/faq-videos/`: `STORYBOARDS.md` (URL exacta, selectores,
+qué ocultar por video), `narration.json` (guiones de los 5 clips/video) y
+`audio_<key>_<n>.mp3` (22 clips ya generados con `scripts/tts-narration.mjs`).
+
+### 6.1 Specs de grabación
+
+Un spec por video, mismo patrón que `record-studio-video.spec.ts` /
+`record-catalog-video.spec.ts`: `e2e/record-share-link-video.spec.ts`,
+`record-branding-video.spec.ts`, `record-orders-video.spec.ts`,
+`record-pricing-video.spec.ts`, `record-support-ticket-video.spec.ts`. Cada
+uno marca `sync.mark(n)` por clip de `narration.json[key].clips` y escribe
+`marketing_assets/video_<key>_raw/latest.webm` +
+`marketing_assets/sync_<key>.json`.
+
+**Nota — `orders` necesita limpieza de DOM antes de cada checkpoint**: la
+base tiene filas huérfanas "Cliente Test E2E" / Cancelado (ver sección 1
+arriba, un DELETE bloqueado por el permission system) que se mezclan con los
+3 pedidos fixture. `record-orders-video.spec.ts` las oculta con un helper
+`hideOrphanTestRows()` local al spec, llamado antes de cada
+`assertNoLeaks()`. **Importante**: ese helper usa
+`el.style.display = 'none'`, **NUNCA `el.remove()`** — la primera versión sí
+usaba `remove()` y reventaba la página con un error boundary ("Algo salió
+mal") en cuanto React volvía a re-renderizar esa lista (ej. al cambiar de
+filtro, que dispara un nuevo fetch + re-render del `<tbody>`): React sigue
+esas filas como propias, y sacarlas del árbol real por fuera de su
+reconciliador lo deja con una referencia rota que explota al día siguiente
+render. `display:none` no interfiere con la reconciliación (mismo patrón no
+destructivo que `hideRetailPrice`). El pedido fixture "nuevo" también avanza
+de estado real (pending → confirmed → producing) al grabar — restaurar con
+`npx tsx scripts/seed-e2e-partner.ts --with-orders` después de grabar.
+
+**Nota — `pricing` muta precios reales**: el bulk-price de la categoría
+"Remera Oversize" (+10%) sí pega contra `/api/partners/catalog/bulk-price` de
+verdad. Restaurar con `npx tsx scripts/seed-e2e-partner.ts --with-products`
+después de grabar. Ojo con el seed: si el producto fixture cambió de forma
+tal que el script no lo encuentra por slug, crea uno NUEVO en vez de
+actualizar el existente y queda un duplicado en el catálogo — confirmar
+`GET /api/partners/catalog` devuelve exactamente 3 productos después de
+sembrar, y borrar el sobrante con `DELETE /api/partners/catalog/<id>` si no.
+
+**Nota — `catalog` (el tutorial original, no uno de los 5 nuevos)**: su
+`sync.mark(3)` original estaba ANTES de abrir el modal "Agregar producto",
+pero la acción real (llenar el form → cancelar → volver a la grilla) tarda
+más que `audio_openai_catalog_3.mp3` + el buffer de 1.5s de
+`scripts/mux-marketing-video.mjs` — el mux cortaba el video con el modal
+todavía abierto, violando la regla de terminar en un estado de éxito
+(encontrado en un review frame-by-frame tras re-mux-ear con la regla de cola
+actual). Se movió `sync.mark(3)` a después de confirmar que la grilla está
+de vuelta visible — la narración ahora acompaña el estado final, no el modal.
+
+### 6.2 Mux con overlay PNG (no drawtext)
+
+Los 5 videos nuevos usan `--overlay-prefix ... --overlay-no-crop` (placas PNG
+1280×720 transparentes, solo el subtítulo abajo, generadas con
+`node scripts/render-captions.mjs`), **no** el modo `--captions` (drawtext)
+de `scripts/mux-marketing-video.mjs`: el `ffmpeg` de Homebrew en esta máquina
+no tiene `libfreetype`/`libfontconfig` (`ffmpeg -filters | grep drawtext` no
+devuelve nada), así que `--captions` no es usable acá. Comando real usado
+(mismo patrón para los 5, cambiando el key):
+
+```bash
+node scripts/render-captions.mjs --only pricing   # genera overlay_pricing_1..4.png
+
+node scripts/mux-marketing-video.mjs \
+  --video marketing_assets/video_pricing_raw/latest.webm \
+  --sync marketing_assets/sync_pricing.json \
+  --audio-prefix marketing_assets/faq-videos/audio_pricing_ \
+  --overlay-prefix marketing_assets/faq-videos/overlay_pricing_ \
+  --overlay-no-crop \
+  --out public/ayuda/pricing.mp4
+```
+
+### 6.3 Duraciones actuales (ffprobe, m:ss)
+
+studio 0:40 · catalog 0:28 · pricing 0:28 · branding 0:34 · share-link 0:32 ·
+orders 0:27 · support-ticket 0:25.
