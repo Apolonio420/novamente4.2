@@ -80,8 +80,22 @@ function parseArgs(argv) {
   return args
 }
 
-function run(cmd, args, label) {
-  const res = spawnSync(cmd, args, { encoding: 'utf-8', maxBuffer: 1024 * 1024 * 64 })
+function run(cmd, args, label, timeoutMs) {
+  const opts = { encoding: 'utf-8', maxBuffer: 1024 * 1024 * 64 }
+  if (timeoutMs) {
+    opts.timeout = timeoutMs
+    opts.killSignal = 'SIGKILL'
+  }
+  const res = spawnSync(cmd, args, opts)
+  // spawnSync marca timeout con res.error.code === 'ETIMEDOUT' (y status
+  // queda null) — visto pasar de verdad: un filtergraph colgado (trim/tpad
+  // sobre un .webm crudo con problemas) quedó 17 minutos al 100% CPU sin
+  // avanzar hasta que alguien lo mató a mano. Con timeoutMs seteado, esto
+  // ahora falla solo con un error claro en vez de colgar la terminal
+  // indefinidamente.
+  if (timeoutMs && res.error && res.error.code === 'ETIMEDOUT') {
+    throw new Error(`${label}: excedió el timeout de ${(timeoutMs / 1000).toFixed(0)}s (posible filtergraph colgado) — matado. Revisar el .webm crudo antes de reintentar (ver validateSyncAgainstRaw).`)
+  }
   if (res.status !== 0) {
     console.error(`--- ${label} FAILED ---`)
     console.error('cmd:', cmd, args.join(' '))
@@ -121,6 +135,83 @@ function ffprobeStreamDuration(filePath, kind) {
   if (matches.length === 0) return null
   const [, hh, mm, ss] = matches[matches.length - 1]
   return parseInt(hh, 10) * 3600 + parseInt(mm, 10) * 60 + parseFloat(ss)
+}
+
+/**
+ * Como ffprobeStreamDuration('v'), pero además detecta un contenedor
+ * truncado/corrupto — visto pasar en una corrida real: el .webm crudo del
+ * screencast de Playwright quedó cortado a mitad de escritura después de una
+ * grabación MUY larga en tiempo real bajo carga pesada de la máquina (el
+ * sync.json tenía un `end` de 103.7s pero el archivo real solo decodifica
+ * ~92s y ffmpeg reporta "File ended prematurely" en el intento de
+ * decodificarlo entero). Un filtergraph (trim/tpad/concat/amix) armado sobre
+ * un archivo así puede colgarse indefinidamente (17 min al 100% CPU antes de
+ * matarlo a mano, en vez de fallar con un error claro) — mejor detectarlo
+ * ANTES de arrancar ffmpeg y abortar con un mensaje explícito.
+ */
+function probeRawVideoHealth(filePath) {
+  const res = run(
+    'ffprobe',
+    ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=duration', '-of', 'csv=p=0', filePath],
+    `ffprobe stream(v) duration ${filePath}`,
+  )
+  const direct = parseFloat(res.stdout.trim())
+  if (Number.isFinite(direct)) return { duration: direct, corrupted: false }
+  const decode = spawnSync('ffmpeg', ['-i', filePath, '-f', 'null', '-'], { encoding: 'utf-8', maxBuffer: 1024 * 1024 * 64 })
+  const corrupted = /file ended prematurely|invalid data found when processing input/i.test(decode.stderr)
+  const matches = [...decode.stderr.matchAll(/time=(\d+):(\d+):(\d+\.\d+)/g)]
+  if (matches.length === 0) return { duration: null, corrupted }
+  const [, hh, mm, ss] = matches[matches.length - 1]
+  const duration = parseInt(hh, 10) * 3600 + parseInt(mm, 10) * 60 + parseFloat(ss)
+  return { duration, corrupted }
+}
+
+/**
+ * Falla rápido (en vez de dejar que ffmpeg arme un filtergraph a ciegas y
+ * potencialmente se cuelgue) si el sync.json no es consistente con la
+ * duración REAL del video crudo: cualquier marker o corte más allá de lo que
+ * el archivo decodifica, cortes superpuestos/desordenados, o un contenedor
+ * detectado como truncado/corrupto.
+ */
+function validateSyncAgainstRaw(videoIn, events, cuts, rawEnd) {
+  const health = probeRawVideoHealth(videoIn)
+  if (health.duration == null) {
+    throw new Error(`No se pudo determinar la duración real de ${videoIn} (ni ffprobe ni una decodificación completa dieron un valor) — abortando en vez de mux-ear a ciegas.`)
+  }
+  if (health.corrupted) {
+    // Solo AVISO, no aborta: confirmado en la práctica que "File ended
+    // prematurely" aparece en CASI TODOS los .webm crudos de este pipeline
+    // (screencast de Playwright por pipe de imágenes a ffmpeg) — incluidos
+    // crudos que decodifican y mux-ean perfecto. No es un buen predictor de
+    // "esto va a colgar el filtergraph" por sí solo (el incidente real que
+    // sí colgó 17 min tenía este mismo mensaje, pero también lo tuvo la
+    // grabación sana inmediatamente siguiente). La protección real contra un
+    // filtergraph colgado es el timeout de `run()` en la llamada principal
+    // de ffmpeg más abajo — esto es solo una señal para mirar el video con
+    // más atención si algo más sale raro.
+    console.warn(`[composite] AVISO: ${videoIn} decodifica con "File ended prematurely" (duración real ~${health.duration.toFixed(2)}s) — normal en crudos de Playwright, no bloquea el mux.`)
+  }
+  for (const ev of events) {
+    if (ev.at >= health.duration) {
+      throw new Error(`sync.json: el marker n=${ev.n} está en ${ev.at}s, pero ${videoIn} solo tiene ${health.duration.toFixed(2)}s reales — volvé a grabar en vez de mux-ear.`)
+    }
+  }
+  for (const cut of cuts) {
+    if (cut.from >= health.duration || cut.to > health.duration) {
+      throw new Error(`sync.json: el corte [${cut.from}, ${cut.to}] excede la duración real del crudo (${health.duration.toFixed(2)}s) — volvé a grabar en vez de mux-ear.`)
+    }
+  }
+  for (let i = 1; i < cuts.length; i++) {
+    if (cuts[i].from < cuts[i - 1].to) {
+      throw new Error(`sync.json: los cortes se superponen o no están ordenados ([${cuts[i - 1].from},${cuts[i - 1].to}] vs [${cuts[i].from},${cuts[i].to}]) — revisar el sync.json a mano.`)
+    }
+  }
+  if (rawEnd != null && rawEnd > health.duration + 5) {
+    console.warn(
+      `[composite] AVISO: el end marker del sync.json (${rawEnd}s) supera por más de 5s la duración real decodificada del crudo (${health.duration.toFixed(2)}s) — ` +
+      `la grabación pudo haber quedado inestable bajo carga pesada (no es fatal por sí solo, el end marker solo se usa como techo de metraje, pero es señal de alerta).`,
+    )
+  }
 }
 
 function ensureDir(filePath) {
@@ -190,6 +281,7 @@ function remuxOnly(args) {
       out,
     ],
     'ffmpeg remux',
+    5 * 60_000,
   )
 
   const previewPath = buildPreviewPath(out)
@@ -295,6 +387,11 @@ function composite(args) {
   if (!Array.isArray(events) || events.length === 0) throw new Error(`sync vacío/invalido: ${syncPath}`)
   events.sort((a, b) => a.at - b.at)
   const cuts = [...rawCuts].filter(c => c.to > c.from).sort((a, b) => a.from - b.from)
+
+  // Falla rápido si el sync.json no cierra con la duración REAL del crudo
+  // (marker/corte más allá de lo decodificable, cortes superpuestos, o
+  // contenedor truncado) — ver comentario de validateSyncAgainstRaw arriba.
+  validateSyncAgainstRaw(videoIn, events, cuts, rawEnd)
 
   const clips = events.map(ev => {
     const audioFile = `${audioPrefix}${ev.n}.mp3`
@@ -515,6 +612,7 @@ function composite(args) {
         out,
       ],
       'ffmpeg composite',
+      5 * 60_000, // timeout duro — ver comentario de run() sobre el incidente real de 17 min colgado
     )
   } finally {
     // Los .txt de subtítulos (--captions) son puramente insumo del comando

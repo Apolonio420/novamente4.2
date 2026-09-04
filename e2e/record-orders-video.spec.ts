@@ -174,8 +174,18 @@ test('grabar tutorial Pedidos (orders)', async ({ page }) => {
   await hideOrphanTestRows(page)
   await assertNoLeaks(page, 'orders-status-advanced')
 
-  // START AUDIO 4: "Vos hacés el seguimiento, nosotros producimos y enviamos." (5.35s)
-  sync.mark(4)
+  // ── Cerrar el detalle y filtrar por "Entregado" — SIN marker propio
+  // (transición sin narración dedicada, mismo patrón que otros specs de este
+  // batch), y ESPERAMOS a que el fetch filtrado resuelva (skeleton fuera del
+  // DOM + fila real visible) ANTES de marcar el clip 4. El mux siempre corta
+  // el video en lastAudioEnd(clip4) + 1.5s medido desde donde se llame
+  // sync.mark(4) — si el marker se dispara ANTES de que el filtro termine de
+  // cargar (visto pasar en una corrida real bajo carga pesada: el video
+  // terminaba con el skeleton de "Entregado" todavía en pantalla, violando
+  // la regla de terminar en un estado de éxito), no hay hold() después que lo
+  // arregle, porque el corte final es un timestamp fijo, no algo que un hold
+  // más largo pueda correr. Arrancar el clip narrado recién con el contenido
+  // ya estable es la única forma de garantizar que el corte cae sobre él. ──
   await page.keyboard.press('Escape') // cierra el panel de detalle (mismo listener que Escape en la página)
   await detailHeading.waitFor({ state: 'hidden', timeout: 10_000 }).catch((e) => {
     console.log('[record-orders-video] detailHeading no se ocultó a tiempo tras Escape:', e.message)
@@ -185,6 +195,15 @@ test('grabar tutorial Pedidos (orders)', async ({ page }) => {
   await driftCursorTo(page, entregadoTab, 5, 300)
   await clickWithRipple(page, entregadoTab)
   await hideOrphanTestRows(page)
+  await expect(page.locator('.animate-pulse')).toHaveCount(0, { timeout: 15_000 }).catch((e) => {
+    console.log('[record-orders-video] skeleton de "Entregado" no se resolvió a tiempo:', e.message)
+  })
+  await page.getByText('Cliente de Prueba').first().waitFor({ state: 'visible', timeout: 15_000 })
+  await hideOrphanTestRows(page)
+
+  // START AUDIO 4: "Vos hacés el seguimiento, nosotros producimos y enviamos." (5.35s)
+  // Recién ACÁ, con la grilla filtrada ya resuelta y estable.
+  sync.mark(4)
   // Encoder catch-up generoso antes de page.close() (ver comentario de hold()
   // en video-recording.ts) — termina en la grilla filtrada por "Entregado".
   await hold(page, 6500)

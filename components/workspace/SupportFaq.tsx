@@ -114,7 +114,7 @@ const FAQ_ITEMS: FaqItem[] = [
       poster: '/ayuda/orders-poster.jpg',
       preview: '/ayuda/orders-preview.mp4',
       title: 'Qué pasa con un pedido',
-      duration: '0:27',
+      duration: '0:29',
     },
     answer: (
       <ol className="list-decimal list-inside space-y-1.5">
