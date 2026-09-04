@@ -5,6 +5,7 @@ import { getCurrentUser } from "./auth"
 import { v4 as uuidv4 } from "uuid"
 import { put } from "@vercel/blob"
 import { normalizeR2Key, toPublicR2Url } from "./r2"
+import { ATTRIBUTION_FIELDS } from "./attribution"
 
 export interface SavedImage {
   id: string
@@ -868,6 +869,18 @@ export interface Order {
   status?: string
   notes?: string | null
   metadata?: any
+  // Atribución de marketing (last-touch, capturada en el navegador por
+  // lib/attribution.ts). Puramente analítica: si falta, la orden se crea igual
+  // con nulls. Ver migrations/20260806_orders_attribution.sql
+  utm_source?: string | null
+  utm_medium?: string | null
+  utm_campaign?: string | null
+  utm_content?: string | null
+  utm_term?: string | null
+  fbclid?: string | null
+  gclid?: string | null
+  landing_page?: string | null
+  referrer?: string | null
   items: OrderItem[]
 }
 
@@ -994,12 +1007,41 @@ export async function createOrder(orderData: Omit<Order, 'id' | 'order_number'>)
       id: uuidv4(), // Explicitly generate ID to avoid "null value in column id" error
     }
 
+    // Atribución de marketing (opcional, ver lib/attribution.ts). Solo se
+    // agregan las claves que vinieron con un valor no vacío — así nunca se
+    // manda basura y el insert de abajo puede sacarlas limpiamente si la
+    // migración 20260806_orders_attribution.sql todavía no corrió en la DB.
+    const attributionInsert = {}
+    for (const key of ATTRIBUTION_FIELDS) {
+      const value = orderData[key]
+      if (typeof value === "string" && value) attributionInsert[key] = value
+    }
+    Object.assign(orderInsert, attributionInsert)
+
     // Insertar pedido usando supabaseAdmin para bypass RLS
-    const { data: order, error: orderError } = await supabaseAdmin
+    let { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .insert(orderInsert)
       .select()
       .single()
+
+    // La migración de atribución puede no estar aplicada todavía en la DB —
+    // crear el pedido NUNCA debe fallar por eso. Si el error es "columna no
+    // existe" (42703) y mandamos algún campo de atribución, reintentamos una
+    // vez sin esas columnas.
+    if (orderError?.code === "42703" && Object.keys(attributionInsert).length > 0) {
+      console.warn(
+        "⚠️ Columnas de atribución no existen en orders (falta aplicar migrations/20260806_orders_attribution.sql) — reintentando sin ellas:",
+        orderError.message,
+      )
+      const fallbackInsert = { ...orderInsert }
+      for (const key of ATTRIBUTION_FIELDS) delete fallbackInsert[key]
+      ;({ data: order, error: orderError } = await supabaseAdmin
+        .from("orders")
+        .insert(fallbackInsert)
+        .select()
+        .single())
+    }
 
     if (orderError) {
       console.error("❌ Error creating order:", orderError)

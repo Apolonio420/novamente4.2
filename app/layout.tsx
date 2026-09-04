@@ -12,6 +12,7 @@ import { ImageHistoryProvider } from "@/contexts/ImageHistoryContext"
 import { Background } from "@/components/ui/Background"
 import FacebookPixel from "@/components/FacebookPixel"
 import GoogleAdsPixel from "@/components/GoogleAdsPixel"
+import AttributionTracker from "@/components/AttributionTracker"
 import { WebVitals } from "@/components/web-vitals"
 
 const inter = Inter({ subsets: ["latin"], display: "swap" })
@@ -221,6 +222,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         </a>
         <FacebookPixel />
         <GoogleAdsPixel />
+        {/* Guarda los UTMs de la URL (last-touch, 30 días) para que el pedido
+            sepa de qué campaña vino. No renderiza nada. */}
+        <AttributionTracker />
         <WebVitals />
         <Background />
         <ImageHistoryProvider>

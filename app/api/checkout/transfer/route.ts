@@ -2,10 +2,14 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createOrder } from "@/lib/db"
 import { toPublicR2Url } from "@/lib/r2"
 import { shippingCostFor, envioPorDistancia } from "@/lib/shipping-config"
+import { sanitizeAttribution } from "@/lib/attribution"
 
 export async function POST(request: NextRequest) {
   try {
-    const { customer, items, subtotal, shippingCost, total, discountCode } = await request.json()
+    const { customer, items, subtotal, shippingCost, total, discountCode, attribution } = await request.json()
+
+    // Atribución de marketing opcional (ver lib/attribution.ts) — nunca bloquea el pedido.
+    const sanitizedAttribution = sanitizeAttribution(attribution) || {}
 
     console.log("🔄 Transfer checkout API received:", {
       itemsCount: items?.length || 0,
@@ -136,6 +140,7 @@ export async function POST(request: NextRequest) {
       status: 'pending',
       notes: 'Esperando comprobante de transferencia bancaria',
       items: orderItems,
+      ...sanitizedAttribution,
       metadata: descuento.valid
         ? {
             discount_code_id: descuento.discountId,

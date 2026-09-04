@@ -4,6 +4,7 @@ import { MercadoPagoConfig, Preference } from "mercadopago"
 import { createOrder, findRecentDuplicateOrder } from "@/lib/db"
 import { toPublicR2Url } from "@/lib/r2"
 import { shippingCostFor, envioPorDistancia } from "@/lib/shipping-config"
+import { sanitizeAttribution } from "@/lib/attribution"
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -25,8 +26,13 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { items, customer, total, cartItems, subtotal, shippingCost, shippingZone, tenantId, discountCode } =
+    const { items, customer, total, cartItems, subtotal, shippingCost, shippingZone, tenantId, discountCode, attribution } =
       await request.json()
+
+    // Atribución de marketing (UTMs/fbclid/gclid/referrer/landing_page), capturada
+    // en el navegador por lib/attribution.ts. Puramente analítica: si viene vacía
+    // o inválida, la orden se crea igual sin ella.
+    const sanitizedAttribution = sanitizeAttribution(attribution) || {}
 
     console.log("🛒 Checkout API received:", {
       itemsCount: items?.length || 0,
@@ -259,6 +265,7 @@ export async function POST(request: NextRequest) {
         status: 'pending',
         tenant_id: validTenantId,
         items: orderItems,
+        ...sanitizedAttribution,
         metadata: {
           card_surcharge_ars: cardSurcharge,
           base_total_ars: finalTotal,

@@ -19,6 +19,7 @@ import { Separator } from "@/components/ui/separator"
 import { DiscountInput } from "@/components/checkout/DiscountInput"
 import { SHIPPING, shippingCostFor, envioPorDistancia, ENVIO_DISTANCIA as SHIPPING_RANGO } from "@/lib/shipping-config"
 import { StoreBrandBar } from "@/components/checkout/StoreBrandBar"
+import { getStoredAttribution } from "@/lib/attribution"
 
 interface CustomerData {
   email: string
@@ -235,6 +236,7 @@ export default function CheckoutPage() {
           shippingZone: shippingZone, // 'BA' | 'RESTO'
           tenantId: tenantId,
           discountCode: appliedDiscount?.code ?? null, // el server lo revalida contra partner_discount_codes
+          attribution: getStoredAttribution(), // UTMs/fbclid/gclid last-touch — null si no hay nada capturado
         }
 
         console.log("📤 Request body:", JSON.stringify(requestBody, null, 2))
@@ -312,6 +314,7 @@ export default function CheckoutPage() {
             shippingZone: shippingZone,
             total: total,
             discountCode: appliedDiscount?.code ?? null,
+            attribution: getStoredAttribution(),
           }),
         })
 
