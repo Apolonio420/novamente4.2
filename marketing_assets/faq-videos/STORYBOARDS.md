@@ -299,6 +299,123 @@ Página: `/workspace/support` ("Soporte" en el sidebar).
 
 ---
 
+## b2c — `/ayuda`: Cómo diseñar tu prenda con IA
+
+**Distinto de los 7 anteriores**: este es el ÚNICO tutorial público de
+`/ayuda` (no vive en `/workspace/support`), flujo B2C sin login, sin tenant
+fixture. Reemplaza el video viejo `public/ayuda/b2c.mp4` (remuxeado
+directo de `marketing_assets/MARKETING_B2C_OPENAI_POLISHED.mp4`, nunca
+grabado con este pipeline) que tenía dos bugs: desync narración/pantalla
+cerca de t≈40s (la caption 4 "Elegí el tipo de prenda..." quedaba pisada
+por el spinner "Generando diseño..." unos segundos) y una fecha de entrega
+vieja quemada en el checkout ("21 ago – 25 ago"). La fecha se recalcula
+en vivo (`app/checkout/page.tsx:90`, `estimatedDelivery`) así que re-grabar
+la arregla sola — no hace falta ningún fix de código para eso.
+
+Narración: 5 clips ya generados, `marketing_assets/audio_openai_b2c_1..5.mp3`
+(2.4 / 2.8 / 5.0 / 3.2 / 3.4s) + placas `marketing_assets/overlay_b2c_1..5.png`
+(estilo viejo, 1280×720 con placa de capítulo arriba — usar el mux SIN
+`--overlay-no-crop`, igual que studio/catalog). Texto exacto de cada clip
+(leído de las placas):
+
+1. Chapter "1. Diseñá a medida" — **"Hacer tu prenda en Novamente es muy fácil."**
+2. Chapter "2. Entrá a Diseñar" — **"Primero, entrá a la opción Diseñar tu prenda."**
+3. Chapter "3. La IA hace el resto" — **"Describí lo que tenés en mente en el chat, y la IA hace el resto."**
+4. Chapter "4. Elegí tu estilo" — **"Elegí el tipo de prenda, el talle y tu color favorito."**
+5. Chapter "5. Recibilo en tu casa" — **"¡Completá tu compra de forma segura y recibilo en tu casa!"**
+
+### Flujo real (confirmado en código, `app/crear/page.tsx` + `DesignChat.tsx` +
+`DesignCanvas.tsx` + `app/cart/page.tsx` + `app/checkout/page.tsx`)
+
+1. Navegar directo a `/crear` (público, sin login — el header muestra
+   "Diseñá tu prenda" y arranca en modo **Chat IA** con el mensaje del bot
+   ya visible: *"Hola! Describime el diseño que querés en tu prenda — yo lo
+   genero..."*). No hace falta pasar por la landing (`/`) ni por
+   `CrearLauncher` — el mismo componente de chat vive en `/crear` y ya
+   muestra el prompt de bienvenida al cargar.
+2. Escribir el prompt en el textarea (sin `id`/testid — es el único
+   `<textarea>` de la página en este estado; placeholder *"Describí tu
+   diseño: ..."*, matchear con `getByPlaceholder(/Describí tu diseño/i)`).
+   Prompt sugerido: **"León de neon estilo retro de los ochenta"** (mismo
+   que el video viejo — visual, sin marca, sin texto ofensivo).
+3. Click en el botón de enviar (`data-testid="send-prompt"`, aria-label
+   "Enviar prompt"). Dispara `POST /api/generate-image` real (costo chico,
+   aceptado por la tarea) — el bot muestra un bloque "Generando diseño..."
+   con subtítulo rotando cada 5s: "Esto puede tardar unos segundos..." →
+   "Optimizando trazo vectorial..." → "Aplicando reglas de impresión
+   textil..." → "Verificando contraste sobre la prenda..." → "Casi listo,
+   dando los toques finales...". Duración real variable (bug viejo: tardaba
+   más de lo que la caption 3/4 alcanzaba a cubrir) — usar `sync.cut()` para
+   recortar del video final todo lo que exceda ~3s de este estado, dejando
+   solo un fragmento corto y bien alineado con la caption 3.
+4. Generación lista: aparece un mensaje del asistente con texto **"Acá está
+   tu diseño:"** y la imagen generada (`getByText(/Acá está tu diseño/i)`,
+   timeout generoso — 90-120s, es IA real). En este punto
+   `session.currentDesignUrl` queda seteado y el tab **"Canvas"** del header
+   (antes deshabilitado, `disabled={!session.currentDesignUrl}` en
+   `app/crear/page.tsx:181`) se habilita.
+5. Click en el tab **"Canvas"** (`role="tab"`, texto "Canvas"). Al entrar,
+   un `useEffect` (`DesignCanvas.tsx:730-773`) agrega automáticamente el
+   diseño generado como layer sobre la prenda — no hace falta ningún paso
+   extra para que aparezca aplicado.
+6. **Elegí tu estilo** (clip 4, visible mientras se interactúa con esto):
+   - Chips de prenda arriba (`DesignCanvas.tsx:1050-1073`, sin testid, texto
+     plano — "Aldea Classic Fit", "Aura Oversize", "Clásica Mujer", "Crop
+     Mujer", "Musculosa Bali"): click en una distinta a la default para que
+     se note el cambio (ej. "Aura Oversize").
+   - Swatches de color debajo (`aria-label={color.name}`, ej. "Negro" /
+     "Blanco"): click en uno.
+   - Selector de talle más abajo (`DesignCanvas.tsx:1646-1658`, botones
+     `S/M/L/XL/XXL`, sin testid — texto exacto): click en uno (ej. "M").
+   - Mantener el estado visible (`hold()`) durante el resto del clip 4.
+7. Click **"Aplicar y agregar al carrito"** (`DesignCanvas.tsx:1661-1668`,
+   `onClick={handleApply}`, deshabilitado solo si no hay layers — el layer
+   ya está por el paso 5). Esto sube el PNG exportado, arma el nombre/precio
+   del producto y llama `addItem` del cart store — sin navegar solo, hay
+   que ir al carrito a mano después.
+8. Navegación dura a `/cart` (`page.goto('/cart')` — incluye el diseño
+   generado como thumbnail, subtotal/envío/total reales del fixture de
+   precios). Click **"Finalizar Compra"** (`app/cart/page.tsx:423`) → navega
+   a `/checkout`.
+9. En `/checkout`: mostrar la vista previa del pedido a la derecha (imagen
+   del mockup) y completar el formulario de la izquierda con datos
+   ficticios obvios — **nunca real**, **nunca enviar el pedido**:
+   - `#email` → `cliente@ejemplo.com`
+   - `#firstName` → `Cliente`
+   - `#lastName` → `Ejemplo`
+   - `#phone` → `+54 9 11 0000-0000`
+   - `#address` → `Av. Ejemplo 123`
+   - `#city` → `Buenos Aires`
+   - `#postalCode` → `1000`
+   Usar `fillAndVerify` para cada campo (mismo patrón que el resto del
+   pipeline). El bloque "Envío" arriba muestra
+   `Comprando ahora te llega entre el {estimatedDelivery}` — se calcula en
+   vivo desde `new Date()`, así que la fecha queda automáticamente
+   actualizada, sin ningún cambio de código.
+10. Terminar el video con el checkout lleno en pantalla (`hold()` ≥ 6s) —
+    **NUNCA** clickear "Confirmar y Pagar" / "Confirmar Pedido”
+    (`app/checkout/page.tsx:865`) ni ningún botón que dispare
+    `POST /api/checkout` o redirija a Mercado Pago.
+
+### Qué debe ocultarse / verificar
+- Nada del `HIDDEN_LEAK_TESTIDS` existente aplica acá (flujo público, sin
+  sesión de partner, sin precios retail de partner) — pero SÍ correr
+  `assertNoLeaks` en cada checkpoint igual, por las dudas (ej. el patrón
+  genérico de email `@[\w.-]+\.(com|ar|test)` no debería dispararse porque
+  el valor ficticio queda dentro de un `<input>` — no forma parte de
+  `document.body.innerText` — pero conviene confirmarlo en la corrida real
+  en vez de asumirlo).
+- La burbuja pública de chat "Nova" y el navbar público son aceptables (a
+  diferencia del `orders`/`pricing` internos, acá NO hay nada del workspace
+  de partner que ocultar).
+- Gate de generación (`GENERATION_GATE_THRESHOLD = 20` en
+  `DesignChat.tsx:93`) y el email-capture a los 90s idle
+  (`DesignChat.tsx:303-309`) no deberían dispararse con una sola generación
+  y un video corto — confirmar que ninguno de los dos modals aparece en los
+  frames de verificación.
+
+---
+
 ## Elementos nuevos a agregar como `data-testid` (si Fase 2 los necesita)
 
 No se encontró ningún leak NUEVO sin cobertura en las páginas storyboardeadas

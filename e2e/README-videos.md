@@ -134,28 +134,71 @@ de abajo, ya en el tercio inferior del frame.
 Reglas de duración: el video termina 1.0s después de que termina el último
 clip de audio; el audio se rellena con silencio hasta esa duración exacta.
 
-### B2C (no se re-graba)
+### B2C — `e2e/record-b2c-video.spec.ts`
 
-`public/ayuda/b2c.mp4` se remuxea directo desde
-`marketing_assets/MARKETING_B2C_OPENAI_POLISHED.mp4` (no hay spec de
-grabación — el video viejo ya estaba bien, solo le faltaba faststart). El
-original ya NO vive en `public/` (era públicamente alcanzable y filtraba
-info interna en los otros dos videos hermanos, MARKETING_CATALOG y
-MARKETING_DEMO, que se borraron del repo por eso mismo):
+`public/ayuda/b2c.mp4` (el único tutorial público de `/ayuda`, no vive en
+`/workspace/support`) SÍ se re-graba con este pipeline desde septiembre
+2026 — reemplaza al viejo remux directo de
+`marketing_assets/MARKETING_B2C_OPENAI_POLISHED.mp4` (un video nunca
+grabado con este sistema, que tenía un desync narración/pantalla cerca de
+t≈40s y una fecha de entrega vieja quemada en el checkout). Storyboard
+completo: `marketing_assets/faq-videos/STORYBOARDS.md` sección "b2c".
+
+Distinto de todos los demás specs de esta sección: es flujo **B2C público**
+(Home → `/crear` → carrito → checkout), **sin login, sin tenant fixture, sin
+`hideRetailPrice`** (esos testids son del workspace de partner). Requiere IA
+real (`POST /api/generate-image`, costo chico) — sin credenciales que
+skipear, corre siempre:
+
+```bash
+npx playwright test e2e/record-b2c-video.spec.ts
+```
+
+Escribe `marketing_assets/video_b2c_raw/latest.webm` +
+`marketing_assets/sync_b2c.json`. Mux (estilo placa vieja, con
+`--overlay-prefix` SIN `--overlay-no-crop`, igual que studio/catalog):
 
 ```bash
 node scripts/mux-marketing-video.mjs \
-  --video marketing_assets/MARKETING_B2C_OPENAI_POLISHED.mp4 \
-  --out public/ayuda/b2c.mp4 \
-  --remux-only
+  --video marketing_assets/video_b2c_raw/latest.webm \
+  --sync marketing_assets/sync_b2c.json \
+  --audio-prefix marketing_assets/audio_openai_b2c_ \
+  --overlay-prefix marketing_assets/overlay_b2c_ \
+  --out public/ayuda/b2c.mp4
 ```
 
-Sin `--trim-after`, el modo remux corta 1s después del final del audio. Ojo:
-en la versión actual del video B2C el contenido DESPUÉS del audio (carrito →
-checkout) es real y relevante, no una cola muda — por eso el mux actual se
-hizo con `--trim-after 56.92` (mantiene el video completo, 57.92s). Si se
-re-graba el audio de B2C, revisar de nuevo si conviene cortar o no antes de
-mux-ear.
+Antes de sobreescribir, copiar el `public/ayuda/b2c.mp4` vigente a
+`marketing_assets/b2c-previous.mp4` (gitignorado por
+`marketing_assets/*.mp4`). Poster: un frame limpio del Canvas con el diseño
+ya aplicado a la prenda, sin caption ni modal encima —
+`ffmpeg -ss <t> -i public/ayuda/b2c.mp4 -frames:v 1 -q:v 2 public/ayuda/b2c-poster.jpg`.
+
+**Gotcha real, encontrado en corridas de grabación** (server de dev
+compartido con otra sesión activa, tráfico pesado simultáneo): el click en
+"Crear gratis" del launcher de la landing (`CrearLauncher.tsx`) a veces
+dispara el submit **nativo** del `<form>` en vez del `onSubmit` de React
+(el input no tiene `name`, así que el submit nativo aterriza en `/?` con
+query vacía) — muy probablemente una carrera de hidratación bajo carga
+pesada del server compartido. El spec reintenta (`submitPromptAndReachCrear`,
+hasta 3 intentos, cada uno recupera volviendo a Home y re-tipeando) y todo
+ese tramo queda recortado del video final con `sync.cut()` (no aporta nada
+bajo la caption 3, que ya se cubre con la escritura del prompt).
+
+**Gotcha real #2**: el store del carrito (zustand con `persist` a
+localStorage, `lib/cartStore.tsx:115`) rehidrata de forma asíncrona — al
+navegar a `/cart` justo después de agregar un producto, aparece un frame de
+"Tu carrito está vacío" antes de que la rehidratación complete. El spec
+recorta ese tramo con `sync.cut()` también (ver el comentario en el spec,
+sección "Carrito → Checkout").
+
+**ffmpeg lento/colgado bajo carga compartida**: si el mux tarda minutos en
+vez de segundos con la máquina compartida por otra sesión corriendo su
+propio ffmpeg al mismo tiempo, es contención de CPU, no necesariamente un
+deadlock del filter graph — confirmado corriendo el mismo filter_complex
+exacto de forma standalone (con `-preset ultrafast` para acotar el tiempo
+de prueba), que terminó en segundos. Aun así, correr el mux siempre en
+foreground acotado con un timeout explícito (nunca en background sin
+límite) y nunca más de un ffmpeg propio en simultáneo.
 
 ## 5. Verificar antes de dar por terminado
 
