@@ -26,6 +26,7 @@ import {
   Image as ImageIcon, Wand2, Loader2, CreditCard, Zap,
   Crown, Rocket,
 } from 'lucide-react'
+import { formatCatalogPrice, getCatalogProduct } from '@/lib/catalog/products'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1562,10 +1563,14 @@ function StepPlan({
 }
 
 // Fallback products (plain garments) — used while mockups generate
+const pOversize = getCatalogProduct('aura-oversize-tshirt')
+const pHoodie = getCatalogProduct('buzo-hoodie-unisex')
+const pClassic = getCatalogProduct('aldea-classic-tshirt')
+
 const PREVIEW_PRODUCTS = [
-  { name: 'Remera Oversize', price: '$18.500', fallback: '/garments/tshirt-black-oversize-front.jpeg', category: 'Remeras' },
-  { name: 'Buzo Hoodie Oversize', price: '$32.900', fallback: '/garments/buzo-hoodie-unisex-marron-front.jpeg', category: 'Buzos' },
-  { name: 'Remera Classic', price: '$15.200', fallback: '/garments/tshirt-white-classic-front.jpeg', category: 'Remeras' },
+  { name: 'Remera Oversize', price: pOversize ? formatCatalogPrice(pOversize.retailARS) : '$31.000', fallback: '/garments/tshirt-black-oversize-front.jpeg', category: 'Remeras' },
+  { name: 'Buzo Hoodie Oversize', price: pHoodie ? formatCatalogPrice(pHoodie.retailARS) : '$55.000', fallback: '/garments/buzo-hoodie-unisex-marron-front.jpeg', category: 'Buzos' },
+  { name: 'Remera Classic', price: pClassic ? formatCatalogPrice(pClassic.retailARS) : '$28.600', fallback: '/garments/tshirt-white-classic-front.jpeg', category: 'Remeras' },
 ]
 
 function usePreviewMockups(_data: WizardData) {
