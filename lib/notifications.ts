@@ -69,6 +69,8 @@ export async function notifySale(order: {
         price?: number;
         imageUrl?: string;
     }>;
+    /** Reemplaza la línea final "Pago aprobado" (ej. transferencia pendiente + link de confirmación). HTML de Telegram. */
+    footer?: string;
 }) {
     const itemsText = order.items
         .map((item) => {
@@ -96,7 +98,7 @@ export async function notifySale(order: {
 <b>Items:</b>
 ${itemsText}
 
-✅ <i>Pago aprobado. ¡A preparar el pedido!</i>
+${order.footer ?? '✅ <i>Pago aprobado. ¡A preparar el pedido!</i>'}
   `.trim();
 
     return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);

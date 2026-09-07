@@ -111,7 +111,11 @@ export async function GET(request: NextRequest) {
       o.customer_email &&
       Number(o.total) > 0 &&
       !o.metadata?.recovery_sent_at &&
-      !o.payment_id,
+      !o.payment_id &&
+      // confirmada desde el admin de la plataforma (admin.novamente.ar, repo
+      // platform, POST /api/admin/ventas/confirm): ese camino setea SOLO
+      // payment_status, sin payment_id → ya pagó, no se le manda el recupero.
+      o.payment_status !== 'approved',
   ).slice(0, MAX_PER_RUN)
 
   const results: Array<{ order: string; status: string }> = []

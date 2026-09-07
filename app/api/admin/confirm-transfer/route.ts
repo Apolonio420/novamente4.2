@@ -17,19 +17,15 @@
  * Idempotente: si ya está approved, lo dice y no repite mails.
  */
 import { NextRequest, NextResponse } from "next/server"
-import { createHmac, timingSafeEqual } from "crypto"
+import { timingSafeEqual } from "crypto"
 import { getOrderByNumber, updateOrder } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
+import { transferConfirmSig } from "@/lib/payments/transfer-confirm"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 15
 
 const BASE = process.env.NEXT_PUBLIC_BASE_URL || "https://www.novamente.ar"
-
-export function transferConfirmSig(orderNumber: string, op: string): string {
-  const secret = process.env.TRANSFER_CONFIRM_SECRET || ""
-  return createHmac("sha256", secret).update(`${orderNumber}|${op}`).digest("hex")
-}
 
 function page(title: string, body: string, ok = true) {
   return new NextResponse(

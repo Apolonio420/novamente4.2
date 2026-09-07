@@ -167,10 +167,15 @@ export async function POST(request: NextRequest) {
     // el cliente transfirió 20 días después y Juan se enteró por el ingreso en MP.
     // Fire-and-forget: un fallo acá nunca rompe el checkout del cliente.
     try {
-      const [{ notifySale }, { sendEmail }] = await Promise.all([
+      const [{ notifySale }, { sendEmail }, { transferConfirmUrl }] = await Promise.all([
         import("@/lib/notifications"),
         import("@/lib/email"),
+        import("@/lib/payments/transfer-confirm"),
       ])
+      // Link firmado de confirmación en un click (op "manual": todavía no hay
+      // comprobante). Sirve para los clientes que transfieren sin avisar: Juan ve
+      // la plata en MP y confirma desde este mismo aviso.
+      const confirmUrl = newOrder.order_number ? transferConfirmUrl(newOrder.order_number) : null
       void notifySale({
         orderNumber: `🟡 TRANSFERENCIA PENDIENTE — ${newOrder.order_number || newOrder.id}`,
         total: finalTotal,
@@ -183,6 +188,9 @@ export async function POST(request: NextRequest) {
           price: it.unit_price,
           imageUrl: it.image_url || it.mockup_url || undefined,
         })),
+        footer: confirmUrl
+          ? `🟡 <i>Transferencia PENDIENTE. Cuando veas la plata en MP:</i> <a href="${confirmUrl}">✅ Confirmar pago en un click</a>`
+          : `🟡 <i>Transferencia PENDIENTE. Confirmar cuando entre la plata en MP.</i>`,
       }).catch((e: any) => console.error("❌ notifySale (transfer) falló:", e?.message))
       const salesEmail = process.env.SALES_NOTIFY_EMAIL || "juan@novamente.ar"
       const itemsHtml = orderItems
@@ -197,6 +205,7 @@ export async function POST(request: NextRequest) {
 <b>Cliente:</b> ${customer.firstName || ""} ${customer.lastName || ""} · ${customer.email} · ${customer.phone || "-"}<br/>
 <b>Envío:</b> ${customer.address || "-"}, ${customer.city || "-"} (CP ${customer.postalCode || "-"})</p>
 <ul>${itemsHtml}</ul>
+${confirmUrl ? `<p><a href="${confirmUrl}" style="display:inline-block;padding:10px 16px;background:#16a34a;color:#fff;border-radius:6px;text-decoration:none;font-weight:600">✅ Confirmar pago en un click</a><br/><small>Solo cuando veas la transferencia acreditada en Mercado Pago. Marca la orden pagada y le avisa al cliente.</small></p>` : ""}
 <p>Si en unos días no llega el pago, el pedido queda pending y lo persigue el rescate. Ficha: admin.novamente.ar/dashboard/orders/fichas</p>`,
       }).then((sent) => {
         if (!sent.ok) console.error("❌ Email de pedido por transferencia falló:", sent.error)
