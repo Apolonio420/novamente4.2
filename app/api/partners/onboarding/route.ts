@@ -51,8 +51,50 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'name and email are required' }, { status: 400 })
       }
 
+      // 🔁 REINTENTO DEL MISMO PARTNER → reusar su tenant en vez de crear otro.
+      // (07/09/2026: cada reintento del onboarding creaba un tenant NUEVO con slug
+      // sufijado — Krowstreet ×6, JML ×3, SONNE ×3 en una semana, 26 grupos
+      // históricos. El slug lindo quedaba tomado por un fantasma vacío y las
+      // métricas de partners se ensuciaban.) Si este email ya tiene un tenant en
+      // `onboarding` de los últimos 7 días con el mismo nombre/slug base, es el
+      // mismo alta: se actualizan los datos y se devuelve ese tenant.
+      const baseSlug = generateSlug(name)
+      try {
+        const { data: prior } = await supabaseAdmin
+          .from('tenants')
+          .select('id, slug, status, created_at')
+          .eq('email', email)
+          .order('created_at', { ascending: false })
+          .limit(10)
+        const reusable: any = ((prior || []) as any[]).find((t: any) =>
+          t.status === 'onboarding'
+          && (t.slug === baseSlug || String(t.slug).startsWith(`${baseSlug}-`))
+          && Date.now() - new Date(t.created_at).getTime() < 7 * 24 * 3600 * 1000)
+        if (reusable) {
+          await updateTenant(reusable.id, {
+            name, phone, industry, website, instagram, description, seo_title, seo_description,
+            ...(country ? { country } : {}), ...(currency ? { currency } : {}),
+          } as any)
+          // Asegurar el vínculo owner ↔ tenant (si el user ya existe).
+          const { data: links } = await supabaseAdmin.from('tenant_users').select('user_id').eq('tenant_id', reusable.id).limit(1)
+          if (!links?.length) {
+            const { data: listData } = await supabaseAdmin.auth.admin.listUsers()
+            const existingUser = listData?.users?.find((u: any) => u.email === email)
+            if (existingUser) await addTenantUser(reusable.id, existingUser.id, 'owner')
+          }
+          console.log(`[onboarding] reintento detectado → reuso tenant ${reusable.slug} (${reusable.id}) para ${email}`)
+          return NextResponse.json({
+            tenant: { id: reusable.id },
+            credentials: { email, password: null, existing_user: true },
+            reused: true,
+          })
+        }
+      } catch (e) {
+        console.warn('[onboarding] chequeo de reintento falló, sigo con alta nueva:', e)
+      }
+
       // Generate slug, handle duplicates
-      let slug = generateSlug(name)
+      let slug = baseSlug
       const existing = await getTenantBySlug(slug)
       if (existing) {
         const suffix = crypto.randomBytes(3).toString('hex')
