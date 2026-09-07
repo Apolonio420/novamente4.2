@@ -12,7 +12,7 @@ const RESERVED_SUBDOMAINS = new Set([
 // (carrito/checkout son globales; el branding por tenant lo resuelve la página)
 const SHARED_PATH_PREFIXES = [
   '/cart', '/checkout', '/api', '/_next', '/merch', '/marcas', '/design',
-  '/crear', '/partners', '/workspace', '/pedido', '/terminos', '/privacidad',
+  '/crear', '/studio', '/partners', '/workspace', '/pedido', '/terminos', '/privacidad',
   '/faq', '/favicon', '/logo', '/robots', '/sitemap', '/manifest', '/opengraph',
   // '/p/' CON barra final: un producto de subdominio como /pantalon-x no debe
   // matchear, pero <slug>.novamente.ar/p/... debe servirse sin re-rewrite (loop).

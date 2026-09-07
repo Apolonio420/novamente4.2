@@ -603,8 +603,8 @@ export default function BlogDTG() {
           <p className="text-zinc-400 text-sm">
             Todos los precios incluyen la prenda + estampado DTG + packaging. Sin costos ocultos.
             Si sos partner, podes revender con margenes del 40-80%.{" "}
-            <Link href="/partners" className="text-emerald-400 hover:text-emerald-300 underline">
-              Conoce el programa Partners
+            <Link href="/studio" className="text-emerald-400 hover:text-emerald-300 underline">
+              Conoce Novamente Studio
             </Link>
           </p>
         </section>

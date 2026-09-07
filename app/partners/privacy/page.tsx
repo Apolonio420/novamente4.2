@@ -17,11 +17,11 @@ export default function PrivacyPage() {
       <header className="border-b border-zinc-800/50">
         <div className="container mx-auto px-4 py-4">
           <Link
-            href="/partners"
+            href="/studio"
             className="inline-flex items-center gap-2 text-zinc-400 hover:text-zinc-200 transition-colors text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
-            Volver a Partners
+            Volver a Novamente Studio
           </Link>
         </div>
       </header>

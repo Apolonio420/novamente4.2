@@ -443,7 +443,7 @@ export default function BlogComoCrearMerch() {
                   <Star className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
                   <span>
                     <strong className="text-white">Storefront de Novamente Partners</strong> — Tu tienda online propia, lista para vender,
-                    sin necesidad de configurar hosting ni dominio. <Link href="/partners" className="text-violet-400 hover:text-violet-300 underline">Mas info aca</Link>.
+                    sin necesidad de configurar hosting ni dominio. <Link href="/studio" className="text-violet-400 hover:text-violet-300 underline">Mas info aca</Link>.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -476,7 +476,7 @@ export default function BlogComoCrearMerch() {
               </div>
               <p className="text-zinc-300 leading-relaxed mb-3">
                 Cuando ya tengas tus primeras ventas y quieras profesionalizar tu marca, el
-                programa <Link href="/partners" className="text-violet-400 hover:text-violet-300 underline">Novamente Partners</Link> te
+                programa <Link href="/studio" className="text-violet-400 hover:text-violet-300 underline">Novamente Studio</Link> te
                 da todo lo que necesitas:
               </p>
               <div className="grid md:grid-cols-2 gap-4 mt-4">
@@ -591,10 +591,10 @@ export default function BlogComoCrearMerch() {
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
-              <Link href="/partners">
+              <Link href="/studio">
                 <Button size="lg" variant="outline" className="border-violet-500/50 text-violet-300 hover:bg-violet-500/10 gap-2">
                   <Users className="w-4 h-4" />
-                  Conocer programa Partners
+                  Conocer Novamente Studio
                 </Button>
               </Link>
             </div>

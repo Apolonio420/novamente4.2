@@ -657,8 +657,8 @@ export default function UniformesPersonalizados() {
               Tenes una marca de ropa y queres vender uniformes personalizados?
             </p>
             <Button asChild variant="link" className="text-blue-400 hover:text-blue-300">
-              <Link href="/partners">
-                Conoce nuestro programa de Partners <ArrowRight className="ml-1 w-4 h-4" />
+              <Link href="/studio">
+                Conoce Novamente Studio <ArrowRight className="ml-1 w-4 h-4" />
               </Link>
             </Button>
           </div>

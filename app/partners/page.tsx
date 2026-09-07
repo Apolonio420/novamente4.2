@@ -16,11 +16,11 @@ export const metadata: Metadata = {
   title: "Novamente Studio — Lanzá tu marca con storefront, IA y growth",
   description: "La unidad de Novamente para marcas y negocios: storefront, catalogo, diseño con IA, leads y operaciones sin stock ni logistica.",
   alternates: {
-    canonical: "https://www.novamente.ar/partners",
+    canonical: "https://www.novamente.ar/studio",
   },
   openGraph: {
     type: "website",
-    url: "https://www.novamente.ar/partners",
+    url: "https://www.novamente.ar/studio",
     title: "Novamente Studio — Lanzá tu marca",
     description: "Storefront, catalogo, diseño con IA y growth comercial para marcas, creadores y negocios.",
     images: [{ url: "https://www.novamente.ar/novamente-logo.png", width: 1200, height: 630, alt: "Novamente Studio" }],

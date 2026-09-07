@@ -222,7 +222,7 @@ export default function Home() {
               Ver productos
             </Link>
             <Link
-              href="/partners"
+              href="/studio"
               className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-4 py-2 font-medium text-white/80 transition hover:border-white/50 hover:text-white"
             >
               <Store className="h-4 w-4" />

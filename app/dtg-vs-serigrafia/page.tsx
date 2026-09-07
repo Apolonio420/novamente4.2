@@ -729,9 +729,9 @@ export default function DtgVsSerigrafia() {
           <p className="text-white/60 mb-6 max-w-xl mx-auto">
             Unite como partner de Novamente. Margenes del 60-80%, sin stock, produccion a demanda.
           </p>
-          <Link href="/partners">
+          <Link href="/studio">
             <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 bg-transparent">
-              Conocer programa de Partners <ArrowRight className="w-4 h-4 ml-2" />
+              Conocer Novamente Studio <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </Link>
         </div>

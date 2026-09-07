@@ -158,9 +158,9 @@ export default function B2BPricesPage() {
           <Link href="https://wa.me/5492235169720?text=Hola%20Novamente!%20Vi%20el%20catalogo%20B2B%202026%20y%20quiero%20coordinar%20pedido%20%2F%20drop.%20(ref%20%C2%B7%20NV-B2B26)" target="_blank">
             <Button className="rounded-lg">Hablar por WhatsApp</Button>
           </Link>
-          <Link href="/partners">
+          <Link href="/studio">
             <Button variant="outline" className="rounded-lg bg-transparent">
-              Conocer programa Partners
+              Conocer Novamente Studio
             </Button>
           </Link>
         </div>

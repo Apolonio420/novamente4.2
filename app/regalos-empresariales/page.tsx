@@ -688,9 +688,9 @@ export default function RegalosEmpresariales() {
           <p className="text-muted-foreground mb-4">
             Sos una agencia o revendedor que necesita merch para sus clientes?
           </p>
-          <Link href="/partners">
+          <Link href="/studio">
             <Button variant="outline" className="border-white/20 text-white/80 hover:bg-white/10">
-              Conoce nuestro Programa Partners B2B
+              Conoce Novamente Studio B2B
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </Link>

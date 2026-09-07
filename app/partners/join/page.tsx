@@ -2203,7 +2203,7 @@ export default function PartnersJoinPage() {
       {/* Header */}
       <header className="border-b border-zinc-800/50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/partners" className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 transition-colors">
+          <Link href="/studio" className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 transition-colors">
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm hidden sm:inline">Volver a Studio</span>
           </Link>

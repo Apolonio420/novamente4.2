@@ -565,7 +565,7 @@ export default function HoodiePersonalizado() {
           </div>
 
           <div className="text-center mt-10">
-            <Link href="/partners" data-cta="partners-margin-hoodie">
+            <Link href="/studio" data-cta="partners-margin-hoodie">
               <Button
                 size="lg"
                 variant="outline"

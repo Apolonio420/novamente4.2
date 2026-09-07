@@ -221,7 +221,7 @@ export default function NovamenteVsPrintfulArgentina() {
                 Disenar con IA <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/partners"
+                href="/studio"
                 className="nv-cta-secondary"
               >
                 Ver Novamente Studio

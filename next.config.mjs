@@ -172,6 +172,15 @@ const nextConfig = {
         destination: '/meta/catalog',
         permanent: true,
       },
+      // ── Hub B2B: /partners → /studio ──
+      // Consolidación definitiva de link equity (PR 8 re-arquitectura).
+      // Resuelve la advertencia de Google Search Console de contenido duplicado.
+      // Match exacto '/partners' no afecta subrutas (/partners/join, /partners/workspace, etc.).
+      {
+        source: '/partners',
+        destination: '/studio',
+        permanent: true,
+      },
       // ── Retiro del storefront legacy /merch/[brand] → canónico /p/[slug] ──
       // 308 (permanent) preserva método y querystring (UTMs de campañas de
       // partners generadas por utm-generator siguen llegando intactas).

@@ -23,10 +23,10 @@ export default function PaymentFailurePage() {
               Reintentar
             </Button>
           </Link>
-          <Link href="/partners">
+          <Link href="/studio">
             <Button variant="outline" className="w-full border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Volver a Partners
+              Volver a Novamente Studio
             </Button>
           </Link>
         </div>
