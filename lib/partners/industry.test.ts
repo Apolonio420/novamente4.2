@@ -120,6 +120,21 @@ describe('industryLabel', () => {
   it('ignora industry_raw en blanco', () => {
     expect(industryLabel({ industry: 'otro', metadata: { industry_raw: '   ' } })).toBe('Otro')
   })
+
+  // Filas sin backfill: el texto original del partner sigue en la columna
+  // `industry` y no hay metadata.industry_raw. Devolver null ahi borraba el
+  // rubro de /marcas y del directorio para la mayoria de las tiendas.
+  it('cae al texto libre de industry cuando no es un slug canónico', () => {
+    expect(industryLabel({ industry: 'Beer Sommelier' })).toBe('Beer Sommelier')
+    expect(industryLabel({ industry: 'fitness · streetwear', metadata: {} })).toBe('fitness · streetwear')
+    expect(industryLabel({ industry: '  Remeras Peronistas  ' })).toBe('Remeras Peronistas')
+  })
+
+  it('trata industry vacío o "-" como sin dato', () => {
+    expect(industryLabel({ industry: '' })).toBeNull()
+    expect(industryLabel({ industry: '   ' })).toBeNull()
+    expect(industryLabel({ industry: '-' })).toBeNull()
+  })
 })
 
 describe('INDUSTRY_CATEGORIES', () => {

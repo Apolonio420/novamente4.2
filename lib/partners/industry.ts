@@ -108,15 +108,22 @@ export function normalizeIndustry(raw: string | null | undefined): string | null
 
 /**
  * Texto para mostrar/usar como contexto descriptivo (copy IA, listados
- * públicos): prioriza la redacción original del partner
- * (`metadata.industry_raw`) y cae a la etiqueta de la categoría si no hay.
+ * públicos). Orden de preferencia:
+ *   1. `metadata.industry_raw` — la redacción original del partner.
+ *   2. la etiqueta de la categoría, si `industry` ya es un slug canónico.
+ *   3. el propio `industry` cuando todavía es texto libre — las filas
+ *      anteriores a la normalización (backfill pendiente) tienen el texto
+ *      del partner ahí y ningún `industry_raw`; sin este paso el rubro
+ *      desaparecía de /marcas y del directorio para la mayoría de las tiendas.
  */
 export function industryLabel(tenant: { industry?: string | null; metadata?: any }): string | null {
   const raw = tenant?.metadata?.industry_raw
   if (typeof raw === 'string' && raw.trim()) return raw.trim()
 
-  const slug = tenant?.industry
-  if (slug && CATEGORY_LABEL[slug]) return CATEGORY_LABEL[slug]
+  const industry = tenant?.industry
+  if (typeof industry !== 'string') return null
+  const trimmed = industry.trim()
+  if (!trimmed || trimmed === '-') return null
 
-  return null
+  return CATEGORY_LABEL[trimmed] ?? trimmed
 }

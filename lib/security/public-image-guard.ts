@@ -461,12 +461,19 @@ export async function guardPublicImageGen(
     if (insertError) {
       // La migracion que agrega prompt/style/meta (2026-09-09) puede no estar
       // corrida todavia en produccion — si el insert falla porque esas
-      // columnas no existen (42703, o el mensaje las menciona), reintentamos
-      // una vez con el insert legacy de 3 columnas para no romper el guard.
+      // columnas no existen, reintentamos una vez con el insert legacy de 3
+      // columnas para no romper el guard (esta fila ES el contador del
+      // rate-limit: si no se escribe, /crear queda sin techo).
+      // OJO: el cliente es supabase-js, o sea PostgREST — una columna que
+      // falta llega como code 'PGRST204' y mensaje "Could not find the
+      // 'prompt' column of 'public_imagegen_requests' in the schema cache",
+      // NO como el 42703 crudo de Postgres. Aceptamos los dos.
+      const insertMessage = insertError.message ?? ""
       const isMissingColumn =
         metaInfo &&
-        (insertError.code === "42703" ||
-          /column .*(prompt|style|meta)/i.test(insertError.message ?? ""))
+        (insertError.code === "PGRST204" ||
+          insertError.code === "42703" ||
+          (/column/i.test(insertMessage) && /(prompt|style|meta)/i.test(insertMessage)))
       if (isMissingColumn) {
         const { error: retryError } = await (supabaseAdmin.from("public_imagegen_requests") as any).insert(baseRow)
         if (retryError) {

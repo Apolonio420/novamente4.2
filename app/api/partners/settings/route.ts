@@ -131,11 +131,19 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // industry_raw explícito manda sobre el fallback de arriba: "" limpia
-    // metadata.industry_raw, texto no vacío lo setea (trim + max 160).
+    // industry_raw explícito manda sobre el fallback de arriba, pero un valor
+    // VACIO no borra el que ya existía ni el texto libre que todavía vive en la
+    // columna `industry` (filas sin backfill). Si lo pisáramos, updates.industry
+    // reemplaza la columna por el slug y el texto original del partner
+    // ("Beer Sommelier", "Remeras Peronistas") se pierde para siempre — no
+    // queda copia en ninguna parte. Solo un valor no vacío cambia el guardado.
     if ('industry_raw' in body) {
       const rawFromBody = typeof body.industry_raw === 'string' ? body.industry_raw.trim().slice(0, 160) : ''
-      metadataPatch = { ...(metadataPatch ?? currentMetadata), industry_raw: rawFromBody }
+      const currentRaw = typeof currentMetadata.industry_raw === 'string' ? currentMetadata.industry_raw.trim() : ''
+      const currentIndustry = typeof tenant.industry === 'string' ? tenant.industry.trim().slice(0, 160) : ''
+      const legacyIndustry = isIndustrySlug(currentIndustry) || currentIndustry === '-' ? '' : currentIndustry
+      const nextRaw = rawFromBody || currentRaw || legacyIndustry
+      metadataPatch = { ...(metadataPatch ?? currentMetadata), industry_raw: nextRaw }
     }
 
     if (metadataPatch) {

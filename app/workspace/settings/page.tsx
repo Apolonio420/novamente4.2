@@ -83,7 +83,15 @@ function deriveIndustryFields(data: SettingsData): SettingsData {
     ? data.industry
     : (normalizeIndustry(data.industry_raw ?? data.industry) ?? '')
   const categoryLabel = INDUSTRY_CATEGORIES.find((c) => c.slug === slug)?.label
-  const rawText = data.industry_raw ?? ''
+  // El texto libre del partner vive en metadata.industry_raw, pero las filas
+  // anteriores a la normalización (backfill pendiente) todavía lo tienen en la
+  // columna `industry` ("Beer Sommelier", "fitness · streetwear"). Si no hay
+  // industry_raw prellenamos con ese texto viejo: si no, guardar CUALQUIER
+  // campo mandaría industry_raw='' + industry=<slug> y el original quedaría
+  // pisado sin copia en ninguna parte.
+  const currentIndustry = (data.industry ?? '').trim()
+  const legacyFreeText = isIndustrySlug(currentIndustry) || currentIndustry === '-' ? '' : currentIndustry
+  const rawText = (data.industry_raw ?? '').trim() || legacyFreeText
   return {
     ...data,
     industry: slug,
