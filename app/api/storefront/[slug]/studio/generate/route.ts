@@ -61,7 +61,22 @@ export async function POST(
       // best-effort — si falla, tratamos como anonimo (no relajamos el guard)
     }
     if (!isOwnerPartner) {
-      const guard = await guardPublicImageGen(request, 'storefront-studio-generate')
+      // Peek de prompt/style para estadisticas del guard — clone() no
+      // consume el body real, que se vuelve a leer mas abajo con request.json().
+      let promptForGuard: string | undefined
+      let styleForGuard: string | undefined
+      try {
+        const peek = await request.clone().json()
+        if (typeof peek?.prompt === 'string') promptForGuard = peek.prompt
+        if (typeof peek?.style === 'string') styleForGuard = peek.style
+      } catch {
+        // body invalido o no-JSON — se maneja mas abajo al parsear de verdad
+      }
+      const guard = await guardPublicImageGen(request, 'storefront-studio-generate', {
+        prompt: promptForGuard,
+        style: styleForGuard,
+        meta: { tenant_slug: slug },
+      })
       if (!guard.allowed) {
         return NextResponse.json({ error: guard.message }, { status: guard.status, headers: ch })
       }

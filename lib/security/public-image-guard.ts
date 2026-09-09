@@ -287,15 +287,32 @@ function fallbackLimiterFor(endpointFamily: string) {
   return l
 }
 
+/** Metadata opcional del pedido, para estadisticas de que se le pide al generador publico. */
+export interface PublicImageGenMeta {
+  /** Prompt del visitante. Se trunca a 1000 caracteres y se trimea antes de guardar. */
+  prompt?: string
+  /** Estilo/opcion elegida, cuando el endpoint la tiene. */
+  style?: string
+  /** Metadata libre adicional (ej. { tenant_slug } en rutas de storefront). */
+  meta?: Record<string, unknown>
+}
+
+const PROMPT_MAX_LENGTH = 1000
+
 /**
  * Corre el guard completo. Devuelve `{allowed:false,...}` si hay que cortar
  * la request ahi mismo (el caller debe responder con `status`/`message`).
  * Si `allowed:true`, el caller puede seguir e idealmente llamar a
  * `meterPublicImageGen` despues de generar con exito.
+ *
+ * `metaInfo` es opcional y solo para estadisticas (prompt/style/meta) — no
+ * afecta ningun chequeo de tope. Los callers que no tienen prompt (remove-bg,
+ * try-on, etc) no pasan nada y siguen funcionando igual que antes.
  */
 export async function guardPublicImageGen(
   request: NextRequest,
   endpointFamily: string,
+  metaInfo?: PublicImageGenMeta,
 ): Promise<ImageGuardResult> {
   if (hasInternalBypass(request)) {
     return { allowed: true, exempt: true }
@@ -434,10 +451,30 @@ export async function guardPublicImageGen(
 
     // `as any`: mismo workaround que el resto del repo para insert() con el
     // cliente supabaseAdmin sin Database generics (ver meter-usage.ts).
-    const { error: insertError } = await (supabaseAdmin.from("public_imagegen_requests") as any)
-      .insert({ ip_hash: ipHash, endpoint_family: endpointFamily, created_at: nowIso })
+    const baseRow = { ip_hash: ipHash, endpoint_family: endpointFamily, created_at: nowIso }
+    const prompt = metaInfo?.prompt?.trim().slice(0, PROMPT_MAX_LENGTH) || undefined
+    const row = metaInfo
+      ? { ...baseRow, prompt, style: metaInfo.style, meta: metaInfo.meta }
+      : baseRow
+
+    const { error: insertError } = await (supabaseAdmin.from("public_imagegen_requests") as any).insert(row)
     if (insertError) {
-      console.error("[public-image-guard] insert failed (dejamos pasar la request igual):", insertError.message)
+      // La migracion que agrega prompt/style/meta (2026-09-09) puede no estar
+      // corrida todavia en produccion — si el insert falla porque esas
+      // columnas no existen (42703, o el mensaje las menciona), reintentamos
+      // una vez con el insert legacy de 3 columnas para no romper el guard.
+      const isMissingColumn =
+        metaInfo &&
+        (insertError.code === "42703" ||
+          /column .*(prompt|style|meta)/i.test(insertError.message ?? ""))
+      if (isMissingColumn) {
+        const { error: retryError } = await (supabaseAdmin.from("public_imagegen_requests") as any).insert(baseRow)
+        if (retryError) {
+          console.error("[public-image-guard] insert (legacy fallback) failed (dejamos pasar la request igual):", retryError.message)
+        }
+      } else {
+        console.error("[public-image-guard] insert failed (dejamos pasar la request igual):", insertError.message)
+      }
     }
 
     return { allowed: true }

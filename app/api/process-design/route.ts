@@ -24,7 +24,17 @@ export async function POST(req: NextRequest) {
   // Rate-limit por IP + tope diario global (DB-backed). Este endpoint NO
   // tenia NINGUN limite ni CORS (auditoria 2026-07-11) — generacion
   // ilimitada a nuestro costo.
-  const guard = await guardPublicImageGen(req, "process-design")
+  //
+  // Peek del prompt para estadisticas del guard — clone() no consume el
+  // body real, que se vuelve a leer mas abajo dentro del try principal.
+  let promptForGuard: string | undefined
+  try {
+    const peek = await req.clone().json()
+    if (typeof peek?.prompt === "string") promptForGuard = peek.prompt
+  } catch {
+    // body invalido o no-JSON — se maneja mas abajo
+  }
+  const guard = await guardPublicImageGen(req, "process-design", { prompt: promptForGuard })
   if (!guard.allowed) {
     return NextResponse.json({ error: guard.message, debugId }, { status: guard.status, headers: ch })
   }

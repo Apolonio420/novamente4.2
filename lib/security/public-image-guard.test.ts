@@ -22,6 +22,11 @@ const h = vi.hoisted(() => {
     // fecha (`created_at >= ...`) que arma startOfBudgetWindowIso() sin
     // tener que aplicar el filtro de verdad en el mock (no hay DB real).
     gteCalls: [] as any[][],
+    // Simula que las columnas prompt/style/meta todavia no existen en la DB
+    // (migracion 2026-09-09 sin correr): el PRIMER insert() con esas columnas
+    // falla con 42703, el guard debe reintentar con el insert legacy.
+    forceInsertColumnError: false,
+    insertColumnErrorConsumed: false,
   }
   const chain: any = {
     from: () => chain,
@@ -46,6 +51,12 @@ const h = vi.hoisted(() => {
       ),
     insert: (row: any) => {
       state.insertCalls.push(row)
+      if (state.forceInsertColumnError && !state.insertColumnErrorConsumed) {
+        state.insertColumnErrorConsumed = true
+        return Promise.resolve({
+          error: { code: "42703", message: 'column "prompt" of relation "public_imagegen_requests" does not exist' },
+        })
+      }
       return Promise.resolve({ error: null })
     },
   }
@@ -86,6 +97,8 @@ beforeEach(async () => {
   h.state.forceBudgetError = false
   h.state.insertCalls = []
   h.state.gteCalls = []
+  h.state.forceInsertColumnError = false
+  h.state.insertColumnErrorConsumed = false
   process.env.PUBLIC_IMAGEGEN_ENABLED = "true"
   delete process.env.PUBLIC_IMAGEGEN_DAILY_CAP
   delete process.env.PUBLIC_GEMINI_BUDGET_USD
@@ -419,5 +432,69 @@ describe("guardPublicImageGen — cupo semanal por visitante (PUBLIC_IMAGEGEN_WE
     const result = await guardPublicImageGen(makeReq(), "generate-image")
 
     expect(result.allowed).toBe(true)
+  })
+})
+
+describe("guardPublicImageGen — metadata de prompt/style/meta (estadisticas)", () => {
+  it("guarda prompt (trimeado y truncado a 1000 caracteres), style y meta en la fila insertada", async () => {
+    queueCounts(0, 0, 0)
+    const longPrompt = `  ${"a".repeat(1200)}  `
+
+    const result = await guardPublicImageGen(makeReq(), "generate-image", {
+      prompt: longPrompt,
+      style: "vaporwave",
+      meta: { tenant_slug: "mi-tienda" },
+    })
+
+    expect(result.allowed).toBe(true)
+    expect(h.state.insertCalls).toHaveLength(1)
+    const row = h.state.insertCalls[0]
+    expect(row.prompt).toHaveLength(1000)
+    expect(row.prompt).toBe("a".repeat(1000))
+    expect(row.style).toBe("vaporwave")
+    expect(row.meta).toEqual({ tenant_slug: "mi-tienda" })
+  })
+
+  it("no agrega las columnas prompt/style/meta cuando el caller no pasa metadata (callers sin prompt siguen igual)", async () => {
+    queueCounts(0, 0, 0)
+
+    const result = await guardPublicImageGen(makeReq(), "try-on")
+
+    expect(result.allowed).toBe(true)
+    expect(h.state.insertCalls).toHaveLength(1)
+    const row = h.state.insertCalls[0]
+    expect(row).toEqual({
+      ip_hash: row.ip_hash,
+      endpoint_family: "try-on",
+      created_at: row.created_at,
+    })
+    expect(Object.keys(row).sort()).toEqual(["created_at", "endpoint_family", "ip_hash"])
+  })
+
+  it("cae al insert legacy de 3 columnas si el insert con prompt/style/meta falla por columna inexistente (42703, migracion no corrida)", async () => {
+    h.state.forceInsertColumnError = true
+    queueCounts(0, 0, 0)
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+
+    const result = await guardPublicImageGen(makeReq(), "generate-image", { prompt: "un dragón vaporwave" })
+
+    expect(result.allowed).toBe(true)
+    // Primer intento (con prompt/style/meta) + reintento legacy.
+    expect(h.state.insertCalls).toHaveLength(2)
+    expect(h.state.insertCalls[0].prompt).toBe("un dragón vaporwave")
+    const legacyRow = h.state.insertCalls[1]
+    expect(Object.keys(legacyRow).sort()).toEqual(["created_at", "endpoint_family", "ip_hash"])
+    expect(legacyRow.endpoint_family).toBe("generate-image")
+    errorSpy.mockRestore()
+  })
+
+  it("un prompt vacio o solo espacios no se guarda como string vacio", async () => {
+    queueCounts(0, 0, 0)
+
+    const result = await guardPublicImageGen(makeReq(), "generate-image", { prompt: "   " })
+
+    expect(result.allowed).toBe(true)
+    const row = h.state.insertCalls[0]
+    expect(row.prompt).toBeUndefined()
   })
 })

@@ -58,7 +58,11 @@ export async function POST(
       // best-effort — si falla, tratamos como anonimo (no relajamos el guard)
     }
     if (!isOwnerPartner) {
-      const guard = await guardPublicImageGen(request, 'storefront-studio-mockup')
+      // Sin prompt (este endpoint solo pega un diseño ya generado sobre una
+      // prenda) — meta lleva igual el tenant_slug para las estadisticas.
+      const guard = await guardPublicImageGen(request, 'storefront-studio-mockup', {
+        meta: { tenant_slug: slug },
+      })
       if (!guard.allowed) {
         return NextResponse.json({ error: guard.message }, { status: guard.status, headers: ch })
       }

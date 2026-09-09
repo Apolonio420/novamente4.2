@@ -30,7 +30,17 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  const guard = await guardPublicImageGen(req, "design-edit")
+  // Peek del prompt (instruction) para estadisticas del guard — clone() no
+  // consume el body real, que se vuelve a leer mas abajo con req.json().
+  let promptForGuard: string | undefined
+  try {
+    const peek = await req.clone().json()
+    if (typeof peek?.instruction === "string") promptForGuard = peek.instruction
+  } catch {
+    // body invalido o no-JSON — se maneja mas abajo al parsear de verdad
+  }
+
+  const guard = await guardPublicImageGen(req, "design-edit", { prompt: promptForGuard })
   if (!guard.allowed) return ok({ error: guard.message }, guard.status)
 
   try {

@@ -79,7 +79,18 @@ export async function POST(req: NextRequest) {
   // Rate-limit por IP + tope diario global (DB-backed). Reemplaza el
   // rate-limiter viejo en memoria (inutil en serverless — ver auditoria
   // 2026-07-11).
-  const guard = await guardPublicImageGen(req, "generate-image")
+  //
+  // Peek del prompt (o instruction, en modo iteracion) para estadisticas del
+  // guard — clone() no consume el body real, que se vuelve a leer mas abajo.
+  let promptForGuard: string | undefined
+  try {
+    const peek = await req.clone().json()
+    if (typeof peek?.prompt === "string") promptForGuard = peek.prompt
+    else if (typeof peek?.instruction === "string") promptForGuard = peek.instruction
+  } catch {
+    // body invalido o no-JSON — se maneja mas abajo al parsear de verdad
+  }
+  const guard = await guardPublicImageGen(req, "generate-image", { prompt: promptForGuard })
   if (!guard.allowed) return ok({ error: guard.message }, guard.status)
 
   const t0 = Date.now()

@@ -35,7 +35,17 @@ export async function POST(request: NextRequest) {
     // Rate-limit por IP + tope diario global (DB-backed). Este endpoint NO
     // tenia NINGUN limite antes — generacion ilimitada a nuestro costo
     // (auditoria 2026-07-11).
-    const guard = await guardPublicImageGen(request, "generate-stamp")
+    //
+    // Peek del prompt para estadisticas del guard — clone() no consume el
+    // body real, que se vuelve a parsear/validar mas abajo con Zod.
+    let promptForGuard: string | undefined
+    try {
+      const peek = await request.clone().json()
+      if (typeof peek?.prompt === "string") promptForGuard = peek.prompt
+    } catch {
+      // body invalido o no-JSON — se maneja mas abajo (parseo + Zod)
+    }
+    const guard = await guardPublicImageGen(request, "generate-stamp", { prompt: promptForGuard })
     if (!guard.allowed) {
       return NextResponse.json({ error: guard.message, debugId }, { status: guard.status, headers: baseHeaders })
     }
