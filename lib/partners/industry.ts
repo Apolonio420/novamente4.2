@@ -37,6 +37,13 @@ const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
   INDUSTRY_CATEGORIES.map((c) => [c.slug, c.label]),
 )
 
+const INDUSTRY_SLUGS = new Set(INDUSTRY_CATEGORIES.map((c) => c.slug))
+
+/** true si `value` ya es, tal cual, uno de los slugs de INDUSTRY_CATEGORIES. */
+export function isIndustrySlug(value: string | null | undefined): value is string {
+  return typeof value === 'string' && INDUSTRY_SLUGS.has(value)
+}
+
 /** Minúsculas y sin acentos, para matchear case/accent-insensitive. */
 export function fold(s: string): string {
   return s

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateTenantResult } from '@/lib/partners/tenant'
-import { normalizeIndustry } from '@/lib/partners/industry'
+import { normalizeIndustry, isIndustrySlug } from '@/lib/partners/industry'
 import { PLAN_FEATURES } from '@/lib/partners/plans'
 
 const SETTINGS_FIELDS = [
@@ -106,16 +106,36 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // `industry` es texto libre del partner — se normaliza a una categoría
-    // canónica (lib/partners/industry.ts) para estadísticas, y el texto
-    // original se preserva en metadata.industry_raw para no perder matiz
-    // descriptivo (lo usan los generadores de copy con IA).
+    // `industry` — el form de Configuración manda ahora el slug directo
+    // (selector sobre INDUSTRY_CATEGORIES, ver app/workspace/settings/page.tsx)
+    // más un `industry_raw` aparte con el matiz descriptivo ("Contanos más").
+    // Si `industry` ya es un slug válido se respeta tal cual — renormalizar
+    // un slug ya canónico no está garantizado a sobrevivir el fold+match de
+    // normalizeIndustry (pensado para texto libre, no para sus propias
+    // salidas). Texto libre (llamadas viejas que no separan industry_raw)
+    // sigue normalizándose igual que antes.
     if ('industry' in updates) {
-      const rawIndustry = typeof updates.industry === 'string' ? updates.industry.trim() : ''
-      updates.industry = normalizeIndustry(updates.industry)
-      if (rawIndustry) {
+      const incomingIndustry = updates.industry
+      const rawIndustry = typeof incomingIndustry === 'string' ? incomingIndustry.trim() : ''
+      updates.industry = isIndustrySlug(incomingIndustry)
+        ? incomingIndustry
+        : normalizeIndustry(incomingIndustry)
+
+      // Compat: si el body no manda industry_raw aparte, preserva el
+      // comportamiento previo — guardar el texto libre de `industry` en
+      // metadata cuando no era ya un slug, para no perder matiz descriptivo
+      // (lo usan los generadores de copy con IA) en llamadas que todavía
+      // mandan solo `industry` como texto libre.
+      if (!('industry_raw' in body) && rawIndustry && !isIndustrySlug(incomingIndustry)) {
         metadataPatch = { ...(metadataPatch ?? currentMetadata), industry_raw: rawIndustry }
       }
+    }
+
+    // industry_raw explícito manda sobre el fallback de arriba: "" limpia
+    // metadata.industry_raw, texto no vacío lo setea (trim + max 160).
+    if ('industry_raw' in body) {
+      const rawFromBody = typeof body.industry_raw === 'string' ? body.industry_raw.trim().slice(0, 160) : ''
+      metadataPatch = { ...(metadataPatch ?? currentMetadata), industry_raw: rawFromBody }
     }
 
     if (metadataPatch) {

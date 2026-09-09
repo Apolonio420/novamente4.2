@@ -5,7 +5,7 @@
 // contexto completo y el orden de prioridad cuando un texto matchea más de
 // una categoría.
 import { describe, it, expect } from 'vitest'
-import { normalizeIndustry, industryLabel, INDUSTRY_CATEGORIES } from './industry'
+import { normalizeIndustry, industryLabel, isIndustrySlug, INDUSTRY_CATEGORIES } from './industry'
 
 describe('normalizeIndustry', () => {
   it('devuelve null para vacío, null, undefined y "-"', () => {
@@ -76,6 +76,28 @@ describe('normalizeIndustry', () => {
     expect(normalizeIndustry('INDUMENTARIA')).toBe('indumentaria')
     expect(normalizeIndustry('Música')).toBe('musica_arte')
     expect(normalizeIndustry('GASTRONOMÍA')).toBe('merch_empresa')
+  })
+
+  it.each(INDUSTRY_CATEGORIES.map((c) => c.slug))(
+    'es idempotente: normalizeIndustry(%s) === %s',
+    (slug) => {
+      expect(normalizeIndustry(slug)).toBe(slug)
+    },
+  )
+})
+
+describe('isIndustrySlug', () => {
+  it('reconoce todos los slugs de INDUSTRY_CATEGORIES', () => {
+    for (const { slug } of INDUSTRY_CATEGORIES) {
+      expect(isIndustrySlug(slug)).toBe(true)
+    }
+  })
+
+  it('rechaza texto libre, vacío y valores no-string', () => {
+    expect(isIndustrySlug('remeras peronistas')).toBe(false)
+    expect(isIndustrySlug('')).toBe(false)
+    expect(isIndustrySlug(null)).toBe(false)
+    expect(isIndustrySlug(undefined)).toBe(false)
   })
 })
 

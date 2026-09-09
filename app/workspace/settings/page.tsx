@@ -32,6 +32,7 @@ import { Badge } from '@/components/ui/badge'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import { supabase } from '@/lib/supabase'
 import { LockedFeature } from '@/components/partners/locked-feature'
+import { INDUSTRY_CATEGORIES, normalizeIndustry, isIndustrySlug } from '@/lib/partners/industry'
 
 // --- Types ---
 
@@ -42,11 +43,12 @@ interface SettingsData {
   phone: string
   website: string
   instagram: string
+  // Slug canónico (lib/partners/industry.ts: INDUSTRY_CATEGORIES) — value del <select>.
   industry: string
-  // Texto libre original del partner (tenants.metadata.industry_raw) — solo
-  // lectura, usado para prellenar `industry` sin pisarlo con el slug
-  // normalizado si el partner guarda sin tocar este campo.
-  industry_raw?: string | null
+  // Texto libre opcional ("Contanos más") — tenants.metadata.industry_raw.
+  // Se guarda aparte del slug para no perder matiz descriptivo (lo usan los
+  // generadores de copy con IA).
+  industry_raw: string
   country: string
   currency: string
   commerce_mode: string
@@ -70,16 +72,24 @@ interface Toast {
 
 // --- Constants ---
 
-const INDUSTRY_OPTIONS = [
-  { value: 'moda', label: 'Moda' },
-  { value: 'deporte', label: 'Deporte' },
-  { value: 'musica', label: 'Musica' },
-  { value: 'gastronomia', label: 'Gastronomia' },
-  { value: 'tecnologia', label: 'Tecnologia' },
-  { value: 'salud', label: 'Salud' },
-  { value: 'educacion', label: 'Educacion' },
-  { value: 'otro', label: 'Otro' },
-]
+// Deriva slug + texto libre a partir de lo que trae GET/PUT: si `industry`
+// ya es un slug válido de INDUSTRY_CATEGORIES se respeta tal cual; si no
+// (tenants viejos con texto libre pre-selector), se normaliza a partir de
+// industry_raw (o del propio industry). El detalle libre solo se prellena
+// si aporta matiz mas alla de la etiqueta de la categoria — si coincide con
+// el label, no es "info extra" y se deja vacio.
+function deriveIndustryFields(data: SettingsData): SettingsData {
+  const slug = isIndustrySlug(data.industry)
+    ? data.industry
+    : (normalizeIndustry(data.industry_raw ?? data.industry) ?? '')
+  const categoryLabel = INDUSTRY_CATEGORIES.find((c) => c.slug === slug)?.label
+  const rawText = data.industry_raw ?? ''
+  return {
+    ...data,
+    industry: slug,
+    industry_raw: rawText && rawText !== categoryLabel ? rawText : '',
+  }
+}
 
 const COUNTRY_OPTIONS = [
   { value: 'AR', label: 'Argentina' },
@@ -175,11 +185,7 @@ export default function SettingsPage() {
       const res = await authFetch('/api/partners/settings')
       if (!res.ok) throw new Error('Error cargando configuracion')
       const json = await res.json()
-      const data: SettingsData = json.settings || json
-      // Prellenar con el texto libre original del partner, no con el slug
-      // normalizado — si el partner guarda sin tocar este campo, evita que
-      // el PUT pise metadata.industry_raw con el slug (ver app/api/partners/settings/route.ts).
-      data.industry = data.industry_raw ?? data.industry
+      const data: SettingsData = deriveIndustryFields(json.settings || json)
       setSettings(data)
       initialRef.current = { ...data }
     } catch {
@@ -197,7 +203,7 @@ export default function SettingsPage() {
     if (!settings || !initialRef.current) return false
     const editable: (keyof SettingsData)[] = [
       'name', 'email', 'phone', 'website', 'instagram',
-      'industry', 'country', 'currency', 'commerce_mode', 'storefront_published',
+      'industry', 'industry_raw', 'country', 'currency', 'commerce_mode', 'storefront_published',
       'seo_title', 'seo_description',
       'bank_cbu', 'bank_alias',
     ]
@@ -234,6 +240,7 @@ export default function SettingsPage() {
           website: settings.website,
           instagram: settings.instagram,
           industry: settings.industry,
+          industry_raw: settings.industry_raw ?? '',
           country: settings.country,
           currency: settings.currency,
           commerce_mode: settings.commerce_mode,
@@ -261,10 +268,7 @@ export default function SettingsPage() {
         throw new Error(err?.error || 'No se pudo guardar la configuración. Probá de nuevo.')
       }
       const json = await res.json()
-      const updated: SettingsData = json.settings || json
-      // Mismo prellenado que en fetchSettings: si el proximo guardado no
-      // toca industry, que reenvie el texto libre y no el slug.
-      updated.industry = updated.industry_raw ?? updated.industry
+      const updated: SettingsData = deriveIndustryFields(json.settings || json)
       setSettings(updated)
       initialRef.current = { ...updated }
       showToast('Configuracion guardada', 'success')
@@ -430,12 +434,19 @@ export default function SettingsPage() {
                   className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="">Seleccionar</option>
-                  {INDUSTRY_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
+                  {INDUSTRY_CATEGORIES.map((cat) => (
+                    <option key={cat.slug} value={cat.slug}>
+                      {cat.label}
                     </option>
                   ))}
                 </select>
+                <Input
+                  id="industry_raw"
+                  value={settings.industry_raw}
+                  onChange={(e) => updateField('industry_raw', e.target.value)}
+                  placeholder="Contanos más (opcional)"
+                  className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 text-xs h-8"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="website" className="text-zinc-300">Sitio web</Label>
