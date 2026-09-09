@@ -37,6 +37,12 @@ export async function GET(request: NextRequest) {
       settings[field] = (tenant as any)[field] ?? null
     }
 
+    // Texto libre original del partner (ver lib/partners/industry.ts) — el
+    // form de Configuracion lo usa para prellenar el campo industry sin
+    // pisarlo con el slug normalizado en un guardado que no lo toca.
+    const rawIndustryMeta = (tenant as any).metadata?.industry_raw
+    settings.industry_raw = typeof rawIndustryMeta === 'string' ? rawIndustryMeta : null
+
     // Bank details are owner-only. Operators/viewers must not see them.
     if (auth.role !== 'owner') {
       settings.bank_cbu = null
@@ -232,6 +238,8 @@ export async function PUT(request: NextRequest) {
     for (const field of SETTINGS_FIELDS) {
       settings[field] = (updated as any)[field] ?? null
     }
+    const rawIndustryMeta = (updated as any).metadata?.industry_raw
+    settings.industry_raw = typeof rawIndustryMeta === 'string' ? rawIndustryMeta : null
 
     return NextResponse.json({ settings })
   } catch (error) {

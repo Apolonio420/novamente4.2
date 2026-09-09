@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getPublishedTenants } from '@/lib/partners/tenant'
+import { industryLabel } from '@/lib/partners/industry'
 import { Badge } from '@/components/ui/badge'
 import { JsonLd } from '@/components/partners/json-ld'
 import {
@@ -49,7 +50,8 @@ export default async function PartnerDirectoryPage() {
   // Only show seo_indexable tenants in the public directory
   const tenants = allTenants.filter((t) => t.seo_indexable)
 
-  // Extract unique industries for the filter
+  // Extract unique industries (canonical slugs) for the filter — the filter
+  // component renders these as category labels but still matches by slug.
   const industries = Array.from(
     new Set(tenants.map((t) => t.industry).filter(Boolean))
   ).sort() as string[]
@@ -60,6 +62,7 @@ export default async function PartnerDirectoryPage() {
     name: t.name,
     tagline: t.tagline,
     industry: t.industry,
+    industryLabel: industryLabel(t),
     logo_url: t.logo_url,
     primary_color: t.primary_color,
   }))

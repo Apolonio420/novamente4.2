@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Sparkles, ExternalLink, Store } from "lucide-react"
 import { getPublishedTenants } from "@/lib/partners/tenant"
+import { industryLabel, fold } from "@/lib/partners/industry"
 import type { Tenant, Plan } from "@/lib/partners/types"
 
 export const revalidate = 3600 // ISR: 1h
@@ -45,6 +46,9 @@ const BLOCKED_NAMES_LOWERCASE = new Set(["cristian dior"])
 
 // Industries no afines al universo Novamente (indumentaria/cultura/marca personal).
 // Si un partner se registra en una industry no afin, no aparece en el directorio publico.
+// Texto crudo pre-normalizacion (ver lib/partners/industry.ts): tenants.industry hoy es un
+// slug canonico ('merch_empresa', etc.) y ya NO matchea estos strings exactos, por eso el
+// check compara tambien contra metadata.industry_raw (case/accent-insensitive).
 const BLOCKED_INDUSTRIES = new Set([
   "Salud",
   "Gastronomia",
@@ -55,12 +59,25 @@ const BLOCKED_INDUSTRIES = new Set([
   "Mayorista",
 ])
 
+const BLOCKED_INDUSTRIES_FOLDED = new Set(
+  Array.from(BLOCKED_INDUSTRIES, (s) => fold(s)),
+)
+
+function isBlockedIndustryText(raw: unknown): boolean {
+  if (typeof raw !== "string" || !raw.trim()) return false
+  return BLOCKED_INDUSTRIES_FOLDED.has(fold(raw))
+}
+
 function isPartnerVisibleInDirectory(t: Tenant): boolean {
   // Tiendas DEMO/placeholder (metadata.is_demo) NO van al directorio público — existen solo
   // para mostrar un link de ejemplo (ej. /p/tu-marca), no son marcas reales. (future-proof)
   if (t.metadata?.is_demo === true) return false
   if (BLOCKED_SLUGS.has(t.slug)) return false
-  if (t.industry && BLOCKED_INDUSTRIES.has(t.industry)) return false
+  // 'merch_empresa' agrupa las industries no afines (salud, gastronomia, inmobiliaria, etc.)
+  // que normalizeIndustry() colapsa a esa categoria canonica.
+  if (t.industry === "merch_empresa") return false
+  if (isBlockedIndustryText(t.industry)) return false
+  if (isBlockedIndustryText(t.metadata?.industry_raw)) return false
   const lowerName = t.name.toLowerCase().trim()
   const lowerSlug = t.slug.toLowerCase()
   // Match exacto por nombre (case-insensitive) — para evitar suplantaciones de marcas reales
@@ -216,6 +233,7 @@ export default async function MarcasPage() {
             {tenants.map(tenant => {
               const planBadge = PLAN_BADGE[tenant.plan]
               const isPaid = tenant.plan !== "starter"
+              const industryText = industryLabel(tenant)
               return (
                 <article
                   key={tenant.id}
@@ -279,8 +297,8 @@ export default async function MarcasPage() {
                             {tenant.name}
                           </Link>
                         </h2>
-                        {tenant.industry && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{tenant.industry}</p>
+                        {industryText && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{industryText}</p>
                         )}
                       </div>
                     </div>

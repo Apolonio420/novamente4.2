@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { getTenantBySlug } from '@/lib/partners/tenant'
+import { industryLabel } from '@/lib/partners/industry'
 import { getPublishedProducts } from '@/lib/partners/catalog'
 import { PLAN_FEATURES, getPlanFeatures, effectivePlan } from '@/lib/partners/plans'
 import type { Tenant, PartnerProduct } from '@/lib/partners/types'
@@ -283,12 +284,12 @@ function HeroSection({ tenant }: { tenant: Tenant }) {
         )}
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-          {tenant.industry && (
+          {industryLabel(tenant) && (
             <Badge
               variant="secondary"
               className="border-white/10 bg-white/10 text-zinc-200 backdrop-blur-sm"
             >
-              {tenant.industry}
+              {industryLabel(tenant)}
             </Badge>
           )}
           {tenant.instagram && (

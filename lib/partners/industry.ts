@@ -38,7 +38,7 @@ const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
 )
 
 /** Minúsculas y sin acentos, para matchear case/accent-insensitive. */
-function fold(s: string): string {
+export function fold(s: string): string {
   return s
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')

@@ -43,6 +43,10 @@ interface SettingsData {
   website: string
   instagram: string
   industry: string
+  // Texto libre original del partner (tenants.metadata.industry_raw) — solo
+  // lectura, usado para prellenar `industry` sin pisarlo con el slug
+  // normalizado si el partner guarda sin tocar este campo.
+  industry_raw?: string | null
   country: string
   currency: string
   commerce_mode: string
@@ -172,6 +176,10 @@ export default function SettingsPage() {
       if (!res.ok) throw new Error('Error cargando configuracion')
       const json = await res.json()
       const data: SettingsData = json.settings || json
+      // Prellenar con el texto libre original del partner, no con el slug
+      // normalizado — si el partner guarda sin tocar este campo, evita que
+      // el PUT pise metadata.industry_raw con el slug (ver app/api/partners/settings/route.ts).
+      data.industry = data.industry_raw ?? data.industry
       setSettings(data)
       initialRef.current = { ...data }
     } catch {
@@ -254,6 +262,9 @@ export default function SettingsPage() {
       }
       const json = await res.json()
       const updated: SettingsData = json.settings || json
+      // Mismo prellenado que en fetchSettings: si el proximo guardado no
+      // toca industry, que reenvie el texto libre y no el slug.
+      updated.industry = updated.industry_raw ?? updated.industry
       setSettings(updated)
       initialRef.current = { ...updated }
       showToast('Configuracion guardada', 'success')

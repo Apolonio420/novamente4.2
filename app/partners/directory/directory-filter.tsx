@@ -5,12 +5,20 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { INDUSTRY_CATEGORIES } from '@/lib/partners/industry'
+
+// Slug -> etiqueta de categoria (para mostrar los botones de filtro; el
+// filtrado en si sigue matcheando por slug, ver `industry` mas abajo).
+const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
+  INDUSTRY_CATEGORIES.map((c) => [c.slug, c.label]),
+)
 
 interface TenantCard {
   slug: string
   name: string
   tagline: string | null
   industry: string | null
+  industryLabel: string | null
   logo_url: string | null
   primary_color: string
 }
@@ -38,7 +46,7 @@ export default function DirectoryFilter({ tenants, industries }: DirectoryFilter
         (t) =>
           t.name.toLowerCase().includes(q) ||
           t.tagline?.toLowerCase().includes(q) ||
-          t.industry?.toLowerCase().includes(q)
+          t.industryLabel?.toLowerCase().includes(q)
       )
     }
 
@@ -78,7 +86,7 @@ export default function DirectoryFilter({ tenants, industries }: DirectoryFilter
                   : 'border border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200'
               }`}
             >
-              {ind}
+              {CATEGORY_LABEL[ind] ?? ind}
             </button>
           ))}
         </div>
@@ -131,12 +139,12 @@ export default function DirectoryFilter({ tenants, industries }: DirectoryFilter
               )}
 
               {/* Industry badge */}
-              {tenant.industry && (
+              {tenant.industryLabel && (
                 <Badge
                   variant="outline"
                   className="border-zinc-700 text-zinc-400"
                 >
-                  {tenant.industry}
+                  {tenant.industryLabel}
                 </Badge>
               )}
 
