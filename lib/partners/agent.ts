@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getGeminiClient } from '@/lib/gemini'
 import { getTenantById } from './tenant'
+import { industryLabel } from './industry'
 import { getPublishedProducts } from './catalog'
 import { PLAN_FEATURES } from './plans'
 import type { Tenant, PartnerProduct, CommerceMode } from './types'
@@ -77,12 +78,16 @@ export async function buildAgentContext(tenantId: string): Promise<string> {
   const commerceInstructions = isDemo
     ? getDemoCommerceInstructions(tenant)
     : getCommerceInstructions(tenant.commerce_mode, tenant)
-  const industryInstructions = isDemo ? getIndustryInstructions(tenant.industry) : ''
+  // tenant.industry es ahora una categoría canónica (lib/partners/industry.ts);
+  // industryLabel prioriza el texto libre original del partner (metadata.industry_raw)
+  // para no perder matiz descriptivo en el contexto del agente.
+  const industryText = industryLabel(tenant)
+  const industryInstructions = isDemo ? getIndustryInstructions(industryText) : ''
 
   return `Sos el asistente virtual de ventas de "${tenant.name}".
 ${tenant.tagline ? `Slogan: ${tenant.tagline}` : ''}
 ${tenant.description ? `Sobre la marca: ${tenant.description}` : ''}
-${tenant.industry ? `Rubro: ${tenant.industry}` : ''}
+${industryText ? `Rubro: ${industryText}` : ''}
 
 ## Tu personalidad
 - Amigable, entusiasta y profesional

@@ -1,4 +1,5 @@
 import { getPublishedTenants, getTenantBySlug } from './tenant'
+import { industryLabel } from './industry'
 import { getPublishedProducts } from './catalog'
 import { partners as staticPartners, getPartnerById } from '@/src/data/partners'
 import type { Tenant, PartnerProduct } from './types'
@@ -94,7 +95,7 @@ export async function getDirectoryEntries(): Promise<DirectoryEntry[]> {
     featured: t.plan === 'pro',
     productCount: 0, // Will be enriched below
     instagram: t.instagram,
-    category: t.industry || null,
+    category: industryLabel(t),
     source: 'db' as const,
   }))
 

@@ -27,6 +27,7 @@ import {
   Crown, Rocket,
 } from 'lucide-react'
 import { formatCatalogPrice, getCatalogProduct } from '@/lib/catalog/products'
+import { INDUSTRY_CATEGORIES } from '@/lib/partners/industry'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -64,6 +65,8 @@ interface WizardData {
   country: string
   currency: string
   industry: string
+  industryCategory: string
+  industryDetail: string
   website: string
   instagram: string
   shortDescription: string
@@ -150,6 +153,8 @@ const DEFAULT_DATA: WizardData = {
   country: 'AR',
   currency: 'ARS',
   industry: '',
+  industryCategory: '',
+  industryDetail: '',
   website: '',
   instagram: '',
   shortDescription: '',
@@ -570,11 +575,35 @@ function StepDatosBasicos({
 
       <div>
         <Label className="text-zinc-300">Rubro / Industria</Label>
+        <select
+          value={data.industryCategory}
+          onChange={(e) => {
+            const slug = e.target.value
+            const label = INDUSTRY_CATEGORIES.find((c) => c.slug === slug)?.label || ''
+            update({
+              industryCategory: slug,
+              industry: data.industryDetail.trim() ? `${label} · ${data.industryDetail.trim()}` : label,
+            })
+          }}
+          className="mt-1.5 w-full rounded-md bg-zinc-900 border border-zinc-800 text-zinc-100 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+        >
+          <option value="" disabled>Elegi una categoria</option>
+          {INDUSTRY_CATEGORIES.map((c) => (
+            <option key={c.slug} value={c.slug}>{c.label}</option>
+          ))}
+        </select>
         <Input
-          placeholder="Ej: Cerveceria artesanal, Gym, Estudio creativo..."
-          value={data.industry}
-          onChange={(e) => update({ industry: e.target.value })}
-          className="mt-1.5 bg-zinc-900 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-purple-500"
+          placeholder="Contanos mas (opcional): Cerveceria artesanal, Gym, Estudio creativo..."
+          value={data.industryDetail}
+          onChange={(e) => {
+            const detail = e.target.value
+            const label = INDUSTRY_CATEGORIES.find((c) => c.slug === data.industryCategory)?.label || ''
+            update({
+              industryDetail: detail,
+              industry: detail.trim() ? `${label} · ${detail.trim()}` : label,
+            })
+          }}
+          className="mt-2 bg-zinc-900 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-purple-500"
         />
       </div>
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateTenantResult } from '@/lib/partners/tenant'
+import { normalizeIndustry } from '@/lib/partners/industry'
 import { PLAN_FEATURES } from '@/lib/partners/plans'
 
 const SETTINGS_FIELDS = [
@@ -79,20 +80,40 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // `metadata` es JSON y tambien guarda datos de suscripcion (pending_plan,
+    // subscription_type, last_mp_payment_id, etc. — camino de plata): SIEMPRE
+    // read-modify-write, nunca pisar el objeto entero. Ambos bloques de abajo
+    // acumulan sobre `metadataPatch` para no pisarse entre si si el mismo
+    // request toca storefront_published E industry.
+    const currentMetadata = ((tenant as any).metadata ?? {}) as Record<string, unknown>
+    let metadataPatch: Record<string, unknown> | null = null
+
     // Marca/limpia el apagado manual del storefront. computeAutoPublishUpdates
     // (lib/partners/auto-publish.ts) respeta esta marca para no volver a
-    // prender sola una tienda que el partner apago a proposito. `metadata` es
-    // JSON y tambien guarda datos de suscripcion (pending_plan,
-    // subscription_type, last_mp_payment_id, etc. — camino de plata): SIEMPRE
-    // read-modify-write, nunca pisar el objeto entero.
+    // prender sola una tienda que el partner apago a proposito.
     if ('storefront_published' in updates) {
-      const currentMetadata = ((tenant as any).metadata ?? {}) as Record<string, unknown>
       if (updates.storefront_published === false && tenant.storefront_published === true) {
-        updates.metadata = { ...currentMetadata, storefront_hidden_manually: true }
+        metadataPatch = { ...(metadataPatch ?? currentMetadata), storefront_hidden_manually: true }
       } else if (updates.storefront_published === true && currentMetadata.storefront_hidden_manually) {
-        const { storefront_hidden_manually: _drop, ...rest } = currentMetadata
-        updates.metadata = rest
+        const { storefront_hidden_manually: _drop, ...rest } = (metadataPatch ?? currentMetadata)
+        metadataPatch = rest
       }
+    }
+
+    // `industry` es texto libre del partner — se normaliza a una categoría
+    // canónica (lib/partners/industry.ts) para estadísticas, y el texto
+    // original se preserva en metadata.industry_raw para no perder matiz
+    // descriptivo (lo usan los generadores de copy con IA).
+    if ('industry' in updates) {
+      const rawIndustry = typeof updates.industry === 'string' ? updates.industry.trim() : ''
+      updates.industry = normalizeIndustry(updates.industry)
+      if (rawIndustry) {
+        metadataPatch = { ...(metadataPatch ?? currentMetadata), industry_raw: rawIndustry }
+      }
+    }
+
+    if (metadataPatch) {
+      updates.metadata = metadataPatch
     }
 
     // Special handling for status transitions (only active <-> paused)

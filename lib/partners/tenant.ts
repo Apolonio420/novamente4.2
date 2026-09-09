@@ -72,7 +72,8 @@ export async function createTenant(input: {
   name: string
   email: string
   phone?: string
-  industry?: string
+  industry?: string | null
+  metadata?: Record<string, unknown>
   website?: string
   instagram?: string
   description?: string
@@ -87,6 +88,7 @@ export async function createTenant(input: {
       email: input.email,
       phone: input.phone || null,
       industry: input.industry || null,
+      ...(input.metadata ? { metadata: input.metadata } : {}),
       website: input.website || null,
       instagram: input.instagram || null,
       description: input.description || null,

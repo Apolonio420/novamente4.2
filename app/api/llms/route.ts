@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getPublishedTenants } from '@/lib/partners/tenant'
+import { industryLabel } from '@/lib/partners/industry'
 import { SHIPPING, SHIPPING_ZONES_PUBLIC, formatShippingARS } from '@/lib/shipping-config'
 
 export const dynamic = 'force-dynamic'
@@ -18,7 +19,7 @@ export async function GET() {
         return [
           `### ${t.name}`,
           `- URL: https://www.novamente.ar/p/${t.slug}`,
-          t.industry ? `- Industria: ${t.industry}` : null,
+          industryLabel(t) ? `- Industria: ${industryLabel(t)}` : null,
           desc ? `- ${desc}` : null,
         ]
           .filter(Boolean)

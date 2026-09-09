@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createTenant, updateTenant, addTenantUser, getTenantBySlug } from '@/lib/partners/tenant'
+import { normalizeIndustry } from '@/lib/partners/industry'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { sendEmail } from '@/lib/email'
 import { buildPartnerWelcomeEmail } from '@/lib/partners/partner-welcome-email'
@@ -51,6 +52,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'name and email are required' }, { status: 400 })
       }
 
+      // `industry` es texto libre del partner — se normaliza a una categoría
+      // canónica (lib/partners/industry.ts) para estadísticas, y el texto
+      // original se preserva en metadata.industry_raw para no perder matiz
+      // descriptivo (lo usan los generadores de copy con IA).
+      const rawIndustry = typeof industry === 'string' ? industry.trim() : ''
+
       // 🔁 REINTENTO DEL MISMO PARTNER → reusar su tenant en vez de crear otro.
       // (07/09/2026: cada reintento del onboarding creaba un tenant NUEVO con slug
       // sufijado — Krowstreet ×6, JML ×3, SONNE ×3 en una semana, 26 grupos
@@ -62,7 +69,7 @@ export async function POST(request: NextRequest) {
       try {
         const { data: prior } = await supabaseAdmin
           .from('tenants')
-          .select('id, slug, status, created_at')
+          .select('id, slug, status, created_at, metadata')
           .eq('email', email)
           .order('created_at', { ascending: false })
           .limit(10)
@@ -72,8 +79,9 @@ export async function POST(request: NextRequest) {
           && Date.now() - new Date(t.created_at).getTime() < 7 * 24 * 3600 * 1000)
         if (reusable) {
           await updateTenant(reusable.id, {
-            name, phone, industry, website, instagram, description, seo_title, seo_description,
+            name, phone, industry: normalizeIndustry(industry), website, instagram, description, seo_title, seo_description,
             ...(country ? { country } : {}), ...(currency ? { currency } : {}),
+            ...(rawIndustry ? { metadata: { ...(reusable.metadata ?? {}), industry_raw: rawIndustry } } : {}),
           } as any)
           // Asegurar el vínculo owner ↔ tenant (si el user ya existe).
           const { data: links } = await supabaseAdmin.from('tenant_users').select('user_id').eq('tenant_id', reusable.id).limit(1)
@@ -107,7 +115,8 @@ export async function POST(request: NextRequest) {
         name,
         email,
         phone,
-        industry,
+        industry: normalizeIndustry(industry),
+        ...(rawIndustry ? { metadata: { industry_raw: rawIndustry } } : {}),
         website,
         instagram,
         description,
@@ -279,7 +288,7 @@ export async function POST(request: NextRequest) {
       // Save brief fields — only set industry if not already populated (avoid overwriting detailed value from step 1)
       const { data: currentTenant } = await db()
         .from('tenants')
-        .select('industry')
+        .select('industry, metadata')
         .eq('id', auth.tenant.id)
         .single()
 
@@ -287,7 +296,13 @@ export async function POST(request: NextRequest) {
         onboarding_step: 9,
         updated_at: new Date().toISOString(),
       }
-      if (brief?.businessType && !currentTenant?.industry) updates.industry = brief.businessType
+      if (brief?.businessType && !currentTenant?.industry) {
+        const rawBusinessType = String(brief.businessType).trim()
+        updates.industry = normalizeIndustry(rawBusinessType)
+        if (rawBusinessType) {
+          updates.metadata = { ...(currentTenant?.metadata ?? {}), industry_raw: rawBusinessType }
+        }
+      }
       if (brief?.designStyle) updates.visual_style = brief.designStyle
 
       const { data: updated, error: updateError } = await db()
