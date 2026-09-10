@@ -135,6 +135,15 @@ describe('industryLabel', () => {
     expect(industryLabel({ industry: '   ' })).toBeNull()
     expect(industryLabel({ industry: '-' })).toBeNull()
   })
+
+  // Mismo criterio en la rama de metadata: un '-' guardado en industry_raw
+  // (el workaround del partner para vaciar el campo) NO puede salir de badge
+  // publico en /marcas ni en el directorio; se cae a la categoria o a null.
+  it('trata industry_raw "-" como sin dato, igual que en la columna industry', () => {
+    expect(industryLabel({ industry: 'otro', metadata: { industry_raw: '-' } })).toBe('Otro')
+    expect(industryLabel({ industry: 'streetwear', metadata: { industry_raw: '  -  ' } })).toBe('Streetwear')
+    expect(industryLabel({ industry: '', metadata: { industry_raw: '-' } })).toBeNull()
+  })
 })
 
 describe('INDUSTRY_CATEGORIES', () => {

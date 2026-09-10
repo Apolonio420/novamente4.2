@@ -482,6 +482,7 @@ describe("guardPublicImageGen — metadata de prompt/style/meta (estadisticas)",
     }
     queueCounts(0, 0, 0)
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
 
     const result = await guardPublicImageGen(makeReq(), "generate-image", { prompt: "un dragón vaporwave" })
 
@@ -493,6 +494,7 @@ describe("guardPublicImageGen — metadata de prompt/style/meta (estadisticas)",
     expect(Object.keys(legacyRow).sort()).toEqual(["created_at", "endpoint_family", "ip_hash"])
     expect(legacyRow.endpoint_family).toBe("generate-image")
     errorSpy.mockRestore()
+    warnSpy.mockRestore()
   })
 
   // Error crudo de Postgres: solo llega si la escritura NO pasa por PostgREST
@@ -504,6 +506,7 @@ describe("guardPublicImageGen — metadata de prompt/style/meta (estadisticas)",
     }
     queueCounts(0, 0, 0)
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
 
     const result = await guardPublicImageGen(makeReq(), "generate-image", { prompt: "un dragón vaporwave" })
 
@@ -512,6 +515,45 @@ describe("guardPublicImageGen — metadata de prompt/style/meta (estadisticas)",
     const legacyRow = h.state.insertCalls[1]
     expect(Object.keys(legacyRow).sort()).toEqual(["created_at", "endpoint_family", "ip_hash"])
     errorSpy.mockRestore()
+    warnSpy.mockRestore()
+  })
+
+  // La rama que matchea por MENSAJE y no por code: los dos tests de arriba
+  // cortan antes en `insertError.code`, asi que sin este test la ampliacion
+  // del regex no esta pinneada por nada.
+  // Ademas pinnea el log del error ORIGINAL: este mensaje matchea el regex
+  // pero NO es una columna faltante (es un NOT NULL sobre `prompt`), y el
+  // reintento legacy sale bien — sin el warn, el problema real quedaria
+  // invisible para siempre.
+  it("reintenta por MENSAJE aunque el code no sea de columna faltante, y loguea el error original", async () => {
+    h.state.insertColumnError = {
+      code: "23502",
+      message: 'null value in column "prompt" of relation "public_imagegen_requests" violates not-null constraint',
+    }
+    queueCounts(0, 0, 0)
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+    const result = await guardPublicImageGen(makeReq(), "generate-image", { prompt: "un dragón vaporwave" })
+
+    expect(result.allowed).toBe(true)
+    expect(h.state.insertCalls).toHaveLength(2)
+    expect(Object.keys(h.state.insertCalls[1]).sort()).toEqual(["created_at", "endpoint_family", "ip_hash"])
+
+    // El reintento anduvo (retryError === null) y aun asi el error original
+    // queda logueado, con su code y su mensaje. Filtramos por el prefijo
+    // porque el chequeo de tope mensual tambien warnea en este mock.
+    const insertWarns = warnSpy.mock.calls.filter((c) =>
+      String(c[0]).includes("insert con prompt/style/meta"),
+    )
+    expect(insertWarns).toHaveLength(1)
+    const warned = insertWarns[0].join(" ")
+    expect(warned).toContain("23502")
+    expect(warned).toContain("violates not-null constraint")
+    expect(errorSpy).not.toHaveBeenCalled()
+
+    errorSpy.mockRestore()
+    warnSpy.mockRestore()
   })
 
   it("no reintenta si el insert falla por otra cosa (no es columna faltante)", async () => {

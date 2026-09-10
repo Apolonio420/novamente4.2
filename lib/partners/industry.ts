@@ -44,6 +44,23 @@ export function isIndustrySlug(value: string | null | undefined): value is strin
   return typeof value === 'string' && INDUSTRY_SLUGS.has(value)
 }
 
+/**
+ * Texto libre de rubro reducido a "hay dato" / "no hay dato": devuelve el
+ * texto trimeado, o `''` cuando no hay dato real.
+ *
+ * `''` y `'-'` son EL MISMO caso: sin dato. '-' (o el campo vaciado) es lo que
+ * escribe el partner cuando no quiere declarar nada, y este texto es PUBLICO
+ * — sale como badge en /marcas, en el directorio y en su tienda —, asi que no
+ * puede terminar mostrandose. Todos los lectores y escritores del rubro
+ * (industryLabel, la API de settings, el prellenado del form de Configuracion)
+ * pasan por aca para que el criterio no vuelva a divergir entre ramas.
+ */
+export function cleanIndustryText(value: unknown): string {
+  if (typeof value !== 'string') return ''
+  const trimmed = value.trim()
+  return trimmed === '-' ? '' : trimmed
+}
+
 /** Minúsculas y sin acentos, para matchear case/accent-insensitive. */
 export function fold(s: string): string {
   return s
@@ -117,13 +134,15 @@ export function normalizeIndustry(raw: string | null | undefined): string | null
  *      desaparecía de /marcas y del directorio para la mayoría de las tiendas.
  */
 export function industryLabel(tenant: { industry?: string | null; metadata?: any }): string | null {
-  const raw = tenant?.metadata?.industry_raw
-  if (typeof raw === 'string' && raw.trim()) return raw.trim()
+  // Las dos ramas usan el MISMO criterio de "sin dato" (cleanIndustryText):
+  // antes industry_raw se devolvia tal cual y un '-' guardado ahi terminaba de
+  // badge publico, mientras que el mismo '-' en la columna `industry` si se
+  // descartaba.
+  const raw = cleanIndustryText(tenant?.metadata?.industry_raw)
+  if (raw) return raw
 
-  const industry = tenant?.industry
-  if (typeof industry !== 'string') return null
-  const trimmed = industry.trim()
-  if (!trimmed || trimmed === '-') return null
+  const trimmed = cleanIndustryText(tenant?.industry)
+  if (!trimmed) return null
 
   return CATEGORY_LABEL[trimmed] ?? trimmed
 }

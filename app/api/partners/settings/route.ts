@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateTenantResult } from '@/lib/partners/tenant'
-import { normalizeIndustry, isIndustrySlug } from '@/lib/partners/industry'
+import { normalizeIndustry, isIndustrySlug, cleanIndustryText } from '@/lib/partners/industry'
 import { PLAN_FEATURES } from '@/lib/partners/plans'
 
 const SETTINGS_FIELDS = [
@@ -116,7 +116,7 @@ export async function PUT(request: NextRequest) {
     // sigue normalizándose igual que antes.
     if ('industry' in updates) {
       const incomingIndustry = updates.industry
-      const rawIndustry = typeof incomingIndustry === 'string' ? incomingIndustry.trim() : ''
+      const rawIndustry = cleanIndustryText(incomingIndustry)
       updates.industry = isIndustrySlug(incomingIndustry)
         ? incomingIndustry
         : normalizeIndustry(incomingIndustry)
@@ -131,19 +131,22 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // industry_raw explícito manda sobre el fallback de arriba, pero un valor
-    // VACIO no borra el que ya existía ni el texto libre que todavía vive en la
-    // columna `industry` (filas sin backfill). Si lo pisáramos, updates.industry
-    // reemplaza la columna por el slug y el texto original del partner
-    // ("Beer Sommelier", "Remeras Peronistas") se pierde para siempre — no
-    // queda copia en ninguna parte. Solo un valor no vacío cambia el guardado.
+    // CONTRATO: un `industry_raw` explícito manda SIEMPRE, incluido el vacío.
+    // Si el partner borra "Contanos más (opcional)" y guarda, el texto se
+    // borra de verdad — es PUBLICO (badge en /marcas, en el directorio y en su
+    // tienda), así que tiene que poder sacarlo. Un '-' cuenta como vacío (ver
+    // cleanIndustryText): era el workaround para vaciar el campo cuando no se
+    // podía, y no puede quedar de badge.
+    // El rescate del texto libre viejo que todavía vive en la columna
+    // `industry` (filas sin backfill) NO va acá: vive en la rama de arriba, la
+    // de "el body NO manda industry_raw". Acá le ganaría al borrado explícito
+    // y, como el prellenado promueve ese texto a metadata en el PRIMER
+    // guardado, el rubro quedaría clavado para siempre.
     if ('industry_raw' in body) {
-      const rawFromBody = typeof body.industry_raw === 'string' ? body.industry_raw.trim().slice(0, 160) : ''
-      const currentRaw = typeof currentMetadata.industry_raw === 'string' ? currentMetadata.industry_raw.trim() : ''
-      const currentIndustry = typeof tenant.industry === 'string' ? tenant.industry.trim().slice(0, 160) : ''
-      const legacyIndustry = isIndustrySlug(currentIndustry) || currentIndustry === '-' ? '' : currentIndustry
-      const nextRaw = rawFromBody || currentRaw || legacyIndustry
-      metadataPatch = { ...(metadataPatch ?? currentMetadata), industry_raw: nextRaw }
+      metadataPatch = {
+        ...(metadataPatch ?? currentMetadata),
+        industry_raw: cleanIndustryText(body.industry_raw).slice(0, 160),
+      }
     }
 
     if (metadataPatch) {

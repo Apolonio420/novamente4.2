@@ -475,6 +475,17 @@ export async function guardPublicImageGen(
           insertError.code === "42703" ||
           (/column/i.test(insertMessage) && /(prompt|style|meta)/i.test(insertMessage)))
       if (isMissingColumn) {
+        // El error ORIGINAL se loguea SIEMPRE, aunque el reintento salga bien:
+        // el match de arriba tambien acepta por MENSAJE, asi que puede
+        // disparar el fallback por algo que no es "falta la columna" (ej. un
+        // NOT NULL sobre `prompt`, cuyo mensaje 'null value in column "prompt"
+        // violates not-null constraint' matchea el regex). Sin esta linea ese
+        // caso queda invisible: el reintento legacy funciona y no se loguea
+        // nada.
+        console.warn(
+          `[public-image-guard] insert con prompt/style/meta fallo (code=${insertError.code ?? "sin code"}), reintento legacy:`,
+          insertMessage,
+        )
         const { error: retryError } = await (supabaseAdmin.from("public_imagegen_requests") as any).insert(baseRow)
         if (retryError) {
           console.error("[public-image-guard] insert (legacy fallback) failed (dejamos pasar la request igual):", retryError.message)

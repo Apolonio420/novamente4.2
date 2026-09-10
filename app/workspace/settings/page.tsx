@@ -32,7 +32,7 @@ import { Badge } from '@/components/ui/badge'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import { supabase } from '@/lib/supabase'
 import { LockedFeature } from '@/components/partners/locked-feature'
-import { INDUSTRY_CATEGORIES, normalizeIndustry, isIndustrySlug } from '@/lib/partners/industry'
+import { INDUSTRY_CATEGORIES, normalizeIndustry, isIndustrySlug, cleanIndustryText } from '@/lib/partners/industry'
 
 // --- Types ---
 
@@ -89,9 +89,11 @@ function deriveIndustryFields(data: SettingsData): SettingsData {
   // industry_raw prellenamos con ese texto viejo: si no, guardar CUALQUIER
   // campo mandaría industry_raw='' + industry=<slug> y el original quedaría
   // pisado sin copia en ninguna parte.
-  const currentIndustry = (data.industry ?? '').trim()
-  const legacyFreeText = isIndustrySlug(currentIndustry) || currentIndustry === '-' ? '' : currentIndustry
-  const rawText = (data.industry_raw ?? '').trim() || legacyFreeText
+  // cleanIndustryText en las DOS: un '-' guardado en industry_raw es "sin
+  // dato" igual que uno en la columna `industry`, no un detalle para prellenar.
+  const currentIndustry = cleanIndustryText(data.industry)
+  const legacyFreeText = isIndustrySlug(currentIndustry) ? '' : currentIndustry
+  const rawText = cleanIndustryText(data.industry_raw) || legacyFreeText
   return {
     ...data,
     industry: slug,
