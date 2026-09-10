@@ -73,9 +73,15 @@ function isPartnerVisibleInDirectory(t: Tenant): boolean {
   // para mostrar un link de ejemplo (ej. /p/tu-marca), no son marcas reales. (future-proof)
   if (t.metadata?.is_demo === true) return false
   if (BLOCKED_SLUGS.has(t.slug)) return false
-  // 'merch_empresa' agrupa las industries no afines (salud, gastronomia, inmobiliaria, etc.)
-  // que normalizeIndustry() colapsa a esa categoria canonica.
-  if (t.industry === "merch_empresa") return false
+  // OJO: NO bloquear por el slug 'merch_empresa'. Esa categoria mezcla dos cosas muy
+  // distintas: el negocio no-afin que encarga merch (una clinica, un restaurante) y la
+  // marca de ropa que escribio su rubro como "Merch" o "Merch / Indumentaria" — que SI
+  // va al directorio. Bloquear por la categoria escondia a el-jardin-de-la-sombra
+  // (partner real, rubro "Merch") y a las dos tiendas propias de Novamente, que hoy se
+  // ven bien. El bloqueo va por el TEXTO del rubro, que es lo que siempre distinguio:
+  // 'Salud'/'Gastronomia'/'Inmobiliaria'/... se bloquean, 'Merch' no.
+  // El texto sobrevive al backfill en metadata.industry_raw, asi que las dos ramas de
+  // abajo cubren el antes y el despues de normalizar.
   if (isBlockedIndustryText(t.industry)) return false
   if (isBlockedIndustryText(t.metadata?.industry_raw)) return false
   const lowerName = t.name.toLowerCase().trim()
