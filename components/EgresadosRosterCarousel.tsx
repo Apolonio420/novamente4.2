@@ -69,16 +69,16 @@ const ROSTER: CharacterOutfit[] = [
     imageSrc: "/marketing/lifestyle/egresados/personaje-4-hoodie-gris.webp",
   },
   {
-    id: "nico-buzo-marron",
+    id: "nico-buzo-stonewash",
     name: "Nico",
     role: "Promo '26",
     garmentName: "Buzo Berlin",
     garmentType: "Cuello redondo (crewneck)",
-    colorName: "Marrón Chocolate",
-    colorHex: "#45281e",
-    printDescription: "Escudo deportivo colegial dorado",
-    badgeText: "Streetwear",
-    imageSrc: "/marketing/lifestyle/egresados/personaje-5-buzo-marron.webp",
+    colorName: "Stone Wash",
+    colorHex: "#52525b",
+    printDescription: "Escudo deportivo Promo Egresados Argentina",
+    badgeText: "Vintage Wash",
+    imageSrc: "/marketing/lifestyle/egresados/personaje-5-buzo-stonewash.webp",
   },
 ]
 
