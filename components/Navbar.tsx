@@ -72,17 +72,12 @@ export function Navbar() {
       href: "/products",
       isDropdown: true,
       subItems: [
-        { label: "🔥 OFERTAS HOT SALE", href: "/ofertas" },
         { label: "CATÁLOGO COMPLETO", href: "/products" },
         { label: "REMERAS PERSONALIZADAS", href: "/remeras-personalizadas" },
         { label: "HOODIES", href: "/hoodie-personalizado" },
         { label: "BUZOS", href: "/buzos-personalizados" },
-        { label: "REMERAS CUMPLEAÑOS", href: "/remeras-cumpleanos" },
-        { label: "BUZOS EGRESADOS", href: "/buzos-egresados" },
-        { label: "DESPEDIDAS", href: "/despedidas-personalizadas" },
+        { label: "BUZOS DE EGRESADOS", href: "/buzos-egresados" },
         { label: "REGALOS PERSONALIZADOS", href: "/regalos-personalizados" },
-        { label: "REGALOS EMPRESARIALES", href: "/regalos-empresariales" },
-        { label: "COMPRA POR MAYOR", href: "/remeras-por-mayor" },
       ]
     },
     {
@@ -91,10 +86,8 @@ export function Navbar() {
       isDropdown: true,
       subItems: [
         { label: "GENERADOR CON IA", href: "/crear" },
-        { label: "DISEÑÁ TU REMERA", href: "/disena-tu-remera" },
         { label: "ESTILOS ARTÍSTICOS", href: "/styles" },
         { label: "COMPARAR PRENDAS", href: "/comparar" },
-        { label: "GUÍA DE ESTAMPADO", href: "/guia-estampado" },
       ]
     },
     {
@@ -104,15 +97,25 @@ export function Navbar() {
       subItems: [
         { label: "NOVAMENTE STUDIO", href: "/studio" },
         { label: "LANZÁ TU MARCA", href: "/lanza-tu-marca" },
+        { label: "MARCAS PARTNERS", href: "/marcas" },
         { label: "PLANES Y PRECIOS", href: "/studio/planes" },
         { label: "COTIZAR PRODUCCIÓN", href: "/cotizador" },
         { label: "MI WORKSPACE", href: "/partners/login" },
       ]
     },
-    { label: "MARCAS", href: "/marcas" },
     { label: "EMPRESAS", href: "/empresas" },
-    { label: "FAQ", href: "/faq" },
-    { label: "AYUDA", href: "/ayuda" },
+    {
+      label: "AYUDA",
+      href: "/faq",
+      isDropdown: true,
+      subItems: [
+        { label: "PREGUNTAS FRECUENTES", href: "/faq" },
+        { label: "TUTORIALES EN VIDEO", href: "/ayuda" },
+        { label: "GUÍA DE ESTAMPADO", href: "/guia-estampado" },
+        { label: "ENVÍOS Y DEVOLUCIONES", href: "/envios" },
+        { label: "CONTACTO POR WHATSAPP", href: "https://wa.me/5492235169720?text=Hola%20Novamente!%20Tengo%20una%20consulta" },
+      ]
+    },
   ]
 
   return (
@@ -161,6 +164,8 @@ export function Navbar() {
                       <DropdownMenuItem key={sub.href} asChild>
                         <Link
                           href={sub.href}
+                          target={sub.href.startsWith("http") ? "_blank" : undefined}
+                          rel={sub.href.startsWith("http") ? "noopener noreferrer" : undefined}
                           className="w-full cursor-pointer text-xs tracking-widest font-medium uppercase py-2"
                         >
                           {sub.label}
@@ -292,6 +297,8 @@ export function Navbar() {
                                 <Link
                                   key={sub.href}
                                   href={sub.href}
+                                  target={sub.href.startsWith("http") ? "_blank" : undefined}
+                                  rel={sub.href.startsWith("http") ? "noopener noreferrer" : undefined}
                                   className="text-xs tracking-widest font-normal uppercase transition-colors hover:text-primary text-zinc-500 dark:text-zinc-400 py-1"
                                   onClick={closeSheet}
                                 >

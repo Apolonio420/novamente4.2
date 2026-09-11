@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import WhatsAppLeadLink from "@/components/WhatsAppLeadLink"
 import { Card, CardContent } from "@/components/ui/card"
@@ -320,65 +321,107 @@ export default function BuzosEgresados() {
         </div>
 
         {/* Hero */}
-        <section className="relative overflow-hidden py-16 sm:py-24">
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/20 via-teal-500/10 to-transparent" />
-          <div className="absolute top-20 right-10 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl" />
+        <section className="relative overflow-hidden py-12 sm:py-20 lg:py-24">
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/20 via-teal-500/10 to-transparent pointer-events-none" />
+          <div className="absolute top-20 right-10 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative max-w-6xl mx-auto px-4">
-            <LandingHeroImage
-              src="/marketing/lifestyle/hero-buzos-egresados.webp"
-              alt="Buzo hoodie crema personalizado para promo de egresados Argentina"
-            />
-            <div className="max-w-3xl">
-              <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 mb-6">
-                <GraduationCap className="w-3 h-3 mr-1" />
-                Promos 2026 y 2027
-              </Badge>
+            <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+              {/* Copy & CTAs */}
+              <div className="lg:col-span-6">
+                <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 mb-6 text-xs sm:text-sm px-3.5 py-1">
+                  <GraduationCap className="w-4 h-4 mr-1.5 inline" />
+                  Promos 2026 y 2027
+                </Badge>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                Buzos de egresados{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-400">
-                  unicos con diseno IA
-                </span>
-              </h1>
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+                  Buzos de egresados{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-teal-400">
+                    únicos con diseño IA
+                  </span>
+                </h1>
 
-              <p className="text-lg sm:text-xl text-zinc-300 mb-4 leading-relaxed">
-                Tu promo merece un buzo que nadie mas tenga. Nuestra IA genera disenos originales
-                y cada alumno lleva su nombre. Hoodie Boston desde{" "}
-                <span className="text-white font-semibold">{formatPrice(boston.price)}</span>, Buzo Berlin desde{" "}
-                <span className="text-white font-semibold">{formatPrice(berlin.price)}</span>.
-              </p>
+                <p className="text-lg sm:text-xl text-zinc-300 mb-6 leading-relaxed">
+                  Tu promo merece un buzo que nadie más tenga. Nuestra IA genera diseños originales
+                  y cada alumno lleva su nombre. Hoodie Boston desde{" "}
+                  <span className="text-white font-semibold">{formatPrice(boston.price)}</span>, Buzo Berlin desde{" "}
+                  <span className="text-white font-semibold">{formatPrice(berlin.price)}</span>.
+                </p>
 
-              <div className="flex flex-wrap gap-3 text-sm text-zinc-400 mb-8">
-                <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-cyan-400" /> Cada buzo con nombre unico</span>
-                <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-cyan-400" /> Diseno IA exclusivo de tu promo</span>
-                <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-cyan-400" /> Algodon 100%, 50+ lavados</span>
+                <div className="flex flex-wrap gap-2.5 sm:gap-3 text-sm text-zinc-400 mb-8">
+                  <span className="flex items-center gap-1.5 bg-zinc-900/80 border border-zinc-800 rounded-full px-3 py-1 text-xs sm:text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" /> Cada buzo con nombre único
+                  </span>
+                  <span className="flex items-center gap-1.5 bg-zinc-900/80 border border-zinc-800 rounded-full px-3 py-1 text-xs sm:text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" /> Diseño IA exclusivo de tu promo
+                  </span>
+                  <span className="flex items-center gap-1.5 bg-zinc-900/80 border border-zinc-800 rounded-full px-3 py-1 text-xs sm:text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" /> Algodón 100%, 50+ lavados
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white text-base sm:text-lg px-8 py-6 shadow-lg shadow-cyan-950/50"
+                  >
+                    <WhatsAppLeadLink
+                      href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
+                      source="hero-buzos-egresados"
+                    >
+                      Cotizar buzos por WhatsApp
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </WhatsAppLeadLink>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-base sm:text-lg px-8 py-6"
+                  >
+                    <Link href="/crear">
+                      Diseñar con IA gratis
+                    </Link>
+                  </Button>
+                </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  asChild
-                  size="lg"
-                  className="bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white text-lg px-8 py-6"
-                >
-                  <WhatsAppLeadLink
-                    href={`https://wa.me/5492235169720?text=${whatsappMessage}`}
-                    source="hero-buzos-egresados"
-                  >
-                    Cotizar buzos por WhatsApp
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </WhatsAppLeadLink>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 text-lg px-8 py-6"
-                >
-                  <Link href="/crear">
-                    Disenar con IA gratis
-                  </Link>
-                </Button>
+              {/* Imagen Hero Optimizada: 4 alumnos con buzos en diferentes colores y estampas IA */}
+              <div className="lg:col-span-6 flex justify-center">
+                <div className="relative w-full max-w-[560px]">
+                  {/* Glow decorativo de fondo */}
+                  <div className="absolute -inset-2 bg-gradient-to-tr from-cyan-500/20 to-teal-500/20 rounded-[2.5rem] blur-xl opacity-75" />
+
+                  {/* Tarjeta con imagen nítida en proporción natural 4:3 */}
+                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl border border-cyan-500/30 bg-zinc-900 shadow-2xl shadow-black/80">
+                    <Image
+                      src="/marketing/lifestyle/hero-buzos-egresados.webp"
+                      alt="Alumnos de promo egresados con buzos y hoodies personalizados Novamente en colores negro, crema, caramel y gris con estampas IA"
+                      fill
+                      priority
+                      className="object-cover object-center transition-transform duration-500 hover:scale-105"
+                      sizes="(max-width: 1024px) 100vw, 560px"
+                    />
+
+                    {/* Gradiente inferior para legibilidad */}
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+
+                    {/* Badge flotante superior */}
+                    <div className="absolute top-4 right-4">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/15 px-3 py-1 text-xs font-medium text-cyan-300 shadow-lg">
+                        <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                        Muestra digital previa
+                      </span>
+                    </div>
+
+                    {/* Detalle flotante inferior con colores y calidad */}
+                    <div className="absolute bottom-4 left-4 right-4 text-left">
+                      <p className="text-xs uppercase tracking-wider text-cyan-400 font-semibold mb-0.5">Colores & Estampas DTG</p>
+                      <p className="text-xs sm:text-sm font-medium text-white/90">Negro · Crema · Caramel · Gris · Diseños IA únicos por curso</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
