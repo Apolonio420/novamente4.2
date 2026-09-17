@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import B2BCatalog from "./B2BCatalog"
 import UnifiedPriceTable from "./UnifiedPriceTable"
+import GorrasSection from "./GorrasSection"
 import { TIERS, MODELS, MODEL_TO_GARMENT_KEY } from "./data"
 import { getGrowthPrice } from "@/lib/partners/garment-pricing.server"
 
@@ -88,7 +89,7 @@ export default function B2BPricesPage() {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { t: "No se cuartea ni se despega", d: "No es una lamina pegada: no se descascara con los lavados como el vinilo o el DTF." },
+            { t: "No se cuartea ni se despega", d: "En prendas de algodon la tinta entra en la fibra en vez de apoyarse encima: no se descascara con los lavados. En gorras, en cambio, el DTF es la tecnica correcta por su tela y construccion." },
             { t: "No se siente al tacto", d: "Pasas la mano y sentis la tela, no un plastico encima del diseno." },
             { t: "Full color y detalle fino", d: "Gradientes, fotorrealismo y trazos finos sin limite de colores ni costo extra." },
             { t: "Desde 1 unidad", d: "Sin planchas ni minimos: por eso el print on demand es posible sin stock." },
@@ -110,6 +111,8 @@ export default function B2BPricesPage() {
       <B2BCatalog growthByModel={growthByModel} />
 
       <UnifiedPriceTable growthByModel={growthByModel} />
+
+      <GorrasSection />
 
       <section className="mb-14">
         <h2 className="novamente-heading text-2xl text-center mb-6">

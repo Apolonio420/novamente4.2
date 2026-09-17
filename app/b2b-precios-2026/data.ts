@@ -427,3 +427,55 @@ export const MODELS: B2BModel[] = [
     ],
   },
 ]
+
+// Gorras: linea de producto separada de MODELS a proposito. No comparten
+// estructura con las prendas: se personalizan en DTF (no DTG, que es para
+// algodon plano), el pedido minimo es 30 unidades (no 1) y la escala de precio
+// tiene 2 tramos (30-99u / 100u+), no los 5 tiers de TIERS. Por eso NO entran
+// en B2BModel/MODELS ni en UnifiedPriceTable/B2BCatalog, que asumen esas 5
+// escalas desde 1 unidad en DTG.
+export type GorraModel = {
+  id: string
+  name: string
+  fabric: string
+  colors: string
+  image: string
+  prices: { desde30: number; desde100: number }
+}
+
+export const GORRAS_MIN_UNITS = 30
+
+export const GORRAS: GorraModel[] = [
+  {
+    id: "gorra-gabardina",
+    name: "Gorra Gabardina",
+    fabric: "100% poliester, ideal para DTF de alta definicion",
+    colors: "Negro, rojo, azul Francia, azul marino, blanco, y combinados de frente blanco con visera de color",
+    image: "/products/gorras/gorra-gabardina.png",
+    prices: { desde30: 15400, desde100: 14600 },
+  },
+  {
+    id: "gorra-6-gajos",
+    name: "Gorra 6 Gajos",
+    fabric: "Acrilica, hebilla de metal, calidad premium",
+    colors: "Negro, blanco, gris, azul marino, bordo, rojo, violeta, beige, azul claro",
+    image: "/products/gorras/gorra-6-gajos.png",
+    prices: { desde30: 17900, desde100: 17100 },
+  },
+  {
+    id: "gorra-vintage-algodon",
+    name: "Gorra Vintage Algodon",
+    fabric: "Algodon pre lavado, aspecto gastado vintage",
+    colors: "Amplia variedad de colores pre lavados",
+    image: "/products/gorras/gorra-vintage-algodon.png",
+    prices: { desde30: 19200, desde100: 18300 },
+  },
+  {
+    id: "gorra-vintage-red",
+    name: "Gorra Vintage con Red",
+    fabric: "Trucker pre lavada con red posterior",
+    colors: "Negro, gris, azul, beige, azul marino, azul Francia, bordo",
+    image: "/products/gorras/gorra-vintage-con-red.png",
+    prices: { desde30: 19200, desde100: 18300 },
+  },
+]
