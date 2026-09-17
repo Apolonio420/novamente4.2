@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { PRODUCTS } from '@/lib/catalog'
+import { tenantIsIndexable } from '@/lib/partners/plans'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600
@@ -136,14 +137,15 @@ export async function GET() {
 
     const { data: tenants } = await supabase
       .from('tenants')
-      .select('id, slug, name, seo_indexable, storefront_published, metadata')
+      .select('id, slug, name, plan, status, seo_indexable, storefront_published, metadata')
       .eq('storefront_published', true)
       .eq('seo_indexable', true)
 
     if (tenants && tenants.length > 0) {
       for (const tenant of tenants) {
-        // Saltear tiendas DEMO/placeholder (metadata.is_demo) — no van al feed de AI
-        if ((tenant.metadata as Record<string, unknown> | null)?.is_demo === true) continue
+        // Mismo criterio que el sitemap y que el noindex de /p/[slug]: el plan
+        // manda (SEO/feeds son feature paga) y las tiendas demo no van.
+        if (!tenantIsIndexable(tenant as Parameters<typeof tenantIsIndexable>[0])) continue
         const { data: products } = await supabase
           .from('tenant_products')
           .select('slug, name, description, price, images, sku')

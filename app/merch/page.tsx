@@ -15,6 +15,10 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: "Merch de tus marcas favoritas | Novamente",
   description: "Descubri el merchandising oficial de tus marcas favoritas. Productos unicos, disenos exclusivos y calidad premium DTG. Envios a todo el pais.",
+  // Sin este canonical se hereda el de app/layout.tsx (la home) y Google
+  // descarta la página como duplicada de la home aunque esté en el sitemap
+  // (GSC: "Página alternativa con etiqueta canónica adecuada", 16/09/2026).
+  alternates: { canonical: "https://www.novamente.ar/merch" },
   openGraph: {
     type: "website",
     url: "https://www.novamente.ar/merch",

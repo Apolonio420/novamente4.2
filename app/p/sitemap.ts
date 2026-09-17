@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { getPublishedTenants } from '@/lib/partners/tenant'
 import { getPublishedProducts } from '@/lib/partners/catalog'
+import { tenantIsIndexable } from '@/lib/partners/plans'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.novamente.ar'
@@ -9,8 +10,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = []
 
   for (const tenant of tenants) {
-    // Skip non-indexable tenants (starter plan or explicitly disabled)
-    if (!tenant.seo_indexable) continue
+    // Mismo criterio que el noindex de /p/[slug] (plan + columna + no-demo).
+    // Este sitemap además nunca había filtrado las tiendas demo.
+    if (!tenantIsIndexable(tenant)) continue
 
     // Tenant storefront page
     entries.push({

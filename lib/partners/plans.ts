@@ -116,6 +116,32 @@ export function featuresDelTenant(tenant: { plan: Plan | string; status?: string
   return PLAN_FEATURES[effectivePlan(tenant)]
 }
 
+/**
+ * ¿Esta tienda puede entrar al índice de Google y a los feeds de IA?
+ *
+ * Única fuente de verdad. Antes había dos y no coincidían: los sitemaps y los
+ * feeds miraban SOLO la columna `seo_indexable`, mientras que /p/[slug] emite
+ * `noindex` según las features del plan (SEO es feature paga, Starter no la
+ * tiene). Al 17/09/2026 quedaban 60 tenants Starter con la columna en true por
+ * deriva histórica: el sitemap se los mandaba a Google y la página les
+ * devolvía noindex, así que 443 de las 519 URLs del sitemap eran URLs que
+ * Google rechazaba (GSC: "Excluida por una etiqueta noindex" y "Rastreada:
+ * actualmente sin indexar", validaciones fallidas del 16/09/2026).
+ *
+ * Tienen que cumplirse las tres condiciones: el plan efectivo incluye SEO, el
+ * partner no lo apagó a mano, y no es una tienda demo/placeholder.
+ */
+export function tenantIsIndexable(tenant: {
+  plan: Plan | string
+  status?: string | null
+  seo_indexable?: boolean | null
+  metadata?: Record<string, unknown> | null
+}): boolean {
+  if (!tenant.seo_indexable) return false
+  if (tenant.metadata?.is_demo === true) return false
+  return featuresDelTenant(tenant).seoIndexable
+}
+
 export function hasFeature(plan: Plan, feature: keyof PlanFeatures): boolean {
   const features = PLAN_FEATURES[plan]
   const value = features[feature]

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getPublishedTenants } from '@/lib/partners/tenant'
 import { industryLabel } from '@/lib/partners/industry'
+import { tenantIsIndexable } from '@/lib/partners/plans'
 import { SHIPPING, SHIPPING_ZONES_PUBLIC, formatShippingARS } from '@/lib/shipping-config'
 
 export const dynamic = 'force-dynamic'
@@ -11,7 +12,7 @@ export async function GET() {
 
   try {
     const tenants = await getPublishedTenants()
-    const indexable = tenants.filter((t) => t.seo_indexable)
+    const indexable = tenants.filter(tenantIsIndexable)
 
     if (indexable.length > 0) {
       const entries = indexable.map((t) => {

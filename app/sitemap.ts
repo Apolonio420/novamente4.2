@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { getPublishedTenants } from '@/lib/partners/tenant'
 import { getPublishedProducts } from '@/lib/partners/catalog'
+import { tenantIsIndexable } from '@/lib/partners/plans'
 import { PRODUCTS as CATALOG_PRODUCTS } from '@/lib/products'
 import { BLOG_POSTS } from '@/lib/blog/posts'
 
@@ -273,9 +274,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const tenants = await getPublishedTenants()
 
     for (const tenant of tenants) {
-      // Skip Starter tenants — they have noindex, adding to sitemap is contradictory
-      // Skip tiendas DEMO/placeholder (metadata.is_demo) — no van al índice de Google
-      if (!tenant.seo_indexable || tenant.metadata?.is_demo === true) continue
+      // Mismo criterio que el noindex de /p/[slug] (plan + columna + no-demo).
+      // Ver tenantIsIndexable: mirar solo la columna metía acá 443 URLs que la
+      // página marcaba noindex.
+      if (!tenantIsIndexable(tenant)) continue
 
       // Tenant storefront page (Growth+)
       dynamicPages.push({
