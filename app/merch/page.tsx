@@ -13,7 +13,8 @@ import MerchFilter from "@/components/MerchFilter"
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: "Merch de tus marcas favoritas | Novamente",
+  // El sufijo "· Novamente" lo agrega el title.template de app/layout.tsx.
+  title: "Merch de tus marcas favoritas",
   description: "Descubri el merchandising oficial de tus marcas favoritas. Productos unicos, disenos exclusivos y calidad premium DTG. Envios a todo el pais.",
   // Sin este canonical se hereda el de app/layout.tsx (la home) y Google
   // descarta la página como duplicada de la home aunque esté en el sitemap

@@ -5,7 +5,8 @@ import type { Metadata } from "next"
 // la descartaba como duplicada de la home aunque esté en el sitemap
 // (GSC: "Página alternativa con etiqueta canónica adecuada", 16/09/2026).
 export const metadata: Metadata = {
-  title: "Creá tu tienda de merch · Novamente",
+  // El sufijo "· Novamente" lo agrega el title.template de app/layout.tsx.
+  title: "Creá tu tienda de merch",
   description:
     "Sumate como partner de Novamente: tienda propia, catálogo con tus diseños, producción a pedido y envíos a todo el país. Sin stock ni inversión inicial.",
   openGraph: {
