@@ -282,7 +282,7 @@ export default function MerchsPage() {
                             {
                                 icon: <ShoppingBag className="h-5 w-5" />,
                                 title: "Catálogo premium",
-                                desc: "Remeras, buzos, gorras y más con tu diseño.",
+                                desc: "Remeras, buzos y más con tu diseño.",
                             },
                             {
                                 icon: <Package className="h-5 w-5" />,

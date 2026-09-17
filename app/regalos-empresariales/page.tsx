@@ -91,7 +91,7 @@ export default function RegalosEmpresariales() {
         name: "Cual es el minimo de unidades para pedidos corporativos?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "No hay minimo de unidades. Podes pedir desde 1 prenda. Sin embargo, ofrecemos descuentos por cantidad: 5% en 10-24 unidades, 10% en 25-49 unidades, 15% en 50-99 unidades y precios especiales para 100+ unidades.",
+          text: "No hay minimo de unidades en indumentaria. Podes pedir desde 1 prenda. Ofrecemos descuentos por cantidad: 5% en 10-24 unidades, 10% en 25-49 unidades, 15% en 50-99 unidades y precios especiales para 100+ unidades. Las gorras son la excepcion: minimo 30 unidades, con 2 tramos de precio fijo en vez de descuento por porcentaje.",
         },
       },
       {
@@ -376,7 +376,7 @@ export default function RegalosEmpresariales() {
               DESCUENTOS POR CANTIDAD
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              Cuanto mas pedis, menos pagas. Sin minimos obligatorios.
+              Cuanto mas pedis, menos pagas. Sin minimos obligatorios en indumentaria (gorras: minimo 30 unidades, precio fijo aparte).
             </p>
           </div>
 
@@ -412,6 +412,9 @@ export default function RegalosEmpresariales() {
             <p className="text-sm text-muted-foreground">
               Precios en ARS. Incluyen diseno + estampado DTG. Envio bonificado en AMBA para 25+ unidades.
             </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Las gorras no entran en esta tabla: tienen minimo 30 unidades y 2 tramos de precio fijo en DTF (ver mas abajo).
+            </p>
           </div>
         </div>
       </section>
@@ -424,7 +427,7 @@ export default function RegalosEmpresariales() {
               PRENDAS DISPONIBLES
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
-              Algodon 100% premium en todos los modelos. Estampado DTG que dura.
+              Algodon 100% premium con estampado DTG en remeras, hoodies y buzos. Gorras en DTF, minimo 30 unidades.
             </p>
           </div>
 
@@ -466,7 +469,7 @@ export default function RegalosEmpresariales() {
                 name: "Buzo Cuello Redondo",
                 price: "Desde $43.000",
                 desc: "Crewneck oversize sin capucha. Elegante para oficina.",
-                img: "/products/buzo-cuello-redondo-negro-front.jpeg",
+                img: "/products/buzo-cuello-redondo-unisex-negro-estilo-oversize/mockups nuevos productos-8.png",
                 colors: "Negro, Crema, Gris",
                 badge: "Oficina",
               },
@@ -474,16 +477,48 @@ export default function RegalosEmpresariales() {
                 name: "Musculosa",
                 price: "Desde $21.800",
                 desc: "Liviana y comoda. Ideal para eventos outdoor o gym corporativo.",
-                img: "/products/musculosa-bali-blanca-front.jpeg",
+                img: "/products/musculosa-bali-blanca/front.png",
                 colors: "Blanca, Negra, Crema",
                 badge: null,
+              },
+              {
+                name: "Gorra Gabardina",
+                price: "Desde $14.600",
+                desc: "DTF, la tecnica correcta para gorra. 30-99u: $15.400 · 100+u: $14.600.",
+                img: "/products/gorras/gorra-gabardina.png",
+                colors: "Negro, rojo, azul Francia, azul marino, blanco",
+                badge: "Min. 30u",
+              },
+              {
+                name: "Gorra 6 Gajos",
+                price: "Desde $17.100",
+                desc: "DTF, hebilla de metal. 30-99u: $17.900 · 100+u: $17.100.",
+                img: "/products/gorras/gorra-6-gajos.png",
+                colors: "Negro, blanco, gris, azul marino, bordo y mas",
+                badge: "Min. 30u",
+              },
+              {
+                name: "Gorra Vintage Algodon",
+                price: "Desde $18.300",
+                desc: "DTF, algodon pre lavado. 30-99u: $19.200 · 100+u: $18.300.",
+                img: "/products/gorras/gorra-vintage-algodon.png",
+                colors: "Amplia variedad de colores pre lavados",
+                badge: "Min. 30u",
+              },
+              {
+                name: "Gorra Vintage con Red",
+                price: "Desde $18.300",
+                desc: "DTF, trucker con red posterior. 30-99u: $19.200 · 100+u: $18.300.",
+                img: "/products/gorras/gorra-vintage-con-red.png",
+                colors: "Negro, gris, azul, beige, azul marino y mas",
+                badge: "Min. 30u",
               },
             ].map((p) => (
               <Card key={p.name} className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-2 hover:border-amber-500/20">
                 <div className="aspect-square relative overflow-hidden">
                   <Image
                     src={p.img}
-                    alt={`${p.name} para regalos empresariales — algodon 100% DTG`}
+                    alt={`${p.name} para regalos empresariales`}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                     sizes="(max-width: 768px) 100vw, 33vw"
@@ -593,7 +628,7 @@ export default function RegalosEmpresariales() {
             {[
               {
                 q: "Cual es el minimo de unidades?",
-                a: "No hay minimo. Podes pedir desde 1 prenda. Ofrecemos descuentos por cantidad: 5% (10-24 un.), 10% (25-49 un.), 15% (50-99 un.) y precio especial para 100+.",
+                a: "No hay minimo en indumentaria. Podes pedir desde 1 prenda. Ofrecemos descuentos por cantidad: 5% (10-24 un.), 10% (25-49 un.), 15% (50-99 un.) y precio especial para 100+. Gorras aparte: minimo 30 unidades, precio fijo por tramo (no descuento por porcentaje).",
               },
               {
                 q: "Pueden estampar el logo de mi empresa?",

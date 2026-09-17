@@ -216,6 +216,10 @@ export default function UniformesPersonalizados() {
     { name: "Buzo Hoodie Oversize", price: "$43.000", ideal: "Tech, educacion, outdoor", badge: null },
     { name: "Buzo Hoodie Oversize", price: "$55.000", ideal: "Premium, welcome packs", badge: "Premium" },
     { name: "Buzo Cuello Redondo", price: "$43.000", ideal: "Invierno, uniformes abrigados", badge: null },
+    { name: "Gorra Gabardina", price: "$15.400", ideal: "Uniformes y equipos (100+u: $14.600)", badge: "Min. 30u" },
+    { name: "Gorra 6 Gajos", price: "$17.900", ideal: "Uniformes premium (100+u: $17.100)", badge: "Min. 30u" },
+    { name: "Gorra Vintage Algodon", price: "$19.200", ideal: "Look casual (100+u: $18.300)", badge: "Min. 30u" },
+    { name: "Gorra Vintage con Red", price: "$19.200", ideal: "Outdoor y trabajo (100+u: $18.300)", badge: "Min. 30u" },
   ]
 
   const pricingTiers = [
@@ -305,7 +309,7 @@ export default function UniformesPersonalizados() {
               </p>
 
               <div className="flex flex-wrap gap-3 text-sm text-zinc-400 mb-8">
-                <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-blue-400" /> Sin minimo de unidades</span>
+                <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-blue-400" /> Sin minimo en prendas (gorras desde 30u)</span>
                 <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-blue-400" /> Cada prenda puede ser unica</span>
                 <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-blue-400" /> Aguanta 50+ lavados</span>
               </div>
@@ -425,7 +429,7 @@ export default function UniformesPersonalizados() {
                 Prendas disponibles para uniformes
               </h2>
               <p className="text-zinc-400 text-lg">
-                Todas en algodon 100% premium, optimizadas para estampado DTG de alta durabilidad.
+                Remeras y buzos en algodon 100% premium con estampado DTG de alta durabilidad. Gorras en DTF, minimo 30 unidades.
               </p>
             </div>
 
@@ -487,6 +491,9 @@ export default function UniformesPersonalizados() {
                 </Card>
               ))}
             </div>
+            <p className="text-center text-sm text-zinc-500 mt-6">
+              Las gorras no entran en esta tabla: minimo 30 unidades y 2 tramos de precio fijo en DTF.
+            </p>
           </div>
         </section>
 

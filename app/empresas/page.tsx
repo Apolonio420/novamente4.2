@@ -38,7 +38,7 @@ const whatsappHref =
 const benefits = [
   ["Producción propia", "Algodón peinado y prendas premium hechas en Vicente López."],
   ["DTG full color", "Tu logo, ilustraciones y gradientes con estampa incluida."],
-  ["Sin mínimos", "Desde una muestra hasta campañas y equipos completos."],
+  ["Sin mínimos en prendas", "Desde una muestra hasta campañas y equipos completos (gorras: mínimo 30 unidades)."],
   ["Propuesta en el día", "Mockups fotorrealistas antes de producir."],
   ["Factura A o B", "Condiciones claras y facturación para empresas."],
   ["Envíos a todo el país", "A una oficina o directo a cada persona del equipo."],
@@ -99,6 +99,26 @@ const products = [
     detail: "Totebag de algodón",
     image: "/products/totebag-crudo/front.jpg",
   },
+  {
+    name: "Gorra Gabardina",
+    detail: "Gorra DTF · talle único · mínimo 30u",
+    image: "/products/gorras/gorra-gabardina.png",
+  },
+  {
+    name: "Gorra 6 Gajos",
+    detail: "Gorra DTF · talle único · mínimo 30u",
+    image: "/products/gorras/gorra-6-gajos.png",
+  },
+  {
+    name: "Gorra Vintage Algodón",
+    detail: "Gorra DTF · talle único · mínimo 30u",
+    image: "/products/gorras/gorra-vintage-algodon.png",
+  },
+  {
+    name: "Gorra Vintage con Red",
+    detail: "Gorra DTF · talle único · mínimo 30u",
+    image: "/products/gorras/gorra-vintage-con-red.png",
+  },
 ]
 
 const process = [
@@ -122,7 +142,7 @@ export default function EmpresasPage() {
               Prendas premium estampadas para eventos, onboarding, regalos corporativos y equipos que quieren verse bien.
             </p>
             <div className="mt-8 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-wide text-[#f5f0e6]">
-              {["Producción propia", "DTG full color", "Sin mínimos"].map((item) => (
+              {["Producción propia", "DTG full color", "Sin mínimos en prendas"].map((item) => (
                 <span key={item} className="rounded-full border border-[#786743] px-3 py-2">{item}</span>
               ))}
             </div>
@@ -189,7 +209,7 @@ export default function EmpresasPage() {
       <section id="catalogo" className="container scroll-mt-24 py-16 md:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#a97d31]">Catálogo visual</p>
-          <h2 className="novamente-heading mt-3 text-4xl leading-tight sm:text-5xl">Nueve modelos. Un estándar de calidad.</h2>
+          <h2 className="novamente-heading mt-3 text-4xl leading-tight sm:text-5xl">Trece modelos. Un estándar de calidad.</h2>
           <p className="mt-4 text-base leading-relaxed text-[#6e665b]">Elegí una base o combiná modelos. Te recomendamos el mix según el objetivo y el presupuesto del pedido.</p>
         </div>
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -205,7 +225,7 @@ export default function EmpresasPage() {
             </article>
           ))}
         </div>
-        <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-[#6e665b]">La tarifa depende del volumen y del mix de prendas. Pedinos una propuesta clara, con mockups y tiempos, antes de confirmar.</p>
+        <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-relaxed text-[#6e665b]">La tarifa depende del volumen y del mix de prendas. Las gorras son la excepción: DTF en vez de DTG y pedido mínimo de 30 unidades. Pedinos una propuesta clara, con mockups y tiempos, antes de confirmar.</p>
       </section>
 
       <section className="border-y border-[#ded3c2] bg-[#fbf8f1] py-16 md:py-24">

@@ -151,6 +151,11 @@ IMPORTANTE sobre acciones:
 PRODUCTOS DISPONIBLES (precios en ARS):
 ${buildProductListForPrompt()}
 
+GORRAS PERSONALIZADAS (no estan en el catalogo de arriba, se piden aparte):
+- Ademas del catalogo por unidad, Novamente hace gorras personalizadas en DTF: Gorra Gabardina, Gorra 6 Gajos, Gorra Vintage Algodon y Gorra Vintage con Red, talle unico, desde **$15.400 por unidad**.
+- Las gorras NO se venden por unidad: el pedido minimo es de **30 unidades**. Si el cliente quiere 1 o pocas gorras, aclarale el minimo en vez de mandarlo al checkout.
+- Para gorras derivalo a **https://www.novamente.ar/b2b-precios-2026** (ahi esta la tarifa completa con fotos) o a WhatsApp al +5492235169720.
+
 TALLES: ${SIZES.join(', ')}
 ${buildShippingForPrompt()}`
 

@@ -214,6 +214,10 @@ export default function IndumentariaDeportiva() {
     { name: "Remera Crop Mujer", price: "$23.500", ideal: "Para equipos femeninos", badge: null, discounted: "$22.325" },
     { name: "Buzo Hoodie Oversize", price: "$55.000", ideal: "Para concentracion y salidas del club", badge: "Premium", discounted: "$52.250" },
     { name: "Buzo Cuello Redondo", price: "$43.000", ideal: "Abrigo para entrenamiento de invierno", badge: null, discounted: "$40.850" },
+    { name: "Gorra Gabardina", price: "$15.400", ideal: "Uniformes de equipo, DTF alta definicion", badge: "Min. 30u", discounted: "$14.600" },
+    { name: "Gorra 6 Gajos", price: "$17.900", ideal: "Uniformes premium con hebilla", badge: "Min. 30u", discounted: "$17.100" },
+    { name: "Gorra Vintage Algodon", price: "$19.200", ideal: "Look casual para el equipo", badge: "Min. 30u", discounted: "$18.300" },
+    { name: "Gorra Vintage con Red", price: "$19.200", ideal: "Trucker para entrenamiento outdoor", badge: "Min. 30u", discounted: "$18.300" },
   ]
 
   const pricingTiers = [
@@ -401,7 +405,7 @@ export default function IndumentariaDeportiva() {
                 Como equipar a tu equipo
               </h2>
               <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
-                En 4 pasos tu equipo tiene indumentaria profesional. Sin minimos, sin complicaciones.
+                En 4 pasos tu equipo tiene indumentaria profesional. Sin minimos en prendas (gorras desde 30u), sin complicaciones.
               </p>
             </div>
 
@@ -433,7 +437,7 @@ export default function IndumentariaDeportiva() {
                 Modelos disponibles
               </h2>
               <p className="text-zinc-400 text-lg">
-                Algodon 100% premium. Precio con 5% OFF para equipos de 10+.
+                Algodon 100% premium en remeras y buzos, precio con 5% OFF para equipos de 10+. Gorras en DTF, minimo 30 unidades.
               </p>
             </div>
 
@@ -511,6 +515,9 @@ export default function IndumentariaDeportiva() {
                 Sale $25.740 por jugador — con nombre, numero y escudo incluido
               </p>
             </div>
+            <p className="text-center text-sm text-zinc-500 mt-6">
+              Las gorras no entran en esta tabla: minimo 30 unidades y 2 tramos de precio fijo en DTF.
+            </p>
           </div>
         </section>
 

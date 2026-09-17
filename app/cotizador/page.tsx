@@ -13,7 +13,7 @@ import CotizadorCalculator from "@/components/cotizador-calculator"
 export const metadata: Metadata = {
   title: "Cotizador Express — Presupuesto Instantaneo Remeras y Buzos | Novamente",
   description:
-    "Calcula el precio de tus remeras, buzos y hoodies personalizados al instante. Descuentos por cantidad: 5% desde 10 un., 10% desde 25, 15% desde 100. Estampado DTG premium. Envios a todo Argentina.",
+    "Calcula el precio de tus remeras, buzos, hoodies y gorras personalizados al instante. Descuentos por cantidad: 5% desde 10 un., 10% desde 25, 15% desde 100. Estampado DTG premium (gorras en DTF, minimo 30 un.). Envios a todo Argentina.",
   keywords: [
     "cotizar remeras personalizadas",
     "presupuesto remeras estampadas",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Cotizador Express — Novamente",
     description:
-      "Precio instantaneo para remeras, buzos y hoodies personalizados con descuentos por cantidad.",
+      "Precio instantaneo para remeras, buzos, hoodies y gorras personalizados con descuentos por cantidad.",
   },
   alternates: { canonical: "https://www.novamente.ar/cotizador" },
 }
@@ -56,16 +56,16 @@ export default function CotizadorPage() {
     "@type": "WebApplication",
     name: "Cotizador Express — Novamente",
     description:
-      "Calculadora de precios para remeras, buzos y hoodies personalizados con estampado DTG. Descuentos automaticos por cantidad.",
+      "Calculadora de precios para remeras, buzos, hoodies y gorras personalizados. Estampado DTG en prendas y DTF en gorras. Descuentos automaticos por cantidad.",
     url: "https://www.novamente.ar/cotizador",
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",
     offers: {
       "@type": "AggregateOffer",
       priceCurrency: "ARS",
-      lowPrice: "21800",
+      lowPrice: "15400",
       highPrice: "55000",
-      offerCount: "8",
+      offerCount: "11",
     },
     provider: {
       "@type": "Organization",
@@ -107,7 +107,7 @@ export default function CotizadorPage() {
         name: "Hay minimo de compra?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "No, no hay minimo de compra. Podes pedir desde 1 unidad. Gracias a la tecnologia DTG, cada prenda se estampa individualmente sin necesidad de grandes tiradas.",
+          text: "No hay minimo de compra para remeras, buzos y hoodies: podes pedir desde 1 unidad gracias a la tecnologia DTG, que estampa cada prenda individualmente. Las gorras son la excepcion: se producen en tecnica DTF y tienen un pedido minimo de 30 unidades por modelo.",
         },
       },
       {
@@ -170,7 +170,7 @@ export default function CotizadorPage() {
               </span>
             </h1>
             <p className="text-xl md:text-2xl text-zinc-300 max-w-2xl mx-auto leading-relaxed">
-              Calcula el precio de tus remeras, buzos y hoodies personalizados{" "}
+              Calcula el precio de tus remeras, buzos, hoodies y gorras personalizados{" "}
               <span className="text-amber-400 font-semibold">al instante</span>.
               Descuentos automaticos por cantidad.
             </p>
@@ -183,7 +183,7 @@ export default function CotizadorPage() {
               </div>
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-amber-400" />
-                Desde 1 unidad
+                Prendas desde 1 unidad
               </div>
               <div className="flex items-center gap-2">
                 <Truck className="w-4 h-4 text-blue-400" />
@@ -398,7 +398,7 @@ export default function CotizadorPage() {
                 },
                 {
                   q: "Hay minimo de compra?",
-                  a: "No, no hay minimo de compra. Podes pedir desde 1 unidad. Gracias a la tecnologia DTG, cada prenda se estampa individualmente sin necesidad de grandes tiradas.",
+                  a: "No hay minimo de compra para remeras, buzos y hoodies: podes pedir desde 1 unidad gracias a la tecnologia DTG, que estampa cada prenda individualmente. Las gorras son la excepcion: se producen en tecnica DTF y tienen un pedido minimo de 30 unidades por modelo.",
                 },
                 {
                   q: "Que incluye el precio?",

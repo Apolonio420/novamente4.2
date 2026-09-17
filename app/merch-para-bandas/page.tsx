@@ -115,7 +115,7 @@ export default function MerchParaBandas() {
         name: "Hay minimo de unidades?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "No, podes pedir desde 1 unidad. No hay minimo. Pero si pedis 10+ unidades tenes descuentos por volumen. Muchos proyectos arrancan con 20-30 prendas para validar demanda y despues reponen segun ventas.",
+          text: "No, en prendas podes pedir desde 1 unidad. No hay minimo. Pero si pedis 10+ unidades tenes descuentos por volumen. Muchos proyectos arrancan con 20-30 prendas para validar demanda y despues reponen segun ventas. Gorras son la excepcion: minimo 30 unidades, 2 tramos de precio fijo en DTF.",
         },
       },
       {
@@ -214,6 +214,10 @@ export default function MerchParaBandas() {
     { name: "Remera Crop Mujer", price: "$23.500", ideal: "Fan merch femenino. Se vende rapido en shows", badge: null, discounted: "$21.150" },
     { name: "Buzo Hoodie Oversize", price: "$55.000", ideal: "Premium. Ideal para giras de invierno y ediciones limitadas", badge: "Premium", discounted: "$49.500" },
     { name: "Buzo Cuello Redondo", price: "$43.000", ideal: "Mas accesible que el hoodie. Gran margen de reventa", badge: null, discounted: "$38.700" },
+    { name: "Gorra Gabardina", price: "$15.400", ideal: "Merch de gira, DTF alta definicion", badge: "Min. 30u", discounted: "$14.600" },
+    { name: "Gorra 6 Gajos", price: "$17.900", ideal: "Merch premium con hebilla de metal", badge: "Min. 30u", discounted: "$17.100" },
+    { name: "Gorra Vintage Algodon", price: "$19.200", ideal: "Look vintage para el fandom", badge: "Min. 30u", discounted: "$18.300" },
+    { name: "Gorra Vintage con Red", price: "$19.200", ideal: "Trucker, ideal para shows al aire libre", badge: "Min. 30u", discounted: "$18.300" },
   ]
 
   const pricingTiers = [
@@ -296,12 +300,12 @@ export default function MerchParaBandas() {
               <p className="text-lg sm:text-xl text-zinc-300 mb-4 leading-relaxed">
                 Remeras, buzos y merch para marcas, creadores, bandas, eventos y empresas.
                 Disena con IA en minutos o subi tu arte. Podes producir por cantidad o vender sin stock con Novamente Studio. Desde{" "}
-                <span className="text-white font-semibold">1 unidad</span>, sin minimos.
+                <span className="text-white font-semibold">1 unidad</span>, sin minimos en prendas (gorras desde 30u).
                 Remeras desde <span className="text-white font-semibold">$24.310</span> con descuento por volumen.
               </p>
 
               <div className="flex flex-wrap gap-3 text-sm text-zinc-400 mb-8">
-                <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-purple-400" /> Sin minimo de unidades</span>
+                <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-purple-400" /> Sin minimo en prendas (gorras desde 30u)</span>
                 <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-purple-400" /> Diseno con IA o subi tu arte</span>
                 <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-purple-400" /> Listo en hasta {productionDaysForQty(PRODUCTION_VOLUME.VOLUME_FROM_QTY)} dias</span>
               </div>
@@ -372,7 +376,7 @@ export default function MerchParaBandas() {
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-bold text-purple-400">$0</div>
-                <div className="text-sm text-zinc-400">minimo de unidades</div>
+                <div className="text-sm text-zinc-400">minimo en prendas (gorras 30u)</div>
               </div>
             </div>
           </div>
@@ -415,7 +419,7 @@ export default function MerchParaBandas() {
                 De la idea al merch en 4 pasos
               </h2>
               <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
-                Mas facil que ensayar un tema nuevo. Sin minimos, sin complicaciones.
+                Mas facil que ensayar un tema nuevo. Sin minimos en prendas (gorras desde 30u), sin complicaciones.
               </p>
             </div>
 
@@ -447,7 +451,7 @@ export default function MerchParaBandas() {
                 Productos para tu merch
               </h2>
               <p className="text-zinc-400 text-lg">
-                Algodon 100% premium. Precios con 10% OFF para lotes de show (25+).
+                Algodon 100% premium en remeras y buzos, con 10% OFF para lotes de show (25+). Gorras en DTF, minimo 30 unidades.
               </p>
             </div>
 
@@ -591,6 +595,9 @@ export default function MerchParaBandas() {
                 </Card>
               ))}
             </div>
+            <p className="text-center text-sm text-zinc-500 mt-6">
+              Las gorras no entran en esta tabla: minimo 30 unidades y 2 tramos de precio fijo en DTF.
+            </p>
           </div>
         </section>
 
@@ -714,7 +721,7 @@ export default function MerchParaBandas() {
                 </h2>
                 <p className="text-lg text-zinc-300 mb-8 max-w-xl mx-auto">
                   Mandanos un WhatsApp con tu marca, comunidad, evento o proyecto.
-                  Te armamos propuestas y disenos con IA en minutos. Sin minimos, sin compromiso.
+                  Te armamos propuestas y disenos con IA en minutos. Sin minimos en prendas, sin compromiso.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
