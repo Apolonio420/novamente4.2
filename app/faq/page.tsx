@@ -37,7 +37,7 @@ const FAQ_ITEMS = [
       },
       {
         q: "¿Qué diferencia a Novamente de otras marcas de ropa personalizada?",
-        a: "Novamente es la única marca en Argentina que combina diseño con inteligencia artificial, estampado DTG premium y producción on-demand. No necesitás saber diseñar: describís tu idea, elegís un estilo artístico y la IA genera un diseño profesional en menos de 30 segundos. Además, no hay mínimos de cantidad ni stock — cada prenda se produce al pedido.",
+        a: "Novamente es la única marca en Argentina que combina diseño con inteligencia artificial, estampado DTG premium y producción on-demand. No necesitás saber diseñar: describís tu idea, elegís un estilo artístico y la IA genera un diseño profesional en menos de 30 segundos. Además, no hay mínimos de cantidad ni stock en prendas — cada una se produce al pedido. La excepción son las gorras, que se hacen en DTF y tienen un pedido mínimo de 30 unidades.",
       },
     ],
   },
