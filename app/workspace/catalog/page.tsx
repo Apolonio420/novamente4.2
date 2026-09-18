@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { ImageUpload } from '@/components/partners/image-upload'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { readPrintArt, writePrintArt } from '@/lib/partners/print-art'
 import { formatPrice as formatGarmentPrice } from '@/lib/partners/format-price'
 import type { PublicGarmentPricing } from '@/lib/partners/garment-pricing.server'
 import { MarginBreakdown } from '@/components/workspace/MarginBreakdown'
@@ -187,8 +188,10 @@ export default function CatalogPage() {
   // Garment key for margin calculation
   const [formGarmentKey, setFormGarmentKey] = useState('')
   // Arte print-ready (para producción; no se muestra en la tienda)
-  const [formPrintReadyUrl, setFormPrintReadyUrl] = useState('')
-  const [formPrintSide, setFormPrintSide] = useState<'frente' | 'dorso' | 'ambos'>('frente')
+  // Arte de producción, un slot por lado. Antes era UN solo archivo con un
+  // desplegable de lado: cargar el dorso pisaba el frente (ver lib/partners/print-art.ts).
+  const [formPrintFront, setFormPrintFront] = useState('')
+  const [formPrintBack, setFormPrintBack] = useState('')
 
   // AI copywriting state
   const [aiIdea, setAiIdea] = useState('')
@@ -323,8 +326,8 @@ export default function CatalogPage() {
     setFormCardDesc('')
     setFormBrandValues('')
     setFormGarmentKey('')
-    setFormPrintReadyUrl('')
-    setFormPrintSide('frente')
+    setFormPrintFront('')
+    setFormPrintBack('')
     setEditingProduct(null)
   }
 
@@ -362,8 +365,11 @@ export default function CatalogPage() {
     setFormCardDesc((m.cardDescription as string) || '')
     setFormBrandValues((m.brandValues as string) || '')
     setFormGarmentKey((m.garmentKey as string) || '')
-    setFormPrintReadyUrl((m.print_ready_url as string) || '')
-    setFormPrintSide(((m.print_side as 'frente' | 'dorso' | 'ambos') || 'frente'))
+    // Lee el modelo nuevo (print.front/back) y cae al viejo (print_ready_url +
+    // print_side) para los productos cargados antes del cambio.
+    const art = readPrintArt(m as Record<string, unknown>)
+    setFormPrintFront(art.front)
+    setFormPrintBack(art.back)
 
     setEditingProduct(product)
     setFormMode('edit')
@@ -420,7 +426,7 @@ export default function CatalogPage() {
       //
       // Cada clave que el form SÍ maneja se setea o se BORRA explícitamente, así
       // vaciar un campo lo sigue eliminando como antes.
-      const metadata: Record<string, unknown> = {
+      let metadata: Record<string, unknown> = {
         ...((formMode === 'edit' && (editingProduct?.metadata as Record<string, unknown> | null)) || {}),
       }
       const setOrDelete = (key: string, value: unknown, keep: boolean) => {
@@ -440,9 +446,10 @@ export default function CatalogPage() {
       setOrDelete('cardDescription', formCardDesc.trim(), !!formCardDesc.trim())
       setOrDelete('brandValues', formBrandValues.trim(), !!formBrandValues.trim())
       setOrDelete('garmentKey', formGarmentKey.trim(), !!formGarmentKey.trim())
-      // Arte print-ready (no se expone en la tienda — lo saca stripSensitiveMetadata)
-      setOrDelete('print_ready_url', formPrintReadyUrl.trim(), !!formPrintReadyUrl.trim())
-      setOrDelete('print_side', formPrintSide, !!formPrintReadyUrl.trim())
+      // Arte print-ready por lado (no se expone en la tienda — lo saca
+      // stripSensitiveMetadata). Escribe metadata.print.{front,back} + dualSide, que es
+      // lo que el checkout manda a producción, y deriva los campos viejos.
+      metadata = writePrintArt(metadata, { front: formPrintFront, back: formPrintBack })
 
       const body: Record<string, unknown> = {
         name: formName.trim(),
@@ -1185,46 +1192,68 @@ export default function CatalogPage() {
               </div>
 
               {/* Arte print-ready (para producción) */}
-              <div className="space-y-3">
+              <div className="space-y-3" data-testid="print-art-section">
                 <div>
                   <Label className="text-zinc-300 text-sm font-medium">
                     Arte para estampar (print-ready)
                   </Label>
                   <p className="text-xs text-zinc-500 mt-1">
                     Opcional. El PNG en alta (preferentemente con fondo transparente) que se usa para producir.
-                    No se muestra en tu tienda: solo se manda a producción cuando cargás una venta de este producto.
+                    Cargá un archivo por lado: si la prenda lleva estampa adelante y atrás, van los dos.
+                    No se muestra en tu tienda — solo viaja a producción cuando se vende este producto.
                   </p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3 sm:items-start">
-                  <div className="w-28 shrink-0">
-                    <ImageUpload
-                      value={formPrintReadyUrl || null}
-                      onChange={(u) => setFormPrintReadyUrl(u || '')}
-                      type="product"
-                      className="[&_div]:h-28 [&_img]:h-28"
-                    />
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <Input
-                      value={formPrintReadyUrl}
-                      onChange={(e) => setFormPrintReadyUrl(e.target.value)}
-                      placeholder="o pegá la URL del arte (PNG alta resolución)"
-                      className="bg-zinc-900/60 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-violet-500/50 focus-visible:border-violet-500/50 h-11"
-                    />
-                    <div className="relative w-full sm:w-48">
-                      <select
-                        value={formPrintSide}
-                        onChange={(e) => setFormPrintSide(e.target.value as 'frente' | 'dorso' | 'ambos')}
-                        className="appearance-none w-full h-11 rounded-md border border-zinc-800 bg-zinc-900/60 px-3 pr-9 text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50"
-                      >
-                        <option value="frente">Estampa al frente</option>
-                        <option value="dorso">Estampa al dorso</option>
-                        <option value="ambos">Frente y dorso</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                {/* Un slot por lado: cargar el dorso ya no pisa el arte del frente.
+                    Apilados, no en 2 columnas: este form vive en un drawer angosto y los
+                    breakpoints de Tailwind miran el viewport, no el ancho del contenedor. */}
+                <div className="space-y-3">
+                  {([
+                    { key: 'front' as const, label: 'Frente', value: formPrintFront, set: setFormPrintFront },
+                    { key: 'back' as const, label: 'Dorso', value: formPrintBack, set: setFormPrintBack },
+                  ]).map(({ key, label, value, set }) => (
+                    <div
+                      key={key}
+                      data-testid={`print-art-${key}`}
+                      className="rounded-lg border border-zinc-800 bg-zinc-900/30 p-3 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <Label className="text-zinc-300 text-xs font-medium uppercase tracking-wide">
+                          {label}
+                        </Label>
+                        {value && (
+                          <button
+                            type="button"
+                            onClick={() => set('')}
+                            className="text-xs text-zinc-500 hover:text-zinc-300"
+                          >
+                            Quitar
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex gap-3 items-start">
+                        <div className="w-28 shrink-0">
+                          <ImageUpload
+                            value={value || null}
+                            onChange={(u) => set(u || '')}
+                            type="product"
+                            className="[&_div]:h-28 [&_img]:h-28"
+                          />
+                        </div>
+                        <Input
+                          value={value}
+                          onChange={(e) => set(e.target.value)}
+                          placeholder="o pegá la URL del arte"
+                          className="flex-1 bg-zinc-900/60 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-violet-500/50 focus-visible:border-violet-500/50 h-11"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
+                {formPrintFront && formPrintBack && (
+                  <p className="text-xs text-amber-400/90">
+                    Doble estampa: este producto se va a producir con arte al frente y al dorso.
+                  </p>
+                )}
               </div>
 
               {/* ── Rich Product Data (Colores, Talles, Features) ── */}

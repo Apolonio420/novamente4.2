@@ -45,6 +45,21 @@ test.describe('Partner UI: campo de arte en el editor', () => {
     const artLabel = page.getByText('Arte para estampar (print-ready)')
     await expect(artLabel).toBeVisible({ timeout: 10_000 })
     await artLabel.scrollIntoViewIfNeeded()
+
+    // Un slot por lado: antes era UN solo archivo + un desplegable de lado, y cargar
+    // el dorso pisaba el arte del frente (caso sponsors 18/09/2026).
+    const front = page.getByTestId('print-art-front')
+    const back = page.getByTestId('print-art-back')
+    await expect(front).toBeVisible()
+    await expect(back).toBeVisible()
+    await expect(front.getByText('Frente')).toBeVisible()
+    await expect(back.getByText('Dorso')).toBeVisible()
+    // El desplegable viejo no debe existir más.
+    await expect(page.getByRole('option', { name: 'Estampa al dorso' })).toHaveCount(0)
+
     await page.screenshot({ path: 'test-results/catalog-print-ready-field.png', fullPage: true })
+    // Captura sólo el bloque: el drawer scrollea y en una captura de viewport el
+    // slot de dorso queda cortado.
+    await page.getByTestId('print-art-section').screenshot({ path: 'test-results/catalog-print-art-block.png' })
   })
 })
