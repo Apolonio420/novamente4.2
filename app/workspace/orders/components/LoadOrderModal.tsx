@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { X, Loader2, Sparkles, Trash2, Plus, Factory, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { readPrintArt } from '@/lib/partners/print-art'
 
 // --- Types ---
 
@@ -27,8 +28,8 @@ interface EditableItem {
   comments?: string
   store_product_id?: string // diseño elegido del catálogo (para matchear la estampa)
   mockup_url?: string
-  print_url?: string        // arte print-ready exacto del producto elegido
-  print_side?: 'frente' | 'dorso' | 'ambos'
+  print_url?: string        // arte print-ready del FRENTE del producto elegido
+  print_back_url?: string   // arte del DORSO, si el producto lleva doble estampa
 }
 
 interface ParsedItem {
@@ -52,9 +53,11 @@ function productImage(p: CatalogProduct): string | undefined {
   return meta?.colors?.[0]?.images?.front
 }
 
-function productPrintReady(p: CatalogProduct): { url?: string; side?: 'frente' | 'dorso' | 'ambos' } {
-  const meta = p.metadata as { print_ready_url?: string; print_side?: 'frente' | 'dorso' | 'ambos' } | undefined
-  return { url: meta?.print_ready_url, side: meta?.print_side }
+function productPrintReady(p: CatalogProduct): { front?: string; back?: string } {
+  // Unifica el modelo nuevo (metadata.print.{front,back}) con el viejo
+  // (print_ready_url + print_side) — ver lib/partners/print-art.ts.
+  const { front, back } = readPrintArt(p.metadata)
+  return { front: front || undefined, back: back || undefined }
 }
 
 function emptyItem(): EditableItem {
@@ -137,8 +140,11 @@ export default function LoadOrderModal({ open, onClose, onCreated }: Props) {
     updateItem(idx, {
       store_product_id: productId || undefined,
       mockup_url: p ? productImage(p) : undefined,
-      print_url: pr.url,
-      print_side: pr.side,
+      print_url: pr.front,
+      print_back_url: pr.back,
+      // Si el producto tiene arte de los dos lados, el default es doble estampa.
+      // El partner lo puede cambiar a mano.
+      ...(pr.front && pr.back ? { doble_estampa: 'Si' as Doble } : {}),
     })
   }
 
@@ -168,9 +174,13 @@ export default function LoadOrderModal({ open, onClose, onCreated }: Props) {
           partner_price: it.partner_price || 0,
           mockup_url: it.mockup_url,
           print_url: it.print_url,
-          comments: [it.comments, it.print_side ? `Estampa: ${it.print_side}` : '']
-            .filter(Boolean)
-            .join(' · ') || undefined,
+          print_url_back: it.print_back_url,
+          comments: [
+            it.comments,
+            // Si la prenda se estampa SOLO atrás, el frente va vacío a propósito:
+            // que producción lo lea explícito y no lo tome por un dato faltante.
+            !it.print_url && it.print_back_url ? 'Estampa solo al dorso' : '',
+          ].filter(Boolean).join(' · ') || undefined,
         })),
       }
       const res = await authFetch('/api/partners/orders', {
@@ -299,9 +309,9 @@ export default function LoadOrderModal({ open, onClose, onCreated }: Props) {
                         ))}
                       </select>
                       {it.store_product_id && (
-                        it.print_url ? (
+                        (it.print_url || it.print_back_url) ? (
                           <p className="mt-1 text-[11px] text-emerald-400">
-                            ✓ Arte print-ready cargada ({it.print_side === 'dorso' ? 'dorso' : it.print_side === 'ambos' ? 'frente y dorso' : 'frente'}) — se manda a producción.
+                            ✓ Arte print-ready cargada ({it.print_url && it.print_back_url ? 'frente y dorso' : it.print_back_url ? 'dorso' : 'frente'}) — se manda a producción.
                           </p>
                         ) : (
                           <p className="mt-1 text-[11px] text-amber-400">

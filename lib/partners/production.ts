@@ -21,7 +21,8 @@ export interface ProductionItem {
   doble_estampa: 'Si' | 'No' | 'Chica'
   comments?: string
   mockup_url?: string              // imagen del producto elegido (para que el equipo vea el diseño)
-  print_url?: string               // arte print-ready (best-effort)
+  print_url?: string               // arte print-ready del FRENTE (best-effort)
+  print_url_back?: string          // arte print-ready del DORSO, si lleva doble estampa
   pvp: number                      // partner-safe: lo que el partner le cobra al cliente (unitario)
   precio_partner: number           // partner-safe: lo que el partner nos transfiere (unitario)
 }

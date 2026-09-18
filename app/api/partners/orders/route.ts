@@ -45,7 +45,8 @@ const itemSchema = z.object({
   unit_price: z.number().min(0).optional().default(0), // PVP unitario (lo que cobra el partner)
   partner_price: z.number().min(0).optional().default(0), // precio partner unitario (nos transfiere)
   mockup_url: z.string().url().max(1000).optional(),
-  print_url: z.string().url().max(1000).optional(),
+  print_url: z.string().url().max(1000).optional(),       // arte del frente
+  print_url_back: z.string().url().max(1000).optional(),  // arte del dorso (doble estampa)
   comments: z.string().max(500).optional(),
 })
 
@@ -195,6 +196,7 @@ export async function POST(request: NextRequest) {
             comments: it.comments,
             mockup_url: it.mockup_url,
             print_url: it.print_url,
+            print_url_back: it.print_url_back,
             pvp: it.unit_price || 0,
             precio_partner: it.partner_price || 0,
           })),

@@ -112,6 +112,44 @@ const baseItem = {
   unit_price: 30000,
 }
 
+describe('POST /api/partners/orders — arte de estampa a producción', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    afterCallbacks.length = 0
+    requirePermission.mockResolvedValue({ ok: true, tenant: TENANT })
+    create.mockResolvedValue({ id: 'order-1' })
+    production.mockResolvedValue({ ok: true, pedido_numero: 'P-1' })
+    notifyPartner.mockResolvedValue(undefined)
+    notifyTeam.mockResolvedValue(undefined)
+  })
+
+  // El item del pedido tenía UN solo print_url: en una prenda con doble estampa el
+  // arte del dorso se perdía y a producción le llegaba media ficha.
+  it('manda frente Y dorso a producción', async () => {
+    const FRENTE = 'https://cdn.test/escudo.png'
+    const DORSO = 'https://cdn.test/logo-nuca.png'
+    await POST(req({
+      produce: true,
+      items: [{ ...baseItem, partner_price: FLOOR_1U, print_url: FRENTE, print_url_back: DORSO }],
+    }))
+    await flushAfter()
+
+    expect(production).toHaveBeenCalledTimes(1)
+    const sent = production.mock.calls[0][0]
+    expect(sent.items[0].print_url).toBe(FRENTE)
+    expect(sent.items[0].print_url_back).toBe(DORSO)
+  })
+
+  it('sin arte de dorso no inventa el campo', async () => {
+    await POST(req({
+      produce: true,
+      items: [{ ...baseItem, partner_price: FLOOR_1U, print_url: 'https://cdn.test/solo-frente.png' }],
+    }))
+    await flushAfter()
+    expect(production.mock.calls[0][0].items[0].print_url_back).toBeUndefined()
+  })
+})
+
 describe('POST /api/partners/orders — piso de precio en produce=true', () => {
   beforeEach(() => {
     vi.clearAllMocks()
