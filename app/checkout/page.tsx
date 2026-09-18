@@ -332,6 +332,11 @@ export default function CheckoutPage() {
           bank: "MercadoPago",
           cvu: "0000003100011214870727",
           alias: "novamente",
+          // El alias es de una cuenta a nombre de una persona física — el banco
+          // del cliente le va a mostrar este nombre al transferir. Si no se lo
+          // anticipamos acá, desconfía y abandona (caso real 17/09: carrito de
+          // $111.400 impago).
+          titular: "Valentín Nuñez",
           amount: total,
           customer: customerInfo,
           items: items,

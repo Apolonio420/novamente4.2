@@ -13,12 +13,15 @@ import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import ReceiptUploader from "@/components/ReceiptUploader"
+import { Logo } from "@/components/Logo"
+import { getWhatsAppLink } from "@/lib/config/links"
 
 interface TransferData {
   bank: string
   cvu?: string
   cbu?: string
   alias: string
+  titular?: string
   amount: number
   order_id?: string
   order_number?: string
@@ -51,6 +54,18 @@ export default function TransferPage() {
       const parsedData = JSON.parse(data)
       console.log("📥 Datos parseados:", parsedData)
       setTransferData(parsedData)
+
+      // Medición de embudo: "llegó a ver los datos de transferencia" (distinto
+      // de "creó el pedido", que ya pasó en el paso anterior). Fire-and-forget:
+      // si falla o la columna no existe todavía, no debe afectar al cliente.
+      const orderId = parsedData?.order_id
+      if (orderId) {
+        fetch('/api/checkout/transfer/viewed', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: orderId }),
+        }).catch(() => {})
+      }
     } else {
       router.push('/checkout')
     }
@@ -93,6 +108,10 @@ export default function TransferPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-between gap-4 mb-4">
+        <Logo />
+      </div>
+
       <div className="flex items-center gap-4 mb-8">
         <Link href="/checkout">
           <Button variant="ghost" size="sm">
@@ -154,13 +173,36 @@ export default function TransferPage() {
                   </div>
                 </div>
 
+                {transferData.titular && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Titular</label>
+                    <div className="p-3 bg-muted rounded-lg font-medium">
+                      {transferData.titular}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Es la cuenta de Mercado Pago de Novamente. Ese es el nombre que vas a ver al transferir.
+                    </p>
+                  </div>
+                )}
+
               </div>
 
               <div className="p-4 bg-blue-50 rounded-lg">
                 <h3 className="font-medium text-blue-900 mb-2">Importante:</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Pedido: <strong>{transferData.order_number || transferData.order_id}</strong></li>
                   <li>• Realiza la transferencia por el monto exacto: <strong>{formatCurrency(transferData.amount)}</strong></li>
-                  <li>• Envía el comprobante a nuestro WhatsApp</li>
+                  <li>
+                    • Envía el comprobante a nuestro WhatsApp:{" "}
+                    <a
+                      href={getWhatsAppLink(`Hola Novamente! Te mando el comprobante de mi transferencia del pedido ${transferData.order_number || transferData.order_id || ""}. (ref · NV-TRANSFERENCIA)`)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium underline text-blue-900 hover:text-blue-700"
+                    >
+                      +54 9 223 516-9720
+                    </a>
+                  </li>
                   <li>• Tu pedido será procesado una vez confirmado el pago</li>
                 </ul>
               </div>

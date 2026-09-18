@@ -232,7 +232,9 @@ ${confirmUrl ? `<p><a href="${confirmUrl}" style="display:inline-block;padding:1
 <p style="background:#f4f4f4;padding:12px;border-radius:8px">
 <b>Alias:</b> novamente<br/>
 <b>CVU:</b> 0000003100011214870727<br/>
-<b>Banco:</b> Mercado Pago</p>
+<b>Banco:</b> Mercado Pago<br/>
+<b>Titular:</b> Valentín Nuñez<br/>
+<small>Es la cuenta de Mercado Pago de Novamente. Ese es el nombre que vas a ver al transferir.</small></p>
 <ul>${itemsHtmlCliente}</ul>
 <p><b>Envío a:</b> ${addr}, ${city}${customer.postalCode ? ` (CP ${customer.postalCode})` : ""}</p>
 <p>Cuando transfieras, <b>respondé este mail con el comprobante</b> y arrancamos la producción (24-48 h hábiles). Cualquier duda, escribinos por acá o por WhatsApp.</p>
