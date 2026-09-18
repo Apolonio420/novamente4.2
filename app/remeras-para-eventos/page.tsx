@@ -99,7 +99,7 @@ export default function RemerasParaEventos() {
         name: "Cual es el minimo de unidades para eventos?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "No hay minimo de unidades. Podes pedir desde 1 remera. Pero para eventos recomendamos pedidos de 10+ para aprovechar los descuentos por volumen. Manejamos pedidos de hasta 500+ unidades con coordinacion especial.",
+          text: "No hay minimo de unidades. Podes pedir desde 1 remera. Pero para eventos recomendamos pedidos de 10+ para aprovechar los descuentos por volumen. Manejamos pedidos de hasta 500+ unidades con coordinacion especial. Las gorras son la excepcion: minimo 30 unidades, con 2 tramos de precio fijo en vez de descuento por porcentaje.",
         },
       },
       {
@@ -214,6 +214,10 @@ export default function RemerasParaEventos() {
     { name: "Remera Crop Mujer", price: "$23.500", ideal: "Para eventos de moda y lifestyle", badge: null, discounted100: "$19.975" },
     { name: "Buzo Hoodie Oversize", price: "$55.000", ideal: "Para staff, speakers y premios", badge: "Premium", discounted100: "$46.750" },
     { name: "Buzo Cuello Redondo", price: "$43.000", ideal: "Comodo para eventos de invierno", badge: null, discounted100: "$36.550" },
+    { name: "Gorra Gabardina", price: "$15.400", ideal: "Opcion economica, DTF alta definicion", badge: "Min. 30u", discounted100: "$14.600" },
+    { name: "Gorra 6 Gajos", price: "$17.900", ideal: "Hebilla metalica, para staff o sponsors", badge: "Min. 30u", discounted100: "$17.100" },
+    { name: "Gorra Vintage Algodon", price: "$19.200", ideal: "Look vintage prelavado", badge: "Min. 30u", discounted100: "$18.300" },
+    { name: "Gorra Vintage con Red", price: "$19.200", ideal: "Trucker, ideal para eventos al aire libre", badge: "Min. 30u", discounted100: "$18.300" },
   ]
 
   const pricingTiers = [
@@ -433,7 +437,7 @@ export default function RemerasParaEventos() {
                 Modelos disponibles para eventos
               </h2>
               <p className="text-zinc-400 text-lg">
-                Algodon 100% premium. Precio con 15% OFF para pedidos de 100+ unidades.
+                Algodon 100% premium en remeras y buzos. Precio con 15% OFF para pedidos de 100+ unidades. Gorras en DTF, minimo 30 unidades.
               </p>
             </div>
 
@@ -508,6 +512,9 @@ export default function RemerasParaEventos() {
                 (ahorro de $858.000 vs precio regular)
               </p>
             </div>
+            <p className="text-center text-sm text-zinc-500 mt-6">
+              Las gorras no entran en esta tabla: minimo 30 unidades y 2 tramos de precio fijo en DTF.
+            </p>
           </div>
         </section>
 

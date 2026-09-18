@@ -91,7 +91,7 @@ export default function RemerasPorMayor() {
         name: "Cual es el minimo para comprar por mayor?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Desde 10 unidades ya accedes a precio mayorista con 5% de descuento. Con 25 unidades tenes 10% OFF y con 100+ unidades 15% OFF. No hay minimo por diseno: podes pedir 10 unidades con 10 disenos diferentes.",
+          text: "Desde 10 unidades ya accedes a precio mayorista con 5% de descuento. Con 25 unidades tenes 10% OFF y con 100+ unidades 15% OFF. No hay minimo por diseno: podes pedir 10 unidades con 10 disenos diferentes. Las gorras son la excepcion: minimo 30 unidades, con 2 tramos de precio fijo en vez de descuento por porcentaje.",
         },
       },
       {
@@ -123,7 +123,7 @@ export default function RemerasPorMayor() {
         name: "Puedo pedir muestras antes de un pedido grande?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Si. Podes comprar 1-2 unidades al precio unitario regular para ver la calidad antes de hacer un pedido mayorista. La calidad es identica en 1 unidad o en 500 — es la misma impresora DTG y la misma tela.",
+          text: "Si. Podes comprar 1-2 unidades al precio unitario regular para ver la calidad antes de hacer un pedido mayorista. La calidad es identica en 1 unidad o en 500 — es la misma impresora DTG y la misma tela. En gorras no aplica: piden minimo 30 unidades, sin opcion de muestra unitaria.",
         },
       },
       {
@@ -255,6 +255,38 @@ export default function RemerasPorMayor() {
       discount: "15% OFF (100+ un.)",
       material: "Lona 100% algodon 280g",
       ideal: "Complemento, regalo con compra",
+    },
+    {
+      name: "Gorra Gabardina",
+      regularPrice: "$15.400",
+      wholesalePrice: "$14.600",
+      discount: "Min. 30u",
+      material: "Gabardina, DTF, talle unico",
+      ideal: "Opcion economica, DTF alta definicion",
+    },
+    {
+      name: "Gorra 6 Gajos",
+      regularPrice: "$17.900",
+      wholesalePrice: "$17.100",
+      discount: "Min. 30u",
+      material: "6 gajos con hebilla metalica, DTF, talle unico",
+      ideal: "Gorra premium, mejor percepcion de valor",
+    },
+    {
+      name: "Gorra Vintage Algodon",
+      regularPrice: "$19.200",
+      wholesalePrice: "$18.300",
+      discount: "Min. 30u",
+      material: "Algodon prelavado vintage, DTF, talle unico",
+      ideal: "Look vintage, buen ticket para showrooms",
+    },
+    {
+      name: "Gorra Vintage con Red",
+      regularPrice: "$19.200",
+      wholesalePrice: "$18.300",
+      discount: "Min. 30u",
+      material: "Trucker con red, DTF, talle unico",
+      ideal: "Estilo trucker, ideal para ferias al aire libre",
     },
   ]
 
@@ -476,6 +508,9 @@ export default function RemerasPorMayor() {
                 Revendes a $40.000 c/u = $4.000.000 facturados → <span className="text-white font-semibold">$1.569.000 de ganancia</span>
               </p>
             </div>
+            <p className="text-center text-sm text-zinc-500 mt-6">
+              Las gorras no entran en esta tabla: minimo 30 unidades y 2 tramos de precio fijo en DTF.
+            </p>
           </div>
         </section>
 
@@ -487,7 +522,7 @@ export default function RemerasPorMayor() {
                 Productos disponibles por mayor
               </h2>
               <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
-                Todos los precios incluyen estampado DTG. Los precios mayoristas son con 15% OFF (100+ unidades).
+                Todos los precios incluyen estampado DTG. Los precios mayoristas en remeras, buzos y tote bag son con 15% OFF (100+ unidades). Gorras en DTF, minimo 30 unidades.
               </p>
             </div>
 
