@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { X, Loader2, Sparkles, Trash2, Plus, Factory, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authFetch } from '@/lib/partners/auth-fetch'
-import { readPrintArt } from '@/lib/partners/print-art'
+import { readPrintArt, type PrintSpec } from '@/lib/partners/print-art'
 
 // --- Types ---
 
@@ -28,8 +28,11 @@ interface EditableItem {
   comments?: string
   store_product_id?: string // diseño elegido del catálogo (para matchear la estampa)
   mockup_url?: string
+  mockup_url_back?: string  // imagen del DORSO del producto elegido, si existe
   print_url?: string        // arte print-ready del FRENTE del producto elegido
   print_back_url?: string   // arte del DORSO, si el producto lleva doble estampa
+  comments_back?: string    // notas del dorso derivadas de metadata.print.back (lugar/medida)
+  lugar_estampa?: 'Frente' | 'Dorso' | 'Frente y dorso'
 }
 
 interface ParsedItem {
@@ -53,11 +56,51 @@ function productImage(p: CatalogProduct): string | undefined {
   return meta?.colors?.[0]?.images?.front
 }
 
+// Espejo de productImage, para el dorso.
+function productBackImage(p: CatalogProduct): string | undefined {
+  if (Array.isArray(p.images) && p.images[1]) return p.images[1]
+  const meta = p.metadata as { colors?: Array<{ images?: { back?: string } }> } | undefined
+  return meta?.colors?.[0]?.images?.back
+}
+
 function productPrintReady(p: CatalogProduct): { front?: string; back?: string } {
   // Unifica el modelo nuevo (metadata.print.{front,back}) con el viejo
   // (print_ready_url + print_side) — ver lib/partners/print-art.ts.
   const { front, back } = readPrintArt(p.metadata)
   return { front: front || undefined, back: back || undefined }
+}
+
+// Dónde va la estampa (para producción) — derivado del arte print-ready cargada.
+function lugarEstampa(p: CatalogProduct): EditableItem['lugar_estampa'] {
+  const { front, back } = productPrintReady(p)
+  if (front && back) return 'Frente y dorso'
+  if (back) return 'Dorso'
+  if (front) return 'Frente'
+  return undefined
+}
+
+// Nota corta con lugar/medida del dorso (ej. "nuca · 7 cm") a partir de
+// metadata.print.back — sin esto producción no sabe DÓNDE ni DE QUÉ TAMAÑO
+// va la estampa (caso real: Club ROSARIO/sponsors, escudo frente + logo 7cm nuca).
+function backComment(p: CatalogProduct): string | undefined {
+  const meta = (p.metadata || {}) as { print?: { back?: PrintSpec } }
+  const back = meta.print?.back
+  if (!back) return undefined
+  const parts = [back.placement, back.widthCm ? `${back.widthCm} cm` : ''].filter(Boolean)
+  if (parts.length) return parts.join(' · ')
+  if (back.stampMode === 'chest-logo') return 'logo chico'
+  return undefined
+}
+
+// El mockup del producto vive en Supabase Storage (URL absoluta) o, si viene
+// del design-engine, como path relativo (/api/proxy-image?key=...) — same-origin
+// para el navegador, pero sendToProduction pega contra platform-master (otro
+// dominio), así que hay que resolverlo a absoluto antes de mandarlo.
+const STORE_ORIGIN = 'https://www.novamente.ar'
+function absolutizeStoreUrl(url?: string): string | undefined {
+  if (!url) return undefined
+  if (/^https?:\/\//.test(url)) return url
+  return `${STORE_ORIGIN}${url.startsWith('/') ? '' : '/'}${url}`
 }
 
 function emptyItem(): EditableItem {
@@ -139,9 +182,12 @@ export default function LoadOrderModal({ open, onClose, onCreated }: Props) {
     const pr = p ? productPrintReady(p) : {}
     updateItem(idx, {
       store_product_id: productId || undefined,
-      mockup_url: p ? productImage(p) : undefined,
+      mockup_url: absolutizeStoreUrl(p ? productImage(p) : undefined),
+      mockup_url_back: absolutizeStoreUrl(p ? productBackImage(p) : undefined),
       print_url: pr.front,
       print_back_url: pr.back,
+      comments_back: p ? backComment(p) : undefined,
+      lugar_estampa: p ? lugarEstampa(p) : undefined,
       // Si el producto tiene arte de los dos lados, el default es doble estampa.
       // El partner lo puede cambiar a mano.
       ...(pr.front && pr.back ? { doble_estampa: 'Si' as Doble } : {}),
@@ -173,8 +219,11 @@ export default function LoadOrderModal({ open, onClose, onCreated }: Props) {
           unit_price: it.unit_price || 0,
           partner_price: it.partner_price || 0,
           mockup_url: it.mockup_url,
+          mockup_url_back: it.mockup_url_back,
           print_url: it.print_url,
           print_url_back: it.print_back_url,
+          lugar_estampa: it.lugar_estampa,
+          comments_back: it.comments_back,
           comments: [
             it.comments,
             // Si la prenda se estampa SOLO atrás, el frente va vacío a propósito:

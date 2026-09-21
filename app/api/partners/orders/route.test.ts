@@ -148,6 +148,32 @@ describe('POST /api/partners/orders — arte de estampa a producción', () => {
     await flushAfter()
     expect(production.mock.calls[0][0].items[0].print_url_back).toBeUndefined()
   })
+
+  // Caso real: "Club ROSARIO" (partner sponsors) — escudo al frente y logo de
+  // 7cm en la nuca. Sin mockup_url_back/comments_back/lugar_estampa, producción
+  // no sabía DÓNDE ni DE QUÉ TAMAÑO iba la estampa del dorso.
+  it('manda mockup_url_back, comments_back y lugar_estampa a producción', async () => {
+    const MOCKUP_BACK = 'https://cdn.test/mockup-dorso.png'
+    const COMMENTS_BACK = 'nuca · 7 cm'
+    await POST(req({
+      produce: true,
+      items: [{
+        ...baseItem,
+        partner_price: FLOOR_1U,
+        print_url: 'https://cdn.test/escudo.png',
+        print_url_back: 'https://cdn.test/logo-nuca.png',
+        mockup_url_back: MOCKUP_BACK,
+        comments_back: COMMENTS_BACK,
+        lugar_estampa: 'Frente y dorso',
+      }],
+    }))
+    await flushAfter()
+
+    const sent = production.mock.calls[0][0].items[0]
+    expect(sent.mockup_url_back).toBe(MOCKUP_BACK)
+    expect(sent.comments_back).toBe(COMMENTS_BACK)
+    expect(sent.lugar_estampa).toBe('Frente y dorso')
+  })
 })
 
 describe('POST /api/partners/orders — piso de precio en produce=true', () => {

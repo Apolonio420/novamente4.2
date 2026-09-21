@@ -20,7 +20,10 @@ export interface ProductionItem {
   cantidad: number
   doble_estampa: 'Si' | 'No' | 'Chica'
   comments?: string
+  comments_back?: string           // notas del dorso (ej. "nuca · 7 cm"), para que producción sepa la medida/lugar
+  lugar_estampa?: 'Frente' | 'Dorso' | 'Frente y dorso' // dónde va la estampa, derivado del arte cargado
   mockup_url?: string              // imagen del producto elegido (para que el equipo vea el diseño)
+  mockup_url_back?: string         // imagen del DORSO del producto elegido, si existe
   print_url?: string               // arte print-ready del FRENTE (best-effort)
   print_url_back?: string          // arte print-ready del DORSO, si lleva doble estampa
   pvp: number                      // partner-safe: lo que el partner le cobra al cliente (unitario)

@@ -45,9 +45,12 @@ const itemSchema = z.object({
   unit_price: z.number().min(0).optional().default(0), // PVP unitario (lo que cobra el partner)
   partner_price: z.number().min(0).optional().default(0), // precio partner unitario (nos transfiere)
   mockup_url: z.string().url().max(1000).optional(),
+  mockup_url_back: z.string().url().max(1000).optional(), // mockup del dorso, para que el equipo vea el diseño
   print_url: z.string().url().max(1000).optional(),       // arte del frente
   print_url_back: z.string().url().max(1000).optional(),  // arte del dorso (doble estampa)
   comments: z.string().max(500).optional(),
+  comments_back: z.string().max(1000).optional(),         // notas del dorso (ej. "nuca · 7 cm")
+  lugar_estampa: z.enum(['Frente', 'Dorso', 'Frente y dorso']).optional(),
 })
 
 const createSchema = z.object({
@@ -194,7 +197,10 @@ export async function POST(request: NextRequest) {
             cantidad: it.quantity,
             doble_estampa: it.doble_estampa,
             comments: it.comments,
+            comments_back: it.comments_back,
+            lugar_estampa: it.lugar_estampa,
             mockup_url: it.mockup_url,
+            mockup_url_back: it.mockup_url_back,
             print_url: it.print_url,
             print_url_back: it.print_url_back,
             pvp: it.unit_price || 0,
