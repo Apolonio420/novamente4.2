@@ -10,7 +10,7 @@ const SOLUTIONS = {
     { href: "/comparar", label: "Comparar prendas" },
   ],
   "Para tu marca (B2B)": [
-    { href: "/partners", label: "Novamente Studio" },
+    { href: "/studio", label: "Novamente Studio" },
     { href: "/merch", label: "Marcas en Novamente" },
     { href: "/lanza-tu-marca", label: "Lanzá tu marca sin stock" },
     { href: "/uniformes-personalizados", label: "Uniformes personalizados" },

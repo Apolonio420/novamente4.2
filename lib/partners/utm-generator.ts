@@ -38,7 +38,7 @@ export function generateMetaAdUtm(
   // Use the current origin or a placeholder for server-side
   const origin = typeof window !== 'undefined'
     ? window.location.origin
-    : process.env.NEXT_PUBLIC_BASE_URL || 'https://novamente.ar'
+    : process.env.NEXT_PUBLIC_BASE_URL || 'https://www.novamente.ar'
 
   const baseUrl = `${origin}/p/${tenantSlug}`
 

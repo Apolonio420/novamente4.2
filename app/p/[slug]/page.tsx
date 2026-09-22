@@ -622,7 +622,7 @@ function Footer({ tenant }: { tenant: Tenant }) {
       {showPoweredBy && (
         <div className="mt-6 text-center">
           <a
-            href="https://novamente.ar"
+            href={BASE_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900 px-4 py-1.5 text-xs text-zinc-500 transition hover:border-zinc-700 hover:text-zinc-400"

@@ -296,7 +296,7 @@ function TemplateBuilder({
   const [campaignSaved, setCampaignSaved] = useState(false)
   const campaignKey = (campaignName || `${tenant.slug}-${template.type}-${product?.slug || 'producto'}`)
     .toLowerCase().trim().replace(/[^a-z0-9_-]+/g, '-').replace(/^-|-$/g, '')
-  const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_BASE_URL || 'https://novamente.ar'
+  const origin = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_BASE_URL || 'https://www.novamente.ar'
   const utmUrl = product ? generateUtmUrl(`${origin}/p/${tenant.slug}/${product.slug}`, {
     source: 'meta', medium: 'paid_social', campaign: campaignKey, content: template.type,
   }) : ''

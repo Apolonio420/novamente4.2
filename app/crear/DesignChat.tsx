@@ -2643,7 +2643,7 @@ export function DesignChat({
                 })
                 const shareUrl = typeof window !== "undefined"
                   ? `${window.location.origin}/crear?${params.toString()}`
-                  : "https://novamente.ar/crear"
+                  : "https://www.novamente.ar/crear"
                 return (
                   <a
                     href={`https://wa.me/?text=${encodeURIComponent(`Mirá lo que diseñé en Novamente 🔥 — podés verlo y comprarlo acá: ${shareUrl}`)}`}

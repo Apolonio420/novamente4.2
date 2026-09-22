@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     url: 'https://www.novamente.ar/nosotros',
     type: 'website',
     siteName: 'Novamente',
-    images: [{ url: 'https://novamente.ar/novamente-logo.png', width: 512, height: 512, alt: 'Novamente Logo' }],
+    images: [{ url: 'https://www.novamente.ar/novamente-logo.png', width: 512, height: 512, alt: 'Novamente Logo' }],
   },
   twitter: {
     card: 'summary',
@@ -37,10 +37,10 @@ export default function NosotrosPage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'ClothingStore',
-    '@id': 'https://novamente.ar/#organization',
+    '@id': 'https://www.novamente.ar/#organization',
     name: 'Novamente',
-    url: 'https://novamente.ar',
-    logo: 'https://novamente.ar/novamente-logo.png',
+    url: 'https://www.novamente.ar',
+    logo: 'https://www.novamente.ar/novamente-logo.png',
     description: 'Primera marca argentina de indumentaria personalizada con inteligencia artificial',
     foundingDate: '2024',
     address: {
