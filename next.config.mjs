@@ -110,6 +110,15 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons', 'framer-motion'],
   },
   serverExternalPackages: ['@vercel/blob'],
+  // El compositor (lib/mockup/compose.ts) lee las bases con fs + path dinámico,
+  // y el file tracing arrastraba TODO public/ (~870 MB) a cada función que lo
+  // importa → "from-design is 909mb, exceeds 250mb" en Vercel (23/09). Estas
+  // rutas bajan las bases por HTTP del propio sitio (lib/mockup/compose.ts
+  // loadPublicFile), así que public/ se excluye entero.
+  outputFileTracingExcludes: {
+    '/api/partners/products/**/*': ['public/**/*'],
+    '/api/partners/design/upload': ['public/**/*'],
+  },
   // Configuración webpack para excluir binarios nativos y paquetes server-only
   webpack: (config, { isServer }) => {
     if (isServer) {

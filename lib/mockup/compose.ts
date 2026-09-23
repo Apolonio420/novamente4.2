@@ -77,6 +77,35 @@ function letterboxRect(W: number, H: number, coords: { x: number; y: number; wid
 }
 
 /**
+ * Lee un archivo de public/. En local (y si el file tracing lo incluyó) sale
+ * del disco; en Vercel las funciones NO traen public/ (se excluye en
+ * next.config.mjs porque arrastraba ~870 MB), así que se baja del propio
+ * sitio, donde public/ se sirve estático. Cache en memoria por instancia.
+ */
+const publicFileCache = new Map<string, Buffer>()
+async function loadPublicFile(relPath: string): Promise<Buffer> {
+  const rel = relPath.replace(/^\//, '')
+  const cached = publicFileCache.get(rel)
+  if (cached) return cached
+  // En Vercel siempre por HTTP. El nombre de la carpeta se arma en runtime a
+  // propósito: `path.join(process.cwd(), 'public', x)` literal hace que el file
+  // tracing de Vercel meta public/ entero en la función (909 MB, 23/09).
+  const publicDir = ['pub', 'lic'].join('')
+  const filePath = path.join(process.cwd(), publicDir, rel)
+  let buffer: Buffer
+  if (!process.env.VERCEL && fs.existsSync(filePath)) {
+    buffer = fs.readFileSync(filePath)
+  } else {
+    const origin = (process.env.NEXT_PUBLIC_BASE_URL || 'https://www.novamente.ar').replace(/\/$/, '')
+    const res = await fetch(`${origin}/${rel}`)
+    if (!res.ok) throw new Error(`No se pudo leer la base ${rel} (HTTP ${res.status})`)
+    buffer = Buffer.from(await res.arrayBuffer())
+  }
+  publicFileCache.set(rel, buffer)
+  return buffer
+}
+
+/**
  * Resuelve la base (buffer + printArea + pxPerCm) para garmentKey/color/side.
  * Primero la base estandar (piezaA); si no existe, cae a garment-mappings.json
  * + la foto original detras de la misma interfaz.
@@ -84,8 +113,7 @@ function letterboxRect(W: number, H: number, coords: { x: number; y: number; wid
 async function resolveBase(garmentKey: string, color: string, side: MockupSide): Promise<ResolvedBase> {
   const std = findStdBase(garmentKey, color, side)
   if (std) {
-    const filePath = path.join(process.cwd(), 'public', std.file.replace(/^\//, ''))
-    const buffer = fs.readFileSync(filePath)
+    const buffer = await loadPublicFile(std.file)
     return { buffer, printArea: std.printArea, pxPerCm: std.pxPerCm }
   }
 
@@ -93,11 +121,7 @@ async function resolveBase(garmentKey: string, color: string, side: MockupSide):
   if (!mapping || mapping.garmentPath === 'fallback') {
     throw new Error(`No hay base disponible para ${garmentKey}/${color}/${side}`)
   }
-  const filePath = path.join(process.cwd(), 'public', mapping.garmentPath.replace(/^\//, ''))
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`Base de ${garmentKey}/${color}/${side} no encontrada en ${filePath}`)
-  }
-  const buffer = fs.readFileSync(filePath)
+  const buffer = await loadPublicFile(mapping.garmentPath)
   const meta = await sharp(buffer).metadata()
   const W = meta.width || 400, H = meta.height || 500
   const printArea = letterboxRect(W, H, mapping.coordinates)
