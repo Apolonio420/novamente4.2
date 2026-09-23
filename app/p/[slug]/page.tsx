@@ -18,6 +18,7 @@ import {
   getDefaultPartnerFAQs,
 } from '@/lib/partners/seo'
 import { PartnerFaqSection } from '@/components/partners/faq-section'
+import { buttonColors } from '@/lib/color/contrast'
 import { ProductCardImage } from '@/components/partners/product-card-image'
 import ContactForm from './contact-form'
 import ChatWidget from '@/components/partners/chat-widget'
@@ -309,13 +310,21 @@ function HeroSection({ tenant }: { tenant: Tenant }) {
         {(() => {
           const heroCtaLabel = (tenant.metadata as { hero_cta_label?: string } | null)
             ?.hero_cta_label
+          const heroCtaColors = buttonColors(tenant.primary_color)
           return (
             heroCtaLabel && (
               <Button
                 asChild
                 size="lg"
-                className="mt-2 text-white"
-                style={{ backgroundColor: tenant.primary_color }}
+                className="mt-2"
+                style={{
+                  backgroundColor: heroCtaColors.background,
+                  color: heroCtaColors.color,
+                  ...(heroCtaColors.borderColor && {
+                    borderColor: heroCtaColors.borderColor,
+                    borderWidth: 1.5,
+                  }),
+                }}
               >
                 <a href="#productos">{heroCtaLabel}</a>
               </Button>
@@ -387,6 +396,7 @@ function ProductsGrid({
             product={product}
             tenantSlug={tenant.slug}
             currency={tenant.currency}
+            primaryColor={tenant.primary_color}
           />
         ))}
       </div>
@@ -398,12 +408,15 @@ function ProductCard({
   product,
   tenantSlug,
   currency,
+  primaryColor,
 }: {
   product: PartnerProduct
   tenantSlug: string
   currency: string
+  primaryColor: string
 }) {
   const comingSoon = (product.metadata as any)?.coming_soon === true
+  const ctaColors = buttonColors(primaryColor)
 
   return (
     <Link
@@ -485,8 +498,14 @@ function ProductCard({
         )}
 
         <span
-          className="mt-3 inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium text-white transition"
-          style={{ backgroundColor: 'var(--partner-primary)' }}
+          className="mt-3 inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium transition"
+          style={{
+            backgroundColor: ctaColors.background,
+            color: ctaColors.color,
+            ...(ctaColors.borderColor && {
+              border: `1.5px solid ${ctaColors.borderColor}`,
+            }),
+          }}
         >
           {comingSoon ? 'Próximamente' : 'Ver y comprar →'}
         </span>
@@ -523,6 +542,24 @@ function CtaSection({
 
   if (!hasProducts && !waHref) return null
 
+  // "Contactar" es el default de la columna cta_text — como título de un <h2>
+  // no dice nada (auditoría: 59/88 tiendas con ese título repetido arriba de
+  // "Ver productos"). Un cta_text propio del partner se sigue mostrando tal cual.
+  const ctaTitle =
+    tenant.cta_text && tenant.cta_text.trim() !== '' && tenant.cta_text.trim() !== 'Contactar'
+      ? tenant.cta_text
+      : '¿Encontraste tu próxima prenda?'
+
+  const ctaColors = buttonColors(tenant.primary_color)
+  const ctaButtonStyle = {
+    backgroundColor: ctaColors.background,
+    color: ctaColors.color,
+    ...(ctaColors.borderColor && {
+      borderColor: ctaColors.borderColor,
+      borderWidth: 1.5,
+    }),
+  }
+
   return (
     <section className="px-6 py-20">
       <div
@@ -533,17 +570,12 @@ function CtaSection({
         }}
       >
         <h2 className="mb-4 text-2xl font-bold text-white md:text-3xl">
-          {tenant.cta_text}
+          {ctaTitle}
         </h2>
 
         {hasProducts ? (
           <>
-            <Button
-              asChild
-              size="lg"
-              className="mt-4 text-white"
-              style={{ backgroundColor: tenant.primary_color }}
-            >
+            <Button asChild size="lg" className="mt-4" style={ctaButtonStyle}>
               <a href="#productos">Ver productos</a>
             </Button>
             {waHref && (
@@ -561,12 +593,7 @@ function CtaSection({
           </>
         ) : (
           waHref && (
-            <Button
-              asChild
-              size="lg"
-              className="mt-4 text-white"
-              style={{ backgroundColor: tenant.primary_color }}
-            >
+            <Button asChild size="lg" className="mt-4" style={ctaButtonStyle}>
               <a href={waHref} target="_blank" rel="noopener noreferrer">
                 {tenant.cta_url ? 'Ir ahora' : 'Escribinos por WhatsApp'}
               </a>
