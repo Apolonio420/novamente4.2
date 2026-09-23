@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { renderProductMockup, type MockupSide } from '@/lib/mockup/compose'
 import { uploadFile } from '@/lib/cloudflare-r2'
+import { saveDesignAsset } from '@/lib/partners/design-engine'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -47,6 +48,9 @@ export async function POST(request: NextRequest) {
     const storageKey = `partners/${tenant.slug}/mockups/${assetId}.jpg`
     const uploadResult = await uploadFile(mockup, storageKey, 'image/jpeg')
 
+    // Fila en partner_assets: el gate de origen la exige para aceptar la URL
+    // cuando el partner la guarda como foto del producto.
+    await saveDesignAsset(tenant.id, uploadResult.url, storageKey, 'mockup', { source: 'compose', garmentKey, color, side, plain: true })
     return NextResponse.json({ url: uploadResult.url })
   } catch (error: any) {
     console.error('POST /api/partners/products/plain-side error:', error)

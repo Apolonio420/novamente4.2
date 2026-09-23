@@ -37,6 +37,7 @@ import {
 import { getCatalogProduct } from '@/lib/catalog/products'
 import { renderProductMockup, type MockupPlacement, type MockupSize } from '@/lib/mockup/compose'
 import { uploadFile } from '@/lib/cloudflare-r2'
+import { saveDesignAsset } from '@/lib/partners/design-engine'
 import { fetchDesignBuffer, resolveRequestOrigin } from '@/lib/partners/design-fetch'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 
@@ -169,15 +170,21 @@ export async function POST(request: NextRequest) {
         uploadFile(frontBuffer, frontKey, 'image/jpeg'),
         uploadFile(backBuffer, backKey, 'image/jpeg'),
       ])
+      // Registrar cada mockup en partner_assets (type 'mockup', source 'compose'):
+      // el gate de origen exige la fila desde el fix de partner_assets (45aec5b),
+      // y así el partner también los ve en su selector de mockups.
+      await Promise.all([
+        saveDesignAsset(tenant.id, frontUpload.url, frontKey, 'mockup', { source: 'compose', garmentKey, color, side: 'front' }),
+        saveDesignAsset(tenant.id, backUpload.url, backKey, 'mockup', { source: 'compose', garmentKey, color, side: 'back' }),
+      ])
       colorImages[color] = { front: frontUpload.url, back: backUpload.url }
     }
 
     const firstColor = colors[0]
     const images = [colorImages[firstColor].front, colorImages[firstColor].back]
 
-    // Gate de origen — defensivo: nuestras propias subidas ya matchean el
-    // patrón que el gate acepta (partners/{slug}/mockups/...), así que esto
-    // no debería rechazar nada en la práctica.
+    // Gate de origen — defensivo: nuestras propias subidas quedaron registradas
+    // arriba en partner_assets, así que esto no debería rechazar nada.
     const badImage = await findFirstDisallowedProductImage(tenant.id, tenant.slug, images)
     if (badImage) {
       return NextResponse.json({ error: PRODUCT_IMAGE_ORIGIN_ERROR }, { status: 400 })

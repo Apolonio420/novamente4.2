@@ -47,6 +47,19 @@ vi.mock('@/lib/partners/catalog', () => ({
   countProducts: vi.fn(async () => 0),
 }))
 
+const saveDesignAssetMock = vi.fn(async () => ({ id: 'asset-1' }))
+vi.mock('@/lib/partners/design-engine', () => ({
+  saveDesignAsset: (...args: unknown[]) => (saveDesignAssetMock as any)(...args),
+}))
+
+// El gate real exige fila en partner_assets (desde 45aec5b); acá se prueba el
+// endpoint, no el gate: se simula que las URLs recién registradas pasan.
+vi.mock('@/lib/partners/product-image-origin', async (orig) => ({
+  ...(await (orig as () => Promise<Record<string, unknown>>)()),
+  findFirstDisallowedProductImage: vi.fn(async () => null),
+  findFirstDisallowedColorImage: vi.fn(async () => null),
+}))
+
 vi.mock('@/lib/supabase-admin', () => {
   const builder: any = {
     from: () => builder,
@@ -176,5 +189,7 @@ describe('POST /api/partners/products/from-design', () => {
     expect(res.status).toBe(201)
     expect(renderProductMockupMock).toHaveBeenCalledTimes(4)
     expect(uploadFileMock).toHaveBeenCalledTimes(4)
+    // Cada mockup subido queda registrado en partner_assets (lo exige el gate).
+    expect(saveDesignAssetMock).toHaveBeenCalledTimes(4)
   })
 })
