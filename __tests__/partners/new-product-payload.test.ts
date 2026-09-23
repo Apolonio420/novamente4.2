@@ -3,6 +3,7 @@ import {
   buildFromDesignPayload,
   validatePriceLive,
   suggestProductName,
+  prettifyDesignFileName,
   MIN_PRODUCT_PRICE_ARS,
   type NewProductFormState,
 } from '@/lib/partners/new-product-payload'
@@ -105,5 +106,28 @@ describe('suggestProductName', () => {
     expect(suggestProductName(null, 'Aldea')).toBe('Aldea')
     expect(suggestProductName('Diseño', null)).toBe('Diseño')
     expect(suggestProductName(null, null)).toBe('')
+  })
+})
+
+describe('prettifyDesignFileName', () => {
+  it('saca la extensión y capitaliza palabras separadas por guion/guion bajo', () => {
+    expect(prettifyDesignFileName('mi_diseño-final.png')).toBe('Mi Diseño Final')
+  })
+
+  it('colapsa espacios repetidos y trimea', () => {
+    expect(prettifyDesignFileName('  logo   banda  .jpg')).toBe('Logo Banda')
+  })
+
+  it('no toca palabras que ya vienen en mayúsculas (siglas)', () => {
+    expect(prettifyDesignFileName('logo-DTG-2026.webp')).toBe('Logo DTG 2026')
+  })
+
+  it('nombre vacío o solo extensión da string vacío', () => {
+    expect(prettifyDesignFileName('.png')).toBe('')
+    expect(prettifyDesignFileName('')).toBe('')
+  })
+
+  it('sin extensión también funciona', () => {
+    expect(prettifyDesignFileName('mi-diseño')).toBe('Mi Diseño')
   })
 })

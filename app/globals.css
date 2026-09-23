@@ -296,3 +296,14 @@
 .nv-tour-popover .driver-popover-arrow {
   border-color: #18181b;
 }
+
+/* Fase 3 pieza C — mientras el panel "Nuevo producto" está abierto
+   (NewProductPanel agrega esta clase a <body>), los flotantes de Novamente
+   (Nova, WhatsApp) quedan tapados por el drawer full-height: se ocultan
+   para no interferir con el scroll/click dentro del panel. Se restauran al
+   cerrar (ver new-product-panel.tsx, useEffect de bloqueo de body). */
+body.nv-panel-open .nova-fab,
+body.nv-panel-open .nova-bubble,
+body.nv-panel-open .whatsapp-float-btn {
+  display: none !important;
+}

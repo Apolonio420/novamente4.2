@@ -15,7 +15,7 @@
  * origen, límite de plan) — este componente solo da feedback inmediato en la
  * UI, nunca es la fuente de verdad.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Loader2, Upload, X, Check, AlertTriangle, ImageIcon, Sparkles } from 'lucide-react'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import { cn } from '@/lib/utils'
@@ -23,6 +23,7 @@ import type { PublicGarmentPricing } from '@/lib/partners/garment-pricing.server
 import type { MockupPlacement, MockupSide, MockupSize } from '@/lib/mockup/compose'
 import {
   buildFromDesignPayload,
+  prettifyDesignFileName,
   suggestProductName,
   validatePriceLive,
   type NewProductFormState,
@@ -63,12 +64,18 @@ interface GarmentColorOption {
   hex: string
   front: boolean
   back: boolean
+  /** URL estática de la base (public/garments/std/…) cuando existe — permite
+   *  mostrar la prenda lisa YA, sin pegarle a mockup-preview. */
+  frontStaticUrl: string | null
+  backStaticUrl: string | null
 }
 
 interface GarmentOption {
   key: string
   name: string
   category: string
+  /** Portada de la tarjeta de prenda — frente del primer color con base estándar. */
+  thumbnail: string | null
   colors: GarmentColorOption[]
 }
 
@@ -76,11 +83,14 @@ interface DesignAsset {
   id: string
   public_url: string
   created_at: string
+  metadata?: { originalFileName?: string } | null
 }
 
 interface UploadResult {
   url: string
   warnings: string[]
+  /** Nombre del archivo, prolijo — para sugerir "{label} · {Prenda}". */
+  label: string
 }
 
 export interface NewProductPanelProps {
@@ -106,10 +116,10 @@ export function NewProductPanel({
 }: NewProductPanelProps) {
   // ---- Diseño ------------------------------------------------------------
   const [frontDesign, setFrontDesign] = useState<UploadResult | null>(
-    initialDesignUrl ? { url: initialDesignUrl, warnings: [] } : null,
+    initialDesignUrl ? { url: initialDesignUrl, warnings: [], label: '' } : null,
   )
   const [backDesign, setBackDesign] = useState<UploadResult | null>(
-    initialBackDesignUrl ? { url: initialBackDesignUrl, warnings: [] } : null,
+    initialBackDesignUrl ? { url: initialBackDesignUrl, warnings: [], label: '' } : null,
   )
   const [sameDesignBothSides, setSameDesignBothSides] = useState(!initialBackDesignUrl)
   const [uploadingSide, setUploadingSide] = useState<MockupSide | null>(null)
@@ -138,7 +148,8 @@ export function NewProductPanel({
   // ---- Vista previa --------------------------------------------------------
   const [previewFront, setPreviewFront] = useState<string | null>(null)
   const [previewBack, setPreviewBack] = useState<string | null>(null)
-  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewFrontLoading, setPreviewFrontLoading] = useState(false)
+  const [previewBackLoading, setPreviewBackLoading] = useState(false)
   const [previewError, setPreviewError] = useState<string | null>(null)
 
   // ---- Submit ---------------------------------------------------------------
@@ -173,12 +184,32 @@ export function NewProductPanel({
     }
   }, [open])
 
-  // Auto-sugerir nombre mientras el partner no lo edite a mano
+  // Auto-sugerir nombre mientras el partner no lo edite a mano — a partir
+  // del nombre del ARCHIVO del diseño (prolijo) + la prenda. SIN diseño
+  // queda vacío (el placeholder del input guía con un ejemplo) — completar
+  // solo con el nombre de la prenda ("Aldea") no es un nombre de producto
+  // real y quedaba pisando lo que el partner después quería escribir.
   useEffect(() => {
     if (nameTouched) return
-    const designLabel = frontDesign || backDesign ? 'Diseño' : null
-    setName(suggestProductName(designLabel, commercialName))
+    const designLabel = frontDesign?.label || backDesign?.label || null
+    setName(designLabel ? suggestProductName(designLabel, commercialName) : '')
   }, [commercialName, frontDesign, backDesign, nameTouched])
+
+  // ---------------------------------------------------------------------
+  // Bloquear el scroll del body y ocultar los flotantes (Nova, WhatsApp)
+  // mientras el panel está abierto — es una hoja fija a pantalla completa,
+  // no debe convivir con el scroll ni los botones flotantes de atrás.
+  // ---------------------------------------------------------------------
+  useEffect(() => {
+    if (!open || typeof document === 'undefined') return
+    const previousOverflow = document.body.style.overflow
+    document.body.classList.add('nv-panel-open')
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.classList.remove('nv-panel-open')
+      document.body.style.overflow = previousOverflow
+    }
+  }, [open])
 
   // ---------------------------------------------------------------------
   // Subida de diseño (drag & drop o click)
@@ -195,7 +226,7 @@ export function NewProductPanel({
         setUploadError(data?.error || 'No pudimos subir el diseño. Probá de nuevo.')
         return
       }
-      const result: UploadResult = { url: data.url, warnings: data.warnings || [] }
+      const result: UploadResult = { url: data.url, warnings: data.warnings || [], label: prettifyDesignFileName(file.name) }
       if (side === 'front') setFrontDesign(result)
       else setBackDesign(result)
     } catch {
@@ -225,6 +256,13 @@ export function NewProductPanel({
   // ---------------------------------------------------------------------
   // Vista previa en vivo (debounced ~400ms) — SIEMPRE frente y dorso lado a
   // lado, el lado sin diseño sale con la prenda lisa.
+  //
+  // Sin diseño para un lado, mostramos YA la base estándar (URL estática de
+  // /garments/std/…, sin red) — nunca un spinner esperando una vuelta al
+  // servidor que no hace falta. Solo pegamos a mockup-preview cuando hay un
+  // diseño que componer, o cuando ese color/lado no tiene base estática
+  // (combos legacy detrás de garment-mappings.json — pieza A) y hace falta
+  // que el servidor resuelva igual la prenda lisa.
   // ---------------------------------------------------------------------
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const previewSeq = useRef(0)
@@ -237,56 +275,81 @@ export function NewProductPanel({
     if (!open || !garmentKey || colors.length === 0) {
       setPreviewFront(null)
       setPreviewBack(null)
+      setPreviewError(null)
       return
     }
     const color = colors[0]
-    const mySeq = ++previewSeq.current
+    const colorOption = selectedGarment?.colors.find((c) => c.key === color) || null
+    const plainFront = colorOption?.frontStaticUrl || null
+    const plainBack = colorOption?.backStaticUrl || null
 
+    const needsFrontNetwork = wantsFront && (!!frontDesign?.url || !plainFront)
+    const needsBackNetwork = wantsBack && (!!effectiveBackDesign?.url || !plainBack)
+
+    // Mostrar la prenda lisa DE UNA, sin red, para el lado que no la necesita.
+    if (!needsFrontNetwork) setPreviewFront(wantsFront ? plainFront : null)
+    if (!needsBackNetwork) setPreviewBack(wantsBack ? plainBack : null)
+
+    if (!needsFrontNetwork && !needsBackNetwork) {
+      setPreviewError(null)
+      setPreviewFrontLoading(false)
+      setPreviewBackLoading(false)
+      return
+    }
+
+    const mySeq = ++previewSeq.current
     if (previewTimer.current) clearTimeout(previewTimer.current)
     previewTimer.current = setTimeout(async () => {
-      setPreviewLoading(true)
       setPreviewError(null)
+      if (needsFrontNetwork) setPreviewFrontLoading(true)
+      if (needsBackNetwork) setPreviewBackLoading(true)
       try {
-        const calls: Promise<any>[] = []
-        calls.push(
+        const fetchSide = (side: MockupSide, designUrl: string | undefined, placement: MockupPlacement) =>
           authFetch('/api/partners/products/mockup-preview', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              designUrl: wantsFront ? frontDesign?.url : undefined,
-              garmentKey,
-              color,
-              side: 'front',
-              size,
-              placement: frontPlacement,
-            }),
-          }).then((r) => r.json()),
-        )
-        calls.push(
-          authFetch('/api/partners/products/mockup-preview', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              designUrl: wantsBack ? effectiveBackDesign?.url : undefined,
-              garmentKey,
-              color,
-              side: 'back',
-              size,
-              placement: backPlacement,
-            }),
-          }).then((r) => r.json()),
-        )
-        const [frontRes, backRes] = await Promise.all(calls)
+            body: JSON.stringify({ designUrl, garmentKey, color, side, size, placement }),
+          })
+            .then((r) => r.json())
+            .catch(() => null)
+
+        const [frontRes, backRes] = await Promise.all([
+          needsFrontNetwork ? fetchSide('front', frontDesign?.url, frontPlacement) : Promise.resolve(null),
+          needsBackNetwork ? fetchSide('back', effectiveBackDesign?.url, backPlacement) : Promise.resolve(null),
+        ])
         if (previewSeq.current !== mySeq) return
-        if (frontRes?.previewUrl) setPreviewFront(frontRes.previewUrl)
-        if (backRes?.previewUrl) setPreviewBack(backRes.previewUrl)
-        if (!frontRes?.previewUrl && !backRes?.previewUrl) {
-          setPreviewError(frontRes?.error || backRes?.error || 'No pudimos generar la vista previa')
+
+        let anyOk = false
+        if (needsFrontNetwork) {
+          if (frontRes?.previewUrl) {
+            setPreviewFront(frontRes.previewUrl)
+            anyOk = true
+          } else {
+            setPreviewFront(plainFront)
+          }
+        }
+        if (needsBackNetwork) {
+          if (backRes?.previewUrl) {
+            setPreviewBack(backRes.previewUrl)
+            anyOk = true
+          } else {
+            setPreviewBack(plainBack)
+          }
+        }
+        if (!anyOk) {
+          setPreviewError('No pudimos generar la vista previa, probá de nuevo.')
         }
       } catch {
-        if (previewSeq.current === mySeq) setPreviewError('No pudimos generar la vista previa')
+        if (previewSeq.current === mySeq) {
+          setPreviewError('No pudimos generar la vista previa, probá de nuevo.')
+          if (needsFrontNetwork) setPreviewFront(plainFront)
+          if (needsBackNetwork) setPreviewBack(plainBack)
+        }
       } finally {
-        if (previewSeq.current === mySeq) setPreviewLoading(false)
+        if (previewSeq.current === mySeq) {
+          setPreviewFrontLoading(false)
+          setPreviewBackLoading(false)
+        }
       }
     }, 400)
 
@@ -294,7 +357,7 @@ export function NewProductPanel({
       if (previewTimer.current) clearTimeout(previewTimer.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, garmentKey, colors, size, frontPlacement, backPlacement, frontDesign?.url, effectiveBackDesign?.url, wantsFront, wantsBack])
+  }, [open, garmentKey, colors, size, frontPlacement, backPlacement, frontDesign?.url, effectiveBackDesign?.url, wantsFront, wantsBack, selectedGarment])
 
   // ---------------------------------------------------------------------
   // Submit
@@ -342,13 +405,16 @@ export function NewProductPanel({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose} />
+      {/* Hoja fija a pantalla completa: mobile = toda la pantalla, desktop =
+          drawer derecho de alto completo. Header y barra de acciones quedan
+          fijos; solo el medio scrollea (ver flex-col + flex-1 overflow-y-auto). */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Nuevo producto"
-        className="fixed inset-y-0 right-0 z-50 w-full max-w-4xl bg-zinc-950 border-l border-zinc-800/80 overflow-y-auto animate-in slide-in-from-right duration-300"
+        className="fixed inset-0 lg:inset-y-0 lg:left-auto lg:right-0 z-50 flex w-full lg:w-[min(960px,100vw)] flex-col bg-zinc-950 lg:border-l lg:border-zinc-800/80 animate-in fade-in lg:slide-in-from-right duration-300"
       >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-800/80 sticky top-0 bg-zinc-950/95 backdrop-blur-sm z-10">
+        <div className="shrink-0 flex items-center justify-between px-6 py-5 border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur-sm">
           <div>
             <h3 className="text-base font-bold text-zinc-100">Nuevo producto</h3>
             <p className="text-xs text-zinc-500 mt-0.5">Tu diseño sobre nuestras prendas — todo en una pantalla</p>
@@ -363,13 +429,14 @@ export function NewProductPanel({
           </button>
         </div>
 
+        <div className="flex-1 overflow-y-auto overscroll-contain">
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 p-6">
           {/* Preview — arriba en mobile, sticky a la derecha en desktop */}
-          <div className="order-1 lg:order-2 lg:sticky lg:top-24 h-fit space-y-3">
+          <div className="order-1 lg:order-2 lg:sticky lg:top-0 h-fit space-y-3">
             <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Vista previa</p>
             <div className="grid grid-cols-2 gap-2" data-testid="new-product-preview">
-              <PreviewSlot label="Frente" src={previewFront} loading={previewLoading} />
-              <PreviewSlot label="Dorso" src={previewBack} loading={previewLoading} />
+              <PreviewSlot label="Frente" src={previewFront} loading={previewFrontLoading} />
+              <PreviewSlot label="Dorso" src={previewBack} loading={previewBackLoading} />
             </div>
             {previewError && <p className="text-xs text-amber-400">{previewError}</p>}
             {!garmentKey && <p className="text-xs text-zinc-500">Elegí una prenda para ver la vista previa.</p>}
@@ -391,8 +458,8 @@ export function NewProductPanel({
                 <DesignLibrary
                   assets={designAssets}
                   loading={loadingAssets}
-                  onPick={(url) => {
-                    setFrontDesign({ url, warnings: [] })
+                  onPick={(url, label) => {
+                    setFrontDesign({ url, warnings: [], label })
                     setShowLibrary(null)
                   }}
                 />
@@ -427,14 +494,24 @@ export function NewProductPanel({
                         setColors((prev) => (g.colors.some((c) => prev.includes(c.key)) ? prev : []))
                       }}
                       className={cn(
-                        'rounded-lg border px-3 py-2.5 text-left text-sm transition-colors',
+                        'flex items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left text-sm transition-colors',
                         garmentKey === g.key
                           ? 'border-violet-500 bg-violet-500/10 text-zinc-100'
                           : 'border-zinc-800 bg-zinc-900/40 text-zinc-300 hover:border-zinc-700',
                       )}
                     >
-                      <span className="font-medium">{COMMERCIAL_NAME[g.key] || g.name}</span>
-                      <span className="block text-[11px] text-zinc-500">{g.name}</span>
+                      {g.thumbnail ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={g.thumbnail} alt="" className="w-10 h-10 rounded-md object-cover bg-zinc-800 shrink-0" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-md bg-zinc-800 shrink-0 flex items-center justify-center">
+                          <ImageIcon className="w-4 h-4 text-zinc-600" />
+                        </div>
+                      )}
+                      <span className="min-w-0">
+                        <span className="block font-medium truncate">{COMMERCIAL_NAME[g.key] || g.name}</span>
+                        <span className="block text-[11px] text-zinc-500 truncate">{g.name}</span>
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -525,8 +602,8 @@ export function NewProductPanel({
                     <DesignLibrary
                       assets={designAssets}
                       loading={loadingAssets}
-                      onPick={(url) => {
-                        setBackDesign({ url, warnings: [] })
+                      onPick={(url, label) => {
+                        setBackDesign({ url, warnings: [], label })
                         setShowLibrary(null)
                       }}
                     />
@@ -612,30 +689,35 @@ export function NewProductPanel({
                   <p className="text-xs text-red-400">{priceValidation.reason}</p>
                 )}
               </div>
-
-              {submitError && <p className="text-xs text-red-400" role="alert">{submitError}</p>}
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  disabled={!canSubmit || submitting !== null}
-                  onClick={() => handleSubmit('draft')}
-                  className="flex-1 h-11 rounded-md border border-zinc-700 text-zinc-200 text-sm font-medium hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {submitting === 'draft' && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Guardar borrador
-                </button>
-                <button
-                  type="button"
-                  disabled={!canSubmit || submitting !== null}
-                  onClick={() => handleSubmit('published')}
-                  className="flex-1 h-11 rounded-md bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {submitting === 'published' && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Publicar
-                </button>
-              </div>
             </section>
+          </div>
+        </div>
+        </div>
+
+        {/* Barra de acciones — fija abajo, siempre visible (no scrollea con
+            el contenido): en mobile es lo primero que hace falta después de
+            completar precio, no algo a lo que haya que llegar scrolleando. */}
+        <div className="shrink-0 border-t border-zinc-800/80 bg-zinc-950/95 backdrop-blur-sm px-6 py-4 space-y-2">
+          {submitError && <p className="text-xs text-red-400" role="alert">{submitError}</p>}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              disabled={!canSubmit || submitting !== null}
+              onClick={() => handleSubmit('draft')}
+              className="flex-1 h-11 rounded-md border border-zinc-700 text-zinc-200 text-sm font-medium hover:bg-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {submitting === 'draft' && <Loader2 className="w-4 h-4 animate-spin" />}
+              Guardar borrador
+            </button>
+            <button
+              type="button"
+              disabled={!canSubmit || submitting !== null}
+              onClick={() => handleSubmit('published')}
+              className="flex-1 h-11 rounded-md bg-violet-600 text-white text-sm font-semibold hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {submitting === 'published' && <Loader2 className="w-4 h-4 animate-spin" />}
+              Publicar
+            </button>
           </div>
         </div>
       </div>
@@ -786,7 +868,7 @@ function DesignLibrary({
 }: {
   assets: DesignAsset[]
   loading: boolean
-  onPick: (url: string) => void
+  onPick: (url: string, label: string) => void
 }) {
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-2">
@@ -800,7 +882,7 @@ function DesignLibrary({
             <button
               key={a.id}
               type="button"
-              onClick={() => onPick(a.public_url)}
+              onClick={() => onPick(a.public_url, prettifyDesignFileName(a.metadata?.originalFileName || ''))}
               className="relative aspect-square rounded border border-zinc-800 overflow-hidden hover:border-violet-500"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}

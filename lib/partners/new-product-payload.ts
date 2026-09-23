@@ -95,3 +95,22 @@ export function suggestProductName(designLabel: string | null, garmentName: stri
   if (designLabel && garmentName) return `${designLabel} · ${garmentName}`
   return garmentName || designLabel || ''
 }
+
+/**
+ * "mi_diseño-FINAL (2).png" → "Mi Diseño FINAL (2)" — para sugerir el nombre
+ * del producto a partir del archivo que subió el partner. Saca la
+ * extensión, cambia guiones/guiones bajos por espacios y capitaliza cada
+ * palabra (sin tocar las que ya vienen en mayúsculas, tipo siglas).
+ */
+export function prettifyDesignFileName(fileName: string): string {
+  const base = fileName.replace(/\.[^./\\]+$/, '')
+  const cleaned = base
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!cleaned) return ''
+  return cleaned
+    .split(' ')
+    .map((w) => (w === w.toUpperCase() ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join(' ')
+}

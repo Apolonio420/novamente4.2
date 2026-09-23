@@ -8,7 +8,7 @@ export function WhatsAppButton() {
   const whatsappUrl = getWhatsAppLink(WHATSAPP_MESSAGES.GENERIC)
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 animate-[whatsapp-in_0.4s_ease-out_1s_both] hover:scale-110 active:scale-95 transition-transform duration-200">
+    <div className="whatsapp-float-btn fixed bottom-6 right-6 z-50 animate-[whatsapp-in_0.4s_ease-out_1s_both] hover:scale-110 active:scale-95 transition-transform duration-200">
       <a
         href={whatsappUrl}
         target="_blank"
