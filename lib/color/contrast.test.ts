@@ -85,6 +85,17 @@ describe('buttonColors', () => {
     expect(contrastRatio(background, PAGE_BG)).toBeGreaterThanOrEqual(3)
   })
 
+  it('negro/gris sin tinte sobre fondo oscuro → botón claro con texto negro (no gris medio)', () => {
+    expect(buttonColors('#0a0a0a', PAGE_BG)).toEqual({ background: '#f4f4f5', color: '#000' })
+    expect(buttonColors('#282828', PAGE_BG)).toEqual({ background: '#f4f4f5', color: '#000' })
+  })
+
+  it('un primario oscuro CON tinte (navy #1e1b4b) conserva el tono al aclararse', () => {
+    const { background } = buttonColors('#1e1b4b', PAGE_BG)
+    expect(background.toLowerCase()).not.toBe('#f4f4f5')
+    expect(contrastRatio(background, PAGE_BG)).toBeGreaterThanOrEqual(3)
+  })
+
   it('hex inválido usa un fallback seguro y no rompe', () => {
     const { background, color } = buttonColors('not-a-hex', PAGE_BG)
     expect(background).toMatch(/^#[0-9a-fA-F]{6}$/)

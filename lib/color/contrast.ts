@@ -132,6 +132,15 @@ export function buttonColors(primary: string, pageBg: string = '#09090b'): Butto
     }
   }
 
+  // Negro/gris casi sin tinte sobre fondo oscuro: aclararlo da un gris medio
+  // que parece un botón deshabilitado (visto en la captura de abond). Para
+  // esas marcas el botón claro con texto negro es el look que corresponde.
+  const rgb = parseHex(validPrimary)!
+  const spread = Math.max(rgb.r, rgb.g, rgb.b) - Math.min(rgb.r, rgb.g, rgb.b)
+  if (spread < 24 && luminance(pageBg) < 0.2) {
+    return { background: '#f4f4f5', color: '#000' }
+  }
+
   // Aclarar hasta pasar el umbral de superficie (o llegar a blanco puro).
   let background = validPrimary
   for (let step = 1; step <= 20; step++) {
