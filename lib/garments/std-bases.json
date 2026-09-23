@@ -5,12 +5,12 @@
     "side": "front",
     "file": "/garments/std/aldea-classic-tshirt-black-front.jpg",
     "printArea": {
-      "x": 568,
-      "y": 473,
-      "w": 872,
-      "h": 1133
+      "x": 602,
+      "y": 515,
+      "w": 802,
+      "h": 1042
     },
-    "pxPerCm": 24.914285714285715
+    "pxPerCm": 22.914285714285715
   },
   {
     "garmentKey": "aldea-classic-tshirt",
@@ -18,12 +18,12 @@
     "side": "back",
     "file": "/garments/std/aldea-classic-tshirt-black-back.jpg",
     "printArea": {
-      "x": 580,
-      "y": 343,
-      "w": 836,
-      "h": 1350
+      "x": 613,
+      "y": 394,
+      "w": 771,
+      "h": 1245
     },
-    "pxPerCm": 23.885714285714286
+    "pxPerCm": 22.02857142857143
   },
   {
     "garmentKey": "aldea-classic-tshirt",
@@ -31,12 +31,12 @@
     "side": "front",
     "file": "/garments/std/aldea-classic-tshirt-white-front.jpg",
     "printArea": {
-      "x": 579,
-      "y": 428,
-      "w": 859,
-      "h": 1221
+      "x": 610,
+      "y": 470,
+      "w": 796,
+      "h": 1131
     },
-    "pxPerCm": 24.542857142857144
+    "pxPerCm": 22.742857142857144
   },
   {
     "garmentKey": "aldea-classic-tshirt",
@@ -44,12 +44,12 @@
     "side": "back",
     "file": "/garments/std/aldea-classic-tshirt-white-back.jpg",
     "printArea": {
-      "x": 639,
-      "y": 368,
-      "w": 761,
-      "h": 1269
+      "x": 668,
+      "y": 419,
+      "w": 701,
+      "h": 1169
     },
-    "pxPerCm": 21.742857142857144
+    "pxPerCm": 20.02857142857143
   },
   {
     "garmentKey": "aura-oversize-tshirt",
@@ -57,12 +57,12 @@
     "side": "front",
     "file": "/garments/std/aura-oversize-tshirt-black-front.jpg",
     "printArea": {
-      "x": 625,
-      "y": 460,
-      "w": 764,
-      "h": 1141
+      "x": 662,
+      "y": 513,
+      "w": 690,
+      "h": 1031
     },
-    "pxPerCm": 21.82857142857143
+    "pxPerCm": 19.714285714285715
   },
   {
     "garmentKey": "aura-oversize-tshirt",
@@ -70,12 +70,12 @@
     "side": "back",
     "file": "/garments/std/aura-oversize-tshirt-black-back.jpg",
     "printArea": {
-      "x": 609,
-      "y": 348,
-      "w": 783,
-      "h": 1319
+      "x": 672,
+      "y": 452,
+      "w": 658,
+      "h": 1108
     },
-    "pxPerCm": 22.37142857142857
+    "pxPerCm": 18.8
   },
   {
     "garmentKey": "aura-oversize-tshirt",
@@ -83,12 +83,12 @@
     "side": "front",
     "file": "/garments/std/aura-oversize-tshirt-white-front.jpg",
     "printArea": {
-      "x": 663,
-      "y": 404,
-      "w": 680,
-      "h": 1264
+      "x": 696,
+      "y": 463,
+      "w": 613,
+      "h": 1140
     },
-    "pxPerCm": 19.428571428571427
+    "pxPerCm": 17.514285714285716
   },
   {
     "garmentKey": "aura-oversize-tshirt",
@@ -96,12 +96,12 @@
     "side": "back",
     "file": "/garments/std/aura-oversize-tshirt-white-back.jpg",
     "printArea": {
-      "x": 661,
-      "y": 351,
-      "w": 742,
-      "h": 1327
+      "x": 716,
+      "y": 456,
+      "w": 623,
+      "h": 1115
     },
-    "pxPerCm": 21.2
+    "pxPerCm": 17.8
   },
   {
     "garmentKey": "aura-oversize-tshirt",
@@ -109,12 +109,12 @@
     "side": "front",
     "file": "/garments/std/aura-oversize-tshirt-stone-wash-front.jpg",
     "printArea": {
-      "x": 658,
-      "y": 397,
-      "w": 681,
-      "h": 1266
+      "x": 692,
+      "y": 457,
+      "w": 615,
+      "h": 1143
     },
-    "pxPerCm": 19.457142857142856
+    "pxPerCm": 17.571428571428573
   },
   {
     "garmentKey": "aura-oversize-tshirt",
@@ -122,12 +122,12 @@
     "side": "back",
     "file": "/garments/std/aura-oversize-tshirt-stone-wash-back.jpg",
     "printArea": {
-      "x": 639,
-      "y": 339,
-      "w": 753,
-      "h": 1332
+      "x": 697,
+      "y": 445,
+      "w": 633,
+      "h": 1119
     },
-    "pxPerCm": 21.514285714285716
+    "pxPerCm": 18.085714285714285
   },
   {
     "garmentKey": "remera-clasica-mujer",
@@ -187,12 +187,12 @@
     "side": "front",
     "file": "/garments/std/remera-crop-mujer-black-front.jpg",
     "printArea": {
-      "x": 635,
-      "y": 419,
-      "w": 670,
-      "h": 766
+      "x": 714,
+      "y": 545,
+      "w": 526,
+      "h": 601
     },
-    "pxPerCm": 19.142857142857142
+    "pxPerCm": 15.028571428571428
   },
   {
     "garmentKey": "remera-crop-mujer",
@@ -200,12 +200,12 @@
     "side": "back",
     "file": "/garments/std/remera-crop-mujer-black-back.jpg",
     "printArea": {
-      "x": 649,
-      "y": 353,
-      "w": 680,
-      "h": 764
+      "x": 743,
+      "y": 526,
+      "w": 499,
+      "h": 560
     },
-    "pxPerCm": 19.428571428571427
+    "pxPerCm": 14.257142857142858
   },
   {
     "garmentKey": "remera-crop-mujer",
@@ -213,12 +213,12 @@
     "side": "front",
     "file": "/garments/std/remera-crop-mujer-chocolate-front.jpg",
     "printArea": {
-      "x": 637,
-      "y": 422,
-      "w": 667,
-      "h": 762
+      "x": 717,
+      "y": 550,
+      "w": 520,
+      "h": 594
     },
-    "pxPerCm": 19.057142857142857
+    "pxPerCm": 14.857142857142858
   },
   {
     "garmentKey": "remera-crop-mujer",
@@ -226,12 +226,12 @@
     "side": "back",
     "file": "/garments/std/remera-crop-mujer-chocolate-back.jpg",
     "printArea": {
-      "x": 653,
-      "y": 431,
-      "w": 660,
-      "h": 741
+      "x": 734,
+      "y": 563,
+      "w": 506,
+      "h": 569
     },
-    "pxPerCm": 18.857142857142858
+    "pxPerCm": 14.457142857142857
   },
   {
     "garmentKey": "remera-crop-mujer",
@@ -239,12 +239,12 @@
     "side": "front",
     "file": "/garments/std/remera-crop-mujer-gray-front.jpg",
     "printArea": {
-      "x": 635,
-      "y": 422,
-      "w": 667,
-      "h": 762
+      "x": 715,
+      "y": 549,
+      "w": 521,
+      "h": 595
     },
-    "pxPerCm": 19.057142857142857
+    "pxPerCm": 14.885714285714286
   },
   {
     "garmentKey": "remera-crop-mujer",
@@ -252,12 +252,12 @@
     "side": "back",
     "file": "/garments/std/remera-crop-mujer-gray-back.jpg",
     "printArea": {
-      "x": 645,
-      "y": 389,
-      "w": 681,
-      "h": 765
+      "x": 741,
+      "y": 553,
+      "w": 497,
+      "h": 559
     },
-    "pxPerCm": 19.457142857142856
+    "pxPerCm": 14.2
   },
   {
     "garmentKey": "remera-crop-mujer",
@@ -265,12 +265,12 @@
     "side": "back",
     "file": "/garments/std/remera-crop-mujer-yellow-back.jpg",
     "printArea": {
-      "x": 651,
-      "y": 414,
-      "w": 662,
-      "h": 744
+      "x": 731,
+      "y": 548,
+      "w": 511,
+      "h": 574
     },
-    "pxPerCm": 18.914285714285715
+    "pxPerCm": 14.6
   },
   {
     "garmentKey": "musculosa-bali",
@@ -317,12 +317,12 @@
     "side": "front",
     "file": "/garments/std/buzo-cuello-redondo-black-front.jpg",
     "printArea": {
-      "x": 607,
-      "y": 541,
-      "w": 794,
-      "h": 684
+      "x": 677,
+      "y": 622,
+      "w": 655,
+      "h": 564
     },
-    "pxPerCm": 22.685714285714287
+    "pxPerCm": 18.714285714285715
   },
   {
     "garmentKey": "buzo-cuello-redondo",
@@ -330,12 +330,12 @@
     "side": "back",
     "file": "/garments/std/buzo-cuello-redondo-black-back.jpg",
     "printArea": {
-      "x": 603,
-      "y": 389,
-      "w": 785,
-      "h": 938
+      "x": 667,
+      "y": 487,
+      "w": 660,
+      "h": 788
     },
-    "pxPerCm": 22.428571428571427
+    "pxPerCm": 18.857142857142858
   },
   {
     "garmentKey": "buzo-cuello-redondo",
@@ -343,12 +343,12 @@
     "side": "front",
     "file": "/garments/std/buzo-cuello-redondo-white-front.jpg",
     "printArea": {
-      "x": 564,
-      "y": 488,
-      "w": 826,
-      "h": 748
+      "x": 686,
+      "y": 630,
+      "w": 596,
+      "h": 540
     },
-    "pxPerCm": 23.6
+    "pxPerCm": 17.02857142857143
   },
   {
     "garmentKey": "buzo-cuello-redondo",
@@ -356,12 +356,12 @@
     "side": "back",
     "file": "/garments/std/buzo-cuello-redondo-white-back.jpg",
     "printArea": {
-      "x": 592,
-      "y": 405,
-      "w": 814,
-      "h": 973
+      "x": 671,
+      "y": 521,
+      "w": 657,
+      "h": 784
     },
-    "pxPerCm": 23.257142857142856
+    "pxPerCm": 18.771428571428572
   },
   {
     "garmentKey": "buzo-cuello-redondo",
@@ -369,12 +369,12 @@
     "side": "front",
     "file": "/garments/std/buzo-cuello-redondo-stone-wash-front.jpg",
     "printArea": {
-      "x": 621,
-      "y": 413,
-      "w": 719,
-      "h": 719
+      "x": 693,
+      "y": 524,
+      "w": 584,
+      "h": 584
     },
-    "pxPerCm": 20.542857142857144
+    "pxPerCm": 16.685714285714287
   },
   {
     "garmentKey": "buzo-cuello-redondo",
@@ -382,12 +382,12 @@
     "side": "back",
     "file": "/garments/std/buzo-cuello-redondo-stone-wash-back.jpg",
     "printArea": {
-      "x": 598,
-      "y": 395,
-      "w": 797,
-      "h": 952
+      "x": 675,
+      "y": 512,
+      "w": 644,
+      "h": 769
     },
-    "pxPerCm": 22.771428571428572
+    "pxPerCm": 18.4
   },
   {
     "garmentKey": "buzo-hoodie-unisex",
@@ -395,12 +395,12 @@
     "side": "front",
     "file": "/garments/std/buzo-hoodie-unisex-black-front.jpg",
     "printArea": {
-      "x": 692,
-      "y": 734,
-      "w": 620,
-      "h": 500
+      "x": 676,
+      "y": 725,
+      "w": 610,
+      "h": 491
     },
-    "pxPerCm": 17.714285714285715
+    "pxPerCm": 17.428571428571427
   },
   {
     "garmentKey": "buzo-hoodie-unisex",
@@ -409,11 +409,11 @@
     "file": "/garments/std/buzo-hoodie-unisex-black-back.jpg",
     "printArea": {
       "x": 690,
-      "y": 643,
-      "w": 623,
-      "h": 623
+      "y": 639,
+      "w": 616,
+      "h": 616
     },
-    "pxPerCm": 17.8
+    "pxPerCm": 17.6
   },
   {
     "garmentKey": "buzo-hoodie-unisex",
@@ -421,12 +421,12 @@
     "side": "front",
     "file": "/garments/std/buzo-hoodie-unisex-white-front.jpg",
     "printArea": {
-      "x": 692,
-      "y": 642,
-      "w": 573,
-      "h": 484
+      "x": 675,
+      "y": 628,
+      "w": 556,
+      "h": 469
     },
-    "pxPerCm": 16.37142857142857
+    "pxPerCm": 15.885714285714286
   },
   {
     "garmentKey": "buzo-hoodie-unisex",
@@ -434,12 +434,12 @@
     "side": "front",
     "file": "/garments/std/buzo-hoodie-unisex-stone-wash-front.jpg",
     "printArea": {
-      "x": 705,
-      "y": 629,
-      "w": 553,
-      "h": 518
+      "x": 688,
+      "y": 621,
+      "w": 543,
+      "h": 509
     },
-    "pxPerCm": 15.8
+    "pxPerCm": 15.514285714285714
   },
   {
     "garmentKey": "buzo-hoodie-unisex",
@@ -447,12 +447,12 @@
     "side": "back",
     "file": "/garments/std/buzo-hoodie-unisex-stone-wash-back.jpg",
     "printArea": {
-      "x": 673,
-      "y": 642,
-      "w": 641,
-      "h": 641
+      "x": 674,
+      "y": 640,
+      "w": 638,
+      "h": 638
     },
-    "pxPerCm": 18.314285714285713
+    "pxPerCm": 18.228571428571428
   },
   {
     "garmentKey": "remera-infantil",
@@ -460,12 +460,12 @@
     "side": "front",
     "file": "/garments/std/remera-infantil-white-front.jpg",
     "printArea": {
-      "x": 606,
-      "y": 602,
-      "w": 791,
-      "h": 1023
+      "x": 673,
+      "y": 670,
+      "w": 657,
+      "h": 850
     },
-    "pxPerCm": 22.6
+    "pxPerCm": 18.771428571428572
   },
   {
     "garmentKey": "remera-infantil",
@@ -473,12 +473,12 @@
     "side": "back",
     "file": "/garments/std/remera-infantil-white-back.jpg",
     "printArea": {
-      "x": 615,
-      "y": 541,
-      "w": 777,
-      "h": 1166
+      "x": 654,
+      "y": 588,
+      "w": 699,
+      "h": 1049
     },
-    "pxPerCm": 22.2
+    "pxPerCm": 19.97142857142857
   },
   {
     "garmentKey": "remera-infantil",
@@ -486,12 +486,12 @@
     "side": "front",
     "file": "/garments/std/remera-infantil-black-front.jpg",
     "printArea": {
-      "x": 608,
-      "y": 602,
-      "w": 786,
-      "h": 1017
+      "x": 675,
+      "y": 670,
+      "w": 651,
+      "h": 843
     },
-    "pxPerCm": 22.457142857142856
+    "pxPerCm": 18.6
   },
   {
     "garmentKey": "remera-infantil",
@@ -499,12 +499,12 @@
     "side": "back",
     "file": "/garments/std/remera-infantil-black-back.jpg",
     "printArea": {
-      "x": 615,
-      "y": 543,
-      "w": 773,
-      "h": 1160
+      "x": 654,
+      "y": 589,
+      "w": 695,
+      "h": 1043
     },
-    "pxPerCm": 22.085714285714285
+    "pxPerCm": 19.857142857142858
   },
   {
     "garmentKey": "remera-infantil",
@@ -512,12 +512,12 @@
     "side": "front",
     "file": "/garments/std/remera-infantil-gray-front.jpg",
     "printArea": {
-      "x": 607,
-      "y": 600,
-      "w": 788,
-      "h": 1020
+      "x": 676,
+      "y": 670,
+      "w": 652,
+      "h": 844
     },
-    "pxPerCm": 22.514285714285716
+    "pxPerCm": 18.62857142857143
   },
   {
     "garmentKey": "remera-infantil",
@@ -525,12 +525,12 @@
     "side": "back",
     "file": "/garments/std/remera-infantil-gray-back.jpg",
     "printArea": {
-      "x": 613,
-      "y": 540,
-      "w": 775,
-      "h": 1163
+      "x": 652,
+      "y": 586,
+      "w": 698,
+      "h": 1046
     },
-    "pxPerCm": 22.142857142857142
+    "pxPerCm": 19.942857142857143
   },
   {
     "garmentKey": "remera-infantil",
@@ -538,12 +538,12 @@
     "side": "front",
     "file": "/garments/std/remera-infantil-yellow-front.jpg",
     "printArea": {
-      "x": 611,
-      "y": 606,
-      "w": 785,
-      "h": 1016
+      "x": 677,
+      "y": 673,
+      "w": 651,
+      "h": 843
     },
-    "pxPerCm": 22.428571428571427
+    "pxPerCm": 18.6
   },
   {
     "garmentKey": "remera-infantil",
@@ -551,12 +551,12 @@
     "side": "back",
     "file": "/garments/std/remera-infantil-yellow-back.jpg",
     "printArea": {
-      "x": 616,
-      "y": 542,
-      "w": 772,
-      "h": 1158
+      "x": 655,
+      "y": 588,
+      "w": 696,
+      "h": 1044
     },
-    "pxPerCm": 22.057142857142857
+    "pxPerCm": 19.885714285714286
   },
   {
     "garmentKey": "remera-infantil",
@@ -564,12 +564,12 @@
     "side": "front",
     "file": "/garments/std/remera-infantil-celeste-front.jpg",
     "printArea": {
-      "x": 610,
-      "y": 604,
-      "w": 786,
-      "h": 1017
+      "x": 677,
+      "y": 672,
+      "w": 651,
+      "h": 843
     },
-    "pxPerCm": 22.457142857142856
+    "pxPerCm": 18.6
   },
   {
     "garmentKey": "remera-infantil",
@@ -577,12 +577,12 @@
     "side": "back",
     "file": "/garments/std/remera-infantil-celeste-back.jpg",
     "printArea": {
-      "x": 614,
-      "y": 544,
-      "w": 775,
-      "h": 1163
+      "x": 654,
+      "y": 591,
+      "w": 695,
+      "h": 1043
     },
-    "pxPerCm": 22.142857142857142
+    "pxPerCm": 19.857142857142858
   },
   {
     "garmentKey": "remera-infantil",
@@ -590,12 +590,12 @@
     "side": "front",
     "file": "/garments/std/remera-infantil-rosa-front.jpg",
     "printArea": {
-      "x": 607,
-      "y": 602,
-      "w": 787,
-      "h": 1019
+      "x": 675,
+      "y": 671,
+      "w": 653,
+      "h": 845
     },
-    "pxPerCm": 22.485714285714284
+    "pxPerCm": 18.65714285714286
   },
   {
     "garmentKey": "remera-infantil",
@@ -603,12 +603,12 @@
     "side": "back",
     "file": "/garments/std/remera-infantil-rosa-back.jpg",
     "printArea": {
-      "x": 615,
-      "y": 541,
-      "w": 774,
-      "h": 1161
+      "x": 655,
+      "y": 588,
+      "w": 696,
+      "h": 1044
     },
-    "pxPerCm": 22.114285714285714
+    "pxPerCm": 19.885714285714286
   },
   {
     "garmentKey": "totebag",
@@ -635,5 +635,44 @@
       "h": 853
     },
     "pxPerCm": 21.257142857142856
+  },
+  {
+    "garmentKey": "remera-crop-mujer",
+    "color": "yellow",
+    "side": "front",
+    "file": "/garments/std/remera-crop-mujer-yellow-front.jpg",
+    "printArea": {
+      "x": 721,
+      "y": 552,
+      "w": 521,
+      "h": 595
+    },
+    "pxPerCm": 14.885714285714286
+  },
+  {
+    "garmentKey": "musculosa-bali",
+    "color": "white",
+    "side": "front",
+    "file": "/garments/std/musculosa-bali-white-front.jpg",
+    "printArea": {
+      "x": 617,
+      "y": 475,
+      "w": 760,
+      "h": 950
+    },
+    "pxPerCm": 21.714285714285715
+  },
+  {
+    "garmentKey": "buzo-hoodie-unisex",
+    "color": "white",
+    "side": "back",
+    "file": "/garments/std/buzo-hoodie-unisex-white-back.jpg",
+    "printArea": {
+      "x": 681,
+      "y": 647,
+      "w": 622,
+      "h": 622
+    },
+    "pxPerCm": 17.771428571428572
   }
 ]
