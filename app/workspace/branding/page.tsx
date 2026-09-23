@@ -46,6 +46,11 @@ import { authFetch } from '@/lib/partners/auth-fetch'
 // Types & Constants
 // ---------------------------------------------------------------------------
 
+interface HeroFocal {
+  x: number
+  y: number
+}
+
 interface BrandingData {
   logo_url: string
   banner_url: string
@@ -60,7 +65,13 @@ interface BrandingData {
   about_text: string
   cta_text: string
   cta_url: string
+  // Fase 2 — toggles del hero y punto de foco del banner (metadata en DB)
+  hero_hide_name: boolean
+  hero_hide_logo: boolean
+  hero_focal: HeroFocal
 }
+
+const DEFAULT_HERO_FOCAL: HeroFocal = { x: 50, y: 50 }
 
 const EMPTY_BRANDING: BrandingData = {
   logo_url: '',
@@ -76,6 +87,9 @@ const EMPTY_BRANDING: BrandingData = {
   about_text: '',
   cta_text: '',
   cta_url: '',
+  hero_hide_name: false,
+  hero_hide_logo: false,
+  hero_focal: DEFAULT_HERO_FOCAL,
 }
 
 const FONT_OPTIONS = [
@@ -167,13 +181,28 @@ function LivePreview({ branding, slug }: { branding: BrandingData; slug: string 
           style={{ backgroundColor: branding.primary_color + '15' }}
         >
           {branding.hero_url || branding.banner_url ? (
-            <NextImage
-              src={branding.hero_url || branding.banner_url}
-              alt="Hero"
-              fill
-              className="object-cover"
-              unoptimized
-            />
+            <>
+              <NextImage
+                src={branding.hero_url || branding.banner_url}
+                alt="Hero"
+                fill
+                className="object-cover"
+                unoptimized
+                style={{ objectPosition: `${branding.hero_focal.x}% ${branding.hero_focal.y}%` }}
+              />
+              <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center gap-0.5">
+                {!branding.hero_hide_logo && branding.logo_url && (
+                  <div className="relative w-4 h-4 rounded overflow-hidden border border-white/40 bg-black/30">
+                    <NextImage src={branding.logo_url} alt="Logo hero" fill className="object-contain" unoptimized />
+                  </div>
+                )}
+                {!branding.hero_hide_name && (
+                  <p className="text-[9px] font-bold text-white drop-shadow">
+                    {slug?.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Tu Marca'}
+                  </p>
+                )}
+              </div>
+            </>
           ) : (
             <div className="text-center px-2">
               <p className="text-[9px] font-semibold" style={{ fontFamily, color: brandColor }}>
@@ -236,6 +265,78 @@ function LivePreview({ branding, slug }: { branding: BrandingData; slug: string 
 }
 
 // ---------------------------------------------------------------------------
+// Focal point picker (Fase 2) — click/tap sobre la miniatura del banner para
+// elegir qué parte NO se debe recortar. Alimenta metadata.hero_focal.
+// ---------------------------------------------------------------------------
+
+function FocalPointPicker({
+  imageUrl,
+  focal,
+  onChange,
+}: {
+  imageUrl: string
+  focal: HeroFocal
+  onChange: (focal: HeroFocal) => void
+}) {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const handlePick = (clientX: number, clientY: number) => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (!rect || rect.width === 0 || rect.height === 0) return
+    const x = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100))
+    const y = Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100))
+    onChange({ x: Math.round(x), y: Math.round(y) })
+  }
+
+  const objectPosition = `${focal.x}% ${focal.y}%`
+
+  return (
+    <div className="space-y-3">
+      <div
+        ref={containerRef}
+        role="button"
+        tabIndex={0}
+        aria-label="Elegir punto de foco del banner"
+        onClick={(e) => handlePick(e.clientX, e.clientY)}
+        className="relative w-full h-36 rounded-lg overflow-hidden border border-zinc-700 cursor-crosshair select-none"
+      >
+        <NextImage
+          src={imageUrl}
+          alt="Banner — elegí el punto que no se debe recortar"
+          fill
+          unoptimized
+          className="object-cover pointer-events-none"
+          style={{ objectPosition }}
+        />
+        <div
+          className="absolute w-4 h-4 -ml-2 -mt-2 rounded-full border-2 border-white bg-violet-500 shadow-lg pointer-events-none"
+          style={{ left: `${focal.x}%`, top: `${focal.y}%` }}
+        />
+      </div>
+      <p className="text-[11px] text-zinc-500">
+        Tocá en la imagen el punto que NO se tiene que cortar. Por defecto se usa el centro (50/50).
+      </p>
+
+      {/* Vista previa de recorte real: mobile y desktop */}
+      <div className="flex flex-wrap items-end gap-4">
+        <div>
+          <p className="text-[10px] text-zinc-500 mb-1">Mobile</p>
+          <div className="relative w-[130px] h-[148px] rounded-md overflow-hidden border border-zinc-700 bg-zinc-800">
+            <NextImage src={imageUrl} alt="Vista previa mobile" fill unoptimized className="object-cover" style={{ objectPosition }} />
+          </div>
+        </div>
+        <div>
+          <p className="text-[10px] text-zinc-500 mb-1">Desktop</p>
+          <div className="relative w-[260px] h-[110px] rounded-md overflow-hidden border border-zinc-700 bg-zinc-800">
+            <NextImage src={imageUrl} alt="Vista previa desktop" fill unoptimized className="object-cover" style={{ objectPosition }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Main Page
 // ---------------------------------------------------------------------------
 
@@ -269,7 +370,7 @@ export default function BrandingPage() {
       const merged: BrandingData = { ...EMPTY_BRANDING }
       for (const key of Object.keys(EMPTY_BRANDING) as (keyof BrandingData)[]) {
         if (brandingData[key] !== undefined && brandingData[key] !== null) {
-          merged[key] = brandingData[key]
+          ;(merged as unknown as Record<string, unknown>)[key] = brandingData[key]
         }
       }
       setBranding(merged)
@@ -291,7 +392,7 @@ export default function BrandingPage() {
       const changed: Partial<BrandingData> = {}
       for (const key of Object.keys(branding) as (keyof BrandingData)[]) {
         if (branding[key] !== original[key]) {
-          changed[key] = branding[key]
+          ;(changed as Record<string, unknown>)[key] = branding[key]
         }
       }
 
@@ -313,7 +414,7 @@ export default function BrandingPage() {
       for (const key of Object.keys(EMPTY_BRANDING) as (keyof BrandingData)[]) {
         const v = brandingPayload[key as string]
         if (v !== undefined && v !== null) {
-          merged[key] = v as BrandingData[typeof key]
+          ;(merged as unknown as Record<string, unknown>)[key] = v
         }
       }
       setBranding(merged)
@@ -519,6 +620,48 @@ export default function BrandingPage() {
                       className="[&_div]:h-[200px] [&_img]:h-[200px]"
                     />
                   </div>
+
+                  {/* Toggles del hero (Fase 2) — algunos banners ya traen el
+                      nombre de marca escrito, y el template lo escribía encima
+                      (auditoría: doble marca en 13/25 tiendas). */}
+                  <div className="space-y-3 rounded-lg border border-zinc-800 bg-zinc-900/40 p-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={branding.hero_hide_name}
+                        onChange={(e) => updateField('hero_hide_name', e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-violet-600 focus:ring-violet-500"
+                      />
+                      <span className="text-sm text-zinc-300">
+                        Mi banner ya tiene el nombre de la marca
+                        <span className="block text-xs text-zinc-500">No lo vuelvas a escribir encima en la portada.</span>
+                      </span>
+                    </label>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={branding.hero_hide_logo}
+                        onChange={(e) => updateField('hero_hide_logo', e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-violet-600 focus:ring-violet-500"
+                      />
+                      <span className="text-sm text-zinc-300">
+                        Ocultar el logo en la portada
+                        <span className="block text-xs text-zinc-500">El logo del encabezado (navbar) no se ve afectado.</span>
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Punto de foco del banner (Fase 2) */}
+                  {(branding.hero_url || branding.banner_url) && (
+                    <div>
+                      <Label className="text-zinc-300 mb-2 block">Punto de foco del banner</Label>
+                      <FocalPointPicker
+                        imageUrl={branding.hero_url || branding.banner_url}
+                        focal={branding.hero_focal}
+                        onChange={(focal) => updateField('hero_focal', focal)}
+                      />
+                    </div>
+                  )}
                   </div>
                 </CardContent>
               </Card>

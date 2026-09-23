@@ -9,6 +9,7 @@ import { computeLogoToneFromUrl } from '@/lib/partners/logo-tone'
 import { countPublishedProducts } from '@/lib/partners/catalog'
 import { sendEmail } from '@/lib/email'
 import { buildStorefrontReactivatedEmail } from '@/lib/partners/storefront-reactivated-email'
+import { parseHeroFocal, DEFAULT_HERO_FOCAL } from '@/lib/partners/hero-focal'
 
 const BRANDING_FIELDS = [
   'logo_url',
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
     const auth = await requireTenantPermission(request, 'marketing:read')
     if (!auth.ok) return auth.response
     const tenant = auth.tenant
+    const metadata = (tenant.metadata as Record<string, unknown> | null) || {}
 
     return NextResponse.json({
       plan: tenant.plan,
@@ -52,6 +54,10 @@ export async function GET(request: NextRequest) {
         cta_text: tenant.cta_text,
         cta_url: tenant.cta_url,
         visual_style: tenant.visual_style,
+        // Toggles del hero + punto de foco (Fase 2) — viven en metadata, no en columnas propias.
+        hero_hide_name: metadata.hero_hide_name === true,
+        hero_hide_logo: metadata.hero_hide_logo === true,
+        hero_focal: parseHeroFocal(metadata.hero_focal) || DEFAULT_HERO_FOCAL,
       },
     })
   } catch (error) {
@@ -79,11 +85,50 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    if (Object.keys(updates).length === 0) {
+    // Toggles del hero + punto de foco (Fase 2): no son columnas de `tenants`,
+    // viven en metadata. Se validan acá y se mergean sin pisar otras claves
+    // (ojo: logo_tone/logo_aspect ya viven en metadata, más abajo).
+    const metadataUpdates: Record<string, unknown> = {}
+    let hasMetadataUpdate = false
+    if ('hero_hide_name' in body) {
+      if (typeof body.hero_hide_name !== 'boolean') {
+        return NextResponse.json({ error: 'hero_hide_name debe ser booleano' }, { status: 400 })
+      }
+      metadataUpdates.hero_hide_name = body.hero_hide_name
+      hasMetadataUpdate = true
+    }
+    if ('hero_hide_logo' in body) {
+      if (typeof body.hero_hide_logo !== 'boolean') {
+        return NextResponse.json({ error: 'hero_hide_logo debe ser booleano' }, { status: 400 })
+      }
+      metadataUpdates.hero_hide_logo = body.hero_hide_logo
+      hasMetadataUpdate = true
+    }
+    if ('hero_focal' in body) {
+      const parsed = parseHeroFocal(body.hero_focal)
+      if (!parsed) {
+        return NextResponse.json(
+          { error: 'hero_focal invalido: se espera { x, y } con numeros 0-100' },
+          { status: 400 },
+        )
+      }
+      metadataUpdates.hero_focal = parsed
+      hasMetadataUpdate = true
+    }
+
+    if (Object.keys(updates).length === 0 && !hasMetadataUpdate) {
       return NextResponse.json(
         { error: 'No se enviaron campos de branding validos' },
         { status: 400 },
       )
+    }
+
+    if (hasMetadataUpdate) {
+      updates.metadata = {
+        ...(tenant.metadata || {}),
+        ...((updates.metadata as Record<string, unknown>) || {}),
+        ...metadataUpdates,
+      }
     }
 
     // Logo nuevo o cambiado: calculamos tono (dark/light) y aspect ratio para
@@ -181,6 +226,11 @@ export async function PUT(request: NextRequest) {
         cta_text: updated.cta_text,
         cta_url: updated.cta_url,
         visual_style: updated.visual_style,
+        hero_hide_name: (updated.metadata as Record<string, unknown> | null)?.hero_hide_name === true,
+        hero_hide_logo: (updated.metadata as Record<string, unknown> | null)?.hero_hide_logo === true,
+        hero_focal:
+          parseHeroFocal((updated.metadata as Record<string, unknown> | null)?.hero_focal) ||
+          DEFAULT_HERO_FOCAL,
       },
     })
   } catch (error) {
