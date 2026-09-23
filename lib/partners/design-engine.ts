@@ -280,11 +280,45 @@ export async function saveDesignAsset(
     .single()
 
   if (error || !data) {
-    console.error('saveDesignAsset error:', error)
+    // El archivo ya está en R2; lo que falta es la fila de auditoría. No rompemos
+    // la respuesta al partner, pero el fallo tiene que verse: hasta 09/2026 este
+    // insert fallaba SIEMPRE por un CHECK (status 'active' no permitido) y nadie
+    // se enteró porque solo iba a console.error.
+    const detail = error
+      ? `${error.code ?? 'sin código'}: ${error.message ?? String(error)}`
+      : 'insert sin fila devuelta'
+    console.error(`[saveDesignAsset] insert partner_assets falló (type=${type}, key=${storageKey}) — ${detail}`)
+    await alertSaveDesignAssetFailure(type, storageKey, detail)
     return null
   }
 
   return data as PartnerAsset
+}
+
+// Throttle por instancia: si el insert se rompe, falla en cada corrida del Studio
+// y no queremos una alerta de Telegram por mockup.
+const SAVE_ASSET_ALERT_THROTTLE_MS = 10 * 60 * 1000
+let lastSaveAssetAlertAt = 0
+
+async function alertSaveDesignAssetFailure(type: string, storageKey: string, detail: string) {
+  const now = Date.now()
+  if (now - lastSaveAssetAlertAt < SAVE_ASSET_ALERT_THROTTLE_MS) return
+  lastSaveAssetAlertAt = now
+  try {
+    const { notifyError } = await import('@/lib/notifications')
+    await notifyError({
+      area: 'Studio partners — registro de assets',
+      endpoint: 'saveDesignAsset → partner_assets',
+      message: `No se guardó la fila de ${type} (el archivo SÍ se subió a R2: ${storageKey}). ${detail}`,
+    })
+  } catch (e) {
+    console.warn('[saveDesignAsset] notifyError falló:', (e as Error).message)
+  }
+}
+
+/** Solo para tests: resetea el throttle de alertas. */
+export function __resetSaveDesignAssetAlertThrottle() {
+  lastSaveAssetAlertAt = 0
 }
 
 // ---------------------------------------------------------------------------
