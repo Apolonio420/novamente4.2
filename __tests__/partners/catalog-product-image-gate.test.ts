@@ -28,20 +28,26 @@ const state = vi.hoisted(() => ({
   existingProduct: null as null | Record<string, unknown>,
 }))
 
-// El gate consulta partner_assets — sin filas, así que solo el patrón de key
-// del compositor Studio decide (mismo mock minimalista que product-image-origin.test.ts).
+// El gate consulta partner_assets (fuente de verdad de los mockups del
+// Studio): GOOD_URL tiene su fila (match por storage_key o public_url); todo
+// lo demás devuelve [] (sin fila → rechazado, salvo patrones legacy).
+const GOOD_KEY = 'partners/impulso/mockups/abc.png'
 vi.mock('@/lib/supabase-admin', () => {
   function makeQuery() {
+    const eqValues: unknown[] = []
     const query: any = {
       from() { return query },
       select() { return query },
-      eq() { return query },
+      eq(_col: string, val: unknown) { eqValues.push(val); return query },
       neq() { return query },
       limit() { return query },
       is() { return query },
       update() { return query },
       single() { return Promise.resolve({ data: state.existingProduct, error: state.existingProduct ? null : new Error('not found') }) },
-      then(resolve: (v: unknown) => void) { resolve({ data: [], error: null }) },
+      then(resolve: (v: unknown) => void) {
+        const hasStudioRow = eqValues.includes('mockup') && (eqValues.includes(GOOD_KEY) || eqValues.includes(GOOD_URL))
+        resolve({ data: hasStudioRow ? [{ id: 'asset-1', source: 'ai_generated' }] : [], error: null })
+      },
     }
     return query
   }
@@ -97,9 +103,15 @@ describe('POST /api/partners/catalog — image origin gate', () => {
     expect(body.error).toMatch(/Studio/i)
   })
 
-  it('accepts a product whose image matches the Studio compositor key pattern', async () => {
+  it('accepts a product whose image is a Studio mockup registered in partner_assets', async () => {
     const res = await catalogPost(makePostRequest({ name: 'Remera test', price: 20000, images: [GOOD_URL] }))
     expect(res.status).toBe(201)
+  })
+
+  it('rejects a Studio-looking key that has no partner_assets row', async () => {
+    const unregistered = '/api/proxy-image?key=partners%2Fimpulso%2Fmockups%2Fnot-registered.png'
+    const res = await catalogPost(makePostRequest({ name: 'Remera test', price: 20000, images: [unregistered] }))
+    expect(res.status).toBe(400)
   })
 
   it('accepts a product with no images at all', async () => {
