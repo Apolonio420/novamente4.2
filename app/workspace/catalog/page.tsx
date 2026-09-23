@@ -1335,38 +1335,34 @@ export default function CatalogPage() {
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                      {/* TODO(fase2-gate-mockups): estas imágenes por color SÍ se
-                          muestran en la tienda pero, a diferencia de la imagen
-                          principal del producto (`images`, ver product-image-origin.ts),
-                          todavía no pasan por el gate "solo nuestros mockups" — quedan
-                          en `metadata.colors[].frontImage/backImage`, fuera del alcance
-                          de esta tarea. Usan type="design" solo para no romper contra el
-                          cierre de type="product" en /api/partners/upload. */}
+                      {/* Igual que la imagen principal del producto: estas fotos por
+                          color se muestran en la tienda (app/p/[slug]/[product]/page.tsx),
+                          así que se eligen entre los mockups del Studio, nunca por
+                          subida libre — y pasan por el mismo gate del lado servidor
+                          (findFirstDisallowedColorImage en product-image-origin.ts). */}
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="text-[10px] text-zinc-500 mb-1 block">Imagen frente</label>
-                          <ImageUpload
+                          <MockupPicker
                             value={color.frontImage || null}
                             onChange={(url) => {
                               const next = [...formColors]
                               next[ci] = { ...next[ci], frontImage: url || '' }
                               setFormColors(next)
                             }}
-                            type="design"
-                            className="[&_div]:h-20 [&_img]:h-20"
+                            heightClassName="h-20"
                           />
                         </div>
                         <div>
                           <label className="text-[10px] text-zinc-500 mb-1 block">Imagen dorso</label>
-                          <ImageUpload
+                          <MockupPicker
                             value={color.backImage || null}
                             onChange={(url) => {
                               const next = [...formColors]
                               next[ci] = { ...next[ci], backImage: url || '' }
                               setFormColors(next)
                             }}
-                            type="design"
-                            className="[&_div]:h-20 [&_img]:h-20"
+                            heightClassName="h-20"
                           />
                         </div>
                       </div>

@@ -29,9 +29,11 @@ interface MockupPickerProps {
   value: string | null
   onChange: (url: string | null) => void
   className?: string
+  /** Clase de alto del botón principal (default h-28). */
+  heightClassName?: string
 }
 
-export function MockupPicker({ value, onChange, className }: MockupPickerProps) {
+export function MockupPicker({ value, onChange, className, heightClassName = 'h-28' }: MockupPickerProps) {
   const [assets, setAssets] = useState<MockupAsset[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -60,7 +62,10 @@ export function MockupPicker({ value, onChange, className }: MockupPickerProps) 
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="relative w-full h-28 rounded-lg border border-dashed border-zinc-700 bg-zinc-900/40 flex items-center justify-center overflow-hidden hover:border-violet-500/50 transition-colors"
+        className={cn(
+          'relative w-full rounded-lg border border-dashed border-zinc-700 bg-zinc-900/40 flex items-center justify-center overflow-hidden hover:border-violet-500/50 transition-colors',
+          heightClassName,
+        )}
       >
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
