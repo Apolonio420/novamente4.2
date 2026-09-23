@@ -5,7 +5,11 @@ import { canAddProduct } from '@/lib/partners/plans'
 import { validatePartnerProductForCreation, validatePartnerProductPrice } from '@/lib/partners/product-policy'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getAllPublicGarmentPricing } from '@/lib/partners/garment-pricing.server'
-import { findFirstDisallowedProductImage, PRODUCT_IMAGE_ORIGIN_ERROR } from '@/lib/partners/product-image-origin'
+import {
+  findFirstDisallowedProductImage,
+  findFirstDisallowedColorImage,
+  PRODUCT_IMAGE_ORIGIN_ERROR,
+} from '@/lib/partners/product-image-origin'
 
 function normalizePricingPlan(plan: string | null | undefined): 'starter' | 'growth' | 'pro' {
   const p = (plan || '').toLowerCase()
@@ -86,6 +90,16 @@ export async function POST(request: NextRequest) {
     if (Array.isArray(body.images) && body.images.length > 0) {
       const badImage = await findFirstDisallowedProductImage(tenant.id, tenant.slug, body.images)
       if (badImage) {
+        return NextResponse.json({ error: PRODUCT_IMAGE_ORIGIN_ERROR }, { status: 400 })
+      }
+    }
+
+    // Mismo gate para las imágenes por color (metadata.colors[].images.front/back
+    // — la tienda pública también las muestra, ver app/p/[slug]/[product]/page.tsx).
+    const colorsInput = (body.metadata as Record<string, unknown> | null)?.colors
+    if (colorsInput) {
+      const badColorImage = await findFirstDisallowedColorImage(tenant.id, tenant.slug, colorsInput)
+      if (badColorImage) {
         return NextResponse.json({ error: PRODUCT_IMAGE_ORIGIN_ERROR }, { status: 400 })
       }
     }

@@ -13,7 +13,11 @@ import { computeAutoPublishUpdates, computeAutoUnpublishUpdates } from '@/lib/pa
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail } from '@/lib/email'
 import { buildStorefrontReactivatedEmail } from '@/lib/partners/storefront-reactivated-email'
-import { findFirstDisallowedProductImage, PRODUCT_IMAGE_ORIGIN_ERROR } from '@/lib/partners/product-image-origin'
+import {
+  findFirstDisallowedProductImage,
+  findFirstDisallowedColorImage,
+  PRODUCT_IMAGE_ORIGIN_ERROR,
+} from '@/lib/partners/product-image-origin'
 
 async function getProductById(productId: string) {
   const { data, error } = await (supabaseAdmin as any)
@@ -81,6 +85,25 @@ export async function PUT(
       )
       if (badImage) {
         return NextResponse.json({ error: PRODUCT_IMAGE_ORIGIN_ERROR }, { status: 400 })
+      }
+    }
+
+    // Mismo gate para metadata.colors[].images.front/back — misma regla
+    // "solo URLs nuevas" comparando contra el metadata.colors que el producto
+    // ya tenía.
+    if (updates.metadata !== undefined) {
+      const existingColors = (existing.metadata as Record<string, unknown> | null)?.colors
+      const newColors = (updates.metadata as Record<string, unknown> | null)?.colors
+      if (newColors) {
+        const badColorImage = await findFirstDisallowedColorImage(
+          auth.tenant.id,
+          auth.tenant.slug,
+          newColors,
+          existingColors,
+        )
+        if (badColorImage) {
+          return NextResponse.json({ error: PRODUCT_IMAGE_ORIGIN_ERROR }, { status: 400 })
+        }
       }
     }
 

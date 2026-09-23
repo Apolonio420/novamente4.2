@@ -21,6 +21,13 @@ vi.mock('@/lib/partners/permissions', () => ({
   })),
 }))
 
+// Estado del fixture "producto existente" que `getProductById` (PUT route)
+// devuelve via `.single()` — mutable por test (hoisted para que el factory
+// de vi.mock lo vea).
+const state = vi.hoisted(() => ({
+  existingProduct: null as null | Record<string, unknown>,
+}))
+
 // El gate consulta partner_assets — sin filas, así que solo el patrón de key
 // del compositor Studio decide (mismo mock minimalista que product-image-origin.test.ts).
 vi.mock('@/lib/supabase-admin', () => {
@@ -33,6 +40,7 @@ vi.mock('@/lib/supabase-admin', () => {
       limit() { return query },
       is() { return query },
       update() { return query },
+      single() { return Promise.resolve({ data: state.existingProduct, error: state.existingProduct ? null : new Error('not found') }) },
       then(resolve: (v: unknown) => void) { resolve({ data: [], error: null }) },
     }
     return query
@@ -59,10 +67,19 @@ vi.mock('@/lib/partners/garment-pricing.server', () => ({
 }))
 
 import { POST as catalogPost } from '@/app/api/partners/catalog/route'
+import { PUT as catalogPut } from '@/app/api/partners/catalog/[id]/route'
 
 function makePostRequest(body: unknown) {
   return new NextRequest('http://localhost/api/partners/catalog', {
     method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'content-type': 'application/json' },
+  })
+}
+
+function makePutRequest(body: unknown) {
+  return new NextRequest('http://localhost/api/partners/catalog/prod-1', {
+    method: 'PUT',
     body: JSON.stringify(body),
     headers: { 'content-type': 'application/json' },
   })
@@ -88,5 +105,74 @@ describe('POST /api/partners/catalog — image origin gate', () => {
   it('accepts a product with no images at all', async () => {
     const res = await catalogPost(makePostRequest({ name: 'Remera test', price: 20000 }))
     expect(res.status).toBe(201)
+  })
+
+  it('rejects a product whose metadata.colors carries a non-Studio image', async () => {
+    const res = await catalogPost(makePostRequest({
+      name: 'Remera test',
+      price: 20000,
+      metadata: { colors: [{ name: 'Negro', hex: '#000', images: { front: BAD_URL } }] },
+    }))
+    expect(res.status).toBe(400)
+    const body = await res.json()
+    expect(body.error).toMatch(/Studio/i)
+  })
+
+  it('accepts a product whose metadata.colors images all come from the Studio', async () => {
+    const res = await catalogPost(makePostRequest({
+      name: 'Remera test',
+      price: 20000,
+      metadata: { colors: [{ name: 'Negro', hex: '#000', images: { front: GOOD_URL, back: GOOD_URL } }] },
+    }))
+    expect(res.status).toBe(201)
+  })
+})
+
+describe('PUT /api/partners/catalog/[id] — image origin gate (images + metadata.colors)', () => {
+  const params = Promise.resolve({ id: 'prod-1' })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    state.existingProduct = {
+      id: 'prod-1',
+      tenant_id: TENANT.id,
+      status: 'draft',
+      price: 20000,
+      images: [],
+      metadata: {},
+    }
+  })
+
+  it('rejects a NEW top-level image that is not from the Studio', async () => {
+    const res = await catalogPut(makePutRequest({ images: [BAD_URL] }), { params })
+    expect(res.status).toBe(400)
+  })
+
+  it('allows an existing top-level image to stay untouched on unrelated edits', async () => {
+    state.existingProduct!.images = [BAD_URL]
+    const res = await catalogPut(makePutRequest({ images: [BAD_URL], price: 21000 }), { params })
+    expect(res.status).toBe(200)
+  })
+
+  it('rejects a NEW metadata.colors image that is not from the Studio', async () => {
+    const res = await catalogPut(makePutRequest({
+      metadata: { colors: [{ name: 'Negro', hex: '#000', images: { front: BAD_URL } }] },
+    }), { params })
+    expect(res.status).toBe(400)
+  })
+
+  it('allows an existing metadata.colors image to stay untouched on unrelated metadata edits', async () => {
+    state.existingProduct!.metadata = { colors: [{ name: 'Negro', hex: '#000', images: { front: BAD_URL } }] }
+    const res = await catalogPut(makePutRequest({
+      metadata: { colors: [{ name: 'Negro', hex: '#000', images: { front: BAD_URL } }], sizes: ['M'] },
+    }), { params })
+    expect(res.status).toBe(200)
+  })
+
+  it('accepts a NEW metadata.colors image that comes from the Studio', async () => {
+    const res = await catalogPut(makePutRequest({
+      metadata: { colors: [{ name: 'Negro', hex: '#000', images: { front: GOOD_URL } }] },
+    }), { params })
+    expect(res.status).toBe(200)
   })
 })
