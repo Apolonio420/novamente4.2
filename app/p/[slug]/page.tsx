@@ -48,7 +48,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const features = getPlanFeatures(tenant.plan)
   const title = tenant.seo_title || tenant.name
   const description =
-    tenant.seo_description || tenant.description || `${tenant.name} — storefront`
+    tenant.seo_description ||
+    tenant.description ||
+    `Tienda de ${tenant.name} en Novamente: prendas estampadas.`
   const canonicalUrl = `${BASE_URL}/p/${slug}`
   // Dynamic OG image — falls back to tenant banner/logo if OG route unavailable
   const dynamicOgImage = `${BASE_URL}/api/og?${new URLSearchParams({

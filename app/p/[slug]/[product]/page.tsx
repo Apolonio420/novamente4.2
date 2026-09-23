@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { getTenantBySlug } from '@/lib/partners/tenant'
 import { getProductBySlug, getPublishedProducts } from '@/lib/partners/catalog'
 import { getPlanFeatures } from '@/lib/partners/plans'
+import { getCatalogProduct } from '@/lib/catalog/products'
 import type { Tenant, PartnerProduct } from '@/lib/partners/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -413,7 +414,15 @@ export default async function ProductDetailPage({ params }: PageProps) {
     // arte y medida reales — el mockup de arriba es sólo la foto
     printFront: (product.metadata as any)?.print?.front ?? null,
     printBack: (product.metadata as any)?.print?.back ?? null,
-    sizes: Array.isArray((product.metadata as any)?.sizes) ? (product.metadata as any).sizes : undefined,
+    // Talles reales: metadata.sizes explícito > talles de la prenda del
+    // catálogo (metadata.garmentKey, misma fuente que usa el pricing en
+    // ledger.ts/variants.ts) > DEFAULT_SIZES fijo (S-XXL) como último
+    // fallback dentro de AddToCartButtons, solo si ninguna de las dos resuelve.
+    sizes: Array.isArray((product.metadata as any)?.sizes)
+      ? (product.metadata as any).sizes
+      : (typeof (product.metadata as any)?.garmentKey === "string"
+          ? getCatalogProduct((product.metadata as any).garmentKey)?.sizes
+          : undefined),
     sizing: (product.metadata as any)?.sizing ?? undefined,
     sizeGuideUrl: (product.metadata as any)?.size_prices ? "" : "/guia-de-talles-novamente.pdf",
     availableColors,
