@@ -144,5 +144,28 @@ export function industryLabel(tenant: { industry?: string | null; metadata?: any
   const trimmed = cleanIndustryText(tenant?.industry)
   if (!trimmed) return null
 
-  return CATEGORY_LABEL[trimmed] ?? trimmed
+  return CATEGORY_LABEL[trimmed] ?? (isSlugLike(trimmed) ? humanizeSlug(trimmed) : trimmed)
+}
+
+/**
+ * true solo para valores "slug-like": minúsculas/dígitos/guion bajo, sin
+ * espacios (ej. "indumentaria_streetwear"). El texto libre que un partner
+ * escribe a mano (con mayúsculas, espacios o puntuación — "Beer Sommelier",
+ * "fitness · streetwear") NO matchea esto y sigue devolviéndose tal cual, sin
+ * tocarlo: solo un slug que se "escapó" sin categoría conocida necesita
+ * humanizarse.
+ */
+function isSlugLike(value: string): boolean {
+  return /^[a-z0-9]+(_[a-z0-9]+)*$/.test(value)
+}
+
+/**
+ * `value` es un slug crudo que no matchea ningún CATEGORY_LABEL conocido
+ * (ej. "indumentaria_streetwear" — visto en /p/[slug], badge de rubro
+ * mostrando el slug tal cual en vez de texto legible). Se humaniza: "_" →
+ * espacio y primera letra en mayúscula.
+ */
+function humanizeSlug(value: string): string {
+  const spaced = value.replace(/_/g, ' ')
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
 }

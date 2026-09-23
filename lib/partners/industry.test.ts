@@ -130,6 +130,14 @@ describe('industryLabel', () => {
     expect(industryLabel({ industry: '  Remeras Peronistas  ' })).toBe('Remeras Peronistas')
   })
 
+  // Fase 2 — badge de rubro en /p/[slug] mostraba el slug crudo
+  // ("indumentaria_streetwear") en vez de texto legible cuando `industry` es
+  // un slug que no matchea ningún CATEGORY_LABEL conocido.
+  it('humaniza un slug no-canónico (guion bajo -> espacio + mayúscula inicial)', () => {
+    expect(industryLabel({ industry: 'indumentaria_streetwear' })).toBe('Indumentaria streetwear')
+    expect(industryLabel({ industry: 'merch_empresa_gourmet' })).toBe('Merch empresa gourmet')
+  })
+
   it('trata industry vacío o "-" como sin dato', () => {
     expect(industryLabel({ industry: '' })).toBeNull()
     expect(industryLabel({ industry: '   ' })).toBeNull()
