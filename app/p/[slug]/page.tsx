@@ -121,10 +121,11 @@ export default async function PartnerStorefrontPage({ params, searchParams }: Pa
     ? [sp.utm_source, sp.utm_medium, sp.utm_campaign].filter(Boolean).join('/')
     : ''
 
-  // FAQs for Growth+ (geoOptimized). Pro can use custom FAQs.
-  const faqs = features.geoOptimized
-    ? (tenant.custom_faqs?.length ? tenant.custom_faqs : getDefaultPartnerFAQs(tenant.name))
-    : []
+  // FAQs en todos los planes (antes solo Growth+/geoOptimized: 85/88 tiendas
+  // starter no mostraban nada). custom_faqs del partner sigue reemplazando
+  // a las por defecto cuando existen. El JSON-LD de FAQ (más abajo) usa esta
+  // misma variable, así que queda coherente con lo que se muestra.
+  const faqs = tenant.custom_faqs?.length ? tenant.custom_faqs : getDefaultPartnerFAQs(tenant.name)
 
   return (
     <main
@@ -166,7 +167,7 @@ export default async function PartnerStorefrontPage({ params, searchParams }: Pa
         />
       )}
 
-      {/* JSON-LD: FAQ (Growth+ via geoOptimized) */}
+      {/* JSON-LD: FAQ (todos los planes) */}
       {faqs.length > 0 && <JsonLd data={generateFAQSchema(faqs)} />}
 
       {/* ── Hero ──────────────────────────────────────────────── */}
@@ -196,7 +197,7 @@ export default async function PartnerStorefrontPage({ params, searchParams }: Pa
       {/* ── CTA ───────────────────────────────────────────────── */}
       <CtaSection tenant={tenant} utmRef={utmRef} hasProducts={products.length > 0} />
 
-      {/* ── FAQ Section (Growth+) ─────────────────────────────── */}
+      {/* ── FAQ Section (todos los planes) ───────────────────── */}
       {faqs.length > 0 && (
         <PartnerFaqSection faqs={faqs} primaryColor={tenant.primary_color} />
       )}
