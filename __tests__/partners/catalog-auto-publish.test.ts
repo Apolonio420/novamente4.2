@@ -117,6 +117,10 @@ const baseProduct = {
   category: 'Remera',
   status: 'draft',
   price: 20000,
+  // Fase 3 pieza E3 (frente y dorso siempre): publicar exige minimo 2
+  // imagenes — este fixture no testea esa regla (ver
+  // catalog-front-back-gate.test.ts), asi que la deja satisfecha de entrada.
+  images: ['https://cdn.example.com/front.jpg', 'https://cdn.example.com/back.jpg'],
   metadata: {},
 }
 

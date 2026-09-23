@@ -18,6 +18,7 @@ import {
   findFirstDisallowedColorImage,
   PRODUCT_IMAGE_ORIGIN_ERROR,
 } from '@/lib/partners/product-image-origin'
+import { validateFrontAndBackForPublish } from '@/lib/partners/product-sides'
 
 async function getProductById(productId: string) {
   const { data, error } = await (supabaseAdmin as any)
@@ -131,6 +132,15 @@ export async function PUT(
       const check = validateProductForPublish({ price: resolvedPrice, cost, variants })
       if (!check.ok) {
         return NextResponse.json({ error: check.reason }, { status: 400 })
+      }
+
+      // E3 — frente y dorso siempre: mínimo 2 imágenes para publicar, y si
+      // hay metadata.colors[] cada color necesita front Y back.
+      const resolvedImages = updates.images !== undefined ? updates.images : existing.images
+      const resolvedColors = (resolvedMeta as Record<string, unknown> | null)?.colors
+      const sidesCheck = validateFrontAndBackForPublish(resolvedImages, resolvedColors)
+      if (!sidesCheck.ok) {
+        return NextResponse.json({ error: sidesCheck.reason }, { status: 400 })
       }
     }
 
