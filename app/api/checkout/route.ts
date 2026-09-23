@@ -5,6 +5,7 @@ import { createOrder, findRecentDuplicateOrder } from "@/lib/db"
 import { toPublicR2Url } from "@/lib/r2"
 import { shippingCostFor, envioPorDistancia } from "@/lib/shipping-config"
 import { sanitizeAttribution } from "@/lib/attribution"
+import { resolveCheckoutOrigin } from "@/lib/checkout/origin"
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -12,6 +13,18 @@ const client = new MercadoPagoConfig({
 
 export async function POST(request: NextRequest) {
   try {
+    // Vuelta de MercadoPago a la tienda correcta (0.5): una compra que
+    // arrancó en <slug>.novamente.ar volvía siempre al apex fijo de
+    // NEXT_PUBLIC_BASE_URL y perdía el contexto de la tienda. Se usa el
+    // origen del REQUEST (Origin del fetch, Host como respaldo) solo si
+    // matchea la allowlist de dominios propios — ver lib/checkout/origin.ts.
+    const checkoutOrigin = resolveCheckoutOrigin({
+      originHeader: request.headers.get('origin'),
+      hostHeader: request.headers.get('host'),
+      fallback: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
+      allowLocalhost: process.env.NODE_ENV !== 'production',
+    })
+
     // Verificar que el token de MercadoPago esté configurado
     console.log("🔑 MP_ACCESS_TOKEN configured:", !!process.env.MP_ACCESS_TOKEN)
 
@@ -346,13 +359,13 @@ export async function POST(request: NextRequest) {
           : {}),
       },
       back_urls: {
-        success: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/success`,
-        failure: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/cancel`,
-        pending: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/checkout/pending`,
+        success: `${checkoutOrigin}/checkout/success`,
+        failure: `${checkoutOrigin}/checkout/cancel`,
+        pending: `${checkoutOrigin}/checkout/pending`,
       },
       // MP exige HTTPS en back_urls.success para auto_return. Solo activar en prod (HTTPS),
       // en dev local mantener desactivado para no romper el flujo.
-      ...(process.env.NEXT_PUBLIC_BASE_URL?.startsWith('https://') ? { auto_return: 'approved' as const } : {}),
+      ...(checkoutOrigin.startsWith('https://') ? { auto_return: 'approved' as const } : {}),
       notification_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/webhooks/mercadopago`,
       statement_descriptor: "NOVAMENTE",
       external_reference: externalReference, // Usar el mismo external_reference del pedido creado
@@ -363,7 +376,7 @@ export async function POST(request: NextRequest) {
       totalAmount: calculatedTotal,
       customerEmail: preferenceData.payer.email,
       backUrls: preferenceData.back_urls,
-      baseUrl: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
+      baseUrl: checkoutOrigin,
     })
 
     console.log("📋 Full preference data:", JSON.stringify(preferenceData, null, 2))

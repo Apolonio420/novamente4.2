@@ -12,7 +12,7 @@ import * as fpixel from "@/lib/fpixel"
 import { setPixelUser } from "@/lib/pixel-user"
 import { trackBeginCheckout } from "@/lib/analytics"
 import { formatCurrency } from "@/lib/utils"
-import { Loader2, ArrowLeft, CreditCard, Smartphone, Building2, Shield, Truck, Clock, X, Shirt, Image as ImageIcon, Camera } from "lucide-react"
+import { Loader2, ArrowLeft, CreditCard, Smartphone, Building2, Shield, Truck, Clock, X, Shirt, Image as ImageIcon, Camera, ShoppingBag } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Separator } from "@/components/ui/separator"
@@ -136,11 +136,11 @@ export default function CheckoutPage() {
     items: items.map((item) => ({ name: item.name, price: item.price, quantity: item.quantity })),
   })
 
-  useEffect(() => {
-    if (getTotalItems() === 0) {
-      router.push("/cart")
-    }
-  }, [getTotalItems, router])
+  // Antes esto redirigía a /cart y de paso, mientras tanto, se veía una
+  // página en blanco (return null más abajo) — un link de MP viejo/reusado,
+  // o volver atrás después de vaciar el carrito, mostraba nada. Ahora
+  // /checkout con carrito vacío muestra su propio estado vacío (ver el
+  // `return` de más abajo) en vez de redirigir a ciegas.
 
   // Sincronizar preview cuando cambia el item seleccionado o el carrito
   useEffect(() => {
@@ -363,8 +363,26 @@ export default function CheckoutPage() {
     }
   }
 
+  // Carrito vacío: antes esto devolvía null (página en blanco) mientras el
+  // useEffect de arriba redirigía a /cart. Ahora se explica y se da una
+  // salida — cubre el link de MP viejo, volver atrás después de vaciar el
+  // carrito, o entrar directo a /checkout sin haber agregado nada.
   if (getTotalItems() === 0) {
-    return null
+    return (
+      <div className="container mx-auto px-4 py-16 flex flex-col items-center text-center gap-4">
+        <ShoppingBag className="w-12 h-12 text-muted-foreground" />
+        <h1 className="text-xl font-semibold">Tu carrito está vacío</h1>
+        <p className="text-muted-foreground max-w-sm">
+          Todavía no agregaste ningún producto. Volvé a la tienda para seguir eligiendo.
+        </p>
+        <Button asChild className="mt-2">
+          <Link href="/">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Volver a la tienda
+          </Link>
+        </Button>
+      </div>
+    )
   }
 
   return (
