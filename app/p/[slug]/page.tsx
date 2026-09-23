@@ -266,11 +266,23 @@ function HeroSection({ tenant }: { tenant: Tenant }) {
         />
       )}
 
-      {/* Gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-zinc-950" />
+      {/* Gradient overlay. En mobile con banner, el recorte angosto pone a la
+          persona/estampa justo detrás del título centrado: el texto baja al pie
+          del hero y el degradado oscurece solo abajo, dejando la foto visible arriba. */}
+      <div
+        className={
+          hasBanner
+            ? 'absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-zinc-950 md:from-black/60 md:via-black/40'
+            : 'absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-zinc-950'
+        }
+      />
 
       {/* Content */}
-      <div className="relative z-10 flex min-h-[60vh] flex-col items-center justify-center gap-6 px-6 py-24 text-center md:min-h-[70vh]">
+      <div
+        className={`relative z-10 flex min-h-[60vh] flex-col items-center gap-6 px-6 text-center md:min-h-[70vh] md:justify-center md:py-24 ${
+          hasBanner ? 'justify-end pb-12 pt-40' : 'justify-center py-24'
+        }`}
+      >
         {/* Hide the big hero logo when the partner opts out
             (metadata.hero_hide_logo = true). Navbar/header logo is untouched. */}
         {tenant.logo_url &&

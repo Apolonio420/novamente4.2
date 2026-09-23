@@ -138,6 +138,12 @@ describe('industryLabel', () => {
     expect(industryLabel({ industry: 'merch_empresa_gourmet' })).toBe('Merch empresa gourmet')
   })
 
+  it('humaniza también un slug crudo guardado en metadata.industry_raw (caso /p/lcitea)', () => {
+    expect(industryLabel({ industry: 'indumentaria', metadata: { industry_raw: 'indumentaria_streetwear' } })).toBe(
+      'Indumentaria streetwear',
+    )
+  })
+
   it('trata industry vacío o "-" como sin dato', () => {
     expect(industryLabel({ industry: '' })).toBeNull()
     expect(industryLabel({ industry: '   ' })).toBeNull()

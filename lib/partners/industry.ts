@@ -139,7 +139,9 @@ export function industryLabel(tenant: { industry?: string | null; metadata?: any
   // badge publico, mientras que el mismo '-' en la columna `industry` si se
   // descartaba.
   const raw = cleanIndustryText(tenant?.metadata?.industry_raw)
-  if (raw) return raw
+  // industry_raw también puede traer un slug crudo ("indumentaria_streetwear",
+  // visto en /p/lcitea): se humaniza igual que la columna.
+  if (raw) return isSlugLike(raw) ? humanizeSlug(raw) : raw
 
   const trimmed = cleanIndustryText(tenant?.industry)
   if (!trimmed) return null
