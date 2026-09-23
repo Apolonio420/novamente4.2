@@ -185,7 +185,7 @@ const BORDE_NEUTRO_MIN = 0.98
  * Sólo corre si el borde parece un fondo de verdad (ver perfilDelBorde). Si es
  * arte de borde a borde, el diseño se devuelve intacto.
  */
-async function knockoutBackground(buf: Buffer): Promise<Buffer> {
+export async function knockoutBackground(buf: Buffer): Promise<Buffer> {
   const { plano, neutro } = await perfilDelBorde(buf)
   const esFondo = plano >= BORDE_PLANO_MIN || neutro >= BORDE_NEUTRO_MIN
   if (!esFondo) {
