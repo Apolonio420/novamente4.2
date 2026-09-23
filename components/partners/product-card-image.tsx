@@ -23,21 +23,28 @@ export function ProductCardImage({
   const back = images.length > 1 ? images[1] : null
   const [showBack, setShowBack] = useState(false)
 
-  // Un solo lado: markup idéntico al original, cero cambios de comportamiento.
+  // Fondo claro fijo detrás de la imagen: los PNG con alpha (remeras oscuras
+  // sobre fondo transparente) quedaban "flotando" sobre la card oscura del
+  // storefront (bg-zinc-900/bg-zinc-800) — auditoría, click-online y otros.
+  const bg = 'bg-zinc-100'
+
+  // Un solo lado: markup casi idéntico al original, solo se agrega el fondo.
   if (!back) {
     return (
-      <Image
-        src={front}
-        alt={alt}
-        fill
-        sizes={IMG_SIZES}
-        className="object-cover transition duration-300 group-hover:scale-105"
-      />
+      <div className={`absolute inset-0 ${bg}`}>
+        <Image
+          src={front}
+          alt={alt}
+          fill
+          sizes={IMG_SIZES}
+          className="object-cover transition duration-300 group-hover:scale-105"
+        />
+      </div>
     )
   }
 
   return (
-    <>
+    <div className={`absolute inset-0 ${bg}`}>
       <Image
         src={front}
         alt={alt}
@@ -80,6 +87,6 @@ export function ProductCardImage({
           </button>
         ))}
       </div>
-    </>
+    </div>
   )
 }
