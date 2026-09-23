@@ -9,6 +9,18 @@ const MAX_SIZE = 5 * 1024 * 1024 // 5MB
 const DESIGN_MAX_SIZE = 10 * 1024 * 1024 // 10MB for design uploads
 const BUCKET = 'partner-assets'
 
+// Tipos de asset que este endpoint de subida libre puede aceptar. Relevado
+// contra los callers reales (grep de `formData.append('type', ...)` y
+// `<ImageUpload type=... />`):
+//   - logo/banner/hero: app/workspace/branding/page.tsx, app/partners/join/page.tsx
+//   - design: components/workspace/QuickDesignUpload.tsx (arte para estampar)
+// 'product' quedó afuera a propósito: era el que usaba el catálogo
+// (app/workspace/catalog/page.tsx) para la foto de producto de la tienda
+// pública, aceptando cualquier jpg/png/webp sin validar que la prenda de la
+// foto fuera una que Novamente fabrica — ver lib/partners/product-image-origin.ts.
+// Las fotos de producto ahora se generan SOLO en el Studio.
+const ALLOWED_UPLOAD_TARGET_TYPES = new Set(['logo', 'banner', 'hero', 'design'])
+
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireTenantPermission(request, 'designs:write')
@@ -22,6 +34,18 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json({ error: 'Se requiere un archivo' }, { status: 400 })
+    }
+
+    if (!ALLOWED_UPLOAD_TARGET_TYPES.has(type)) {
+      return NextResponse.json(
+        {
+          error:
+            type === 'product'
+              ? 'Las fotos de producto se generan en el Studio con nuestras prendas. Subí tu diseño y elegí prenda y color.'
+              : `Tipo de asset no permitido: '${type}'`,
+        },
+        { status: 400 },
+      )
     }
 
     // For design uploads: enforce PNG/SVG only and 10MB limit
