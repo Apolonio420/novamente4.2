@@ -29,11 +29,7 @@ const CANVAS = 2000
 const BG = { r: 0xd9, g: 0xd9, b: 0xd9 }
 const TARGET_HEIGHT_FRAC = 0.8
 const AREA_IMPRIMIBLE_CM = 35
-// Tight a proposito (ver estimateLocalBackground): el fondo real es casi
-// plano por foto (desvio 0..5), y la prenda blanca mas clara del catalogo
-// solo se aleja ~9-11 unidades del fondo — 8 separa ambos casos sin comerse
-// la prenda.
-const BG_TOLERANCE = 8
+// La tolerancia de color ahora es adaptativa por foto — ver adaptiveTolerance().
 
 fs.mkdirSync(OUT_DIR, { recursive: true })
 fs.mkdirSync(path.dirname(STD_BASES_JSON), { recursive: true })
@@ -57,31 +53,126 @@ function cajaLetterbox(W: number, H: number, coords: { x: number; y: number; wid
   return { x: offX + coords.x * s, y: offY + coords.y * s, w: coords.width * s, h: coords.height * s }
 }
 
+interface RGB { r: number; g: number; b: number }
+
 /**
- * Estima el fondo REAL de esta foto (no asumir #d9d9d9 fijo): la mayoria de
- * las bases son casi exactamente ese gris, pero algunas difieren un poco
- * (ruido JPEG, viñeteado). Medido: el fondo es CASI PLANO dentro de una
- * misma foto (desvio estandar 0..5 en los casos reales), mientras que la
- * prenda BLANCA solo esta ~10-20 unidades mas clara — con un target fijo y
- * tolerancia floja (30) el flood-fill se comia toda una prenda blanca entera
- * (caso real: aldea/aura blanco, musculosa blanca, hoodie blanco).
+ * Estima el fondo REAL de esta foto a partir de las 4 ESQUINAS (nunca las
+ * pisa la prenda en un flat-lay centrado) — la mediana por canal es mas
+ * robusta que el promedio de todo el borde: algunas bases tienen un fondo
+ * "moteado" (nubes claras de tela/papel, no gris perfectamente plano) y un
+ * promedio de borde completo se contaminaba con zonas mas oscuras del
+ * moteado, corriendo la referencia.
  */
-function estimateLocalBackground(raw: Buffer, W: number, H: number, channels: number): { r: number; g: number; b: number } {
-  let sr = 0, sg = 0, sb = 0, n = 0
-  const step = Math.max(1, Math.floor(Math.min(W, H) / 500))
-  for (let x = 0; x < W; x += step) {
-    for (const y of [0, H - 1]) {
-      const o = (y * W + x) * channels
-      sr += raw[o]; sg += raw[o + 1]; sb += raw[o + 2]; n++
+function estimateLocalBackground(raw: Buffer, W: number, H: number, channels: number): RGB {
+  const patch = Math.max(4, Math.floor(Math.min(W, H) * 0.06))
+  const rs: number[] = [], gs: number[] = [], bs: number[] = []
+  const corners: Array<[number, number]> = [[0, 0], [W - patch, 0], [0, H - patch], [W - patch, H - patch]]
+  for (const [cx, cy] of corners) {
+    for (let y = cy; y < cy + patch; y++) {
+      for (let x = cx; x < cx + patch; x++) {
+        const o = (y * W + x) * channels
+        rs.push(raw[o]); gs.push(raw[o + 1]); bs.push(raw[o + 2])
+      }
     }
   }
-  for (let y = 0; y < H; y += step) {
-    for (const x of [0, W - 1]) {
+  const median = (arr: number[]) => { const s = [...arr].sort((a, b) => a - b); return s[Math.floor(s.length / 2)] }
+  return { r: median(rs), g: median(gs), b: median(bs) }
+}
+
+/**
+ * Tolerancia de color ADAPTATIVA, calibrada con los propios píxeles del
+ * borde de ESTA foto en vez de un número fijo: algunas bases tienen un fondo
+ * casi perfectamente plano (desvío ~0, sirve una tolerancia chica) y otras
+ * un fondo "moteado" real (desvío hasta ~15-17, necesitan una tolerancia
+ * mayor para que el flood-fill no se quede pegado en los bordes mas claros
+ * del moteado). Se mide el percentil 92 de la distancia (canal con mayor
+ * desvío) de los píxeles de borde a la referencia, con margen — así cada
+ * foto usa la tolerancia que en verdad necesita, ni más ni menos.
+ */
+function adaptiveTolerance(raw: Buffer, W: number, H: number, channels: number, bg: RGB): number {
+  const devs: number[] = []
+  const step = Math.max(1, Math.floor(Math.min(W, H) / 400))
+  const pushDev = (x: number, y: number) => {
+    const o = (y * W + x) * channels
+    const d = Math.max(Math.abs(raw[o] - bg.r), Math.abs(raw[o + 1] - bg.g), Math.abs(raw[o + 2] - bg.b))
+    devs.push(d)
+  }
+  for (let x = 0; x < W; x += step) { pushDev(x, 0); pushDev(x, H - 1) }
+  for (let y = 0; y < H; y += step) { pushDev(0, y); pushDev(W - 1, y) }
+  devs.sort((a, b) => a - b)
+  const p92 = devs[Math.min(devs.length - 1, Math.floor(devs.length * 0.92))]
+  return Math.min(45, Math.max(10, p92 + 5))
+}
+
+/**
+ * Tapa el badge circular "Novamente" (logo esquina inferior derecha, visto
+ * en boston/cuello redondo/mujer/crop) con el color de fondo estimado,
+ * ANTES de segmentar — así el flood-fill lo trata como fondo y desaparece
+ * limpio en vez de quedar recortado como un circulito ajeno sobre la
+ * prenda. Circulo chico y off-corner (no un cuadrado del borde entero) para
+ * no comerse una manga/puño que llegue cerca de esa esquina.
+ */
+function patchBadgeZone(raw: Buffer, W: number, H: number, channels: number, bg: RGB): void {
+  const cx = Math.round(W * 0.905), cy = Math.round(H * 0.905)
+  const radius = Math.round(Math.min(W, H) * 0.095)
+  const r2 = radius * radius
+  for (let y = Math.max(0, cy - radius); y < Math.min(H, cy + radius); y++) {
+    for (let x = Math.max(0, cx - radius); x < Math.min(W, cx + radius); x++) {
+      const dx = x - cx, dy = y - cy
+      if (dx * dx + dy * dy > r2) continue
       const o = (y * W + x) * channels
-      sr += raw[o]; sg += raw[o + 1]; sb += raw[o + 2]; n++
+      raw[o] = bg.r; raw[o + 1] = bg.g; raw[o + 2] = bg.b
     }
   }
-  return { r: sr / n, g: sg / n, b: sb / n }
+}
+
+/**
+ * De un mask binario (255=sujeto), se queda SOLO con la componente conexa
+ * mas grande — descarta manchas sueltas (ruido del moteado que localmente
+ * superó la tolerancia) que quedaron marcadas como "sujeto" sin ser parte
+ * de la prenda.
+ */
+/**
+ * Devuelve `fragmentationRatio` = tamaño de la componente mas grande /
+ * total de píxeles "sujeto" antes de limpiar — si la prenda quedo partida
+ * en muchos pedazos sueltos (un color demasiado parecido al fondo para
+ * ESTA foto puntual, ej. amarillo/crema sobre el moteado claro) esta
+ * relación cae bajo, señal de que la segmentación no dio una silueta
+ * limpia aunque el guardarraíl de bbox/densidad no lo detecte (el pedazo
+ * mas grande — una manga suelta — puede igual ser denso y no-tan-chico).
+ */
+function keepLargestComponent(mask: Uint8Array, W: number, H: number): { fragmentationRatio: number } {
+  const N = W * H
+  const labels = new Int32Array(N).fill(-1)
+  const stack = new Int32Array(N)
+  let bestLabel = -1, bestSize = 0
+  let totalForeground = 0
+  let label = 0
+  for (let start = 0; start < N; start++) {
+    if (mask[start] !== 255 || labels[start] !== -1) continue
+    let sp = 0
+    stack[sp++] = start
+    labels[start] = label
+    let size = 0
+    while (sp > 0) {
+      const idx = stack[--sp]
+      size++
+      const x = idx % W, y = (idx / W) | 0
+      const tryPush = (n: number) => { if (mask[n] === 255 && labels[n] === -1) { labels[n] = label; stack[sp++] = n } }
+      if (x > 0) tryPush(idx - 1)
+      if (x < W - 1) tryPush(idx + 1)
+      if (y > 0) tryPush(idx - W)
+      if (y < H - 1) tryPush(idx + W)
+    }
+    totalForeground += size
+    if (size > bestSize) { bestSize = size; bestLabel = label }
+    label++
+  }
+  if (bestLabel < 0) return { fragmentationRatio: 1 }
+  for (let i = 0; i < N; i++) {
+    if (mask[i] === 255 && labels[i] !== bestLabel) mask[i] = 0
+  }
+  return { fragmentationRatio: totalForeground > 0 ? bestSize / totalForeground : 1 }
 }
 
 /** BFS iterativo con stack tipado — marca 255=sujeto, 0=fondo. */
@@ -123,6 +214,39 @@ function floodFillBackground(raw: Buffer, W: number, H: number, channels: number
   return mask
 }
 
+/**
+ * Contraste real prenda-vs-fondo, medido DENTRO de la silueta detectada (no
+ * en todo el cuadro): mediana de la distancia de color al fondo en una
+ * grilla de puntos del 50% central del bbox, menos la tolerancia usada. Un
+ * margen chico o negativo es la firma del caso "yellow crop" (un color de
+ * prenda puntual, en ESTA foto, demasiado parecido al moteado de fondo):
+ * bbox y densidad pueden salir razonables y aun así la silueta viene toda
+ * carcomida por dentro (recorte en jirones, no un borde limpio).
+ */
+function contrastMargin(
+  raw: Buffer, W: number, H: number, channels: number, bg: RGB, tol: number,
+  bbox: { x0: number; y0: number; x1: number; y1: number },
+): number {
+  const bw = bbox.x1 - bbox.x0, bh = bbox.y1 - bbox.y0
+  const x0 = bbox.x0 + bw * 0.25, x1 = bbox.x0 + bw * 0.75
+  const y0 = bbox.y0 + bh * 0.25, y1 = bbox.y0 + bh * 0.75
+  const dists: number[] = []
+  const STEPS = 5
+  for (let i = 0; i < STEPS; i++) {
+    for (let j = 0; j < STEPS; j++) {
+      const x = Math.round(x0 + ((x1 - x0) * i) / (STEPS - 1))
+      const y = Math.round(y0 + ((y1 - y0) * j) / (STEPS - 1))
+      if (x < 0 || y < 0 || x >= W || y >= H) continue
+      const o = (y * W + x) * channels
+      dists.push(Math.max(Math.abs(raw[o] - bg.r), Math.abs(raw[o + 1] - bg.g), Math.abs(raw[o + 2] - bg.b)))
+    }
+  }
+  if (!dists.length) return -999
+  dists.sort((a, b) => a - b)
+  const median = dists[Math.floor(dists.length / 2)]
+  return median - tol
+}
+
 function maskBbox(mask: Uint8Array, W: number, H: number) {
   let minX = W, minY = H, maxX = -1, maxY = -1
   let foregroundCount = 0
@@ -150,23 +274,39 @@ async function buildOne(garmentKey: string, color: string, side: 'front' | 'back
   const channels = info.channels
 
   const localBg = estimateLocalBackground(raw, W, H, channels)
-  const mask = floodFillBackground(raw, W, H, channels, localBg, BG_TOLERANCE)
+  patchBadgeZone(raw, W, H, channels, localBg)
+  const tol = adaptiveTolerance(raw, W, H, channels, localBg)
+  const mask = floodFillBackground(raw, W, H, channels, localBg, tol)
+  const { fragmentationRatio } = keepLargestComponent(mask, W, H)
   const bbox = maskBbox(mask, W, H)
   const bboxArea = (bbox.x1 - bbox.x0) * (bbox.y1 - bbox.y0)
   const density = bboxArea > 0 ? bbox.foregroundCount / bboxArea : 0
-  // Guardarraíl: si la prenda detectada ocupa menos del 5% del cuadro, o el
-  // "sujeto" es un contorno hueco disperso (densidad de píxeles de sujeto
-  // adentro de su propio bbox muy baja) la segmentación fracasó — visto en
-  // la práctica: una foto sobre fondo BLANCO puro en vez del gris de estudio
-  // (sin contraste de color no hay nada que separar; el flood-fill se come
-  // casi toda la prenda y sólo dejaba un contorno fantasma disperso, que
-  // igual arma un bbox grande pero casi vacío). Mejor listar la combinación
-  // como faltante que publicar un mockup roto.
+  // Guardarraíles — mejor listar la combinación como faltante que publicar
+  // un mockup roto:
+  //  1) bbox <5% del cuadro o densidad <25%: contorno fantasma disperso
+  //     (foto con fondo blanco puro en vez del gris de estudio, sin
+  //     contraste de color para separar).
+  //  2) fragmentationRatio <0.75: la silueta quedó partida en pedazos
+  //     sueltos (un color puntual — crema/amarillo — demasiado parecido al
+  //     moteado de ESA foto) y la componente mas grande que sobrevive
+  //     (ej. una manga sola) puede igual pasar el chequeo de bbox/densidad.
+  //     Calibrado contra casos reales: 91% (hoodie blanco, OK) vs 62%
+  //     (crop amarillo frente, roto en jirones) — 75 separa ambos.
   if (bboxArea / (W * H) < 0.05 || density < 0.25) {
     throw new Error(
       `segmentacion fallida — bbox ${(100 * bboxArea / (W * H)).toFixed(1)}% del cuadro, densidad ${(100 * density).toFixed(1)}%. `
       + `Probable foto con fondo distinto al resto (blanco puro en vez de gris de estudio); revisar a ojo.`,
     )
+  }
+  if (fragmentationRatio < 0.75) {
+    throw new Error(
+      `segmentacion fallida — la silueta quedó fragmentada (componente mas grande = ${(100 * fragmentationRatio).toFixed(1)}% del total). `
+      + `Probable color de prenda demasiado parecido al moteado de esta foto puntual; revisar a ojo.`,
+    )
+  }
+  if (process.env.F3_DEBUG) {
+    const margin = contrastMargin(raw, W, H, channels, localBg, tol, bbox)
+    console.log(`DEBUG ${garmentKey} ${color} ${side}: tol=${tol} bboxFrac=${(100*bboxArea/(W*H)).toFixed(1)}% density=${(100*density).toFixed(1)}% frag=${(100*fragmentationRatio).toFixed(1)}% margin=${margin.toFixed(1)}`)
   }
   const bboxH = bbox.y1 - bbox.y0
   const k = (TARGET_HEIGHT_FRAC * CANVAS) / bboxH
