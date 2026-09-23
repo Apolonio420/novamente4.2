@@ -812,83 +812,32 @@ export default function DesignStudioPage() {
   // Add to catalog
   // ---------------------------------------------------------------------------
 
-  const handleCreateCatalogProduct = async () => {
+  // ---------------------------------------------------------------------------
+  // Fase 3 pieza C: "Agregar al catálogo" ya no crea el producto acá con el
+  // endpoint viejo (POST /api/partners/catalog, mockup ya "quemado" como
+  // foto) — redirige al panel "Nuevo producto" de /workspace/catalog con el
+  // ARTE crudo precargado (frontPrint.designUrl / backPrint.designUrl), que
+  // usa el compositor único (pieza B) y siempre genera frente+dorso reales
+  // por color. Mismo chequeo de host que `isTrustedDesignUrl` (uploadedDesignUrl)
+  // porque el panel también termina fetcheando esa URL server-side.
+  // ---------------------------------------------------------------------------
+  const handleCreateCatalogProduct = () => {
     if (!catalogModal) return
-    const name = catalogProductName.trim()
-    if (!name) {
-      setCatalogToast('Falta nombre del producto')
-      return
-    }
-    const price = parseInt(catalogProductPrice, 10) || 0
     const garmentKey = catalogModal.garmentKey || selectedGarment
     const colorKey = catalogModal.color || selectedColor
-    const cat = CATALOG_PRODUCTS.find(p => p.key === garmentKey)
 
-    setCatalogCreating(true)
-    try {
-      // Si es doble estampa, mandamos las 2 imagenes (frente primero, espalda segunda)
-      const images = catalogModal.backImageUrl
-        ? [catalogModal.imageUrl, catalogModal.backImageUrl]
-        : [catalogModal.imageUrl]
-      const isDualSide = !!catalogModal.backImageUrl
-      const description = isDualSide
-        ? `${cat?.name || 'Producto'} con doble estampa (frente y espalda) — diseño custom Novamente.`
-        : (cat?.shortDescription || `${cat?.name || 'Producto'} con diseno custom Novamente.`)
-      const tags = ['novamente', 'estampado-dtg', cat?.fit || 'oversize']
-      if (isDualSide) tags.push('doble-estampa')
-
-      const res = await authFetch('/api/partners/catalog', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          description,
-          category: cat?.category || 'Remera Oversize',
-          price,
-          images,
-          tags,
-          status: 'draft',
-          metadata: {
-            garmentKey,
-            color: colorKey,
-            sizes: cat?.sizes || ['S', 'M', 'L', 'XL', 'XXL'],
-            source: 'design-engine',
-            dualSide: isDualSide,
-            /**
-             * Con qué se estampa de verdad. El mockup es una FOTO: si esto no
-             * viaja, cuando alguien compra en la tienda al proveedor le llega
-             * sólo esa foto, sin el arte ni la medida, y termina interpretando.
-             */
-            print: {
-              front: catalogModal.frontPrint || null,
-              back: catalogModal.backPrint || null,
-            },
-          },
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setCatalogToast(data.error || 'Error creando producto')
-        return
-      }
-      const successMsg = catalogModal.backImageUrl
-        ? 'Producto doble estampa creado (borrador en /workspace/catalog)'
-        : 'Producto creado en tu catalogo (borrador)'
-      setCatalogToast(successMsg)
-      setCatalogModal(null)
-      // Si era doble estampa, limpiar los lados afianzados (ya consumidos)
-      if (catalogModal.backImageUrl) {
-        setPinnedFront(null)
-        setPinnedBack(null)
-      }
-      setCatalogProductName('')
-      setCatalogProductPrice('')
-    } catch (err: any) {
-      setCatalogToast(err.message || 'Error')
-    } finally {
-      setCatalogCreating(false)
-      setTimeout(() => setCatalogToast(null), 4000)
+    const params = new URLSearchParams({ new: '1' })
+    const frontDesignUrl = catalogModal.frontPrint?.designUrl
+    const backDesignUrl = catalogModal.backPrint?.designUrl
+    if (frontDesignUrl && isTrustedDesignUrl(frontDesignUrl)) params.set('designUrl', frontDesignUrl)
+    if (backDesignUrl && isTrustedDesignUrl(backDesignUrl) && backDesignUrl !== frontDesignUrl) {
+      params.set('backDesignUrl', backDesignUrl)
     }
+    if (garmentKey) params.set('garmentKey', garmentKey)
+    if (colorKey) params.set('color', colorKey)
+
+    setCatalogModal(null)
+    window.location.href = `/workspace/catalog?${params.toString()}`
   }
 
   // ---------------------------------------------------------------------------

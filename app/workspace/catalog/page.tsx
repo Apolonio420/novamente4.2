@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -27,9 +27,12 @@ import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { ImageUpload } from '@/components/partners/image-upload'
 import { MockupPicker } from '@/components/partners/mockup-picker'
+import { NewProductPanel } from '@/components/partners/new-product-panel'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import { readPrintArt, writePrintArt } from '@/lib/partners/print-art'
 import { formatPrice as formatGarmentPrice } from '@/lib/partners/format-price'
+import { isTrustedAssetUrl } from '@/lib/partners/trusted-asset-url'
+import { validateFrontAndBackForPublish, MISSING_SIDES_ERROR } from '@/lib/partners/product-sides'
 import type { PublicGarmentPricing } from '@/lib/partners/garment-pricing.server'
 import { MarginBreakdown } from '@/components/workspace/MarginBreakdown'
 
@@ -312,6 +315,41 @@ export default function CatalogPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, loading])
 
+  // ---------------------------------------------------------------------
+  // Fase 3 pieza C: abrir el panel "Nuevo producto" con el diseño precargado
+  // cuando se llega desde el Studio (?new=1&designUrl=...). El host se
+  // valida igual que `isTrustedDesignUrl` en design-engine — el panel
+  // termina fetcheando esta URL server-side (mockup-preview/from-design).
+  // ---------------------------------------------------------------------
+  const [newPanelOpen, setNewPanelOpen] = useState(false)
+  const [newPanelInit, setNewPanelInit] = useState<{
+    designUrl: string | null
+    backDesignUrl: string | null
+    garmentKey: string | null
+    color: string | null
+  }>({ designUrl: null, backDesignUrl: null, garmentKey: null, color: null })
+  const newPanelHandledRef = useRef(false)
+
+  useEffect(() => {
+    if (newPanelHandledRef.current) return
+    if (searchParams.get('new') !== '1') return
+    newPanelHandledRef.current = true
+
+    const rawDesignUrl = searchParams.get('designUrl')
+    const rawBackDesignUrl = searchParams.get('backDesignUrl')
+    setNewPanelInit({
+      designUrl: isTrustedAssetUrl(rawDesignUrl) ? rawDesignUrl : null,
+      backDesignUrl: isTrustedAssetUrl(rawBackDesignUrl) ? rawBackDesignUrl : null,
+      garmentKey: searchParams.get('garmentKey'),
+      color: searchParams.get('color'),
+    })
+    setNewPanelOpen(true)
+
+    const url = new URL(window.location.href)
+    ;['new', 'designUrl', 'backDesignUrl', 'garmentKey', 'color'].forEach((k) => url.searchParams.delete(k))
+    window.history.replaceState({}, '', url.pathname + url.search + url.hash)
+  }, [searchParams])
+
   const resetForm = () => {
     setFormName('')
     setFormDescription('')
@@ -410,6 +448,16 @@ export default function CatalogPage() {
     if (formStatus === 'published' && (!formPrice || Number(formPrice) <= 0)) {
       showToast('Necesitás definir un precio antes de publicar este producto.', 'error')
       return
+    }
+
+    if (formStatus === 'published') {
+      const imagesForCheck = formImages.filter((u): u is string => u !== null)
+      const colorsForCheck = formColors.map((c) => ({ images: { front: c.frontImage, back: c.backImage } }))
+      const sidesCheck = validateFrontAndBackForPublish(imagesForCheck, colorsForCheck)
+      if (!sidesCheck.ok) {
+        showToast(sidesCheck.reason || MISSING_SIDES_ERROR, 'error')
+        return
+      }
     }
 
     setSaving(true)
@@ -617,12 +665,12 @@ export default function CatalogPage() {
 
           <div className="relative group">
             <Button
-              onClick={openCreateForm}
+              onClick={() => setNewPanelOpen(true)}
               disabled={atLimit}
               className="bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-600/20 transition-all"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Agregar producto
+              <Sparkles className="w-4 h-4 mr-2" />
+              Nuevo producto
             </Button>
             {atLimit && (
               <div className="absolute right-0 top-full mt-2 w-56 px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 shadow-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
@@ -630,6 +678,15 @@ export default function CatalogPage() {
               </div>
             )}
           </div>
+          <Button
+            onClick={openCreateForm}
+            disabled={atLimit}
+            variant="outline"
+            className="border-zinc-700 bg-zinc-900/60 text-zinc-200 hover:bg-zinc-800 hover:text-white"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Subir producto propio
+          </Button>
           </div>
         </div>
 
@@ -720,11 +777,11 @@ export default function CatalogPage() {
             Agrega tu primer producto para empezar a armar tu catalogo y vender online.
           </p>
           <Button
-            onClick={openCreateForm}
+            onClick={() => setNewPanelOpen(true)}
             className="bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-600/20 px-6 h-11"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Agregar primer producto
+            <Sparkles className="w-4 h-4 mr-2" />
+            Crear mi primer producto
           </Button>
         </div>
       )}
@@ -899,18 +956,22 @@ export default function CatalogPage() {
             {/* Panel body */}
             <div className="p-6 space-y-6">
               {formMode === 'create' && (
-                <a
-                  href="/workspace/design-engine"
-                  className="block rounded-lg border border-violet-500/30 bg-gradient-to-br from-violet-950/30 to-zinc-900/40 p-3 hover:border-violet-500/60 transition-colors"
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeForm()
+                    setNewPanelOpen(true)
+                  }}
+                  className="block w-full text-left rounded-lg border border-violet-500/30 bg-gradient-to-br from-violet-950/30 to-zinc-900/40 p-3 hover:border-violet-500/60 transition-colors"
                 >
                   <div className="flex items-start gap-2.5">
                     <Sparkles className="w-4 h-4 text-violet-400 mt-0.5 shrink-0" />
                     <div className="text-xs leading-relaxed">
                       <p className="font-semibold text-zinc-100 mb-0.5">¿Querés diseñar sobre una prenda Novamente?</p>
-                      <p className="text-zinc-400">Este formulario es para subir tu propio producto con tus imágenes. Para usar nuestras prendas base (remeras, buzos, hoodies) usá el <span className="text-violet-400 font-medium">Design Engine →</span></p>
+                      <p className="text-zinc-400">Este formulario es para subir tu propio producto con tus imágenes. Para usar nuestras prendas base (remeras, buzos, hoodies) con tu diseño abrí el <span className="text-violet-400 font-medium">panel Nuevo producto →</span></p>
                     </div>
                   </div>
-                </a>
+                </button>
               )}
 
               {/* Name */}
@@ -1183,10 +1244,31 @@ export default function CatalogPage() {
                           Principal
                         </span>
                       )}
+                      {i === 1 && (
+                        <span className="absolute -top-2 left-2 z-20 text-[10px] font-bold uppercase tracking-wider bg-zinc-700 text-zinc-200 px-1.5 py-0.5 rounded">
+                          Dorso
+                        </span>
+                      )}
                       <MockupPicker
                         value={url}
                         onChange={(newUrl) => handleImageChange(i, newUrl)}
                         className="w-28"
+                        // E3 UI: el slot de dorso (índice 1) ofrece "Dorso liso"
+                        // usando la prenda base del producto — hace falta para
+                        // poder publicar (validateFrontAndBackForPublish).
+                        plainSide={
+                          i === 1
+                            ? {
+                                side: 'back',
+                                garmentKey: formGarmentKey.trim() || null,
+                                // Este form no guarda un colorKey validado contra
+                                // CATALOG_PRODUCTS (formColors.name es texto libre) —
+                                // el picker deja elegirlo acá mismo.
+                                colorKey: null,
+                                required: formStatus === 'published',
+                              }
+                            : undefined
+                        }
                       />
                       {/* Remove slot button (only if not the only empty slot) */}
                       {url && (
@@ -1361,6 +1443,12 @@ export default function CatalogPage() {
                               const next = [...formColors]
                               next[ci] = { ...next[ci], backImage: url || '' }
                               setFormColors(next)
+                            }}
+                            plainSide={{
+                              side: 'back',
+                              garmentKey: formGarmentKey.trim() || null,
+                              colorKey: null,
+                              required: formStatus === 'published' && !!color.frontImage,
                             }}
                             heightClassName="h-20"
                           />
@@ -1703,6 +1791,28 @@ export default function CatalogPage() {
           </div>
         </>
       )}
+
+      {/* ============================================================== */}
+      {/* Panel "Nuevo producto" (Fase 3 pieza C)                          */}
+      {/* ============================================================== */}
+      <NewProductPanel
+        open={newPanelOpen}
+        onClose={() => setNewPanelOpen(false)}
+        garmentPricing={garmentPricing}
+        initialDesignUrl={newPanelInit.designUrl}
+        initialBackDesignUrl={newPanelInit.backDesignUrl}
+        initialGarmentKey={newPanelInit.garmentKey}
+        initialColor={newPanelInit.color}
+        onCreated={(product) => {
+          setProducts((prev) => [product, ...prev])
+          setNewPanelOpen(false)
+          setNewPanelInit({ designUrl: null, backDesignUrl: null, garmentKey: null, color: null })
+          showToast(
+            product.status === 'published' ? 'Producto publicado' : 'Borrador guardado',
+            'success',
+          )
+        }}
+      />
     </div>
   )
 }
