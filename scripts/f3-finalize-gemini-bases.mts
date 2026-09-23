@@ -23,6 +23,10 @@ const TARGETS: Array<{ garmentKey: string; color: string; side: 'front' | 'back'
   { garmentKey: 'remera-crop-mujer', color: 'yellow', side: 'front' },
   { garmentKey: 'musculosa-bali', color: 'white', side: 'front' },
   { garmentKey: 'buzo-hoodie-unisex', color: 'white', side: 'back' },
+  { garmentKey: 'buzo-cuello-redondo', color: 'white', side: 'front' },
+  { garmentKey: 'buzo-hoodie-unisex', color: 'black', side: 'front' },
+  { garmentKey: 'buzo-hoodie-unisex', color: 'white', side: 'front' },
+  { garmentKey: 'buzo-hoodie-unisex', color: 'stone-wash', side: 'front' },
 ]
 
 async function main() {

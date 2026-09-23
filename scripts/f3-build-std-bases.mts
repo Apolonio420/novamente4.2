@@ -270,7 +270,7 @@ function contrastMargin(
   return median - tol
 }
 
-function maskBbox(mask: Uint8Array, W: number, H: number) {
+export function maskBbox(mask: Uint8Array, W: number, H: number) {
   let minX = W, minY = H, maxX = -1, maxY = -1
   let foregroundCount = 0
   for (let y = 0; y < H; y++) {
