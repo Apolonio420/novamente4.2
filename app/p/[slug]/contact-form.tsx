@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { buttonColors } from '@/lib/color/contrast'
 
 interface ContactFormProps {
   tenantSlug: string
@@ -14,6 +15,7 @@ interface ContactFormProps {
 export default function ContactForm({ tenantSlug, primaryColor }: ContactFormProps) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+  const submitColors = buttonColors(primaryColor)
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -149,8 +151,15 @@ export default function ContactForm({ tenantSlug, primaryColor }: ContactFormPro
           type="submit"
           size="lg"
           disabled={status === 'loading'}
-          className="w-full text-white disabled:opacity-60"
-          style={{ backgroundColor: primaryColor }}
+          className="w-full disabled:opacity-60"
+          style={{
+            backgroundColor: submitColors.background,
+            color: submitColors.color,
+            ...(submitColors.borderColor && {
+              borderColor: submitColors.borderColor,
+              borderWidth: 1.5,
+            }),
+          }}
         >
           {status === 'loading' ? 'Enviando...' : 'Enviar consulta'}
         </Button>

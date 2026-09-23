@@ -7,6 +7,7 @@ import { ShoppingCart, Zap, MessageCircle } from "lucide-react"
 import { useCart } from "@/lib/cartStore"
 import { useToast } from "@/hooks/use-toast"
 import * as fpixel from "@/lib/fpixel"
+import { buttonColors } from "@/lib/color/contrast"
 
 const DEFAULT_SIZES = ["S", "M", "L", "XL", "XXL"] as const
 
@@ -113,6 +114,11 @@ export function AddToCartButtons({
   const { addItem } = useCart()
   const { toast } = useToast()
   const router = useRouter()
+
+  // Botón "Comprar ahora": el fondo es primary_color, así que debe cumplir
+  // contraste de superficie contra el bg-zinc-950 del storefront (no siempre
+  // lo cumple el primario tal cual — auditoría de 88 tiendas).
+  const buyNowColors = buttonColors(primaryColor)
 
   const viewContentFiredRef = useRef(false)
   useEffect(() => {
@@ -298,8 +304,15 @@ export function AddToCartButtons({
         <Button
           size="lg"
           onClick={handleBuyNow}
-          className="flex-1 h-14 text-base font-semibold text-white"
-          style={{ backgroundColor: primaryColor }}
+          className="flex-1 h-14 text-base font-semibold"
+          style={{
+            backgroundColor: buyNowColors.background,
+            color: buyNowColors.color,
+            ...(buyNowColors.borderColor && {
+              borderColor: buyNowColors.borderColor,
+              borderWidth: 1.5,
+            }),
+          }}
         >
           <Zap className="mr-2 h-5 w-5" />
           Comprar ahora
