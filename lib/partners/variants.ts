@@ -9,6 +9,16 @@
  * Tenant scoping: variants have no tenant_id of their own — they belong to a product.
  * Every operation verifies the product belongs to the caller's tenant; a foreign
  * product returns 404 (never reveals existence).
+ *
+ * `image_url` (gate "solo nuestros mockups", Fase 2 — ver
+ * lib/partners/product-image-origin.ts): revisado 2026-09-23 y NO se aplica
+ * ese gate acá. `app/api/partners/catalog/[id]/variants/route.ts` y
+ * `.../[variantId]/route.ts` aceptan cualquier `image_url` sin validar, pero
+ * ningún componente de la tienda pública (`app/p/[slug]/[product]/page.tsx`,
+ * `ProductMediaBuy.tsx`, la card de `/p/[slug]/page.tsx`) lee este campo hoy
+ * — la foto de producto que SÍ se muestra sale de `partner_products.images`
+ * y `metadata.colors[].images.{front,back}` (ambos ya gateados). Si en el
+ * futuro se conecta `image_url` al storefront, hay que gatear ahí también.
  */
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getPartnerPlanPrice, ALL_GARMENT_PRICING } from './garment-pricing.server'
