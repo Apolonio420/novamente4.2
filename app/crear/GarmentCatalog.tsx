@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import { CATALOG_PRODUCTS } from "@/lib/catalog/products"
+import { productDisplayName } from "@/lib/product-names"
 import { Check } from "lucide-react"
 
 /**
@@ -94,14 +95,14 @@ export function GarmentCatalog({
               <div className="relative aspect-square bg-zinc-100 rounded overflow-hidden mb-2">
                 <Image
                   src={thumbnail}
-                  alt={product.name}
+                  alt={productDisplayName({ id: product.key, name: product.name })}
                   fill
                   className="object-cover"
                   sizes="(max-width: 1024px) 50vw, 33vw"
                 />
               </div>
               <div className="text-[11px] font-medium text-white leading-tight line-clamp-2 min-h-[28px]">
-                {product.name}
+                {productDisplayName({ id: product.key, name: product.name })}
               </div>
               <div className="text-xs font-bold text-violet-400 mt-1">{fmt(product.retailARS)}</div>
 
@@ -122,7 +123,7 @@ export function GarmentCatalog({
                         })
                       }}
                       title={c.name}
-                      aria-label={`${product.name} en ${c.name}`}
+                      aria-label={`${productDisplayName({ id: product.key, name: product.name })} en ${c.name}`}
                       className={`relative w-5 h-5 rounded-full border transition ${
                         isColorActive
                           ? "border-white ring-2 ring-violet-500"

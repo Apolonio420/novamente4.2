@@ -1,3 +1,5 @@
+import { productDisplayName } from "./product-names"
+
 export interface Product {
     id: string
     name: string
@@ -559,7 +561,9 @@ export function getPublishableProducts(): MetaCommerceProduct[] {
 
             return {
                 id: product.id,
-                title: product.name,
+                // Nombre descriptivo para el feed (Meta/Ads) — el id interno
+                // no cambia, solo el título que ve el cliente/comprador.
+                title: productDisplayName({ id: product.id, name: product.name, color: product.color }),
                 description: sanitizedDescription,
                 price: numericPrice,
                 currency: "ARS" as const,

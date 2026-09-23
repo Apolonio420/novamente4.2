@@ -13,6 +13,7 @@ import {
   PRODUCTION_DAYS as PROD_DAYS,
   totalDeliveryLine,
 } from './shipping-config'
+import { productDisplayName, productModelName } from './product-names'
 
 export interface Product {
   name: string
@@ -129,11 +130,19 @@ export function formatPrice(n: number): string {
   return `$${n.toLocaleString('es-AR')}`
 }
 
-/** Generate the PRODUCTOS section for AI system prompts */
+/**
+ * Generate the PRODUCTOS section for AI system prompts. Nombra la prenda
+ * por lo que es (pedido de Juan 23/09/2026, PLAN-NOMBRES-DESCRIPTIVOS.md);
+ * agrega "(modelo X)" para que el asistente siga entendiendo si el cliente
+ * usa el nombre comercial viejo (Aura, Aldea, Boston...).
+ */
 export function buildProductListForPrompt(): string {
   const lines = PRODUCTS.map(p => {
     const colors = p.colors.length > 0 ? ` (${p.colors.join(', ')})` : ''
-    return `- ${p.name}: ${formatPrice(p.price)}${colors}`
+    const displayName = productDisplayName({ garmentType: p.garmentType, name: p.name })
+    const modelo = productModelName({ garmentType: p.garmentType, name: p.name })
+    const modeloSuffix = modelo ? ` [modelo ${modelo}]` : ''
+    return `- ${displayName}${modeloSuffix}: ${formatPrice(p.price)}${colors}`
   })
   return lines.join('\n')
 }

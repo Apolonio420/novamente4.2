@@ -34,6 +34,7 @@ import { useCart } from "@/lib/cartStore"
 import { useToast } from "@/hooks/use-toast"
 import type { DesignSession } from "./page"
 import { getCatalogProduct, CATALOG_PRODUCTS } from "@/lib/catalog/products"
+import { productDisplayName } from "@/lib/product-names"
 import * as fpixel from "@/lib/fpixel"
 
 // --- Constants ---
@@ -987,7 +988,7 @@ export function DesignCanvas({
       // que valida el checkout server-side; si difieren, la compra rebota con 400.
       const recargoDorso = esDoble ? (session.garmentType.toLowerCase().includes('tote') ? 5000 : 3500) : 0
       const price = (product?.retailARS ?? 35000) + recargoDorso
-      const productName = `${product?.name ?? "Remera"} Custom — Novamente`
+      const productName = `${product ? productDisplayName({ id: product.key, name: product.name }) : "Remera"} Custom — Novamente`
       const itemId = `custom-canvas-${Date.now()}`
 
       addItem({
@@ -1019,7 +1020,7 @@ export function DesignCanvas({
         currency: "ARS",
       })
 
-      toast({ title: "Agregado al carrito", description: `${product?.name} talle ${selectedSize}` })
+      toast({ title: "Agregado al carrito", description: `${product ? productDisplayName({ id: product.key, name: product.name }) : ""} talle ${selectedSize}` })
     } catch (err) {
       console.error("DesignCanvas: apply failed", err)
       toast({ title: "Error", description: "No se pudo agregar al carrito", variant: "destructive" })
@@ -1067,7 +1068,7 @@ export function DesignCanvas({
                   : "border-zinc-700 text-zinc-300 hover:border-zinc-500"
               }`}
             >
-              {p.name.replace("Remera ", "").replace("Buzo ", "")}
+              {productDisplayName({ id: p.key, name: p.name })}
             </button>
           ))}
         </div>
@@ -1636,7 +1637,7 @@ export function DesignCanvas({
         {generatingMockup ? (
           <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generando foto lifestyle...</>
         ) : (
-          <><Shirt className="h-4 w-4 mr-2" /> Probar en {currentProduct?.name ?? "prenda"} (foto lifestyle)</>
+          <><Shirt className="h-4 w-4 mr-2" /> Probar en {currentProduct ? productDisplayName({ id: currentProduct.key, name: currentProduct.name }) : "prenda"} (foto lifestyle)</>
         )}
       </Button>
 

@@ -13,6 +13,7 @@ import {
   WashingMachine, ArrowLeft
 } from "lucide-react"
 import { PRODUCTS, parsePrice } from "@/lib/products"
+import { productDisplayName, productModelName } from "@/lib/product-names"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 import { StockPerSize } from "@/components/StockPerSize"
 import { shippingDetailsJsonLd, RETURN_POLICY_REF, SHIPPING, SHIPPING_ZONES_PUBLIC, formatShippingARS } from "@/lib/shipping-config"
@@ -103,12 +104,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const numericPrice = parsePrice(product.price)
   const baseUrl = "https://www.novamente.ar"
+  const displayName = productDisplayName({ id: product.id, name: product.name, color: product.color })
 
   return {
-    title: `${product.name} — Personalizable con IA | Novamente`,
-    description: `${product.name} a ${product.price}. ${product.description.slice(0, 140)}... Algodon 100% premium con estampado DTG. Personalizalo con inteligencia artificial.`,
+    title: `${displayName} — Personalizable con IA | Novamente`,
+    description: `${displayName} a ${product.price}. ${product.description.slice(0, 140)}... Algodon 100% premium con estampado DTG. Personalizalo con inteligencia artificial.`,
     keywords: [
-      product.name.toLowerCase(),
+      displayName.toLowerCase(),
       `${product.category.toLowerCase()} personalizado`,
       "ropa personalizada argentina",
       "estampado dtg",
@@ -116,7 +118,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       "novamente",
     ],
     openGraph: {
-      title: `${product.name} — ${product.price} | Novamente`,
+      title: `${displayName} — ${product.price} | Novamente`,
       description: product.description.slice(0, 200),
       url: `${baseUrl}/products/${product.id}`,
       images: [{ url: `${baseUrl}${product.images.main}`, width: 800, height: 800 }],
@@ -124,7 +126,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     },
     twitter: {
       card: "summary_large_image",
-      title: `${product.name} — ${product.price}`,
+      title: `${displayName} — ${product.price}`,
       description: product.description.slice(0, 200),
     },
     alternates: { canonical: `${baseUrl}/products/${product.id}` },
@@ -139,6 +141,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const numericPrice = parsePrice(product.price)
   const baseUrl = "https://www.novamente.ar"
   const sizeChart = SIZE_CHARTS[getSizeChartKey(product.id, product.category)]
+  const displayName = productDisplayName({ id: product.id, name: product.name, color: product.color })
+  const modelName = productModelName({ id: product.id, name: product.name })
 
   // Reseñas reales del catálogo propio. Si el tenant no resuelve (o la DB falla)
   // queda null y la página sale sin rating, igual que antes: nunca inventado.
@@ -164,7 +168,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const productJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: product.name,
+    name: displayName,
     description: product.description,
     image: allImages.map((img) => `${baseUrl}${img}`),
     brand: { "@type": "Brand", name: "Novamente" },
@@ -217,13 +221,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Inicio", item: `${baseUrl}/` },
       { "@type": "ListItem", position: 2, name: "Productos", item: `${baseUrl}/products` },
-      { "@type": "ListItem", position: 3, name: product.name, item: `${baseUrl}/products/${product.id}` },
+      { "@type": "ListItem", position: 3, name: displayName, item: `${baseUrl}/products/${product.id}` },
     ],
   }
 
   return (
     <div className="min-h-screen">
-      <ProductViewPixel id={product.id} name={product.name} price={parsePrice(product.price)} category="catalogo" />
+      <ProductViewPixel id={product.id} name={displayName} price={parsePrice(product.price)} category="catalogo" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
@@ -234,7 +238,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <li><ChevronRight className="w-3 h-3" /></li>
           <li><Link href="/products" className="hover:text-foreground transition-colors">Productos</Link></li>
           <li><ChevronRight className="w-3 h-3" /></li>
-          <li className="text-foreground font-medium truncate max-w-[200px]">{product.name}</li>
+          <li className="text-foreground font-medium truncate max-w-[200px]">{displayName}</li>
         </ol>
       </nav>
 
@@ -249,7 +253,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 <div className="aspect-square relative rounded-2xl overflow-hidden bg-muted cursor-zoom-in group">
                   <Image
                     src={product.images.main}
-                    alt={product.name}
+                    alt={displayName}
                     fill
                     priority
                     sizes="(max-width: 1024px) 100vw, 50vw"
@@ -262,9 +266,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 </div>
               </DialogTrigger>
               <DialogContent className="max-w-4xl p-0 bg-white/95">
-                <DialogTitle className="sr-only">{product.name}</DialogTitle>
+                <DialogTitle className="sr-only">{displayName}</DialogTitle>
                 <div className="relative w-full aspect-square">
-                  <Image src={product.images.main} alt={product.name} fill quality={100} className="object-contain p-4" />
+                  <Image src={product.images.main} alt={displayName} fill quality={100} className="object-contain p-4" />
                 </div>
               </DialogContent>
             </Dialog>
@@ -275,13 +279,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 <Dialog key={i}>
                   <DialogTrigger asChild>
                     <div className="aspect-square relative rounded-lg overflow-hidden bg-muted cursor-zoom-in hover:ring-2 ring-primary transition-all">
-                      <Image src={img} alt={`${product.name} - Foto ${i + 2}`} fill sizes="120px" quality={70} className="object-cover" />
+                      <Image src={img} alt={`${displayName} - Foto ${i + 2}`} fill sizes="120px" quality={70} className="object-cover" />
                     </div>
                   </DialogTrigger>
                   <DialogContent className="max-w-4xl p-0 bg-white/95">
-                    <DialogTitle className="sr-only">{product.name} - Foto {i + 2}</DialogTitle>
+                    <DialogTitle className="sr-only">{displayName} - Foto {i + 2}</DialogTitle>
                     <div className="relative w-full aspect-square">
-                      <Image src={img} alt={`${product.name} - Foto ${i + 2}`} fill quality={100} className="object-contain p-4" />
+                      <Image src={img} alt={`${displayName} - Foto ${i + 2}`} fill quality={100} className="object-contain p-4" />
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -291,16 +295,16 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 <Dialog>
                   <DialogTrigger asChild>
                     <div className="aspect-square relative rounded-lg overflow-hidden bg-muted cursor-zoom-in hover:ring-2 ring-primary transition-all">
-                      <Image src={product.images.measurements} alt={`${product.name} - Medidas`} fill sizes="120px" quality={70} className="object-contain p-1" />
+                      <Image src={product.images.measurements} alt={`${displayName} - Medidas`} fill sizes="120px" quality={70} className="object-contain p-1" />
                       <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
                         <Ruler className="w-5 h-5 text-primary" />
                       </div>
                     </div>
                   </DialogTrigger>
                   <DialogContent className="max-w-3xl p-0 bg-white/95">
-                    <DialogTitle className="sr-only">Tabla de medidas - {product.name}</DialogTitle>
+                    <DialogTitle className="sr-only">Tabla de medidas - {displayName}</DialogTitle>
                     <div className="relative w-full aspect-[4/3]">
-                      <Image src={product.images.measurements} alt={`Medidas ${product.name}`} fill quality={100} className="object-contain p-4" />
+                      <Image src={product.images.measurements} alt={`Medidas ${displayName}`} fill quality={100} className="object-contain p-4" />
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -315,7 +319,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <Badge className="bg-green-500 text-white">En stock</Badge>
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-bold mb-2" data-speakable>{product.name}</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-1" data-speakable>{displayName}</h1>
+            {modelName && (
+              <p className="text-sm text-muted-foreground mb-2">Modelo {modelName}</p>
+            )}
 
             {anchorPriceLabel(product.price) && (
               <p className="text-base text-muted-foreground/60 line-through -mb-1">{anchorPriceLabel(product.price)}</p>
@@ -441,7 +448,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                     <div className="aspect-square relative rounded-xl overflow-hidden bg-white cursor-zoom-in group border max-w-md mx-auto w-full">
                       <Image
                         src={product.images.measurements}
-                        alt={`Tabla de medidas ${product.name}`}
+                        alt={`Tabla de medidas ${displayName}`}
                         fill
                         sizes="400px"
                         quality={85}
@@ -453,9 +460,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                     </div>
                   </DialogTrigger>
                   <DialogContent className="max-w-3xl p-0 bg-white/95">
-                    <DialogTitle className="sr-only">Tabla de medidas - {product.name}</DialogTitle>
+                    <DialogTitle className="sr-only">Tabla de medidas - {displayName}</DialogTitle>
                     <div className="relative w-full aspect-[4/3]">
-                      <Image src={product.images.measurements} alt={`Medidas ${product.name}`} fill quality={100} className="object-contain p-4" />
+                      <Image src={product.images.measurements} alt={`Medidas ${displayName}`} fill quality={100} className="object-contain p-4" />
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -500,7 +507,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   <div className="aspect-square relative overflow-hidden">
                     <Image
                       src={rp.images.main}
-                      alt={rp.name}
+                      alt={productDisplayName({ id: rp.id, name: rp.name, color: rp.color })}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       quality={70}
@@ -508,7 +515,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                     />
                   </div>
                   <CardContent className="p-4">
-                    <h3 className="font-semibold truncate">{rp.name}</h3>
+                    <h3 className="font-semibold truncate">{productDisplayName({ id: rp.id, name: rp.name, color: rp.color })}</h3>
                     {anchorPriceLabel(rp.price) && (
                       <span className="text-[11px] text-muted-foreground/60 line-through block leading-none">{anchorPriceLabel(rp.price)}</span>
                     )}
@@ -526,7 +533,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl md:text-3xl font-bold mb-4">Hacelo unico con tu diseno</h2>
           <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-            Describi tu idea y nuestra inteligencia artificial crea el diseno perfecto para tu {product.name.split(" - ")[0].toLowerCase()}.
+            Describi tu idea y nuestra inteligencia artificial crea el diseno perfecto para tu {displayName.split(" - ")[0].toLowerCase()}.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/#generator-section" data-cta="product-detail-bottom-cta">

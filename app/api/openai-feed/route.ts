@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { PRODUCTS } from '@/lib/catalog'
+import { productDisplayName } from '@/lib/product-names'
 import { tenantIsIndexable } from '@/lib/partners/plans'
 
 export const dynamic = 'force-dynamic'
@@ -24,10 +25,12 @@ export async function GET() {
     lienzo:    'Hogar > Decoración > Lienzos Personalizados',
   }
 
-  const catalogProducts = PRODUCTS.map((p) => ({
-    title: `${p.name} — Personalizado con IA`,
+  const catalogProducts = PRODUCTS.map((p) => {
+    const displayName = productDisplayName({ garmentType: p.garmentType, name: p.name })
+    return {
+    title: `${displayName} — Personalizado con IA`,
     description:
-      `${p.name} de Novamente con estampado DTG premium y diseño generado con inteligencia artificial. ` +
+      `${displayName} de Novamente con estampado DTG premium y diseño generado con inteligencia artificial. ` +
       `37 estilos artísticos disponibles. ${p.colors.length ? `Colores: ${p.colors.join(', ')}.` : ''} ` +
       `Producción bajo demanda en Argentina, sin stock muerto. Envíos AMBA en 3-5 días, resto del país 7-10.`,
     url: `${baseUrl}/products`,
@@ -40,7 +43,8 @@ export async function GET() {
     condition: 'new',
     country: 'AR',
     language: 'es',
-  }))
+  }
+  })
 
   // Tote bag legacy (no está en catalog.ts pero tenemos producto activo)
   const extraProducts = [

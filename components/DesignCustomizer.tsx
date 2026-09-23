@@ -38,12 +38,15 @@ const GARMENT_PRICES = {
   "remera-crop-mujer": 23500,
 }
 
+// Nombres descriptivos al cliente (PLAN-NOMBRES-DESCRIPTIVOS.md). Estas keys
+// son garmentType (id interno, no tocar); los values son SOLO lo que se
+// muestra/guarda como CartItem.name — no se usan para matching en ningún lado.
 const GARMENT_NAMES = {
-  "aura-oversize-tshirt": "Aura Oversize T-Shirt Personalizada",
-  "aldea-classic-tshirt": "Aldea Classic T-Shirt Personalizada",
-  "buzo-hoodie-unisex": "Buzo Hoodie Oversize Personalizado",
+  "aura-oversize-tshirt": "Remera oversize Personalizada",
+  "aldea-classic-tshirt": "Remera clásica Personalizada",
+  "buzo-hoodie-unisex": "Buzo con capucha Personalizado",
   "buzo-cuello-redondo-unisex": "Buzo Cuello Redondo Personalizado",
-  "musculosa-bali": "Musculosa Bali Personalizada",
+  "musculosa-bali": "Musculosa Personalizada",
   "remera-clasica-mujer": "Remera Clásica Mujer Personalizada",
   "remera-crop-mujer": "Remera Crop Mujer Personalizada",
 }

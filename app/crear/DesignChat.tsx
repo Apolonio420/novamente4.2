@@ -54,13 +54,17 @@ type Msg = {
 // ============================================================
 
 import { CATALOG_PRODUCTS, getCatalogProduct, getCatalogProductColor } from "@/lib/catalog/products"
+import { productDisplayName } from "@/lib/product-names"
 import * as fpixel from "@/lib/fpixel"
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"]
 
-// Helpers usando el catalog como fuente de verdad
+// Helpers usando el catalog como fuente de verdad. Nombre descriptivo al
+// cliente (PLAN-NOMBRES-DESCRIPTIVOS.md) — `key` (garmentType) sigue viajando
+// intacto a todo lo que importa matching/producción, esto es solo display.
 function garmentLabel(key: string) {
-  return getCatalogProduct(key)?.name ?? key
+  const product = getCatalogProduct(key)
+  return product ? productDisplayName({ id: product.key, name: product.name }) : key
 }
 function colorLabel(productKey: string, colorKey: string) {
   return getCatalogProductColor(productKey, colorKey)?.name ?? colorKey
@@ -2585,9 +2589,9 @@ export function DesignChat({
                       }, 100)
                     }}
                     className="text-[11px] rounded border border-zinc-700 hover:border-violet-500 bg-zinc-800/50 hover:bg-violet-600/10 text-zinc-300 hover:text-white px-2 py-1 transition"
-                    title={`Generar mockup en ${p.name}`}
+                    title={`Generar mockup en ${garmentLabel(p.key)}`}
                   >
-                    {p.name.replace("Remera ", "").replace("Buzo ", "")}
+                    {garmentLabel(p.key)}
                   </button>
                 ))}
             </div>

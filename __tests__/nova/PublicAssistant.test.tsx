@@ -328,8 +328,11 @@ describe("C) Action execution", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Precios.*incluyen diseño/)).toBeInTheDocument()
-      expect(screen.getByText("Aura Oversize")).toBeInTheDocument()
-      expect(screen.getByText("Buzo Hoodie Oversize")).toBeInTheDocument()
+      // PLAN-NOMBRES-DESCRIPTIVOS.md: al cliente se le nombra la prenda por lo
+      // que es, no por el modelo interno (Aura -> Remera oversize, Boston ->
+      // Buzo con capucha).
+      expect(screen.getByText("Remera oversize")).toBeInTheDocument()
+      expect(screen.getByText("Buzo con capucha")).toBeInTheDocument()
     })
   })
 })

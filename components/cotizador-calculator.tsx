@@ -23,14 +23,17 @@ type CotizadorProduct = {
   tiers?: PriceTier[]
 }
 
+// Nombres descriptivos al cliente (PLAN-NOMBRES-DESCRIPTIVOS.md). `id` sigue
+// siendo el identificador interno; `name` es SOLO texto de este cotizador
+// (display + mensaje de WhatsApp a ventas), no se usa como key en ningún lado.
 const COTIZADOR_PRODUCTS: CotizadorProduct[] = [
-  { id: "buzo-hoodie", name: "Buzo Hoodie Oversize", price: 55000, category: "Hoodies" },
+  { id: "buzo-hoodie", name: "Buzo con capucha", price: 55000, category: "Hoodies" },
   { id: "buzo-cuello", name: "Buzo Cuello Redondo", price: 43000, category: "Buzos" },
-  { id: "aura-oversize", name: "Aura Oversize T-Shirt", price: 31000, category: "Remeras" },
-  { id: "aldea-classic", name: "Aldea Classic Fit T-Shirt", price: 28600, category: "Remeras" },
+  { id: "aura-oversize", name: "Remera oversize", price: 31000, category: "Remeras" },
+  { id: "aldea-classic", name: "Remera clásica", price: 28600, category: "Remeras" },
   { id: "clasica-mujer", name: "Remera Clasica Mujer", price: 28600, category: "Remeras" },
   { id: "crop-mujer", name: "Remera Crop Mujer", price: 23500, category: "Remeras" },
-  { id: "musculosa-bali", name: "Musculosa Bali", price: 21800, category: "Musculosas" },
+  { id: "musculosa-bali", name: "Musculosa", price: 21800, category: "Musculosas" },
   {
     id: "gorra-gabardina",
     name: "Gorra Gabardina",

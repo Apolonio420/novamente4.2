@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { PRODUCTS, parsePrice } from "@/lib/products"
+import { productDisplayName } from "@/lib/product-names"
 import ProductsFilter from "@/components/ProductsFilter"
 import { shippingDetailsJsonLd, RETURN_POLICY_REF } from "@/lib/shipping-config"
 
@@ -31,7 +32,7 @@ function generateProductsJsonLd() {
     return {
       "@context": "https://schema.org",
       "@type": "Product",
-      name: product.name,
+      name: productDisplayName({ id: product.id, name: product.name, color: product.color }),
       description: product.description,
       image: `${baseUrl}${product.images.main}`,
       brand: { "@type": "Brand", name: "Novamente" },

@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import { matchGarmentKey, matchStockColor, normalizeStockSize, type LiquidationStockRow } from "@/lib/stock/liquidation"
+import { productDisplayName } from "@/lib/product-names"
 
 interface GarmentSelectorProps {
   selectedGarment: string
@@ -133,14 +134,16 @@ export function GarmentSelector({
                     <div className="w-12 h-12 relative rounded-md overflow-hidden">
                       <Image
                         src={garment.image || "/placeholder.svg"}
-                        alt={garment.name}
+                        alt={productDisplayName({ id: garment.id, name: garment.name })}
                         fill
                         className="object-cover"
                         sizes="48px"
                       />
                     </div>
                     <div>
-                      <h4 className="font-medium">{garment.name}</h4>
+                      {/* garment.name (modelo) sigue siendo lo que matchGarmentKey()
+                          parsea más abajo — no tocar, solo el render usa el descriptivo. */}
+                      <h4 className="font-medium">{productDisplayName({ id: garment.id, name: garment.name })}</h4>
                       <p className="text-sm text-muted-foreground">${garment.price.toLocaleString()}</p>
                     </div>
                   </div>

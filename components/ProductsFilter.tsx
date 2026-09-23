@@ -10,6 +10,7 @@ import { Palette, Sparkles, ZoomIn, ShoppingCart, Check, SlidersHorizontal, X } 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCart } from "@/lib/cartStore"
 import { parsePrice, type Product } from "@/lib/products"
+import { productDisplayName } from "@/lib/product-names"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 import { matchGarmentKey, matchStockColor, normalizeStockSize, type LiquidationStockRow } from "@/lib/stock/liquidation"
 
@@ -74,7 +75,10 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
       const price = parsePrice(product.price)
       addItem({
         id: `${product.id}-${selectedSize}-${Date.now()}`,
-        name: product.name,
+        name: productDisplayName({ id: product.id, name: product.name, color: product.color }),
+        // garmentType queda con el nombre "viejo" (no el descriptivo): stock-guard
+        // y matchGarmentKey lo parsean con texto que incluye el modelo (ver
+        // lib/stock/liquidation.ts matchGarmentKey). No tocar.
         garmentType: product.name,
         color: product.color,
         size: selectedSize,
@@ -175,14 +179,14 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
 
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {group.items.map((product, index) => (
-                  <article key={product.id} className="group" aria-label={product.name}>
+                  <article key={product.id} className="group" aria-label={productDisplayName({ id: product.id, name: product.name, color: product.color })}>
                     <div className="border rounded-xl overflow-hidden bg-card hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                       {/* Image */}
                       <Link href={`/products/${product.id}`} className="block">
                         <div className="aspect-square relative overflow-hidden bg-gradient-to-br from-zinc-800/40 to-zinc-900/60">
                           <Image
                             src={product.images.main || "/placeholder.svg"}
-                            alt={`${product.name} — prenda personalizable de Novamente`}
+                            alt={`${productDisplayName({ id: product.id, name: product.name, color: product.color })} — prenda personalizable de Novamente`}
                             fill
                             priority={index < 6}
                             fetchPriority={index < 6 ? "high" : "auto"}
@@ -209,7 +213,7 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
                       </Link>
 
                       <div className="p-3 md:p-4 flex flex-col flex-1">
-                        <h3 className="text-sm md:text-base font-semibold leading-tight line-clamp-2">{product.name}</h3>
+                        <h3 className="text-sm md:text-base font-semibold leading-tight line-clamp-2">{productDisplayName({ id: product.id, name: product.name, color: product.color })}</h3>
                         <div className="flex items-center justify-between mt-1 mb-2">
                           <div className="flex flex-col leading-none">
                             {anchorPriceLabel(product.price) && (

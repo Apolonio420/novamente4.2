@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { PRODUCTS, formatPrice } from "@/lib/catalog"
+import { productDisplayName } from "@/lib/product-names"
 import { useAssistantAuth } from "@/lib/hooks/useAssistantAuth"
 import { usePageContext } from "@/lib/hooks/usePageContext"
 
@@ -999,10 +1000,10 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
           {PRODUCTS.map(p => (
             <div key={p.name} className="shrink-0 w-32 bg-zinc-900 rounded-lg overflow-hidden border border-zinc-700 hover:border-purple-500/50 transition-colors">
               <div className="h-24 bg-zinc-800 relative">
-                <Image src={p.image} alt={p.name} fill className="object-cover" sizes="128px" />
+                <Image src={p.image} alt={productDisplayName({ garmentType: p.garmentType, name: p.name })} fill className="object-cover" sizes="128px" />
               </div>
               <div className="p-2">
-                <p className="text-xs font-medium text-zinc-200 truncate">{p.name}</p>
+                <p className="text-xs font-medium text-zinc-200 truncate">{productDisplayName({ garmentType: p.garmentType, name: p.name })}</p>
                 <p className="text-xs text-purple-400 font-bold">{formatPrice(p.price)}</p>
                 <p className="text-[10px] text-zinc-500 truncate">{p.colors.join(", ")}</p>
               </div>
@@ -1031,13 +1032,13 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
 
   if (action.type === "SHOW_PRICING") {
     const pricing = [
-      { name: "Musculosa Bali", price: 21800 },
-      { name: "Crop Mujer", price: 23500 },
-      { name: "Aldea Classic", price: 28600 },
-      { name: "Clásica Mujer", price: 28600 },
-      { name: "Aura Oversize", price: 31000 },
-      { name: "Buzo Cuello Redondo", price: 43000 },
-      { name: "Buzo Hoodie Oversize", price: 55000 },
+      { name: "Musculosa", price: 21800 },
+      { name: "Remera crop mujer", price: 23500 },
+      { name: "Remera clásica", price: 28600 },
+      { name: "Remera clásica mujer", price: 28600 },
+      { name: "Remera oversize", price: 31000 },
+      { name: "Buzo cuello redondo", price: 43000 },
+      { name: "Buzo con capucha", price: 55000 },
     ]
     return (
       <div className="mt-3">
