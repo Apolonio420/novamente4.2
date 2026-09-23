@@ -49,7 +49,12 @@ vi.mock('@/lib/supabase-admin', () => {
   return { supabaseAdmin: { from: () => makeQuery() } }
 })
 
-import { isOwnMockupUrl, findFirstDisallowedProductImage } from '@/lib/partners/product-image-origin'
+import {
+  isOwnMockupUrl,
+  findFirstDisallowedProductImage,
+  extractColorImageUrls,
+  findFirstDisallowedColorImage,
+} from '@/lib/partners/product-image-origin'
 
 const TENANT_ID = 'tenant-1'
 const SLUG = 'impulso'
@@ -113,7 +118,7 @@ describe('isOwnMockupUrl', () => {
     expect(result.reason).toBe('legacy_curated')
   })
 
-  it('accepts the legacy WhatsApp-bot mockups-fallback bucket', async () => {
+  it('accepts the legacy WhatsApp-bot mockups-fallback bucket — v2/uploads/dashboard subpath', async () => {
     const result = await isOwnMockupUrl(
       TENANT_ID,
       SLUG,
@@ -121,6 +126,47 @@ describe('isOwnMockupUrl', () => {
     )
     expect(result.ok).toBe(true)
     expect(result.reason).toBe('legacy_bot_fallback')
+  })
+
+  it('accepts the legacy WhatsApp-bot mockups-fallback bucket — robot-images/mockups subpath', async () => {
+    const result = await isOwnMockupUrl(
+      TENANT_ID,
+      SLUG,
+      'https://fvsjvvyohaarivametxq.supabase.co/storage/v1/object/public/mockups-fallback/robot-images/mockups/abc.jpg',
+    )
+    expect(result.ok).toBe(true)
+    expect(result.reason).toBe('legacy_bot_fallback')
+  })
+
+  // Verificado listando el bucket real (2026-09-23): v1/stamps son diseños
+  // sueltos (no mockups compuestos) y robot-images/images son imágenes
+  // genéricas del robot de posteos — ninguna de las dos es una foto de
+  // prenda con estampa, así que NO deben aceptarse como "nuestro mockup".
+  it('rejects mockups-fallback/v1/stamps (diseños sueltos, no mockups)', async () => {
+    const result = await isOwnMockupUrl(
+      TENANT_ID,
+      SLUG,
+      'https://fvsjvvyohaarivametxq.supabase.co/storage/v1/object/public/mockups-fallback/v1/stamps/0030b680-6fae-4054-af69-f5f32d4472f4',
+    )
+    expect(result.ok).toBe(false)
+  })
+
+  it('rejects mockups-fallback/robot-images/images (imágenes genéricas, no mockups)', async () => {
+    const result = await isOwnMockupUrl(
+      TENANT_ID,
+      SLUG,
+      'https://fvsjvvyohaarivametxq.supabase.co/storage/v1/object/public/mockups-fallback/robot-images/images/abc.jpg',
+    )
+    expect(result.ok).toBe(false)
+  })
+
+  it('rejects mockups-fallback/remove-bg (recortes sueltos, no mockups)', async () => {
+    const result = await isOwnMockupUrl(
+      TENANT_ID,
+      SLUG,
+      'https://fvsjvvyohaarivametxq.supabase.co/storage/v1/object/public/mockups-fallback/remove-bg/abc.png',
+    )
+    expect(result.ok).toBe(false)
   })
 
   it('rejects a free upload from the partner-assets bucket (type=product path)', async () => {
@@ -167,5 +213,58 @@ describe('findFirstDisallowedProductImage', () => {
     const newBad = 'https://images.unsplash.com/photo-new'
     const result = await findFirstDisallowedProductImage(TENANT_ID, SLUG, [legacyBad, newBad], [legacyBad])
     expect(result).toBe(newBad)
+  })
+})
+
+describe('extractColorImageUrls', () => {
+  it('pulls front and back URLs out of metadata.colors[]', () => {
+    const colors = [
+      { name: 'Negro', hex: '#000', images: { front: 'https://a/front.png', back: 'https://a/back.png' } },
+      { name: 'Blanco', hex: '#fff', images: { front: 'https://b/front.png' } },
+    ]
+    expect(extractColorImageUrls(colors)).toEqual([
+      'https://a/front.png',
+      'https://a/back.png',
+      'https://b/front.png',
+    ])
+  })
+
+  it('ignores colors with no images / empty strings / non-array input', () => {
+    expect(extractColorImageUrls([{ name: 'Rojo', hex: '#f00', images: { front: '', back: '' } }])).toEqual([])
+    expect(extractColorImageUrls(null)).toEqual([])
+    expect(extractColorImageUrls(undefined)).toEqual([])
+    expect(extractColorImageUrls('not-an-array')).toEqual([])
+  })
+})
+
+describe('findFirstDisallowedColorImage', () => {
+  const GOOD = '/api/proxy-image?key=partners%2Fimpulso%2Fmockups%2Fa.png'
+  const BAD = 'https://images.unsplash.com/photo-123'
+
+  it('returns null when every color image is a Studio mockup', async () => {
+    const colors = [{ name: 'Negro', hex: '#000', images: { front: GOOD, back: GOOD } }]
+    expect(await findFirstDisallowedColorImage(TENANT_ID, SLUG, colors)).toBeNull()
+  })
+
+  it('returns the first disallowed color image URL', async () => {
+    const colors = [{ name: 'Negro', hex: '#000', images: { front: GOOD, back: BAD } }]
+    expect(await findFirstDisallowedColorImage(TENANT_ID, SLUG, colors)).toBe(BAD)
+  })
+
+  it('leaves a legacy color image (already in existingColors) untouched even if it would fail today', async () => {
+    const existingColors = [{ name: 'Negro', hex: '#000', images: { front: BAD } }]
+    const newColors = [{ name: 'Negro', hex: '#000', images: { front: BAD } }]
+    expect(await findFirstDisallowedColorImage(TENANT_ID, SLUG, newColors, existingColors)).toBeNull()
+  })
+
+  it('validates a newly-added color even when an existing legacy color is also bad', async () => {
+    const legacyBad = 'https://images.unsplash.com/photo-legacy'
+    const newBad = 'https://images.unsplash.com/photo-new'
+    const existingColors = [{ name: 'Negro', hex: '#000', images: { front: legacyBad } }]
+    const newColors = [
+      { name: 'Negro', hex: '#000', images: { front: legacyBad } },
+      { name: 'Blanco', hex: '#fff', images: { front: newBad } },
+    ]
+    expect(await findFirstDisallowedColorImage(TENANT_ID, SLUG, newColors, existingColors)).toBe(newBad)
   })
 })

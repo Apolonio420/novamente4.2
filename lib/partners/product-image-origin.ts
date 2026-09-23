@@ -81,16 +81,39 @@ function isLegacyCuratedMockupUrl(url: string, tenantSlug: string): boolean {
 }
 
 /**
+ * Subcarpetas de `mockups-fallback` que son mockups compuestos de verdad
+ * (foto de la prenda con el diseño puesto), verificado listando el bucket
+ * real (Supabase Storage, `mockups-fallback`, 2026-09-23):
+ *
+ *   remove-bg/          → recortes sueltos (salida de quitar fondo), NO mockup
+ *   robot-images/images  → imágenes genéricas del robot de posteos, NO mockup
+ *   robot-images/mockups → mockups compuestos del robot — SÍ
+ *   v1/stamps/           → diseños/estampas sueltos (el nombre lo dice), NO mockup
+ *   v2/uploads/dashboard/{telefono}/... → mockup entregado por WhatsApp al
+ *                          dashboard del cliente — SÍ (ya visto como imagen
+ *                          real de un producto publicado)
+ *   videos/              → video, no imagen
+ *
+ * Solo se aceptan las dos subcarpetas marcadas "SÍ" arriba.
+ */
+const LEGACY_BOT_MOCKUP_SUBPATHS = [
+  'mockups-fallback/robot-images/mockups/',
+  'mockups-fallback/v2/uploads/dashboard/',
+]
+
+/**
  * true si `url` es del bucket legacy `mockups-fallback/...` del compositor del
- * bot de WhatsApp. Path no lleva el slug del tenant (lleva un teléfono), así
- * que no se puede scopear por tenant acá — se acepta ancho a propósito: ese
- * bucket nunca lo escribe `/api/partners/upload` (el path de un partner
+ * bot de WhatsApp, y cae en una de las subcarpetas que SÍ son mockups
+ * compuestos (ver `LEGACY_BOT_MOCKUP_SUBPATHS`). El path no lleva el slug del
+ * tenant (lleva un teléfono), así que no se puede scopear por tenant acá —
+ * ese bucket nunca lo escribe `/api/partners/upload` (el path de un partner
  * upload libre es siempre `partner-assets/{tenantId}/{type}/...`), así que un
  * partner no puede "fingir" esta URL subiendo un archivo con ese nombre.
  */
 function isLegacyBotMockupUrl(url: string): boolean {
-  return url.includes('/storage/v1/object/public/mockups-fallback/')
-    || url.includes('/object/public/mockups-fallback/')
+  return LEGACY_BOT_MOCKUP_SUBPATHS.some(
+    (sub) => url.includes(`/storage/v1/object/public/${sub}`) || url.includes(`/object/public/${sub}`),
+  )
 }
 
 export interface OwnMockupCheckResult {
@@ -184,4 +207,46 @@ export async function findFirstDisallowedProductImage(
     if (!result.ok) return url
   }
   return null
+}
+
+/**
+ * Shape mínimo de `metadata.colors[]` (ver `app/workspace/catalog/page.tsx`,
+ * `setOrDelete('colors', ...)`): cada color guarda `images.front`/`images.back`,
+ * que `app/p/[slug]/[product]/page.tsx` (galería de colores) SÍ muestra en la
+ * tienda pública — mismo riesgo que `partner_products.images`, así que pasa
+ * por el mismo gate.
+ */
+export interface ProductColorMetadata {
+  images?: { front?: unknown; back?: unknown } | null
+  [key: string]: unknown
+}
+
+/** Extrae, en orden estable, las URLs de imagen (front/back) de `metadata.colors[]`. */
+export function extractColorImageUrls(colors: unknown): string[] {
+  if (!Array.isArray(colors)) return []
+  const urls: string[] = []
+  for (const color of colors as ProductColorMetadata[]) {
+    const front = color?.images?.front
+    const back = color?.images?.back
+    if (typeof front === 'string' && front) urls.push(front)
+    if (typeof back === 'string' && back) urls.push(back)
+  }
+  return urls
+}
+
+/**
+ * Igual que `findFirstDisallowedProductImage`, pero para las imágenes por
+ * color de `metadata.colors[]` en vez de `partner_products.images`.
+ * `existingColors` es el `metadata.colors` que el producto ya tenía —  sus
+ * URLs no se re-validan (mismo criterio: solo URLs nuevas).
+ */
+export async function findFirstDisallowedColorImage(
+  tenantId: string,
+  tenantSlug: string,
+  colors: unknown,
+  existingColors: unknown = [],
+): Promise<string | null> {
+  const newUrls = extractColorImageUrls(colors)
+  const existingUrls = extractColorImageUrls(existingColors)
+  return findFirstDisallowedProductImage(tenantId, tenantSlug, newUrls, existingUrls)
 }
