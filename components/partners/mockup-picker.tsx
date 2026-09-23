@@ -14,9 +14,10 @@
  */
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Wand2, Check, Loader2, ImageOff } from 'lucide-react'
+import { Wand2, Check, Loader2, ImageOff, Shirt } from 'lucide-react'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import { cn } from '@/lib/utils'
+import { CATALOG_PRODUCTS } from '@/lib/catalog/products'
 
 interface MockupAsset {
   id: string
@@ -25,18 +26,70 @@ interface MockupAsset {
   created_at: string
 }
 
+/**
+ * Fase 3 pieza E3 UI — botón "Dorso liso": genera la prenda lisa de este
+ * lado (`POST /api/partners/products/plain-side`) y completa el slot solo.
+ * Si no se sabe la prenda/color todavía (producto viejo sin `garmentKey`),
+ * el picker deja elegirla acá mismo antes de generar.
+ */
+interface PlainSideConfig {
+  side: 'front' | 'back'
+  garmentKey: string | null
+  colorKey: string | null
+  /** obligatorio para publicar — solo cambia el texto de ayuda. */
+  required?: boolean
+}
+
 interface MockupPickerProps {
   value: string | null
   onChange: (url: string | null) => void
   className?: string
   /** Clase de alto del botón principal (default h-28). */
   heightClassName?: string
+  plainSide?: PlainSideConfig
 }
 
-export function MockupPicker({ value, onChange, className, heightClassName = 'h-28' }: MockupPickerProps) {
+export function MockupPicker({ value, onChange, className, heightClassName = 'h-28', plainSide }: MockupPickerProps) {
   const [assets, setAssets] = useState<MockupAsset[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
+
+  // Estado del selector de prenda/color cuando plainSide no trae garmentKey.
+  const [pickGarmentKey, setPickGarmentKey] = useState(plainSide?.garmentKey || '')
+  const [pickColorKey, setPickColorKey] = useState(plainSide?.colorKey || '')
+  const [generatingPlain, setGeneratingPlain] = useState(false)
+  const [plainError, setPlainError] = useState<string | null>(null)
+
+  const pickGarment = CATALOG_PRODUCTS.find((g) => g.key === pickGarmentKey) || null
+
+  const handleGeneratePlain = async () => {
+    if (!plainSide) return
+    const garmentKey = plainSide.garmentKey || pickGarmentKey
+    const colorKey = plainSide.colorKey || pickColorKey
+    if (!garmentKey || !colorKey) {
+      setPlainError('Elegí prenda y color primero')
+      return
+    }
+    setPlainError(null)
+    setGeneratingPlain(true)
+    try {
+      const res = await authFetch('/api/partners/products/plain-side', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ garmentKey, color: colorKey, side: plainSide.side }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.url) {
+        setPlainError(data?.error || 'No pudimos generar el dorso liso')
+        return
+      }
+      onChange(data.url)
+    } catch {
+      setPlainError('Falló la conexión, probá de nuevo')
+    } finally {
+      setGeneratingPlain(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -121,6 +174,58 @@ export function MockupPicker({ value, onChange, className, heightClassName = 'h-
             <Wand2 className="w-3.5 h-3.5" />
             Crear mockup en el Studio
           </Link>
+        </div>
+      )}
+
+      {plainSide && !value && (
+        <div className="rounded-lg border border-dashed border-zinc-800 bg-zinc-950/40 p-2 space-y-1.5">
+          {(!plainSide.garmentKey || !plainSide.colorKey) && (
+            <div className="flex gap-1.5">
+              {!plainSide.garmentKey && (
+                <select
+                  value={pickGarmentKey}
+                  onChange={(e) => {
+                    setPickGarmentKey(e.target.value)
+                    setPickColorKey('')
+                  }}
+                  className="flex-1 h-7 text-[11px] rounded border border-zinc-800 bg-zinc-900/60 text-zinc-300 px-1"
+                >
+                  <option value="">Prenda…</option>
+                  {CATALOG_PRODUCTS.map((g) => (
+                    <option key={g.key} value={g.key}>{g.name}</option>
+                  ))}
+                </select>
+              )}
+              {!plainSide.colorKey && (
+                <select
+                  value={pickColorKey}
+                  onChange={(e) => setPickColorKey(e.target.value)}
+                  disabled={!pickGarment}
+                  className="flex-1 h-7 text-[11px] rounded border border-zinc-800 bg-zinc-900/60 text-zinc-300 px-1 disabled:opacity-40"
+                >
+                  <option value="">Color…</option>
+                  {pickGarment?.colors.map((c) => (
+                    <option key={c.key} value={c.key}>{c.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={handleGeneratePlain}
+            disabled={generatingPlain}
+            className="w-full flex items-center justify-center gap-1.5 text-xs font-medium text-zinc-200 hover:text-white rounded-md border border-zinc-700 bg-zinc-900/60 h-8 disabled:opacity-50"
+          >
+            {generatingPlain ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shirt className="w-3.5 h-3.5" />}
+            Dorso liso
+          </button>
+          {plainSide.required && (
+            <p className="text-[10px] text-amber-400/90">
+              Hace falta el dorso (liso o con estampa) para publicar.
+            </p>
+          )}
+          {plainError && <p className="text-[10px] text-red-400">{plainError}</p>}
         </div>
       )}
     </div>
