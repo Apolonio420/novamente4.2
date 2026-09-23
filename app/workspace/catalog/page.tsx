@@ -26,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { ImageUpload } from '@/components/partners/image-upload'
+import { MockupPicker } from '@/components/partners/mockup-picker'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import { readPrintArt, writePrintArt } from '@/lib/partners/print-art'
 import { formatPrice as formatGarmentPrice } from '@/lib/partners/format-price'
@@ -1170,7 +1171,9 @@ export default function CatalogPage() {
                   </span>
                 </div>
                 <p className="text-xs text-zinc-500">
-                  La primera imagen sera la portada del producto. Arrastra o hace click para subir.
+                  La primera imagen sera la portada del producto. Tu tienda muestra
+                  nuestras prendas reales con tu diseño: elegí un mockup ya generado
+                  en el Studio, o creá uno nuevo.
                 </p>
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
                   {formImages.map((url, i) => (
@@ -1180,11 +1183,10 @@ export default function CatalogPage() {
                           Principal
                         </span>
                       )}
-                      <ImageUpload
+                      <MockupPicker
                         value={url}
                         onChange={(newUrl) => handleImageChange(i, newUrl)}
-                        type="product"
-                        className="[&_div]:h-28 [&_img]:h-28"
+                        className="w-28"
                       />
                       {/* Remove slot button (only if not the only empty slot) */}
                       {url && (
@@ -1244,10 +1246,14 @@ export default function CatalogPage() {
                       </div>
                       <div className="flex gap-3 items-start">
                         <div className="w-28 shrink-0">
+                          {/* Arte de producción, no foto de vidriera — no pasa por el
+                              gate de origen de mockup (product-image-origin.ts). Usa
+                              type="design" (no "product", cerrado en /api/partners/upload
+                              para fotos de producto libres). */}
                           <ImageUpload
                             value={value || null}
                             onChange={(u) => set(u || '')}
-                            type="product"
+                            type="design"
                             className="[&_div]:h-28 [&_img]:h-28"
                           />
                         </div>
@@ -1329,6 +1335,13 @@ export default function CatalogPage() {
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
+                      {/* TODO(fase2-gate-mockups): estas imágenes por color SÍ se
+                          muestran en la tienda pero, a diferencia de la imagen
+                          principal del producto (`images`, ver product-image-origin.ts),
+                          todavía no pasan por el gate "solo nuestros mockups" — quedan
+                          en `metadata.colors[].frontImage/backImage`, fuera del alcance
+                          de esta tarea. Usan type="design" solo para no romper contra el
+                          cierre de type="product" en /api/partners/upload. */}
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="text-[10px] text-zinc-500 mb-1 block">Imagen frente</label>
@@ -1339,7 +1352,7 @@ export default function CatalogPage() {
                               next[ci] = { ...next[ci], frontImage: url || '' }
                               setFormColors(next)
                             }}
-                            type="product"
+                            type="design"
                             className="[&_div]:h-20 [&_img]:h-20"
                           />
                         </div>
@@ -1352,7 +1365,7 @@ export default function CatalogPage() {
                               next[ci] = { ...next[ci], backImage: url || '' }
                               setFormColors(next)
                             }}
-                            type="product"
+                            type="design"
                             className="[&_div]:h-20 [&_img]:h-20"
                           />
                         </div>
