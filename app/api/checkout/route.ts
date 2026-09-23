@@ -104,21 +104,28 @@ export async function POST(request: NextRequest) {
     const { validarPrecios } = await import('@/lib/checkout/precio-real')
     const chequeo = await validarPrecios(itemsParaValidar)
     if (!chequeo.ok) {
-      console.error('❌ Precio por debajo del real:', chequeo.subfacturados)
+      console.error('❌ Precio por debajo del real:', chequeo.subfacturados, chequeo.bajoCosto)
       const { notifyError } = await import('@/lib/notifications')
       await notifyError({
         area: 'Checkout',
         endpoint: 'POST /api/checkout',
         message:
           `Intento de compra por debajo del precio real (${customer?.email || 'sin email'}): ` +
-          chequeo.subfacturados
-            .map((s) => `${s.item} cobrado ${s.cobrado} vs real ${s.real}`)
-            .join(' · '),
+          [
+            ...chequeo.subfacturados.map((s) => `${s.item} cobrado ${s.cobrado} vs real ${s.real}`),
+            ...chequeo.bajoCosto.map((s) => `${s.item} precio real ${s.real} por debajo del costo ${s.costo ?? '(piso absoluto)'}`),
+          ].join(' · '),
       }).catch(() => null)
-      return NextResponse.json(
-        { success: false, error: 'Los precios del carrito no coinciden. Recargá la página y probá de nuevo.' },
-        { status: 400 },
-      )
+      // bajoCosto: el precio de la FILA del producto (no lo que mandó el
+      // navegador) está por debajo del costo de producción — un partner
+      // cargó el precio "en miles" (40, 60) y el checkout lo cobraría tal
+      // cual. Mensaje distinto de subfacturados: acá no hay nada que
+      // "recargar la página" arregle, el producto necesita que el partner
+      // corrija el precio.
+      const mensaje = chequeo.bajoCosto.length > 0
+        ? 'Este producto no está disponible ahora. Escribile a la tienda.'
+        : 'Los precios del carrito no coinciden. Recargá la página y probá de nuevo.'
+      return NextResponse.json({ success: false, error: mensaje }, { status: 400 })
     }
     if (chequeo.sinVerificar > 0) {
       console.warn(`[checkout] ${chequeo.sinVerificar} item(s) sin precio verificable`)
