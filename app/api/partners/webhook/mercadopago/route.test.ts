@@ -3,7 +3,7 @@
 // webhooks (reintentos, notificaciones duplicadas, o un replay manual de un
 // payment id viejo) — un mismo payment id aprobado no debe re-ejecutar los
 // efectos (activar plan, extender vencimiento, notificar) más de una vez.
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 const h = vi.hoisted(() => ({
@@ -222,6 +222,17 @@ describe('isSuspectedDoubleCharge (unidad)', () => {
 
 describe('POST /api/partners/webhook/mercadopago — alerta de doble cobro', () => {
   const externalReference = 'partner_sub_tenant-1_1751500000000_monthly_growth'
+
+  // "Período activo" se evalúa contra new Date() en la ruta: fijamos el reloj
+  // para que los fixtures (vigente hasta 2026-08-20 / vencido en 2026-02-20)
+  // no caduquen con el calendario real. Solo Date: los timers/promesas quedan reales.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-07-15T00:00:00.000Z'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
 
   it('payment id distinto dentro del período activo: procesa el pago normal Y alerta por Telegram con ambos ids/fechas', async () => {
     const tenant = {
