@@ -5,6 +5,7 @@ import { getPlanFeatures } from '@/lib/partners/plans'
 import type { Plan } from '@/lib/partners/types'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { computeAutoPublishUpdates } from '@/lib/partners/auto-publish'
+import { computeLogoToneFromUrl } from '@/lib/partners/logo-tone'
 import { countPublishedProducts } from '@/lib/partners/catalog'
 import { sendEmail } from '@/lib/email'
 import { buildStorefrontReactivatedEmail } from '@/lib/partners/storefront-reactivated-email'
@@ -83,6 +84,26 @@ export async function PUT(request: NextRequest) {
         { error: 'No se enviaron campos de branding validos' },
         { status: 400 },
       )
+    }
+
+    // Logo nuevo o cambiado: calculamos tono (dark/light) y aspect ratio para
+    // que la caja del hero en /p/[slug] no se trague un logo oscuro con su
+    // fondo translúcido oscuro por default. Best-effort: si falla la
+    // descarga o el cómputo, NO rompe el guardado del branding.
+    if (
+      typeof updates.logo_url === 'string' &&
+      updates.logo_url &&
+      updates.logo_url !== tenant.logo_url
+    ) {
+      const result = await computeLogoToneFromUrl(updates.logo_url)
+      if (result) {
+        updates.metadata = {
+          ...(tenant.metadata || {}),
+          ...((updates.metadata as Record<string, unknown>) || {}),
+          logo_tone: result.tone,
+          logo_aspect: result.aspect,
+        }
+      }
     }
 
     // AUTO-PUBLISH: si el partner ya tiene branding minimo cargado (logo

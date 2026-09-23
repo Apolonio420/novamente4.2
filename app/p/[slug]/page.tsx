@@ -263,15 +263,33 @@ function HeroSection({ tenant }: { tenant: Tenant }) {
         {/* Hide the big hero logo when the partner opts out
             (metadata.hero_hide_logo = true). Navbar/header logo is untouched. */}
         {tenant.logo_url &&
-          (tenant.metadata as { hero_hide_logo?: boolean } | null)?.hero_hide_logo !== true && (
-            <Image
-              src={tenant.logo_url}
-              alt={`${tenant.name} logo`}
-              width={120}
-              height={120}
-              className="rounded-2xl border border-white/10 bg-black/30 object-contain p-2 backdrop-blur-sm"
-            />
-          )}
+          (tenant.metadata as { hero_hide_logo?: boolean } | null)?.hero_hide_logo !== true && (() => {
+            const logoMeta = tenant.metadata as
+              | { logo_tone?: 'dark' | 'light'; logo_aspect?: number }
+              | null
+            // Logo oscuro sobre la caja translúcida oscura de siempre = invisible
+            // (auditoría). metadata.logo_tone se calcula al subir el logo
+            // (app/api/partners/branding/route.ts, lib/partners/logo-tone.ts).
+            const isDarkLogo = logoMeta?.logo_tone === 'dark'
+            // Logos muy anchos (wordmarks, aspect > 2.2) no entran bien en una
+            // caja cuadrada 120×120 — se les da una caja ancha en su lugar.
+            const isWide = typeof logoMeta?.logo_aspect === 'number' && logoMeta.logo_aspect > 2.2
+            const boxWidth = isWide ? 220 : 120
+            const boxHeight = 120
+            return (
+              <Image
+                src={tenant.logo_url}
+                alt={`${tenant.name} logo`}
+                width={boxWidth}
+                height={boxHeight}
+                className={`rounded-2xl border object-contain p-2 backdrop-blur-sm ${
+                  isDarkLogo
+                    ? 'border-black/10 bg-white/90'
+                    : 'border-white/10 bg-black/30'
+                }`}
+              />
+            )
+          })()}
 
         {/* Hide the big brand-name heading when the partner opts out
             (metadata.hero_hide_name = true). Keeps the logo + tagline. */}
