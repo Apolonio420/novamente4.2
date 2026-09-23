@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     // Motivo por el que el storefront no esta visible (null si ya lo esta) —
     // calculado del lado del server reusando la MISMA regla que decide el
     // auto-publish, asi el UI no reimplementa el criterio de branding minimo.
-    const storefrontHiddenReason = computeStorefrontHiddenReason(tenant)
+    const storefrontHiddenReason = computeStorefrontHiddenReason(tenant, publishedProducts)
 
     // Cap freemium (ver app/p/[slug]/page.tsx, mismo criterio): cuántos
     // productos publicados se muestran realmente en la vidriera pública según

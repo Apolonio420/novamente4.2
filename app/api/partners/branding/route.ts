@@ -5,6 +5,7 @@ import { getPlanFeatures } from '@/lib/partners/plans'
 import type { Plan } from '@/lib/partners/types'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { computeAutoPublishUpdates } from '@/lib/partners/auto-publish'
+import { countPublishedProducts } from '@/lib/partners/catalog'
 import { sendEmail } from '@/lib/email'
 import { buildStorefrontReactivatedEmail } from '@/lib/partners/storefront-reactivated-email'
 
@@ -90,7 +91,8 @@ export async function PUT(request: NextRequest) {
     // visible aunque haya cargado todo el branding (caso DUB SHIRTS). Regla
     // compartida con catalog/[id]/route.ts — ver lib/partners/auto-publish.ts.
     const merged = { ...tenant, ...updates } as typeof tenant
-    const autoPublish = computeAutoPublishUpdates(merged)
+    const publishedCount = await countPublishedProducts(tenant.id)
+    const autoPublish = computeAutoPublishUpdates(merged, publishedCount)
     if (autoPublish) {
       Object.assign(updates, autoPublish)
     }

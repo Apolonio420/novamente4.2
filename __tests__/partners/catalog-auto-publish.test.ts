@@ -17,6 +17,9 @@ const h = vi.hoisted(() => ({
   product: {} as Record<string, unknown>,
   updateProductMock: vi.fn(),
   updateTenantMock: vi.fn(),
+  // Por default hay 1 producto publicado (el propio, ya updateado) — los
+  // tests de "0 productos" lo pisan con .mockResolvedValue(0).
+  countPublishedProductsMock: vi.fn(async (_tenantId: string) => 1),
   tenantWriteCalls: [] as { vals: Record<string, unknown> }[],
 }))
 
@@ -35,6 +38,7 @@ vi.mock('@/lib/partners/catalog', () => ({
   updateProduct: (id: string, updates: Record<string, unknown>) => h.updateProductMock(id, updates),
   deleteProduct: vi.fn(),
   generateUniqueSlug: vi.fn(async (_tenantId: string, name: string) => name),
+  countPublishedProducts: (tenantId: string) => h.countPublishedProductsMock(tenantId),
 }))
 
 // Mockeamos variants.ts entero: evita tener que simular las queries reales de
@@ -130,6 +134,7 @@ beforeEach(() => {
     Object.assign(h.tenant, updates)
     return { ...h.tenant }
   })
+  h.countPublishedProductsMock.mockImplementation(async () => 1)
 })
 
 describe('PUT /api/partners/catalog/[id] — auto-publish del storefront', () => {
@@ -232,6 +237,55 @@ describe('PUT /api/partners/catalog/[id] — auto-publish del storefront', () =>
     const body = await res.json()
 
     expect(body.auto_published).toBe(false)
+    expect(h.updateTenantMock).not.toHaveBeenCalled()
+  })
+
+  // Auditoría 22/09: 6 tiendas + e2e-partner-test quedaron publicadas con 0
+  // productos — branding minimo ya NO alcanza, hace falta ≥1 publicado.
+  it('(e) branding minimo + tienda apagada + 0 productos publicados => NO publica', async () => {
+    h.tenant.logo_url = 'https://cdn/logo.png'
+    h.tenant.tagline = 'Ropa con onda'
+    h.tenant.storefront_published = false
+    h.tenant.status = 'onboarding'
+    h.countPublishedProductsMock.mockResolvedValue(0)
+
+    const res = await PUT(makeRequest({ status: 'published' }), { params })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+
+    expect(body.auto_published).toBe(false)
+    expect(h.updateTenantMock).not.toHaveBeenCalled()
+  })
+
+  it('(f) auto-unpublish: bajar a draft el ÚLTIMO producto publicado apaga la tienda sola', async () => {
+    h.tenant.logo_url = 'https://cdn/logo.png'
+    h.tenant.tagline = 'Ropa con onda'
+    h.tenant.storefront_published = true
+    h.tenant.status = 'active'
+    h.product.status = 'published' // el producto baja de published a draft
+    h.countPublishedProductsMock.mockResolvedValue(0) // no queda ningún otro publicado
+
+    const res = await PUT(makeRequest({ status: 'draft' }), { params })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+
+    expect(body.auto_unpublished).toBe(true)
+    expect(h.updateTenantMock).toHaveBeenCalledWith('tenant-1', { storefront_published: false })
+  })
+
+  it('(g) bajar a draft un producto cuando QUEDAN otros publicados no apaga la tienda', async () => {
+    h.tenant.logo_url = 'https://cdn/logo.png'
+    h.tenant.tagline = 'Ropa con onda'
+    h.tenant.storefront_published = true
+    h.tenant.status = 'active'
+    h.product.status = 'published'
+    h.countPublishedProductsMock.mockResolvedValue(2) // otros 2 siguen publicados
+
+    const res = await PUT(makeRequest({ status: 'draft' }), { params })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+
+    expect(body.auto_unpublished).toBe(false)
     expect(h.updateTenantMock).not.toHaveBeenCalled()
   })
 })

@@ -559,6 +559,10 @@ const HIDDEN_REASON_COPY: Record<
     title: 'Tu tienda todavía no se puede publicar',
     body: 'Para publicar tu tienda te falta una portada, una frase de marca o una descripción.',
   },
+  no_products: {
+    title: 'Tu tienda todavía no se puede publicar',
+    body: 'Publicá al menos 1 producto en tu catálogo.',
+  },
   hidden_manually: {
     title: 'Tu tienda está oculta porque la ocultaste desde Configuración',
     body: 'Cuando quieras, la podés volver a publicar.',
@@ -693,6 +697,33 @@ function StorefrontVisibilityBanner({
             <Link href="/workspace/branding">
               <Palette className="w-4 h-4 mr-2" />
               {reason === 'missing_logo' ? 'Cargar mi logo' : 'Completar mi marca'}
+            </Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Branding completo pero 0 productos publicados (auditoría 22/09) — manda
+  // al catálogo, no a branding: acá no falta marca, falta vidriera.
+  if (reason === 'no_products') {
+    const copy = HIDDEN_REASON_COPY.no_products
+    return (
+      <div className="relative rounded-xl border-2 border-amber-500/40 bg-gradient-to-r from-amber-600/10 via-orange-600/5 to-zinc-900/60 p-5 shadow-lg shadow-amber-950/10">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-11 h-11 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
+              <EyeOff className="w-5 h-5 text-amber-400" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-zinc-100">{copy.title}</h3>
+              <p className="text-xs text-zinc-400 mt-0.5">{copy.body}</p>
+            </div>
+          </div>
+          <Button asChild className="shrink-0 bg-amber-600 hover:bg-amber-500 text-white border-0">
+            <Link href="/workspace/catalog">
+              <ShoppingBag className="w-4 h-4 mr-2" />
+              Cargar un producto
             </Link>
           </Button>
         </div>

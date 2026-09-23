@@ -42,7 +42,12 @@ export function isHiddenManually(metadata: Record<string, unknown> | null | unde
  * Devuelve los campos a actualizar para auto-publicar el storefront, o null
  * si no corresponde. No corresponde cuando: el storefront YA esta publicado
  * (no re-escribimos ni pisamos storefront_published_at), el partner lo apago
- * a proposito, o el branding todavia no es el minimo necesario.
+ * a proposito, el branding todavia no es el minimo necesario, o el tenant
+ * tiene 0 productos publicados (auditoría 22/09: 6 tiendas + e2e-partner-test
+ * quedaron publicadas sin un solo producto cargado — vidriera vacía).
+ *
+ * `publishedCount` lo cuenta el caller (countPublishedProducts) — este
+ * helper es puro y no toca la base.
  *
  * `status: 'active'` solo se incluye si el tenant estaba en 'onboarding'
  * (nunca pisa 'paused'/'suspended' — esos son estados que un admin o el
@@ -50,10 +55,12 @@ export function isHiddenManually(metadata: Record<string, unknown> | null | unde
  */
 export function computeAutoPublishUpdates(
   tenant: BrandingFields & PublishState & MetadataField,
+  publishedCount: number,
 ): { storefront_published: true; status?: 'active' } | null {
   if (tenant.storefront_published) return null
   if (isHiddenManually(tenant.metadata)) return null
   if (!hasMinimumBranding(tenant)) return null
+  if (publishedCount < 1) return null
 
   const updates: { storefront_published: true; status?: 'active' } = {
     storefront_published: true,
@@ -62,6 +69,25 @@ export function computeAutoPublishUpdates(
     updates.status = 'active'
   }
   return updates
+}
+
+/**
+ * Contraparte de computeAutoPublishUpdates: si una tienda YA publicada se
+ * queda sin ningún producto publicado (se despublicó/borró/pasó a draft el
+ * último), se apaga sola — nunca queda una vidriera vacía en /p/<slug>.
+ *
+ * A propósito NO toca metadata.storefront_hidden_manually: al volver a tener
+ * un producto publicado, computeAutoPublishUpdates la vuelve a prender sin
+ * que el partner tenga que hacer nada — a diferencia de cuando el partner
+ * la apaga él mismo desde Configuración.
+ */
+export function computeAutoUnpublishUpdates(
+  tenant: PublishState,
+  publishedCount: number,
+): { storefront_published: false } | null {
+  if (!tenant.storefront_published) return null
+  if (publishedCount > 0) return null
+  return { storefront_published: false }
 }
 
 /**
@@ -80,6 +106,7 @@ export type StorefrontHiddenReason =
   | 'hidden_manually'
   | 'missing_logo'
   | 'missing_cover_or_description'
+  | 'no_products'
   | 'ready_not_published'
 
 /**
@@ -90,14 +117,21 @@ export type StorefrontHiddenReason =
  * primero: ni el branding ni el apagado manual importan si la cuenta está
  * suspendida, y app/p/[slug]/page.tsx igual hace notFound() para
  * status !== 'active', así que este motivo nunca compite con storefront_published.
+ *
+ * `publishedCount` se suma DESPUÉS del branding: a un partner sin logo hay
+ * que pedirle el logo, no "cargá un producto" (aunque también le falten los
+ * dos). `no_products` es el motivo cuando el branding YA está completo — el
+ * caso que agrega la auditoría 22/09 (6 tiendas + e2e-partner-test vacías).
  */
 export function computeStorefrontHiddenReason(
   tenant: BrandingFields & PublishState & MetadataField,
+  publishedCount: number,
 ): StorefrontHiddenReason | null {
   if (tenant.status === 'suspended') return 'suspended'
   if (tenant.storefront_published) return null
   if (isHiddenManually(tenant.metadata)) return 'hidden_manually'
   if (!tenant.logo_url) return 'missing_logo'
   if (!tenant.banner_url && !tenant.tagline && !tenant.about_text) return 'missing_cover_or_description'
+  if (publishedCount < 1) return 'no_products'
   return 'ready_not_published'
 }

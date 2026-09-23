@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
-import { updateProduct, deleteProduct, generateUniqueSlug } from '@/lib/partners/catalog'
+import { updateProduct, deleteProduct, generateUniqueSlug, countPublishedProducts } from '@/lib/partners/catalog'
 import { validatePartnerProductForCreation, validatePartnerProductPrice } from '@/lib/partners/product-policy'
 import {
   listVariants,
@@ -9,7 +9,7 @@ import {
   validateProductForPublish,
 } from '@/lib/partners/variants'
 import { updateTenant } from '@/lib/partners/tenant'
-import { computeAutoPublishUpdates } from '@/lib/partners/auto-publish'
+import { computeAutoPublishUpdates, computeAutoUnpublishUpdates } from '@/lib/partners/auto-publish'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail } from '@/lib/email'
 import { buildStorefrontReactivatedEmail } from '@/lib/partners/storefront-reactivated-email'
@@ -124,6 +124,7 @@ export async function PUT(
     }
 
     let autoPublished = false
+    let autoUnpublished = false
 
     if (updates.status === 'published') {
       // Fire-and-forget: set first_product_published_at once
@@ -134,12 +135,14 @@ export async function PUT(
         .is('first_product_published_at', null)
 
       // AUTO-PUBLISH: publicar el primer producto no publica la tienda por si
-      // sola — si el tenant ya tiene branding minimo cargado pero el
-      // storefront sigue apagado (caso Orlando: onboarding cargo branding,
-      // publico productos, y su /p/<slug> quedo en 404 un mes sin aviso),
-      // lo publicamos automaticamente. Misma regla que branding/route.ts —
-      // ver lib/partners/auto-publish.ts.
-      const autoPublishUpdates = computeAutoPublishUpdates(auth.tenant)
+      // sola — si el tenant ya tiene branding minimo cargado, YA tiene al
+      // menos 1 producto publicado (este mismo) y el storefront sigue
+      // apagado (caso Orlando: onboarding cargo branding, publico productos,
+      // y su /p/<slug> quedo en 404 un mes sin aviso), lo publicamos
+      // automaticamente. Misma regla que branding/route.ts — ver
+      // lib/partners/auto-publish.ts.
+      const publishedCount = await countPublishedProducts(auth.tenant.id)
+      const autoPublishUpdates = computeAutoPublishUpdates(auth.tenant, publishedCount)
       if (autoPublishUpdates) {
         const updatedTenant = await updateTenant(auth.tenant.id, autoPublishUpdates)
         if (updatedTenant) {
@@ -164,9 +167,26 @@ export async function PUT(
           }
         }
       }
+    } else if (
+      updates.status !== undefined
+      && updates.status !== 'published'
+      && existing.status === 'published'
+    ) {
+      // AUTO-UNPUBLISH: este producto era el que sostenía la vidriera — si
+      // bajarlo a draft/hidden/archived deja al tenant en 0 productos
+      // publicados y la tienda seguía publicada, se apaga sola (auditoría
+      // 22/09: no dejar una vidriera vacía en /p/<slug>). No toca
+      // metadata.storefront_hidden_manually: si el partner vuelve a publicar
+      // algo, computeAutoPublishUpdates la vuelve a prender sin pedirle nada.
+      const publishedCount = await countPublishedProducts(auth.tenant.id)
+      const autoUnpublishUpdates = computeAutoUnpublishUpdates(auth.tenant, publishedCount)
+      if (autoUnpublishUpdates) {
+        const updatedTenant = await updateTenant(auth.tenant.id, autoUnpublishUpdates)
+        if (updatedTenant) autoUnpublished = true
+      }
     }
 
-    return NextResponse.json({ product, auto_published: autoPublished })
+    return NextResponse.json({ product, auto_published: autoPublished, auto_unpublished: autoUnpublished })
   } catch (error) {
     console.error('PUT /api/partners/catalog/[id] error:', error)
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })
@@ -195,7 +215,19 @@ export async function DELETE(
       return NextResponse.json({ error: 'No se pudo eliminar el producto' }, { status: 500 })
     }
 
-    return NextResponse.json({ ok: true })
+    let autoUnpublished = false
+    if (existing.status === 'published') {
+      // Mismo auto-unpublish que el PUT: borrar el último producto publicado
+      // no debe dejar la tienda publicada y vacía.
+      const publishedCount = await countPublishedProducts(auth.tenant.id)
+      const autoUnpublishUpdates = computeAutoUnpublishUpdates(auth.tenant, publishedCount)
+      if (autoUnpublishUpdates) {
+        const updatedTenant = await updateTenant(auth.tenant.id, autoUnpublishUpdates)
+        if (updatedTenant) autoUnpublished = true
+      }
+    }
+
+    return NextResponse.json({ ok: true, auto_unpublished: autoUnpublished })
   } catch (error) {
     console.error('DELETE /api/partners/catalog/[id] error:', error)
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })

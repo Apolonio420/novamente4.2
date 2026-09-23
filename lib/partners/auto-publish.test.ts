@@ -4,11 +4,17 @@
 // despues publica productos sin volver a /workspace/branding nunca disparaba esa
 // regla y quedaba con storefront_published=false invisible en /p/<slug> por un mes
 // sin ningun aviso. Este archivo cubre el helper que ahora comparten AMBOS endpoints.
+//
+// Auditoría 22/09/2026: 6 tiendas + e2e-partner-test quedaron PUBLICADAS con 0
+// productos — branding minimo no alcanza, ahora se suma "≥1 producto publicado"
+// como condicion (computeAutoPublishUpdates) y su contraparte, que apaga sola
+// una tienda que se queda sin productos (computeAutoUnpublishUpdates).
 import { describe, it, expect } from 'vitest'
 import {
   hasMinimumBranding,
   isHiddenManually,
   computeAutoPublishUpdates,
+  computeAutoUnpublishUpdates,
   computeStorefrontHiddenReason,
 } from './auto-publish'
 
@@ -52,9 +58,10 @@ describe('hasMinimumBranding', () => {
 })
 
 describe('computeAutoPublishUpdates', () => {
-  it('branding minimo + tienda apagada + onboarding → publica y activa', () => {
+  it('branding minimo + ≥1 producto publicado + tienda apagada + onboarding → publica y activa', () => {
     const updates = computeAutoPublishUpdates(
       tenant({ logo_url: 'x', tagline: 'y', storefront_published: false, status: 'onboarding' }),
+      1,
     )
     expect(updates).toEqual({ storefront_published: true, status: 'active' })
   })
@@ -62,20 +69,41 @@ describe('computeAutoPublishUpdates', () => {
   it('branding minimo + tienda apagada + status YA active → publica sin tocar status', () => {
     const updates = computeAutoPublishUpdates(
       tenant({ logo_url: 'x', tagline: 'y', storefront_published: false, status: 'active' }),
+      1,
     )
     expect(updates).toEqual({ storefront_published: true })
   })
 
-  it('sin branding minimo → null (no publica)', () => {
+  it('sin branding minimo → null (no publica), aunque tenga productos publicados', () => {
     const updates = computeAutoPublishUpdates(
       tenant({ logo_url: null, storefront_published: false, status: 'onboarding' }),
+      3,
     )
     expect(updates).toBeNull()
+  })
+
+  // Caso central de la auditoría 22/09: branding completo no alcanza si la
+  // vidriera está vacía.
+  it('branding minimo completo pero 0 productos publicados → null (no publica)', () => {
+    const updates = computeAutoPublishUpdates(
+      tenant({ logo_url: 'x', tagline: 'y', storefront_published: false, status: 'onboarding' }),
+      0,
+    )
+    expect(updates).toBeNull()
+  })
+
+  it('branding minimo + 1 producto publicado (justo el mínimo) → publica', () => {
+    const updates = computeAutoPublishUpdates(
+      tenant({ logo_url: 'x', tagline: 'y', storefront_published: false, status: 'active' }),
+      1,
+    )
+    expect(updates).toEqual({ storefront_published: true })
   })
 
   it('tienda ya publicada y activa → null (nada que hacer, no re-escribe)', () => {
     const updates = computeAutoPublishUpdates(
       tenant({ logo_url: 'x', tagline: 'y', storefront_published: true, status: 'active' }),
+      1,
     )
     expect(updates).toBeNull()
   })
@@ -86,6 +114,7 @@ describe('computeAutoPublishUpdates', () => {
     // nunca debe ser tocado por el auto-publish.
     const updates = computeAutoPublishUpdates(
       tenant({ logo_url: 'x', tagline: 'y', storefront_published: true, status: 'paused' }),
+      1,
     )
     expect(updates).toBeNull()
   })
@@ -93,6 +122,7 @@ describe('computeAutoPublishUpdates', () => {
   it('sin branding minimo y tienda ya publicada → null', () => {
     const updates = computeAutoPublishUpdates(
       tenant({ storefront_published: true, status: 'active' }),
+      1,
     )
     expect(updates).toBeNull()
   })
@@ -109,6 +139,7 @@ describe('computeAutoPublishUpdates', () => {
         status: 'active',
         metadata: { storefront_hidden_manually: true, subscription_type: 'recurring' },
       }),
+      1,
     )
     expect(updates).toBeNull()
   })
@@ -117,6 +148,7 @@ describe('computeAutoPublishUpdates', () => {
     expect(
       computeAutoPublishUpdates(
         tenant({ logo_url: 'x', tagline: 'y', storefront_published: false, metadata: null }),
+        1,
       ),
     ).toEqual({ storefront_published: true, status: 'active' })
     expect(
@@ -127,8 +159,35 @@ describe('computeAutoPublishUpdates', () => {
           storefront_published: false,
           metadata: { subscription_type: 'recurring' },
         }),
+        1,
       ),
     ).toEqual({ storefront_published: true, status: 'active' })
+  })
+})
+
+describe('computeAutoUnpublishUpdates', () => {
+  it('tienda publicada + 0 productos publicados → se apaga', () => {
+    const updates = computeAutoUnpublishUpdates(
+      tenant({ storefront_published: true }),
+      0,
+    )
+    expect(updates).toEqual({ storefront_published: false })
+  })
+
+  it('tienda publicada + todavía tiene productos publicados → null (no la toca)', () => {
+    const updates = computeAutoUnpublishUpdates(
+      tenant({ storefront_published: true }),
+      2,
+    )
+    expect(updates).toBeNull()
+  })
+
+  it('tienda YA apagada + 0 productos → null (no re-escribe, ya está apagada)', () => {
+    const updates = computeAutoUnpublishUpdates(
+      tenant({ storefront_published: false }),
+      0,
+    )
+    expect(updates).toBeNull()
   })
 })
 
@@ -153,7 +212,7 @@ describe('isHiddenManually', () => {
 describe('computeStorefrontHiddenReason', () => {
   it('tienda ya publicada → null (nada que explicar)', () => {
     expect(
-      computeStorefrontHiddenReason(tenant({ logo_url: 'x', tagline: 'y', storefront_published: true })),
+      computeStorefrontHiddenReason(tenant({ logo_url: 'x', tagline: 'y', storefront_published: true }), 1),
     ).toBeNull()
   })
 
@@ -164,6 +223,7 @@ describe('computeStorefrontHiddenReason', () => {
         storefront_published: false,
         metadata: { storefront_hidden_manually: true },
       }),
+      0,
     )
     expect(reason).toBe('hidden_manually')
   })
@@ -171,6 +231,7 @@ describe('computeStorefrontHiddenReason', () => {
   it('sin logo (branding incompleto, no oculto a proposito) → missing_logo', () => {
     const reason = computeStorefrontHiddenReason(
       tenant({ logo_url: null, banner_url: 'x', storefront_published: false }),
+      0,
     )
     expect(reason).toBe('missing_logo')
   })
@@ -178,13 +239,24 @@ describe('computeStorefrontHiddenReason', () => {
   it('con logo pero sin banner/tagline/about_text → missing_cover_or_description', () => {
     const reason = computeStorefrontHiddenReason(
       tenant({ logo_url: 'x', banner_url: null, tagline: null, about_text: null, storefront_published: false }),
+      0,
     )
     expect(reason).toBe('missing_cover_or_description')
   })
 
-  it('branding minimo completo, no oculto a proposito, tienda apagada → ready_not_published', () => {
+  // Caso nuevo de la auditoría 22/09: branding COMPLETO pero vidriera vacía.
+  it('branding completo pero 0 productos publicados → no_products', () => {
     const reason = computeStorefrontHiddenReason(
       tenant({ logo_url: 'x', tagline: 'y', storefront_published: false }),
+      0,
+    )
+    expect(reason).toBe('no_products')
+  })
+
+  it('branding minimo completo, ≥1 producto publicado, no oculto a proposito, tienda apagada → ready_not_published', () => {
+    const reason = computeStorefrontHiddenReason(
+      tenant({ logo_url: 'x', tagline: 'y', storefront_published: false }),
+      1,
     )
     expect(reason).toBe('ready_not_published')
   })
