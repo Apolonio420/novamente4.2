@@ -18,7 +18,9 @@ import {
   getDefaultPartnerFAQs,
 } from '@/lib/partners/seo'
 import { PartnerFaqSection } from '@/components/partners/faq-section'
-import { buttonColors } from '@/lib/color/contrast'
+import { buttonColors, isValidHex, readableTextOn } from '@/lib/color/contrast'
+import { heroFocalToObjectPosition } from '@/lib/partners/hero-focal'
+import { headingFontClassName } from './fonts'
 import { ProductCardImage } from '@/components/partners/product-card-image'
 import ContactForm from './contact-form'
 import ChatWidget from '@/components/partners/chat-widget'
@@ -136,6 +138,9 @@ export default async function PartnerStorefrontPage({ params, searchParams }: Pa
         {
           '--partner-primary': tenant.primary_color,
           '--partner-secondary': tenant.secondary_color,
+          // accent_color del panel (Fase 2): si no es un hex válido, cae al
+          // primario — mismo comportamiento que antes de esta fase.
+          '--partner-accent': isValidHex(tenant.accent_color) ? tenant.accent_color : tenant.primary_color,
         } as React.CSSProperties
       }
     >
@@ -234,6 +239,8 @@ function HeroSection({ tenant }: { tenant: Tenant }) {
   // Prioridad alineada con /merch/[brand] (hero || banner): el partner sube su
   // portada como "Imagen hero" y debe verse igual en su panel y en el link público.
   const bannerSrc = tenant.hero_url || tenant.banner_url
+  const heading = headingFontClassName(tenant.font_preference)
+  const accentValid = isValidHex(tenant.accent_color)
 
   return (
     <section className="relative w-full overflow-hidden">
@@ -245,6 +252,10 @@ function HeroSection({ tenant }: { tenant: Tenant }) {
           fill
           priority
           className="object-cover"
+          // Punto de foco elegido por el partner (metadata.hero_focal, panel de
+          // branding) — default 50/50. Evita que el crop centrado se coma el
+          // diseño en mobile (auditoría: 40/80 tiendas pierden ≥50% de la imagen).
+          style={{ objectPosition: heroFocalToObjectPosition(tenant.metadata) }}
         />
       ) : (
         <div
@@ -294,7 +305,7 @@ function HeroSection({ tenant }: { tenant: Tenant }) {
         {/* Hide the big brand-name heading when the partner opts out
             (metadata.hero_hide_name = true). Keeps the logo + tagline. */}
         {(tenant.metadata as { hero_hide_name?: boolean } | null)?.hero_hide_name !== true && (
-          <h1 className="max-w-3xl text-4xl font-bold tracking-tight text-white md:text-6xl">
+          <h1 className={`max-w-3xl text-4xl font-bold tracking-tight text-white md:text-6xl ${heading}`}>
             {tenant.name}
           </h1>
         )}
@@ -309,7 +320,15 @@ function HeroSection({ tenant }: { tenant: Tenant }) {
           {industryLabel(tenant) && (
             <Badge
               variant="secondary"
-              className="border-white/10 bg-white/10 text-zinc-200 backdrop-blur-sm"
+              className={accentValid ? 'backdrop-blur-sm border-transparent' : 'border-white/10 bg-white/10 text-zinc-200 backdrop-blur-sm'}
+              style={
+                accentValid
+                  ? {
+                      backgroundColor: tenant.accent_color!,
+                      color: readableTextOn(tenant.accent_color!),
+                    }
+                  : undefined
+              }
             >
               {industryLabel(tenant)}
             </Badge>
@@ -319,7 +338,8 @@ function HeroSection({ tenant }: { tenant: Tenant }) {
               href={`https://instagram.com/${tenant.instagram.replace('@', '')}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-zinc-400 transition hover:text-white"
+              className="text-sm text-zinc-400 underline-offset-4 transition hover:text-white hover:underline"
+              style={accentValid ? { textDecorationColor: tenant.accent_color! } : undefined}
             >
               @{tenant.instagram.replace('@', '')}
             </a>
@@ -362,9 +382,10 @@ function HeroSection({ tenant }: { tenant: Tenant }) {
 // ---------------------------------------------------------------------------
 
 function AboutSection({ tenant }: { tenant: Tenant }) {
+  const heading = headingFontClassName(tenant.font_preference)
   return (
     <section className="mx-auto max-w-4xl px-6 py-20">
-      <h2 className="mb-6 text-2xl font-semibold text-white md:text-3xl">
+      <h2 className={`mb-6 text-2xl font-semibold text-white md:text-3xl ${heading}`}>
         Sobre nosotros
       </h2>
       {tenant.description && (
@@ -398,6 +419,7 @@ function ProductsGrid({
     (tenant.metadata as
       | { products_heading?: string; products_subheading?: string }
       | null) || {}
+  const heading = headingFontClassName(tenant.font_preference)
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-20">
@@ -406,7 +428,7 @@ function ProductsGrid({
           {productsSubheading}
         </p>
       )}
-      <h2 className="mb-10 text-center text-2xl font-semibold text-white md:text-3xl">
+      <h2 className={`mb-10 text-center text-2xl font-semibold text-white md:text-3xl ${heading}`}>
         {productsHeading || 'Productos'}
       </h2>
 
@@ -418,6 +440,8 @@ function ProductsGrid({
             tenantSlug={tenant.slug}
             currency={tenant.currency}
             primaryColor={tenant.primary_color}
+            accentColor={tenant.accent_color}
+            headingClassName={heading}
           />
         ))}
       </div>
@@ -430,19 +454,24 @@ function ProductCard({
   tenantSlug,
   currency,
   primaryColor,
+  accentColor,
+  headingClassName,
 }: {
   product: PartnerProduct
   tenantSlug: string
   currency: string
   primaryColor: string
+  accentColor?: string | null
+  headingClassName?: string
 }) {
   const comingSoon = (product.metadata as any)?.coming_soon === true
   const ctaColors = buttonColors(primaryColor)
+  const accentValid = isValidHex(accentColor)
 
   return (
     <Link
       href={`/p/${tenantSlug}/${product.slug}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 transition hover:border-[var(--partner-primary)] hover:shadow-lg hover:shadow-[var(--partner-primary)]/5"
+      className="group flex flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 transition hover:border-[var(--partner-accent)] hover:shadow-lg hover:shadow-[var(--partner-accent)]/5"
     >
       {/* Image */}
       <div className="relative aspect-square w-full overflow-hidden bg-zinc-800">
@@ -478,7 +507,7 @@ function ProductCard({
 
       {/* Info */}
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <h3 className="font-medium text-zinc-100 line-clamp-2">
+        <h3 className={`font-medium text-zinc-100 line-clamp-2 ${headingClassName || ''}`}>
           {product.name}
         </h3>
 
@@ -491,7 +520,10 @@ function ProductCard({
             <span className="text-xs text-zinc-400">Desde</span>
           )}
           {product.price != null && (
-            <span className="text-lg font-bold text-white">
+            <span
+              className="text-lg font-bold text-white"
+              style={accentValid ? { color: accentColor! } : undefined}
+            >
               {formatPrice(product.price, currency)}
             </span>
           )}
@@ -572,6 +604,8 @@ function CtaSection({
       : '¿Encontraste tu próxima prenda?'
 
   const ctaColors = buttonColors(tenant.primary_color)
+  const heading = headingFontClassName(tenant.font_preference)
+  const accentValid = isValidHex(tenant.accent_color)
   const ctaButtonStyle = {
     backgroundColor: ctaColors.background,
     color: ctaColors.color,
@@ -590,7 +624,7 @@ function CtaSection({
           border: `1px solid ${tenant.primary_color}33`,
         }}
       >
-        <h2 className="mb-4 text-2xl font-bold text-white md:text-3xl">
+        <h2 className={`mb-4 text-2xl font-bold text-white md:text-3xl ${heading}`}>
           {ctaTitle}
         </h2>
 
@@ -606,6 +640,7 @@ function CtaSection({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-white/70 underline-offset-4 hover:text-white hover:underline"
+                  style={accentValid ? { textDecorationColor: tenant.accent_color! } : undefined}
                 >
                   ¿Preferís consultar por WhatsApp? Escribinos
                 </a>

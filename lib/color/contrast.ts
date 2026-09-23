@@ -77,6 +77,13 @@ export function contrastRatio(a: string, b: string): number {
   return (lighter + 0.05) / (darker + 0.05)
 }
 
+/** True si `hex` es un hex válido (#RGB o #RRGGBB). Usado para decidir si aplicar accent_color
+ *  (Fase 2 tiendas partner): valores vacíos/inválidos del panel deben caer al comportamiento
+ *  actual (sin acento), nunca romper el render. */
+export function isValidHex(hex: string | null | undefined): hex is string {
+  return typeof hex === 'string' && HEX_RE.test(hex.trim())
+}
+
 /** Texto '#000' o '#fff', el que dé mayor contraste sobre `hex`. Hex inválido → '#fff'. */
 export function readableTextOn(hex: string): '#000' | '#fff' {
   const rgb = parseHex(hex)
