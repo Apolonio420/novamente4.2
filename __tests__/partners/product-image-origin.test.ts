@@ -9,6 +9,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const state = vi.hoisted(() => ({
   // Filas de partner_assets que "existen" en el mock, por (tenant_id, type, public_url|storage_key)
   rows: [] as Array<{ tenant_id: string; type: string; source: string; public_url: string; storage_key: string }>,
+  // true → toda query a partner_assets devuelve { error } (DB caída)
+  dbDown: false,
 }))
 
 vi.mock('@/lib/supabase-admin', () => {
@@ -32,6 +34,7 @@ vi.mock('@/lib/supabase-admin', () => {
       },
       limit() { return query },
       then(resolve: (v: unknown) => void) {
+        if (state.dbDown) return resolve({ data: null, error: { message: 'connection refused' } })
         const matches = state.rows.filter((r) => {
           for (const [k, v] of Object.entries(filters)) {
             if ((r as any)[k] !== v) return false
@@ -59,8 +62,14 @@ import {
 const TENANT_ID = 'tenant-1'
 const SLUG = 'impulso'
 
+/** Fila de partner_assets como la escribe saveDesignAsset para un mockup del Studio. */
+function studioMockupRow(key: string, tenantId = TENANT_ID) {
+  return { tenant_id: tenantId, type: 'mockup', source: 'ai_generated', public_url: `/api/proxy-image?key=${encodeURIComponent(key)}`, storage_key: key }
+}
+
 beforeEach(() => {
   state.rows = []
+  state.dbDown = false
 })
 
 describe('isOwnMockupUrl', () => {
@@ -89,14 +98,73 @@ describe('isOwnMockupUrl', () => {
     expect(result.ok).toBe(false)
   })
 
-  it('accepts the Studio compositor key pattern for this tenant, even with no DB row', async () => {
+  it('accepts a Studio mockup matched by storage_key (URL in another format, e.g. CDN)', async () => {
+    state.rows.push(studioMockupRow('partners/impulso/mockups/17d3af93.png'))
     const result = await isOwnMockupUrl(
       TENANT_ID,
       SLUG,
       '/api/proxy-image?key=partners%2Fimpulso%2Fmockups%2F17d3af93.png',
     )
     expect(result.ok).toBe(true)
-    expect(result.reason).toBe('studio_key_pattern')
+    expect(result.reason).toBe('db_asset')
+  })
+
+  it('REJECTS a Studio key pattern with no partner_assets row (DB is now the source of truth)', async () => {
+    const result = await isOwnMockupUrl(
+      TENANT_ID,
+      SLUG,
+      '/api/proxy-image?key=partners%2Fimpulso%2Fmockups%2F17d3af93.png',
+    )
+    expect(result.ok).toBe(false)
+  })
+
+  it('rejects a Studio mockup row that belongs to ANOTHER tenant', async () => {
+    state.rows.push(studioMockupRow('partners/impulso/mockups/17d3af93.png', 'tenant-2'))
+    const result = await isOwnMockupUrl(
+      TENANT_ID,
+      SLUG,
+      '/api/proxy-image?key=partners%2Fimpulso%2Fmockups%2F17d3af93.png',
+    )
+    expect(result.ok).toBe(false)
+  })
+
+  it('accepts a mockup row even if the tenant slug changed (matched by tenant_id, not path)', async () => {
+    state.rows.push(studioMockupRow('partners/nombre-viejo/mockups/17d3af93.png'))
+    const result = await isOwnMockupUrl(
+      TENANT_ID,
+      SLUG,
+      '/api/proxy-image?key=partners%2Fnombre-viejo%2Fmockups%2F17d3af93.png',
+    )
+    expect(result.ok).toBe(true)
+    expect(result.reason).toBe('db_asset')
+  })
+
+  it('rejects a design (not mockup) row — only mockups are product photos', async () => {
+    state.rows.push({ ...studioMockupRow('partners/impulso/designs/d1.png'), type: 'design' })
+    const result = await isOwnMockupUrl(TENANT_ID, SLUG, '/api/proxy-image?key=partners%2Fimpulso%2Fdesigns%2Fd1.png')
+    expect(result.ok).toBe(false)
+  })
+
+  describe('when the partner_assets query fails (DB down)', () => {
+    beforeEach(() => {
+      state.dbDown = true
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    it('falls back to the Studio key pattern for this tenant', async () => {
+      const result = await isOwnMockupUrl(
+        TENANT_ID,
+        SLUG,
+        '/api/proxy-image?key=partners%2Fimpulso%2Fmockups%2F17d3af93.png',
+      )
+      expect(result.ok).toBe(true)
+      expect(result.reason).toBe('studio_key_pattern_db_down')
+    })
+
+    it('still rejects another tenant slug and external URLs', async () => {
+      expect((await isOwnMockupUrl(TENANT_ID, SLUG, '/api/proxy-image?key=partners%2Fotro%2Fmockups%2Fx.png')).ok).toBe(false)
+      expect((await isOwnMockupUrl(TENANT_ID, SLUG, 'https://images.unsplash.com/photo-123')).ok).toBe(false)
+    })
   })
 
   it('rejects the Studio compositor key pattern for a DIFFERENT tenant slug', async () => {
@@ -189,6 +257,10 @@ describe('isOwnMockupUrl', () => {
 })
 
 describe('findFirstDisallowedProductImage', () => {
+  beforeEach(() => {
+    state.rows.push(studioMockupRow('partners/impulso/mockups/a.png'))
+  })
+
   it('returns null when all images are allowed', async () => {
     const images = ['/api/proxy-image?key=partners%2Fimpulso%2Fmockups%2Fa.png']
     const bad = await findFirstDisallowedProductImage(TENANT_ID, SLUG, images)
@@ -238,6 +310,10 @@ describe('extractColorImageUrls', () => {
 })
 
 describe('findFirstDisallowedColorImage', () => {
+  beforeEach(() => {
+    state.rows.push(studioMockupRow('partners/impulso/mockups/a.png'))
+  })
+
   const GOOD = '/api/proxy-image?key=partners%2Fimpulso%2Fmockups%2Fa.png'
   const BAD = 'https://images.unsplash.com/photo-123'
 

@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
 
     // Save asset record — design uploads use status='active' so they appear in design-library
     const db2 = supabaseAdmin as any
-    await db2.from('partner_assets').insert({
+    const { error: assetError } = await db2.from('partner_assets').insert({
       tenant_id: auth.tenant.id,
       type,
       status: source === 'uploaded' && type === 'design' ? 'active' : 'uploaded',
@@ -136,6 +136,10 @@ export async function POST(request: NextRequest) {
       mime_type: file.type,
       size_bytes: file.size,
     })
+    if (assetError) {
+      // Sin esta fila el límite de uploads por plan no cuenta este diseño.
+      console.error(`[partners/upload] insert partner_assets falló (type=${type}, key=${filename}):`, assetError.code, assetError.message)
+    }
 
     return NextResponse.json({
       url: urlData.publicUrl,

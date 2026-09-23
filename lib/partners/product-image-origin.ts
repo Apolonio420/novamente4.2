@@ -16,35 +16,28 @@
  *
  * `isOwnMockupUrl` decide si una URL de imagen de producto es "nuestra":
  *
- * 1. Fuente de verdad (cuando existe fila): `partner_assets` del tenant con
+ * 1. Fuente de verdad para mockups del Studio: `partner_assets` del tenant con
  *    `type = 'mockup'` y `source != 'uploaded'` — coincidencia por
  *    `public_url` o por `storage_key` (la key R2, ya sea que la URL venga
  *    como `/api/proxy-image?key=...`, con un CDN público, o el dominio R2
- *    directo).
+ *    directo). Scopeado por `tenant_id`, así que sobrevive a un cambio de slug.
  *
- * 2. Fallback por PATRÓN DE KEY/PATH, aceptado aunque no haya fila en
- *    `partner_assets`. Esto es necesario porque, a la fecha de este cambio
- *    (verificado con un SELECT de solo lectura sobre la base real, 2026-09-23),
- *    la tabla `partner_assets` tiene 518 filas y **0** de `type IN ('mockup',
- *    'design', 'stamp')` — solo existen 'logo' | 'product' | 'other' | 'banner'
- *    | 'hero' — pese a que `saveDesignAsset()` (lib/partners/design-engine.ts)
- *    escribe esos tipos en cada corrida del Studio. `saveDesignAsset` traga el
- *    error de insert (`console.error` + `return null`) y sus callers
- *    (`design/mockup`, `design/upload`, `design/generate`) igual devuelven
- *    `asset?.id || <uuid generado localmente>`, así que la subida a R2/el
- *    mockup en sí SÍ funciona pero la fila de auditoría en `partner_assets`
- *    puede faltar en silencio (posible drift entre el CHECK constraint de
- *    `type` en prod — `create_partners_os_tables.sql` solo declara
- *    `'logo','banner','hero','product','mockup','generated','approved','other'`,
- *    sin 'design'/'stamp' — y lo que el código intenta insertar). Ver
- *    hallazgo reportado aparte; NO se toca ese bug acá, fuera de alcance de
- *    esta tarea. Por eso el gate NO puede depender solo de la fila en DB:
- *    valida también por el patrón de key que el compositor oficial siempre
- *    usa, scopeado al tenant.
+ *    Hasta el 23/09/2026 la tabla no tenía NINGUNA fila de Studio: el insert
+ *    de `saveDesignAsset()` fallaba siempre (status 'active' fuera del CHECK)
+ *    y el error se tragaba. Arreglado en 45aec5b + migración
+ *    20260923_partner_assets_design_types.sql, y los 705 archivos que ya
+ *    estaban en R2 se reconstruyeron con scripts/backfill-partner-assets-r2.ts.
+ *    Desde ahí, un mockup del Studio SIN fila es un mockup que no pasó por el
+ *    compositor oficial (o cuyo insert falló — eso ahora alerta por
+ *    notifyError) y se rechaza.
  *
- *    Patrones aceptados (siempre exigiendo que el segmento de tenant en el
- *    path sea el `tenant.slug` del auth actual, o legacy sin ese segmento):
- *      - key R2 `partners/{slug}/mockups/...` (compositor Studio, vigente)
+ *    El patrón de key `partners/{slug}/mockups/` solo se usa si la CONSULTA a
+ *    la tabla falla (error de DB): en ese caso degradamos al criterio anterior
+ *    en vez de bloquear a todos los partners por un blip de Supabase.
+ *
+ * 2. Legacy que nunca pasó por `partner_assets` (no hay fila posible), por
+ *    PATRÓN DE PATH:
+ *
  *      - bucket Supabase `images/mockups/{slug}/...` (mockups curados a mano
  *        de una corrida pre-Studio; visto en datos reales — 41 imágenes en
  *        `partner_products.images` sobre una muestra de 500 productos)
@@ -118,7 +111,7 @@ function isLegacyBotMockupUrl(url: string): boolean {
 
 export interface OwnMockupCheckResult {
   ok: boolean
-  reason?: 'db_asset' | 'studio_key_pattern' | 'legacy_curated' | 'legacy_bot_fallback'
+  reason?: 'db_asset' | 'studio_key_pattern_db_down' | 'legacy_curated' | 'legacy_bot_fallback'
 }
 
 /**
@@ -138,10 +131,11 @@ export async function isOwnMockupUrl(
 
   const key = safeDecodeKey(url)
 
-  // 1) Fuente de verdad: fila real en partner_assets, si existe.
+  // 1) Fuente de verdad: fila real en partner_assets.
   // Dos queries separadas (en vez de `.or()` con la URL interpolada) para no
   // depender de escapar comas/paréntesis de una URL arbitraria dentro del
   // string de filtro de PostgREST.
+  let dbFailed = false
   try {
     const base = () =>
       db()
@@ -153,23 +147,27 @@ export async function isOwnMockupUrl(
         .limit(1)
 
     const byUrl = await base().eq('public_url', url)
+    if (byUrl.error) throw byUrl.error
     if (Array.isArray(byUrl.data) && byUrl.data.length > 0) {
       return { ok: true, reason: 'db_asset' }
     }
 
     if (key) {
       const byKey = await base().eq('storage_key', key)
+      if (byKey.error) throw byKey.error
       if (Array.isArray(byKey.data) && byKey.data.length > 0) {
         return { ok: true, reason: 'db_asset' }
       }
     }
-  } catch {
-    // best-effort: si falla la consulta, seguimos con los patrones legacy.
+  } catch (e) {
+    dbFailed = true
+    console.error('[product-image-origin] consulta a partner_assets falló, uso patrón de key:', (e as Error)?.message ?? e)
   }
 
-  // 2) Patrón de key del compositor Studio vigente.
-  if (key && isStudioMockupKey(key, tenantSlug)) {
-    return { ok: true, reason: 'studio_key_pattern' }
+  // 2) Solo si la DB no respondió: patrón de key del compositor Studio.
+  // Con la DB sana, una key de Studio sin fila se rechaza.
+  if (dbFailed && key && isStudioMockupKey(key, tenantSlug)) {
+    return { ok: true, reason: 'studio_key_pattern_db_down' }
   }
 
   // 3) Legacy: mockups curados a mano.
