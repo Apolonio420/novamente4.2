@@ -25,12 +25,14 @@ vi.mock("@/lib/supabase-admin", () => {
     from() { return builder },
     select() { return builder },
     eq() { return builder },
-    // Terminal de generateUniqueSlug: devuelve los slugs existentes que matchean base%
+    // Terminal de generateUniqueSlug: devuelve los slugs existentes que matchean base%.
+    // Incluye `id` porque generateUniqueSlug selecciona 'id,slug' y excluye el
+    // producto en edición por id (filas reales siempre traen id).
     like(_col: string, pattern: string) {
       const base = pattern.replace(/%$/, "")
       const data = state.existingSlugs
         .filter((s) => s === base || s.startsWith(base))
-        .map((slug) => ({ slug }))
+        .map((slug) => ({ id: `prod-${slug}`, slug }))
       return Promise.resolve({ data, error: null })
     },
     insert(row: { slug: string; name: string }) {

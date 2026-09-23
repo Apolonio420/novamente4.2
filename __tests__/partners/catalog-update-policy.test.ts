@@ -31,6 +31,10 @@ const updateProductMock = vi.fn(async (id: string, updates: Record<string, unkno
 vi.mock("@/lib/partners/catalog", () => ({
   updateProduct: (id: string, updates: Record<string, unknown>) => updateProductMock(id, updates),
   deleteProduct: vi.fn(),
+  // La route regenera el slug (deduped) cada vez que llega `name`.
+  generateUniqueSlug: vi.fn(async (_tenantId: string, name: string) =>
+    name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "producto"),
+  countPublishedProducts: vi.fn(async () => 1),
 }))
 
 // Stub supabaseAdmin so the route's local getProductById returns our fixture.
