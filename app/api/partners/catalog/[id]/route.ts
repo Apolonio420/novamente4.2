@@ -13,6 +13,7 @@ import { computeAutoPublishUpdates, computeAutoUnpublishUpdates } from '@/lib/pa
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail } from '@/lib/email'
 import { buildStorefrontReactivatedEmail } from '@/lib/partners/storefront-reactivated-email'
+import { findFirstDisallowedProductImage, PRODUCT_IMAGE_ORIGIN_ERROR } from '@/lib/partners/product-image-origin'
 
 async function getProductById(productId: string) {
   const { data, error } = await (supabaseAdmin as any)
@@ -64,6 +65,22 @@ export async function PUT(
       const priceCheck = validatePartnerProductPrice(updates.price)
       if (!priceCheck.ok) {
         return NextResponse.json({ error: priceCheck.reason }, { status: 400 })
+      }
+    }
+
+    // Gate "solo nuestros mockups": solo se validan las URLs NUEVAS — las que
+    // el producto ya tenía (legacy) siguen permitidas para no romper edits de
+    // precio/nombre en productos cargados antes de este cambio.
+    if (Array.isArray(updates.images)) {
+      const existingImages = Array.isArray(existing.images) ? (existing.images as string[]) : []
+      const badImage = await findFirstDisallowedProductImage(
+        auth.tenant.id,
+        auth.tenant.slug,
+        updates.images as string[],
+        existingImages,
+      )
+      if (badImage) {
+        return NextResponse.json({ error: PRODUCT_IMAGE_ORIGIN_ERROR }, { status: 400 })
       }
     }
 

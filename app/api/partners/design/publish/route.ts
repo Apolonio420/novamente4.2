@@ -3,6 +3,7 @@ import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { uploadFile } from '@/lib/cloudflare-r2'
 import { toBanner16x9 } from '@/lib/partners/banner-image'
+import { isOwnMockupUrl, PRODUCT_IMAGE_ORIGIN_ERROR } from '@/lib/partners/product-image-origin'
 
 const db = () => supabaseAdmin as any
 
@@ -73,6 +74,16 @@ export async function POST(request: NextRequest) {
 
       if (!product) {
         return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 })
+      }
+
+      // Gate "solo nuestros mockups" — mismo criterio que POST/PUT de
+      // catálogo (lib/partners/product-image-origin.ts). En la práctica
+      // assetUrl siempre viene del propio compositor Studio, pero se valida
+      // igual por defensa en profundidad (este endpoint acepta cualquier
+      // assetUrl en el body, no solo el que el Studio acaba de generar).
+      const originCheck = await isOwnMockupUrl(tenant.id, tenant.slug, assetUrl)
+      if (!originCheck.ok) {
+        return NextResponse.json({ error: PRODUCT_IMAGE_ORIGIN_ERROR }, { status: 400 })
       }
 
       const currentImages = (product.images as string[]) || []
