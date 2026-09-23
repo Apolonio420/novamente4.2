@@ -28,6 +28,12 @@ const SHEET_DIR = path.join(
 const CANVAS = 2000
 const BG = { r: 0xd9, g: 0xd9, b: 0xd9 }
 const TARGET_HEIGHT_FRAC = 0.8
+// Prendas anchas con las mangas extendidas (crop, cuello redondo, hoodie)
+// se pasaban del canvas si solo se ajustaba la altura al 80% — el ancho se
+// recortaba en el extract final (parecía "manga rota", no era la mascara).
+// Ajustar por el lado MAS RESTRICTIVO de los dos (alto Y ancho) evita el
+// recorte lateral sin dejar de llenar el cuadro.
+const TARGET_WIDTH_FRAC = 0.84
 const AREA_IMPRIMIBLE_CM = 35
 // La tolerancia de color ahora es adaptativa por foto — ver adaptiveTolerance().
 
@@ -35,8 +41,8 @@ fs.mkdirSync(OUT_DIR, { recursive: true })
 fs.mkdirSync(path.dirname(STD_BASES_JSON), { recursive: true })
 fs.mkdirSync(SHEET_DIR, { recursive: true })
 
-interface Rect { x: number; y: number; w: number; h: number }
-interface StdBaseEntry {
+export interface Rect { x: number; y: number; w: number; h: number }
+export interface StdBaseEntry {
   garmentKey: string
   color: string
   side: 'front' | 'back'
@@ -53,7 +59,7 @@ function cajaLetterbox(W: number, H: number, coords: { x: number; y: number; wid
   return { x: offX + coords.x * s, y: offY + coords.y * s, w: coords.width * s, h: coords.height * s }
 }
 
-interface RGB { r: number; g: number; b: number }
+export interface RGB { r: number; g: number; b: number }
 
 /**
  * Estima el fondo REAL de esta foto a partir de las 4 ESQUINAS (nunca las
@@ -63,7 +69,7 @@ interface RGB { r: number; g: number; b: number }
  * promedio de borde completo se contaminaba con zonas mas oscuras del
  * moteado, corriendo la referencia.
  */
-function estimateLocalBackground(raw: Buffer, W: number, H: number, channels: number): RGB {
+export function estimateLocalBackground(raw: Buffer, W: number, H: number, channels: number): RGB {
   const patch = Math.max(4, Math.floor(Math.min(W, H) * 0.06))
   const rs: number[] = [], gs: number[] = [], bs: number[] = []
   const corners: Array<[number, number]> = [[0, 0], [W - patch, 0], [0, H - patch], [W - patch, H - patch]]
@@ -89,7 +95,7 @@ function estimateLocalBackground(raw: Buffer, W: number, H: number, channels: nu
  * desvío) de los píxeles de borde a la referencia, con margen — así cada
  * foto usa la tolerancia que en verdad necesita, ni más ni menos.
  */
-function adaptiveTolerance(raw: Buffer, W: number, H: number, channels: number, bg: RGB): number {
+export function adaptiveTolerance(raw: Buffer, W: number, H: number, channels: number, bg: RGB): number {
   const devs: number[] = []
   const step = Math.max(1, Math.floor(Math.min(W, H) / 400))
   const pushDev = (x: number, y: number) => {
@@ -106,21 +112,38 @@ function adaptiveTolerance(raw: Buffer, W: number, H: number, channels: number, 
 
 /**
  * Tapa el badge circular "Novamente" (logo esquina inferior derecha, visto
- * en boston/cuello redondo/mujer/crop) con el color de fondo estimado,
- * ANTES de segmentar — así el flood-fill lo trata como fondo y desaparece
- * limpio en vez de quedar recortado como un circulito ajeno sobre la
- * prenda. Circulo chico y off-corner (no un cuadrado del borde entero) para
- * no comerse una manga/puño que llegue cerca de esa esquina.
+ * en boston/cuello redondo/mujer/crop) — DESPUES de segmentar, y
+ * restringido a los pixeles que la mascara YA clasificó como fondo
+ * (mask===0) dentro de esa zona. Nunca pinta un pixel que la mascara diga
+ * que es prenda.
+ *
+ * Probamos antes: (1) pintarlo ANTES de segmentar con un disco grande —
+ * pisaba el puño real de buzo-hoodie-unisex cuando la manga llegaba a esa
+ * esquina (mordía tela). (2) inpainting por clonado (radial y por
+ * traslación) — el clonado radial distorsionaba cualquier borde recto en
+ * un patrón dentado, y el clonado por traslación fija terminó copiando
+ * parte de OTRA zona de la manga, dejando un bulto redondo donde no lo
+ * había (deformaba la forma real de la prenda, peor que dejar el logo).
+ *
+ * Por eso: circulo CHICO calibrado al tamaño real del logo medido en
+ * varias fotos (centro ~0.944,0.944 fracción, no 0.905 — más ajustado al
+ * borde para minimizar la chance de superponerse a tela real) y SOLO
+ * repinta fondo. Si el logo llega a estar pegado/fundido con la prenda en
+ * alguna foto puntual (mask!==0 ahi), queda tal cual — nunca se toca tela.
  */
-function patchBadgeZone(raw: Buffer, W: number, H: number, channels: number, bg: RGB): void {
-  const cx = Math.round(W * 0.905), cy = Math.round(H * 0.905)
-  const radius = Math.round(Math.min(W, H) * 0.095)
+function patchBadgeZone(raw: Buffer, mask: Uint8Array, W: number, H: number, channels: number, bg: RGB): void {
+  const cx = W * 0.944, cy = H * 0.944
+  const radius = Math.min(W, H) * 0.045
   const r2 = radius * radius
-  for (let y = Math.max(0, cy - radius); y < Math.min(H, cy + radius); y++) {
-    for (let x = Math.max(0, cx - radius); x < Math.min(W, cx + radius); x++) {
+  const x0 = Math.max(0, Math.floor(cx - radius)), x1 = Math.min(W, Math.ceil(cx + radius))
+  const y0 = Math.max(0, Math.floor(cy - radius)), y1 = Math.min(H, Math.ceil(cy + radius))
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
       const dx = x - cx, dy = y - cy
       if (dx * dx + dy * dy > r2) continue
-      const o = (y * W + x) * channels
+      const idx = y * W + x
+      if (mask[idx] !== 0) continue // nunca tocar un pixel que es parte de la prenda
+      const o = idx * channels
       raw[o] = bg.r; raw[o + 1] = bg.g; raw[o + 2] = bg.b
     }
   }
@@ -141,7 +164,7 @@ function patchBadgeZone(raw: Buffer, W: number, H: number, channels: number, bg:
  * limpia aunque el guardarraíl de bbox/densidad no lo detecte (el pedazo
  * mas grande — una manga suelta — puede igual ser denso y no-tan-chico).
  */
-function keepLargestComponent(mask: Uint8Array, W: number, H: number): { fragmentationRatio: number } {
+export function keepLargestComponent(mask: Uint8Array, W: number, H: number): { fragmentationRatio: number } {
   const N = W * H
   const labels = new Int32Array(N).fill(-1)
   const stack = new Int32Array(N)
@@ -176,7 +199,7 @@ function keepLargestComponent(mask: Uint8Array, W: number, H: number): { fragmen
 }
 
 /** BFS iterativo con stack tipado — marca 255=sujeto, 0=fondo. */
-function floodFillBackground(raw: Buffer, W: number, H: number, channels: number, bg: { r: number; g: number; b: number }, tol: number): Uint8Array {
+export function floodFillBackground(raw: Buffer, W: number, H: number, channels: number, bg: { r: number; g: number; b: number }, tol: number): Uint8Array {
   const N = W * H
   const mask = new Uint8Array(N).fill(255)
   const visited = new Uint8Array(N)
@@ -247,7 +270,7 @@ function contrastMargin(
   return median - tol
 }
 
-function maskBbox(mask: Uint8Array, W: number, H: number) {
+export function maskBbox(mask: Uint8Array, W: number, H: number) {
   let minX = W, minY = H, maxX = -1, maxY = -1
   let foregroundCount = 0
   for (let y = 0; y < H; y++) {
@@ -266,7 +289,7 @@ function maskBbox(mask: Uint8Array, W: number, H: number) {
   return { x0: minX, y0: minY, x1: maxX + 1, y1: maxY + 1, foregroundCount }
 }
 
-async function buildOne(garmentKey: string, color: string, side: 'front' | 'back', srcPath: string, coords: { x: number; y: number; width: number; height: number }): Promise<{ entry: StdBaseEntry; outPath: string }> {
+export async function buildOne(garmentKey: string, color: string, side: 'front' | 'back', srcPath: string, coords: { x: number; y: number; width: number; height: number }): Promise<{ entry: StdBaseEntry; outPath: string }> {
   const img = sharp(srcPath).rotate() // respeta EXIF
   const meta = await img.metadata()
   const W = meta.width!, H = meta.height!
@@ -274,10 +297,11 @@ async function buildOne(garmentKey: string, color: string, side: 'front' | 'back
   const channels = info.channels
 
   const localBg = estimateLocalBackground(raw, W, H, channels)
-  patchBadgeZone(raw, W, H, channels, localBg)
   const tol = adaptiveTolerance(raw, W, H, channels, localBg)
   const mask = floodFillBackground(raw, W, H, channels, localBg, tol)
   const { fragmentationRatio } = keepLargestComponent(mask, W, H)
+  // Recien ACA, con la mascara final: solo repinta lo que ya es fondo.
+  patchBadgeZone(raw, mask, W, H, channels, localBg)
   const bbox = maskBbox(mask, W, H)
   const bboxArea = (bbox.x1 - bbox.x0) * (bbox.y1 - bbox.y0)
   const density = bboxArea > 0 ? bbox.foregroundCount / bboxArea : 0
@@ -309,7 +333,10 @@ async function buildOne(garmentKey: string, color: string, side: 'front' | 'back
     console.log(`DEBUG ${garmentKey} ${color} ${side}: tol=${tol} bboxFrac=${(100*bboxArea/(W*H)).toFixed(1)}% density=${(100*density).toFixed(1)}% frag=${(100*fragmentationRatio).toFixed(1)}% margin=${margin.toFixed(1)}`)
   }
   const bboxH = bbox.y1 - bbox.y0
-  const k = (TARGET_HEIGHT_FRAC * CANVAS) / bboxH
+  const bboxW = bbox.x1 - bbox.x0
+  const kHeight = (TARGET_HEIGHT_FRAC * CANVAS) / bboxH
+  const kWidth = (TARGET_WIDTH_FRAC * CANVAS) / bboxW
+  const k = Math.min(kHeight, kWidth)
 
   // Alpha con feather: blur suave del mask para que el corte no sea duro.
   // sharp asume color (3 canales) al blurear un raw de 1 canal — extractChannel(0)
@@ -474,4 +501,9 @@ async function main() {
   console.log(`Hoja de contacto: ${sheetPath} (${sheetW}x${sheetH})`)
 }
 
-main().catch((e) => { console.error(e); process.exit(1) })
+// Solo correr el pipeline completo si el archivo se ejecuta directo (no al
+// importar sus funciones exportadas desde otro script, ej. f3-gemini-bg-fix.mts).
+const isMain = process.argv[1] && import.meta.url === `file://${process.argv[1]}`
+if (isMain) {
+  main().catch((e) => { console.error(e); process.exit(1) })
+}
