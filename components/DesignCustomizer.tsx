@@ -44,7 +44,7 @@ const GARMENT_PRICES = {
 const GARMENT_NAMES = {
   "aura-oversize-tshirt": "Remera oversize Personalizada",
   "aldea-classic-tshirt": "Remera clásica Personalizada",
-  "buzo-hoodie-unisex": "Buzo con capucha Personalizado",
+  "buzo-hoodie-unisex": "Buzo hoodie oversize Personalizado",
   "buzo-cuello-redondo-unisex": "Buzo Cuello Redondo Personalizado",
   "musculosa-bali": "Musculosa Personalizada",
   "remera-clasica-mujer": "Remera Clásica Mujer Personalizada",

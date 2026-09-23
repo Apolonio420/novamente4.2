@@ -27,7 +27,7 @@ type CotizadorProduct = {
 // siendo el identificador interno; `name` es SOLO texto de este cotizador
 // (display + mensaje de WhatsApp a ventas), no se usa como key en ningún lado.
 const COTIZADOR_PRODUCTS: CotizadorProduct[] = [
-  { id: "buzo-hoodie", name: "Buzo con capucha", price: 55000, category: "Hoodies" },
+  { id: "buzo-hoodie", name: "Buzo hoodie oversize", price: 55000, category: "Hoodies" },
   { id: "buzo-cuello", name: "Buzo Cuello Redondo", price: 43000, category: "Buzos" },
   { id: "aura-oversize", name: "Remera oversize", price: 31000, category: "Remeras" },
   { id: "aldea-classic", name: "Remera clásica", price: 28600, category: "Remeras" },

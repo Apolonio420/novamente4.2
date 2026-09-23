@@ -330,9 +330,9 @@ describe("C) Action execution", () => {
       expect(screen.getByText(/Precios.*incluyen diseño/)).toBeInTheDocument()
       // PLAN-NOMBRES-DESCRIPTIVOS.md: al cliente se le nombra la prenda por lo
       // que es, no por el modelo interno (Aura -> Remera oversize, Boston ->
-      // Buzo con capucha).
+      // Buzo hoodie oversize).
       expect(screen.getByText("Remera oversize")).toBeInTheDocument()
-      expect(screen.getByText("Buzo con capucha")).toBeInTheDocument()
+      expect(screen.getByText("Buzo hoodie oversize")).toBeInTheDocument()
     })
   })
 })

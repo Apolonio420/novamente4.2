@@ -42,8 +42,8 @@ export interface ProductNameLookupInput {
  */
 const CANONICAL_NAMES: Record<string, ProductNameEntry> = {
   'buzo-cuello-redondo': { modelo: 'Berlin', descriptivo: 'Buzo cuello redondo' },
-  'buzo-hoodie': { modelo: 'Boston', descriptivo: 'Buzo con capucha' },
-  hoodie: { modelo: 'Boston', descriptivo: 'Buzo con capucha' },
+  'buzo-hoodie': { modelo: 'Boston', descriptivo: 'Buzo hoodie oversize' },
+  hoodie: { modelo: 'Boston', descriptivo: 'Buzo hoodie oversize' },
   'remera-clasica-mujer': { modelo: 'Buenos Aires', descriptivo: 'Remera clásica mujer' },
   'remera-crop': { modelo: 'Bahamas', descriptivo: 'Remera crop mujer' },
   'remera-infantil': { modelo: 'Bambino', descriptivo: 'Remera infantil' },

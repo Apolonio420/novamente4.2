@@ -37,10 +37,10 @@ describe('product-names — tabla canónica (PLAN-NOMBRES-DESCRIPTIVOS.md)', () 
     })
   })
 
-  it('buzo-hoodie-unisex -> Buzo con capucha (Boston)', () => {
+  it('buzo-hoodie-unisex -> Buzo hoodie oversize (Boston)', () => {
     expect(lookupProductName({ id: 'buzo-hoodie-negro', garmentType: 'buzo-hoodie-unisex' })).toEqual({
       modelo: 'Boston',
-      descriptivo: 'Buzo con capucha',
+      descriptivo: 'Buzo hoodie oversize',
     })
   })
 
@@ -66,7 +66,7 @@ describe('productDisplayName', () => {
   })
 
   it('sin color, devuelve solo el descriptivo', () => {
-    expect(productDisplayName({ id: 'buzo-hoodie-unisex' })).toBe('Buzo con capucha')
+    expect(productDisplayName({ id: 'buzo-hoodie-unisex' })).toBe('Buzo hoodie oversize')
   })
 
   it('no duplica el color si ya viene incluido en la base', () => {

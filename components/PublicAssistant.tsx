@@ -1038,7 +1038,7 @@ function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: ()
       { name: "Remera clásica mujer", price: 28600 },
       { name: "Remera oversize", price: 31000 },
       { name: "Buzo cuello redondo", price: 43000 },
-      { name: "Buzo con capucha", price: 55000 },
+      { name: "Buzo hoodie oversize", price: 55000 },
     ]
     return (
       <div className="mt-3">
