@@ -1,5 +1,11 @@
 # QMD Log - novamente4.2
 
+### [2026-09-22] Reseñas Google sin local + rating hardcodeado en layout
+**Goal**: Juan preguntó si el sistema de puntuación propio puede "hacerse con Google" o si hace falta local físico.
+**Done**: Solo análisis, sin cambios. Conclusión: Google Business Profile NO exige local; alcanza el retiro con cita en Vicente López. Armar como negocio con área de servicio, dirección OCULTA, verificación por video. Las reseñas de Google no se alimentan del sistema propio: pedirlas con link corto en el postventa D+14 (construido, sin commit, apagado — ver memoria project-postventa-d14-dos-canales).
+**Hallazgos**: (1) `app/products/[id]/page.tsx:188` ya emite aggregateRating REAL desde product_reviews (OK). (2) `app/layout.tsx:120` tiene un aggregateRating de Organization HARDCODEADO 4.8/95 reseñas → self-serving, riesgo de acción manual de Google. Pendiente borrarlo.
+**Next**: borrar el bloque de layout.tsx; cuando el perfil de Google esté verificado, meter el link de reseña en la respuesta "Llegó bien" del postventa (solo score 4-5).
+
 ### [2026-07-14] Brief Empresas + landing pública B2B
 **Goal**: Auditar/pulir el PDF Novamente Empresas y convertirlo en una nueva página web pública, ubicando Empresas en la navegación después de Marcas y antes de FAQ. Sincronizar dos veces para no pisar trabajo ajeno.
 **Done**:
