@@ -119,4 +119,19 @@ describe("PUT /api/partners/catalog/[id] — policy revalidation", () => {
     const res = await PUT(req, { params })
     expect(res.status).toBe(200)
   })
+
+  // Auditoría 22/09: partner cargando "40" pensando en miles — el piso corre
+  // ANTES de tocar la policy de nombre/categoría (400, no 422).
+  it("editar price a 40 (cargado en miles) se rechaza con 400", async () => {
+    const req = makeRequest({ price: 40 })
+    const res = await PUT(req, { params })
+    expect(res.status).toBe(400)
+    expect(updateProductMock).not.toHaveBeenCalled()
+  })
+
+  it("editar price a un valor normal sigue funcionando", async () => {
+    const req = makeRequest({ price: 55000 })
+    const res = await PUT(req, { params })
+    expect(res.status).toBe(200)
+  })
 })

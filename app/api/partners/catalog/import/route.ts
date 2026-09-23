@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { parseCsvProducts } from '@/lib/partners/csv-parser'
 import { countProducts, createProduct } from '@/lib/partners/catalog'
-import { validatePartnerProductForCreation } from '@/lib/partners/product-policy'
+import { validatePartnerProductForCreation, validatePartnerProductPrice } from '@/lib/partners/product-policy'
 import { PLAN_FEATURES } from '@/lib/partners/plans'
 import type { Plan } from '@/lib/partners/types'
 
@@ -69,6 +69,15 @@ export async function POST(request: NextRequest) {
       })
       if (!policy.ok) {
         importErrors.push(`"${p.name}" rechazado: ${policy.reason}`)
+        continue
+      }
+
+      // Piso "no cargues 40 pensando en miles" (auditoría 22/09) — se reporta
+      // por fila, igual que el resto de los rechazos de este import: una fila
+      // mala no aborta el resto del CSV.
+      const priceCheck = validatePartnerProductPrice(p.price)
+      if (!priceCheck.ok) {
+        importErrors.push(`"${p.name}" rechazado: ${priceCheck.reason}`)
         continue
       }
 

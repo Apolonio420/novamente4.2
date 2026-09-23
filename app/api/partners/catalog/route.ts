@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getAllProducts, createProduct, countProducts } from '@/lib/partners/catalog'
 import { canAddProduct } from '@/lib/partners/plans'
-import { validatePartnerProductForCreation } from '@/lib/partners/product-policy'
+import { validatePartnerProductForCreation, validatePartnerProductPrice } from '@/lib/partners/product-policy'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getAllPublicGarmentPricing } from '@/lib/partners/garment-pricing.server'
 
@@ -70,6 +70,14 @@ export async function POST(request: NextRequest) {
     })
     if (!policy.ok) {
       return NextResponse.json({ error: policy.reason }, { status: 422 })
+    }
+
+    // Piso "no cargues 40 pensando en miles" (auditoría 22/09) — se aplica
+    // ACÁ, al cargar, además del piso de costo real que corre en el checkout
+    // (lib/checkout/precio-real.ts).
+    const priceCheck = validatePartnerProductPrice(body.price)
+    if (!priceCheck.ok) {
+      return NextResponse.json({ error: priceCheck.reason }, { status: 400 })
     }
 
     const product = await createProduct(tenant.id, {

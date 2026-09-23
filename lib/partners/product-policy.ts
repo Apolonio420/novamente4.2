@@ -164,3 +164,33 @@ export function validatePartnerProductForCreation(input: {
 
   return { ok: true }
 }
+
+/**
+ * Piso mínimo de precio al CARGAR un producto (no confundir con el piso de
+ * costo del checkout en lib/checkout/precio-real.ts, que compara contra el
+ * costo real de producción). Este es más simple y corre antes: evita que un
+ * partner guarde "40" o "60" pensando en miles de pesos — auditoría 22/09,
+ * lcitea (×6) y al-fa (×1).
+ */
+export const MIN_PARTNER_PRODUCT_PRICE_ARS = 1000
+
+/**
+ * Valida el precio de un producto de partner al crear/editar/importar.
+ * `price` puede venir `null`/`undefined` (producto sin precio todavía, se
+ * permite guardar como borrador) — sólo se rechaza un precio EXPLICITO por
+ * debajo del piso.
+ */
+export function validatePartnerProductPrice(price: unknown): ProductPolicyValidation {
+  if (price === null || price === undefined || price === "") return { ok: true }
+  const n = Number(price)
+  if (!Number.isFinite(n)) {
+    return { ok: false, reason: "El precio tiene que ser un número." }
+  }
+  if (n > 0 && n < MIN_PARTNER_PRODUCT_PRICE_ARS) {
+    return {
+      ok: false,
+      reason: `El precio ($${n.toLocaleString("es-AR")}) parece cargado en miles. Escribí el precio final en pesos, ej: 55000.`,
+    }
+  }
+  return { ok: true }
+}

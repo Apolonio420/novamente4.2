@@ -1062,12 +1062,24 @@ export default function CatalogPage() {
                     type="number"
                     value={formPrice}
                     onChange={(e) => setFormPrice(e.target.value)}
-                    placeholder="0"
-                    min="0"
+                    placeholder="55000"
+                    min="1000"
                     step="1"
                     className="pl-7 bg-zinc-900/60 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-violet-500/50 focus-visible:border-violet-500/50 h-11"
                   />
                 </div>
+                <p className="text-xs text-zinc-500">
+                  Precio final en pesos, sin puntos. Ej: 55000
+                </p>
+                {/* Auditoría 22/09: partners cargando "40" o "60" pensando en
+                    miles — un aviso a tiempo de escribir evita el viaje hasta
+                    el 400 del servidor. No bloquea acá: el piso real corre en
+                    el servidor (min 1000, ver app/api/partners/catalog). */}
+                {Number(formPrice) > 0 && Number(formPrice) < 1000 && (
+                  <p className="text-xs text-amber-400">
+                    ¿Quisiste decir ${Number(formPrice).toLocaleString('es-AR')}.000?
+                  </p>
+                )}
               </div>
 
               {/* Stock (opcional) */}

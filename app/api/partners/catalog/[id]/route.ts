@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateProduct, deleteProduct, generateUniqueSlug } from '@/lib/partners/catalog'
-import { validatePartnerProductForCreation } from '@/lib/partners/product-policy'
+import { validatePartnerProductForCreation, validatePartnerProductPrice } from '@/lib/partners/product-policy'
 import {
   listVariants,
   needsPublishedProductValidation,
@@ -55,6 +55,15 @@ export async function PUT(
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         updates[field] = body[field]
+      }
+    }
+
+    // Piso "no cargues 40 pensando en miles" (auditoría 22/09) — solo cuando
+    // el partner efectivamente está mandando un precio nuevo.
+    if (updates.price !== undefined) {
+      const priceCheck = validatePartnerProductPrice(updates.price)
+      if (!priceCheck.ok) {
+        return NextResponse.json({ error: priceCheck.reason }, { status: 400 })
       }
     }
 
