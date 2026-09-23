@@ -47,28 +47,38 @@ export default function ImageGalleryClient({ images, name }: Props) {
         )}
       </button>
 
-      {/* Thumbnails · clickables */}
+      {/* Thumbnails · clickables — Fase 3 pieza E1: frente y dorso siempre
+          visibles y etiquetados, para que se sepa cuál es cuál de un
+          vistazo (no solo por orden). */}
       {images.length > 1 && (
         <div className="grid grid-cols-4 gap-3">
-          {images.slice(0, 4).map((img, i) => (
-            <button
-              type="button"
-              key={i}
-              onClick={() => setActiveIdx(i)}
-              className={`relative aspect-square overflow-hidden rounded-lg border bg-zinc-900 transition-all cursor-pointer hover:scale-105 ${
-                i === activeIdx ? 'border-[var(--partner-primary)] ring-2 ring-[var(--partner-primary)]/40' : 'border-zinc-800 hover:border-zinc-600'
-              }`}
-              aria-label={`Ver imagen ${i + 1}`}
-            >
-              <Image
-                src={img}
-                alt={`${name} ${i + 1}`}
-                fill
-                sizes="(max-width: 1024px) 25vw, 12vw"
-                className="object-cover"
-              />
-            </button>
-          ))}
+          {images.slice(0, 4).map((img, i) => {
+            const sideLabel = i === 0 ? 'Frente' : i === 1 ? 'Dorso' : null
+            return (
+              <button
+                type="button"
+                key={i}
+                onClick={() => setActiveIdx(i)}
+                className={`relative aspect-square overflow-hidden rounded-lg border bg-zinc-900 transition-all cursor-pointer hover:scale-105 ${
+                  i === activeIdx ? 'border-[var(--partner-primary)] ring-2 ring-[var(--partner-primary)]/40' : 'border-zinc-800 hover:border-zinc-600'
+                }`}
+                aria-label={sideLabel ? `Ver ${sideLabel.toLowerCase()}` : `Ver imagen ${i + 1}`}
+              >
+                <Image
+                  src={img}
+                  alt={sideLabel ? `${name} — ${sideLabel}` : `${name} ${i + 1}`}
+                  fill
+                  sizes="(max-width: 1024px) 25vw, 12vw"
+                  className="object-cover"
+                />
+                {sideLabel && (
+                  <span className="absolute bottom-1 left-1 text-[9px] font-semibold uppercase tracking-wide bg-black/70 text-white px-1 py-0.5 rounded">
+                    {sideLabel}
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
       )}
 

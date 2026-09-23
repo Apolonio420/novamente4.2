@@ -1,16 +1,23 @@
 'use client'
 
 import Image from 'next/image'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const IMG_SIZES = '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw'
+const CROSSFADE_MS = 3500
 
 /**
  * Imagen de la card de producto en el storefront /p/[slug].
- * Si el producto tiene una 2ª imagen (por convención = dorso), la revela:
- *  - Desktop: al hacer hover (crossfade, CSS puro vía el `.group` del <Link> padre).
- *  - Touch: con dos puntitos (frente/dorso) — el hover no existe en mobile.
- * Con una sola imagen se comporta EXACTAMENTE igual que antes (sin overlay ni puntitos).
+ *
+ * Fase 3 pieza E1: toda card con frente+dorso alterna SOLA entre las dos
+ * caras (fundido CSS, ~3.5s), para que el cliente sepa cómo es el dorso sin
+ * tener que entrar al producto. Se pausa con el mouse encima o con foco de
+ * teclado (mismo botón que ya mostraba el toggle en touch). Con
+ * `prefers-reduced-motion: reduce` no anima: muestra el frente fijo y un
+ * botón chico para mirar el dorso a pedido.
+ *
+ * El arranque de cada card se desfasa con un delay aleatorio para que la
+ * grilla entera no titile sincronizada.
  */
 export function ProductCardImage({
   images,
@@ -20,8 +27,32 @@ export function ProductCardImage({
   alt: string
 }) {
   const front = images[0]
-  const back = images.length > 1 ? images[1] : null
+  const back = images.length > 1 && images[1] !== images[0] ? images[1] : null
   const [showBack, setShowBack] = useState(false)
+  const [paused, setPaused] = useState(false)
+  const [reducedMotion, setReducedMotion] = useState(false)
+  const startDelay = useRef(Math.random() * CROSSFADE_MS)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setReducedMotion(mq.matches)
+    const onChange = () => setReducedMotion(mq.matches)
+    mq.addEventListener?.('change', onChange)
+    return () => mq.removeEventListener?.('change', onChange)
+  }, [])
+
+  useEffect(() => {
+    if (!back || paused || reducedMotion) return
+    let interval: ReturnType<typeof setInterval> | null = null
+    const timeout = setTimeout(() => {
+      setShowBack((v) => !v)
+      interval = setInterval(() => setShowBack((v) => !v), CROSSFADE_MS)
+    }, startDelay.current)
+    return () => {
+      clearTimeout(timeout)
+      if (interval) clearInterval(interval)
+    }
+  }, [back, paused, reducedMotion])
 
   // Fondo claro fijo detrás de la imagen: los PNG con alpha (remeras oscuras
   // sobre fondo transparente) quedaban "flotando" sobre la card oscura del
@@ -43,14 +74,50 @@ export function ProductCardImage({
     )
   }
 
+  // Con reduced-motion: frente fijo + un botón chico para mirar el dorso,
+  // sin animación automática (pedido explícito de la pieza E1).
+  if (reducedMotion) {
+    const active = showBack ? back : front
+    return (
+      <div className={`absolute inset-0 ${bg}`}>
+        <Image
+          key={active}
+          src={active}
+          alt={showBack ? `${alt} — dorso` : alt}
+          fill
+          sizes={IMG_SIZES}
+          className="object-cover transition duration-300 group-hover:scale-105"
+        />
+        <button
+          type="button"
+          aria-label={showBack ? 'Ver frente' : 'Ver dorso'}
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setShowBack((v) => !v)
+          }}
+          className="absolute bottom-2 right-2 z-10 rounded-full bg-black/70 px-2 py-1 text-[10px] font-medium text-white"
+        >
+          {showBack ? 'Frente' : 'Dorso'}
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <div className={`absolute inset-0 ${bg}`}>
+    <div
+      className={`absolute inset-0 ${bg}`}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+    >
       <Image
         src={front}
         alt={alt}
         fill
         sizes={IMG_SIZES}
-        className={`object-cover transition duration-500 group-hover:scale-105 group-hover:opacity-0 ${
+        className={`object-cover transition-opacity duration-700 ease-in-out group-hover:scale-105 ${
           showBack ? 'opacity-0' : 'opacity-100'
         }`}
       />
@@ -59,33 +126,32 @@ export function ProductCardImage({
         alt={`${alt} — dorso`}
         fill
         sizes={IMG_SIZES}
-        className={`object-cover transition duration-500 group-hover:scale-105 group-hover:opacity-100 ${
+        className={`object-cover transition-opacity duration-700 ease-in-out group-hover:scale-105 ${
           showBack ? 'opacity-100' : 'opacity-0'
         }`}
       />
 
-      {/* Puntitos frente/dorso — solo en dispositivos sin hover (touch). */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center gap-2 [@media(hover:hover)]:hidden">
-        {[false, true].map((isBack) => (
-          <button
-            key={String(isBack)}
-            type="button"
-            aria-label={isBack ? 'Ver dorso' : 'Ver frente'}
-            aria-pressed={showBack === isBack}
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              setShowBack(isBack)
-            }}
-            className="pointer-events-auto -m-1 p-1.5"
-          >
-            <span
-              className={`block h-1.5 w-1.5 rounded-full transition ${
-                showBack === isBack ? 'bg-white' : 'bg-white/50'
-              }`}
-            />
-          </button>
-        ))}
+      {/* Indicador discreto — visible siempre, no solo en touch. */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center gap-1.5">
+        {(['Frente', 'Dorso'] as const).map((label, i) => {
+          const isBack = i === 1
+          return (
+            <button
+              key={label}
+              type="button"
+              tabIndex={-1}
+              aria-hidden="true"
+              className="pointer-events-none -m-1 p-1.5"
+            >
+              <span
+                className={`block h-1.5 w-1.5 rounded-full transition ${
+                  showBack === isBack ? 'bg-white' : 'bg-white/50'
+                }`}
+              />
+            </button>
+          )
+        })}
+        <span className="sr-only">{showBack ? 'Mostrando dorso' : 'Mostrando frente'}</span>
       </div>
     </div>
   )

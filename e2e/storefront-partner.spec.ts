@@ -86,5 +86,46 @@ for (const viewport of VIEWPORTS) {
       const ratio = contrastRatio(buttonHex!, pageHex!)
       expect(ratio).toBeGreaterThanOrEqual(3 - 0.05)
     })
+
+    // Fase 3 pieza E1 — la card de producto con frente+dorso alterna sola
+    // entre las 2 caras (fundido CSS). Con reduced-motion DESACTIVADO
+    // (`reducedMotion: 'no-preference'`) tiene que animar; verificamos que
+    // la card tenga 2 <img> (frente/dorso) y que en 2 momentos distintos la
+    // opacidad de al menos una de las dos cambie.
+    test('la card de producto con dorso alterna frente/dorso (reduced-motion desactivado)', async ({ page }) => {
+      test.setTimeout(30_000)
+      await page.emulateMedia({ reducedMotion: 'no-preference' })
+
+      const response = await page.goto(STOREFRONT_URL, { waitUntil: 'domcontentloaded' })
+      test.skip(
+        !response || response.status() >= 400,
+        `No se pudo cargar ${STOREFRONT_URL} (status ${response?.status()}) — tienda de test no disponible en este entorno`,
+      )
+
+      // Buscar la primera card que tenga 2 imágenes (frente + dorso real).
+      const dualImageContainers = page.locator('div.absolute.inset-0').filter({
+        has: page.locator('img'),
+      })
+      const count = await dualImageContainers.count()
+      let target = null
+      for (let i = 0; i < count; i++) {
+        const el = dualImageContainers.nth(i)
+        if ((await el.locator('img').count()) === 2) {
+          target = el
+          break
+        }
+      }
+      test.skip(!target, 'Tienda de test sin ningún producto con 2 imágenes (frente+dorso) — nada que animar')
+
+      const opacityAt = async () =>
+        target!.locator('img').evaluateAll((imgs) => imgs.map((img) => getComputedStyle(img).opacity))
+
+      const first = await opacityAt()
+      // El fundido tarda ~3.5s + un delay de arranque aleatorio (0-3.5s) —
+      // esperamos hasta 8s para ver el cambio con margen.
+      await expect
+        .poll(async () => (await opacityAt()).join(','), { timeout: 8_000, intervals: [250] })
+        .not.toBe(first.join(','))
+    })
   })
 }

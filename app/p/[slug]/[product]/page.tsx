@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { JsonLd } from '@/components/partners/json-ld'
 import { ProductCardImage } from '@/components/partners/product-card-image'
+import { resolveCardFrames } from '@/lib/partners/product-card-frames'
 import ImageGalleryClient from './ImageGalleryClient'
 import ProductMediaBuy from './ProductMediaBuy'
 import {
@@ -586,7 +587,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
 // ---------------------------------------------------------------------------
 
 function ImageGallery({ product }: { product: PartnerProduct }) {
-  return <ImageGalleryClient images={product.images || []} name={product.name} />
+  // Fase 3 pieza E1: siempre las 2 caras, aunque `images[]` solo traiga el
+  // frente (el dorso real del color mostrado vive en metadata.colors[]).
+  const frames = resolveCardFrames(product as any)
+  const images = frames.back && frames.front ? [frames.front, frames.back] : product.images || []
+  return <ImageGalleryClient images={images} name={product.name} />
 }
 
 // ---------------------------------------------------------------------------
@@ -609,7 +614,13 @@ function RelatedProductCard({
     >
       <div className="relative aspect-square w-full overflow-hidden bg-zinc-800">
         {product.images?.length ? (
-          <ProductCardImage images={product.images} alt={product.name} />
+          <ProductCardImage
+            images={(() => {
+              const frames = resolveCardFrames(product as any)
+              return frames.back ? [frames.front!, frames.back] : product.images
+            })()}
+            alt={product.name}
+          />
         ) : (
           <div className="flex h-full items-center justify-center">
             <span className="text-3xl text-zinc-600">

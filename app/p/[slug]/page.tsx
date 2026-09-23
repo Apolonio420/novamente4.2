@@ -22,6 +22,7 @@ import { buttonColors, isValidHex, readableTextOn } from '@/lib/color/contrast'
 import { heroFocalToObjectPosition } from '@/lib/partners/hero-focal'
 import { headingFontClassName } from './fonts'
 import { ProductCardImage } from '@/components/partners/product-card-image'
+import { resolveCardFrames } from '@/lib/partners/product-card-frames'
 import ContactForm from './contact-form'
 import ChatWidget from '@/components/partners/chat-widget'
 import { StorefrontTracker } from '@/components/partners/storefront-tracker'
@@ -488,7 +489,13 @@ function ProductCard({
       {/* Image */}
       <div className="relative aspect-square w-full overflow-hidden bg-zinc-800">
         {product.images?.length ? (
-          <ProductCardImage images={product.images} alt={product.name} />
+          <ProductCardImage
+            images={(() => {
+              const frames = resolveCardFrames(product as any)
+              return frames.back ? [frames.front!, frames.back] : product.images
+            })()}
+            alt={product.name}
+          />
         ) : (
           <div className="flex h-full items-center justify-center">
             <span className="text-3xl text-zinc-600">
