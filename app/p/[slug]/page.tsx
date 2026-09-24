@@ -492,7 +492,9 @@ function ProductCard({
           <ProductCardImage
             images={(() => {
               const frames = resolveCardFrames(product as any)
-              return frames.back ? [frames.front!, frames.back] : product.images
+              return frames.back
+                ? [frames.front!, frames.back, ...product.images.filter((u) => u !== frames.front && u !== frames.back)]
+                : product.images
             })()}
             alt={product.name}
           />
