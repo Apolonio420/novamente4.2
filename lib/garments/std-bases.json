@@ -674,18 +674,5 @@
       "h": 622
     },
     "pxPerCm": 17.771428571428572
-  },
-  {
-    "garmentKey": "musculosa-bali",
-    "color": "black",
-    "side": "front",
-    "file": "/garments/std/musculosa-bali-black-front.jpg",
-    "printArea": {
-      "x": 784,
-      "y": 800,
-      "w": 480,
-      "h": 770
-    },
-    "pxPerCm": 13.714285714285714
   }
 ]
