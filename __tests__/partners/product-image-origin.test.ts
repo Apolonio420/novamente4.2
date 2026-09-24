@@ -286,6 +286,37 @@ describe('findFirstDisallowedProductImage', () => {
     const result = await findFirstDisallowedProductImage(TENANT_ID, SLUG, [legacyBad, newBad], [legacyBad])
     expect(result).toBe(newBad)
   })
+
+  // Fase 3: images[0]=frente, images[1]=dorso — gateados. images[2+]=extras
+  // (lifestyle/detalle/foto real) — el partner puede subirlas libres.
+  describe('extras (index >= 2) skip the "our mockup" gate', () => {
+    const good = '/api/proxy-image?key=partners%2Fimpulso%2Fmockups%2Fa.png'
+    const stockPhoto = 'https://images.unsplash.com/photo-lifestyle'
+
+    it('allows a non-mockup URL at index 2+ (front/back are valid)', async () => {
+      const result = await findFirstDisallowedProductImage(TENANT_ID, SLUG, [good, good, stockPhoto])
+      expect(result).toBeNull()
+    })
+
+    it('allows MULTIPLE non-mockup extras from index 2 onward', async () => {
+      const result = await findFirstDisallowedProductImage(
+        TENANT_ID,
+        SLUG,
+        [good, good, stockPhoto, 'https://images.unsplash.com/photo-detail', 'https://images.unsplash.com/photo-real'],
+      )
+      expect(result).toBeNull()
+    })
+
+    it('STILL rejects a non-mockup front (index 0) even with valid extras after it', async () => {
+      const result = await findFirstDisallowedProductImage(TENANT_ID, SLUG, [stockPhoto, good, stockPhoto])
+      expect(result).toBe(stockPhoto)
+    })
+
+    it('STILL rejects a non-mockup back (index 1) even though extras are allowed', async () => {
+      const result = await findFirstDisallowedProductImage(TENANT_ID, SLUG, [good, stockPhoto, stockPhoto])
+      expect(result).toBe(stockPhoto)
+    })
+  })
 })
 
 describe('extractColorImageUrls', () => {

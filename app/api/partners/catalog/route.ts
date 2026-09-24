@@ -9,6 +9,7 @@ import {
   findFirstDisallowedProductImage,
   findFirstDisallowedColorImage,
   PRODUCT_IMAGE_ORIGIN_ERROR,
+  MAX_PRODUCT_IMAGES,
 } from '@/lib/partners/product-image-origin'
 
 function normalizePricingPlan(plan: string | null | undefined): 'starter' | 'growth' | 'pro' {
@@ -85,8 +86,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: priceCheck.reason }, { status: 400 })
     }
 
+    if (Array.isArray(body.images) && body.images.length > MAX_PRODUCT_IMAGES) {
+      return NextResponse.json(
+        { error: `Máximo ${MAX_PRODUCT_IMAGES} fotos por producto` },
+        { status: 400 },
+      )
+    }
+
     // Gate "solo nuestros mockups": todas las imágenes son NUEVAS en un
-    // producto recién creado, así que se validan todas.
+    // producto recién creado, así que se validan todas (frente/dorso —
+    // las extras, índice 2+, no pasan por este gate: ver
+    // MOCKUP_REQUIRED_SLOTS en lib/partners/product-image-origin.ts).
     if (Array.isArray(body.images) && body.images.length > 0) {
       const badImage = await findFirstDisallowedProductImage(tenant.id, tenant.slug, body.images)
       if (badImage) {

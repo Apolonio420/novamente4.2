@@ -3,7 +3,7 @@ import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { uploadFile } from '@/lib/cloudflare-r2'
 import { toBanner16x9 } from '@/lib/partners/banner-image'
-import { isOwnMockupUrl, PRODUCT_IMAGE_ORIGIN_ERROR } from '@/lib/partners/product-image-origin'
+import { isOwnMockupUrl, PRODUCT_IMAGE_ORIGIN_ERROR, MAX_PRODUCT_IMAGES } from '@/lib/partners/product-image-origin'
 
 const db = () => supabaseAdmin as any
 
@@ -35,7 +35,18 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response
     const tenant = auth.tenant
     const body = await request.json()
-    const { assetUrl, slot, productId } = body
+    const { assetUrl, slot, productId, side } = body as {
+      assetUrl?: string
+      slot?: string
+      productId?: string
+      /**
+       * Cara del producto que este mockup representa (galería, regla
+       * frente=[0]/dorso=[1]/extras=[2+] — ver
+       * lib/partners/product-image-origin.ts). Opcional: sin `side` se
+       * mantiene el comportamiento legacy de agregar al final.
+       */
+      side?: 'front' | 'back'
+    }
 
     if (!assetUrl || !slot) {
       return NextResponse.json({ error: 'assetUrl y slot son obligatorios' }, { status: 400 })
@@ -86,8 +97,44 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: PRODUCT_IMAGE_ORIGIN_ERROR }, { status: 400 })
       }
 
-      const currentImages = (product.images as string[]) || []
-      const updatedImages = [...currentImages, assetUrl]
+      const currentImages = ((product.images as string[]) || []).filter(
+        (u) => typeof u === 'string' && u,
+      )
+
+      // Regla frente/dorso/extras (lib/partners/product-image-origin.ts):
+      //   - side='front' → REEMPLAZA images[0]. No se hace shift: el dorso
+      //     que ya estaba en images[1] sigue siendo el dorso de este
+      //     producto (regenerar el frente no debe desemparejarlo del dorso
+      //     vigente), y las extras (índice 2+) quedan intactas.
+      //   - side='back' → REEMPLAZA (o completa) images[1]. Requiere que ya
+      //     haya un frente (images[0]) — el dorso siempre empareja con un
+      //     frente existente, nunca lo crea.
+      //   - sin side → comportamiento legacy: agregar al final (nunca
+      //     "adelanta" nada a los índices 0/1 salvo que el producto todavía
+      //     no los tuviera, igual que antes de este cambio).
+      let updatedImages: string[]
+      if (side === 'front') {
+        updatedImages = [...currentImages]
+        updatedImages[0] = assetUrl
+      } else if (side === 'back') {
+        if (currentImages.length < 1) {
+          return NextResponse.json(
+            { error: 'Publicá primero el frente — el dorso necesita un frente para emparejar.' },
+            { status: 400 },
+          )
+        }
+        updatedImages = [...currentImages]
+        updatedImages[1] = assetUrl
+      } else {
+        updatedImages = [...currentImages, assetUrl]
+      }
+
+      if (updatedImages.length > MAX_PRODUCT_IMAGES) {
+        return NextResponse.json(
+          { error: `Máximo ${MAX_PRODUCT_IMAGES} fotos por producto` },
+          { status: 400 },
+        )
+      }
 
       const { error } = await db()
         .from('partner_products')

@@ -17,6 +17,7 @@ import {
   findFirstDisallowedProductImage,
   findFirstDisallowedColorImage,
   PRODUCT_IMAGE_ORIGIN_ERROR,
+  MAX_PRODUCT_IMAGES,
 } from '@/lib/partners/product-image-origin'
 import { validateFrontAndBackForPublish } from '@/lib/partners/product-sides'
 
@@ -73,9 +74,18 @@ export async function PUT(
       }
     }
 
+    if (Array.isArray(updates.images) && (updates.images as unknown[]).length > MAX_PRODUCT_IMAGES) {
+      return NextResponse.json(
+        { error: `Máximo ${MAX_PRODUCT_IMAGES} fotos por producto` },
+        { status: 400 },
+      )
+    }
+
     // Gate "solo nuestros mockups": solo se validan las URLs NUEVAS — las que
     // el producto ya tenía (legacy) siguen permitidas para no romper edits de
-    // precio/nombre en productos cargados antes de este cambio.
+    // precio/nombre en productos cargados antes de este cambio. Y solo hasta
+    // MOCKUP_REQUIRED_SLOTS (frente/dorso) — las extras (índice 2+) pueden
+    // ser fotos propias del partner.
     if (Array.isArray(updates.images)) {
       const existingImages = Array.isArray(existing.images) ? (existing.images as string[]) : []
       const badImage = await findFirstDisallowedProductImage(

@@ -119,7 +119,11 @@ const PLACEHOLDER_GRADIENTS = [
   'from-indigo-600 to-violet-500',
 ]
 
-const MAX_IMAGES = 5
+// Fase 3: frente + dorso (mockups del Studio, obligatorios) + hasta 6 fotos
+// extra (lifestyle/detalle/producto real, subida libre) — ver
+// MAX_PRODUCT_IMAGES en lib/partners/product-image-origin.ts (mismo límite,
+// server-side).
+const MAX_IMAGES = 8
 const MAX_DESCRIPTION = 500
 
 // ---------------------------------------------------------------------------
@@ -1232,16 +1236,17 @@ export default function CatalogPage() {
                   </span>
                 </div>
                 <p className="text-xs text-zinc-500">
-                  La primera imagen sera la portada del producto. Tu tienda muestra
-                  nuestras prendas reales con tu diseño: elegí un mockup ya generado
-                  en el Studio, o creá uno nuevo.
+                  Frente y dorso son mockups del Studio con tu diseño sobre
+                  nuestras prendas reales: elegí uno ya generado o creá uno
+                  nuevo. Desde la 3ra foto podés sumar tus propias fotos
+                  (lifestyle, detalle, producto real).
                 </p>
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
                   {formImages.map((url, i) => (
                     <div key={i} className="relative shrink-0 w-28">
                       {i === 0 && (
                         <span className="absolute -top-2 left-2 z-20 text-[10px] font-bold uppercase tracking-wider bg-violet-600 text-white px-1.5 py-0.5 rounded">
-                          Principal
+                          Frente
                         </span>
                       )}
                       {i === 1 && (
@@ -1249,27 +1254,44 @@ export default function CatalogPage() {
                           Dorso
                         </span>
                       )}
-                      <MockupPicker
-                        value={url}
-                        onChange={(newUrl) => handleImageChange(i, newUrl)}
-                        className="w-28"
-                        // E3 UI: el slot de dorso (índice 1) ofrece "Dorso liso"
-                        // usando la prenda base del producto — hace falta para
-                        // poder publicar (validateFrontAndBackForPublish).
-                        plainSide={
-                          i === 1
-                            ? {
-                                side: 'back',
-                                garmentKey: formGarmentKey.trim() || null,
-                                // Este form no guarda un colorKey validado contra
-                                // CATALOG_PRODUCTS (formColors.name es texto libre) —
-                                // el picker deja elegirlo acá mismo.
-                                colorKey: null,
-                                required: formStatus === 'published',
-                              }
-                            : undefined
-                        }
-                      />
+                      {i >= 2 && (
+                        <span className="absolute -top-2 left-2 z-20 text-[10px] font-bold uppercase tracking-wider bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">
+                          Foto extra
+                        </span>
+                      )}
+                      {i < 2 ? (
+                        <MockupPicker
+                          value={url}
+                          onChange={(newUrl) => handleImageChange(i, newUrl)}
+                          className="w-28"
+                          // E3 UI: el slot de dorso (índice 1) ofrece "Dorso liso"
+                          // usando la prenda base del producto — hace falta para
+                          // poder publicar (validateFrontAndBackForPublish).
+                          plainSide={
+                            i === 1
+                              ? {
+                                  side: 'back',
+                                  garmentKey: formGarmentKey.trim() || null,
+                                  // Este form no guarda un colorKey validado contra
+                                  // CATALOG_PRODUCTS (formColors.name es texto libre) —
+                                  // el picker deja elegirlo acá mismo.
+                                  colorKey: null,
+                                  required: formStatus === 'published',
+                                }
+                              : undefined
+                          }
+                        />
+                      ) : (
+                        // Fotos extra (índice 2+): NO pasan por el gate "solo
+                        // nuestros mockups" (ver MOCKUP_REQUIRED_SLOTS en
+                        // lib/partners/product-image-origin.ts) — subida libre
+                        // del partner, para lifestyle/detalle/producto real.
+                        <ImageUpload
+                          value={url}
+                          onChange={(newUrl) => handleImageChange(i, newUrl)}
+                          className="w-28"
+                        />
+                      )}
                       {/* Remove slot button (only if not the only empty slot) */}
                       {url && (
                         <button

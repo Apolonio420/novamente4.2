@@ -14,12 +14,21 @@ const BUCKET = 'partner-assets'
 // `<ImageUpload type=... />`):
 //   - logo/banner/hero: app/workspace/branding/page.tsx, app/partners/join/page.tsx
 //   - design: components/workspace/QuickDesignUpload.tsx (arte para estampar)
+//   - other: app/workspace/catalog/page.tsx, slots de foto EXTRA (índice 2+)
+//     de la galería de producto — lifestyle/detalle/foto real del partner.
+//     `ImageUpload` (components/partners/image-upload.tsx) ya manda type='other'
+//     por default. Guardado en partner_assets con ese mismo type (ya permitido
+//     por el CHECK de la tabla, sin necesitar migración) — no confundir con un
+//     tipo dedicado 'lifestyle'/'extra': se evaluó pero el CHECK actual
+//     (logo|banner|hero|product|mockup|generated|approved|other|design|stamp)
+//     no lo tiene, y no hacía falta una migración solo para el nombre.
 // 'product' quedó afuera a propósito: era el que usaba el catálogo
 // (app/workspace/catalog/page.tsx) para la foto de producto de la tienda
 // pública, aceptando cualquier jpg/png/webp sin validar que la prenda de la
 // foto fuera una que Novamente fabrica — ver lib/partners/product-image-origin.ts.
-// Las fotos de producto ahora se generan SOLO en el Studio.
-const ALLOWED_UPLOAD_TARGET_TYPES = new Set(['logo', 'banner', 'hero', 'design'])
+// Las fotos de producto (frente/dorso, índice 0/1) se generan SOLO en el
+// Studio; las fotos extra (índice 2+) sí pueden subirse libres, con type='other'.
+const ALLOWED_UPLOAD_TARGET_TYPES = new Set(['logo', 'banner', 'hero', 'design', 'other'])
 
 export async function POST(request: NextRequest) {
   try {

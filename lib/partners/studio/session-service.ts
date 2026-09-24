@@ -149,6 +149,8 @@ export async function publishToStorefront(body: {
   assetUrl: string
   slot: 'hero' | 'banner' | 'product_image'
   productId?: string
+  /** Frente/dorso del producto — ver side en app/api/partners/design/publish/route.ts. */
+  side?: 'front' | 'back'
 }): Promise<any> {
   const res = await authFetch('/api/partners/design/publish', {
     method: 'POST',

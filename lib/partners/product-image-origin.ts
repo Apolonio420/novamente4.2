@@ -187,10 +187,31 @@ export const PRODUCT_IMAGE_ORIGIN_ERROR =
   'Las fotos de producto se generan en el Studio con nuestras prendas. Subí tu diseño y elegí prenda y color.'
 
 /**
+ * Regla de negocio (galería de producto, Fase 3): `images[0]` = frente,
+ * `images[1]` = dorso — SIEMPRE mockups del Studio sobre nuestra prenda real,
+ * gateados por `isOwnMockupUrl`. Desde este índice en adelante (`images[2+]`)
+ * son fotos extra (lifestyle, detalle, producto real) y SÍ pueden ser una
+ * subida libre del partner — ver `app/api/partners/upload/route.ts`
+ * (type='other') y `components/partners/image-upload.tsx` en
+ * `app/workspace/catalog/page.tsx`.
+ *
+ * Depende de que el array de `images` llegue siempre en orden
+ * frente/dorso/extras — lo garantiza el form de catálogo
+ * (`app/workspace/catalog/page.tsx`, `formImages`) y el insert de
+ * `side: 'front'|'back'` en `app/api/partners/design/publish/route.ts`.
+ */
+export const MOCKUP_REQUIRED_SLOTS = 2
+
+/** Máximo de fotos por producto: frente + dorso + hasta 6 extras. */
+export const MAX_PRODUCT_IMAGES = 8
+
+/**
  * Valida un array de URLs de imagen de producto, devolviendo la primera que
- * no pasa el gate (o null si todas pasan). `existingUrls` son URLs que el
- * producto ya tenía antes de este PUT — nunca se re-validan (no romper
- * productos legacy al editar otros campos).
+ * no pasa el gate (o null si todas pasan). Solo se valida hasta
+ * `MOCKUP_REQUIRED_SLOTS` (frente + dorso) — las fotos extra (índice 2+)
+ * nunca pasan por este gate. `existingUrls` son URLs que el producto ya
+ * tenía antes de este PUT — nunca se re-validan (no romper productos legacy
+ * al editar otros campos).
  */
 export async function findFirstDisallowedProductImage(
   tenantId: string,
@@ -199,7 +220,8 @@ export async function findFirstDisallowedProductImage(
   existingUrls: string[] = [],
 ): Promise<string | null> {
   const existing = new Set(existingUrls)
-  for (const url of images) {
+  for (let i = 0; i < images.length && i < MOCKUP_REQUIRED_SLOTS; i++) {
+    const url = images[i]
     if (existing.has(url)) continue
     const result = await isOwnMockupUrl(tenantId, tenantSlug, url)
     if (!result.ok) return url

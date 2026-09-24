@@ -688,7 +688,11 @@ export default function DesignStudioPage() {
       const res = await authFetch('/api/partners/design/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assetUrl: publishUrl, slot: publishSlot }),
+        // `side` viaja siempre que se conoce (selectedSide, el toggle
+        // frente/dorso del compositor) — el server solo lo usa para
+        // slot === 'product_image' (ver app/api/partners/design/publish/route.ts);
+        // para hero/banner lo ignora.
+        body: JSON.stringify({ assetUrl: publishUrl, slot: publishSlot, side: selectedSide }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
