@@ -291,12 +291,12 @@
     "side": "front",
     "file": "/garments/std/musculosa-bali-gray-front.jpg",
     "printArea": {
-      "x": 645,
-      "y": 497,
-      "w": 732,
-      "h": 914
+      "x": 711,
+      "y": 594,
+      "w": 617,
+      "h": 771
     },
-    "pxPerCm": 20.914285714285715
+    "pxPerCm": 17.62857142857143
   },
   {
     "garmentKey": "musculosa-bali",
@@ -655,12 +655,12 @@
     "side": "front",
     "file": "/garments/std/musculosa-bali-white-front.jpg",
     "printArea": {
-      "x": 617,
-      "y": 475,
-      "w": 760,
-      "h": 950
+      "x": 711,
+      "y": 590,
+      "w": 620,
+      "h": 774
     },
-    "pxPerCm": 21.714285714285715
+    "pxPerCm": 17.714285714285715
   },
   {
     "garmentKey": "buzo-hoodie-unisex",
@@ -674,5 +674,18 @@
       "h": 622
     },
     "pxPerCm": 17.771428571428572
+  },
+  {
+    "garmentKey": "musculosa-bali",
+    "color": "black",
+    "side": "front",
+    "file": "/garments/std/musculosa-bali-black-front.jpg",
+    "printArea": {
+      "x": 784,
+      "y": 800,
+      "w": 480,
+      "h": 770
+    },
+    "pxPerCm": 13.714285714285714
   }
 ]
