@@ -12,6 +12,7 @@ import { embedDocuments, embedQuery } from './embeddings'
 import { InMemoryVectorStore } from './vector-store'
 import type { VectorDocument, SearchResult } from './vector-store'
 import { buildProductListForPrompt, buildShippingForPrompt, SIZES } from '@/lib/catalog'
+import { loadProductNameOverrides, type ProductNameOverrides } from '@/lib/product-names-db'
 
 const CHAT_MODEL = 'gemini-2.0-flash'
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta'
@@ -90,7 +91,15 @@ async function searchPublic(query: string, topK = 6): Promise<SearchResult[]> {
     return getPublicStore().search(embedding, { topK, minScore: 0.25 })
 }
 
-const SYSTEM_PROMPT = `Sos Nova, el asistente de Novamente. Ayudas a clientes a disenar y comprar ropa personalizada con IA.
+/**
+ * Antes era un const armado una sola vez al cargar el módulo. Ahora es una
+ * función porque PRODUCTOS DISPONIBLES tiene que reflejar los nombres
+ * descriptivos vigentes en Supabase `product_names` (cache 5 min, ver
+ * lib/product-names-db.ts) sin esperar un deploy — se recalcula por request
+ * en publicChatStream con los overrides ya cargados.
+ */
+function buildSystemPrompt(overrides: ProductNameOverrides): string {
+  return `Sos Nova, el asistente de Novamente. Ayudas a clientes a disenar y comprar ropa personalizada con IA.
 
 QUIEN SOS:
 - Representas a Novamente, la primera marca argentina de indumentaria personalizada con inteligencia artificial.
@@ -153,7 +162,7 @@ IMPORTANTE sobre acciones:
 - Podes combinar texto + accion en la misma respuesta.
 
 PRODUCTOS DISPONIBLES (precios en ARS):
-${buildProductListForPrompt()}
+${buildProductListForPrompt(overrides)}
 
 GORRAS PERSONALIZADAS (no estan en el catalogo de arriba, se piden aparte):
 - Ademas del catalogo por unidad, Novamente hace gorras personalizadas en DTF: Gorra Gabardina, Gorra 6 Gajos, Gorra Vintage Algodon y Gorra Vintage con Red, talle unico, desde **$15.400 por unidad**.
@@ -162,6 +171,7 @@ GORRAS PERSONALIZADAS (no estan en el catalogo de arriba, se piden aparte):
 
 TALLES: ${SIZES.join(', ')}
 ${buildShippingForPrompt()}`
+}
 
 export interface ChatMessage {
     role: 'user' | 'model'
@@ -219,6 +229,9 @@ export async function* publicChatStream(
 
     await indexPublicSources()
 
+    const overrides = await loadProductNameOverrides()
+    const systemPrompt = buildSystemPrompt(overrides)
+
     const sources = await searchPublic(query)
     const context = sources.length > 0
         ? sources.map(s => s.document.text).join('\n\n---\n\n')
@@ -237,7 +250,7 @@ export async function* publicChatStream(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            system_instruction: { parts: [{ text: systemPrompt }] },
             contents,
             generationConfig: { temperature: 0.5, maxOutputTokens: 2048 },
         }),

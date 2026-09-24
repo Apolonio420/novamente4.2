@@ -1,4 +1,4 @@
-import { productDisplayName } from "./product-names"
+import { productDisplayName, type ProductNameOverrides } from "./product-names"
 
 export interface Product {
     id: string
@@ -539,7 +539,7 @@ export function parsePrice(priceStr: string): number {
  * Get products formatted for Meta Commerce feed
  * Converts relative image URLs to absolute URLs and extracts numeric price
  */
-export function getPublishableProducts(): MetaCommerceProduct[] {
+export function getPublishableProducts(overrides?: ProductNameOverrides): MetaCommerceProduct[] {
     const baseUrl = "https://www.novamente.ar"
 
     return PRODUCTS
@@ -563,7 +563,7 @@ export function getPublishableProducts(): MetaCommerceProduct[] {
                 id: product.id,
                 // Nombre descriptivo para el feed (Meta/Ads) — el id interno
                 // no cambia, solo el título que ve el cliente/comprador.
-                title: productDisplayName({ id: product.id, name: product.name, color: product.color }),
+                title: productDisplayName({ id: product.id, name: product.name, color: product.color }, overrides),
                 description: sanitizedDescription,
                 price: numericPrice,
                 currency: "ARS" as const,

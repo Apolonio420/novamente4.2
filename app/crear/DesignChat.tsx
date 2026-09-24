@@ -55,6 +55,7 @@ type Msg = {
 
 import { CATALOG_PRODUCTS, getCatalogProduct, getCatalogProductColor } from "@/lib/catalog/products"
 import { productDisplayName } from "@/lib/product-names"
+import { useProductNames } from "@/lib/product-names-context"
 import * as fpixel from "@/lib/fpixel"
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"]
@@ -230,6 +231,17 @@ export function DesignChat({
   const { toast } = useToast()
   const { addItem } = useCart()
   const router = useRouter()
+  // Nombres descriptivos con overrides de Supabase (ver
+  // lib/product-names-context.tsx) — pisa el `garmentLabel` module-level
+  // que usa la tabla hardcodeada por default.
+  const { productDisplayName: productDisplayNameWithOverrides } = useProductNames()
+  const garmentLabel = useCallback(
+    (key: string) => {
+      const product = getCatalogProduct(key)
+      return product ? productDisplayNameWithOverrides({ id: product.key, name: product.name }) : key
+    },
+    [productDisplayNameWithOverrides],
+  )
 
   const [messages, setMessages] = useState<Msg[]>([
     {

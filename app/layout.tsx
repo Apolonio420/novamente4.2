@@ -14,6 +14,8 @@ import FacebookPixel from "@/components/FacebookPixel"
 import GoogleAdsPixel from "@/components/GoogleAdsPixel"
 import AttributionTracker from "@/components/AttributionTracker"
 import { WebVitals } from "@/components/web-vitals"
+import { loadProductNameOverrides } from "@/lib/product-names-db"
+import { ProductNamesProvider } from "@/lib/product-names-context"
 
 const inter = Inter({ subsets: ["latin"], display: "swap" })
 
@@ -168,11 +170,16 @@ const websiteJsonLd = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Nombres descriptivos de prendas (product_names en Supabase, cache 5 min,
+  // ver lib/product-names-db.ts). Nunca tira: {} si la tabla no existe todavía
+  // o falla la lectura, y los componentes caen a la tabla hardcodeada.
+  const productNameOverrides = await loadProductNameOverrides()
+
   return (
     <html lang="es-AR" className="h-full" suppressHydrationWarning>
       <head>
@@ -227,13 +234,15 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         <AttributionTracker />
         <WebVitals />
         <Background />
-        <ImageHistoryProvider>
-          {/* GlobalChrome oculta Navbar+Footer+flotantes para /workspace/*
-              (el workspace tiene su propio chrome y necesita full-height sin
-              capas extras que crean nested scrolls) */}
-          <GlobalChrome>{children}</GlobalChrome>
-          <Toaster />
-        </ImageHistoryProvider>
+        <ProductNamesProvider overrides={productNameOverrides}>
+          <ImageHistoryProvider>
+            {/* GlobalChrome oculta Navbar+Footer+flotantes para /workspace/*
+                (el workspace tiene su propio chrome y necesita full-height sin
+                capas extras que crean nested scrolls) */}
+            <GlobalChrome>{children}</GlobalChrome>
+            <Toaster />
+          </ImageHistoryProvider>
+        </ProductNamesProvider>
       </body>
     </html>
   )

@@ -36,9 +36,12 @@ beforeAll(async () => {
     path.resolve(__dirname, '../../lib/rag/public-chat.ts'),
     'utf-8',
   )
-  // Extract the SYSTEM_PROMPT template literal (between the backticks)
-  const match = src.match(/const SYSTEM_PROMPT = `([\s\S]*?)`/)
-  if (!match) throw new Error('Could not extract SYSTEM_PROMPT from source')
+  // Extract the buildSystemPrompt() template literal (between the backticks).
+  // Desde PLAN-NOMBRES-DESCRIPTIVOS.md Opción A el prompt es una función (no
+  // un const) porque PRODUCTOS DISPONIBLES depende de los overrides de
+  // Supabase product_names, cargados por request.
+  const match = src.match(/function buildSystemPrompt\([^)]*\): string \{\s*return `([\s\S]*?)`\n\}/)
+  if (!match) throw new Error('Could not extract buildSystemPrompt from source')
   SYSTEM_PROMPT = match[1]
 })
 

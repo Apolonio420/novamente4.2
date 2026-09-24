@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import { matchGarmentKey, matchStockColor, normalizeStockSize, type LiquidationStockRow } from "@/lib/stock/liquidation"
-import { productDisplayName } from "@/lib/product-names"
+import { useProductNames } from "@/lib/product-names-context"
 
 interface GarmentSelectorProps {
   selectedGarment: string
@@ -25,6 +25,7 @@ export function GarmentSelector({
   onColorChange,
   onSizeChange,
 }: GarmentSelectorProps) {
+  const { productDisplayName } = useProductNames()
   const garments = [
     {
       id: "aura-oversize-tshirt",

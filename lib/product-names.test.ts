@@ -97,3 +97,40 @@ describe('productModelName', () => {
     expect(productModelName({ id: 'lienzo' })).toBeNull()
   })
 })
+
+// Opción A del plan (24/09/2026): nombres editables en Supabase product_names
+// sin deploy. Ver lib/product-names-db.ts para el loader con cache/fallback;
+// acá se prueba que lookupProductName/productDisplayName/productModelName
+// aplican esos overrides sin romper el comportamiento sin overrides.
+describe('overrides (Supabase product_names, Opción A)', () => {
+  it('pisa el descriptivo/modelo cuando la key del override matchea el producto', () => {
+    const overrides = { aura_oversize_tshirt: { modelo: 'Aura', descriptivo: 'Remera oversize premium' } }
+    expect(lookupProductName({ id: 'aura-tshirt-blanco' }, overrides)).toEqual({
+      modelo: 'Aura',
+      descriptivo: 'Remera oversize premium',
+    })
+    expect(productDisplayName({ id: 'aura-tshirt-blanco' }, overrides)).toBe('Remera oversize premium')
+  })
+
+  it('overrides parciales (solo descriptivo) no dejan el modelo vacío', () => {
+    const overrides = { aldea_classic_fit: { descriptivo: 'Remera básica' } }
+    expect(productDisplayName({ id: 'aldea-tshirt-negro' }, overrides)).toBe('Remera básica')
+    expect(productModelName({ id: 'aldea-tshirt-negro' }, overrides)).toBe('Aldea')
+  })
+
+  it('sin overrides (undefined o {}) el comportamiento es idéntico al hardcodeado', () => {
+    expect(productDisplayName({ id: 'aura-tshirt-blanco' })).toBe(productDisplayName({ id: 'aura-tshirt-blanco' }, {}))
+    expect(productDisplayName({ id: 'aura-tshirt-blanco' }, undefined)).toBe('Remera oversize')
+  })
+
+  it('override de una key que no matchea ningún producto no afecta nada', () => {
+    const overrides = { key_inexistente: { modelo: 'X', descriptivo: 'Y' } }
+    expect(productDisplayName({ id: 'aura-tshirt-blanco' }, overrides)).toBe('Remera oversize')
+  })
+
+  it('buzo_hoodie_unisex override no se filtra a buzo_cuello_redondo (dbKey por token)', () => {
+    const overrides = { buzo_hoodie_unisex: { modelo: 'Boston', descriptivo: 'Buzo con capucha' } }
+    expect(productDisplayName({ id: 'buzo-cuello-redondo-negro' }, overrides)).toBe('Buzo cuello redondo')
+    expect(productDisplayName({ garmentType: 'buzo-hoodie-unisex' }, overrides)).toBe('Buzo con capucha')
+  })
+})

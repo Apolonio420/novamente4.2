@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { PRODUCTS, formatPrice } from "@/lib/catalog"
-import { productDisplayName } from "@/lib/product-names"
+import { useProductNames } from "@/lib/product-names-context"
 import { useAssistantAuth } from "@/lib/hooks/useAssistantAuth"
 import { usePageContext } from "@/lib/hooks/usePageContext"
 
@@ -992,6 +992,7 @@ function ShareButton({ url }: { url: string }) {
 
 // --- Action Card Component ---
 function ActionCard({ action, onExecute }: { action: ParsedAction; onExecute: () => void }) {
+  const { productDisplayName } = useProductNames()
   if (action.type === "SHOW_CATALOG") {
     return (
       <div className="mt-3 space-y-2">

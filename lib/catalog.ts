@@ -13,7 +13,7 @@ import {
   PRODUCTION_DAYS as PROD_DAYS,
   totalDeliveryLine,
 } from './shipping-config'
-import { productDisplayName, productModelName } from './product-names'
+import { productDisplayName, productModelName, type ProductNameOverrides } from './product-names'
 
 export interface Product {
   name: string
@@ -136,11 +136,11 @@ export function formatPrice(n: number): string {
  * agrega "(modelo X)" para que el asistente siga entendiendo si el cliente
  * usa el nombre comercial viejo (Aura, Aldea, Boston...).
  */
-export function buildProductListForPrompt(): string {
+export function buildProductListForPrompt(overrides?: ProductNameOverrides): string {
   const lines = PRODUCTS.map(p => {
     const colors = p.colors.length > 0 ? ` (${p.colors.join(', ')})` : ''
-    const displayName = productDisplayName({ garmentType: p.garmentType, name: p.name })
-    const modelo = productModelName({ garmentType: p.garmentType, name: p.name })
+    const displayName = productDisplayName({ garmentType: p.garmentType, name: p.name }, overrides)
+    const modelo = productModelName({ garmentType: p.garmentType, name: p.name }, overrides)
     const modeloSuffix = modelo ? ` [modelo ${modelo}]` : ''
     return `- ${displayName}${modeloSuffix}: ${formatPrice(p.price)}${colors}`
   })

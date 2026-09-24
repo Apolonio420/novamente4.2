@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getPublishableProducts } from "@/lib/products"
+import { loadProductNameOverrides } from "@/lib/product-names-db"
 import { PARTNER_PRICE_BY_ID_ARS } from "@/lib/partnerPrices"
 
 export const dynamic = "force-dynamic"
@@ -17,7 +18,8 @@ export const dynamic = "force-dynamic"
  */
 export async function GET() {
     try {
-        const products = getPublishableProducts()
+        const overrides = await loadProductNameOverrides()
+        const products = getPublishableProducts(overrides)
 
         // TSV Header
         const header = [

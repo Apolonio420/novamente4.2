@@ -34,7 +34,7 @@ import { useCart } from "@/lib/cartStore"
 import { useToast } from "@/hooks/use-toast"
 import type { DesignSession } from "./page"
 import { getCatalogProduct, CATALOG_PRODUCTS } from "@/lib/catalog/products"
-import { productDisplayName } from "@/lib/product-names"
+import { useProductNames } from "@/lib/product-names-context"
 import * as fpixel from "@/lib/fpixel"
 
 // --- Constants ---
@@ -526,6 +526,7 @@ export function DesignCanvas({
   useGoogleFonts()
   const { addItem } = useCart()
   const { toast } = useToast()
+  const { productDisplayName } = useProductNames()
   const [generatingMockup, setGeneratingMockup] = useState(false)
 
   const currentProduct = useMemo(

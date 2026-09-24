@@ -10,7 +10,7 @@ import { Palette, Sparkles, ZoomIn, ShoppingCart, Check, SlidersHorizontal, X } 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCart } from "@/lib/cartStore"
 import { parsePrice, type Product } from "@/lib/products"
-import { productDisplayName } from "@/lib/product-names"
+import { useProductNames } from "@/lib/product-names-context"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 import { matchGarmentKey, matchStockColor, normalizeStockSize, type LiquidationStockRow } from "@/lib/stock/liquidation"
 
@@ -27,6 +27,7 @@ const SIZES = ["S", "M", "L", "XL", "XXL"] as const
 const KIDS_SIZES = ["4", "6", "8", "10", "12", "14", "16"] as const
 
 export default function ProductsFilter({ products }: { products: Product[] }) {
+  const { productDisplayName } = useProductNames()
   const [activeCategory, setActiveCategory] = useState<string>("Todos")
   const [activePriceRange, setActivePriceRange] = useState(0)
   const [quickAddId, setQuickAddId] = useState<string | null>(null)

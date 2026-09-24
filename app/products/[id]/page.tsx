@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { PRODUCTS, parsePrice } from "@/lib/products"
 import { productDisplayName, productModelName } from "@/lib/product-names"
+import { loadProductNameOverrides } from "@/lib/product-names-db"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 import { StockPerSize } from "@/components/StockPerSize"
 import { shippingDetailsJsonLd, RETURN_POLICY_REF, SHIPPING, SHIPPING_ZONES_PUBLIC, formatShippingARS } from "@/lib/shipping-config"
@@ -88,8 +89,10 @@ const CARE_INSTRUCTIONS = [
 // vía lib/partners/catalog-reviews (UUID determinístico del id estático).
 
 // Estas páginas son estáticas (generateStaticParams). Con ISR, una reseña recién
-// aprobada entra al aggregateRating dentro de la hora, sin esperar un deploy.
-export const revalidate = 3600
+// aprobada, o un nombre descriptivo editado en Supabase product_names (ver
+// PLAN-NOMBRES-DESCRIPTIVOS.md Opción A), entra dentro de estos 300s sin
+// esperar un deploy.
+export const revalidate = 300
 
 export async function generateStaticParams() {
   return PRODUCTS.filter(p => p.available).map((product) => ({
@@ -104,7 +107,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const numericPrice = parsePrice(product.price)
   const baseUrl = "https://www.novamente.ar"
-  const displayName = productDisplayName({ id: product.id, name: product.name, color: product.color })
+  const overrides = await loadProductNameOverrides()
+  const displayName = productDisplayName({ id: product.id, name: product.name, color: product.color }, overrides)
 
   return {
     title: `${displayName} — Personalizable con IA | Novamente`,
@@ -141,8 +145,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const numericPrice = parsePrice(product.price)
   const baseUrl = "https://www.novamente.ar"
   const sizeChart = SIZE_CHARTS[getSizeChartKey(product.id, product.category)]
-  const displayName = productDisplayName({ id: product.id, name: product.name, color: product.color })
-  const modelName = productModelName({ id: product.id, name: product.name })
+  const overrides = await loadProductNameOverrides()
+  const displayName = productDisplayName({ id: product.id, name: product.name, color: product.color }, overrides)
+  const modelName = productModelName({ id: product.id, name: product.name }, overrides)
 
   // Reseñas reales del catálogo propio. Si el tenant no resuelve (o la DB falla)
   // queda null y la página sale sin rating, igual que antes: nunca inventado.
@@ -507,7 +512,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   <div className="aspect-square relative overflow-hidden">
                     <Image
                       src={rp.images.main}
-                      alt={productDisplayName({ id: rp.id, name: rp.name, color: rp.color })}
+                      alt={productDisplayName({ id: rp.id, name: rp.name, color: rp.color }, overrides)}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       quality={70}
@@ -515,7 +520,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                     />
                   </div>
                   <CardContent className="p-4">
-                    <h3 className="font-semibold truncate">{productDisplayName({ id: rp.id, name: rp.name, color: rp.color })}</h3>
+                    <h3 className="font-semibold truncate">{productDisplayName({ id: rp.id, name: rp.name, color: rp.color }, overrides)}</h3>
                     {anchorPriceLabel(rp.price) && (
                       <span className="text-[11px] text-muted-foreground/60 line-through block leading-none">{anchorPriceLabel(rp.price)}</span>
                     )}

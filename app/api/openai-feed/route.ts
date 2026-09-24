@@ -2,10 +2,14 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { PRODUCTS } from '@/lib/catalog'
 import { productDisplayName } from '@/lib/product-names'
+import { loadProductNameOverrides } from '@/lib/product-names-db'
 import { tenantIsIndexable } from '@/lib/partners/plans'
 
 export const dynamic = 'force-dynamic'
-export const revalidate = 3600
+// 300s: alineado con el cache del loader de product_names (ver
+// PLAN-NOMBRES-DESCRIPTIVOS.md Opción A) — force-dynamic ya recalcula en
+// cada request, este valor es solo documentación/headers de cache aguas abajo.
+export const revalidate = 300
 
 /**
  * OpenAI Product Feed — JSONL format
@@ -25,8 +29,9 @@ export async function GET() {
     lienzo:    'Hogar > Decoración > Lienzos Personalizados',
   }
 
+  const overrides = await loadProductNameOverrides()
   const catalogProducts = PRODUCTS.map((p) => {
-    const displayName = productDisplayName({ garmentType: p.garmentType, name: p.name })
+    const displayName = productDisplayName({ garmentType: p.garmentType, name: p.name }, overrides)
     return {
     title: `${displayName} — Personalizado con IA`,
     description:

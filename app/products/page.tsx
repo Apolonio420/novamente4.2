@@ -1,10 +1,14 @@
-export const revalidate = 3600 // ISR: revalidate every hour
+// ISR: 300s para que un cambio en Supabase product_names (nombres
+// descriptivos, ver PLAN-NOMBRES-DESCRIPTIVOS.md Opción A) llegue al JSON-LD
+// en <=5 min sin deploy.
+export const revalidate = 300
 
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { PRODUCTS, parsePrice } from "@/lib/products"
-import { productDisplayName } from "@/lib/product-names"
+import { productDisplayName, type ProductNameOverrides } from "@/lib/product-names"
+import { loadProductNameOverrides } from "@/lib/product-names-db"
 import ProductsFilter from "@/components/ProductsFilter"
 import { shippingDetailsJsonLd, RETURN_POLICY_REF } from "@/lib/shipping-config"
 
@@ -25,14 +29,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://www.novamente.ar/products" },
 }
 
-function generateProductsJsonLd() {
+function generateProductsJsonLd(overrides?: ProductNameOverrides) {
   const baseUrl = "https://www.novamente.ar"
   return PRODUCTS.filter(p => p.available).map((product) => {
     const numericPrice = parsePrice(product.price)
     return {
       "@context": "https://schema.org",
       "@type": "Product",
-      name: productDisplayName({ id: product.id, name: product.name, color: product.color }),
+      name: productDisplayName({ id: product.id, name: product.name, color: product.color }, overrides),
       description: product.description,
       image: `${baseUrl}${product.images.main}`,
       brand: { "@type": "Brand", name: "Novamente" },
@@ -79,8 +83,9 @@ const webPageJsonLd = {
   },
 }
 
-export default function ProductsPage() {
-  const productsJsonLd = generateProductsJsonLd()
+export default async function ProductsPage() {
+  const overrides = await loadProductNameOverrides()
+  const productsJsonLd = generateProductsJsonLd(overrides)
 
   return (
     <div className="container mx-auto px-4 py-8">

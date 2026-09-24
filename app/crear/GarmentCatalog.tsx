@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { CATALOG_PRODUCTS } from "@/lib/catalog/products"
-import { productDisplayName } from "@/lib/product-names"
+import { useProductNames } from "@/lib/product-names-context"
 import { Check } from "lucide-react"
 
 /**
@@ -31,6 +31,7 @@ export function GarmentCatalog({
   onChange: (next: GarmentCatalogValue) => void
 }) {
   const fmt = (n: number) => `$${n.toLocaleString("es-AR")}`
+  const { productDisplayName } = useProductNames()
 
   return (
     <div className="space-y-4">
