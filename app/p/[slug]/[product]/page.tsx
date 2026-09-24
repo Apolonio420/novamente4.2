@@ -589,8 +589,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
 function ImageGallery({ product }: { product: PartnerProduct }) {
   // Fase 3 pieza E1: siempre las 2 caras, aunque `images[]` solo traiga el
   // frente (el dorso real del color mostrado vive en metadata.colors[]).
+  // Después de frente+dorso van el resto de `images[]` (lifestyle, fotos del
+  // partner, detalles): antes se descartaban y la galería quedaba en 2.
   const frames = resolveCardFrames(product as any)
-  const images = frames.back && frames.front ? [frames.front, frames.back] : product.images || []
+  const all = product.images || []
+  const images =
+    frames.back && frames.front
+      ? [frames.front, frames.back, ...all.filter((u) => u !== frames.front && u !== frames.back)]
+      : all
   return <ImageGalleryClient images={images} name={product.name} />
 }
 
