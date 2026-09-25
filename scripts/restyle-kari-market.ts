@@ -152,12 +152,12 @@ const PRODUCTS: ProductSpec[] = [
     name: "Musculosa 'Corazón Mate'",
     slug: "musculosa-corazon-mate",
     category: "Musculosa",
-    baseGarmentImage: "musculosa-bali-blanca/Musculosa_Rib_Blanca.png",
+    baseGarmentImage: "musculosa-bali-blanca/front.png",
     price: 23500,
     designConcept:
       "Small minimalist illustration on the chest: a mate gourd outlined inside a hand-drawn heart shape, in rose blush ink. Single-line continuous drawing style. Tiny and delicate, centered on the chest area.",
     description:
-      "Musculosa Bali rib blanca con diseño minimalista: un mate dentro de un corazón en line art rose blush. Pequeño y delicado. Algodón 100%, perfecta para el verano.",
+      "Musculosa Bali blanca con diseño minimalista: un mate dentro de un corazón en line art rose blush. Pequeño y delicado. Algodón 100%, perfecta para el verano.",
   },
   {
     name: "Remera Oversize 'Kari Market Floral'",

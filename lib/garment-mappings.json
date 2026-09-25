@@ -534,14 +534,6 @@
     "timestamp": 1761100000006
   },
   {
-    "id": "1761100000007",
-    "name": "Musculosa Bali Negra Frontal",
-    "garmentPath": "/garments/musculosa-bali-black-front.png",
-    "margins": { "top": 22, "right": 30, "bottom": 24, "left": 30 },
-    "coordinates": { "x": 120, "y": 140, "width": 160, "height": 200 },
-    "timestamp": 1761100000007
-  },
-  {
     "id": "1761100000008",
     "name": "Musculosa Bali Blanca Frontal",
     "garmentPath": "/garments/musculosa-bali-white-front.png",

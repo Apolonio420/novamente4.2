@@ -94,7 +94,7 @@ const GARMENT_DEFAULT_IMAGES = {
   "aldea-classic-tshirt": "/garments/tshirt-white-classic-front.jpeg",
   "buzo-hoodie-unisex": "/garments/buzo-hoodie-unisex-black-front.png",
   "buzo-cuello-redondo-unisex": "/garments/buzo-cuello-redondo-black-front.png",
-  "musculosa-bali": "/garments/musculosa-bali-black-front.png",
+  "musculosa-bali": "/garments/musculosa-bali-white-front.png",
   "remera-clasica-mujer": "/garments/remera-clasica-mujer-black-front.png",
   "remera-crop-mujer": "/garments/remera-crop-mujer-black-front.png",
 }
@@ -104,7 +104,7 @@ const COLORS_BY_GARMENT: Record<string, string[]> = {
   "aldea-classic-tshirt": ["black", "white"],
   "buzo-hoodie-unisex": ["black", "white", "stone-wash", "marron", "gray", "cream"],
   "buzo-cuello-redondo-unisex": ["black", "white", "stone-wash"],
-  "musculosa-bali": ["black", "white", "gray"],
+  "musculosa-bali": ["white", "gray"],
   "remera-clasica-mujer": ["black", "white"],
   "remera-crop-mujer": ["black", "chocolate", "gray", "yellow"],
 }

@@ -4,7 +4,7 @@ import { getGarmentMapping } from "@/lib/garment-mappings"
 const NEW_PRODUCTS: Array<{ type: string; colors: string[] }> = [
   { type: "buzo-hoodie-unisex", colors: ["black", "white", "stone-wash", "marron", "cream", "gray"] },
   { type: "buzo-cuello-redondo-unisex", colors: ["black", "white", "stone-wash"] },
-  { type: "musculosa-bali", colors: ["black", "white", "gray"] },
+  { type: "musculosa-bali", colors: ["white", "gray"] },
   { type: "remera-clasica-mujer", colors: ["black", "white"] },
   { type: "remera-crop-mujer", colors: ["black", "chocolate", "gray", "yellow"] },
 ]

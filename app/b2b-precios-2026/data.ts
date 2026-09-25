@@ -343,7 +343,6 @@ export const MODELS: B2BModel[] = [
         images: [
           "/products/musculosa-bali-blanca/front.png",
           "/products/musculosa-bali-blanca/back.png",
-          "/products/musculosa-bali-blanca/Musculosa_Rib_Blanca_Lifestyle.png",
         ],
       },
       {
@@ -352,7 +351,6 @@ export const MODELS: B2BModel[] = [
         images: [
           "/products/musculosa-bali-gris/front.png",
           "/products/musculosa-bali-gris/back.png",
-          "/products/musculosa-bali-gris/Musculosa_Rib_Blanca_Lifestyle.png",
         ],
       },
     ],

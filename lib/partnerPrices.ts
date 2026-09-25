@@ -17,7 +17,6 @@ export const PARTNER_PRICE_BY_ID_ARS: Record<string, number> = {
 
     // Musculosa Bali - 17400 ARS
     "musculosa-bali-blanca": 17400,
-    "musculosa-bali-negra": 17400,
     "musculosa-bali-gris": 17400,
 
     // Buzo Hoodie Oversize - 38700 ARS

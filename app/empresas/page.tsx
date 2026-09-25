@@ -87,7 +87,7 @@ const products = [
   {
     name: "Bali",
     detail: "Musculosa de mujer · 150 g/m²",
-    image: "/products/musculosa-bali-negra/Musculosa_Rib_Negra.png",
+    image: "/products/musculosa-bali-blanca/front.png",
   },
   {
     name: "Bambino",

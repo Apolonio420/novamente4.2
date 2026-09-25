@@ -62,7 +62,7 @@ const SIZE_CHARTS: SizeChart[] = [
     sizes: ['S', 'M', 'L', 'XL', '2XL'],
     width: ['28', '30', '32', '34', '36'],
     length: ['44', '46', '48', '50', '52'],
-    image: 'garments/musculosa-bali-black-front.png',
+    image: 'garments/musculosa-bali-white-front.png',
   },
   {
     title: 'Remera clásica (mujer)',

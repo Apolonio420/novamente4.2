@@ -49,7 +49,6 @@ const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = {
     yellow: '/garments/remera-crop-mujer-yellow-front.png',
   },
   'musculosa-bali': {
-    black: '/garments/musculosa-bali-black-front.png',
     white: '/garments/musculosa-bali-white-front.png',
     gray: '/garments/musculosa-bali-gray-front.png',
   },

@@ -147,27 +147,12 @@ export const PRODUCTS: Product[] = [
         description: "Musculosa de morley premium en color blanco. Confección suave y fresca, ideal para estampar tu diseño personalizado y lucirlo este verano. Corte moderno que se adapta a tu estilo.",
         images: {
             main: "/products/musculosa-bali-blanca/front.png",
-            lifestyle: ["/products/musculosa-bali-blanca/back.png", "/products/musculosa-bali-blanca/Musculosa_Rib_Blanca_Lifestyle.png"],
+            lifestyle: ["/products/musculosa-bali-blanca/back.png"],
             measurements: "/products/musculosa-bali-blanca/Medidas3.png"
         },
         category: "Musculosas",
         color: "Blanco",
         available: true
-    },
-    {
-        id: "musculosa-bali-negra",
-        name: "Musculosa Bali - Negra",
-        price: "$21.800",
-        description: "Musculosa de morley premium en color negro. La base oscura perfecta para resaltar diseños en colores vibrantes o blancos. Tela elástica y cómoda para uso diario.",
-        images: {
-            main: "/products/musculosa-bali-negra/Musculosa_Rib_Negra.png",
-            lifestyle: ["/products/musculosa-bali-negra/Musculosa_Rib_Blanca_Lifestyle.png", "/products/musculosa-bali-negra/Musculosa_Urban.png"],
-            measurements: "/products/musculosa-bali-negra/Medidas3.png"
-        },
-        category: "Musculosas",
-        color: "Negro",
-        // Bali solo viene en blanca y gris.
-        available: false
     },
     {
         id: "musculosa-bali-gris",
@@ -176,7 +161,7 @@ export const PRODUCTS: Product[] = [
         description: "Musculosa de morley premium en color gris. Un tono neutro y versátil que combina con todo. Textura suave y calce perfecto.",
         images: {
             main: "/products/musculosa-bali-gris/front.png",
-            lifestyle: ["/products/musculosa-bali-gris/back.png", "/products/musculosa-bali-gris/Musculosa_Rib_Blanca_Lifestyle.png"],
+            lifestyle: ["/products/musculosa-bali-gris/back.png"],
             measurements: "/products/musculosa-bali-gris/Medidas3.png"
         },
         category: "Musculosas",
