@@ -188,7 +188,7 @@
     "file": "/garments/std/remera-crop-mujer-black-front.jpg",
     "printArea": {
       "x": 714,
-      "y": 545,
+      "y": 661,
       "w": 526,
       "h": 601
     },
@@ -214,7 +214,7 @@
     "file": "/garments/std/remera-crop-mujer-chocolate-front.jpg",
     "printArea": {
       "x": 717,
-      "y": 550,
+      "y": 665,
       "w": 520,
       "h": 594
     },
@@ -240,7 +240,7 @@
     "file": "/garments/std/remera-crop-mujer-gray-front.jpg",
     "printArea": {
       "x": 715,
-      "y": 549,
+      "y": 664,
       "w": 521,
       "h": 595
     },
@@ -421,12 +421,12 @@
     "side": "front",
     "file": "/garments/std/buzo-hoodie-unisex-white-front.jpg",
     "printArea": {
-      "x": 675,
-      "y": 628,
-      "w": 556,
-      "h": 469
+      "x": 704,
+      "y": 645,
+      "w": 579,
+      "h": 488
     },
-    "pxPerCm": 15.885714285714286
+    "pxPerCm": 16.542857142857144
   },
   {
     "garmentKey": "buzo-hoodie-unisex",
@@ -643,7 +643,7 @@
     "file": "/garments/std/remera-crop-mujer-yellow-front.jpg",
     "printArea": {
       "x": 721,
-      "y": 552,
+      "y": 667,
       "w": 521,
       "h": 595
     },

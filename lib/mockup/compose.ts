@@ -16,7 +16,7 @@
 import sharp from 'sharp'
 import fs from 'fs'
 import path from 'path'
-import { knockoutBackground } from './perfect-stamp'
+import { knockoutBackground, hasUsableAlpha } from './perfect-stamp'
 import { getGarmentMapping } from '@/lib/garment-mappings'
 import stdBasesData from '@/lib/garments/std-bases.json'
 
@@ -140,8 +140,17 @@ async function resolveBase(garmentKey: string, color: string, side: MockupSide):
 function anchorFraction(side: MockupSide, placement: MockupPlacement): { fx: number; fy: number } {
   if (placement === 'pecho-izq') return { fx: 0.72, fy: 0.18 }
   if (placement === 'nuca') return { fx: 0.5, fy: 0.08 }
-  return { fx: 0.5, fy: 0.5 } // centro
+  return { fx: 0.5, fy: 0.5 } // centro (solo para lados fuera de front/back)
 }
+
+/**
+ * "centro" se ancla ARRIBA, no en el centro geométrico: en las remeras el
+ * printArea va del pecho al ruedo y una estampa de 24 cm centrada caía en la
+ * panza (productos partner 24/09). Borde superior al 6% del alto del área,
+ * centrada en X. En el hoodie (área = pecho sobre el bolsillo) una estampa que
+ * ocupa casi todo el alto queda prácticamente igual.
+ */
+const CENTRO_TOP_FRAC = 0.06
 
 function defaultPlacement(side: MockupSide, size: MockupSize): MockupPlacement {
   if (side === 'front' && size === 'chico') return 'pecho-izq'
@@ -170,9 +179,11 @@ export async function renderProductMockup(opts: RenderProductMockupOptions): Pro
     return pipeline.flatten({ background: OUTPUT_BG }).jpeg({ quality: 88 }).toBuffer()
   }
 
-  // Quitar fondo del diseño con el knockout determinístico (nunca redibuja el
-  // arte; si no hay fondo recortable se estampa tal cual, igual que antes).
-  const cleanDesign = await knockoutBackground(designBuffer)
+  // Si el diseño ya viene con transparencia se usa TAL CUAL (el knockout sobre
+  // un PNG transparente borraba el texto negro, ver hasUsableAlpha). Si es
+  // opaco, knockout determinístico (nunca redibuja el arte; si no hay fondo
+  // recortable se estampa tal cual).
+  const cleanDesign = (await hasUsableAlpha(designBuffer)) ? designBuffer : await knockoutBackground(designBuffer)
 
   // Recortar el aire transparente/uniforme alrededor ANTES de escalar, para
   // que el cm pedido sea el del dibujo y no el del canvas del archivo
@@ -202,7 +213,9 @@ export async function renderProductMockup(opts: RenderProductMockupOptions): Pro
   const cx = base.printArea.x + anchor.fx * base.printArea.w
   const cy = base.printArea.y + anchor.fy * base.printArea.h
   let left = Math.round(cx - stampW / 2)
-  let top = Math.round(cy - stampH / 2)
+  let top = placement === 'centro' && (side === 'front' || side === 'back')
+    ? Math.round(base.printArea.y + CENTRO_TOP_FRAC * base.printArea.h)
+    : Math.round(cy - stampH / 2)
   // clamp: la estampa nunca sale del area imprimible
   left = Math.min(Math.max(left, Math.round(base.printArea.x)), Math.round(base.printArea.x + base.printArea.w - stampW))
   top = Math.min(Math.max(top, Math.round(base.printArea.y)), Math.round(base.printArea.y + base.printArea.h - stampH))

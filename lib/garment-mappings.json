@@ -570,7 +570,7 @@
     "name": "Remera Crop Mujer Negra Frontal",
     "garmentPath": "/garments/remera-crop-mujer-black-front.png",
     "margins": { "top": 26, "right": 32, "bottom": 52, "left": 32 },
-    "coordinates": { "x": 130, "y": 130, "width": 140, "height": 160 },
+    "coordinates": { "x": 130, "y": 161, "width": 140, "height": 160 },
     "timestamp": 1761100000012
   },
   {
@@ -578,7 +578,7 @@
     "name": "Remera Crop Mujer Chocolate Frontal",
     "garmentPath": "/garments/remera-crop-mujer-chocolate-front.png",
     "margins": { "top": 26, "right": 32, "bottom": 52, "left": 32 },
-    "coordinates": { "x": 130, "y": 130, "width": 140, "height": 160 },
+    "coordinates": { "x": 130, "y": 161, "width": 140, "height": 160 },
     "timestamp": 1761100000013
   },
   {
@@ -586,7 +586,7 @@
     "name": "Remera Crop Mujer Gris Frontal",
     "garmentPath": "/garments/remera-crop-mujer-gray-front.png",
     "margins": { "top": 26, "right": 32, "bottom": 52, "left": 32 },
-    "coordinates": { "x": 130, "y": 130, "width": 140, "height": 160 },
+    "coordinates": { "x": 130, "y": 161, "width": 140, "height": 160 },
     "timestamp": 1761100000014
   },
   {
@@ -594,7 +594,7 @@
     "name": "Remera Crop Mujer Amarilla Frontal",
     "garmentPath": "/garments/remera-crop-mujer-yellow-front.png",
     "margins": { "top": 26, "right": 32, "bottom": 52, "left": 32 },
-    "coordinates": { "x": 130, "y": 130, "width": 140, "height": 160 },
+    "coordinates": { "x": 130, "y": 161, "width": 140, "height": 160 },
     "timestamp": 1761100000015
   },
   {

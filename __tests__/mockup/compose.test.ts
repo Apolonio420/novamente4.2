@@ -142,6 +142,43 @@ describe('renderProductMockup — con diseño', () => {
     expect(data[idx + 2]).toBeGreaterThan(data[idx])
     expect(data[idx + 2]).toBeGreaterThan(data[idx + 1])
   })
+
+  it('diseño transparente con arte negro: NO borra el negro en prenda blanca (hasUsableAlpha)', async () => {
+    // Un PNG transparente con un bloque negro en el centro (ej: logo/texto negro)
+    // En prenda blanca, la estampa debe permanecer negra y NO ser eliminada por el knockout
+    const transparentCanvas = sharp({
+      create: { width: 300, height: 300, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+    })
+    const blackBox = await sharp({
+      create: { width: 100, height: 100, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 1 } },
+    }).png().toBuffer()
+
+    const designWithAlpha = await transparentCanvas
+      .composite([{ input: blackBox, top: 100, left: 100 }])
+      .png()
+      .toBuffer()
+
+    const out = await renderProductMockup({
+      garmentKey: 'aldea-classic-tshirt',
+      color: 'white',
+      side: 'front',
+      designBuffer: designWithAlpha,
+      size: 'grande',
+      placement: 'centro',
+    })
+
+    const { data, info } = await sharp(out).raw().toBuffer({ resolveWithObject: true })
+    const ch = info.channels
+
+    // En algún lugar dentro del área de la estampa debe haber píxeles oscuros (<50) de la estampa negra
+    let darkPixels = 0
+    for (let i = 0; i < data.length; i += ch) {
+      if (data[i] < 50 && data[i + 1] < 50 && data[i + 2] < 50) {
+        darkPixels++
+      }
+    }
+    expect(darkPixels).toBeGreaterThan(500)
+  })
 })
 
 describe('renderProductMockup — combinación sin base', () => {

@@ -270,6 +270,118 @@ function contrastMargin(
   return median - tol
 }
 
+/**
+ * Overrides deterministicos por base (`<garmentKey>-<color>-<side>`) para las
+ * fotos donde el pipeline por defecto falla — sin IA.
+ *
+ *  - segment 'warmth': prenda BLANCA sobre fondo blanco-calido (hoodie blanco
+ *    frente): la distancia RGB prenda-fondo es <=5, menor que la tolerancia
+ *    minima (10), y el flood-fill se comia media manga izquierda y el borde
+ *    inferior (silueta dentada, badge suelto). Lo que SI separa es la
+ *    temperatura de color: fondo R-B ~ +6 (p5=5), prenda R-B ~ -1 (p95=0),
+ *    medido sobre la foto blureada. Se hace el flood-fill desde los bordes
+ *    sobre R-B >= minWarmth en vez de la distancia RGB.
+ *  - neutralize: la foto de la crop gris FRENTE viene verdosa respecto del
+ *    DORSO. Ganancia por canal (gray-world dentro de la mascara de la prenda)
+ *    para que el promedio de la prenda quede neutro a la misma luminancia.
+ */
+interface BaseOverride { segment?: { mode: 'warmth'; minWarmth: number }; neutralize?: boolean; clearBadgeOnWhite?: boolean }
+const BASE_OVERRIDES: Record<string, BaseOverride> = {
+  // clearBadgeOnWhite: en esta foto el badge queda pegado al puño derecho y
+  // sobrevive como parte de la prenda (patchBadgeZone no toca tela).
+  'buzo-hoodie-unisex-white-front': { segment: { mode: 'warmth', minWarmth: 3 }, clearBadgeOnWhite: true },
+  'remera-crop-mujer-gray-front': { neutralize: true },
+}
+
+/** Flood-fill de fondo desde los bordes por temperatura de color (R-B) de la foto blureada. */
+async function floodFillByWarmth(srcPath: string, W: number, H: number, minWarmth: number): Promise<Uint8Array> {
+  const { data: blurred, info } = await sharp(srcPath).rotate().blur(1.5).removeAlpha().raw().toBuffer({ resolveWithObject: true })
+  if (info.width !== W || info.height !== H) throw new Error('warmth: dimensiones distintas tras blur')
+  const warmRaw = Buffer.alloc(W * H * 3)
+  for (let i = 0; i < W * H; i++) {
+    const warm = blurred[i * 3] - blurred[i * 3 + 2] >= minWarmth ? 0 : 255
+    warmRaw[i * 3] = warmRaw[i * 3 + 1] = warmRaw[i * 3 + 2] = warm
+  }
+  // Reusa el flood-fill: fondo = pixel "calido" (0), tolerancia 0.
+  return floodFillBackground(warmRaw, W, H, 3, { r: 0, g: 0, b: 0 }, 0)
+}
+
+/**
+ * Solo para prendas BLANCAS con el badge pegado: dentro del circulo del badge
+ * saca de la mascara todo pixel que no sea blanco-neutro (el logo es oscuro y
+ * saturado; la tela del puño es >=195 y casi sin croma), y vuelve a quedarse
+ * con la componente mas grande para descartar restos sueltos del anillo.
+ */
+function clearBadgeOnWhite(raw: Buffer, mask: Uint8Array, W: number, H: number, channels: number): void {
+  const cx = W * 0.944, cy = H * 0.944
+  const radius = Math.min(W, H) * 0.05
+  for (let y = Math.max(0, Math.floor(cy - radius)); y < Math.min(H, Math.ceil(cy + radius)); y++) {
+    for (let x = Math.max(0, Math.floor(cx - radius)); x < Math.min(W, Math.ceil(cx + radius)); x++) {
+      if ((x - cx) ** 2 + (y - cy) ** 2 > radius * radius) continue
+      const o = (y * W + x) * channels
+      const mn = Math.min(raw[o], raw[o + 1], raw[o + 2]), mx = Math.max(raw[o], raw[o + 1], raw[o + 2])
+      if (!(mn >= 215 && mx - mn <= 10)) mask[y * W + x] = 0
+    }
+  }
+  keepLargestComponent(mask, W, H)
+
+  // El badge tapaba la esquina del puño en la foto: queda un "mordisco". Se
+  // cierra con la envolvente convexa LOCAL de la prenda (ventana 2x radio) y
+  // se rellena con el blanco medio del puño alrededor — relleno plano, sin
+  // clonar texturas de otra zona.
+  const win = radius * 2
+  const wx0 = Math.max(0, Math.floor(cx - win)), wx1 = Math.min(W, Math.ceil(cx + win))
+  const wy0 = Math.max(0, Math.floor(cy - win)), wy1 = Math.min(H, Math.ceil(cy + win))
+  const pts: Array<[number, number]> = []
+  let sr = 0, sg = 0, sb = 0, n = 0
+  for (let y = wy0; y < wy1; y++) {
+    for (let x = wx0; x < wx1; x++) {
+      if (mask[y * W + x] !== 255) continue
+      pts.push([x, y])
+      const o = (y * W + x) * channels
+      sr += raw[o]; sg += raw[o + 1]; sb += raw[o + 2]; n++
+    }
+  }
+  if (pts.length < 3) return
+  pts.sort((a, b) => a[0] - b[0] || a[1] - b[1])
+  const cross = (o: number[], a: number[], b: number[]) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+  const lower: number[][] = [], upper: number[][] = []
+  for (const p of pts) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop(); lower.push(p) }
+  for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop(); upper.push(p) }
+  const hull = lower.slice(0, -1).concat(upper.slice(0, -1)) // CCW
+  const inHull = (x: number, y: number) => hull.every((a, i) => cross(a, hull[(i + 1) % hull.length], [x, y]) >= 0)
+  const fill = { r: Math.round(sr / n), g: Math.round(sg / n), b: Math.round(sb / n) }
+  for (let y = Math.max(0, Math.floor(cy - radius)); y < Math.min(H, Math.ceil(cy + radius)); y++) {
+    for (let x = Math.max(0, Math.floor(cx - radius)); x < Math.min(W, Math.ceil(cx + radius)); x++) {
+      const idx = y * W + x
+      if (!inHull(x, y)) continue
+      const o = idx * channels
+      if (mask[idx] === 255 && Math.min(raw[o], raw[o + 1], raw[o + 2]) >= 215) continue
+      mask[idx] = 255
+      raw[o] = fill.r; raw[o + 1] = fill.g; raw[o + 2] = fill.b
+    }
+  }
+}
+
+/** Ganancia por canal para que el promedio de la prenda (mask===255) quede gris neutro. */
+function neutralizeGarment(raw: Buffer, mask: Uint8Array, W: number, H: number, channels: number): void {
+  let sr = 0, sg = 0, sb = 0, n = 0
+  for (let i = 0; i < W * H; i++) {
+    if (mask[i] !== 255) continue
+    const o = i * channels
+    sr += raw[o]; sg += raw[o + 1]; sb += raw[o + 2]; n++
+  }
+  if (!n) return
+  const mr = sr / n, mg = sg / n, mb = sb / n, L = (mr + mg + mb) / 3
+  const gr = L / mr, gg = L / mg, gb = L / mb
+  for (let i = 0; i < W * H; i++) {
+    const o = i * channels
+    raw[o] = Math.min(255, Math.round(raw[o] * gr))
+    raw[o + 1] = Math.min(255, Math.round(raw[o + 1] * gg))
+    raw[o + 2] = Math.min(255, Math.round(raw[o + 2] * gb))
+  }
+}
+
 export function maskBbox(mask: Uint8Array, W: number, H: number) {
   let minX = W, minY = H, maxX = -1, maxY = -1
   let foregroundCount = 0
@@ -298,8 +410,13 @@ export async function buildOne(garmentKey: string, color: string, side: 'front' 
 
   const localBg = estimateLocalBackground(raw, W, H, channels)
   const tol = adaptiveTolerance(raw, W, H, channels, localBg)
-  const mask = floodFillBackground(raw, W, H, channels, localBg, tol)
+  const override = BASE_OVERRIDES[`${garmentKey}-${color}-${side}`] || {}
+  const mask = override.segment?.mode === 'warmth'
+    ? await floodFillByWarmth(srcPath, W, H, override.segment.minWarmth)
+    : floodFillBackground(raw, W, H, channels, localBg, tol)
   const { fragmentationRatio } = keepLargestComponent(mask, W, H)
+  if (override.clearBadgeOnWhite) clearBadgeOnWhite(raw, mask, W, H, channels)
+  if (override.neutralize) neutralizeGarment(raw, mask, W, H, channels)
   // Recien ACA, con la mascara final: solo repinta lo que ya es fondo.
   patchBadgeZone(raw, mask, W, H, channels, localBg)
   const bbox = maskBbox(mask, W, H)
@@ -422,6 +539,12 @@ export async function buildOne(garmentKey: string, color: string, side: 'front' 
 }
 
 async function main() {
+  // --only=<garmentKey>-<color>-<side>,... regenera SOLO esas bases y las
+  // mergea en el std-bases.json existente — correr sin --only pisaria las
+  // bases arregladas con Gemini (f3-finalize-gemini-bases.mts) con la
+  // version sin arreglar.
+  const onlyArg = process.argv.find((a) => a.startsWith('--only='))
+  const ONLY = onlyArg ? onlyArg.slice('--only='.length).split(',').filter(Boolean) : null
   const bases: StdBaseEntry[] = []
   const missing: Array<{ garmentKey: string; color: string; side: string; reason: string }> = []
   const thumbs: Array<{ label: string; outPath: string; printArea: Rect }> = []
@@ -429,6 +552,7 @@ async function main() {
   for (const p of CATALOG_PRODUCTS) {
     for (const c of p.colors) {
       for (const side of ['front', 'back'] as const) {
+        if (ONLY && !ONLY.includes(`${p.key}-${c.key}-${side}`)) continue
         const mapping = getGarmentMapping(p.key, c.key, side)
         if (!mapping || mapping.garmentPath === 'fallback') {
           missing.push({ garmentKey: p.key, color: c.key, side, reason: 'sin mapping (fallback)' })
@@ -452,6 +576,20 @@ async function main() {
     }
   }
 
+  if (ONLY) {
+    const existing: StdBaseEntry[] = JSON.parse(fs.readFileSync(STD_BASES_JSON, 'utf8'))
+    for (const b of bases) {
+      const idx = existing.findIndex((e) => e.garmentKey === b.garmentKey && e.color === b.color && e.side === b.side)
+      if (idx >= 0) existing[idx] = b
+      else existing.push(b)
+    }
+    bases.length = 0
+    bases.push(...existing)
+    thumbs.length = 0
+    for (const b of existing) {
+      thumbs.push({ label: `${b.garmentKey}\n${b.color} ${b.side}`, outPath: path.join(PUBLIC, b.file.replace(/^\//, '')), printArea: b.printArea })
+    }
+  }
   fs.writeFileSync(STD_BASES_JSON, JSON.stringify(bases, null, 2) + '\n')
   console.log(`\nEscrito ${STD_BASES_JSON} (${bases.length} entradas)`)
   if (missing.length) {

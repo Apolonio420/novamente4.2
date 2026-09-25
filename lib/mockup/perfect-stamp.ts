@@ -131,6 +131,28 @@ export async function hasRealAlpha(buf: Buffer): Promise<boolean> {
 }
 
 /**
+ * ¿El diseño ya trae un fondo transparente utilizable? Sí si las 4 esquinas
+ * son transparentes o si al menos el 2% de los píxeles tiene alpha < 10.
+ * Más laxo que hasRealAlpha (alpha === 0) a propósito: exportadores que dejan
+ * alpha 1-9 en el fondo también cuentan como "ya recortado".
+ */
+export async function hasUsableAlpha(buf: Buffer): Promise<boolean> {
+  try {
+    const meta = await sharp(buf).metadata()
+    if (!meta.hasAlpha) return false
+    const { data, info } = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+    const { width: w, height: h, channels: c } = info
+    const a = (x: number, y: number) => data[(y * w + x) * c + 3]
+    if ([a(0, 0), a(w - 1, 0), a(0, h - 1), a(w - 1, h - 1)].every(v => v < 10)) return true
+    let clear = 0
+    for (let i = 3; i < data.length; i += c) if (data[i] < 10) clear++
+    return clear / (w * h) >= 0.02
+  } catch {
+    return false
+  }
+}
+
+/**
  * ¿Este diseño TIENE un fondo que sacar, o es arte de borde a borde?
  *
  * Se mira sólo el borde de 1px, que es de donde siembra el flood-fill. Dos
@@ -186,6 +208,12 @@ const BORDE_NEUTRO_MIN = 0.98
  * arte de borde a borde, el diseño se devuelve intacto.
  */
 export async function knockoutBackground(buf: Buffer): Promise<Buffer> {
+  // Si el arte YA trae transparencia se usa tal cual. Los píxeles transparentes
+  // suelen venir con RGB (0,0,0): el perfil del borde los lee como "fondo negro
+  // plano" y el pase de damero, sembrado ahí, se comía el texto NEGRO pegado a
+  // la zona transparente (caso eccos-multimedios 24/09) y apagaba el arte
+  // oscuro con alpha parcial (brankova 7RINIDAD).
+  if (await hasUsableAlpha(buf)) return buf
   const { plano, neutro } = await perfilDelBorde(buf)
   const esFondo = plano >= BORDE_PLANO_MIN || neutro >= BORDE_NEUTRO_MIN
   if (!esFondo) {
