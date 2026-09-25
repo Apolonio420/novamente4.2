@@ -50,10 +50,10 @@ function rateLimit(ip: string): NextResponse | null {
 let supabaseClient: ReturnType<typeof createClient> | null = null;
 function getSupabase() {
   if (supabaseClient) return supabaseClient;
-  const url = process.env.ROBOT_SUPABASE_URL;
-  const key = process.env.ROBOT_SUPABASE_SERVICE_ROLE_KEY;
+  const url = process.env.ROBOT_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.ROBOT_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
-    throw new Error("ROBOT_SUPABASE_URL / ROBOT_SUPABASE_SERVICE_ROLE_KEY missing");
+    throw new Error("ROBOT_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL missing");
   }
   supabaseClient = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
