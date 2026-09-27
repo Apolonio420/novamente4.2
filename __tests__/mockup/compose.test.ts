@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import sharp from 'sharp'
 import { renderProductMockup, CANVAS_SIZE } from '@/lib/mockup/compose'
+import { knockoutBackground, hasUsableAlpha } from '@/lib/mockup/perfect-stamp'
 import stdBases from '@/lib/garments/std-bases.json'
 
 /**
@@ -178,6 +179,55 @@ describe('renderProductMockup — con diseño', () => {
       }
     }
     expect(darkPixels).toBeGreaterThan(500)
+  })
+})
+
+describe('knockout de diseños (hasUsableAlpha)', () => {
+  async function blackBoxOn(bg: { r: number; g: number; b: number; alpha?: number }, channels: 3 | 4) {
+    const box = await sharp({ create: { width: 100, height: 100, channels: 3, background: { r: 0, g: 0, b: 0 } } }).png().toBuffer()
+    return sharp({ create: { width: 300, height: 300, channels, background: bg } })
+      .composite([{ input: box, top: 100, left: 100 }]).png().toBuffer()
+  }
+
+  it('PNG transparente con negro: knockoutBackground lo devuelve intacto', async () => {
+    const design = await blackBoxOn({ r: 0, g: 0, b: 0, alpha: 0 }, 4)
+    expect(await hasUsableAlpha(design)).toBe(true)
+    const out = await knockoutBackground(design)
+    const { data } = await sharp(out).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+    const center = (150 * 300 + 150) * 4
+    expect(data[center + 3]).toBe(255)
+    expect(data[center]).toBe(0)
+  })
+
+  it('diseño OPACO de fondo blanco: se va el blanco y el negro queda', async () => {
+    const design = await blackBoxOn({ r: 255, g: 255, b: 255 }, 3)
+    expect(await hasUsableAlpha(design)).toBe(false)
+    const out = await knockoutBackground(design)
+    const { data } = await sharp(out).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+    expect(data[(5 * 300 + 5) * 4 + 3]).toBe(0) // esquina: fondo fuera
+    const center = (150 * 300 + 150) * 4
+    expect(data[center + 3]).toBe(255) // negro intacto
+    expect(data[center]).toBeLessThan(20)
+  })
+})
+
+describe('renderProductMockup — anclaje "centro"', () => {
+  it('en Aura blanca frente, el borde superior de la estampa cae en el tercio superior del printArea', async () => {
+    const entry = (stdBases as Array<{ garmentKey: string; color: string; side: string; printArea: { x: number; y: number; w: number; h: number } }>)
+      .find(b => b.garmentKey === 'aura-oversize-tshirt' && b.color === 'white' && b.side === 'front')!
+    const design = await makeSolidDesignPng({ r: 220, g: 0, b: 0 }, 400)
+    const out = await renderProductMockup({
+      garmentKey: 'aura-oversize-tshirt', color: 'white', side: 'front', designBuffer: design, size: 'mediano', placement: 'centro',
+    })
+    const { data, info } = await sharp(out).raw().toBuffer({ resolveWithObject: true })
+    const cx = Math.round(entry.printArea.x + entry.printArea.w / 2)
+    let topRed = -1
+    for (let y = 0; y < info.height; y++) {
+      const i = (y * info.width + cx) * info.channels
+      if (data[i] > 150 && data[i + 1] < 80 && data[i + 2] < 80) { topRed = y; break }
+    }
+    expect(topRed).toBeGreaterThanOrEqual(entry.printArea.y)
+    expect(topRed).toBeLessThan(entry.printArea.y + entry.printArea.h / 3)
   })
 })
 
