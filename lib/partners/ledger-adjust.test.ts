@@ -118,6 +118,13 @@ describe('claveAjuste / asientoAjuste', () => {
   })
 })
 
+describe('asientoAjuste — sobrepago', () => {
+  it("con kind 'sobrepago' lo marca en metadata; sin kind no agrega la clave", () => {
+    expect(asientoAjuste({ ...base, kind: 'sobrepago' }).metadata).toMatchObject({ kind: 'sobrepago' })
+    expect(asientoAjuste(base).metadata).not.toHaveProperty('kind')
+  })
+})
+
 describe('aplicarAjuste', () => {
   it('dry-run: no inserta y muestra el saldo después', async () => {
     const r = await aplicarAjuste(base, { execute: false })

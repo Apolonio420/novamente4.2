@@ -4,7 +4,8 @@
  *
  *   node --conditions=react-server --import tsx scripts/partner-ledger-adjust.mts \
  *     --partner <slug|uuid> --monto <+N|-N> --motivo "<texto>" --autoriza "<quién>" \
- *     [--pedido <NOV-...|uuid>] [--execute]
+ *     [--pedido <NOV-...|uuid>] [--sobrepago] [--execute]
+ *   --sobrepago: el cliente pagó de más y se le pasa al partner (neutro para el margen de Novamente).
  *
  *   ... --partner <slug> --usar-saldo --monto <N> --referencia "<pedido>" --autoriza "<quién>" [--motivo "<nota>"] [--execute]
  *       usa saldo a favor en un pedido propio del partner (débito 'credit_applied', RPC partner_admin_apply_credit).
@@ -130,7 +131,7 @@ if (pedido) {
 
 const ars = (n: number | undefined) => (n == null ? '—' : `$${Math.round(n).toLocaleString('es-AR')}`)
 const r = await aplicarAjuste(
-  { tenantId: tenant.id, amount: monto, motivo, autorizadoPor: autoriza, orderId, orderNumber },
+  { tenantId: tenant.id, amount: monto, motivo, autorizadoPor: autoriza, orderId, orderNumber, kind: args.includes('--sobrepago') ? 'sobrepago' : null },
   { execute },
 )
 

@@ -31,6 +31,12 @@ export interface AjusteInput {
   autorizadoPor: string
   orderId?: string | null
   orderNumber?: string | null
+  /**
+   * 'sobrepago' = plata que el cliente pagó DE MÁS y se le pasa al partner: es
+   * neutra para el margen de Novamente (entra y sale). platform la excluye de la
+   * "parte del partner" que descuenta de los márgenes (lib/partners/order-partner-share.ts).
+   */
+  kind?: 'sobrepago' | null
 }
 
 export function validarAjuste(a: AjusteInput): { ok: true } | { ok: false; error: string } {
@@ -70,6 +76,7 @@ export function asientoAjuste(a: AjusteInput, now = new Date()) {
       motivo: a.motivo.trim(),
       autorizado_por: a.autorizadoPor.trim(),
       recorded_at: now.toISOString(),
+      ...(a.kind ? { kind: a.kind } : {}),
     },
   }
 }
