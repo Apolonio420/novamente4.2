@@ -190,6 +190,9 @@ export async function POST(request: NextRequest) {
           telefono: body.customer_phone,
           direccion: body.shipping_address,
           notas: body.notes,
+          // Ancla de idempotencia en platform-master: un reintento nuestro
+          // (o suyo) con el mismo partner_order_id nunca duplica el pedido.
+          partnerOrderId: order.id,
           items: body.items.map((it) => ({
             producto: it.producto_canonical || it.name,
             color: it.color || '',
@@ -214,10 +217,18 @@ export async function POST(request: NextRequest) {
           // producción, al partner le llegaba "se envió a producción" igual, y
           // nadie se enteraba hasta que el cliente reclamaba la entrega.
           console.error('[POST /api/partners/orders] producción falló:', prod.error)
+          // 'incierto' (timeout nuestro o de platform-master): el pedido puede
+          // haber entrado igual al Apps Script — decir "cargarlo a mano" acá
+          // arriesgaba duplicarlo en el Sheet. request_id/partner_order_id son
+          // determinísticos, así que un reintento (nuestro o de un admin) es
+          // seguro DESPUÉS de verificar, nunca antes.
+          const incierto = prod.code === 'incierto'
           await notifyError({
             area: 'Pedidos de partners',
             endpoint: 'POST /api/partners/orders → sendToProduction',
-            message: `${tenant.name}: el pedido de ${body.customer_name} NO entró a producción (${body.items.length} item/s). Hay que cargarlo a mano. Detalle: ${prod.error || 'sin detalle'}`,
+            message: incierto
+              ? `${tenant.name}: el pedido de ${body.customer_name} (${body.items.length} item/s) quedó INCIERTO al mandarlo a producción (timeout) — puede que YA haya entrado. Verificar el Sheet de Órdenes ANTES de cargarlo a mano; NO recargarlo todavía. partner_order_id=${order.id}.`
+              : `${tenant.name}: el pedido de ${body.customer_name} NO entró a producción (${body.items.length} item/s). Hay que cargarlo a mano. Detalle: ${prod.error || 'sin detalle'}`,
             debugId: order.id,
           }).catch(() => null)
         }

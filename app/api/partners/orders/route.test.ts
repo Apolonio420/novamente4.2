@@ -72,12 +72,13 @@ vi.mock('@/lib/partners/production', () => ({
 vi.mock('@/lib/notifications', () => ({
   notifyPartnerOrder: vi.fn(),
   notifyTeamManualSale: vi.fn(),
+  notifyError: vi.fn(),
 }))
 
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { createOrder } from '@/lib/partners/orders'
 import { sendToProduction } from '@/lib/partners/production'
-import { notifyPartnerOrder, notifyTeamManualSale } from '@/lib/notifications'
+import { notifyPartnerOrder, notifyTeamManualSale, notifyError } from '@/lib/notifications'
 import { POST } from './route'
 
 const requirePermission = requireTenantPermission as ReturnType<typeof vi.fn>
@@ -85,6 +86,7 @@ const create = createOrder as ReturnType<typeof vi.fn>
 const production = sendToProduction as ReturnType<typeof vi.fn>
 const notifyPartner = notifyPartnerOrder as ReturnType<typeof vi.fn>
 const notifyTeam = notifyTeamManualSale as ReturnType<typeof vi.fn>
+const notifyErr = notifyError as ReturnType<typeof vi.fn>
 
 const TENANT = { id: 'tenant-a', name: 'Tienda A', slug: 'tienda-a', currency: 'ARS', plan: 'starter' as const }
 
@@ -121,6 +123,7 @@ describe('POST /api/partners/orders — arte de estampa a producción', () => {
     production.mockResolvedValue({ ok: true, pedido_numero: 'P-1' })
     notifyPartner.mockResolvedValue(undefined)
     notifyTeam.mockResolvedValue(undefined)
+    notifyErr.mockResolvedValue(undefined)
   })
 
   // El item del pedido tenía UN solo print_url: en una prenda con doble estampa el
@@ -185,6 +188,7 @@ describe('POST /api/partners/orders — piso de precio en produce=true', () => {
     production.mockResolvedValue({ ok: true, pedido_numero: 'P-1' })
     notifyPartner.mockResolvedValue(undefined)
     notifyTeam.mockResolvedValue(undefined)
+    notifyErr.mockResolvedValue(undefined)
   })
 
   it('rechaza produce=true con partner_price=0 (piso no cubierto)', async () => {
@@ -252,5 +256,66 @@ describe('POST /api/partners/orders — piso de precio en produce=true', () => {
     await flushAfter()
     expect(production).not.toHaveBeenCalled()
     expect(notifyTeam).toHaveBeenCalledTimes(1)
+  })
+})
+
+// A3b (PLAN-FICHAS-ENVIO-PROVEEDOR.md §3): sendToProduction manda
+// partner_order_id (ancla de idempotencia en platform-master) y, ante un
+// resultado incierto (timeout), el aviso interno NUNCA dice "cargarlo a
+// mano" — dice que hay que verificar antes de tocar nada.
+describe('POST /api/partners/orders — partner_order_id e incierto (A3b)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    afterCallbacks.length = 0
+    requirePermission.mockResolvedValue({ ok: true, tenant: TENANT })
+    create.mockResolvedValue({ id: 'order-1' })
+    production.mockResolvedValue({ ok: true, pedido_numero: 'P-1' })
+    notifyPartner.mockResolvedValue(undefined)
+    notifyTeam.mockResolvedValue(undefined)
+    notifyErr.mockResolvedValue(undefined)
+  })
+
+  it('manda partnerOrderId = order.id a sendToProduction', async () => {
+    await POST(req({ produce: true, items: [{ ...baseItem, partner_price: FLOOR_1U }] }))
+    await flushAfter()
+
+    expect(production).toHaveBeenCalledTimes(1)
+    expect(production.mock.calls[0][0].partnerOrderId).toBe('order-1')
+  })
+
+  it('code:"incierto" → el aviso interno dice que hay que VERIFICAR, no "cargarlo a mano"', async () => {
+    production.mockResolvedValue({ ok: false, code: 'incierto', error: 'timeout' })
+
+    await POST(req({ produce: true, items: [{ ...baseItem, partner_price: FLOOR_1U }] }))
+    await flushAfter()
+
+    expect(notifyErr).toHaveBeenCalledTimes(1)
+    const { message } = notifyErr.mock.calls[0][0]
+    expect(message).toMatch(/incierto/i)
+    expect(message).toMatch(/verificar/i)
+    expect(message).not.toMatch(/hay que cargarlo a mano/i)
+    // nunca afirmar una producción que no ocurrió
+    expect(notifyPartner).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ produce: false }),
+    )
+  })
+
+  it('falla SIN code (rechazo definitivo, no timeout): sigue diciendo "cargarlo a mano" como antes', async () => {
+    production.mockResolvedValue({ ok: false, error: 'SKU inválido' })
+
+    await POST(req({ produce: true, items: [{ ...baseItem, partner_price: FLOOR_1U }] }))
+    await flushAfter()
+
+    expect(notifyErr).toHaveBeenCalledTimes(1)
+    const { message } = notifyErr.mock.calls[0][0]
+    expect(message).toMatch(/hay que cargarlo a mano/i)
+    expect(message).not.toMatch(/incierto/i)
+  })
+
+  it('éxito: no llama a notifyError', async () => {
+    await POST(req({ produce: true, items: [{ ...baseItem, partner_price: FLOOR_1U }] }))
+    await flushAfter()
+    expect(notifyErr).not.toHaveBeenCalled()
   })
 })

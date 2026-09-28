@@ -37,12 +37,35 @@ export interface ProductionRequest {
   direccion?: string
   notas?: string
   items: ProductionItem[]
+  /**
+   * partner_orders.id (este repo) — platform-master lo usa como ancla de
+   * idempotencia: si este mismo pedido ya se produjo (metadata.partner_order_id
+   * ya existe en whatsapp_orders), devuelve el pedido_numero SIN volver a
+   * mandarlo al Apps Script, y arma un request_id determinístico
+   * (`partner:<partnerOrderId>`) para que un reintento nuestro tras un timeout
+   * nunca duplique la fila del Sheet.
+   */
+  partnerOrderId?: string
 }
 
 export interface ProductionResult {
   ok: boolean
   pedido_numero?: string
   error?: string
+  /**
+   * 'incierto' = platform-master no pudo confirmar si el pedido llegó a
+   * producción (timeout del Apps Script, o de este mismo fetch — ver abajo).
+   * NO es un rechazo definitivo: NUNCA hay que decirle al partner "cargalo a
+   * mano" en este caso, porque el pedido puede haber entrado igual y cargarlo
+   * de nuevo duplicaría el Sheet. El caller debe avisar que se está
+   * verificando y que no hay que reintentar todavía.
+   */
+  code?: 'incierto'
+}
+
+/** AbortSignal.timeout() tira una DOMException con name='TimeoutError' (no siempre instanceof Error). */
+function isTimeoutErr(e: unknown): boolean {
+  return typeof e === 'object' && e !== null && (e as { name?: string }).name === 'TimeoutError'
 }
 
 export async function sendToProduction(req: ProductionRequest): Promise<ProductionResult> {
@@ -68,17 +91,21 @@ export async function sendToProduction(req: ProductionRequest): Promise<Producti
         direccion: req.direccion,
         notas: req.notas,
         items: req.items,
+        partner_order_id: req.partnerOrderId,
       }),
       signal: AbortSignal.timeout(25_000),
     })
 
-    // platform-master responde SOLO { ok, pedido_numero } — nunca costo/margen.
-    const data = (await res.json().catch(() => ({}))) as { ok?: boolean; pedido_numero?: string; error?: string }
+    // platform-master responde SOLO { ok, pedido_numero, code? } — nunca costo/margen.
+    const data = (await res.json().catch(() => ({}))) as { ok?: boolean; pedido_numero?: string; error?: string; code?: string }
     if (!res.ok || !data.ok) {
-      return { ok: false, error: data.error || `HTTP ${res.status}` }
+      return { ok: false, error: data.error || `HTTP ${res.status}`, code: data.code === 'incierto' ? 'incierto' : undefined }
     }
     return { ok: true, pedido_numero: data.pedido_numero }
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) }
+    // Timeout de ESTE fetch (25s): no sabemos si platform-master (y en
+    // cascada el Apps Script) llegó a procesar el pedido — mismo caso que
+    // platform-master respondiendo code:'incierto', así que se trata igual.
+    return { ok: false, error: e instanceof Error ? e.message : String(e), code: isTimeoutErr(e) ? 'incierto' : undefined }
   }
 }
