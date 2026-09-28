@@ -6,6 +6,12 @@
  *     --partner <slug|uuid> --monto <+N|-N> --motivo "<texto>" --autoriza "<quién>" \
  *     [--pedido <NOV-...|uuid>] [--execute]
  *
+ *   ... --partner <slug> --usar-saldo --monto <N> --referencia "<pedido>" --autoriza "<quién>" [--motivo "<nota>"] [--execute]
+ *       usa saldo a favor en un pedido propio del partner (débito 'credit_applied', RPC partner_admin_apply_credit).
+ *   ... --partner <slug> --modo <credit|cash> --autoriza "<quién>" [--execute]
+ *       cómo cobra el partner: 'credit' = saldo a favor para pedidos propios (no se transfiere),
+ *       'cash' = transferencia semanal (RPC partner_admin_set_payout_mode).
+ *
  * Sin --execute es dry-run: muestra el asiento y el saldo antes/después, no escribe.
  * Monto positivo = a favor del partner; negativo = en contra. Tope: MAX_AJUSTE_ARS.
  * Correrlo dos veces con los mismos datos no duplica (clave de idempotencia).
@@ -26,7 +32,12 @@ const motivo = arg('--motivo') || ''
 const autoriza = arg('--autoriza') || ''
 const pedido = arg('--pedido')
 
-if (!partner || !arg('--monto')) {
+const usarSaldoMode = args.includes('--usar-saldo')
+const referencia = arg('--referencia') || ''
+
+const modo = arg('--modo')
+
+if (!partner || (!arg('--monto') && !modo)) {
   console.error('Uso: --partner <slug|uuid> --monto <+N|-N> --motivo "<texto>" --autoriza "<quién>" [--pedido <NOV-...|uuid>] [--execute]')
   process.exit(1)
 }
@@ -44,6 +55,49 @@ const { data: tenant } = await sb
 if (!tenant) {
   console.error(`No existe el partner "${partner}"`)
   process.exit(1)
+}
+
+if (modo) {
+  if (modo !== 'credit' && modo !== 'cash') {
+    console.error('--modo tiene que ser credit o cash')
+    process.exit(1)
+  }
+  if (!autoriza.trim()) {
+    console.error('Falta --autoriza')
+    process.exit(1)
+  }
+  const { data: t } = await sb.from('tenants').select('metadata').eq('id', tenant.id).single()
+  const actual = t?.metadata?.payout_mode === 'credit' ? 'credit' : 'cash'
+  console.log(`\n${execute ? '⚠️  EJECUCIÓN' : '🔎 DRY-RUN (no escribe nada)'} — ${tenant.slug} cobra en: ${actual} → ${modo}`)
+  if (execute && actual !== modo) {
+    const { data, error } = await sb.rpc('partner_admin_set_payout_mode', { p_tenant_id: tenant.id, p_mode: modo, p_admin_email: autoriza.trim() })
+    if (error || !data?.ok) {
+      console.error(`❌ ${error?.message || data?.error}`)
+      process.exit(1)
+    }
+    console.log('   ✅ Cambiado.')
+  } else if (actual === modo) {
+    console.log('   ℹ️  Ya estaba así; nada que cambiar.')
+  } else {
+    console.log('\nPara ejecutar: agregá --execute\n')
+  }
+  process.exit(0)
+}
+
+if (usarSaldoMode) {
+  const { usarSaldo } = await import('../lib/partners/ledger-adjust')
+  const r = await usarSaldo({ tenantId: tenant.id, amount: monto, referencia, autorizadoPor: autoriza, nota: motivo || null }, { execute })
+  const fmt = (n: number | undefined) => (n == null ? '—' : `$${Math.round(n).toLocaleString('es-AR')}`)
+  console.log(`\n${execute ? '⚠️  EJECUCIÓN' : '🔎 DRY-RUN (no escribe nada)'} — usar saldo a favor de ${tenant.slug} en "${referencia}": ${fmt(monto)}`)
+  if (!r.ok) {
+    console.error(`❌ ${r.error}`)
+    process.exit(1)
+  }
+  if (r.yaExistia) console.log(`   ℹ️  Ya estaba registrado (entry ${r.entryId}); no se duplica.`)
+  else if (!r.dryRun) console.log(`   ✅ Registrado (entry ${r.entryId}).`)
+  console.log(`   Saldo a favor: ${fmt(r.saldoAntes)} → ${fmt(r.saldoDespues)}`)
+  if (r.dryRun) console.log('\nPara ejecutar: agregá --execute\n')
+  process.exit(0)
 }
 
 let orderId: string | null = null

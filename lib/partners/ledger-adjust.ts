@@ -60,7 +60,9 @@ export function asientoAjuste(a: AjusteInput, now = new Date()) {
     type: a.amount > 0 ? ('credit' as const) : ('debit' as const),
     amount: Math.abs(a.amount),
     status: 'confirmed',
-    concept: `${a.amount > 0 ? 'Bonificación' : 'Ajuste'}: ${a.motivo.trim()}${pedido}`.slice(0, 200),
+    // El concepto lo ve el partner en sus movimientos: el motivo tal cual (sin
+    // prefijos tipo "Bonificación" que no aplican a todo ajuste a favor).
+    concept: `${a.motivo.trim()}${pedido}`.slice(0, 200),
     metadata: {
       idempotency_key: key,
       order_id: a.orderId || null,
@@ -137,4 +139,55 @@ export async function aplicarAjuste(a: AjusteInput, opts: { execute: boolean }):
   const { data, error } = await sb.from('partner_ledger_entries').insert(asiento).select('id').single()
   if (error) return { ok: false, dryRun: false, error: error.message, asiento }
   return { ok: true, dryRun: false, entryId: data.id, saldoAntes, saldoDespues: await saldoDe(a.tenantId), asiento }
+}
+
+// ---------------------------------------------------------------------------
+// Usar saldo a favor en un pedido propio del partner (débito 'credit_applied')
+// ---------------------------------------------------------------------------
+
+export interface UsoSaldoInput {
+  tenantId: string
+  /** ARS enteros > 0 que se descuentan del saldo a favor. */
+  amount: number
+  /** Pedido donde se usa (NOV-…, ficha, pedido de WhatsApp…). */
+  referencia: string
+  autorizadoPor: string
+  nota?: string | null
+}
+
+export function claveUsoSaldo(u: UsoSaldoInput): string {
+  const base = [u.tenantId, u.referencia.trim().toLowerCase(), String(u.amount)].join('|')
+  return `use:${createHash('sha256').update(base).digest('hex').slice(0, 32)}`
+}
+
+/**
+ * Descuenta saldo a favor vía el RPC partner_admin_apply_credit (atómico, con
+ * lock por tenant, idempotente, no deja usar más que el saldo). Mismo camino que
+ * el botón "Usar saldo a favor" del admin de platform.
+ */
+export async function usarSaldo(u: UsoSaldoInput, opts: { execute: boolean }): Promise<ResultadoAjuste> {
+  const dryRun = !opts.execute
+  if (!u.tenantId) return { ok: false, dryRun, error: 'Falta el partner (tenant).' }
+  if (!Number.isInteger(u.amount) || u.amount <= 0) return { ok: false, dryRun, error: 'El monto tiene que ser un entero mayor a 0.' }
+  if (!u.referencia || !u.referencia.trim()) return { ok: false, dryRun, error: 'Falta la referencia del pedido.' }
+  if (!u.autorizadoPor || !u.autorizadoPor.trim()) return { ok: false, dryRun, error: 'Falta quién autorizó.' }
+
+  const saldoAntes = await saldoDe(u.tenantId)
+  if (u.amount > saldoAntes) {
+    return { ok: false, dryRun, saldoAntes, error: `El saldo a favor es $${saldoAntes.toLocaleString('es-AR')}; no alcanza para $${u.amount.toLocaleString('es-AR')}.` }
+  }
+  if (dryRun) return { ok: true, dryRun, saldoAntes, saldoDespues: saldoAntes - u.amount }
+
+  const { data, error } = await (supabaseAdmin as any).rpc('partner_admin_apply_credit', {
+    p_tenant_id: u.tenantId,
+    p_amount: u.amount,
+    p_reference: u.referencia.trim(),
+    p_admin_email: u.autorizadoPor.trim(),
+    p_idempotency_key: claveUsoSaldo(u),
+    p_notes: u.nota || null,
+  })
+  if (error) return { ok: false, dryRun, saldoAntes, error: error.message }
+  const r = (data || {}) as { ok?: boolean; error?: string; entry_id?: string; idempotent?: boolean; available?: number }
+  if (!r.ok) return { ok: false, dryRun, saldoAntes, error: r.error === 'insufficient_funds' ? `Saldo insuficiente (disponible $${r.available}).` : r.error }
+  return { ok: true, dryRun, yaExistia: !!r.idempotent, entryId: r.entry_id, saldoAntes, saldoDespues: await saldoDe(u.tenantId) }
 }

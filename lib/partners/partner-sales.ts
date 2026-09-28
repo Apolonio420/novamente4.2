@@ -9,8 +9,9 @@
  * nada de Dreamful/márgenes (el ledger no los tiene, pero la whitelist lo
  * garantiza aunque alguien los agregue).
  *
- * Estado de cada venta: los pagos de Novamente (débitos 'payout') se aplican
- * FIFO sobre las ventas confirmadas más viejas — misma regla que el admin de
+ * Estado de cada venta: lo cobrado (débitos 'payout' = transferencias, y
+ * 'credit_applied' = saldo a favor usado en un pedido propio) se aplica FIFO
+ * sobre las ventas confirmadas más viejas — misma regla que el admin de
  * platform (lib/partners/ventas-partners.ts).
  */
 
@@ -89,8 +90,11 @@ export function buildPartnerSales(entries: LedgerEntryForSales[]): PartnerSale[]
   const reembolsadas = new Set(
     sorted.filter((e) => e.source === 'order_refund' && e.order_id).map((e) => e.order_id as string),
   )
+  // Lo "cobrado" = pagos transferidos + saldo a favor usado en pedidos propios.
   let pool =
-    sorted.filter((e) => e.type === 'debit' && e.source === 'payout').reduce((s, e) => s + num(e.amount), 0) -
+    sorted
+      .filter((e) => e.type === 'debit' && (e.source === 'payout' || e.source === 'credit_applied'))
+      .reduce((s, e) => s + num(e.amount), 0) -
     sorted.filter((e) => e.type === 'credit' && e.source === 'payout_reversal').reduce((s, e) => s + num(e.amount), 0)
 
   const sales: PartnerSale[] = []

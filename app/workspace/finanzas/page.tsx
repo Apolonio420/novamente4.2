@@ -31,6 +31,8 @@ interface Payout {
 
 interface FinanzasData {
   balance: { available: number; pendingReview: number; paid: number }
+  payoutMode: 'cash' | 'credit'
+  creditUsed: number
   sales: PartnerSale[]
   entries: LedgerEntry[]
   payouts: Payout[]
@@ -80,6 +82,7 @@ export default function FinanzasPage() {
   }
 
   const banco = data?.bankAlias ? `alias ${data.bankAlias}` : data?.bankCbu ? `CBU ${data.bankCbu}` : null
+  const aCredito = data?.payoutMode === 'credit'
   const sales = data?.sales ?? []
   const paidPayouts = (data?.payouts ?? []).filter((p) => p.status === 'paid')
 
@@ -91,7 +94,9 @@ export default function FinanzasPage() {
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Cuando alguien compra en tu tienda y el pago se confirma, tu ganancia se acredita acá: el precio de venta menos tu costo.
-          Novamente te transfiere lo que tengas a cobrar <b>una vez por semana, sin mínimo</b>.
+          {aCredito
+            ? <>Tu saldo te queda <b>a favor</b> para usarlo como crédito cuando nos encargues prendas.</>
+            : <>Novamente te transfiere tu saldo a favor <b>una vez por semana, sin mínimo</b>.</>}
         </p>
       </div>
 
@@ -101,18 +106,25 @@ export default function FinanzasPage() {
       <div className="grid sm:grid-cols-3 gap-4">
         <div className="rounded-2xl border bg-gradient-to-br from-emerald-500/10 to-transparent p-6">
           <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-            <TrendingUp className="h-4 w-4" /> A cobrar
+            <TrendingUp className="h-4 w-4" /> Saldo a favor
           </p>
           <p className={`text-3xl font-bold mt-2 ${(data?.balance.available ?? 0) < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
             {fmt(data?.balance.available ?? 0)}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">Te lo transferimos en el próximo pago semanal.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {aCredito
+              ? 'Lo usás como crédito en tu próximo pedido (no se transfiere).'
+              : 'Te lo transferimos en el próximo pago semanal.'}
+          </p>
         </div>
         <div className="rounded-2xl border p-6">
           <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-            <CheckCircle2 className="h-4 w-4" /> Cobrado
+            <CheckCircle2 className="h-4 w-4" /> {aCredito ? 'Usado en tus pedidos' : 'Cobrado'}
           </p>
-          <p className="text-3xl font-bold mt-2">{fmt(data?.balance.paid ?? 0)}</p>
+          <p className="text-3xl font-bold mt-2">{fmt(aCredito ? (data?.creditUsed ?? 0) : (data?.balance.paid ?? 0))}</p>
+          {aCredito && (data?.balance.paid ?? 0) > 0 && (
+            <p className="text-xs text-muted-foreground mt-1">Transferido antes: {fmt(data?.balance.paid ?? 0)}</p>
+          )}
         </div>
         {(data?.balance.pendingReview ?? 0) > 0 ? (
           <div className="rounded-2xl border bg-amber-500/5 p-6">
@@ -139,7 +151,7 @@ export default function FinanzasPage() {
       )}
 
       {/* Datos bancarios */}
-      <div className={`rounded-2xl border p-5 flex items-start gap-3 ${banco ? '' : 'border-red-500/40 bg-red-500/5'}`}>
+      <div className={`rounded-2xl border p-5 flex items-start gap-3 ${banco || aCredito ? '' : 'border-red-500/40 bg-red-500/5'}`}>
         <Landmark className={`h-5 w-5 mt-0.5 ${banco ? 'text-muted-foreground' : 'text-red-600'}`} />
         <div className="text-sm">
           {banco ? (
@@ -149,6 +161,8 @@ export default function FinanzasPage() {
                 ¿Cambió? Actualizalo en <Link href="/workspace/settings" className="underline">Configuración</Link>.
               </p>
             </>
+          ) : aCredito ? (
+            <p className="text-muted-foreground">Cobrás a crédito, así que no necesitamos tus datos bancarios. Si preferís que te transfiramos, avisanos.</p>
           ) : (
             <>
               <p className="font-semibold text-red-600">Cargá tu alias o CBU para poder cobrar</p>
@@ -182,7 +196,9 @@ export default function FinanzasPage() {
                   <p className="text-xs text-muted-foreground">{fmtDay(s.fecha)}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className={ESTADO_VENTA[s.estado].cls}>{ESTADO_VENTA[s.estado].label}</Badge>
+                  <Badge variant="outline" className={ESTADO_VENTA[s.estado].cls}>
+                    {aCredito && s.estado === 'a_cobrar' ? 'A favor' : aCredito && s.estado === 'pagado' ? 'Usada / cobrada' : ESTADO_VENTA[s.estado].label}
+                  </Badge>
                   <p className="text-lg font-bold text-emerald-600">{fmt(s.ganancia)}</p>
                 </div>
               </div>

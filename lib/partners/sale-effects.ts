@@ -22,6 +22,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { updateOrder } from '@/lib/db'
 import { creditOrderMargin, type CreditResult, type OrderItemLike, type TenantCredit } from './ledger'
+import { payoutModeDe } from './payout-mode'
 
 export interface SaleOrder {
   id: string
@@ -137,7 +138,7 @@ export async function runPartnerSaleEffects(
   const ok = credit.credits.filter((c) => c.inserted || c.alreadyExisted)
   const tenantIds = ok.map((c) => c.tenantId)
   const { data: tenants } = tenantIds.length
-    ? await sb.from('tenants').select('id, name, slug, email, bank_alias, bank_cbu').in('id', tenantIds)
+    ? await sb.from('tenants').select('id, name, slug, email, bank_alias, bank_cbu, metadata').in('id', tenantIds)
     : { data: [] }
   const tenantById = new Map<string, any>((tenants || []).map((t: any) => [t.id, t]))
 
@@ -156,6 +157,7 @@ export async function runPartnerSaleEffects(
           orderNumber: order.order_number || order.id.slice(0, 8),
           customerName: customerName(order),
           credit: c,
+          payoutMode: payoutModeDe(t.metadata),
         })
         if (sent) {
           avisados.push(c.tenantId)
@@ -186,6 +188,7 @@ export async function runPartnerSaleEffects(
         reasons: c.reasons,
         hasBankData: !!(t?.bank_alias || t?.bank_cbu),
         partnerNotified: !!opts.notifyPartner,
+        payoutMode: payoutModeDe(t?.metadata),
       })
     } catch (e: any) {
       console.error('❌ Error avisando deuda partner por Telegram:', e?.message)

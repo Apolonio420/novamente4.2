@@ -556,6 +556,9 @@ const WORKSPACE_FINANZAS_URL = 'https://www.novamente.ar/workspace/finanzas';
 /** Cuándo cobra el partner (decisión Juan 27/09/2026: pago de oficio semanal, sin mínimo). */
 export const CUANDO_COBRA_TXT =
     'Novamente te transfiere tu ganancia una vez por semana, sin mínimo, al alias o CBU que tenés cargado en tu panel.';
+/** Partners que cobran a crédito (tenants.metadata.payout_mode = 'credit'). */
+export const CUANDO_COBRA_CREDITO_TXT =
+    'Tu ganancia te queda como saldo a favor para usarla como crédito cuando nos encargues prendas (no se transfiere).';
 
 function escHtml(s: unknown): string {
     return String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -589,6 +592,8 @@ export async function notifyPartnerWebSale(
         orderNumber: string;
         customerName?: string | null;
         credit: { amount: number; needsReview: boolean; breakdown: PartnerSaleLine[] };
+        /** 'credit' = cobra a crédito: el saldo le queda a favor, no se transfiere. */
+        payoutMode?: 'cash' | 'credit';
     },
 ): Promise<boolean> {
     if (!tenant.email) return false;
@@ -609,7 +614,8 @@ export async function notifyPartnerWebSale(
         .join('');
     const descuento = lines.reduce((s, l) => s + (l.descuento || 0), 0);
     const hayDoble = lines.some((l) => l.doble_estampa);
-    const sinBanco = !tenant.bank_alias && !tenant.bank_cbu;
+    const aCredito = sale.payoutMode === 'credit';
+    const sinBanco = !aCredito && !tenant.bank_alias && !tenant.bank_cbu;
 
     const html = `
     <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;color:#1a1a1a">
@@ -623,7 +629,7 @@ export async function notifyPartnerWebSale(
       <p style="margin:16px 0 4px;font-size:16px"><b>Tu ganancia por esta venta: ${ars(sale.credit.amount)}</b></p>
       ${sale.credit.needsReview ? '<p style="margin:0 0 8px;color:#b45309">Estamos revisando el cálculo de esta venta; te confirmamos el monto final en tu panel.</p>' : ''}
       <p style="margin:8px 0 0;color:#555;font-size:13px">Tu costo es el precio B2B de tu plan (<a href="${B2B_PRECIOS_URL}">ver lista de precios</a>)${hayDoble ? ', más el recargo por doble estampa en las prendas estampadas en frente y dorso' : ''}. Tu ganancia es el precio de venta menos ese costo.</p>
-      <p style="margin:12px 0 0;color:#555;font-size:13px">${CUANDO_COBRA_TXT}</p>
+      <p style="margin:12px 0 0;color:#555;font-size:13px">${aCredito ? CUANDO_COBRA_CREDITO_TXT : CUANDO_COBRA_TXT}</p>
       ${sinBanco ? '<p style="margin:12px 0 0;color:#b00020;font-size:13px"><b>Todavía no cargaste tu alias o CBU</b>: cargalo en tu panel para que podamos transferirte.</p>' : ''}
       <p style="margin:20px 0 0"><a href="${WORKSPACE_FINANZAS_URL}" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;border-radius:8px;text-decoration:none">Ver mis ventas y ganancias</a></p>
     </div>`;
@@ -650,14 +656,20 @@ export async function notifyPartnerDebt(d: {
     reasons?: string[];
     hasBankData: boolean;
     partnerNotified: boolean;
+    payoutMode?: 'cash' | 'credit';
 }) {
+    const aCredito = d.payoutMode === 'credit';
     const msg = [
-        `💸 <b>Deuda partner ${escapeTelegramHtml(d.tenantSlug)}</b> +${ars(d.amount)}`,
+        aCredito
+            ? `🟢 <b>Saldo a favor partner ${escapeTelegramHtml(d.tenantSlug)}</b> +${ars(d.amount)} (cobra a crédito: NO transferir)`
+            : `💸 <b>Deuda partner ${escapeTelegramHtml(d.tenantSlug)}</b> +${ars(d.amount)}`,
         `Venta ${escapeTelegramHtml(d.orderNumber)}${d.tenantName ? ` · ${escapeTelegramHtml(d.tenantName)}` : ''}`,
         d.needsReview ? `⚠️ EN REVISIÓN (${escapeTelegramHtml((d.reasons || []).join(', ') || 'ver admin')}) — no cuenta como disponible hasta que la apruebes.` : '',
-        d.hasBankData ? '' : '⚠️ El partner no tiene alias/CBU cargado.',
+        d.hasBankData || aCredito ? '' : '⚠️ El partner no tiene alias/CBU cargado.',
         d.partnerNotified ? '' : '✉️ Al partner NO se le mandó mail automático (acreditado por barrido): avisale.',
-        `Se paga en la tanda semanal → <a href="${PARTNER_ADMIN_VENTAS_URL}">admin ventas partners</a>`,
+        aCredito
+            ? `Se descuenta cuando le tomemos un pedido propio → <a href="${PARTNER_ADMIN_VENTAS_URL}">admin ventas partners</a>`
+            : `Se paga en la tanda semanal → <a href="${PARTNER_ADMIN_VENTAS_URL}">admin ventas partners</a>`,
     ].filter(Boolean).join('\n');
     return sendToTelegram(SALES_CHAT_ID, msg, SALES_BOT_TOKEN);
 }

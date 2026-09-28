@@ -14,6 +14,7 @@ import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { computeFinancials } from '@/lib/partners/payouts'
 import { buildPartnerSales } from '@/lib/partners/partner-sales'
+import { payoutModeDe } from '@/lib/partners/payout-mode'
 
 export async function GET(request: NextRequest) {
   try {
@@ -47,7 +48,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       // `pendingReview` kept as an alias for backward compatibility with the UI.
       balance: { ...financials, pendingReview: financials.pending },
-      payoutMode: 'weekly',
+      // 'cash' = se le transfiere semanal · 'credit' = le queda a favor para sus pedidos.
+      payoutMode: payoutModeDe((tenant as any).metadata),
+      // Total de saldo a favor ya usado en pedidos propios.
+      creditUsed: entries
+        .filter((e: any) => e.type === 'debit' && e.source === 'credit_applied')
+        .reduce((s: number, e: any) => s + (Number(e.amount) || 0), 0),
       sales,
       // Movimientos: sin metadata (tiene datos internos del cálculo).
       entries: [...entries]

@@ -10,6 +10,7 @@
  */
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { computeFinancials } from './payouts'
+import { payoutModeDe, type PayoutMode } from './payout-mode'
 
 export interface PartnerBalance {
   tenantId: string
@@ -17,6 +18,8 @@ export interface PartnerBalance {
   name: string | null
   bankAlias: string | null
   bankCbu: string | null
+  /** 'credit' = el saldo le queda a favor, NO se transfiere. */
+  payoutMode: PayoutMode
   available: number
   pendingReview: number
   paid: number
@@ -75,7 +78,7 @@ export async function getPartnerBalances(): Promise<PartnerBalance[]> {
   if (!tenantIds.length) return []
   const { data: tenants } = await sb
     .from('tenants')
-    .select('id, slug, name, bank_alias, bank_cbu')
+    .select('id, slug, name, bank_alias, bank_cbu, metadata')
     .in('id', tenantIds)
   const tById = new Map<string, any>((tenants || []).map((t: any) => [t.id, t]))
 
@@ -89,6 +92,7 @@ export async function getPartnerBalances(): Promise<PartnerBalance[]> {
       name: t?.name ?? null,
       bankAlias: t?.bank_alias || null,
       bankCbu: t?.bank_cbu || null,
+      payoutMode: payoutModeDe(t?.metadata),
       available: f.available,
       pendingReview: f.pending,
       paid: f.paid,
@@ -102,7 +106,8 @@ const escTg = (s: unknown) => String(s ?? '').replace(/&/g, '&amp;').replace(/</
 
 /** Arma el mensaje semanal. null = no hay nada para pagar ni revisar. */
 export function buildWeeklyPayoutMessage(balances: PartnerBalance[], now = new Date()): string | null {
-  const aPagar = balances.filter((b) => b.available > 0).sort((a, b) => b.available - a.available)
+  const aPagar = balances.filter((b) => b.available > 0 && b.payoutMode !== 'credit').sort((a, b) => b.available - a.available)
+  const aCredito = balances.filter((b) => b.available > 0 && b.payoutMode === 'credit')
   const enRevision = balances.filter((b) => b.pendingReview > 0)
   const negativos = balances.filter((b) => b.available < 0)
   if (!aPagar.length && !enRevision.length) return null
@@ -113,6 +118,10 @@ export function buildWeeklyPayoutMessage(balances: PartnerBalance[], now = new D
     const dias = b.oldestUnpaidAt ? Math.floor((now.getTime() - new Date(b.oldestUnpaidAt).getTime()) / 86_400_000) : 0
     const banco = b.bankAlias ? `alias <code>${escTg(b.bankAlias)}</code>` : b.bankCbu ? `CBU <code>${escTg(b.bankCbu)}</code>` : '⚠️ SIN alias/CBU (pedíselo)'
     lines.push(`• <b>${escTg(b.slug || b.name || b.tenantId.slice(0, 8))}</b> ${ars(b.available)} → ${banco}${dias > 7 ? ` · ⚠️ impago hace ${dias} días` : ''}`)
+  }
+  if (!aPagar.length) lines.push('Nada para transferir.')
+  if (aCredito.length) {
+    lines.push('', `🟢 A crédito (NO transferir, lo usan en sus pedidos): ${aCredito.map((b) => `${escTg(b.slug || b.tenantId.slice(0, 8))} ${ars(b.available)}`).join(', ')}`)
   }
   if (enRevision.length) {
     lines.push('', `🔎 En revisión (no se pagan hasta aprobarlas): ${enRevision.map((b) => `${escTg(b.slug || b.tenantId.slice(0, 8))} ${ars(b.pendingReview)}`).join(', ')}`)
