@@ -1,5 +1,6 @@
 /**
- * GET /api/admin/confirm-transfer?order=NOV-…&op=<nro operación>&sig=<hmac>
+ * GET  /api/admin/confirm-transfer?order=NOV-…&op=<nro operación>&sig=<hmac> → página con botón (NO confirma)
+ * POST /api/admin/confirm-transfer (form order/op/sig) → confirma
  *
  * Confirmación EN UN CLICK de un pedido web pagado por TRANSFERENCIA.
  *
@@ -37,28 +38,67 @@ function page(title: string, body: string, ok = true) {
   )
 }
 
+const esc = (s: unknown) => String(s ?? "").replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
+
+/** Valida firma + estado. Devuelve la orden o la página de error/“ya confirmado”. */
+async function load(order: string, op: string, sig: string): Promise<{ o: any } | { res: NextResponse }> {
+  if (!process.env.TRANSFER_CONFIRM_SECRET) return { res: page("Sin configurar", "Falta TRANSFER_CONFIRM_SECRET en el entorno.", false) }
+  if (!order || !op || !sig) return { res: page("Link incompleto", "Faltan parámetros (order, op, sig).", false) }
+
+  const expected = transferConfirmSig(order, op)
+  const a = Buffer.from(expected), b = Buffer.from(sig)
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return { res: page("Link inválido", "La firma no coincide. Usá el link exacto del aviso.", false) }
+
+  const o: any = await getOrderByNumber(order)
+  if (!o) return { res: page("Pedido no encontrado", `No existe ${esc(order)}.`, false) }
+
+  if (o.payment_status === "approved") {
+    return { res: page(`${esc(order)} ya estaba confirmado ✅`, `Pago registrado (op. ${esc(o.payment_id || "?")}). No se reenviaron mails.`) }
+  }
+  if (o.payment_method !== "transferencia") {
+    return { res: page("No es un pedido por transferencia", `${esc(order)} tiene payment_method="${esc(o.payment_method)}". Este atajo es solo para transferencias.`, false) }
+  }
+  return { o }
+}
+
+/**
+ * GET NO confirma nada: muestra el pedido y un botón que hace POST.
+ * 26/09/2026 (NOV-20260926-9852): el preview de links de Telegram (y los escáneres
+ * de links de los mails) hacen GET a las URLs de los avisos → la orden se marcaba
+ * pagada 3 s después de crearse y el cliente recibía "Recibimos tu pago" sin haber
+ * pagado. Los bots de preview no envían formularios, así que el efecto va por POST.
+ */
 export async function GET(req: NextRequest) {
   const url = new URL(req.url)
   const order = (url.searchParams.get("order") || "").trim()
   const op = (url.searchParams.get("op") || "").trim()
   const sig = (url.searchParams.get("sig") || "").trim()
 
-  if (!process.env.TRANSFER_CONFIRM_SECRET) return page("Sin configurar", "Falta TRANSFER_CONFIRM_SECRET en el entorno.", false)
-  if (!order || !op || !sig) return page("Link incompleto", "Faltan parámetros (order, op, sig).", false)
+  const r = await load(order, op, sig)
+  if ("res" in r) return r.res
+  const o = r.o
+  const items = (o.items || []).map((it: any) => `<li><b>${esc(it.item_name || "Producto")}</b> x${esc(it.quantity || 1)}${it.product_size ? ` — Talle ${esc(it.product_size)}` : ""}</li>`).join("")
+  const total = Number(o.total || 0).toLocaleString("es-AR")
+  return page(
+    `¿Confirmar pago de ${esc(order)}?`,
+    `<p><b>$${total}</b> · ${esc(o.customer_first_name || "")} ${esc(o.customer_last_name || "")} · ${esc(o.customer_email || "-")}</p><ul>${items}</ul>
+<p>Confirmá <b>solo si ya ves la transferencia acreditada en Mercado Pago</b>. Marca la orden pagada y le manda al cliente el mail de pago recibido.</p>
+<form method="POST" action="/api/admin/confirm-transfer">
+<input type="hidden" name="order" value="${esc(order)}"><input type="hidden" name="op" value="${esc(op)}"><input type="hidden" name="sig" value="${esc(sig)}">
+<button type="submit" style="padding:12px 18px;background:#16a34a;color:#fff;border:0;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer">✅ Sí, la plata ya entró — confirmar</button>
+</form>`,
+  )
+}
 
-  const expected = transferConfirmSig(order, op)
-  const a = Buffer.from(expected), b = Buffer.from(sig)
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return page("Link inválido", "La firma no coincide. Usá el link exacto del aviso.", false)
+export async function POST(req: NextRequest) {
+  const form = await req.formData().catch(() => null)
+  const order = String(form?.get("order") || "").trim()
+  const op = String(form?.get("op") || "").trim()
+  const sig = String(form?.get("sig") || "").trim()
 
-  const o: any = await getOrderByNumber(order)
-  if (!o) return page("Pedido no encontrado", `No existe ${order}.`, false)
-
-  if (o.payment_status === "approved") {
-    return page(`${order} ya estaba confirmado ✅`, `Pago registrado (op. ${o.payment_id || "?"}). No se reenviaron mails.`)
-  }
-  if (o.payment_method !== "transferencia") {
-    return page("No es un pedido por transferencia", `${order} tiene payment_method="${o.payment_method}". Este atajo es solo para transferencias.`, false)
-  }
+  const r = await load(order, op, sig)
+  if ("res" in r) return r.res
+  const o = r.o
 
   const now = new Date().toISOString()
   const meta = { ...(o.metadata || {}), transfer_confirmed_at: now, transfer_confirmed_via: "admin-link", transfer_op: op }

@@ -38,6 +38,8 @@ async function sendToTelegram(chatId: string | undefined, message: string, token
                 chat_id: chatId,
                 text: message,
                 parse_mode: 'HTML',
+                // Sin preview: Telegram hace GET a los links para armarlo (ej. el de confirmar transferencia).
+                disable_web_page_preview: true,
             }),
         });
 
