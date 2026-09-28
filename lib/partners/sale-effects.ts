@@ -87,8 +87,11 @@ async function bridgePartnerOrders(order: SaleOrder, saleKey: string, credits: T
         status: 'confirmed',
         fulfillment_status: 'queued_for_production',
         payment_id: saleKey,
-        payment_status: 'approved',
+        // Ojo: partner_orders en prod NO tiene payment_status (la migración vieja
+        // create_partner_orders_table.sql no refleja el esquema real) — mandarlo
+        // hacía fallar el insert con PGRST204 (así nunca funcionó el bridge de MP).
         shipping_info: {
+          source: 'web',
           address: order.shipping_address || null,
           city: order.shipping_city || null,
           postal_code: order.shipping_postal_code || null,

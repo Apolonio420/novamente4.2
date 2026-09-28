@@ -127,6 +127,9 @@ describe('runPartnerSaleEffects — bridge a partner_orders', () => {
     expect(h.state.bridgeInsertCalls).toHaveLength(2)
     const byTenant = Object.fromEntries(h.state.bridgeInsertCalls.map((c: any) => [c.tenant_id, c]))
     expect(byTenant['tenant-A']).toMatchObject({ payment_id: 'web:order-1', fulfillment_status: 'queued_for_production', status: 'confirmed' })
+    // partner_orders en prod NO tiene payment_status: mandarlo rompe el insert (PGRST204).
+    expect(byTenant['tenant-A']).not.toHaveProperty('payment_status')
+    expect(byTenant['tenant-A'].shipping_info).toMatchObject({ source: 'web' })
     expect(byTenant['tenant-A'].items.map((i: any) => i.id)).toEqual(['item-1'])
     expect(byTenant['tenant-B'].items.map((i: any) => i.id)).toEqual(['item-2'])
   })
