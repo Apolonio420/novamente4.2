@@ -55,47 +55,47 @@ const useCases = [
 
 const products = [
   {
-    name: "Boston",
+    name: "Buzo Hoodie Oversize",
     detail: "Hoodie unisex · 300 g/m²",
     image: "/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png",
   },
   {
-    name: "Berlin",
+    name: "Buzo Cuello Redondo",
     detail: "Buzo cuello redondo · 300 g/m²",
     image: "/products/buzo-cuello-redondo-unisex-negro-estilo-oversize/mockups nuevos productos-8.png",
   },
   {
-    name: "Aura",
+    name: "Remera Oversize",
     detail: "Remera oversize unisex · 250 g/m²",
     image: "/products/aura-tshirt-negro-front.jpeg",
   },
   {
-    name: "Aldea Classic Fit",
+    name: "Remera Clásica",
     detail: "Remera regular unisex · 250 g/m²",
     image: "/products/tshirt-aldea-negro-front.jpeg",
   },
   {
-    name: "Buenos Aires",
+    name: "Remera Clásica Mujer",
     detail: "Remera clásica de mujer · 250 g/m²",
     image: "/products/remera-clasica-woman-blanca/mockups nuevos productos-2.png",
   },
   {
-    name: "Bahamas",
+    name: "Remera Crop Mujer",
     detail: "Remera crop de mujer · 150 g/m²",
     image: "/products/remera-crop-de-mujer-amarillo/mockups nuevos productos-7.png",
   },
   {
-    name: "Bali",
+    name: "Musculosa",
     detail: "Musculosa de mujer · 150 g/m²",
     image: "/products/musculosa-bali-blanca/front.png",
   },
   {
-    name: "Bambino",
+    name: "Remera Infantil",
     detail: "Remera infantil unisex · talles 4 al 16",
     image: "/products/remera-infantil-negro/front.jpg",
   },
   {
-    name: "Bahía",
+    name: "Totebag",
     detail: "Totebag de algodón",
     image: "/products/totebag-crudo/front.jpg",
   },
@@ -159,10 +159,10 @@ export default function EmpresasPage() {
             <div className="absolute inset-8 rounded-full bg-[#c99d4c]/20 blur-3xl" />
             <div className="relative grid grid-cols-2 gap-4">
               <div className="mt-16 overflow-hidden rounded-[2rem] bg-[#e9e4db] p-4 shadow-2xl shadow-black/30">
-                <Image src="/products/aura-tshirt-negro-front.jpeg" alt="Remera Aura negra personalizada" width={640} height={640} className="aspect-square w-full object-cover" priority />
+                <Image src="/products/aura-tshirt-negro-front.jpeg" alt="Remera oversize negra personalizada" width={640} height={640} className="aspect-square w-full object-cover" priority />
               </div>
               <div className="overflow-hidden rounded-[2rem] bg-[#e9e4db] p-4 shadow-2xl shadow-black/30">
-                <Image src="/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png" alt="Hoodie Boston negro personalizado" width={640} height={640} className="aspect-square w-full object-cover" priority />
+                <Image src="/products/buzo-hoddie-unisex-negro/mockups nuevos productos-12.png" alt="Buzo hoodie oversize negro personalizado" width={640} height={640} className="aspect-square w-full object-cover" priority />
               </div>
             </div>
           </div>

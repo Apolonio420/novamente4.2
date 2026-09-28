@@ -58,7 +58,7 @@ export function ArrepentimientoForm() {
           id="pedido"
           name="pedido"
           required
-          placeholder="Ej: Pedido #12345 o Remera Aldea talle M"
+          placeholder="Ej: Pedido #12345 o Remera Clásica talle M"
           className={inputClass}
         />
       </div>

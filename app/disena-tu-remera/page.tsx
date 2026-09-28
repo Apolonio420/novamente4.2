@@ -56,7 +56,7 @@ export default function DisenaTuRemera() {
     "@type": "Product",
     name: "Remera Personalizada con IA — Novamente",
     description:
-      "Remera de algodon 100% con diseno personalizado generado por inteligencia artificial y estampado DTG premium. Disponible en Classic Fit y Oversize.",
+      "Remera de algodon 100% con diseno personalizado generado por inteligencia artificial y estampado DTG premium. Disponible en corte clasico y oversize.",
     image: [
       "https://www.novamente.ar/products/aura-tshirt-blanco-front.jpeg",
       "https://www.novamente.ar/products/aura-tshirt-negro-front.jpeg",
@@ -94,7 +94,7 @@ export default function DisenaTuRemera() {
         name: "Cuanto cuesta una remera personalizada en Novamente?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Las remeras personalizadas en Novamente arrancan desde $28.600 ARS para el modelo Aldea Classic Fit y $31.000 ARS para la Aura Oversize. Ambos precios incluyen el diseno personalizado con IA y estampado DTG de alta calidad.",
+          text: "Las remeras personalizadas en Novamente arrancan desde $28.600 ARS para la remera clasica y $31.000 ARS para la remera oversize. Ambos precios incluyen el diseno personalizado con IA y estampado DTG de alta calidad.",
         },
       },
       {
@@ -110,7 +110,7 @@ export default function DisenaTuRemera() {
         name: "Que material son las remeras?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Todas nuestras remeras son de algodon 100% peinado premium, optimizado para estampado DTG. Ofrecemos dos modelos: Aldea Classic Fit (clasica) y Aura Oversize (amplia y moderna). Disponibles en blanco y negro.",
+          text: "Todas nuestras remeras son de algodon 100% peinado premium, optimizado para estampado DTG. Ofrecemos dos cortes: remera clasica (modelo Aldea) y remera oversize, amplia y moderna (modelo Aura). Disponibles en blanco y negro.",
         },
       },
       {
@@ -257,7 +257,7 @@ export default function DisenaTuRemera() {
                   <div className="aspect-[3/4] relative rounded-2xl overflow-hidden shadow-2xl">
                     <Image
                       src="/products/aura-tshirt-blanco-front.jpeg"
-                      alt="Remera personalizada blanca Aura Oversize — algodon 100% con estampado DTG"
+                      alt="Remera personalizada blanca oversize — algodon 100% con estampado DTG"
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 50vw, 25vw"
@@ -267,7 +267,7 @@ export default function DisenaTuRemera() {
                   <div className="aspect-square relative rounded-2xl overflow-hidden shadow-2xl">
                     <Image
                       src="/products/tshirt-aldea-negro-front.jpeg"
-                      alt="Remera personalizada negra Aldea Classic Fit — algodon premium DTG"
+                      alt="Remera personalizada negra clasica — algodon premium DTG"
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 50vw, 25vw"
@@ -278,7 +278,7 @@ export default function DisenaTuRemera() {
                   <div className="aspect-square relative rounded-2xl overflow-hidden shadow-2xl">
                     <Image
                       src="/products/aura-tshirt-negro-front.jpeg"
-                      alt="Remera personalizada negra Aura Oversize con estampado DTG"
+                      alt="Remera personalizada negra oversize con estampado DTG"
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 50vw, 25vw"
@@ -287,7 +287,7 @@ export default function DisenaTuRemera() {
                   <div className="aspect-[3/4] relative rounded-2xl overflow-hidden shadow-2xl">
                     <Image
                       src="/products/tshirt-aldea-blanco-front.jpeg"
-                      alt="Remera personalizada blanca Aldea Classic Fit — diseno con IA"
+                      alt="Remera personalizada blanca clasica — diseno con IA"
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 50vw, 25vw"
@@ -381,12 +381,12 @@ export default function DisenaTuRemera() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Aldea Classic */}
+            {/* Remera clasica (modelo Aldea) */}
             <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20">
               <div className="aspect-square relative overflow-hidden">
                 <Image
                   src="/products/tshirt-aldea-blanco-front.jpeg"
-                  alt="Remera personalizada Aldea Classic Fit — algodon 100% DTG"
+                  alt="Remera personalizada clasica — algodon 100% DTG"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -401,7 +401,7 @@ export default function DisenaTuRemera() {
                 </div>
               </div>
               <CardContent className="p-6">
-                <h3 className="text-2xl font-semibold mb-2">Aldea Classic Fit</h3>
+                <h3 className="text-2xl font-semibold mb-2">Remera clasica <span className="text-base font-normal text-muted-foreground">(modelo Aldea)</span></h3>
                 <p className="text-muted-foreground mb-4">
                   Corte clasico recto. Ideal para un look prolijo y casual. Algodon 100% peinado premium.
                 </p>
@@ -414,18 +414,18 @@ export default function DisenaTuRemera() {
                 <Link href="/crear" data-cta="aldea-classic-disena-remera">
                   <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-xl py-3">
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Personalizar Aldea Classic
+                    Personalizar Remera Clasica
                   </Button>
                 </Link>
               </CardContent>
             </Card>
 
-            {/* Aura Oversize */}
+            {/* Remera oversize (modelo Aura) */}
             <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20">
               <div className="aspect-square relative overflow-hidden">
                 <Image
                   src="/products/aura-tshirt-blanco-front.jpeg"
-                  alt="Remera personalizada Aura Oversize — fit amplio algodon premium DTG"
+                  alt="Remera personalizada oversize — fit amplio algodon premium DTG"
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -440,7 +440,7 @@ export default function DisenaTuRemera() {
                 </div>
               </div>
               <CardContent className="p-6">
-                <h3 className="text-2xl font-semibold mb-2">Aura Oversize</h3>
+                <h3 className="text-2xl font-semibold mb-2">Remera oversize <span className="text-base font-normal text-muted-foreground">(modelo Aura)</span></h3>
                 <p className="text-muted-foreground mb-4">
                   Corte amplio y moderno. Tendencia urbana con caida relajada. Algodon 100% peinado.
                 </p>
@@ -453,7 +453,7 @@ export default function DisenaTuRemera() {
                 <Link href="/crear" data-cta="aura-oversize-disena-remera">
                   <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white font-medium rounded-xl py-3">
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Personalizar Aura Oversize
+                    Personalizar Remera Oversize
                   </Button>
                 </Link>
               </CardContent>
@@ -567,7 +567,7 @@ export default function DisenaTuRemera() {
                   ))}
                 </div>
                 <p className="text-sm text-white/80 mb-4">
-                  &ldquo;La Aura Oversize es comodisima y el estampado DTG tiene una definicion impresionante. Ya lave varias veces y sigue impecable.&rdquo;
+                  &ldquo;La remera oversize es comodisima y el estampado DTG tiene una definicion impresionante. Ya lave varias veces y sigue impecable.&rdquo;
                 </p>
                 <p className="text-sm font-semibold">Tomas G. — Cordoba</p>
               </CardContent>
@@ -589,7 +589,7 @@ export default function DisenaTuRemera() {
             {[
               {
                 q: "Cuanto cuesta una remera personalizada?",
-                a: "Las remeras arrancan desde $28.600 ARS (Aldea Classic Fit) y $31.000 ARS (Aura Oversize). El precio incluye el diseno personalizado con IA y el estampado DTG de alta calidad.",
+                a: "Las remeras arrancan desde $28.600 ARS (remera clasica) y $31.000 ARS (remera oversize). El precio incluye el diseno personalizado con IA y el estampado DTG de alta calidad.",
               },
               {
                 q: "Como funciona el diseno con IA?",
@@ -597,7 +597,7 @@ export default function DisenaTuRemera() {
               },
               {
                 q: "Que material son las remeras?",
-                a: "Todas nuestras remeras son de algodon 100% peinado premium, optimizado para que el estampado DTG se adhiera perfectamente y dure muchos lavados. Ofrecemos Classic Fit y Oversize.",
+                a: "Todas nuestras remeras son de algodon 100% peinado premium, optimizado para que el estampado DTG se adhiera perfectamente y dure muchos lavados. Ofrecemos corte clasico y oversize.",
               },
               {
                 q: "Cuanto tarda en llegar?",

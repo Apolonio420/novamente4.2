@@ -209,7 +209,7 @@ export default function RemerasPorMayor() {
 
   const products = [
     {
-      name: "Aldea Classic Fit T-Shirt",
+      name: "Remera Clasica",
       regularPrice: "$28.600",
       wholesalePrice: "$24.310",
       discount: "15% OFF (100+ un.)",
@@ -217,7 +217,7 @@ export default function RemerasPorMayor() {
       ideal: "Basica mayorista, mejor margen",
     },
     {
-      name: "Aura Oversize T-Shirt",
+      name: "Remera Oversize",
       regularPrice: "$31.000",
       wholesalePrice: "$26.350",
       discount: "15% OFF (100+ un.)",
@@ -225,7 +225,7 @@ export default function RemerasPorMayor() {
       ideal: "Tendencia oversize, mas valor percibido",
     },
     {
-      name: "Aura Oversize T-Shirt Stone Wash",
+      name: "Remera Oversize Stone Wash",
       regularPrice: "$31.000",
       wholesalePrice: "$26.350",
       discount: "15% OFF (100+ un.)",
@@ -628,7 +628,7 @@ export default function RemerasPorMayor() {
                 Cuanto podes ganar revendiendo
               </h2>
               <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
-                Numeros reales. Remera Aldea Classic Fit, precio mayorista (100+ un.) $24.310.
+                Numeros reales. Remera clasica, precio mayorista (100+ un.) $24.310.
               </p>
             </div>
 

@@ -116,7 +116,7 @@ export default function Home() {
         name: "¿Cuánto cuesta una remera personalizada?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Las remeras personalizadas arrancan desde $28.600 ARS para el modelo Aldea Classic Fit y $31.000 ARS para la Aura Oversize. Los hoodies comienzan en $55.000 ARS y el Buzo Hoodie Oversize está en $55.000 ARS. Todos incluyen el diseño personalizado con IA y estampado DTG.",
+          text: "Las remeras personalizadas arrancan desde $28.600 ARS para la remera clásica y $31.000 ARS para la remera oversize. Los hoodies comienzan en $55.000 ARS y el buzo hoodie oversize está en $55.000 ARS. Todos incluyen el diseño personalizado con IA y estampado DTG.",
         },
       },
       {
@@ -647,7 +647,7 @@ export default function Home() {
                 <div className="aspect-square relative overflow-hidden cursor-pointer">
                   <Image
                     src="/products/aura-tshirt-blanco-front.jpeg"
-                    alt="Aura Oversize T-Shirt"
+                    alt="Remera oversize"
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                     sizes="(max-width: 768px) 100vw, 33vw"
@@ -681,7 +681,7 @@ export default function Home() {
 
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-3">
-                  <h2 className="text-xl font-semibold leading-tight">Aura Oversize T-Shirt</h2>
+                  <h2 className="text-xl font-semibold leading-tight">Remera oversize</h2>
                   <span className="text-2xl font-bold text-primary ml-4">{catalogPrice("aura-oversize-tshirt")}</span>
                 </div>
 
@@ -1005,7 +1005,7 @@ export default function Home() {
                 <span className="text-primary group-open:rotate-45 transition-transform text-2xl">+</span>
               </summary>
               <p className="mt-4 text-muted-foreground leading-relaxed">
-                Las remeras personalizadas arrancan desde $28.600 ARS para el modelo Aldea Classic Fit y $31.000 ARS para la Aura Oversize. Los hoodies comienzan en $55.000 ARS. Todos los precios incluyen el diseño personalizado con IA y estampado DTG de alta calidad.
+                Las remeras personalizadas arrancan desde $28.600 ARS para la remera clásica y $31.000 ARS para la remera oversize. Los hoodies comienzan en $55.000 ARS. Todos los precios incluyen el diseño personalizado con IA y estampado DTG de alta calidad.
               </p>
             </details>
 

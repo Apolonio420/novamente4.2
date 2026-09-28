@@ -58,8 +58,8 @@ export async function GET() {
 ## Productos Disponibles
 | Producto | Precio (ARS) | Material | Ideal para |
 |----------|-------------|----------|-----------|
-| Aldea Classic Fit | $28.600 | Algodón 24/1 Jersey 190g | Remera clásica, unisex |
-| Aura Oversize | $29.900 | Algodón 30/1 Jersey 210g | Streetwear, tendencia oversize |
+| Remera Clásica | $28.600 | Algodón 24/1 Jersey 190g | Remera clásica, unisex |
+| Remera Oversize | $29.900 | Algodón 30/1 Jersey 210g | Streetwear, tendencia oversize |
 | Buzo Hoodie Oversize | $55.000 | Frisa algodón 350g | Abrigo premium con capucha |
 | Nova Tote Bag | $18.600 | Lona 100% algodón 280g | Bolsa reutilizable, merchandising |
 

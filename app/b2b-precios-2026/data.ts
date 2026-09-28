@@ -51,8 +51,8 @@ export const MODEL_TO_GARMENT_KEY: Record<string, string> = {
 export const MODELS: B2BModel[] = [
   {
     id: "berlin",
-    name: "Berlin",
-    subtitle: "Buzo Cuello Redondo (Crewneck)",
+    name: "Buzo Cuello Redondo (Crewneck)",
+    subtitle: "Modelo Berlin",
     category: "Buzos",
     fabric: "Algodon frizado premium 100%",
     sizes: ["XS", "S", "M", "L", "XL", "2XL"],
@@ -89,8 +89,8 @@ export const MODELS: B2BModel[] = [
   },
   {
     id: "boston",
-    name: "Boston",
-    subtitle: "Buzo Hoodie Unisex Oversize",
+    name: "Buzo Hoodie Oversize",
+    subtitle: "Modelo Boston",
     category: "Hoodies",
     fabric: "Algodon frizado premium 100%, capucha y bolsillo canguro",
     sizes: ["XS", "S", "M", "L", "XL", "2XL"],
@@ -129,8 +129,8 @@ export const MODELS: B2BModel[] = [
   },
   {
     id: "aura",
-    name: "Aura",
-    subtitle: "Oversize T-Shirt Unisex",
+    name: "Remera Oversize",
+    subtitle: "Modelo Aura",
     category: "T-Shirts",
     fabric: "Algodon peinado 100% premium, fibra larga",
     sizes: ["2XS", "XS", "S", "M", "L", "XL", "2XL"],
@@ -169,8 +169,8 @@ export const MODELS: B2BModel[] = [
   },
   {
     id: "aldea",
-    name: "Aldea",
-    subtitle: "Classic Fit T-Shirt",
+    name: "Remera Clasica",
+    subtitle: "Modelo Aldea",
     category: "T-Shirts",
     fabric: "Algodon 100% de alta densidad, calce regular",
     sizes: ["S", "M", "L", "XL", "XXL"],
@@ -207,8 +207,8 @@ export const MODELS: B2BModel[] = [
   },
   {
     id: "buenos-aires",
-    name: "Buenos Aires",
-    subtitle: "Remera Clasica Mujer",
+    name: "Remera Clasica Mujer",
+    subtitle: "Modelo Buenos Aires",
     category: "Remeras Mujer",
     fabric: "Algodon suave premium, corte femenino",
     sizes: ["S", "M", "L", "XL", "2XL"],
@@ -237,8 +237,8 @@ export const MODELS: B2BModel[] = [
   },
   {
     id: "bahamas",
-    name: "Bahamas",
-    subtitle: "Remera Crop Mujer",
+    name: "Remera Crop Mujer",
+    subtitle: "Modelo Bahamas",
     category: "Remeras Crop",
     fabric: "Algodon suave, calce relajado y moderno",
     sizes: ["S", "M", "L", "XL", "2XL"],
@@ -287,8 +287,8 @@ export const MODELS: B2BModel[] = [
   },
   {
     id: "bambino",
-    name: "Bambino",
-    subtitle: "Remera Infantil Unisex",
+    name: "Remera Infantil Unisex",
+    subtitle: "Modelo Bambino",
     category: "Remeras Infantiles",
     fabric: "Algodon peinado premium, calce unisex para chicos",
     sizes: ["4", "6", "8", "10", "12", "14", "16"],
@@ -329,8 +329,8 @@ export const MODELS: B2BModel[] = [
   },
   {
     id: "bali",
-    name: "Bali",
-    subtitle: "Musculosa",
+    name: "Musculosa",
+    subtitle: "Modelo Bali",
     category: "Musculosas",
     fabric: "Morley premium elastico, ideal para verano",
     sizes: ["S", "M", "L", "XL", "2XL"],
@@ -357,8 +357,8 @@ export const MODELS: B2BModel[] = [
   },
   {
     id: "bahia",
-    name: "Bahía",
-    subtitle: "Totebag de Algodón",
+    name: "Totebag de Algodón",
+    subtitle: "Modelo Bahía",
     category: "Accesorios",
     fabric: "Algodón crudo resistente · asas largas · estampado DTG",
     sizes: ["Único"],

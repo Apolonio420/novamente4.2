@@ -83,7 +83,7 @@ export default function CotizadorPage() {
         name: "Cual es el precio de una remera personalizada?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Las remeras personalizadas arrancan desde $21.800 (Musculosa Bali) hasta $31.000 (Aura Oversize). El precio incluye la prenda + estampado DTG premium con colores ilimitados. Con descuentos por cantidad podes ahorrar hasta 15%.",
+          text: "Las remeras personalizadas arrancan desde $21.800 (musculosa) hasta $31.000 (remera oversize). El precio incluye la prenda + estampado DTG premium con colores ilimitados. Con descuentos por cantidad podes ahorrar hasta 15%.",
         },
       },
       {
@@ -386,7 +386,7 @@ export default function CotizadorPage() {
               {[
                 {
                   q: "Cual es el precio de una remera personalizada?",
-                  a: "Las remeras personalizadas arrancan desde $21.800 (Musculosa Bali) hasta $31.000 (Aura Oversize). El precio incluye la prenda + estampado DTG premium con colores ilimitados. Con descuentos por cantidad podes ahorrar hasta 15%.",
+                  a: "Las remeras personalizadas arrancan desde $21.800 (musculosa) hasta $31.000 (remera oversize). El precio incluye la prenda + estampado DTG premium con colores ilimitados. Con descuentos por cantidad podes ahorrar hasta 15%.",
                 },
                 {
                   q: "Hay descuentos por cantidad?",

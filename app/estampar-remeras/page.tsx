@@ -188,10 +188,10 @@ export default function EstamparRemeras() {
   ]
 
   const pricingTiers = [
-    { garment: "Musculosa Bali", price: 21800, description: "Morley, ideal verano" },
+    { garment: "Musculosa", price: 21800, description: "Morley, ideal verano" },
     { garment: "Remera Crop Mujer", price: 23500, description: "Crop top moderno" },
     { garment: "Remera Clasica", price: 28600, description: "Fit regular, unisex/mujer" },
-    { garment: "Aura Oversize T-Shirt", price: 31000, description: "La mas vendida", popular: true },
+    { garment: "Remera Oversize", price: 31000, description: "La mas vendida", popular: true },
     { garment: "Buzo Cuello Redondo", price: 43000, description: "Crewneck oversize" },
     { garment: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize" },
     { garment: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize" },

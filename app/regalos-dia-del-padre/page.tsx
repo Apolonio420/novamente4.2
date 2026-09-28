@@ -162,11 +162,11 @@ export default function RegalosDiaDelPadre() {
   }
 
   const products = [
-    { name: "Musculosa Bali", price: 21800, description: "Morley algodon, ideal verano o gym", category: "Musculosa" },
+    { name: "Musculosa", price: 21800, description: "Morley algodon, ideal verano o gym", category: "Musculosa" },
     { name: "Remera Crop Mujer", price: 23500, description: "Para mama que quiere combinar", category: "Remera" },
     { name: "Remera Clasica Mujer", price: 28600, description: "Clasica para mama — combo familia", category: "Remera" },
-    { name: "Aldea Classic Fit", price: 28600, description: "Fit regular, algodon 100%", category: "Remera", popular: true },
-    { name: "Aura Oversize T-Shirt", price: 31000, description: "Oversize premium, caida amplia", category: "Remera" },
+    { name: "Remera Clasica", price: 28600, description: "Fit regular, algodon 100%", category: "Remera", popular: true },
+    { name: "Remera Oversize", price: 31000, description: "Oversize premium, caida amplia", category: "Remera" },
     { name: "Buzo Cuello Redondo", price: 43000, description: "Crewneck frizado, ideal invierno", category: "Buzo" },
     { name: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize con capucha", category: "Hoodie", popular: true },
     { name: "Buzo Hoodie Oversize", price: 55000, description: "Hoodie oversize", category: "Buzo Hoodie Oversize" },

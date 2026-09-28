@@ -347,7 +347,7 @@ export default function BlogComoCrearMerch() {
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-semibold text-white">Remera Aldea Classic Fit</h4>
+                        <h4 className="font-semibold text-white">Remera Clasica</h4>
                         <p className="text-zinc-400 text-sm mt-1">Algodon 100%, ideal para empezar</p>
                       </div>
                       <Badge className="bg-green-500/20 text-green-300 border-green-500/30">$28.600</Badge>
@@ -358,7 +358,7 @@ export default function BlogComoCrearMerch() {
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-semibold text-white">Remera Aura Oversize</h4>
+                        <h4 className="font-semibold text-white">Remera Oversize</h4>
                         <p className="text-zinc-400 text-sm mt-1">Corte oversize, tendencia 2026</p>
                       </div>
                       <Badge className="bg-green-500/20 text-green-300 border-green-500/30">$31.000</Badge>

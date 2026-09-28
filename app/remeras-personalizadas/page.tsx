@@ -163,7 +163,7 @@ export default function RemerasPersonalizadas() {
 
   const products = [
     {
-      name: "Aura Oversize T-Shirt",
+      name: "Remera Oversize",
       price: 31000,
       badge: "Mas vendida",
       description: "Corte oversize, algodon 100%, 4 colores. La favorita de nuestros clientes.",
@@ -171,7 +171,7 @@ export default function RemerasPersonalizadas() {
       link: "/products",
     },
     {
-      name: "Aldea Classic Fit",
+      name: "Remera Clasica",
       price: 28600,
       badge: "Clasica",
       description: "Fit regular, ideal para estampados limpios y profesionales.",
@@ -195,7 +195,7 @@ export default function RemerasPersonalizadas() {
       link: "/products",
     },
     {
-      name: "Musculosa Bali",
+      name: "Musculosa",
       price: 21800,
       badge: "Desde $21.800",
       description: "Musculosa morley, perfecta para verano y looks urbanos.",

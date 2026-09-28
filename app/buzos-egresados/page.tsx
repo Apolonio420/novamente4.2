@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { PRODUCTS as CATALOG_PRODUCTS } from "@/lib/catalog"
 import { PRODUCTION_VOLUME, RETURN_POLICY_REF, SHIPPING, productionDaysForQty, shippingDetailsJsonLd } from "@/lib/shipping-config"
+import { productDisplayName } from "@/lib/product-names"
 
 export const metadata: Metadata = {
   title: "Buzos de Egresados 2026 — Personalizados con IA",
@@ -83,11 +84,11 @@ export default function BuzosEgresados() {
   const formatPrice = (n: number) => `$${n.toLocaleString("es-AR")}`
 
   const products = [
-    { ...boston, displayName: "Boston", ideal: "El hoodie clásico de la promo: capucha y bolsillo canguro", badge: "Más elegido" },
-    { ...berlin, displayName: "Berlin", ideal: "Buzo cuello redondo, mismo estampado, opción más abrigada", badge: "Mejor precio" },
-    { ...aldea, displayName: "Aldea", ideal: "Remera classic fit para el viaje, las fotos o la fiesta", badge: null },
-    { ...aura, displayName: "Aura", ideal: "Remera oversize, calce relajado y moderno", badge: null },
-    { ...bali, displayName: "Bali", ideal: "Musculosa liviana para el verano o el viaje", badge: null },
+    { ...boston, name: productDisplayName({ garmentType: boston.garmentType, name: boston.name }), modelo: "Boston", ideal: "El hoodie clásico de la promo: capucha y bolsillo canguro", badge: "Más elegido" },
+    { ...berlin, name: productDisplayName({ garmentType: berlin.garmentType, name: berlin.name }), modelo: "Berlin", ideal: "Buzo cuello redondo, mismo estampado, opción más abrigada", badge: "Mejor precio" },
+    { ...aldea, name: productDisplayName({ garmentType: aldea.garmentType, name: aldea.name }), modelo: "Aldea", ideal: "Remera clásica para el viaje, las fotos o la fiesta", badge: null },
+    { ...aura, name: productDisplayName({ garmentType: aura.garmentType, name: aura.name }), modelo: "Aura", ideal: "Remera oversize, calce relajado y moderno", badge: null },
+    { ...bali, name: productDisplayName({ garmentType: bali.garmentType, name: bali.name }), modelo: "Bali", ideal: "Musculosa liviana para el verano o el viaje", badge: null },
   ]
 
   const serviceJsonLd = {
@@ -117,8 +118,8 @@ export default function BuzosEgresados() {
   const productsJsonLd = products.map((p) => ({
     "@context": "https://schema.org",
     "@type": "Product",
-    name: `${p.displayName} — ${p.name} de Egresados`,
-    description: `${p.name} personalizado para promos de egresados. ${p.ideal}. Estampado DTG, produccion propia en Argentina.`,
+    name: `${p.name} de Egresados`,
+    description: `${p.name} personalizado para promos de egresados (modelo ${p.modelo}). ${p.ideal}. Estampado DTG, produccion propia en Argentina.`,
     image: [`https://www.novamente.ar${p.image}`],
     brand: { "@type": "Brand", name: "Novamente" },
     material: "Algodon 100%",
@@ -146,7 +147,7 @@ export default function BuzosEgresados() {
         name: "Cuanto cuestan los buzos de egresados?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `El Hoodie Boston (con capucha) arranca en ${formatPrice(boston.price)} y el Buzo Berlin (cuello redondo) en ${formatPrice(berlin.price)}, precio de lista por unidad. Para pedidos de curso armamos una cotizacion a medida segun cantidad de alumnos y modelos elegidos — la coordinas con tu asesor por WhatsApp.`,
+          text: `El buzo hoodie oversize (con capucha) arranca en ${formatPrice(boston.price)} y el buzo cuello redondo en ${formatPrice(berlin.price)}, precio de lista por unidad. Para pedidos de curso armamos una cotizacion a medida segun cantidad de alumnos y modelos elegidos — la coordinas con tu asesor por WhatsApp.`,
         },
       },
       {
@@ -154,7 +155,7 @@ export default function BuzosEgresados() {
         name: "Que talles tienen disponibles?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Boston y Berlin van de talle XS a 2XL; las remeras Aldea y Aura tienen su propia tabla de talles. Antes de producir coordinamos el talle de cada alumno para que le quede perfecto. Descargas la guia de talles completa en PDF desde la web.",
+          text: "El buzo hoodie oversize y el buzo cuello redondo van de talle XS a 2XL; la remera clasica y la remera oversize tienen su propia tabla de talles. Antes de producir coordinamos el talle de cada alumno para que le quede perfecto. Descargas la guia de talles completa en PDF desde la web.",
         },
       },
       {
@@ -186,7 +187,7 @@ export default function BuzosEgresados() {
         name: "Como cotizo el pedido de mi curso?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Escribinos por WhatsApp con el colegio, la cantidad aproximada de alumnos y el modelo que les interesa (Boston, Berlin o ambos). Te armamos una propuesta con muestra digital gratuita antes de producir.",
+          text: "Escribinos por WhatsApp con el colegio, la cantidad aproximada de alumnos y el modelo que les interesa (hoodie con capucha, cuello redondo o ambos). Te armamos una propuesta con muestra digital gratuita antes de producir.",
         },
       },
       {
@@ -248,7 +249,7 @@ export default function BuzosEgresados() {
       icon: Camera,
       title: "Fotos de promo",
       description: "Buzos para la sesion de fotos grupal. Quedan increibles con disenos IA unicos.",
-      example: "Hoodie Boston con diseno artistico generado por IA",
+      example: "Hoodie oversize con diseno artistico generado por IA",
       color: "text-violet-400",
       bg: "bg-violet-500/10",
     },
@@ -521,10 +522,10 @@ export default function BuzosEgresados() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => (
-                <Card key={product.displayName} className="bg-zinc-900/50 border-zinc-800 hover:border-cyan-500/30 transition-all duration-300">
+                <Card key={product.modelo} className="bg-zinc-900/50 border-zinc-800 hover:border-cyan-500/30 transition-all duration-300">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-lg font-semibold text-white">{product.displayName} <span className="text-zinc-500 font-normal text-sm">— {product.name}</span></h3>
+                      <h3 className="text-lg font-semibold text-white">{product.name} <span className="text-zinc-500 font-normal text-sm">(modelo {product.modelo})</span></h3>
                       {product.badge && (
                         <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30 text-xs">
                           {product.badge}
@@ -565,7 +566,7 @@ export default function BuzosEgresados() {
 
             <div className="text-center mt-4 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-xl max-w-2xl mx-auto">
               <p className="text-cyan-300 font-medium">
-                Ejemplo de referencia: 30 Hoodies Boston
+                Ejemplo de referencia: 30 buzos hoodie oversize
               </p>
               <p className="text-zinc-400 text-sm mt-1">
                 30 x {formatPrice(boston.price)} = <span className="text-white font-semibold">{formatPrice(30 * boston.price)}</span> a precio de lista
