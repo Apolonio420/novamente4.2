@@ -44,8 +44,8 @@ export function BusinessModelBanner({ tenantId }: BusinessModelBannerProps) {
       text: (
         <>
           Tu ganancia (PVP − costo Novamente) queda disponible cuando se confirma
-          el pago. Los retiros aprobados se transfieren a tu CBU/alias en{' '}
-          <strong className="text-emerald-300">24–48 h hábiles</strong>.
+          el pago. Te la transferimos a tu CBU/alias{' '}
+          <strong className="text-emerald-300">una vez por semana, sin mínimo</strong>.
         </>
       ),
     },

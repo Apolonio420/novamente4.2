@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getPartnerPlanPrice } from './garment-pricing.server'
+import { resolveProductCost } from './variants'
 import type { Plan } from './types'
 
 const db = () => supabaseAdmin as any
@@ -127,8 +127,9 @@ export async function getDailyAttention(
     const missingPrice = !product.price || Number(product.price) <= 0
     const missingImage = !Array.isArray(product.images) || product.images.length === 0
     const metadata = (product.metadata || {}) as Record<string, unknown>
-    const garmentKey = typeof metadata.garmentKey === 'string' ? metadata.garmentKey : null
-    const cost = garmentKey ? getPartnerPlanPrice(garmentKey, tenant.plan) : null
+    // Costo del partner (plan + doble estampa si lleva frente y dorso) — misma
+    // fuente que el piso del checkout (lib/partners/partner-cost.ts).
+    const cost = resolveProductCost(metadata, tenant.plan)
     const lowMargin = product.status === 'published' && cost !== null && Number(product.price || 0) <= cost
 
     if (product.status === 'published' && (missingPrice || missingImage)) {

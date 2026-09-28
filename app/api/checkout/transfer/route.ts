@@ -88,8 +88,11 @@ export async function POST(request: NextRequest) {
     const finalTotal = Math.max(0, finalSubtotal - descuento.discountARS) + finalShippingCost
 
     // Preparar items del pedido desde items del carrito
-    const orderItems = items.map((item: any) => ({
+    const orderItemsCarrito = items.map((item: any) => ({
       item_name: item.name || `${item.garmentType || 'Producto'} - ${item.color} - Talle ${item.size}`,
+      // Faltaba (el checkout de MP sí lo guardaba): sin esto el ledger del
+      // partner tenía que adivinar el producto por nombre (NOV-20260926-9852).
+      partner_product_id: item.productId || item.partner_product_id || null,
       product_type: item.garmentType || 'unknown',
       product_color: item.color || 'unknown',
       product_size: item.size || 'unknown',
@@ -114,6 +117,10 @@ export async function POST(request: NextRequest) {
         ...(item.metadata || {})
       }
     }))
+    // Ítems de tienda partner: id verificado, doble estampa y color resueltos
+    // desde partner_products (no desde el carrito) — lib/checkout/partner-items.ts.
+    const { enriquecerItemsPartner } = await import('@/lib/checkout/partner-items')
+    const orderItems = await enriquecerItemsPartner(orderItemsCarrito)
 
     // Crear el pedido en la base de datos
     const externalReference = `order_transfer_${Date.now()}`

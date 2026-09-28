@@ -56,6 +56,11 @@ async function sendToTelegram(chatId: string | undefined, message: string, token
     }
 }
 
+/** Mensaje libre (HTML) al canal de VENTAS de Novamente. null si falló. */
+export async function sendSalesTelegram(message: string) {
+    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
+}
+
 /**
  * Notifies a successful sale/payment
  */
@@ -543,6 +548,118 @@ ${order.customerName ? `<b>Cliente:</b> ${order.customerName}\n` : ''}${itemsLin
     `.trim();
         await sendToTelegram(chatId, msg, SALES_BOT_TOKEN);
     }
+}
+
+const PARTNER_ADMIN_VENTAS_URL = 'https://admin.novamente.ar/dashboard/partners/ventas';
+const B2B_PRECIOS_URL = 'https://www.novamente.ar/b2b-precios-2026';
+const WORKSPACE_FINANZAS_URL = 'https://www.novamente.ar/workspace/finanzas';
+/** Cuándo cobra el partner (decisión Juan 27/09/2026: pago de oficio semanal, sin mínimo). */
+export const CUANDO_COBRA_TXT =
+    'Novamente te transfiere tu ganancia una vez por semana, sin mínimo, al alias o CBU que tenés cargado en tu panel.';
+
+function escHtml(s: unknown): string {
+    return String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+/** Línea del desglose que se le puede mostrar al partner (sin datos del proveedor). */
+interface PartnerSaleLine {
+    item: string;
+    qty: number;
+    unit: number;
+    color: string | null;
+    talle: string | null;
+    doble_estampa: boolean;
+    costo_base: number | null;
+    recargo_doble: number;
+    cost: number | null;
+    descuento: number;
+    ganancia: number | null;
+}
+
+/**
+ * Avisa al PARTNER por MAIL (decisión Juan 27/09: solo mail) que su tienda
+ * vendió por la web: producto, PVP, su costo B2B (precio de plan + doble
+ * estampa explicada), su ganancia y cuándo cobra. Partner-safe: NUNCA costo del
+ * proveedor ni margen de Novamente (el desglose del ledger no los tiene).
+ * Devuelve true si el mail salió.
+ */
+export async function notifyPartnerWebSale(
+    tenant: { name?: string | null; email?: string | null; bank_alias?: string | null; bank_cbu?: string | null },
+    sale: {
+        orderNumber: string;
+        customerName?: string | null;
+        credit: { amount: number; needsReview: boolean; breakdown: PartnerSaleLine[] };
+    },
+): Promise<boolean> {
+    if (!tenant.email) return false;
+    const lines = sale.credit.breakdown;
+    const rows = lines
+        .map((l) => {
+            const variant = [l.color, l.talle ? `talle ${l.talle}` : null].filter(Boolean).join(' · ');
+            const costo = l.cost == null
+                ? '<i>a confirmar</i>'
+                : `${ars(l.costo_base ?? 0)}${l.recargo_doble ? ` + ${ars(l.recargo_doble)} doble estampa` : ''}`;
+            return `<tr>
+        <td style="padding:8px 10px;border-bottom:1px solid #eee">${l.qty}x ${escHtml(l.item)}${variant ? `<br/><span style="color:#888;font-size:12px">${escHtml(variant)}${l.doble_estampa ? ' · frente y dorso' : ''}</span>` : ''}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;white-space:nowrap">${ars(l.unit)}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right">${costo}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;white-space:nowrap"><b>${l.ganancia == null ? '—' : ars(l.ganancia)}</b></td>
+      </tr>`;
+        })
+        .join('');
+    const descuento = lines.reduce((s, l) => s + (l.descuento || 0), 0);
+    const hayDoble = lines.some((l) => l.doble_estampa);
+    const sinBanco = !tenant.bank_alias && !tenant.bank_cbu;
+
+    const html = `
+    <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;color:#1a1a1a">
+      <h2 style="margin:0 0 4px">¡Vendiste en tu tienda! 🎉</h2>
+      <p style="color:#555;margin:0 0 16px">Pedido web <b>${escHtml(sale.orderNumber)}</b>${sale.customerName ? ` · ${escHtml(sale.customerName)}` : ''}. El cliente ya pagó; Novamente lo produce y lo despacha.</p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <tr style="background:#f6f6f6"><th style="padding:8px 10px;text-align:left">Producto</th><th style="padding:8px 10px;text-align:right">Precio de venta</th><th style="padding:8px 10px;text-align:right">Tu costo</th><th style="padding:8px 10px;text-align:right">Tu ganancia</th></tr>
+        ${rows}
+      </table>
+      ${descuento > 0 ? `<p style="margin:12px 0 0;color:#555;font-size:13px">Incluye ${ars(descuento)} del código de descuento de tu tienda (se descuenta de tu ganancia).</p>` : ''}
+      <p style="margin:16px 0 4px;font-size:16px"><b>Tu ganancia por esta venta: ${ars(sale.credit.amount)}</b></p>
+      ${sale.credit.needsReview ? '<p style="margin:0 0 8px;color:#b45309">Estamos revisando el cálculo de esta venta; te confirmamos el monto final en tu panel.</p>' : ''}
+      <p style="margin:8px 0 0;color:#555;font-size:13px">Tu costo es el precio B2B de tu plan (<a href="${B2B_PRECIOS_URL}">ver lista de precios</a>)${hayDoble ? ', más el recargo por doble estampa en las prendas estampadas en frente y dorso' : ''}. Tu ganancia es el precio de venta menos ese costo.</p>
+      <p style="margin:12px 0 0;color:#555;font-size:13px">${CUANDO_COBRA_TXT}</p>
+      ${sinBanco ? '<p style="margin:12px 0 0;color:#b00020;font-size:13px"><b>Todavía no cargaste tu alias o CBU</b>: cargalo en tu panel para que podamos transferirte.</p>' : ''}
+      <p style="margin:20px 0 0"><a href="${WORKSPACE_FINANZAS_URL}" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;border-radius:8px;text-decoration:none">Ver mis ventas y ganancias</a></p>
+    </div>`;
+
+    const r = await sendEmail({
+        to: tenant.email,
+        subject: `Vendiste en tu tienda — ganancia ${ars(sale.credit.amount)} (${sale.orderNumber})`,
+        html,
+    }).catch(() => null);
+    return !!r?.ok;
+}
+
+/**
+ * Telegram a Novamente cuando se acredita la ganancia de un partner por una venta
+ * web: es plata que hay que transferirle en el pago semanal. Una vez por
+ * crédito (el caller lo llama solo cuando la entry se insertó en esa corrida).
+ */
+export async function notifyPartnerDebt(d: {
+    tenantSlug: string;
+    tenantName?: string | null;
+    orderNumber: string;
+    amount: number;
+    needsReview: boolean;
+    reasons?: string[];
+    hasBankData: boolean;
+    partnerNotified: boolean;
+}) {
+    const msg = [
+        `💸 <b>Deuda partner ${escapeTelegramHtml(d.tenantSlug)}</b> +${ars(d.amount)}`,
+        `Venta ${escapeTelegramHtml(d.orderNumber)}${d.tenantName ? ` · ${escapeTelegramHtml(d.tenantName)}` : ''}`,
+        d.needsReview ? `⚠️ EN REVISIÓN (${escapeTelegramHtml((d.reasons || []).join(', ') || 'ver admin')}) — no cuenta como disponible hasta que la apruebes.` : '',
+        d.hasBankData ? '' : '⚠️ El partner no tiene alias/CBU cargado.',
+        d.partnerNotified ? '' : '✉️ Al partner NO se le mandó mail automático (acreditado por barrido): avisale.',
+        `Se paga en la tanda semanal → <a href="${PARTNER_ADMIN_VENTAS_URL}">admin ventas partners</a>`,
+    ].filter(Boolean).join('\n');
+    return sendToTelegram(SALES_CHAT_ID, msg, SALES_BOT_TOKEN);
 }
 
 /**

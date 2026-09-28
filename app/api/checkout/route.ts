@@ -243,6 +243,11 @@ export async function POST(request: NextRequest) {
       }))
     }
 
+    // Ítems de tienda partner: id verificado, doble estampa y color resueltos
+    // desde partner_products (no desde el carrito) — lib/checkout/partner-items.ts.
+    const { enriquecerItemsPartner } = await import('@/lib/checkout/partner-items')
+    orderItems = await enriquecerItemsPartner(orderItems)
+
     // Validar que tenantId sea un UUID antes de persistirlo
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     const validTenantId = typeof tenantId === 'string' && UUID_RE.test(tenantId) ? tenantId : null

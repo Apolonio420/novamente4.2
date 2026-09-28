@@ -1,15 +1,19 @@
 /**
- * GET  /api/partners/finanzas — balance + movimientos + retiros del tenant
- * POST /api/partners/finanzas — solicitar retiro { amount, method? }
+ * GET  /api/partners/finanzas — saldo + ventas web (con su costo B2B y
+ *      ganancia) + pagos recibidos + movimientos del tenant
+ * POST /api/partners/finanzas — DESACTIVADO (410): desde el 27/09/2026 Novamente
+ *      le paga al partner de oficio una vez por semana, sin mínimo (decisión de
+ *      Juan). El pago lo registra un admin en platform con el nro. de operación.
  *
- * Ambos son owner-only: exponen y mueven dinero (banco + retiros). El retiro usa
- * el RPC transaccional partner_request_payout (atómico, idempotente y serializado
- * por tenant). Idempotency-Key se toma del header homónimo.
+ * Owner-only (expone datos bancarios y plata). Lo que viaja al partner es
+ * partner-safe: las ventas pasan por la whitelist de lib/partners/partner-sales.ts
+ * y los movimientos NO incluyen la metadata del ledger.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getTenantFinancials, requestPayout, MIN_PAYOUT_ARS, validateIdempotencyKey } from '@/lib/partners/payouts'
+import { computeFinancials } from '@/lib/partners/payouts'
+import { buildPartnerSales } from '@/lib/partners/partner-sales'
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,28 +22,48 @@ export async function GET(request: NextRequest) {
     const tenant = auth.tenant
     const sb = supabaseAdmin as any
 
-    const [financials, { data: entries }, { data: payouts }] = await Promise.all([
-      getTenantFinancials(tenant.id),
+    // Todas las entries del tenant (el estado de cada venta es FIFO contra los
+    // pagos, necesita la historia completa). Un partner tiene decenas, no miles.
+    const [{ data: allEntries, error: entriesErr }, { data: payouts, error: payoutsErr }] = await Promise.all([
       sb
         .from('partner_ledger_entries')
-        .select('id, type, amount, concept, status, source, created_at')
+        .select('id, type, amount, concept, status, source, order_id, metadata, created_at')
         .eq('tenant_id', tenant.id)
-        .order('created_at', { ascending: false })
-        .limit(50),
+        .order('created_at', { ascending: true })
+        .limit(1000),
       sb
         .from('partner_payouts')
-        .select('id, amount, status, method, requested_at, resolved_at')
+        .select('id, amount, status, method, requested_at, resolved_at, metadata')
         .eq('tenant_id', tenant.id)
         .order('requested_at', { ascending: false })
-        .limit(20),
+        .limit(50),
     ])
+    if (entriesErr || payoutsErr) throw new Error(entriesErr?.message || payoutsErr?.message)
+
+    const entries = allEntries ?? []
+    const financials = computeFinancials(entries, payouts ?? [])
+    const sales = buildPartnerSales(entries)
 
     return NextResponse.json({
       // `pendingReview` kept as an alias for backward compatibility with the UI.
       balance: { ...financials, pendingReview: financials.pending },
-      minPayout: MIN_PAYOUT_ARS,
-      entries: entries ?? [],
-      payouts: payouts ?? [],
+      payoutMode: 'weekly',
+      sales,
+      // Movimientos: sin metadata (tiene datos internos del cálculo).
+      entries: [...entries]
+        .reverse()
+        .slice(0, 50)
+        .map((e: any) => ({ id: e.id, type: e.type, amount: e.amount, concept: e.concept, status: e.status, source: e.source, created_at: e.created_at })),
+      payouts: (payouts ?? []).map((p: any) => ({
+        id: p.id,
+        amount: p.amount,
+        status: p.status,
+        method: p.method,
+        requested_at: p.requested_at,
+        resolved_at: p.resolved_at,
+        reference: typeof p.metadata?.reference === 'string' ? p.metadata.reference : null,
+        paid_at: typeof p.metadata?.paid_at === 'string' ? p.metadata.paid_at : p.resolved_at,
+      })),
       bankAlias: (tenant as any).bank_alias || null,
       bankCbu: (tenant as any).bank_cbu || null,
     })
@@ -50,53 +74,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const auth = await requireTenantPermission(request, 'withdrawals:manage')
-    if (!auth.ok) return auth.response
-    const tenant = auth.tenant
-
-    const body = await request.json().catch(() => ({}))
-    const amount = Math.round(Number(body.amount) || 0)
-    const method = String(
-      body.method || (tenant as any).bank_alias || (tenant as any).bank_cbu || '',
-    ).slice(0, 120)
-    // Do not fall back to an optional body field. The client must retain this
-    // header while retrying a single withdrawal intent.
-    const idempotencyKey = request.headers.get('idempotency-key')?.trim() || ''
-    const keyValidation = validateIdempotencyKey(idempotencyKey)
-    if (!keyValidation.ok) {
-      return NextResponse.json({ error: keyValidation.error }, { status: keyValidation.status })
-    }
-
-    const result = await requestPayout({ tenantId: tenant.id, amount, method, idempotencyKey })
-    if (!result.ok) {
-      return NextResponse.json({ error: result.error }, { status: result.status })
-    }
-
-    // Aviso interno (Telegram ventas si está configurado) — best effort.
-    // No se reenvía en réplicas idempotentes para no duplicar la notificación.
-    if (!result.idempotent) {
-      try {
-        const token = process.env.TELEGRAM_BOT_TOKEN_SALES || process.env.TELEGRAM_BOT_TOKEN
-        const chatId = process.env.TELEGRAM_CHAT_ID_SALES || process.env.TELEGRAM_CHAT_ID
-        if (token && chatId) {
-          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: `💸 RETIRO SOLICITADO\n\nPartner: ${tenant.name} (${tenant.slug})\nMonto: $${amount.toLocaleString('es-AR')}\nDestino: ${method}\n\nTransferir y marcar pagado.`,
-            }),
-          })
-        }
-      } catch {
-        /* no bloquea */
-      }
-    }
-
-    return NextResponse.json({ ok: true, payoutId: result.payoutId, idempotent: !!result.idempotent })
-  } catch (e: any) {
-    console.error('[finanzas] POST error:', e?.message)
-    return NextResponse.json({ error: 'Error interno' }, { status: 500 })
-  }
+  const auth = await requireTenantPermission(request, 'withdrawals:read')
+  if (!auth.ok) return auth.response
+  return NextResponse.json(
+    {
+      error:
+        'Ya no hace falta pedir retiros: Novamente te transfiere tu ganancia disponible una vez por semana, sin mínimo, al alias o CBU de tu panel.',
+    },
+    { status: 410 },
+  )
 }

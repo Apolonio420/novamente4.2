@@ -21,7 +21,7 @@
  * futuro se conecta `image_url` al storefront, hay que gatear ahí también.
  */
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getPartnerPlanPrice, ALL_GARMENT_PRICING } from './garment-pricing.server'
+import { costoPartnerUnitario, esDobleEstampa } from './partner-cost'
 import type { Plan } from './types'
 
 const db = () => supabaseAdmin as any
@@ -146,21 +146,18 @@ export function needsPublishedProductValidation(
 }
 
 /**
- * Production cost of a product (ARS): garment pricing (plan price) is always the
- * source of truth when garmentKey resolves — explicit metadata cost is only a
- * last-resort fallback (a partner writing metadata.cost_partner cannot override
- * the plan price and evade the publish margin gate).
+ * Production cost of a product (ARS) — lo que paga el partner por UNA prenda:
+ * precio del plan + recargo por doble estampa si el producto se estampa en las
+ * dos caras (ver lib/partners/partner-cost.ts, fuente única). Garment pricing
+ * (plan price) is always the source of truth when garmentKey resolves —
+ * explicit metadata cost is only a last-resort fallback (a partner writing
+ * metadata.cost_partner cannot override the plan price and evade the publish
+ * margin gate). Sin heurística por nombre: si no hay garmentKey ni costo
+ * explícito, devuelve null.
  */
 export function resolveProductCost(metadata: Record<string, unknown> | null | undefined, plan: Plan): number | null {
-  const meta = metadata || {}
-  const gk = typeof (meta as any).garmentKey === 'string' ? (meta as any).garmentKey : null
-  if (gk && ALL_GARMENT_PRICING[gk]) {
-    const price = getPartnerPlanPrice(gk, plan)
-    if (price) return price
-  }
-  const explicit = Number((meta as any).cost_partner ?? (meta as any).cost_ars)
-  if (Number.isFinite(explicit) && explicit > 0) return explicit
-  return null
+  const costo = costoPartnerUnitario({ metadata, plan, doble: esDobleEstampa(metadata) })
+  return costo ? costo.total : null
 }
 
 // ---------------------------------------------------------------------------

@@ -17,7 +17,8 @@
 import { getOrderByExternalReference, updateOrder } from "@/lib/db"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { MercadoPagoConfig, Payment } from "mercadopago"
-import { creditOrderMargin, reverseOrderMargin } from "@/lib/partners/ledger"
+import { reverseOrderMargin } from "@/lib/partners/ledger"
+import { runPartnerSaleEffects, partnerSaleKey } from "@/lib/partners/sale-effects"
 import { sendEmail } from "@/lib/email"
 import { matchGarmentKey, matchStockColor, normalizeStockSize } from "@/lib/stock/liquidation"
 import { registrarUsoDescuento } from "@/lib/checkout/discount-guard"
@@ -164,9 +165,10 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
   // el proceso moría entre confirmar la orden (PASO 6) y acreditar el ledger /
   // notificar, el reintento de MP entraba acá y el margen del partner se perdía
   // para siempre. Ahora el retry re-corre los efectos, que son seguros de
-  // repetir: bridge upsert (onConflict payment_id) y creditOrderMargin (unique
-  // index) son idempotentes, y las notificaciones/email llevan guard en el
-  // metadata FRESCO de la orden (partner_notified_at, confirmation_email_sent_at,
+  // repetir: los efectos de venta partner (lib/partners/sale-effects.ts:
+  // crédito con unique index + bridge que busca antes de insertar) son
+  // idempotentes, y las notificaciones/email llevan guard en el
+  // metadata FRESCO de la orden (partner_notified_tenants, confirmation_email_sent_at,
   // sale_notified_at) — lo ya hecho no se repite, lo que faltaba se completa.
   if (order.status === "confirmed" && order.payment_id === String(paymentId) && paymentDetails.status === "approved") {
     console.log("ℹ️ Orden ya confirmada con mismo payment_id — reconciliando efectos pendientes:", order.id)
@@ -368,10 +370,10 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
  * camino normal tras ganar el claim de PASO 6, y también en cada retry que
  * entra por el guard de PASO 3 (orden ya confirmada con el mismo pago) — así,
  * si el proceso murió a mitad de los efectos, el reintento de MP o el fallback
- * /api/payments/confirm completan lo que faltó. Repetir es seguro: el bridge
- * es upsert (onConflict payment_id), creditOrderMargin es idempotente (unique
- * index), y las comunicaciones llevan guard persistido en metadata
- * (partner_notified_at / confirmation_email_sent_at / sale_notified_at).
+ * /api/payments/confirm completan lo que faltó. Repetir es seguro: los efectos
+ * de venta partner (runPartnerSaleEffects) son idempotentes, y las
+ * comunicaciones llevan guard persistido en metadata
+ * (partner_notified_tenants / confirmation_email_sent_at / sale_notified_at).
  * CAPI dedupea en Meta por event_id = order.id.
  *
  * `baseMetadata` = metadata vigente de la orden (fresco en el camino de retry;
@@ -390,86 +392,21 @@ async function runConfirmedOrderEffects(
   {
     console.log("🎉 Pago aprobado! Orden confirmada:", order.order_number)
 
-    // Bridgear a partner_orders si la orden viene de un storefront partner
+    // Venta de tienda partner: ganancia al ledger, bridge a partner_orders, mail
+    // al partner y aviso de deuda a Novamente — lib/partners/sale-effects.ts, el
+    // mismo camino que usa la confirmación de transferencias (antes esto vivía
+    // solo acá y las transferencias nunca acreditaban al partner).
     const tenantId = (order as any).tenant_id
-    let partnerMargin = 0
     if (tenantId) {
       try {
-        const partnerOrderPayload = {
-          tenant_id: tenantId,
-          customer_name:
-            `${(order as any).customer_first_name || ""} ${(order as any).customer_last_name || ""}`.trim() || null,
-          customer_email: order.customer_email || null,
-          customer_phone: (order as any).customer_phone || null,
-          items: order.items || [],
-          total: order.total || 0,
-          currency: (order as any).currency || "ARS",
-          status: "confirmed",
-          payment_id: String(paymentId),
-          payment_status: "approved",
-          shipping_info: {
-            address: (order as any).shipping_address || null,
-            city: (order as any).shipping_city || null,
-            postal_code: (order as any).shipping_postal_code || null,
-            cost: (order as any).shipping_cost || 0,
-          },
-        }
-
-        const { error: partnerOrderError } = await (supabaseAdmin as any)
-          .from("partner_orders")
-          .upsert({ ...partnerOrderPayload, updated_at: new Date().toISOString() }, { onConflict: "payment_id" })
-
-        if (partnerOrderError) {
-          console.error("❌ Error bridgeando a partner_orders:", partnerOrderError.message)
-        } else {
-          console.log("✅ Venta bridgeada a partner_orders para tenant:", tenantId)
-        }
-
-        // Ledger: acreditar el margen del partner por esta venta (idempotente)
-        const credited = await creditOrderMargin({
-          id: order.id as string,
-          tenant_id: tenantId,
-          order_number: order.order_number,
-          items: order.items as any[],
+        const r = await runPartnerSaleEffects(order as any, {
+          saleKey: partnerSaleKey(order as any, paymentId),
+          meta,
+          notifyPartner: true,
         })
-        partnerMargin = credited?.margin || 0
-      } catch (bridgeErr: any) {
-        console.error("❌ Exception bridgeando partner_orders:", bridgeErr.message)
-      }
-
-      // Avisar al PARTNER que su tienda vendió (antes solo se enteraba Novamente).
-      // Guard en metadata para no duplicar si webhook + confirm procesan ambos.
-      if (!meta.partner_notified_at) {
-        try {
-          const { data: tenant } = await (supabaseAdmin as any)
-            .from("tenants")
-            .select("name, email, metadata")
-            .eq("id", tenantId)
-            .maybeSingle()
-          if (tenant?.email) {
-            const { notifyPartnerOrder } = await import("@/lib/notifications")
-            await notifyPartnerOrder(tenant, {
-              customerName:
-                `${(order as any).customer_first_name || ""} ${(order as any).customer_last_name || ""}`.trim() || null,
-              items: (order.items || []).map((item: any) => ({
-                name: item.item_name || "Producto",
-                quantity: item.quantity || 1,
-                color: item.product_color || undefined,
-                talle: item.product_size || undefined,
-                unit_price: item.unit_price || 0,
-              })),
-              pvpTotal: order.total || 0,
-              partnerTotal: partnerMargin,
-              produce: false,
-              pedidoNumero: order.order_number || undefined,
-            })
-            meta.partner_notified_at = new Date().toISOString()
-            await updateOrder(order.id!, { metadata: meta })
-            console.log("✅ Partner notificado de la venta:", tenantId)
-          }
-        } catch (partnerNotifErr: any) {
-          console.error("❌ Error notificando al partner:", partnerNotifErr.message)
-        }
+        Object.assign(meta, r.meta)
+      } catch (partnerErr: any) {
+        console.error("❌ Exception en efectos de venta partner:", partnerErr?.message)
       }
     }
 

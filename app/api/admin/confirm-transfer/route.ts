@@ -24,7 +24,8 @@ import { sendEmail } from "@/lib/email"
 import { transferConfirmSig } from "@/lib/payments/transfer-confirm"
 
 export const dynamic = "force-dynamic"
-export const maxDuration = 15
+// 30 s: además de los mails, una venta de tienda partner acredita al ledger y avisa al partner.
+export const maxDuration = 30
 
 const BASE = process.env.NEXT_PUBLIC_BASE_URL || "https://www.novamente.ar"
 
@@ -101,14 +102,42 @@ export async function POST(req: NextRequest) {
   const o = r.o
 
   const now = new Date().toISOString()
-  const meta = { ...(o.metadata || {}), transfer_confirmed_at: now, transfer_confirmed_via: "admin-link", transfer_op: op }
+  const meta: Record<string, any> = { ...(o.metadata || {}), transfer_confirmed_at: now, transfer_confirmed_via: "admin-link", transfer_op: op }
+  // status → confirmed, igual que un pago aprobado por MP (antes quedaba en
+  // "pending" con payment_status "approved", caso NOV-20260926-9852).
   const ok = await updateOrder(o.id, {
     payment_status: "approved",
+    status: "confirmed",
     payment_id: op,
     metadata: meta,
     notes: `PAGADA POR TRANSFERENCIA (confirmada por link admin ${now.slice(0, 10)}) — op. ${op}.${o.notes ? ` | Antes: ${o.notes}` : ""}`,
   } as any)
   if (!ok) return page("No se pudo actualizar", "updateOrder devolvió false. Revisá la DB.", false)
+
+  // Venta de tienda partner: mismos efectos que un pago MP (ganancia al ledger,
+  // bridge a partner_orders, mail al partner, aviso de deuda). Antes este
+  // camino NO acreditaba nada al partner. Si algo falla acá, el barrido diario
+  // (lib/partners/ledger-sweep.ts) lo completa.
+  let partnerNote = ""
+  if (o.tenant_id) {
+    try {
+      const { runPartnerSaleEffects, partnerSaleKey } = await import("@/lib/partners/sale-effects")
+      const orderConfirmada = { ...o, payment_status: "approved", status: "confirmed", payment_id: op, metadata: meta }
+      const efectos = await runPartnerSaleEffects(orderConfirmada, {
+        saleKey: partnerSaleKey(orderConfirmada),
+        meta,
+        notifyPartner: true,
+      })
+      Object.assign(meta, efectos.meta)
+      const credits = efectos.credit?.credits || []
+      partnerNote = credits.length
+        ? `<br/>Ganancia partner acreditada: ${credits.map((c) => `$${c.amount.toLocaleString("es-AR")}${c.needsReview ? " (EN REVISIÓN)" : ""}`).join(" + ")}.`
+        : "<br/>⚠️ No se pudo acreditar la ganancia del partner (lo reintenta el barrido diario)."
+    } catch (e: any) {
+      console.error("[confirm-transfer] efectos de venta partner fallaron:", e?.message)
+      partnerNote = "<br/>⚠️ Falló la acreditación al partner (lo reintenta el barrido diario)."
+    }
+  }
 
   const items = (o.items || []).map((it: any) => ({
     name: it.item_name || "Producto", qty: it.quantity || 1, size: it.product_size, color: it.product_color,
@@ -134,7 +163,10 @@ ${sinDireccion
 <p>— Novamente · <a href="${BASE}">novamente.ar</a></p>`,
     })
     mailCliente = sent.ok ? `enviado a ${o.customer_email}` : `FALLÓ (${sent.error || "?"})`
-    if (sent.ok) await updateOrder(o.id, { metadata: { ...meta, confirmation_email_sent_at: new Date().toISOString() } } as any)
+    if (sent.ok) {
+      meta.confirmation_email_sent_at = new Date().toISOString()
+      await updateOrder(o.id, { metadata: meta } as any)
+    }
   }
 
   // 2) Aviso de VENTA a Novamente (Telegram + mail), mismo patrón que los pagos MP.
@@ -155,5 +187,5 @@ ${sinDireccion
     })
   } catch (e) { console.error("[confirm-transfer] mail venta falló:", e) }
 
-  return page(`${order} confirmado ✅`, `Pago registrado (op. ${op}) por <b>$${total}</b>.<br/>Mail al cliente: ${mailCliente}.<br/>${sinDireccion ? "⚠️ La orden no tiene dirección de envío — el mail se la pide." : `Envío a ${o.shipping_address}, ${o.shipping_city || ""}.`}<br/><br/>Ahora: cargar el pedido al proveedor desde la ficha en el admin.`)
+  return page(`${order} confirmado ✅`, `Pago registrado (op. ${op}) por <b>$${total}</b>.<br/>Mail al cliente: ${mailCliente}.${partnerNote}<br/>${sinDireccion ? "⚠️ La orden no tiene dirección de envío — el mail se la pide." : `Envío a ${o.shipping_address}, ${o.shipping_city || ""}.`}<br/><br/>Ahora: cargar el pedido al proveedor desde la ficha en el admin.`)
 }

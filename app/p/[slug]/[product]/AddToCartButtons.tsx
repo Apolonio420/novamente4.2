@@ -101,9 +101,11 @@ export function AddToCartButtons({
   // Precio efectivo según la medida elegida (variant pricing); si no hay tabla, usa el base.
   const currentPrice = (sizePrices && sizePrices[selectedSize] != null) ? sizePrices[selectedSize] : price
   const hasColors = availableColors && availableColors.length > 0
+  // Sin selector de color (producto de un solo color): el color del producto
+  // (metadata.color). Antes quedaba "" y el pedido llegaba con color "unknown".
   const initialColor = defaultColor && availableColors?.some(c => c.name === defaultColor)
     ? defaultColor
-    : (availableColors?.[0]?.name ?? "")
+    : (availableColors?.[0]?.name ?? defaultColor ?? "")
   // Estado interno (uncontrolled) — se usa siempre que el caller no pase
   // selectedColor/onSelectColor. Si los pasa (modo controlado), esos props
   // ganan y este estado queda sin usar (no se pierde nada al no controlarlo).

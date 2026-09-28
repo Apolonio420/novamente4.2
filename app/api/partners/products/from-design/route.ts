@@ -126,8 +126,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Costo real del plan para este garmentKey — mismo piso que el resto del
-    // catálogo (precio ≥ costo).
-    const cost = resolveProductCost({ garmentKey }, tenant.plan)
+    // catálogo (precio ≥ costo). Con arte de frente Y dorso suma el recargo
+    // por doble estampa (lib/partners/partner-cost.ts).
+    const cost = resolveProductCost(
+      {
+        garmentKey,
+        print: {
+          front: front?.designUrl ? { designUrl: front.designUrl } : undefined,
+          back: back?.designUrl ? { designUrl: back.designUrl } : undefined,
+        },
+      },
+      tenant.plan,
+    )
     if (cost != null && numericPrice <= cost) {
       return NextResponse.json(
         { error: `El precio ($${numericPrice.toLocaleString('es-AR')}) no cubre el costo de producción ($${cost.toLocaleString('es-AR')}). Subí el precio para tener margen.` },
