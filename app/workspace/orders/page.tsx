@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import { authFetch } from '@/lib/partners/auth-fetch'
 import LoadOrderModal from './components/LoadOrderModal'
 import { isPartnersFulfillmentEnabled } from '@/lib/partners/feature-flags'
+import { partnerOrderPayment, type PartnerOrderPayment } from '@/lib/partners/order-payment'
 
 // --- Types ---
 
@@ -48,7 +49,6 @@ interface Order {
   currency: string
   status: OrderStatus
   payment_id: string | null
-  payment_status: PaymentStatus
   shipping_info: Record<string, unknown>
   notes: string | null
   fulfillment_status?: FulfillmentStatus
@@ -63,7 +63,6 @@ interface Order {
 }
 
 type OrderStatus = 'pending' | 'confirmed' | 'producing' | 'shipped' | 'delivered' | 'exception' | 'cancelled'
-type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'refunded' | 'charged_back' | 'cancelled'
 type FulfillmentStatus = 'awaiting_art_approval' | 'queued_for_production' | 'in_production' | 'quality_check' | 'ready_to_ship' | 'shipped' | 'delivered' | 'exception' | 'cancelled'
 
 // --- Constants ---
@@ -106,12 +105,10 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; bg: string; icon: Reac
   },
 }
 
-const PAYMENT_CONFIG: Record<PaymentStatus, { label: string; bg: string }> = {
+// El pago se deduce del estado del pedido (partner_orders no tiene payment_status).
+const PAYMENT_CONFIG: Record<PartnerOrderPayment, { label: string; bg: string }> = {
   pending: { label: 'Pendiente', bg: 'bg-zinc-500/20 border-zinc-500/30 text-zinc-300' },
-  approved: { label: 'Aprobado', bg: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' },
-  rejected: { label: 'Rechazado', bg: 'bg-red-500/20 border-red-500/30 text-red-300' },
-  refunded: { label: 'Reembolsado', bg: 'bg-amber-500/20 border-amber-500/30 text-amber-300' },
-  charged_back: { label: 'Contracargo', bg: 'bg-orange-500/20 border-orange-500/30 text-orange-300' },
+  paid: { label: 'Pagado', bg: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' },
   cancelled: { label: 'Cancelado', bg: 'bg-zinc-500/20 border-zinc-500/30 text-zinc-400' },
 }
 
@@ -267,7 +264,7 @@ function OrderDetail({
   isUpdating: boolean
 }) {
   const statusCfg = STATUS_CONFIG[order.status]
-  const paymentCfg = PAYMENT_CONFIG[order.payment_status] || PAYMENT_CONFIG.pending
+  const paymentCfg = PAYMENT_CONFIG[partnerOrderPayment(order)]
   const transitions = STATUS_TRANSITIONS[order.status]
   const displayName = order.customer_name || order.customer_email || order.customer_phone || 'Cliente anonimo'
   const [editingNotes, setEditingNotes] = useState(false)

@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS partner_orders (
   currency TEXT DEFAULT 'ARS',
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending','confirmed','producing','shipped','delivered','cancelled')),
   payment_id TEXT,
+  -- OJO (28/09/2026): payment_status NO existe en la tabla de prod. El código ya
+  -- no la usa; el pago se deduce de `status` (lib/partners/order-payment.ts).
   payment_status TEXT DEFAULT 'pending' CHECK (payment_status IN ('pending','approved','rejected','refunded')),
   shipping_info JSONB DEFAULT '{}',
   notes TEXT,

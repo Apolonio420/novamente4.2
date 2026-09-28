@@ -335,15 +335,11 @@ function daysAgoIso(days: number): string {
 // de pagos reales (process-payment.ts) — no queremos que un pago real algun
 // dia choque contra un valor inventado.
 //
-// NOTA schema drift: el codigo (lib/partners/orders.ts, la UI de
-// /workspace/orders) referencia una columna `payment_status`, y la migracion
-// create_partner_orders_table.sql la declara — pero la tabla EN VIVO (
-// confirmado corriendo un select real durante esta tarea, error PGRST204 al
-// intentar escribirla) no la tiene. Es drift preexistente, no introducido por
-// este seed — no la mandamos en el insert porque rompe. Efecto visible: el
-// badge de "Pago" en la UI va a mostrar siempre "Pendiente" para estos 3
-// pedidos (falla igual para pedidos reales, no es un problema nuevo de este
-// fixture).
+// NOTA schema drift: la migracion create_partner_orders_table.sql declara una
+// columna `payment_status`, pero la tabla EN VIVO no la tiene (PGRST204 al
+// escribirla). No la mandamos en el insert. El codigo ya no la usa: el badge
+// de "Pago" en /workspace/orders y los KPIs deducen el pago de `status`
+// (lib/partners/order-payment.ts).
 function buildDemoOrder(
   tenantId: string,
   id: string,

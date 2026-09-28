@@ -109,8 +109,9 @@ export async function PUT(
       return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
     }
 
+    // payment_status NO: partner_orders no tiene esa columna (el update fallaba).
     const allowedFields = [
-      'status', 'payment_status', 'notes', 'shipping_info', 'fulfillment_status',
+      'status', 'notes', 'shipping_info', 'fulfillment_status',
       'estimated_delivery_at', 'carrier', 'tracking_number', 'tracking_url', 'exception_reason',
     ] as const
     const updates: Record<string, unknown> = {}

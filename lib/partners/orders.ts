@@ -39,7 +39,8 @@ export interface PartnerOrder {
   // hide an order that needs manual attention.
   status: 'pending' | 'confirmed' | 'producing' | 'shipped' | 'delivered' | 'exception' | 'cancelled'
   payment_id: string | null
-  payment_status: 'pending' | 'approved' | 'rejected' | 'refunded' | 'charged_back' | 'cancelled'
+  // Sin payment_status: la columna no existe en prod. El pago se deduce de
+  // `status` → ver lib/partners/order-payment.ts.
   shipping_info: Record<string, unknown>
   notes: string | null
   fulfillment_status: FulfillmentStatus
@@ -159,7 +160,7 @@ export async function updateOrder(
   tenantId: string,
   id: string,
   updates: Partial<Pick<PartnerOrder,
-    'notes' | 'shipping_info' | 'payment_status' | 'status' | 'fulfillment_status'
+    'notes' | 'shipping_info' | 'status' | 'fulfillment_status'
     | 'estimated_delivery_at' | 'carrier' | 'tracking_number' | 'tracking_url' | 'exception_reason'
   >>,
 ): Promise<PartnerOrder | null> {

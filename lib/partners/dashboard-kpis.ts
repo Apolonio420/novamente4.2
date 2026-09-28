@@ -2,6 +2,7 @@
  * KPIs del dashboard del partner — derivados de partner_orders + partner_leads.
  */
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { isPartnerOrderPaid } from '@/lib/partners/order-payment'
 
 const db = () => supabaseAdmin as any
 
@@ -28,16 +29,18 @@ export async function getDashboardKPIs(tenantId: string): Promise<DashboardKPIs>
   const t30d = new Date(now.getTime() - 30 * MS_DAY).toISOString()
   const t60d = new Date(now.getTime() - 60 * MS_DAY).toISOString()
 
-  // Ordenes ultimos 60 dias
-  const { data: ordersRaw } = await db()
+  // Ordenes ultimos 60 dias. Sin payment_status: esa columna no existe en
+  // partner_orders y pedirla hacía fallar la query → KPIs siempre en 0.
+  const { data: ordersRaw, error: ordersError } = await db()
     .from('partner_orders')
-    .select('id, total, items, status, payment_status, created_at')
+    .select('id, total, items, status, payment_id, created_at')
     .eq('tenant_id', tenantId)
     .gte('created_at', t60d)
     .order('created_at', { ascending: false })
+  if (ordersError) throw new Error(`getDashboardKPIs(partner_orders): ${ordersError.message}`)
 
   const orders = (ordersRaw || []) as any[]
-  const isPaid = (o: any) => o.payment_status === 'approved' || ['confirmed', 'producing', 'shipped', 'delivered'].includes(o.status)
+  const isPaid = isPartnerOrderPaid
   const isFulfilled = (o: any) => ['shipped', 'delivered'].includes(o.status)
 
   const last30 = orders.filter(o => new Date(o.created_at).getTime() > now.getTime() - 30 * MS_DAY)
