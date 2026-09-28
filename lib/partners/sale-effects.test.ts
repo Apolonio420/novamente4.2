@@ -218,3 +218,38 @@ describe('runPartnerSaleEffects — aviso de deuda por Telegram (notifyPartnerDe
     expect(notifyPartnerDebtMock).toHaveBeenCalledWith(expect.objectContaining({ tenantSlug: expect.any(String) }))
   })
 })
+
+describe('runPartnerSaleEffects — payoutMode derivado de tenant.metadata', () => {
+  const order = { id: 'order-5', tenant_id: 'tenant-A', order_number: 'NOV-5', items: [{ id: 'item-1', item_name: 'Item 1' }] }
+  const credit = makeCredit({ tenantId: 'tenant-A', inserted: true, breakdown: [{ order_item_id: 'item-1', unit: 1000, qty: 1, descuento: 0 }] })
+
+  beforeEach(() => {
+    creditOrderMarginMock.mockResolvedValue({ margin: 1000, needsReview: false, excluded: [], credits: [credit] })
+  })
+
+  it("tenant.metadata.payout_mode 'credit' → se pasa payoutMode:'credit' a notifyPartnerWebSale y notifyPartnerDebt", async () => {
+    h.state.tenants.push({
+      data: [{ id: 'tenant-A', name: 'Sponsors', slug: 'sponsors', email: 'sponsors@x.com', bank_alias: null, bank_cbu: null, metadata: { payout_mode: 'credit' } }],
+      error: null,
+    })
+
+    await runPartnerSaleEffects(order, { saleKey: 'web:order-5', meta: {}, notifyPartner: true })
+
+    expect(notifyPartnerWebSaleMock).toHaveBeenCalledTimes(1)
+    expect(notifyPartnerWebSaleMock.mock.calls[0][1]).toMatchObject({ payoutMode: 'credit' })
+    expect(notifyPartnerDebtMock).toHaveBeenCalledTimes(1)
+    expect(notifyPartnerDebtMock.mock.calls[0][0]).toMatchObject({ payoutMode: 'credit' })
+  })
+
+  it("tenant sin metadata.payout_mode (o sin metadata) → payoutMode:'cash'", async () => {
+    h.state.tenants.push({
+      data: [{ id: 'tenant-A', name: 'Tienda A', slug: 'a', email: 'a@x.com', bank_alias: 'a.alias', bank_cbu: null }],
+      error: null,
+    })
+
+    await runPartnerSaleEffects(order, { saleKey: 'web:order-5', meta: {}, notifyPartner: true })
+
+    expect(notifyPartnerWebSaleMock.mock.calls[0][1]).toMatchObject({ payoutMode: 'cash' })
+    expect(notifyPartnerDebtMock.mock.calls[0][0]).toMatchObject({ payoutMode: 'cash' })
+  })
+})

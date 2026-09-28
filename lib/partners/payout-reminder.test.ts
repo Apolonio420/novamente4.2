@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { oldestUnpaidCredit, buildWeeklyPayoutMessage, esLunesArgentina, type PartnerBalance } from './payout-reminder'
+import { payoutModeDe } from './payout-mode'
 
 // Las tres funciones son puras (no tocan supabase) — no hace falta mockear nada.
 
@@ -37,6 +38,7 @@ function balance(overrides: Partial<PartnerBalance> = {}): PartnerBalance {
     name: 'Sponsors',
     bankAlias: 'sponsors.mp',
     bankCbu: null,
+    payoutMode: 'cash',
     available: 0,
     pendingReview: 0,
     paid: 0,
@@ -89,6 +91,36 @@ describe('buildWeeklyPayoutMessage', () => {
     const msg = buildWeeklyPayoutMessage([balance({ available: 0, pendingReview: 3000 })])!
     expect(msg).toContain('En revisión')
     expect(msg).toContain('$3.000')
+  })
+})
+
+describe('buildWeeklyPayoutMessage — partners a crédito', () => {
+  it('no suma a crédito al total a transferir y los lista aparte como NO transferir', () => {
+    const msg = buildWeeklyPayoutMessage([
+      balance({ tenantId: 'a', slug: 'cash-partner', available: 10000 }),
+      balance({ tenantId: 'b', slug: 'sponsors', available: 23300, payoutMode: 'credit' }),
+    ])!
+    expect(msg).toContain('total $10.000')
+    expect(msg).toContain('cash-partner')
+    expect(msg).toMatch(/A crédito \(NO transferir[^)]*\): sponsors \$23\.300/)
+    expect(msg).not.toMatch(/• <b>sponsors<\/b>/)
+  })
+  it('si solo hay saldos a crédito (nada para transferir ni revisar) no manda mensaje', () => {
+    expect(buildWeeklyPayoutMessage([balance({ available: 23300, payoutMode: 'credit' })])).toBeNull()
+  })
+
+  // getPartnerBalances deriva payoutMode con payoutModeDe(tenant.metadata) — un
+  // tenant sin metadata (o sin la clave payout_mode) tiene que caer a 'cash' y
+  // sumar al total a transferir, no a la lista "A crédito".
+  it('tenant con metadata sin payout_mode (o sin metadata) → payoutMode cash, suma al total a transferir', () => {
+    const payoutModeSinMetadata = payoutModeDe(undefined)
+    expect(payoutModeSinMetadata).toBe('cash')
+    const msg = buildWeeklyPayoutMessage([
+      balance({ tenantId: 'sin-metadata', slug: 'sin-metadata-partner', available: 7000, payoutMode: payoutModeSinMetadata }),
+    ])!
+    expect(msg).toContain('total $7.000')
+    expect(msg).toContain('sin-metadata-partner')
+    expect(msg).not.toContain('A crédito')
   })
 })
 
