@@ -4,13 +4,12 @@
  * Streams the mp4 from the Robot's Supabase Storage through novamente.ar (the
  * domain verified in the TikTok Dev Portal). TikTok pulls anonymously.
  *
- * Reads Content rows from the Robot Supabase project (ywsoqaclylvrbqfvwofr) via
- * the service role key. This repo's own Supabase project is unrelated — do NOT
- * reuse NEXT_PUBLIC_SUPABASE_URL here.
+ * Reads Content rows with the service role key from this repo's own Supabase
+ * project, where the Robot's Content table lives since 2026-09-25.
  *
- * Required env:
- *   ROBOT_SUPABASE_URL                — https://ywsoqaclylvrbqfvwofr.supabase.co
- *   ROBOT_SUPABASE_SERVICE_ROLE_KEY   — service_role key for the Robot project
+ * Env: NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.
+ * ROBOT_SUPABASE_URL / ROBOT_SUPABASE_SERVICE_ROLE_KEY, if set, override them —
+ * leave them unset unless the Robot moves to a separate project again.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
