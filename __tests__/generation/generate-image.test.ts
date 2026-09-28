@@ -3,13 +3,21 @@ import { NextRequest } from "next/server"
 
 // --- Mocks ---
 
-// Mock rate-limit to always allow
-vi.mock("@/lib/rate-limit", () => ({
-  rateLimit: () => ({
-    check: () => ({ success: true, resetAt: Date.now() + 60000 }),
-  }),
-  rateLimitResponse: () =>
-    new Response(JSON.stringify({ error: "Rate limited" }), { status: 429 }),
+// Guard publico (rate-limit por IP + topes, DB-backed): tiene su propia suite
+// en lib/security/public-image-guard.test.ts. Aca solo importa que el route
+// lo consulte y respete su respuesta.
+const mockGuard = vi.fn()
+vi.mock("@/lib/security/public-image-guard", () => ({
+  guardPublicImageGen: (...args: any[]) => mockGuard(...args),
+}))
+
+// Metering de costo (escribe en api_usage) y telemetria (lib/db): sin DB en tests
+const mockMeter = vi.fn().mockResolvedValue(undefined)
+vi.mock("@/lib/security/meter-usage", () => ({
+  meterPublicImageGen: (...args: any[]) => mockMeter(...args),
+}))
+vi.mock("@/lib/db", () => ({
+  saveGeneratedImage: vi.fn().mockResolvedValue(undefined),
 }))
 
 // Mock R2 upload
@@ -30,15 +38,30 @@ vi.mock("@/lib/notifications", () => ({
   notifyError: vi.fn().mockResolvedValue(undefined),
 }))
 
-// Mock Gemini
-const mockGenerateContent = vi.fn()
+// Gemini, SDK viejo (@google/generative-ai): el route solo lo usa para
+// reescribir el prompt en modo iteracion (instruction + lastPrompt).
+const mockTextGenerateContent = vi.fn()
 vi.mock("@google/generative-ai", () => {
   return {
     GoogleGenerativeAI: class {
       getGenerativeModel() {
         return {
-          generateContent: (...args: any[]) => mockGenerateContent(...args),
+          generateContent: (...args: any[]) => mockTextGenerateContent(...args),
         }
+      }
+    },
+  }
+})
+
+// Gemini, SDK nuevo (@google/genai): la generacion de imagen va por aca desde
+// que el route pasa imageConfig.aspectRatio. Forma de la respuesta: candidates
+// directo en el resultado (no bajo `.response`) y `text` es un getter.
+const mockImageGenerateContent = vi.fn()
+vi.mock("@google/genai", () => {
+  return {
+    GoogleGenAI: class {
+      models = {
+        generateContent: (...args: any[]) => mockImageGenerateContent(...args),
       }
     },
   }
@@ -58,43 +81,43 @@ function makeRequest(body: Record<string, unknown>): NextRequest {
   })
 }
 
+function imageResponse(...base64s: string[]) {
+  return {
+    candidates: [
+      {
+        content: {
+          parts: base64s.map((data) => ({ inlineData: { mimeType: "image/png", data } })),
+        },
+      },
+    ],
+    text: undefined,
+    usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 1290 },
+  }
+}
+
+function textResponse(text: string) {
+  return {
+    candidates: [{ content: { parts: [{ text }] } }],
+    text,
+  }
+}
+
 // Helper: Gemini returns an image
 function mockGeminiImage(base64 = "iVBORw0KGgoAAAANSUhEUg==") {
-  mockGenerateContent.mockResolvedValue({
-    response: {
-      candidates: [
-        {
-          content: {
-            parts: [
-              { inlineData: { mimeType: "image/png", data: base64 } },
-            ],
-          },
-        },
-      ],
-      text: () => undefined,
-    },
-  })
+  mockImageGenerateContent.mockResolvedValue(imageResponse(base64))
 }
 
 // Helper: Gemini returns only text (no image)
 function mockGeminiTextOnly(text = "I cannot generate images") {
-  mockGenerateContent.mockResolvedValue({
-    response: {
-      candidates: [
-        {
-          content: {
-            parts: [{ text }],
-          },
-        },
-      ],
-      text: () => text,
-    },
-  })
+  mockImageGenerateContent.mockResolvedValue(textResponse(text))
 }
 
 describe("POST /api/generate-image", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockImageGenerateContent.mockReset()
+    mockTextGenerateContent.mockReset()
+    mockGuard.mockResolvedValue({ allowed: true })
     mockUploadFile.mockResolvedValue({
       url: "https://r2.example.com/v1/raw-designs/test.png",
       provider: "r2" as const,
@@ -132,27 +155,9 @@ describe("POST /api/generate-image", () => {
 
   it("retries when Gemini returns text instead of image", async () => {
     // First call returns text, second returns image
-    mockGenerateContent
-      .mockResolvedValueOnce({
-        response: {
-          candidates: [{ content: { parts: [{ text: "no image" }] } }],
-          text: () => "no image",
-        },
-      })
-      .mockResolvedValueOnce({
-        response: {
-          candidates: [
-            {
-              content: {
-                parts: [
-                  { inlineData: { mimeType: "image/png", data: "abc123" } },
-                ],
-              },
-            },
-          ],
-          text: () => undefined,
-        },
-      })
+    mockImageGenerateContent
+      .mockResolvedValueOnce(textResponse("no image"))
+      .mockResolvedValueOnce(imageResponse("abc123"))
 
     const res = await POST(makeRequest({ prompt: "a cat" }))
     const json = await res.json()
@@ -160,7 +165,7 @@ describe("POST /api/generate-image", () => {
     expect(res.status).toBe(200)
     expect(json.success).toBe(true)
     // Gemini was called twice (initial + retry)
-    expect(mockGenerateContent).toHaveBeenCalledTimes(2)
+    expect(mockImageGenerateContent).toHaveBeenCalledTimes(2)
   })
 
   it("returns 502 when both attempts return text", async () => {
@@ -171,7 +176,7 @@ describe("POST /api/generate-image", () => {
 
     expect(res.status).toBe(502)
     expect(json.error).toContain("texto en lugar de imagen")
-    expect(mockGenerateContent).toHaveBeenCalledTimes(2)
+    expect(mockImageGenerateContent).toHaveBeenCalledTimes(2)
   })
 
   it("includes promptUsed field in response", async () => {
@@ -210,25 +215,11 @@ describe("POST /api/generate-image", () => {
   // --- Instruction-based iteration ---
 
   it("accepts instruction + lastPrompt for iteration", async () => {
-    // Text model resolves new prompt, then image model generates
-    mockGenerateContent
-      .mockResolvedValueOnce({
-        response: { text: () => "modified prompt with blue sky" },
-      })
-      .mockResolvedValueOnce({
-        response: {
-          candidates: [
-            {
-              content: {
-                parts: [
-                  { inlineData: { mimeType: "image/png", data: "abc" } },
-                ],
-              },
-            },
-          ],
-          text: () => undefined,
-        },
-      })
+    // Text model (SDK viejo) resuelve el prompt nuevo, image model (SDK nuevo) genera
+    mockTextGenerateContent.mockResolvedValueOnce({
+      response: { text: () => "modified prompt with blue sky" },
+    })
+    mockImageGenerateContent.mockResolvedValueOnce(imageResponse("abc"))
 
     const res = await POST(
       makeRequest({
@@ -240,6 +231,49 @@ describe("POST /api/generate-image", () => {
 
     expect(res.status).toBe(200)
     expect(json.success).toBe(true)
+    expect(mockTextGenerateContent).toHaveBeenCalledTimes(1)
+    expect(json.promptUsed).toContain("modified prompt with blue sky")
+    const [params] = mockImageGenerateContent.mock.calls[0]
+    expect(params.contents[0].text).toContain("modified prompt with blue sky")
+  })
+
+  // --- B) Guard, aspect ratio y metering ---
+
+  it("returns the guard's status/message and never calls Gemini when the guard blocks", async () => {
+    mockGuard.mockResolvedValueOnce({ allowed: false, status: 429, message: "Demasiadas solicitudes." })
+
+    const res = await POST(makeRequest({ prompt: "a red dragon" }))
+    const json = await res.json()
+
+    expect(res.status).toBe(429)
+    expect(json.error).toBe("Demasiadas solicitudes.")
+    expect(mockImageGenerateContent).not.toHaveBeenCalled()
+    expect(mockGuard).toHaveBeenCalledWith(expect.anything(), "generate-image", { prompt: "a red dragon" })
+  })
+
+  it("passes the closest supported aspectRatio to Gemini via imageConfig (1:1 by default)", async () => {
+    mockGeminiImage()
+
+    await POST(makeRequest({ prompt: "banner", size: { width: 1200, height: 800 } }))
+    await POST(makeRequest({ prompt: "square" }))
+
+    expect(mockImageGenerateContent.mock.calls[0][0].config.imageConfig.aspectRatio).toBe("3:2")
+    expect(mockImageGenerateContent.mock.calls[1][0].config.imageConfig.aspectRatio).toBe("1:1")
+  })
+
+  it("meters the real cost with Gemini's usageMetadata after a successful generation", async () => {
+    mockGeminiImage()
+
+    await POST(makeRequest({ prompt: "a tree" }))
+
+    expect(mockMeter).toHaveBeenCalledTimes(1)
+    expect(mockMeter).toHaveBeenCalledWith(
+      expect.objectContaining({
+        endpoint: "public/generate-image",
+        units: 1,
+        usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 1290 },
+      })
+    )
   })
 
   // --- C) Edge cases ---
@@ -291,7 +325,7 @@ describe("POST /api/generate-image", () => {
   })
 
   it("returns 500 when Gemini throws an error", async () => {
-    mockGenerateContent.mockRejectedValue(new Error("API quota exceeded"))
+    mockImageGenerateContent.mockRejectedValue(new Error("API quota exceeded"))
 
     const res = await POST(makeRequest({ prompt: "test" }))
     const json = await res.json()
@@ -301,21 +335,7 @@ describe("POST /api/generate-image", () => {
   })
 
   it("respects n parameter for multiple images", async () => {
-    mockGenerateContent.mockResolvedValue({
-      response: {
-        candidates: [
-          {
-            content: {
-              parts: [
-                { inlineData: { mimeType: "image/png", data: "img1" } },
-                { inlineData: { mimeType: "image/png", data: "img2" } },
-              ],
-            },
-          },
-        ],
-        text: () => undefined,
-      },
-    })
+    mockImageGenerateContent.mockResolvedValue(imageResponse("img1", "img2"))
 
     const res = await POST(makeRequest({ prompt: "dual", n: 2 }))
     const json = await res.json()

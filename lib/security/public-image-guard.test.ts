@@ -10,7 +10,10 @@ import type { NextRequest } from "next/server"
 //  - state.budgetPages: para el chequeo de tope MENSUAL en USD (termina en
 //    `.range()`, paginando de a BUDGET_PAGE_SIZE). Cada llamada a `.range()`
 //    hace shift() de una "pagina" (array de filas {cost_usd}); si la cola
-//    esta vacia devuelve pagina vacia (gasto 0).
+//    esta vacia devuelve pagina vacia (gasto 0). Esa query pasa ademas por
+//    `.or()` (allowlist de operations PUBLICAS, 8e8d31c): sin `or` en el
+//    mock la cadena tira TypeError, el guard cae en su fail-open y el tope
+//    mensual queda sin testear.
 const h = vi.hoisted(() => {
   const state = {
     countQueue: [] as number[],
@@ -22,6 +25,8 @@ const h = vi.hoisted(() => {
     // fecha (`created_at >= ...`) que arma startOfBudgetWindowIso() sin
     // tener que aplicar el filtro de verdad en el mock (no hay DB real).
     gteCalls: [] as any[][],
+    // Args de cada llamada a `.or()` — el filtro de operations publicas.
+    orCalls: [] as any[][],
     // Simula que las columnas prompt/style/meta todavia no existen en la DB
     // (migracion 2026-09-09 sin correr): el PRIMER insert() con esas columnas
     // falla con el error que se le cargue aca, el guard debe reintentar con el
@@ -35,6 +40,10 @@ const h = vi.hoisted(() => {
     select: () => chain,
     eq: () => chain,
     in: () => chain,
+    or: (...args: any[]) => {
+      state.orCalls.push(args)
+      return chain
+    },
     gt: () =>
       Promise.resolve(
         state.forceError
@@ -97,6 +106,7 @@ beforeEach(async () => {
   h.state.forceBudgetError = false
   h.state.insertCalls = []
   h.state.gteCalls = []
+  h.state.orCalls = []
   h.state.insertColumnError = null
   h.state.insertColumnErrorConsumed = false
   process.env.PUBLIC_IMAGEGEN_ENABLED = "true"
@@ -310,6 +320,20 @@ describe("guardPublicImageGen — tope mensual USD (PUBLIC_GEMINI_BUDGET_USD)", 
     expect(result.allowed).toBe(false)
     // Confirma que efectivamente consumio ambas paginas (pagino de verdad).
     expect(h.state.budgetPages).toHaveLength(0)
+  })
+
+  it("solo suma operations PUBLICAS (el trafico interno bot/manual/partners no cuenta)", async () => {
+    process.env.PUBLIC_GEMINI_BUDGET_USD = "25"
+    queueBudgetPage([1])
+    queueCounts(0, 0, 0)
+
+    await guardPublicImageGen(makeReq(), "generate-image")
+
+    expect(h.state.orCalls).toHaveLength(1)
+    const filter = String(h.state.orCalls[0][0])
+    expect(filter).toContain("operation.like.public/*")
+    expect(filter).toContain("operation.like.storefront/*")
+    expect(filter).not.toMatch(/bot\/|manual\/|partners\//)
   })
 })
 
