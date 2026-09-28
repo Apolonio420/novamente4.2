@@ -141,4 +141,22 @@ describe('piso de costo en productos de partner (no se puede cobrar por debajo d
     expect(r.ok).toBe(false)
     expect(r.bajoCosto).toEqual([{ item: 'p5', real: 5000, costo: 10000 }])
   })
+
+  // 27/09/2026: el piso ignoraba la doble estampa — un producto que se estampa
+  // en frente y dorso cuesta costo_base + $3.500, no solo el costo base.
+  it('producto de doble estampa (frente + dorso) con precio = costo BASE + 1000 → rechaza (no cubre el recargo de $3.500)', async () => {
+    store.partner_products = {
+      price: 11000, // costo base (10000) + 1000 — por debajo del costo real con recargo (13500)
+      metadata: {
+        garmentKey: 'aura-oversize-tshirt',
+        print: { front: { designUrl: 'https://x/f.png' }, back: { designUrl: 'https://x/b.png' } },
+      },
+      tenant_id: 'tenant-1',
+    }
+    store.tenants = { plan: 'starter' }
+
+    const r = await validarPrecios([{ productId: 'p6', unit_price: 11000, quantity: 1 }])
+    expect(r.ok).toBe(false)
+    expect(r.bajoCosto).toEqual([{ item: 'p6', real: 11000, costo: 13500 }])
+  })
 })

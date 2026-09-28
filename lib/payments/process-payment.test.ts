@@ -93,10 +93,21 @@ vi.mock('@/lib/supabase-admin', () => ({
 }))
 
 const reverseOrderMarginMock = vi.fn(async (_order: any) => ({ reversed: true, amount: 20000 }))
-const creditOrderMarginMock = vi.fn(async (_order: any) => ({ margin: 0, needsReview: false }))
 vi.mock('@/lib/partners/ledger', () => ({
-  creditOrderMargin: (order: any) => creditOrderMarginMock(order),
   reverseOrderMargin: (order: any) => reverseOrderMarginMock(order),
+}))
+
+// process-payment.ts corre los efectos de venta partner (ganancia al ledger,
+// bridge, mail) a través de runPartnerSaleEffects (lib/partners/sale-effects.ts)
+// en vez de llamar creditOrderMargin inline — un solo lugar compartido con la
+// confirmación de transferencias y el barrido. Se mockea entero acá: lo que
+// nos importa en process-payment.test.ts es CON QUÉ se lo llama (saleKey,
+// notifyPartner), no su lógica interna (esa vive en sale-effects.test.ts).
+const runPartnerSaleEffectsMock = vi.fn(async (_order: any, _opts: any) => ({ meta: {}, credit: null }))
+const partnerSaleKeyMock = vi.fn((_order: any, paymentId?: string | null) => (paymentId ? String(paymentId) : 'web:x'))
+vi.mock('@/lib/partners/sale-effects', () => ({
+  runPartnerSaleEffects: (order: any, opts: any) => runPartnerSaleEffectsMock(order, opts),
+  partnerSaleKey: (order: any, paymentId?: string | null) => partnerSaleKeyMock(order, paymentId),
 }))
 
 vi.mock('@/lib/email', () => ({
@@ -120,7 +131,9 @@ import { processPaymentById } from './process-payment'
 
 beforeEach(() => {
   reverseOrderMarginMock.mockClear()
-  creditOrderMarginMock.mockClear()
+  runPartnerSaleEffectsMock.mockClear()
+  runPartnerSaleEffectsMock.mockResolvedValue({ meta: {}, credit: null })
+  partnerSaleKeyMock.mockClear()
   notifySaleMock.mockClear()
   notifyPartnerOrderMock.mockClear()
   h.state.updateOrderResult = true
@@ -180,11 +193,12 @@ describe('processPaymentById — guard de idempotencia PASO 3', () => {
     const result = await processPaymentById('pay-10')
 
     expect(result.reason).toBe('already_confirmed')
-    // El efecto de plata (crédito de margen al partner) corrió en el retry:
-    expect(creditOrderMarginMock).toHaveBeenCalledTimes(1)
-    expect(creditOrderMarginMock).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'order-10', tenant_id: 'tenant-10' }),
-    )
+    // El efecto de plata (venta partner: ledger + bridge + mail) corrió en el retry:
+    expect(runPartnerSaleEffectsMock).toHaveBeenCalledTimes(1)
+    const [orderArg, optsArg] = runPartnerSaleEffectsMock.mock.calls[0]
+    expect(orderArg).toMatchObject({ id: 'order-10', tenant_id: 'tenant-10' })
+    expect(optsArg.notifyPartner).toBe(true)
+    expect(optsArg.saleKey).toBe('pay-10') // saleKey = paymentId (partnerSaleKey mockeado devuelve el paymentId)
     // El aviso de venta también se completó (tenía metadata sin sale_notified_at):
     expect(notifySaleMock).toHaveBeenCalledTimes(1)
     // Pero NO se re-clameó la transición de la orden (PASO 6 no corre en este camino):
@@ -217,8 +231,8 @@ describe('processPaymentById — guard de idempotencia PASO 3', () => {
     const result = await processPaymentById('pay-11')
 
     expect(result.reason).toBe('already_confirmed')
-    // El crédito de ledger se re-intenta (es idempotente por unique index — no duplica):
-    expect(creditOrderMarginMock).toHaveBeenCalledTimes(1)
+    // El efecto de plata se re-intenta (es idempotente adentro de sale-effects/ledger — no duplica):
+    expect(runPartnerSaleEffectsMock).toHaveBeenCalledTimes(1)
     // Las comunicaciones NO se repiten: los guards del metadata las cortan.
     expect(notifySaleMock).not.toHaveBeenCalled()
     expect(notifyPartnerOrderMock).not.toHaveBeenCalled()
@@ -312,7 +326,7 @@ describe('processPaymentById — guard PASO 3.5: no pisar una orden confirmada c
     // No se reclamó ninguna transición de la orden (PASO 6 no corre en este camino):
     expect(h.state.claimCalls.length).toBe(0)
     // No se re-ejecutó NINGÚN efecto de plata/notificación con el pago nuevo:
-    expect(creditOrderMarginMock).not.toHaveBeenCalled()
+    expect(runPartnerSaleEffectsMock).not.toHaveBeenCalled()
     expect(notifySaleMock).not.toHaveBeenCalled()
     expect(notifyPartnerOrderMock).not.toHaveBeenCalled()
   })
@@ -453,14 +467,94 @@ describe('processPaymentById — concurrencia (hallazgos [10]/[11]): dos invocac
       expect(winners.length).toBe(1)
       expect(losers.length).toBe(1)
 
-      // El efecto de plata/notificación (creditOrderMargin no aplica sin tenant
-      // acá, pero el guard general se prueba igual con updateOrderResult) corrió
-      // una sola vez: verificamos que solo una de las dos invocaciones llegó a
-      // marcar la orden como confirmed (no ambas).
+      // El efecto de plata/notificación (runPartnerSaleEffects no aplica sin
+      // tenant acá, pero el guard general se prueba igual con
+      // updateOrderResult) corrió una sola vez: verificamos que solo una de
+      // las dos invocaciones llegó a marcar la orden como confirmed (no ambas).
       expect(claimed).toBe(true)
     } finally {
       ;(supa.supabaseAdmin as any).from = originalFromFn
     }
+  })
+})
+
+describe('processPaymentById — venta de tienda partner (runPartnerSaleEffects)', () => {
+  it('camino approved nuevo (PASO 6, gana el claim): llama runPartnerSaleEffects con saleKey = paymentId y notifyPartner true', async () => {
+    h.state.order = {
+      id: 'order-50',
+      order_number: 'NM-050',
+      status: 'pending',
+      payment_id: null,
+      tenant_id: 'tenant-50',
+      customer_email: null,
+      items: [{ item_name: 'Buzo', quantity: 1, unit_price: 50000 }],
+      metadata: {},
+    }
+    h.state.paymentGet = {
+      id: 'pay-50',
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 50000,
+      external_reference: 'ext-50',
+    }
+
+    const result = await processPaymentById('pay-50')
+
+    expect(result.orderStatus).toBe('confirmed')
+    expect(runPartnerSaleEffectsMock).toHaveBeenCalledTimes(1)
+    const [orderArg, optsArg] = runPartnerSaleEffectsMock.mock.calls[0]
+    expect(orderArg).toMatchObject({ id: 'order-50', tenant_id: 'tenant-50' })
+    expect(optsArg.notifyPartner).toBe(true)
+    expect(optsArg.saleKey).toBe('pay-50')
+    expect(partnerSaleKeyMock).toHaveBeenCalledWith(orderArg, 'pay-50')
+  })
+
+  it('orden sin tenant_id: NO llama runPartnerSaleEffects', async () => {
+    h.state.order = {
+      id: 'order-51',
+      order_number: 'NM-051',
+      status: 'pending',
+      payment_id: null,
+      tenant_id: null,
+      customer_email: null,
+      items: [],
+      metadata: {},
+    }
+    h.state.paymentGet = {
+      id: 'pay-51',
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 1000,
+      external_reference: 'ext-51',
+    }
+
+    await processPaymentById('pay-51')
+
+    expect(runPartnerSaleEffectsMock).not.toHaveBeenCalled()
+  })
+
+  it('refund/chargeback: llama reverseOrderMargin (no runPartnerSaleEffects)', async () => {
+    h.state.order = {
+      id: 'order-52',
+      order_number: 'NM-052',
+      status: 'confirmed',
+      payment_id: 'pay-52',
+      tenant_id: 'tenant-52',
+      items: [],
+      metadata: {},
+    }
+    h.state.paymentGet = {
+      id: 'pay-52',
+      status: 'refunded',
+      status_detail: 'refunded',
+      transaction_amount: 1000,
+      external_reference: 'ext-52',
+    }
+
+    await processPaymentById('pay-52')
+
+    expect(reverseOrderMarginMock).toHaveBeenCalledWith(expect.objectContaining({ id: 'order-52', tenant_id: 'tenant-52' }))
+    expect(runPartnerSaleEffectsMock).not.toHaveBeenCalled()
   })
 })
 

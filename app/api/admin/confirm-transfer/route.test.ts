@@ -5,17 +5,23 @@ import { NextRequest } from "next/server"
 vi.hoisted(() => { process.env.TRANSFER_CONFIRM_SECRET = "test-secret" })
 const db = vi.hoisted(() => ({ getOrderByNumber: vi.fn(), updateOrder: vi.fn() }))
 const mail = vi.hoisted(() => ({ sendEmail: vi.fn() }))
+const saleEffects = vi.hoisted(() => ({
+  runPartnerSaleEffects: vi.fn(async (..._args: any[]) => ({ meta: {}, credit: { margin: 0, needsReview: false, credits: [], excluded: [] } })),
+  partnerSaleKey: vi.fn((..._args: any[]) => "transfer:NOV-20260926-9852"),
+}))
 vi.mock("@/lib/db", () => db)
 vi.mock("@/lib/email", () => mail)
 vi.mock("@/lib/notifications", () => ({ notifySale: vi.fn() }))
+vi.mock("@/lib/partners/sale-effects", () => saleEffects)
 
 import { GET, POST } from "./route"
 import { transferConfirmSig } from "@/lib/payments/transfer-confirm"
 
 const ORDER = "NOV-20260926-9852"
-const pending = () => ({
+const pending = (tenantId: string | null = null) => ({
   id: "o1", order_number: ORDER, payment_method: "transferencia", payment_status: "pending",
   total: 111400, customer_email: "cliente@example.com", customer_first_name: "Seba", items: [{ item_name: "Buzo", quantity: 1, product_size: "L" }],
+  tenant_id: tenantId,
 })
 const url = (sig = transferConfirmSig(ORDER, "manual")) =>
   `https://www.novamente.ar/api/admin/confirm-transfer?order=${ORDER}&op=manual&sig=${sig}`
@@ -60,5 +66,39 @@ describe("confirm-transfer", () => {
     const res = await POST(post())
     expect(await res.text()).toContain("ya estaba confirmado")
     expect(db.updateOrder).not.toHaveBeenCalled()
+    expect(saleEffects.runPartnerSaleEffects).not.toHaveBeenCalled()
+  })
+
+  // 27/09/2026 (NOV-20260926-9852): una transferencia confirmada por este link
+  // NUNCA acreditaba nada al partner. POST ahora corre los mismos efectos que
+  // un pago de MercadoPago aprobado (ganancia al ledger, bridge, mail).
+  describe("venta de tienda partner", () => {
+    it("orden CON tenant_id: pone status confirmed y llama runPartnerSaleEffects 1 vez con la saleKey de transferencia y notifyPartner true", async () => {
+      db.getOrderByNumber.mockResolvedValue(pending("tenant-sponsors"))
+
+      const res = await POST(post())
+
+      expect(res.status).toBe(200)
+      expect(db.updateOrder).toHaveBeenCalledWith(
+        "o1",
+        expect.objectContaining({ payment_status: "approved", status: "confirmed", payment_id: "manual" }),
+      )
+      expect(saleEffects.runPartnerSaleEffects).toHaveBeenCalledTimes(1)
+      const [orderArg, optsArg] = saleEffects.runPartnerSaleEffects.mock.calls[0]
+      expect(orderArg).toMatchObject({ id: "o1", tenant_id: "tenant-sponsors", payment_status: "approved", status: "confirmed" })
+      expect(optsArg.notifyPartner).toBe(true)
+      expect(optsArg.saleKey).toBe("transfer:NOV-20260926-9852")
+      expect(saleEffects.partnerSaleKey).toHaveBeenCalledWith(orderArg)
+    })
+
+    it("orden SIN tenant_id: no llama runPartnerSaleEffects", async () => {
+      db.getOrderByNumber.mockResolvedValue(pending(null))
+
+      const res = await POST(post())
+
+      expect(res.status).toBe(200)
+      expect(db.updateOrder).toHaveBeenCalled() // la orden igual se confirma
+      expect(saleEffects.runPartnerSaleEffects).not.toHaveBeenCalled()
+    })
   })
 })

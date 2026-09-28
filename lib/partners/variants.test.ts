@@ -135,6 +135,17 @@ describe('resolveProductCost', () => {
   it('devuelve null si no hay costo resoluble', () => {
     expect(resolveProductCost({}, 'starter')).toBe(null)
   })
+  it('producto que se estampa en las dos caras (print.front + print.back) suma el recargo de $3.500', () => {
+    const metadata = {
+      garmentKey: 'aura-oversize-tshirt',
+      print: { front: { designUrl: 'https://x/f.png' }, back: { designUrl: 'https://x/b.png' } },
+    }
+    expect(resolveProductCost(metadata, 'starter')).toBe(10000 + 3500)
+  })
+  it('producto estampado en un solo lado no lleva recargo', () => {
+    const metadata = { garmentKey: 'aura-oversize-tshirt', print: { front: { designUrl: 'https://x/f.png' } } }
+    expect(resolveProductCost(metadata, 'starter')).toBe(10000)
+  })
 })
 
 describe('CRUD tenant-scoping', () => {
