@@ -7,7 +7,17 @@ import { notifyPartnerOrder, notifyTeamManualSale, type ManualOrderItemNotice, n
 import { guessGarmentKey } from '@/lib/partners/ledger'
 import { getPartnerPlanPrice, type GrowthTier } from '@/lib/partners/garment-pricing.server'
 
-export const maxDuration = 30
+// El trabajo real de este endpoint pasa DESPUÉS de responder, dentro de
+// `after()` (líneas ~180+): sendToProduction ahora espera hasta 55s (review
+// Opus 28/09 — corre sin apuro porque el partner ya tiene su respuesta), y
+// recién DESPUÉS corren notifyError/notifyTeamManualSale/notifyPartnerOrder
+// (Telegram + email). Con maxDuration=30, Vercel mataba la función ANTES de
+// que `after()` terminara — se perdía el aviso a Juan y el mail al partner
+// en silencio, sin ningún error visible (segunda review 28/09).
+// vercel.json no tiene "functions" (solo "crons") — nada capa este export;
+// ya hay precedente de rutas >60 en este mismo repo (120: ledger-sweep,
+// check-subscriptions, mockup-prenda, cleanup; 300: crons largos).
+export const maxDuration = 120
 
 export async function GET(request: NextRequest) {
   try {

@@ -79,7 +79,7 @@ import { requireTenantPermission } from '@/lib/partners/permissions'
 import { createOrder } from '@/lib/partners/orders'
 import { sendToProduction } from '@/lib/partners/production'
 import { notifyPartnerOrder, notifyTeamManualSale, notifyError } from '@/lib/notifications'
-import { POST } from './route'
+import { POST, maxDuration } from './route'
 
 const requirePermission = requireTenantPermission as ReturnType<typeof vi.fn>
 const create = createOrder as ReturnType<typeof vi.fn>
@@ -331,5 +331,13 @@ describe('POST /api/partners/orders — partner_order_id e incierto (A3b)', () =
     await POST(req({ produce: true, items: [{ ...baseItem, partner_price: FLOOR_1U }] }))
     await flushAfter()
     expect(notifyErr).not.toHaveBeenCalled()
+  })
+
+  // Segunda review Opus 28/09: con maxDuration=30, Vercel mataba la función
+  // ANTES de que sendToProduction (hasta 55s dentro de after()) terminara —
+  // se perdía notifyError/notifyPartnerOrder en silencio. Guard simple para
+  // que nadie lo vuelva a bajar por accidente.
+  it('maxDuration ≥ 75 — cubre la espera de sendToProduction (55s) dentro de after()', () => {
+    expect(maxDuration).toBeGreaterThanOrEqual(75)
   })
 })
