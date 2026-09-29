@@ -259,10 +259,11 @@ describe('POST /api/partners/orders — piso de precio en produce=true', () => {
   })
 })
 
-// A3b (PLAN-FICHAS-ENVIO-PROVEEDOR.md §3): sendToProduction manda
-// partner_order_id (ancla de idempotencia en platform-master) y, ante un
-// resultado incierto (timeout), el aviso interno NUNCA dice "cargarlo a
-// mano" — dice que hay que verificar antes de tocar nada.
+// A3b (PLAN-FICHAS-ENVIO-PROVEEDOR.md §3) + review Opus 28/09: sendToProduction
+// manda partner_order_id (ancla de idempotencia en platform-master) y, ante
+// cualquier resultado que NO sea explícitamente code:'rechazado', el aviso
+// interno NUNCA dice "cargarlo a mano" — dice que hay que verificar antes de
+// tocar nada. SOLO 'rechazado' es definitivo.
 describe('POST /api/partners/orders — partner_order_id e incierto (A3b)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -301,7 +302,7 @@ describe('POST /api/partners/orders — partner_order_id e incierto (A3b)', () =
     )
   })
 
-  it('falla SIN code (rechazo definitivo, no timeout): sigue diciendo "cargarlo a mano" como antes', async () => {
+  it('falla SIN code explícito: ahora se trata como INCIERTO (review — solo "rechazado" es definitivo), nunca "cargarlo a mano"', async () => {
     production.mockResolvedValue({ ok: false, error: 'SKU inválido' })
 
     await POST(req({ produce: true, items: [{ ...baseItem, partner_price: FLOOR_1U }] }))
@@ -309,8 +310,21 @@ describe('POST /api/partners/orders — partner_order_id e incierto (A3b)', () =
 
     expect(notifyErr).toHaveBeenCalledTimes(1)
     const { message } = notifyErr.mock.calls[0][0]
+    expect(message).toMatch(/incierto/i)
+    expect(message).not.toMatch(/hay que cargarlo a mano/i)
+  })
+
+  it('code:"rechazado" explícito: SÍ es definitivo, dice "cargarlo a mano"', async () => {
+    production.mockResolvedValue({ ok: false, code: 'rechazado', error: 'SKU inválido' })
+
+    await POST(req({ produce: true, items: [{ ...baseItem, partner_price: FLOOR_1U }] }))
+    await flushAfter()
+
+    expect(notifyErr).toHaveBeenCalledTimes(1)
+    const { message } = notifyErr.mock.calls[0][0]
     expect(message).toMatch(/hay que cargarlo a mano/i)
-    expect(message).not.toMatch(/incierto/i)
+    expect(message).toMatch(/RECHAZO DEFINITIVO/i)
+    expect(message).not.toMatch(/quedó INCIERTO/i)
   })
 
   it('éxito: no llama a notifyError', async () => {

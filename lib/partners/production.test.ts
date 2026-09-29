@@ -2,12 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { sendToProduction, type ProductionRequest } from './production'
 
 /**
- * A3b (PLAN-FICHAS-ENVIO-PROVEEDOR.md §3): sendToProduction manda
- * `partner_order_id` (ancla de idempotencia en platform-master) y traduce un
- * timeout — el suyo propio o el que platform-master reporta como
- * `code:'incierto'` — en el mismo `code:'incierto'`, para que el caller
- * (app/api/partners/orders/route.ts) nunca le diga al partner "cargalo a
- * mano" cuando en realidad no sabemos si el pedido ya entró a producción.
+ * A3b (PLAN-FICHAS-ENVIO-PROVEEDOR.md §3) + review Opus 28/09: sendToProduction
+ * manda `partner_order_id` (ancla de idempotencia en platform-master). SOLO
+ * `code:'rechazado'` es definitivo — TODO LO DEMÁS (sin code, timeout de este
+ * fetch o de platform-master, error de red, HTTP no-200) se traduce/propaga
+ * como `code:'incierto'`, para que el caller (app/api/partners/orders/route.ts)
+ * nunca le diga al partner "cargalo a mano" cuando en realidad no sabemos si
+ * el pedido ya entró a producción.
  */
 
 const REQ: ProductionRequest = {
@@ -70,7 +71,18 @@ describe('sendToProduction — partner_order_id', () => {
   })
 })
 
-describe('sendToProduction — code "incierto"', () => {
+describe('sendToProduction — SOLO "rechazado" es definitivo (review Opus 28/09)', () => {
+  it('platform-master responde code:"rechazado" → se propaga tal cual (definitivo)', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: false, code: 'rechazado', error: 'SKU inválido' }),
+    })
+
+    const result = await sendToProduction(REQ)
+    expect(result.ok).toBe(false)
+    expect(result.code).toBe('rechazado')
+  })
+
   it('platform-master responde code:"incierto" → se propaga tal cual', async () => {
     fetchMock.mockResolvedValue({
       ok: false,
@@ -92,16 +104,16 @@ describe('sendToProduction — code "incierto"', () => {
     expect(result.code).toBe('incierto')
   })
 
-  it('un error de conexión (no timeout) NO se marca como incierto', async () => {
+  it('un error de conexión (no timeout) TAMBIÉN se marca como incierto (todo error de red, sin distinguir)', async () => {
     const connErr = Object.assign(new Error('ECONNREFUSED'), { name: 'FetchError' })
     fetchMock.mockRejectedValue(connErr)
 
     const result = await sendToProduction(REQ)
     expect(result.ok).toBe(false)
-    expect(result.code).toBeUndefined()
+    expect(result.code).toBe('incierto')
   })
 
-  it('un rechazo definitivo (sin code) sigue sin marcarse como incierto', async () => {
+  it('un rechazo SIN code explícito ahora se trata como incierto, no como definitivo', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({ ok: false, error: 'SKU inválido' }),
@@ -109,8 +121,31 @@ describe('sendToProduction — code "incierto"', () => {
 
     const result = await sendToProduction(REQ)
     expect(result.ok).toBe(false)
-    expect(result.code).toBeUndefined()
+    expect(result.code).toBe('incierto')
     expect(result.error).toBe('SKU inválido')
+  })
+
+  it('HTTP no-200 sin code explícito también es incierto (no asume definitivo)', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ ok: false, error: 'internal' }),
+    })
+
+    const result = await sendToProduction(REQ)
+    expect(result.code).toBe('incierto')
+  })
+})
+
+describe('sendToProduction — timeout de 55s (review Opus 28/09: corre dentro de after(), el partner no espera)', () => {
+  it('usa un AbortSignal con timeout de 55s, no 25s', async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ok: true, pedido_numero: 'P-1' }) })
+    const abortSpy = vi.spyOn(AbortSignal, 'timeout')
+
+    await sendToProduction(REQ)
+
+    expect(abortSpy).toHaveBeenCalledWith(55_000)
+    abortSpy.mockRestore()
   })
 })
 

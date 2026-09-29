@@ -53,19 +53,16 @@ export interface ProductionResult {
   pedido_numero?: string
   error?: string
   /**
-   * 'incierto' = platform-master no pudo confirmar si el pedido llegó a
-   * producción (timeout del Apps Script, o de este mismo fetch — ver abajo).
-   * NO es un rechazo definitivo: NUNCA hay que decirle al partner "cargalo a
-   * mano" en este caso, porque el pedido puede haber entrado igual y cargarlo
-   * de nuevo duplicaría el Sheet. El caller debe avisar que se está
-   * verificando y que no hay que reintentar todavía.
+   * Review Opus 28/09: SOLO 'rechazado' es definitivo (datos inválidos, o el
+   * Apps Script rechazó el pedido sin escribir nada) — ahí sí es seguro
+   * decirle al partner que corrija y vuelva a cargar. TODO LO DEMÁS (sin
+   * `code`, HTTP no-200, error de red, timeout — de platform-master o de
+   * ESTE fetch) es 'incierto': no sabemos si el pedido entró a producción.
+   * NUNCA hay que decirle al partner "cargalo a mano" ante un 'incierto' —
+   * cargarlo de nuevo puede duplicarlo en el Sheet si en realidad sí había
+   * entrado. El caller debe avisar que se está verificando, nada más.
    */
-  code?: 'incierto'
-}
-
-/** AbortSignal.timeout() tira una DOMException con name='TimeoutError' (no siempre instanceof Error). */
-function isTimeoutErr(e: unknown): boolean {
-  return typeof e === 'object' && e !== null && (e as { name?: string }).name === 'TimeoutError'
+  code?: 'incierto' | 'rechazado'
 }
 
 export async function sendToProduction(req: ProductionRequest): Promise<ProductionResult> {
@@ -93,19 +90,27 @@ export async function sendToProduction(req: ProductionRequest): Promise<Producti
         items: req.items,
         partner_order_id: req.partnerOrderId,
       }),
-      signal: AbortSignal.timeout(25_000),
+      // 55s: corre dentro de `after()` (POST /api/partners/orders ya le
+      // respondió al partner) — el partner no está esperando, así que no hay
+      // apuro por cortar rápido; platform-master ahora espera hasta 45s al
+      // Apps Script v29 (más trabajo: Drive + draft) y necesita margen propio
+      // para el resto de su handler (antes 25s cortaba ANTES que
+      // platform-master, generando un 'incierto' de acá aunque allá hubiera
+      // salido bien — review Opus 28/09).
+      signal: AbortSignal.timeout(55_000),
     })
 
     // platform-master responde SOLO { ok, pedido_numero, code? } — nunca costo/margen.
     const data = (await res.json().catch(() => ({}))) as { ok?: boolean; pedido_numero?: string; error?: string; code?: string }
     if (!res.ok || !data.ok) {
-      return { ok: false, error: data.error || `HTTP ${res.status}`, code: data.code === 'incierto' ? 'incierto' : undefined }
+      const definitivo = data.code === 'rechazado'
+      return { ok: false, error: data.error || `HTTP ${res.status}`, code: definitivo ? 'rechazado' : 'incierto' }
     }
     return { ok: true, pedido_numero: data.pedido_numero }
   } catch (e) {
-    // Timeout de ESTE fetch (25s): no sabemos si platform-master (y en
-    // cascada el Apps Script) llegó a procesar el pedido — mismo caso que
-    // platform-master respondiendo code:'incierto', así que se trata igual.
-    return { ok: false, error: e instanceof Error ? e.message : String(e), code: isTimeoutErr(e) ? 'incierto' : undefined }
+    // Cualquier fallo de ESTE fetch (timeout u otro error de red): no sabemos
+    // si platform-master (y en cascada el Apps Script) llegó a procesar el
+    // pedido — SIEMPRE 'incierto', nunca un rechazo definitivo.
+    return { ok: false, error: e instanceof Error ? e.message : String(e), code: 'incierto' }
   }
 }
