@@ -96,7 +96,7 @@ const GARMENT_DEFAULT_IMAGES = {
   "buzo-cuello-redondo-unisex": "/garments/buzo-cuello-redondo-black-front.png",
   "musculosa-bali": "/garments/musculosa-bali-white-front.png",
   "remera-clasica-mujer": "/garments/remera-clasica-mujer-black-front.png",
-  "remera-crop-mujer": "/garments/remera-crop-mujer-black-front.png",
+  "remera-crop-mujer": "/garments/remera-crop-mujer-chocolate-front.png",
 }
 
 const COLORS_BY_GARMENT: Record<string, string[]> = {
@@ -106,7 +106,8 @@ const COLORS_BY_GARMENT: Record<string, string[]> = {
   "buzo-cuello-redondo-unisex": ["black", "white", "stone-wash"],
   "musculosa-bali": ["white", "gray"],
   "remera-clasica-mujer": ["black", "white"],
-  "remera-crop-mujer": ["black", "chocolate", "gray", "yellow"],
+  // La crop NO existe en negro (decisión Juan 28/09/2026) — colores reales.
+  "remera-crop-mujer": ["chocolate", "gray", "yellow"],
 }
 
 const SIZE_CHART_BY_GARMENT: Record<string, string> = {

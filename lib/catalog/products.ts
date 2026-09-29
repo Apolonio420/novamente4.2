@@ -181,14 +181,9 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     sizes: ['S', 'M', 'L', 'XL', '2XL'],
     measurementsImage: '/products/remera-crop-de-mujer-negra/Medidas1.png',
     shortDescription: 'Remera crop mujer en algodon liviano, ideal para verano y looks juveniles.',
+    // La crop NO existe en negro (decisión Juan 28/09/2026) — colores reales:
+    // chocolate, gris melange, amarillo, visón.
     colors: [
-      {
-        key: 'black',
-        name: 'Negra',
-        hex: '#1a1a1a',
-        thumbnail: '/garments/remera-crop-mujer-black-front.png',
-        hero: '/products/remera-crop-de-mujer-negra/mockups nuevos productos-4.png',
-      },
       {
         key: 'chocolate',
         name: 'Chocolate',

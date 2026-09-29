@@ -110,7 +110,10 @@ export default async function ProductsPage() {
         </p>
       </div>
 
-      <ProductsFilter products={PRODUCTS} />
+      {/* Solo productos publicables: evita que un producto available:false
+          (ej. remera-crop-negra, no existe en negro) viaje en el payload
+          RSC/HTML aunque ProductsFilter ya lo excluya del render visual. */}
+      <ProductsFilter products={PRODUCTS.filter(p => p.available)} />
 
       {/* Bottom CTA */}
       <div className="mt-16 text-center">

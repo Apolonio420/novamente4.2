@@ -27,8 +27,7 @@ export const PARTNER_PRICE_BY_ID_ARS: Record<string, number> = {
     "buzo-hoodie-crema": 38700,
     "buzo-hoodie-gris": 38700,
 
-    // Remera Crop Mujer - 19300 ARS
-    "remera-crop-negra": 19300,
+    // Remera Crop Mujer - 19300 ARS (NO existe en negro, ver lib/products.ts)
     "remera-crop-chocolate": 19300,
     "remera-crop-gris": 19300,
     "remera-crop-amarillo": 19300,

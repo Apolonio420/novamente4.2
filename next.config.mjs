@@ -227,6 +227,17 @@ const nextConfig = {
         destination: '/products/lienzo',
         permanent: true,
       },
+      // La remera crop mujer NO existe en negro (decisión Juan, 28/09/2026:
+      // colores reales chocolate/gris melange/amarillo/visón). El producto
+      // "remera-crop-negra" quedó available:false en lib/products.ts, así que
+      // app/products/[id]/page.tsx devuelve notFound(). 301 a la variante
+      // chocolate para no dejar la URL vieja (indexada, referenciada en ads)
+      // sirviendo 404.
+      {
+        source: '/products/remera-crop-negra',
+        destination: '/products/remera-crop-chocolate',
+        permanent: true,
+      },
       // NOTA: NO redirigir /disena-tu-remera, /quote ni /merchs — son
       // landings SEO con keywords propios distintos a /crear, /cotizador
       // y /merch. Cada una rankea queries específicas. Verificar antes en
