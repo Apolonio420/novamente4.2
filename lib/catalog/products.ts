@@ -100,6 +100,13 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
         hero: '/products/tshirt-aldea-blanco-front.jpeg',
       },
       {
+        key: 'beige',
+        name: 'Beige',
+        hex: '#d9c7a8',
+        thumbnail: '/garments/tshirt-beige-classic-front.jpeg',
+        hero: '/products/tshirt-aldea-beige-front.jpeg',
+      },
+      {
         key: 'stone-wash',
         name: 'Stone Wash',
         hex: '#9a9085',

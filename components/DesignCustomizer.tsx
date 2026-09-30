@@ -101,7 +101,7 @@ const GARMENT_DEFAULT_IMAGES = {
 
 const COLORS_BY_GARMENT: Record<string, string[]> = {
   "aura-oversize-tshirt": ["black", "white", "caramel"],
-  "aldea-classic-tshirt": ["black", "white", "stone-wash"],
+  "aldea-classic-tshirt": ["black", "white", "beige", "stone-wash"],
   "buzo-hoodie-unisex": ["black", "white", "stone-wash", "marron", "gray", "cream"],
   "buzo-cuello-redondo-unisex": ["black", "white", "stone-wash"],
   "musculosa-bali": ["white", "gray"],

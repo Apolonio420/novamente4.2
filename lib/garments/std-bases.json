@@ -700,5 +700,31 @@
       "h": 1244
     },
     "pxPerCm": 22.02857142857143
+  },
+  {
+    "garmentKey": "aldea-classic-tshirt",
+    "color": "beige",
+    "side": "front",
+    "file": "/garments/std/aldea-classic-tshirt-beige-front.jpg",
+    "printArea": {
+      "x": 602,
+      "y": 515,
+      "w": 802,
+      "h": 1042
+    },
+    "pxPerCm": 22.914285714285715
+  },
+  {
+    "garmentKey": "aldea-classic-tshirt",
+    "color": "beige",
+    "side": "back",
+    "file": "/garments/std/aldea-classic-tshirt-beige-back.jpg",
+    "printArea": {
+      "x": 613,
+      "y": 395,
+      "w": 771,
+      "h": 1244
+    },
+    "pxPerCm": 22.02857142857143
   }
 ]

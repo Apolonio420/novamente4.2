@@ -31,6 +31,7 @@ const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = {
   'aldea-classic-tshirt': {
     black: '/garments/tshirt-black-classic-front.jpeg',
     white: '/garments/tshirt-white-classic-front.jpeg',
+    beige: '/garments/tshirt-beige-classic-front.jpeg',
     'stone-wash': '/garments/tshirt-stone-wash-classic-front.jpeg',
   },
   'buzo-hoodie-unisex': {
@@ -64,11 +65,11 @@ const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = {
 }
 
 const COLOR_LABELS: Record<string, string> = {
-  black: 'Negro', white: 'Blanco', cream: 'Crema', gray: 'Gris', marron: 'Marron', chocolate: 'Chocolate', yellow: 'Amarillo', 'stone-wash': 'Stone Wash',
+  black: 'Negro', white: 'Blanco', beige: 'Beige', cream: 'Crema', gray: 'Gris', marron: 'Marron', chocolate: 'Chocolate', yellow: 'Amarillo', 'stone-wash': 'Stone Wash',
 }
 
 const COLOR_MAP: Record<string, string> = {
-  black: '#1a1a1a', white: '#f5f5f5', cream: '#f5f0e1', gray: '#6b7280', marron: '#8B5E34', chocolate: '#5C3A21', yellow: '#F5C518', 'stone-wash': '#9a9085',
+  black: '#1a1a1a', white: '#f5f5f5', beige: '#d9c7a8', cream: '#f5f0e1', gray: '#6b7280', marron: '#8B5E34', chocolate: '#5C3A21', yellow: '#F5C518', 'stone-wash': '#9a9085',
 }
 
 // ---------------------------------------------------------------------------

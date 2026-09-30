@@ -82,6 +82,7 @@ export function hasBackTemplate(garmentType: string): boolean {
 const COLOR_MAP: Record<string, string> = {
   negro: "black",
   blanco: "white",
+  beige: "beige",
   stone_wash: "stone-wash",
   gris: "gray",
   crema: "cream",

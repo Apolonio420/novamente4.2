@@ -7,7 +7,7 @@ Todos los productos son 100% algodón premium, optimizados para impresión DTG d
 ### Aldea Classic Fit T-Shirt
 - **Precio:** $28,600 ARS
 - **Material:** Algodón peinado 24/1
-- **Colores:** Negro, Blanco, Stone Wash
+- **Colores:** Negro, Blanco, Beige, Stone Wash
 - **Talles:** S, M, L, XL
 - **Descripción:** Remera clásica unisex de corte recto. Ideal para diseños con mucho detalle.
 

@@ -249,6 +249,7 @@ function useKonvaImage(url: string | null | undefined): HTMLImageElement | null 
 const COLOR_MAP: Record<string, string> = {
   negro: "black",
   blanco: "white",
+  beige: "beige",
   stone_wash: "stone-wash",
   "stone-wash": "stone-wash",
   gris: "gray",

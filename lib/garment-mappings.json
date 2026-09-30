@@ -776,5 +776,41 @@
       "height": 310
     },
     "timestamp": 1763000000015
+  },
+  {
+    "id": "1763000000016",
+    "name": "T-shirt Beige Clásico Frontal",
+    "garmentPath": "/garments/tshirt-beige-classic-front.jpeg",
+    "margins": {
+      "top": 27,
+      "right": 25,
+      "bottom": 20,
+      "left": 24
+    },
+    "coordinates": {
+      "x": 96,
+      "y": 135,
+      "width": 204,
+      "height": 265
+    },
+    "timestamp": 1763000000016
+  },
+  {
+    "id": "1763000000017",
+    "name": "T-shirt Beige Clásico Trasero",
+    "garmentPath": "/garments/tshirt-beige-classic-back.jpeg",
+    "margins": {
+      "top": 21,
+      "right": 27,
+      "bottom": 17,
+      "left": 25
+    },
+    "coordinates": {
+      "x": 100,
+      "y": 105,
+      "width": 192,
+      "height": 310
+    },
+    "timestamp": 1763000000017
   }
 ]
