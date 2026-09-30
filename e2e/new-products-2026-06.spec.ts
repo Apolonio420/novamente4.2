@@ -19,6 +19,13 @@ test.describe('Productos nuevos 2026-06', () => {
     await page.screenshot({ path: 'e2e/screenshots/aldea-beige.png', fullPage: false })
   })
 
+  test('PDP Aldea stone wash renderiza', async ({ page }) => {
+    await page.goto('/products/aldea-tshirt-stone-wash')
+    await expect(page.getByText('Aldea Classic Fit T-Shirt - Stone Wash').first()).toBeVisible()
+    await expect(page.getByText('$28.600').first()).toBeVisible()
+    await page.screenshot({ path: 'e2e/screenshots/aldea-stone-wash.png', fullPage: false })
+  })
+
   test('PDP Crop visón renderiza y crop negra ya no existe', async ({ page }) => {
     await page.goto('/products/remera-crop-vison')
     await expect(page.getByText('Remera Crop Mujer - Visón').first()).toBeVisible()

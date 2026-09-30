@@ -674,5 +674,31 @@
       "h": 622
     },
     "pxPerCm": 17.771428571428572
+  },
+  {
+    "garmentKey": "aldea-classic-tshirt",
+    "color": "stone-wash",
+    "side": "front",
+    "file": "/garments/std/aldea-classic-tshirt-stone-wash-front.jpg",
+    "printArea": {
+      "x": 602,
+      "y": 515,
+      "w": 802,
+      "h": 1042
+    },
+    "pxPerCm": 22.914285714285715
+  },
+  {
+    "garmentKey": "aldea-classic-tshirt",
+    "color": "stone-wash",
+    "side": "back",
+    "file": "/garments/std/aldea-classic-tshirt-stone-wash-back.jpg",
+    "printArea": {
+      "x": 613,
+      "y": 395,
+      "w": 771,
+      "h": 1244
+    },
+    "pxPerCm": 22.02857142857143
   }
 ]

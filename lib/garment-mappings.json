@@ -740,5 +740,41 @@
     "margins": { "top": 23, "right": 31, "bottom": 16, "left": 28 },
     "coordinates": { "x": 112, "y": 115, "width": 164, "height": 305 },
     "timestamp": 1763000000013
+  },
+  {
+    "id": "1763000000014",
+    "name": "T-shirt Stone Wash Clásico Frontal",
+    "garmentPath": "/garments/tshirt-stone-wash-classic-front.jpeg",
+    "margins": {
+      "top": 27,
+      "right": 25,
+      "bottom": 20,
+      "left": 24
+    },
+    "coordinates": {
+      "x": 96,
+      "y": 135,
+      "width": 204,
+      "height": 265
+    },
+    "timestamp": 1763000000014
+  },
+  {
+    "id": "1763000000015",
+    "name": "T-shirt Stone Wash Clásico Trasero",
+    "garmentPath": "/garments/tshirt-stone-wash-classic-back.jpeg",
+    "margins": {
+      "top": 21,
+      "right": 27,
+      "bottom": 17,
+      "left": 25
+    },
+    "coordinates": {
+      "x": 100,
+      "y": 105,
+      "width": 192,
+      "height": 310
+    },
+    "timestamp": 1763000000015
   }
 ]

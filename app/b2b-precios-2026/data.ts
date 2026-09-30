@@ -203,6 +203,15 @@ export const MODELS: B2BModel[] = [
           "/products/tshirt-aldea-beige-back.jpeg",
         ],
       },
+      {
+        name: "Stone Wash",
+        swatch: "#9b9588",
+        images: [
+          "/products/tshirt-aldea-stone-wash-front.jpeg",
+          "/products/tshirt-aldea-stone-wash-back.jpeg",
+          "/products/tshirt-aldea-stone-wash-lifestyle-1.jpeg",
+        ],
+      },
     ],
   },
   {

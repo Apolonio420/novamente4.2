@@ -31,6 +31,7 @@ const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = {
   'aldea-classic-tshirt': {
     black: '/garments/tshirt-black-classic-front.jpeg',
     white: '/garments/tshirt-white-classic-front.jpeg',
+    'stone-wash': '/garments/tshirt-stone-wash-classic-front.jpeg',
   },
   'buzo-hoodie-unisex': {
     black: '/garments/buzo-hoodie-unisex-black-front.png',

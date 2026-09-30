@@ -53,7 +53,7 @@ export const PRODUCTS: Product[] = [
     name: 'Aldea Classic Fit T-Shirt',
     garmentType: 'aldea-classic-tshirt',
     price: 28600,
-    colors: ['negro', 'blanco', 'beige'],
+    colors: ['negro', 'blanco', 'beige', 'stone-wash'],
     image: '/products/classic-negro-front.jpeg',
     category: 'remera',
   },

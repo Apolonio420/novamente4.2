@@ -20,7 +20,7 @@ interface MockupViewerProps {
 const GARMENTS = [
     { id: "aura-oversize-tshirt", name: "Remera Oversize", colors: ["black", "white", "caramel"], type: "tshirt", variant: "oversize" },
     { id: "buzo-hoodie-unisex", name: "Buzo Hoodie Oversize", colors: ["black", "white", "stone-wash", "marron", "cream", "gray"], type: "hoodie", variant: "oversize" },
-    { id: "aldea-classic-tshirt", name: "Remera Classic", colors: ["black", "white"], type: "tshirt", variant: "classic" },
+    { id: "aldea-classic-tshirt", name: "Remera Classic", colors: ["black", "white", "stone-wash"], type: "tshirt", variant: "classic" },
 ]
 
 const COLOR_MAP: Record<string, string> = {
@@ -30,6 +30,7 @@ const COLOR_MAP: Record<string, string> = {
     marron: "bg-[#8B5E34]",
     cream: "bg-[#F5F5DC]",
     gray: "bg-zinc-500",
+    "stone-wash": "bg-[#9a9085]",
 }
 
 export function MockupViewer({

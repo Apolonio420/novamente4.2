@@ -62,10 +62,12 @@ export function MockupCanvas({
         front: {
           black: "/garments/tshirt-black-classic-front.jpeg",
           white: "/garments/tshirt-white-classic-front.jpeg",
+          "stone-wash": "/garments/tshirt-stone-wash-classic-front.jpeg",
         },
         back: {
           black: "/garments/tshirt-black-classic-back.jpeg",
           white: "/garments/tshirt-white-classic-back.jpeg",
+          "stone-wash": "/garments/tshirt-stone-wash-classic-back.jpeg",
         },
       },
       "buzo-hoodie-unisex": {

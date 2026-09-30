@@ -126,6 +126,21 @@ export const PRODUCTS: Product[] = [
         available: true,
     },
     {
+        id: "aldea-tshirt-stone-wash",
+        name: "Aldea Classic Fit T-Shirt - Stone Wash",
+        price: "$28.600",
+        description:
+            "Remera clásica con efecto lavado Stone Wash en algodón 100% peinado premium de 250 g/m². Gris pizarra con marmolado sutil y un acabado vintage auténtico: cada prenda es única. Corte regular atemporal para que tu diseño se luzca con un estilo relajado y elegante.",
+        images: {
+            main: "/products/tshirt-aldea-stone-wash-front.jpeg",
+            lifestyle: ["/products/tshirt-aldea-stone-wash-back.jpeg", "/products/tshirt-aldea-stone-wash-lifestyle-1.jpeg"],
+            measurements: "/products/tshirt-aldea-blanco-medidas.png",
+        },
+        category: "T-Shirts",
+        color: "Stone Wash",
+        available: true,
+    },
+    {
         id: "lienzo",
         name: "Lienzo",
         price: "Desde $34.000",

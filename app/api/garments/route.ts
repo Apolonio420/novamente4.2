@@ -38,7 +38,7 @@ function inferMeta(file: string): Omit<GarmentItem, "path" | "url"> {
   const side = lower.includes("front") ? "front" : lower.includes("back") ? "back" : "unknown"
 
   // intenta extraer color principal
-  const colors = ["black", "white", "gray", "caramel", "cream"]
+  const colors = ["black", "white", "gray", "caramel", "cream", "stone-wash"]
   const color = colors.find((c) => lower.includes(c))
 
   return { type, side, color }
@@ -62,6 +62,8 @@ const GARMENT_FILES = [
   "tshirt-black-oversize-front.jpeg",
   "tshirt-caramel-oversize-back.jpeg",
   "tshirt-caramel-oversize-front.png",
+  "tshirt-stone-wash-classic-back.jpeg",
+  "tshirt-stone-wash-classic-front.jpeg",
   "tshirt-white-classic-back.jpeg",
   "tshirt-white-classic-front.jpeg",
   "tshirt-white-oversize-back.jpeg",

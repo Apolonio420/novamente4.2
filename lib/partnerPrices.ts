@@ -14,6 +14,8 @@ export const PARTNER_PRICE_BY_ID_ARS: Record<string, number> = {
     // Aldea Classic Fit T-Shirt - 25700 ARS
     "aldea-tshirt-negro": 25700,
     "aldea-tshirt-blanco": 25700,
+    "aldea-tshirt-beige": 25700,
+    "aldea-tshirt-stone-wash": 25700,
 
     // Musculosa Bali - 17400 ARS
     "musculosa-bali-blanca": 17400,
