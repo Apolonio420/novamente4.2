@@ -167,6 +167,26 @@ export async function POST(request: NextRequest) {
 
     console.log("✅ Transfer order created in database:", newOrder.id, "Number:", newOrder.order_number)
 
+    // DROP7 (piloto lanzamiento 7 días): "🚀 DROP7 · <Marca>" si algún tenant
+    // del carrito está en su semana de lanzamiento (tenants.metadata.drop7).
+    // Query liviana aparte — un fallo acá nunca tiene que tumbar el aviso de
+    // venta ni el checkout. Ver lib/partners/drop7.ts.
+    let drop7Label: string | null = null
+    try {
+      const tenantIds = [...new Set((items as any[]).map((i) => i.tenantId).filter(Boolean))]
+      if (tenantIds.length) {
+        const { supabaseAdmin } = await import("@/lib/supabase-admin")
+        const { drop7LabelForTenants } = await import("@/lib/partners/drop7")
+        const { data: tenantsDrop7 } = await (supabaseAdmin as any)
+          .from("tenants")
+          .select("name, metadata")
+          .in("id", tenantIds)
+        drop7Label = drop7LabelForTenants(tenantsDrop7 || [], (newOrder as any).created_at || new Date().toISOString())
+      }
+    } catch (e: any) {
+      console.error("❌ DROP7 label lookup falló (no bloquea el aviso):", e?.message)
+    }
+
     // 🔔 Aviso a Novamente al CREARSE el pedido por transferencia (Telegram + email).
     // Una transferencia directa a la cuenta MP no dispara ningún webhook, así que
     // este es el ÚNICO momento en que el sistema puede avisar. Caso Marcelo
@@ -198,15 +218,17 @@ export async function POST(request: NextRequest) {
         footer: confirmUrl
           ? `🟡 <i>Transferencia PENDIENTE. Cuando veas la plata en MP:</i> <a href="${confirmUrl}">✅ Confirmar pago en un click</a>`
           : `🟡 <i>Transferencia PENDIENTE. Confirmar cuando entre la plata en MP.</i>`,
+        label: drop7Label,
       }).catch((e: any) => console.error("❌ notifySale (transfer) falló:", e?.message))
       const salesEmail = process.env.SALES_NOTIFY_EMAIL || "juan@novamente.ar"
       const itemsHtml = orderItems
         .map((it: any) => `<li><b>${it.item_name}</b> x${it.quantity} — Talle ${it.product_size || "-"} · ${it.product_color || "-"}</li>`)
         .join("")
+      const drop7Prefix = drop7Label ? `${drop7Label} — ` : ""
       void sendEmail({
         to: salesEmail,
-        subject: `🟡 PEDIDO POR TRANSFERENCIA ${newOrder.order_number || ""} — $${finalTotal.toLocaleString("es-AR")} (${customer.firstName || ""} ${customer.lastName || ""})`,
-        html: `<h2>Pedido por transferencia creado — esperando el pago 🟡</h2>
+        subject: `${drop7Prefix}🟡 PEDIDO POR TRANSFERENCIA ${newOrder.order_number || ""} — $${finalTotal.toLocaleString("es-AR")} (${customer.firstName || ""} ${customer.lastName || ""})`,
+        html: `<h2>${drop7Label ? `${drop7Label}<br/>` : ""}Pedido por transferencia creado — esperando el pago 🟡</h2>
 <p>Cuando entre una transferencia de <b>$${finalTotal.toLocaleString("es-AR")}</b> en Mercado Pago, es este pedido.</p>
 <p><b>Pedido:</b> ${newOrder.order_number || newOrder.id}<br/>
 <b>Cliente:</b> ${customer.firstName || ""} ${customer.lastName || ""} · ${customer.email} · ${customer.phone || "-"}<br/>

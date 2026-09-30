@@ -23,6 +23,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { updateOrder } from '@/lib/db'
 import { creditOrderMargin, type CreditResult, type OrderItemLike, type TenantCredit } from './ledger'
 import { payoutModeDe } from './payout-mode'
+import { drop7LabelForTenants } from './drop7'
 
 export interface SaleOrder {
   id: string
@@ -41,6 +42,8 @@ export interface SaleOrder {
   currency?: string | null
   items?: OrderItemLike[] | null
   metadata?: Record<string, unknown> | null
+  /** Fecha de creación del pedido — solo se usa para la etiqueta DROP7. */
+  created_at?: string | null
 }
 
 /**
@@ -111,6 +114,8 @@ async function bridgePartnerOrders(order: SaleOrder, saleKey: string, credits: T
 export interface PartnerSaleEffectsResult {
   meta: Record<string, any>
   credit: CreditResult | null
+  /** "🚀 DROP7 · <Marca>" si algún tenant de la venta está en su semana de lanzamiento, si no null. */
+  drop7Label: string | null
 }
 
 export async function runPartnerSaleEffects(
@@ -130,7 +135,7 @@ export async function runPartnerSaleEffects(
   } catch (e: any) {
     console.error('❌ Exception acreditando ganancia partner:', e?.message)
   }
-  if (!credit) return { meta, credit }
+  if (!credit) return { meta, credit, drop7Label: null }
 
   await bridgePartnerOrders(order, opts.saleKey, credit.credits)
 
@@ -141,6 +146,16 @@ export async function runPartnerSaleEffects(
     ? await sb.from('tenants').select('id, name, slug, email, bank_alias, bank_cbu, metadata').in('id', tenantIds)
     : { data: [] }
   const tenantById = new Map<string, any>((tenants || []).map((t: any) => [t.id, t]))
+
+  // DROP7 (piloto lanzamiento 7 días): etiqueta si CUALQUIER tenant de la
+  // venta está en su ventana. Solo lectura de metadata — nunca puede romper
+  // el resto de los efectos de venta.
+  let drop7Label: string | null = null
+  try {
+    drop7Label = drop7LabelForTenants(Array.from(tenantById.values()), order.created_at)
+  } catch (e: any) {
+    console.error('❌ Exception calculando etiqueta DROP7:', e?.message)
+  }
 
   // Mail al partner (solo confirmaciones en vivo). Guard por tenant en metadata.
   // Pedidos avisados con el esquema viejo (un solo flag, sin lista por tenant): no re-avisar.
@@ -195,5 +210,5 @@ export async function runPartnerSaleEffects(
     }
   }
 
-  return { meta, credit }
+  return { meta, credit, drop7Label }
 }

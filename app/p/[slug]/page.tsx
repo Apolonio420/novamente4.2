@@ -610,8 +610,13 @@ function CtaSection({
       ? `https://wa.me/${tenant.phone.replace(/\D/g, '')}`
       : null)
 
-  if (waHref && utmRef && waHref.includes('wa.me/')) {
-    waHref = `${waHref}?text=${encodeURIComponent(`Hola! Ref: ${utmRef}`)}`
+  // DROP7 y otros: el cta_url ya puede traer su propio `?text=` (ej. el mensaje
+  // de lanzamiento con el nombre de la marca) — no pisarlo ni duplicarlo. Y si
+  // ya tiene un `?` (por el que sea), el utmRef se agrega con `&`, si no con `?`
+  // (antes SIEMPRE pegaba un segundo "?text=" y rompía el link armado).
+  if (waHref && utmRef && waHref.includes('wa.me/') && !/[?&]text=/.test(waHref)) {
+    const sep = waHref.includes('?') ? '&' : '?'
+    waHref = `${waHref}${sep}text=${encodeURIComponent(`Hola! Ref: ${utmRef}`)}`
   }
 
   if (!hasProducts && !waHref) return null

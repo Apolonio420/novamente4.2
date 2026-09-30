@@ -388,6 +388,11 @@ async function runConfirmedOrderEffects(
   baseMetadata: Record<string, any>,
 ): Promise<void> {
   const meta: Record<string, any> = { ...baseMetadata }
+  // DROP7 (piloto lanzamiento 7 días): "🚀 DROP7 · <Marca>" si la venta es de
+  // una tienda partner en su semana de lanzamiento — la calcula
+  // runPartnerSaleEffects (ya consulta el/los tenant/s de la orden) y acá solo
+  // se antepone al aviso de venta. Ver lib/partners/drop7.ts.
+  let drop7Label: string | null = null
   // (bloque preservado tal cual del camino inline original de processPaymentById)
   {
     console.log("🎉 Pago aprobado! Orden confirmada:", order.order_number)
@@ -405,6 +410,7 @@ async function runConfirmedOrderEffects(
           notifyPartner: true,
         })
         Object.assign(meta, r.meta)
+        drop7Label = r.drop7Label
       } catch (partnerErr: any) {
         console.error("❌ Exception en efectos de venta partner:", partnerErr?.message)
       }
@@ -575,6 +581,7 @@ async function runConfirmedOrderEffects(
             price: item.unit_price || 0,
             imageUrl: item.image_url || item.mockup_url || null,
           })),
+          label: drop7Label,
         })
         if (tgResult) {
           meta.sale_notified_at = new Date().toISOString()
@@ -594,10 +601,11 @@ async function runConfirmedOrderEffects(
         const itemsHtml = (order.items || [])
           .map((item: any) => `<li><b>${item.item_name || "Producto"}</b> x${item.quantity || 1} — Talle ${item.product_size || "-"} · ${item.product_color || "-"}</li>`)
           .join("")
+        const drop7Prefix = drop7Label ? `${drop7Label} — ` : ""
         const sent = await sendEmail({
           to: salesEmail,
-          subject: `💰 VENTA ${order.order_number || ""} — $${Number(order.total || 0).toLocaleString("es-AR")} (${(order as any).customer_first_name || ""} ${(order as any).customer_last_name || ""})`,
-          html: `<h2>Nueva venta pagada ✅</h2>
+          subject: `${drop7Prefix}💰 VENTA ${order.order_number || ""} — $${Number(order.total || 0).toLocaleString("es-AR")} (${(order as any).customer_first_name || ""} ${(order as any).customer_last_name || ""})`,
+          html: `<h2>${drop7Label ? `${drop7Label}<br/>` : ""}Nueva venta pagada ✅</h2>
 <p><b>Pedido:</b> ${order.order_number || order.id}<br/>
 <b>Total:</b> $${Number(order.total || 0).toLocaleString("es-AR")}<br/>
 <b>Cliente:</b> ${(order as any).customer_first_name || ""} ${(order as any).customer_last_name || ""} · ${order.customer_email || "-"} · ${(order as any).customer_phone || "-"}<br/>

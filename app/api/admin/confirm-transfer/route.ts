@@ -119,6 +119,11 @@ export async function POST(req: NextRequest) {
   // camino NO acreditaba nada al partner. Si algo falla acá, el barrido diario
   // (lib/partners/ledger-sweep.ts) lo completa.
   let partnerNote = ""
+  // DROP7 (piloto lanzamiento 7 días): "🚀 DROP7 · <Marca>" si la tienda está
+  // en su semana de lanzamiento — la calcula runPartnerSaleEffects con la
+  // fecha de CREACIÓN del pedido (una transferencia del domingo confirmada el
+  // lunes sigue etiquetada). Ver lib/partners/drop7.ts.
+  let drop7Label: string | null = null
   if (o.tenant_id) {
     try {
       const { runPartnerSaleEffects, partnerSaleKey } = await import("@/lib/partners/sale-effects")
@@ -129,6 +134,7 @@ export async function POST(req: NextRequest) {
         notifyPartner: true,
       })
       Object.assign(meta, efectos.meta)
+      drop7Label = efectos.drop7Label
       const credits = efectos.credit?.credits || []
       partnerNote = credits.length
         ? `<br/>Ganancia partner acreditada: ${credits.map((c) => `$${c.amount.toLocaleString("es-AR")}${c.needsReview ? " (EN REVISIÓN)" : ""}`).join(" + ")}.`
@@ -177,13 +183,15 @@ ${sinDireccion
       total: Number(o.total || 0),
       email: o.customer_email || "N/A",
       items: (o.items || []).map((it: any) => ({ name: it.item_name || "Producto", quantity: it.quantity || 1, size: it.product_size, color: it.product_color, price: it.unit_price || 0, imageUrl: it.image_url || it.mockup_url || undefined })),
+      label: drop7Label,
     })
   } catch (e) { console.error("[confirm-transfer] notifySale falló:", e) }
   try {
+    const drop7Prefix = drop7Label ? `${drop7Label} — ` : ""
     await sendEmail({
       to: process.env.SALES_NOTIFY_EMAIL || "juan@novamente.ar",
-      subject: `💰 VENTA por transferencia CONFIRMADA ${order} — $${total} (${o.customer_first_name || ""} ${o.customer_last_name || ""})`,
-      html: `<h2>Transferencia confirmada ✅</h2><p><b>Pedido:</b> ${order} · <b>op:</b> ${op}<br/><b>Cliente:</b> ${o.customer_first_name || ""} ${o.customer_last_name || ""} · ${o.customer_email || "-"} · ${o.customer_phone || "-"}<br/><b>Envío:</b> ${o.shipping_address || "-"}, ${o.shipping_city || "-"} (CP ${o.shipping_postal_code || "-"})</p><ul>${itemsHtml}</ul><p>Mail al cliente: ${mailCliente}. Ficha: admin.novamente.ar/dashboard/orders/fichas</p>`,
+      subject: `${drop7Prefix}💰 VENTA por transferencia CONFIRMADA ${order} — $${total} (${o.customer_first_name || ""} ${o.customer_last_name || ""})`,
+      html: `<h2>${drop7Label ? `${drop7Label}<br/>` : ""}Transferencia confirmada ✅</h2><p><b>Pedido:</b> ${order} · <b>op:</b> ${op}<br/><b>Cliente:</b> ${o.customer_first_name || ""} ${o.customer_last_name || ""} · ${o.customer_email || "-"} · ${o.customer_phone || "-"}<br/><b>Envío:</b> ${o.shipping_address || "-"}, ${o.shipping_city || "-"} (CP ${o.shipping_postal_code || "-"})</p><ul>${itemsHtml}</ul><p>Mail al cliente: ${mailCliente}. Ficha: admin.novamente.ar/dashboard/orders/fichas</p>`,
     })
   } catch (e) { console.error("[confirm-transfer] mail venta falló:", e) }
 

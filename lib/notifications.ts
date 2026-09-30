@@ -78,6 +78,8 @@ export async function notifySale(order: {
     }>;
     /** Reemplaza la línea final "Pago aprobado" (ej. transferencia pendiente + link de confirmación). HTML de Telegram. */
     footer?: string;
+    /** DROP7 (piloto lanzamiento 7 días): "🚀 DROP7 · <Marca>" antepuesto al aviso. null/undefined = sin etiqueta. */
+    label?: string | null;
 }) {
     const itemsText = order.items
         .map((item) => {
@@ -96,7 +98,7 @@ export async function notifySale(order: {
         .join('\n\n');
 
     const message = `
-💰 <b>¡NUEVA VENTA!</b> 💰
+${order.label ? `${order.label}\n` : ''}💰 <b>¡NUEVA VENTA!</b> 💰
 
 <b>Pedido:</b> #${order.orderNumber}
 <b>Cliente:</b> ${order.email}
