@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import ReceiptUploader from "@/components/ReceiptUploader"
 import { Logo } from "@/components/Logo"
 import { getWhatsAppLink } from "@/lib/config/links"
+import { envioAMostrar } from "@/lib/checkout/form-checkout"
 
 interface TransferData {
   bank: string
@@ -23,6 +24,8 @@ interface TransferData {
   alias: string
   titular?: string
   amount: number
+  shippingCost?: number
+  discountARS?: number
   order_id?: string
   order_number?: string
   customer: {
@@ -306,7 +309,11 @@ export default function TransferPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>Envío</span>
-                  <span className="text-green-600 font-medium">Gratis</span>
+                  {envioAMostrar(transferData) > 0 ? (
+                    <span>{formatCurrency(envioAMostrar(transferData))}</span>
+                  ) : (
+                    <span className="text-green-600 font-medium">Gratis</span>
+                  )}
                 </div>
               </div>
 

@@ -20,6 +20,7 @@ import { DiscountInput } from "@/components/checkout/DiscountInput"
 import { SHIPPING, shippingCostFor, envioPorDistancia, ENVIO_DISTANCIA as SHIPPING_RANGO } from "@/lib/shipping-config"
 import { StoreBrandBar } from "@/components/checkout/StoreBrandBar"
 import { getStoredAttribution } from "@/lib/attribution"
+import { camposFaltantes, mensajeCamposFaltantes } from "@/lib/checkout/form-checkout"
 
 interface CustomerData {
   email: string
@@ -160,13 +161,18 @@ export default function CheckoutPage() {
     // /checkout/success — si no volvía, el pedido quedaba pago y sin adónde
     // despachar). /checkout/success + shipping-info quedan como backfill de
     // pedidos viejos, no como camino normal.
-    const required = ["email", "firstName", "lastName", "phone", "address", "city", "postalCode"]
-    return required.every((field) => customerInfo[field as keyof typeof customerInfo].trim() !== "")
+    return camposFaltantes(customerInfo).length === 0
   }
 
   const handleCheckout = async () => {
-    if (!validateForm()) {
-      alert("Por favor completá todos los campos, incluidos los datos de envío (dirección, ciudad y código postal) — los necesitamos para despachar tu pedido.")
+    const faltan = camposFaltantes(customerInfo)
+    if (faltan.length) {
+      // El botón ya NO se deshabilita por formulario incompleto (01/10/2026,
+      // reporte la-blancq): deshabilitado, tocarlo no hacía nada y parecía que
+      // la transferencia estaba rota. Ahora decimos qué falta y llevamos el
+      // foco al primer campo vacío.
+      alert(mensajeCamposFaltantes(faltan))
+      if (typeof document !== "undefined") document.getElementById(faltan[0])?.focus()
       return
     }
 
@@ -338,6 +344,9 @@ export default function CheckoutPage() {
           // $111.400 impago).
           titular: "Valentín Nuñez",
           amount: total,
+          // Para mostrar el envío real en /checkout/transfer (antes decía "Gratis" siempre).
+          shippingCost,
+          discountARS,
           customer: customerInfo,
           items: items,
           order_id: transferDataResponse.order_id,
@@ -875,7 +884,7 @@ export default function CheckoutPage() {
             </CardContent>
           </Card>
 
-          <Button onClick={handleCheckout} disabled={isProcessing || !validateForm()} className="w-full text-base" size="lg">
+          <Button onClick={handleCheckout} disabled={isProcessing} className="w-full text-base" size="lg">
             {isProcessing ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
