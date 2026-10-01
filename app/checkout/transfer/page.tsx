@@ -122,12 +122,12 @@ export default function TransferPage() {
             Volver al Checkout
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold">Transferencia Bancaria</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold min-w-0">Transferencia Bancaria</h1>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Datos de transferencia */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -227,7 +227,7 @@ export default function TransferPage() {
                 </div>
                 <div>
                   <label className="text-muted-foreground">Email</label>
-                  <p className="font-medium">{transferData.customer.email}</p>
+                  <p className="font-medium break-all">{transferData.customer.email}</p>
                 </div>
                 <div>
                   <label className="text-muted-foreground">Teléfono</label>
@@ -251,7 +251,7 @@ export default function TransferPage() {
         </div>
 
         {/* Resumen del pedido */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           <Card>
             <CardHeader>
               <CardTitle>Resumen del Pedido</CardTitle>
@@ -315,6 +315,13 @@ export default function TransferPage() {
                     <span className="text-green-600 font-medium">Gratis</span>
                   )}
                 </div>
+                {/* Sin esta línea, con cupón subtotal + envío ≠ total a transferir. */}
+                {(transferData.discountARS ?? 0) > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span>Descuento</span>
+                    <span className="font-medium">−{formatCurrency(transferData.discountARS ?? 0)}</span>
+                  </div>
+                )}
               </div>
 
               <Separator className="my-4" />

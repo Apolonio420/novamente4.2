@@ -36,6 +36,56 @@ export function mensajeCamposFaltantes(faltan: CampoObligatorio[]): string | nul
   return `Para confirmar el pedido completá: ${lista}. Los datos de envío los necesitamos para despachar tu pedido.`
 }
 
+/** Formato mínimo de email: algo@algo.algo, sin espacios. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/** Texto chico que va debajo de cada campo vacío. */
+const MENSAJE_VACIO: Record<CampoObligatorio, string> = {
+  email: "Completá tu email",
+  firstName: "Completá tu nombre",
+  lastName: "Completá tu apellido",
+  phone: "Completá tu teléfono",
+  address: "Completá la dirección",
+  city: "Completá la ciudad",
+  postalCode: "Completá el código postal",
+}
+
+export type ErroresCampos = Partial<Record<CampoObligatorio, string>>
+
+/**
+ * Error por campo para marcar en rojo en /checkout (pedido de Juan 01/10/2026:
+ * el aviso salía pero no se veía QUÉ campo faltaba). Mismos requisitos que
+ * `camposFaltantes` (no vacío) + formato de email y que el teléfono tenga
+ * números. El orden de las claves es el del formulario.
+ */
+export function erroresCampos(info: Partial<Record<CampoObligatorio, string | null | undefined>>): ErroresCampos {
+  const errores: ErroresCampos = {}
+  for (const campo of Object.keys(CAMPOS_OBLIGATORIOS) as CampoObligatorio[]) {
+    const valor = String(info[campo] ?? "").trim()
+    if (!valor) {
+      errores[campo] = MENSAJE_VACIO[campo]
+    } else if (campo === "email" && !EMAIL_RE.test(valor)) {
+      errores[campo] = "Revisá el email (ej. nombre@gmail.com)"
+    } else if (campo === "phone" && !/\d/.test(valor)) {
+      errores[campo] = "El teléfono tiene que tener números"
+    }
+  }
+  return errores
+}
+
+/** Mensaje general (alert) a partir de los errores por campo, o null si no hay. */
+export function mensajeErrores(errores: ErroresCampos): string | null {
+  const campos = Object.keys(errores) as CampoObligatorio[]
+  if (!campos.length) return null
+  const vacios = campos.filter((c) => (errores[c] ?? "").startsWith("Completá"))
+  const partes: string[] = []
+  const msgVacios = mensajeCamposFaltantes(vacios)
+  if (msgVacios) partes.push(msgVacios)
+  if (errores.email && !vacios.includes("email")) partes.push("Revisá el email: no parece válido.")
+  if (errores.phone && !vacios.includes("phone")) partes.push("Revisá el teléfono: tiene que tener números.")
+  return partes.join(" ")
+}
+
 /**
  * Costo de envío a mostrar en /checkout/transfer. Antes la pantalla decía
  * "Envío: Gratis" SIEMPRE aunque el "Total a transferir" lo incluyera — el

@@ -20,7 +20,7 @@ import { DiscountInput } from "@/components/checkout/DiscountInput"
 import { SHIPPING, shippingCostFor, envioPorDistancia, ENVIO_DISTANCIA as SHIPPING_RANGO } from "@/lib/shipping-config"
 import { StoreBrandBar } from "@/components/checkout/StoreBrandBar"
 import { getStoredAttribution } from "@/lib/attribution"
-import { camposFaltantes, mensajeCamposFaltantes } from "@/lib/checkout/form-checkout"
+import { camposFaltantes, erroresCampos, mensajeErrores, type CampoObligatorio, type ErroresCampos } from "@/lib/checkout/form-checkout"
 
 interface CustomerData {
   email: string
@@ -30,6 +30,16 @@ interface CustomerData {
   address: string
   city: string
   postalCode: string
+}
+
+const AUTOCOMPLETE: Record<keyof CustomerData, string> = {
+  email: "email",
+  firstName: "given-name",
+  lastName: "family-name",
+  phone: "tel",
+  address: "street-address",
+  city: "address-level2",
+  postalCode: "postal-code",
 }
 
 export default function CheckoutPage() {
@@ -150,8 +160,55 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, selectedItemIndex])
 
-  const handleInputChange = (field: string, value: string) => {
+  // Errores por campo (borde rojo + texto chico). Se llenan al tocar
+  // "Confirmar" con datos incompletos y cada uno se limpia apenas ese campo
+  // queda bien (pedido de Juan 01/10/2026).
+  const [errores, setErrores] = useState<ErroresCampos>({})
+
+  const handleInputChange = (field: CampoObligatorio, value: string) => {
     setCustomerInfo((prev) => ({ ...prev, [field]: value }))
+    setErrores((prev) => {
+      if (!prev[field]) return prev
+      const nuevo = erroresCampos({ ...customerInfo, [field]: value })[field]
+      const next = { ...prev }
+      if (nuevo) next[field] = nuevo
+      else delete next[field]
+      return next
+    })
+  }
+
+  const renderCampo = (
+    id: CampoObligatorio,
+    label: string,
+    placeholder: string,
+    type?: "email" | "tel",
+  ) => {
+    const error = errores[id]
+    return (
+      <div>
+        <Label htmlFor={id} className={error ? "text-red-500" : undefined}>
+          {label}
+        </Label>
+        <Input
+          id={id}
+          type={type}
+          inputMode={type === "tel" ? "tel" : undefined}
+          autoComplete={AUTOCOMPLETE[id]}
+          value={customerInfo[id]}
+          onChange={(e) => handleInputChange(id, e.target.value)}
+          placeholder={placeholder}
+          required
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
+          className={error ? "border-2 border-red-500 focus-visible:ring-red-500" : undefined}
+        />
+        {error && (
+          <p id={`${id}-error`} className="mt-1 text-xs font-medium text-red-500">
+            {error}
+          </p>
+        )}
+      </div>
+    )
   }
 
   const validateForm = () => {
@@ -165,16 +222,19 @@ export default function CheckoutPage() {
   }
 
   const handleCheckout = async () => {
-    const faltan = camposFaltantes(customerInfo)
-    if (faltan.length) {
+    const erroresActuales = erroresCampos(customerInfo)
+    const conError = Object.keys(erroresActuales) as CampoObligatorio[]
+    if (conError.length) {
       // El botón ya NO se deshabilita por formulario incompleto (01/10/2026,
       // reporte la-blancq): deshabilitado, tocarlo no hacía nada y parecía que
-      // la transferencia estaba rota. Ahora decimos qué falta y llevamos el
-      // foco al primer campo vacío.
-      alert(mensajeCamposFaltantes(faltan))
-      if (typeof document !== "undefined") document.getElementById(faltan[0])?.focus()
+      // la transferencia estaba rota. Ahora decimos qué falta, marcamos en
+      // rojo TODOS los campos con problema y llevamos el foco al primero.
+      setErrores(erroresActuales)
+      alert(mensajeErrores(erroresActuales))
+      if (typeof document !== "undefined") document.getElementById(conError[0])?.focus()
       return
     }
+    setErrores({})
 
     // Persist Advanced Matching data so all subsequent Pixel events (and
     // PageViews on future visits) carry hashed user info → improves Event
@@ -437,49 +497,12 @@ export default function CheckoutPage() {
               <CardTitle>Información de Contacto</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={customerInfo.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  placeholder="tu@email.com"
-                  required
-                />
-              </div>
+              {renderCampo("email", "Email *", "tu@email.com", "email")}
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">Nombre *</Label>
-                  <Input
-                    id="firstName"
-                    value={customerInfo.firstName}
-                    onChange={(e) => handleInputChange("firstName", e.target.value)}
-                    placeholder="Juan"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="lastName">Apellido *</Label>
-                  <Input
-                    id="lastName"
-                    value={customerInfo.lastName}
-                    onChange={(e) => handleInputChange("lastName", e.target.value)}
-                    placeholder="Pérez"
-                    required
-                  />
-                </div>
+                {renderCampo("firstName", "Nombre *", "Juan", undefined)}
+                {renderCampo("lastName", "Apellido *", "Pérez", undefined)}
               </div>
-              <div>
-                <Label htmlFor="phone">Teléfono *</Label>
-                <Input
-                  id="phone"
-                  value={customerInfo.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                  placeholder="+54 9 11 1234-5678"
-                  required
-                />
-              </div>
+              {renderCampo("phone", "Teléfono *", "+54 9 11 1234-5678", "tel")}
             </CardContent>
           </Card>
 
@@ -552,37 +575,10 @@ export default function CheckoutPage() {
                   Los necesitamos para despachar tu pedido por Andreani.
                 </p>
                 <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="address">Dirección (calle y número) *</Label>
-                    <Input
-                      id="address"
-                      value={customerInfo.address}
-                      onChange={(e) => handleInputChange("address", e.target.value)}
-                      placeholder="Av. Corrientes 1234, piso/depto"
-                      required
-                    />
-                  </div>
+                  {renderCampo("address", "Dirección (calle y número) *", "Av. Corrientes 1234, piso/depto", undefined)}
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor="city">Ciudad *</Label>
-                      <Input
-                        id="city"
-                        value={customerInfo.city}
-                        onChange={(e) => handleInputChange("city", e.target.value)}
-                        placeholder="Buenos Aires"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="postalCode">Código Postal *</Label>
-                      <Input
-                        id="postalCode"
-                        value={customerInfo.postalCode}
-                        onChange={(e) => handleInputChange("postalCode", e.target.value)}
-                        placeholder="1000"
-                        required
-                      />
-                    </div>
+                    {renderCampo("city", "Ciudad *", "Buenos Aires", undefined)}
+                    {renderCampo("postalCode", "Código Postal *", "1000", undefined)}
                   </div>
                 </div>
               </div>
@@ -897,7 +893,9 @@ export default function CheckoutPage() {
                 ) : (
                   <Building2 className="mr-2 h-5 w-5" />
                 )}
-                {paymentMethod === 'mercadopago' ? 'Confirmar y Pagar' : 'Confirmar Pedido'} — {formatCurrency(total)}
+                {/* Con MP el monto es el que se cobra (incluye recargo de tarjeta): antes
+                    el botón decía el total SIN recargo y el resumen, con recargo. */}
+                {paymentMethod === 'mercadopago' ? 'Confirmar y Pagar' : 'Confirmar Pedido'} — {formatCurrency(totalAPagar)}
               </>
             )}
           </Button>

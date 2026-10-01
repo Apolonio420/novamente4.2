@@ -45,6 +45,7 @@ autopilot-session-*.log
 # OS / screenshots / scripts con secretos (no van al repo)
 .DS_Store
 /e2e/screenshots/
+/e2e/out/
 /scripts/diag-76-detalle.mjs
 
 # one-off scripts y logs locales (2026-07-02)
