@@ -34,6 +34,20 @@ export const ATTRIBUTION_URL_PARAMS = [
   "gclid",
 ] as const
 
+/**
+ * `utm_id` — Meta lo manda como `{{ad.id}}` (el id numérico del ad, ~18
+ * dígitos). Se captura con las mismas reglas que los demás params de URL
+ * (last-touch, TTL 30 días) pero vive DELIBERADAMENTE fuera de
+ * ATTRIBUTION_URL_PARAMS/ATTRIBUTION_FIELDS: esa lista whitelistea las 9
+ * columnas de migrations/20260806_orders_attribution.sql y alimenta el
+ * insert a `orders` (ver lib/db.ts). La tabla NO tiene columna utm_id —
+ * mezclarlo ahí dispararía un 42703 en el insert y el fallback de lib/db.ts
+ * pisaría TODA la atribución (no solo utm_id). Por eso utm_id solo se usa
+ * para taggear el link de WhatsApp (ver lib/wa-ref.ts), nunca se persiste
+ * en `orders`.
+ */
+export const ATTRIBUTION_AD_ID_PARAM = "utm_id"
+
 /** Campos contextuales que derivamos del navegador, no de la query string. */
 export const ATTRIBUTION_CONTEXT_FIELDS = ["landing_page", "referrer"] as const
 
@@ -50,6 +64,13 @@ export type Attribution = Record<AttributionField, string | null>
 
 /** Lo que efectivamente vive en localStorage: la atribución + cuándo se capturó. */
 export type StoredAttribution = Attribution & { ts: number }
+
+/**
+ * Lo mínimo que necesita el tagger de links de WhatsApp (lib/wa-ref.ts):
+ * el utm_id crudo (sin validar formato) y el timestamp para chequear TTL.
+ * No es `Attribution` — ver comentario de ATTRIBUTION_AD_ID_PARAM arriba.
+ */
+export type StoredAdAttribution = { utm_id: string | null; ts: number }
 
 /** Recorta y normaliza un valor suelto. Vacío/no-string → null. */
 function normalizeValue(value: unknown): string | null {
@@ -98,21 +119,27 @@ export function sanitizeAttribution(raw: unknown): Attribution | null {
   return hasAny ? out : null
 }
 
+/** Lo que vive en localStorage en runtime: Attribution + ts + utm_id crudo. */
+type PersistedAttribution = StoredAttribution & { utm_id: string | null }
+
 /** Lee el registro crudo de localStorage, ya validado y sin vencer. */
-function readStored(): StoredAttribution | null {
+function readStored(): PersistedAttribution | null {
   if (typeof window === "undefined") return null
   try {
     const raw = window.localStorage.getItem(ATTRIBUTION_STORAGE_KEY)
     if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<StoredAttribution>
+    const parsed = JSON.parse(raw) as Partial<PersistedAttribution>
     const ts = typeof parsed?.ts === "number" ? parsed.ts : 0
     if (!ts || Date.now() - ts > ATTRIBUTION_TTL_MS) {
       window.localStorage.removeItem(ATTRIBUTION_STORAGE_KEY)
       return null
     }
+    // sanitizeAttribution solo whitelistea las 9 columnas de ATTRIBUTION_FIELDS
+    // (lo que va a `orders`); utm_id se lee aparte porque NO es una de ellas.
     const attribution = sanitizeAttribution(parsed)
-    if (!attribution) return null
-    return { ...attribution, ts }
+    const utmId = normalizeValue((parsed as Record<string, unknown>)[ATTRIBUTION_AD_ID_PARAM])
+    if (!attribution && !utmId) return null
+    return { ...(attribution ?? ({} as Attribution)), utm_id: utmId, ts }
   } catch {
     // JSON corrupto, storage bloqueado (modo privado), cuota llena — nunca
     // rompemos la navegación por un dato de analytics.
@@ -121,14 +148,26 @@ function readStored(): StoredAttribution | null {
 }
 
 /**
- * Atribución guardada lista para mandar al backend (sin el `ts` interno).
+ * Atribución guardada lista para mandar al backend (sin `ts` ni `utm_id`
+ * internos — utm_id no es una columna de `orders`, ver ATTRIBUTION_AD_ID_PARAM).
  * null si no hay nada capturado o si venció.
  */
 export function getStoredAttribution(): Attribution | null {
   const stored = readStored()
   if (!stored) return null
-  const { ts: _ts, ...attribution } = stored
+  const { ts: _ts, utm_id: _utmId, ...attribution } = stored
   return attribution as Attribution
+}
+
+/**
+ * Lo mínimo para taggear el link de WhatsApp con el ad id de Meta
+ * (ver lib/wa-ref.ts). Separado de getStoredAttribution a propósito: ese
+ * sigue siendo el contrato que consume el backend (checkout, capi.ts).
+ */
+export function getStoredAdAttribution(): StoredAdAttribution | null {
+  const stored = readStored()
+  if (!stored) return null
+  return { utm_id: stored.utm_id, ts: stored.ts }
 }
 
 /**
@@ -143,14 +182,15 @@ export function captureAttribution(
   search?: string,
   landingPage?: string,
   referrer?: string,
-): StoredAttribution | null {
+): PersistedAttribution | null {
   if (typeof window === "undefined") return null
   try {
     const params = new URLSearchParams(search ?? window.location.search)
     const campaign = parseAttributionParams(params)
+    const utmId = normalizeValue(params.get(ATTRIBUTION_AD_ID_PARAM))
 
-    // Sin parámetros de campaña => navegación directa/interna => NO pisar.
-    if (!hasCampaignTouch(campaign)) return null
+    // Sin parámetros de campaña (ni utm_id) => navegación directa/interna => NO pisar.
+    if (!hasCampaignTouch(campaign) && !utmId) return null
 
     const resolvedLanding =
       normalizeValue(landingPage) ??
@@ -167,10 +207,11 @@ export function captureAttribution(
       }
     }
 
-    const record: StoredAttribution = {
+    const record: PersistedAttribution = {
       ...campaign,
       landing_page: resolvedLanding,
       referrer: resolvedReferrer,
+      utm_id: utmId,
       ts: Date.now(),
     }
 

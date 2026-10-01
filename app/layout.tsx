@@ -13,6 +13,7 @@ import { Background } from "@/components/ui/Background"
 import FacebookPixel from "@/components/FacebookPixel"
 import GoogleAdsPixel from "@/components/GoogleAdsPixel"
 import AttributionTracker from "@/components/AttributionTracker"
+import WhatsAppRefTagger from "@/components/WhatsAppRefTagger"
 import { WebVitals } from "@/components/web-vitals"
 import { loadProductNameOverrides } from "@/lib/product-names-db"
 import { ProductNamesProvider } from "@/lib/product-names-context"
@@ -232,6 +233,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         {/* Guarda los UTMs de la URL (last-touch, 30 días) para que el pedido
             sepa de qué campaña vino. No renderiza nada. */}
         <AttributionTracker />
+        {/* Taggea los botones de WhatsApp con el ad id de Meta (post-hidratación,
+            no toca el HTML server-rendered). Ver lib/wa-ref.ts. */}
+        <WhatsAppRefTagger />
         <WebVitals />
         <Background />
         <ProductNamesProvider overrides={productNameOverrides}>
