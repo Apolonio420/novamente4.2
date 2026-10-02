@@ -66,7 +66,7 @@ COMMENT ON TABLE checkout_events IS
 -- Embudo diario en hora de Argentina — sesiones únicas por etapa + pedidos y
 -- pagos (estos por order_id, no por session_id, porque pueden confirmarse
 -- días después de la sesión que originó la compra).
-CREATE OR REPLACE VIEW checkout_funnel_daily AS
+CREATE OR REPLACE VIEW checkout_funnel_daily WITH (security_invoker = true) AS
 SELECT
   (date_trunc('day', created_at AT TIME ZONE 'America/Argentina/Buenos_Aires'))::date AS day,
   COUNT(DISTINCT session_id) FILTER (WHERE event = 'checkout_view') AS sessions_view,
@@ -84,7 +84,7 @@ COMMENT ON VIEW checkout_funnel_daily IS
 
 -- Qué campo falta más seguido cuando "Confirmar" sale inválido — para saber
 -- si el problema es el form (ej. todos fallan en "phone") o abandono real.
-CREATE OR REPLACE VIEW checkout_missing_fields_daily AS
+CREATE OR REPLACE VIEW checkout_missing_fields_daily WITH (security_invoker = true) AS
 SELECT
   (date_trunc('day', created_at AT TIME ZONE 'America/Argentina/Buenos_Aires'))::date AS day,
   campo AS field,
@@ -96,6 +96,11 @@ ORDER BY 1 DESC, 3 DESC;
 
 COMMENT ON VIEW checkout_missing_fields_daily IS
   'Desglose diario de qué campo obligatorio falta más seguido en los confirm_click inválidos (unnest de missing_fields). Útil para decidir si hay que sacar/simplificar un campo del form.';
+
+-- Las vistas nuevas en public quedan con GRANT a anon/authenticated por los
+-- default privileges de Supabase: cerrarlas igual que la tabla (solo service_role).
+REVOKE ALL ON checkout_funnel_daily FROM anon, authenticated;
+REVOKE ALL ON checkout_missing_fields_daily FROM anon, authenticated;
 
 -- Query de ejemplo — embudo de los últimos 14 días:
 -- SELECT * FROM checkout_funnel_daily WHERE day >= CURRENT_DATE - INTERVAL '14 days';
