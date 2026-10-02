@@ -1,6 +1,6 @@
 import type { Tenant, PartnerProduct } from './types'
 import type { ReviewStats } from './reviews'
-import { SHIPPING, shippingZonesDetailLine } from "../shipping-config"
+import { SHIPPING_ZONES_PUBLIC, shippingZonesDetailLine } from "../shipping-config"
 
 const BASE_URL = 'https://www.novamente.ar'
 
@@ -92,8 +92,9 @@ export function generateProductSchema(
           '@type': 'MonetaryAmount',
           currency: 'ARS',
           // Derivado de shipping-config: antes decía '5500', que ya no es lo
-          // que cobra el checkout.
-          value: SHIPPING.RESTO,
+          // que cobra el checkout. Usa el MÁXIMO de la zona "Resto del país"
+          // (nunca el mínimo): a Google no se le subestima un precio.
+          value: SHIPPING_ZONES_PUBLIC[1].priceMax,
         },
         deliveryTime: {
           '@type': 'ShippingDeliveryTime',

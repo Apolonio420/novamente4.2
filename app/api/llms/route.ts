@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getPublishedTenants } from '@/lib/partners/tenant'
 import { industryLabel } from '@/lib/partners/industry'
 import { tenantIsIndexable } from '@/lib/partners/plans'
-import { SHIPPING, SHIPPING_ZONES_PUBLIC, formatShippingARS } from '@/lib/shipping-config'
+import { SHIPPING, SHIPPING_ZONES_PUBLIC, formatShippingARS, formatShippingRangeARS } from '@/lib/shipping-config'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600 // 1 hour
@@ -75,7 +75,7 @@ Todos los productos incluyen el diseño con IA y estampado DTG. No hay costo ext
 Anime, Art Deco, Bauhaus, Botanical, Brutalist, Chibi, Comic, Cyberpunk, Dark Fantasy, Doodle, Engraving, Flat Design, Geometric, Glitch, Graffiti, Isometric, Kawaii, Line Art, Low Poly, Mandala, Memphis, Minimalist, Neo-Tokyo, Pixel Art, Pop Art, Psychedelic, Retro Gaming, Risograph, Sticker, Surreal, Synthwave, Tattoo Flash, Tribal, Ukiyo-e, Vaporwave, Vintage, Watercolor
 
 ## Envíos a todo Argentina
-${SHIPPING_ZONES_PUBLIC.map((z) => `- ${z.zone}: ${z.days} (${formatShippingARS(z.price)})`).join('\n')}
+${SHIPPING_ZONES_PUBLIC.map((z) => `- ${z.zone}: ${z.days} (${formatShippingRangeARS(z.priceMin, z.priceMax)}, según código postal)`).join('\n')}
 - Envío gratis en pedidos desde ${formatShippingARS(SHIPPING.FREE_THRESHOLD)}
 
 ## Pagos

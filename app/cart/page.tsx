@@ -414,8 +414,8 @@ export default function CartPage() {
               <Separator />
 
               <div className="flex justify-between font-bold text-lg">
-                <span>Total</span>
-                <span>{formatCurrency(getTotalPrice() + (getTotalPrice() >= SHIPPING.FREE_THRESHOLD ? 0 : SHIPPING.BA))}</span>
+                <span>Total {getTotalPrice() < SHIPPING.FREE_THRESHOLD && <span className="text-xs font-normal text-muted-foreground">(envío aparte)</span>}</span>
+                <span>{formatCurrency(getTotalPrice())}</span>
               </div>
 
               <div className="space-y-3 pt-4">

@@ -13,7 +13,7 @@ import {
   Camera, PartyPopper, Flame, Music, Trophy, Shirt
 } from "lucide-react"
 import { PRODUCTS as CATALOG_PRODUCTS } from "@/lib/catalog"
-import { PRODUCTION_VOLUME, RETURN_POLICY_REF, SHIPPING, productionDaysForQty, shippingDetailsJsonLd } from "@/lib/shipping-config"
+import { ENVIO_DISTANCIA, PRODUCTION_VOLUME, RETURN_POLICY_REF, SHIPPING, productionDaysForQty, shippingDetailsJsonLd } from "@/lib/shipping-config"
 import { productDisplayName } from "@/lib/product-names"
 
 export const metadata: Metadata = {
@@ -203,7 +203,7 @@ export default function BuzosEgresados() {
         name: "Hacen envios a todo el pais? Cuanto cuesta?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: `Si. El envio a CABA/GBA sale ${formatPrice(SHIPPING.BA)} y al resto del pais ${formatPrice(SHIPPING.RESTO)}, con envio gratis en pedidos desde ${formatPrice(SHIPPING.FREE_THRESHOLD)} — la mayoria de los pedidos de curso lo supera.`,
+          text: `Sí. El envío a CABA/GBA sale entre ${formatPrice(ENVIO_DISTANCIA.AMBA_MIN)} y ${formatPrice(ENVIO_DISTANCIA.AMBA_MAX)}, y al resto del país entre ${formatPrice(ENVIO_DISTANCIA.INTERIOR_MIN)} y ${formatPrice(ENVIO_DISTANCIA.TOPE)} según tu código postal, con envío gratis en pedidos desde ${formatPrice(SHIPPING.FREE_THRESHOLD)} — la mayoria de los pedidos de curso lo supera.`,
         },
       },
     ],

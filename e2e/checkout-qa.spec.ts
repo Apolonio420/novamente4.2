@@ -422,7 +422,8 @@ for (const vp of VIEWPORTS) {
       const fecha = () => page.getByText(/te llega entre el/).innerText()
       const envioResumen = async () =>
         money(await page.locator('div.flex.justify-between', { has: page.getByText('Envío', { exact: true }) }).last().innerText())
-      // sin CP: manda el botón
+      // sin CP: manda el botón y el envío del resumen se marca como estimado
+      await expect(page.getByTestId('envio-estimado')).toBeVisible()
       const fechaBA = await fecha()
       await resto.click()
       await expect(resto).toHaveAttribute('aria-pressed', 'true')
@@ -434,6 +435,7 @@ for (const vp of VIEWPORTS) {
       await expect(resto).toHaveAttribute('aria-pressed', 'false')
       await expect(resto).toBeDisabled()
       await expect(page.getByTestId('zona-por-cp')).toBeVisible()
+      await expect(page.getByTestId('envio-estimado')).toHaveCount(0)
       expect(await fecha()).toBe(fechaBA)
       const envioAmba = await envioResumen()
       expect(money(await ba.innerText())).toBe(envioAmba)

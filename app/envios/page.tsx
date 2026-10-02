@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, Truck, Package, RefreshCw } from 'lucide-react'
-import { SHIPPING_ZONES_PUBLIC, formatShippingARS } from '@/lib/shipping-config'
+import { SHIPPING_ZONES_PUBLIC, formatShippingRangeARS } from '@/lib/shipping-config'
 
 export const metadata: Metadata = {
   title: 'Envios y Devoluciones — Novamente',
@@ -11,11 +11,13 @@ export const metadata: Metadata = {
 }
 
 // Derivado de lib/shipping-config: esta página tenía su propia tabla y
-// mostraba tarifas viejas que el checkout ya no cobraba.
+// mostraba tarifas planas (viejas) que el checkout ya no cobra — el
+// checkout cobra por distancia al código postal, así que mostramos el rango
+// real de cada zona.
 const SHIPPING_ZONES = SHIPPING_ZONES_PUBLIC.map((z) => ({
   zone: z.zone,
   description: z.description,
-  price: formatShippingARS(z.price),
+  price: formatShippingRangeARS(z.priceMin, z.priceMax),
   time: z.days,
 }))
 
@@ -78,7 +80,8 @@ export default function EnviosPage() {
             </div>
             <p className="mb-4">
               Los tiempos de envio son adicionales al tiempo de produccion.
-              Origen: Villa Martelli, Buenos Aires.
+              Origen: Villa Martelli, Buenos Aires. El costo exacto depende de
+              tu codigo postal: estos son los rangos segun zona.
             </p>
             <div className="overflow-hidden rounded-xl border border-white/10">
               <table className="w-full text-sm">

@@ -495,9 +495,10 @@ export default function CheckoutPage() {
           // anticipamos acá, desconfía y abandona (caso real 17/09: carrito de
           // $111.400 impago).
           titular: "Valentín Nuñez",
-          amount: total,
+          // El monto lo confirma el server (mismo cálculo; si difiere, el pedido se rechaza antes).
+          amount: typeof transferDataResponse.total === 'number' ? transferDataResponse.total : total,
           // Para mostrar el envío real en /checkout/transfer (antes decía "Gratis" siempre).
-          shippingCost,
+          shippingCost: typeof transferDataResponse.shipping_cost === 'number' ? transferDataResponse.shipping_cost : shippingCost,
           discountARS,
           customer: customerInfo,
           items: items,
@@ -943,7 +944,16 @@ export default function CheckoutPage() {
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Envío</span>
+                  <span>
+                    <span>Envío</span>
+                    {/* Sin CP es la tarifa de referencia de la zona: el monto
+                        final sale del código postal (lib/shipping-config). */}
+                    {envio.estimado && shippingCost > 0 && (
+                      <span className="ml-1 text-xs text-muted-foreground" data-testid="envio-estimado">
+                        (estimado — se ajusta con tu CP)
+                      </span>
+                    )}
+                  </span>
                   <span>
                     {shippingCost === 0 ? (
                       <span className="text-green-600 font-medium">¡Gratis!</span>

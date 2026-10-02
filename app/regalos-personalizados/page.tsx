@@ -608,7 +608,7 @@ export default function RegalosPersonalizados() {
               },
               {
                 q: "Que metodos de pago aceptan?",
-                a: "Tarjeta de credito/debito, MercadoPago (cuotas sin interes), transferencia bancaria. Factura A para empresas y monotributistas.",
+                a: "Tarjeta de credito/debito, MercadoPago (en cuotas segun las que ofrezca tu tarjeta), transferencia bancaria. Factura A para empresas y monotributistas.",
               },
             ].map((faq) => (
               <Card key={faq.q} className="bg-zinc-900 border-zinc-800">

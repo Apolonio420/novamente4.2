@@ -18,7 +18,7 @@ import { loadProductNameOverrides } from "@/lib/product-names-db"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 import { StockPerSize } from "@/components/StockPerSize"
 import { ProductBuyBox } from "@/components/ProductBuyBox"
-import { shippingDetailsJsonLd, RETURN_POLICY_REF, SHIPPING, SHIPPING_ZONES_PUBLIC, formatShippingARS } from "@/lib/shipping-config"
+import { shippingDetailsJsonLd, RETURN_POLICY_REF, SHIPPING, SHIPPING_ZONES_PUBLIC, formatShippingARS, formatShippingRangeARS } from "@/lib/shipping-config"
 import { ProductReviews } from "@/components/partners/product-reviews"
 import { getApprovedReviewStats } from "@/lib/partners/reviews"
 import { getTenantBySlug } from "@/lib/partners/tenant"
@@ -337,7 +337,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <p className="text-base text-muted-foreground/60 line-through -mb-1">{anchorPriceLabel(product.price)}</p>
             )}
             <p className="text-4xl font-bold text-primary mb-4">{product.price}</p>
-            <p className="text-sm text-muted-foreground mb-6">6 cuotas sin interés de ${(numericPrice / 6).toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+            <p className="text-sm text-muted-foreground mb-6">Pagá en cuotas con Mercado Pago (según las que ofrezca tu tarjeta)</p>
 
             <p className="text-muted-foreground mb-6 leading-relaxed" data-speakable>{product.description}</p>
 
@@ -404,11 +404,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
                   {SHIPPING_ZONES_PUBLIC.map((z) => (
-                    <div key={z.zone}>{`${z.zone}: ${formatShippingARS(z.price)} (${z.days})`}</div>
+                    <div key={z.zone}>{`${z.zone}: ${formatShippingRangeARS(z.priceMin, z.priceMax)} (${z.days})`}</div>
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  {`Envío gratis desde ${formatShippingARS(SHIPPING.FREE_THRESHOLD)}`}
+                  {`El costo exacto depende de tu código postal. Envío gratis desde ${formatShippingARS(SHIPPING.FREE_THRESHOLD)}`}
                 </p>
                 <p className="text-xs text-muted-foreground mt-2">Producción: 2-5 días hábiles</p>
               </CardContent>
@@ -423,7 +423,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <div className="container mx-auto px-4">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
               <Ruler className="w-6 h-6 text-primary" />
-              Guia de Talles
+              Guía de Talles
             </h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
               {/* Size Table */}
@@ -447,7 +447,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   </tbody>
                 </table>
                 <p className="text-xs text-muted-foreground mt-3">
-                  * Las medidas pueden variar +/- 1cm. Si estas entre dos talles, te recomendamos elegir el mas grande.
+                  * Las medidas pueden variar +/- 1cm. Si estás entre dos talles, te recomendamos elegir el más grande.
                 </p>
                 <a
                   href="/guia-de-talles-novamente.pdf"
@@ -506,7 +506,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           ))}
         </div>
         <p className="text-sm text-muted-foreground mt-4 text-center">
-          Siguiendo estas instrucciones, tu estampado DTG se mantendra vibrante por 50+ lavados.
+          Siguiendo estas instrucciones, tu estampado DTG se mantendrá vibrante por 50+ lavados.
         </p>
       </section>
 
@@ -518,7 +518,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       {/* Related Products */}
       {relatedProducts.length > 0 && (
         <section className="container mx-auto px-4 py-12">
-          <h2 className="text-2xl font-bold mb-6">Tambien te puede interesar</h2>
+          <h2 className="text-2xl font-bold mb-6">También te puede interesar</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {relatedProducts.map((rp) => (
               <Link key={rp.id} href={`/products/${rp.id}`} className="group">
@@ -550,21 +550,21 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       {/* Final CTA */}
       <section className="bg-gradient-to-br from-primary/5 to-purple-600/5 py-12">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold mb-4">Hacelo unico con tu diseno</h2>
+          <h2 className="text-2xl md:text-3xl font-bold mb-4">Hacelo único con tu diseño</h2>
           <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-            Describi tu idea y nuestra inteligencia artificial crea el diseno perfecto para tu {displayName.split(" - ")[0].toLowerCase()}.
+            Describí tu idea y nuestra inteligencia artificial crea el diseño perfecto para tu {displayName.split(" - ")[0].toLowerCase()}.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/#generator-section" data-cta="product-detail-bottom-cta">
               <Button className="bg-gradient-to-r from-primary to-purple-600 text-white font-semibold rounded-xl py-6 px-8 text-lg shadow-lg">
                 <Sparkles className="w-5 h-5 mr-2" />
-                Disenar Ahora con IA
+                Diseñar ahora con IA
               </Button>
             </Link>
             <Link href="/products">
               <Button variant="outline" className="rounded-xl py-6 px-8 text-lg">
                 <ArrowLeft className="w-5 h-5 mr-2" />
-                Ver Catalogo Completo
+                Ver catálogo completo
               </Button>
             </Link>
           </div>

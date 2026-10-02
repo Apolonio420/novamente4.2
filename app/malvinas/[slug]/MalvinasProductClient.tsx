@@ -169,7 +169,7 @@ export default function MalvinasProductClient({ product }: { product: MalvinasPr
               {formatPrice(currentPrice)}
             </div>
             <p className="text-xs text-zinc-500">
-              6 cuotas sin interés de {formatPrice(currentPrice / 6)} · Estampado DTG incluido
+              Pagá en cuotas con Mercado Pago (según las que ofrezca tu tarjeta) · Estampado DTG incluido
             </p>
 
             <p className="mt-6 leading-relaxed text-zinc-200">{product.blurb}</p>

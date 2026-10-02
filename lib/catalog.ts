@@ -12,6 +12,7 @@ import {
   SHIPPING_ZONES_PUBLIC,
   PRODUCTION_DAYS as PROD_DAYS,
   totalDeliveryLine,
+  formatShippingRangeARS,
 } from './shipping-config'
 import { productDisplayName, productModelName, type ProductNameOverrides } from './product-names'
 
@@ -149,7 +150,8 @@ export function buildProductListForPrompt(overrides?: ProductNameOverrides): str
 
 /** Generate shipping info for AI system prompts */
 export function buildShippingForPrompt(): string {
-  const zones = SHIPPING_ZONES.map(z => `${z.zone} ${formatPrice(z.price)}`).join(' | ')
+  // Rango real (por CP), no un numero plano: el checkout cobra por distancia.
+  const zones = SHIPPING_ZONES_PUBLIC.map(z => `${z.zone} ${formatShippingRangeARS(z.priceMin, z.priceMax)} segun CP`).join(' | ')
   const entrega = SHIPPING_ZONES_PUBLIC.map(z => `${z.zone} ${z.days}`).join(' | ')
   return `ENVIO: ${zones} | GRATIS desde ${formatPrice(SHIPPING.FREE_THRESHOLD)}\nPRODUCCION: ${PRODUCTION_DAYS} dias habiles | ENTREGA: ${entrega} | TOTAL: ${totalDeliveryLine()}`
 }

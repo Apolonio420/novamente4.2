@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, MessageCircle, CheckCircle, XCircle, ArrowRight } from 'lucide-react'
 
-import { SHIPPING, formatShippingARS, productionLine, shippingZonesDetailLine, totalDeliveryLine } from "@/lib/shipping-config"
+import { SHIPPING, ENVIO_DISTANCIA, formatShippingARS, formatShippingRangeARS, productionLine, shippingZonesDetailLine, totalDeliveryLine } from "@/lib/shipping-config"
 export const metadata: Metadata = {
   title: 'Novamente vs Printful vs Printify — Comparativa para Argentina 2026',
   description:
@@ -101,7 +101,7 @@ export default function CompararPage() {
                 </tr>
                 <tr className="border-b border-white/5 bg-white/[0.02]">
                   <td className="py-3 px-4 font-medium">Envio nacional</td>
-                  <td className="py-3 px-4 text-center text-green-400">{`${totalDeliveryLine()} / ${formatShippingARS(SHIPPING.BA)}-${formatShippingARS(SHIPPING.RESTO)}`}</td>
+                  <td className="py-3 px-4 text-center text-green-400">{`${totalDeliveryLine()} / ${formatShippingRangeARS(ENVIO_DISTANCIA.AMBA_MIN, ENVIO_DISTANCIA.TOPE)}`}</td>
                   <td className="py-3 px-4 text-center text-red-400/70">15-30 dias / $15,000+</td>
                   <td className="py-3 px-4 text-center text-red-400/70">15-30 dias / $15,000+</td>
                 </tr>

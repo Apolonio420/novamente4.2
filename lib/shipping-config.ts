@@ -253,45 +253,68 @@ export function totalDeliveryLine(): string {
 /**
  * Tabla pública de zonas — la que se muestra en /envios, /faq y el copy de las
  * landings. Dos zonas, las mismas que cobra el checkout.
+ *
+ * El precio NO es un número plano: el checkout cobra por distancia real al CP
+ * (envioPorDistancia / ENVIO_DISTANCIA), así que acá mostramos el RANGO
+ * honesto de cada zona — nunca un número hardcodeado a mano. `price` queda
+ * como alias de `priceMax` solo por compatibilidad con imports viejos
+ * (lib/catalog.ts SHIPPING_ZONES, y posibles consumidores externos).
  */
 export const SHIPPING_ZONES_PUBLIC = [
   {
     zone: 'CABA y GBA',
     description: 'Capital Federal y Gran Buenos Aires',
-    price: SHIPPING.BA,
-    days: '24 a 72 horas habiles',
+    priceMin: ENVIO_DISTANCIA.AMBA_MIN,
+    priceMax: ENVIO_DISTANCIA.AMBA_MAX,
+    /** @deprecated usar priceMin/priceMax. Alias por compatibilidad hacia atrás. */
+    price: ENVIO_DISTANCIA.AMBA_MAX,
+    days: '24 a 72 horas hábiles',
     /** Solo transito, sin produccion — para el deliveryTime del JSON-LD. */
     transitDays: { min: 1, max: 3 },
   },
   {
-    zone: 'Resto del pais',
-    description: 'Todas las demas provincias',
-    price: SHIPPING.RESTO,
-    days: '2 a 4 dias habiles',
+    zone: 'Resto del país',
+    description: 'Todas las demás provincias',
+    priceMin: ENVIO_DISTANCIA.INTERIOR_MIN,
+    priceMax: ENVIO_DISTANCIA.TOPE,
+    /** @deprecated usar priceMin/priceMax. Alias por compatibilidad hacia atrás. */
+    price: ENVIO_DISTANCIA.TOPE,
+    days: '2 a 4 días hábiles',
     transitDays: { min: 2, max: 4 },
   },
 ] as const
 
-/** "CABA y GBA $10.000 · Resto del pais $15.000" — para copy de una línea. */
+/** "$8.500 a $12.000" — el rango real que cobra el checkout en esa zona. */
+export function formatShippingRangeARS(min: number, max: number): string {
+  return `${formatShippingARS(min)} a ${formatShippingARS(max)}`
+}
+
+/** "CABA y GBA $8.500 a $12.000 · Resto del país $13.500 a $16.000" */
 export function shippingSummaryLine(): string {
   return SHIPPING_ZONES_PUBLIC
-    .map((z) => `${z.zone} ${formatShippingARS(z.price)}`)
+    .map((z) => `${z.zone} ${formatShippingRangeARS(z.priceMin, z.priceMax)}`)
     .join(' · ')
 }
 
-/** Igual que shippingSummaryLine pero agregando el umbral de envío gratis. */
+/**
+ * Igual que shippingSummaryLine, aclarando que el valor exacto depende del
+ * código postal (es lo que de verdad decide el precio en el checkout), más
+ * el umbral de envío gratis.
+ */
 export function shippingSummaryWithFreeThreshold(): string {
-  return `${shippingSummaryLine()}. Envio gratis en pedidos desde ${formatShippingARS(SHIPPING.FREE_THRESHOLD)}.`
+  return `${shippingSummaryLine()} (según tu código postal). Envío gratis en pedidos desde ${formatShippingARS(SHIPPING.FREE_THRESHOLD)}.`
 }
 
 /**
- * "CABA y GBA $10.000 (24 a 72 horas habiles), Resto del pais $15.000 (2 a 4
- * dias habiles)" — para las FAQ de las landings, que dan precio y plazo.
+ * "CABA y GBA $8.500 a $12.000 (24 a 72 horas hábiles), Resto del país
+ * $13.500 a $16.000 (2 a 4 días hábiles) — el valor exacto depende de tu
+ * código postal" — para las FAQ de las landings, que dan precio y plazo.
  */
 export function shippingZonesDetailLine(): string {
-  return SHIPPING_ZONES_PUBLIC
-    .map((z) => `${z.zone} ${formatShippingARS(z.price)} (${z.days})`)
+  const zonas = SHIPPING_ZONES_PUBLIC
+    .map((z) => `${z.zone} ${formatShippingRangeARS(z.priceMin, z.priceMax)} (${z.days})`)
     .join(', ')
+  return `${zonas} — el valor exacto depende de tu código postal`
 }
 
 /**
@@ -325,8 +348,10 @@ function deliveryTimeJsonLd(transit: { min: number; max: number }) {
  * `offers.shippingDetails` para schema.org / Google Merchant listings.
  *
  * Dos zonas porque tenemos dos tarifas reales: CABA (AR-C) y resto del país.
- * El envío gratis por encima del umbral no se declara acá — Google no soporta
- * umbrales en OfferShippingDetails, eso va en Merchant Center.
+ * `value` usa el MÁXIMO de cada zona (priceMax), nunca el mínimo: a Google
+ * nunca se le subestima un precio. El envío gratis por encima del umbral no
+ * se declara acá — Google no soporta umbrales en OfferShippingDetails, eso va
+ * en Merchant Center.
  */
 export function shippingDetailsJsonLd() {
   return [
@@ -338,14 +363,14 @@ export function shippingDetailsJsonLd() {
         addressCountry: 'AR',
         addressRegion: 'AR-C',
       },
-      shippingRate: { '@type': 'MonetaryAmount', currency: 'ARS', value: SHIPPING.BA },
+      shippingRate: { '@type': 'MonetaryAmount', currency: 'ARS', value: SHIPPING_ZONES_PUBLIC[0].priceMax },
       deliveryTime: deliveryTimeJsonLd(SHIPPING_ZONES_PUBLIC[0].transitDays),
     },
     {
       '@type': 'OfferShippingDetails',
       name: 'Resto del país',
       shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'AR' },
-      shippingRate: { '@type': 'MonetaryAmount', currency: 'ARS', value: SHIPPING.RESTO },
+      shippingRate: { '@type': 'MonetaryAmount', currency: 'ARS', value: SHIPPING_ZONES_PUBLIC[1].priceMax },
       deliveryTime: deliveryTimeJsonLd(SHIPPING_ZONES_PUBLIC[1].transitDays),
     },
   ] as const
