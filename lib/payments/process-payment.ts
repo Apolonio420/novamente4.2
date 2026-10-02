@@ -253,10 +253,38 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
       break
   }
 
+  // PASO 4.5: el monto cobrado tiene que cubrir el total de la orden (02/10/2026).
+  // La preferencia de MP la arma el server con los mismos montos que la orden,
+  // pero si alguna vez no coinciden (preferencia vieja, manipulación, bug) un
+  // pago "approved" por menos NO confirma la orden: queda pendiente, con el
+  // detalle en metadata.amount_mismatch, y se avisa una sola vez para revisar.
+  const totalEsperado = Number((order as any).total) || 0
+  const montoPagado = Number(paymentDetails.transaction_amount) || 0
+  const pagoInsuficiente = paymentStatus === "approved" && totalEsperado > 0 && montoPagado + 2 < totalEsperado
+  if (pagoInsuficiente) {
+    console.error("❌ Pago aprobado por MENOS que el total de la orden — no se confirma:", {
+      orderId: order.id, orderNumber: order.order_number, totalEsperado, montoPagado, paymentId,
+    })
+    paymentStatus = "pending"
+    orderStatus = "pending"
+  }
+
   // PASO 5: Mergear metadata (preservar eventos previos, no pisar)
   const existingMetadata = (order as any).metadata || {}
+  const yaAvisadoMonto = !!existingMetadata.amount_mismatch?.notified_at
   const newMetadata: Record<string, any> = {
     ...existingMetadata,
+    ...(pagoInsuficiente
+      ? {
+          amount_mismatch: {
+            expected: totalEsperado,
+            paid: montoPagado,
+            payment_id: String(paymentId),
+            mp_status: paymentDetails.status,
+            notified_at: existingMetadata.amount_mismatch?.notified_at || new Date().toISOString(),
+          },
+        }
+      : {}),
     ...(webhookBody ? { webhook_data: webhookBody } : {}),
     payment_details: {
       status: paymentDetails.status,
@@ -327,6 +355,22 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
   }
 
   console.log("✅ Orden actualizada:", order.id, "→ status:", orderStatus)
+
+  if (pagoInsuficiente && !yaAvisadoMonto) {
+    try {
+      const { notifyError } = await import("@/lib/notifications")
+      await notifyError({
+        area: "Pagos",
+        endpoint: "processPaymentById",
+        message:
+          `Pago MP ${paymentId} APROBADO por $${montoPagado.toLocaleString("es-AR")} pero la orden ` +
+          `${order.order_number || order.id} es de $${totalEsperado.toLocaleString("es-AR")}. ` +
+          `La orden quedó PENDIENTE (no se produce). Revisar en MP y decidir: reembolsar o cobrar la diferencia.`,
+      })
+    } catch (e: any) {
+      console.warn("⚠️ No se pudo avisar el pago insuficiente:", e?.message)
+    }
+  }
 
   // Refund/chargeback: revertir el margen del partner ya acreditado (si lo hubo).
   // Asiento inverso en el ledger — no toca notificaciones/email/CAPI del camino approved.

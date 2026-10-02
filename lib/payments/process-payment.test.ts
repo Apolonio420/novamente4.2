@@ -116,7 +116,9 @@ vi.mock('@/lib/email', () => ({
 
 const notifySaleMock = vi.fn(async (_args: any) => undefined)
 const notifyPartnerOrderMock = vi.fn(async (_tenant: any, _args: any) => undefined)
+const notifyErrorMock = vi.fn(async (_args: any) => undefined)
 vi.mock('@/lib/notifications', () => ({
+  notifyError: (args: any) => notifyErrorMock(args),
   notifySale: (args: any) => notifySaleMock(args),
   notifyPartnerOrder: (tenant: any, args: any) => notifyPartnerOrderMock(tenant, args),
 }))
@@ -681,5 +683,65 @@ describe('processPaymentById — decremento de garment_stock (liquidación) con 
     expect(h.state.garmentClaimCalls).toHaveLength(1) // intentó reclamar
     const dec = h.state.rpcCalls.filter((c) => c.fn === 'decrement_garment_stock')
     expect(dec).toHaveLength(0) // pero al perder el claim no decrementa
+  })
+})
+
+describe('processPaymentById — PASO 4.5: pago aprobado por menos que el total', () => {
+  const ordenPendiente = (over: any = {}) => ({
+    id: 'order-mm',
+    order_number: 'NM-MM',
+    status: 'pending',
+    payment_id: null,
+    tenant_id: 'tenant-mm',
+    total: 50000,
+    items: [{ item_name: 'Buzo', quantity: 1, unit_price: 45000 }],
+    metadata: {},
+    ...over,
+  })
+  const pagoAprobado = (monto: number) => ({
+    id: 'pay-mm',
+    status: 'approved',
+    status_detail: 'accredited',
+    transaction_amount: monto,
+    external_reference: 'ext-mm',
+  })
+
+  it('MP aprueba $1 por una orden de $50.000: NO se confirma, queda pendiente con el detalle y avisa', async () => {
+    notifyErrorMock.mockClear()
+    h.state.order = ordenPendiente()
+    h.state.paymentGet = pagoAprobado(1)
+
+    const result = await processPaymentById('pay-mm')
+
+    expect(result.orderStatus).toBe('pending')
+    const claim = h.state.claimCalls.at(-1)!
+    expect(claim.updates.status).toBe('pending')
+    expect(claim.updates.payment_status).toBe('pending')
+    expect(claim.updates.metadata.amount_mismatch).toMatchObject({ expected: 50000, paid: 1, payment_id: 'pay-mm', mp_status: 'approved' })
+    expect(runPartnerSaleEffectsMock).not.toHaveBeenCalled()
+    expect(notifySaleMock).not.toHaveBeenCalled()
+    expect(notifyErrorMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('reintento del mismo pago insuficiente: no vuelve a avisar', async () => {
+    notifyErrorMock.mockClear()
+    h.state.order = ordenPendiente({ payment_id: 'pay-mm', metadata: { amount_mismatch: { notified_at: '2026-10-02T00:00:00Z' } } })
+    h.state.paymentGet = pagoAprobado(1)
+
+    await processPaymentById('pay-mm')
+
+    expect(notifyErrorMock).not.toHaveBeenCalled()
+  })
+
+  it('pago por el total (o con diferencia de redondeo ≤ $2) confirma normal', async () => {
+    notifyErrorMock.mockClear()
+    h.state.order = ordenPendiente()
+    h.state.paymentGet = pagoAprobado(49999)
+
+    const result = await processPaymentById('pay-mm')
+
+    expect(result.orderStatus).toBe('confirmed')
+    expect(h.state.claimCalls.at(-1)!.updates.metadata.amount_mismatch).toBeUndefined()
+    expect(notifyErrorMock).not.toHaveBeenCalled()
   })
 })

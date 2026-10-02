@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createOrder } from "@/lib/db"
 import { toPublicR2Url } from "@/lib/r2"
-import { shippingCostFor, envioPorDistancia } from "@/lib/shipping-config"
+import { shippingCostFor } from "@/lib/shipping-config"
 import { sanitizeAttribution } from "@/lib/attribution"
 
 export async function POST(request: NextRequest) {
   try {
-    const { customer, items, subtotal, shippingCost, total, discountCode, attribution, funnelSessionId } = await request.json()
+    const { customer, items, subtotal, shippingCost, shippingZone, total, discountCode, attribution, funnelSessionId } = await request.json()
 
     // Atribución de marketing opcional (ver lib/attribution.ts) — nunca bloquea el pedido.
     const sanitizedAttribution = sanitizeAttribution(attribution) || {}
@@ -68,10 +68,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calcular subtotal y shipping si no vienen (fallback zona BA — fuente de verdad compartida)
-    const finalSubtotal = subtotal || items.reduce((sum: number, item: any) => sum + (item.price || 0) * (item.quantity || 1), 0)
-    const finalShippingCost =
-      shippingCost ?? envioPorDistancia(finalSubtotal, (customer as any)?.postalCode, 'BA').costo
+    // Subtotal y envío los calcula el SERVIDOR (ver lib/checkout/montos-server.ts):
+    // antes se usaban los del navegador y el monto a transferir se podía
+    // manipular (02/10/2026). Si no coinciden con lo que vio el cliente, se
+    // rechaza más abajo.
+    const { subtotalServer, envioServer } = await import('@/lib/checkout/montos-server')
+    const finalSubtotal = subtotalServer(items as any[])
+    const finalShippingCost = envioServer(finalSubtotal, (customer as any)?.postalCode, shippingZone)
+    if (subtotal !== finalSubtotal || shippingCost !== finalShippingCost) {
+      console.warn('[checkout/transfer] montos del navegador distintos de los del server:', {
+        subtotal, finalSubtotal, shippingCost, finalShippingCost,
+      })
+    }
 
     // Código de descuento: se vuelve a resolver EN EL SERVIDOR — nunca se confía
     // en el discountId/discountARS que mande el navegador. Un código inválido
@@ -86,6 +94,16 @@ export async function POST(request: NextRequest) {
     }
 
     const finalTotal = Math.max(0, finalSubtotal - descuento.discountARS) + finalShippingCost
+
+    // Mismo gate que /api/checkout: el monto que el cliente va a transferir
+    // (el que vio en pantalla) tiene que ser el del pedido.
+    if (Math.abs(Number(total) - finalTotal) > 1) {
+      console.error('❌ Total de transferencia no coincide:', { receivedTotal: total, finalTotal })
+      return NextResponse.json(
+        { success: false, error: 'Los montos del carrito cambiaron. Recargá la página y probá de nuevo.' },
+        { status: 400 },
+      )
+    }
 
     // Preparar items del pedido desde items del carrito
     const orderItemsCarrito = items.map((item: any) => ({
@@ -125,8 +143,11 @@ export async function POST(request: NextRequest) {
     // Crear el pedido en la base de datos
     const externalReference = `order_transfer_${Date.now()}`
 
-    // Si todos los items vienen de una tienda partner, vincular el pedido al tenant
-    const tenantId = items.find((i: any) => i.tenantId)?.tenantId ?? null
+    // Tienda del pedido: la de más monto en el carrito; si hay varias, todas
+    // quedan en metadata.tenant_ids (ver tenantsDelCarrito).
+    const { tenantsDelCarrito } = await import('@/lib/checkout/montos-server')
+    const tiendas = tenantsDelCarrito(items as any[])
+    const tenantId = tiendas.principal
 
     const newOrder = await createOrder({
       tenant_id: tenantId,
@@ -148,13 +169,19 @@ export async function POST(request: NextRequest) {
       notes: 'Esperando comprobante de transferencia bancaria',
       items: orderItems,
       ...sanitizedAttribution,
-      metadata: descuento.valid
-        ? {
-            discount_code_id: descuento.discountId,
-            discount_code: descuento.discountCode,
-            discount_ars: descuento.discountARS,
-          }
-        : undefined,
+      metadata:
+        descuento.valid || tiendas.todos.length > 1
+          ? {
+              ...(descuento.valid
+                ? {
+                    discount_code_id: descuento.discountId,
+                    discount_code: descuento.discountCode,
+                    discount_ars: descuento.discountARS,
+                  }
+                : {}),
+              ...(tiendas.todos.length > 1 ? { tenant_ids: tiendas.todos } : {}),
+            }
+          : undefined,
     })
 
     if (!newOrder) {
@@ -296,6 +323,9 @@ ${confirmUrl ? `<p><a href="${confirmUrl}" style="display:inline-block;padding:1
       order_id: newOrder.id,
       order_number: newOrder.order_number,
       external_reference: externalReference,
+      // Monto del pedido calculado por el server: es lo que se muestra para transferir.
+      total: finalTotal,
+      shipping_cost: finalShippingCost,
       message: "Order created successfully. Waiting for transfer receipt.",
     })
   } catch (error: any) {

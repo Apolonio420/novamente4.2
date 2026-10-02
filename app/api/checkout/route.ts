@@ -3,7 +3,7 @@ import { cardSurchargeAmount } from "@/lib/payment-config"
 import { MercadoPagoConfig, Preference } from "mercadopago"
 import { createOrder, findRecentDuplicateOrder } from "@/lib/db"
 import { toPublicR2Url } from "@/lib/r2"
-import { shippingCostFor, envioPorDistancia } from "@/lib/shipping-config"
+import { shippingCostFor } from "@/lib/shipping-config"
 import { sanitizeAttribution } from "@/lib/attribution"
 import { resolveCheckoutOrigin } from "@/lib/checkout/origin"
 
@@ -144,18 +144,19 @@ export async function POST(request: NextRequest) {
       console.warn(`[checkout] ${chequeo.sinVerificar} item(s) sin precio verificable`)
     }
 
-    // Calcular subtotal y shipping si no vienen. El fallback sale de
-    // lib/shipping-config (antes tenía los montos hardcodeados acá y quedaba
-    // desincronizado del carrito cuando cambiaba la tarifa).
-    const finalSubtotal = subtotal || calculatedTotal
-    // Mismo cálculo por distancia que muestra el checkout, para que el server
-    // nunca cobre un envío distinto del que vio el cliente.
-    const fallbackShipping = envioPorDistancia(
-      calculatedTotal,
-      customer?.postalCode,
-      shippingZone === 'RESTO' ? 'RESTO' : 'BA',
-    ).costo
-    const finalShippingCost = typeof shippingCost === 'number' ? shippingCost : fallbackShipping
+    // Subtotal y envío los calcula el SERVIDOR (lib/checkout/montos-server.ts):
+    // subtotal = ítems que pasaron validarPrecios; envío = distancia por CP, el
+    // mismo cálculo que muestra el checkout. Antes se usaban el `subtotal` y el
+    // `shippingCost` del navegador (02/10/2026). Si no coinciden con lo que vio
+    // el cliente, el gate de total de abajo rechaza el pedido.
+    const { subtotalServer, envioServer, itemsMPDesdeCarrito, itemMPEnvio, totalItemsMP } = await import('@/lib/checkout/montos-server')
+    const finalSubtotal = subtotalServer(itemsParaValidar)
+    const finalShippingCost = envioServer(finalSubtotal, customer?.postalCode, shippingZone)
+    if (subtotal !== finalSubtotal || shippingCost !== finalShippingCost) {
+      console.warn('[checkout] montos del navegador distintos de los del server:', {
+        subtotal, finalSubtotal, shippingCost, finalShippingCost,
+      })
+    }
 
     // Código de descuento: se vuelve a resolver EN EL SERVIDOR contra
     // partner_discount_codes — nunca se confía en el discountId/discountARS
@@ -250,7 +251,11 @@ export async function POST(request: NextRequest) {
 
     // Validar que tenantId sea un UUID antes de persistirlo
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    const validTenantId = typeof tenantId === 'string' && UUID_RE.test(tenantId) ? tenantId : null
+    // Tienda del pedido deducida de los ítems (la de más monto); el tenantId del
+    // body queda sólo de respaldo si el carrito no trae ninguno.
+    const { tenantsDelCarrito } = await import('@/lib/checkout/montos-server')
+    const tiendas = tenantsDelCarrito(itemsParaValidar)
+    const validTenantId = tiendas.principal ?? (typeof tenantId === 'string' && UUID_RE.test(tenantId) ? tenantId : null)
 
     // ── Idempotencia anti doble-submit ──────────────────────────────────────
     // Si el cliente re-envía el MISMO carrito (doble-click o volver-atrás desde
@@ -294,6 +299,7 @@ export async function POST(request: NextRequest) {
         metadata: {
           card_surcharge_ars: cardSurcharge,
           base_total_ars: finalTotal,
+          ...(tiendas.todos.length > 1 ? { tenant_ids: tiendas.todos } : {}),
           ...(descuento.valid
             ? {
                 discount_code_id: descuento.discountId,
@@ -339,9 +345,11 @@ export async function POST(request: NextRequest) {
     // línea de "descuento" en negativo se reduce proporcionalmente cada item —
     // así lo que MP efectivamente cobra coincide con finalTotal.
     const { aplicarDescuentoAItemsMP } = await import('@/lib/checkout/discount-guard')
-    const mpItemsProducto = items.filter((item: any) => item.id !== 'shipping')
-    const mpItemShipping = items.filter((item: any) => item.id === 'shipping')
-    const mpItemsFinal = [...aplicarDescuentoAItemsMP(mpItemsProducto, descuento.discountARS), ...mpItemShipping]
+    // Ítems de MP armados desde el carrito validado + envío del server — nunca
+    // desde el `items` del navegador (ver lib/checkout/montos-server.ts).
+    const mpItemsProducto = itemsMPDesdeCarrito(itemsParaValidar)
+    const mpItemShipping = itemMPEnvio(finalShippingCost)
+    const mpItemsFinal: any[] = [...aplicarDescuentoAItemsMP(mpItemsProducto, descuento.discountARS), ...mpItemShipping]
 
     // Línea propia de recargo: MP no acepta multiplicar el total, así que va
     // como item explícito — de paso el cliente ve el porqué en la pantalla de pago.
@@ -353,6 +361,14 @@ export async function POST(request: NextRequest) {
         unit_price: cardSurcharge,
         description: 'Pagando por transferencia bancaria este recargo no aplica',
       })
+    }
+
+    // Lo que MP va a cobrar tiene que ser el total de la orden (± redondeo del
+    // reparto del descuento). Si no, no se crea la preferencia.
+    const totalPreferencia = totalItemsMP(mpItemsFinal)
+    if (Math.abs(totalPreferencia - chargeTotal) > 2) {
+      console.error('❌ Preferencia MP no coincide con el total de la orden:', { totalPreferencia, chargeTotal })
+      return NextResponse.json({ success: false, error: "Price validation failed" }, { status: 400 })
     }
 
     const preferenceData = {
@@ -394,7 +410,7 @@ export async function POST(request: NextRequest) {
 
     console.log("🚀 Creating MercadoPago preference:", {
       itemsCount: preferenceData.items.length,
-      totalAmount: calculatedTotal,
+      totalAmount: totalPreferencia,
       customerEmail: preferenceData.payer.email,
       backUrls: preferenceData.back_urls,
       baseUrl: checkoutOrigin,
