@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { Upload, X, Loader2, ImageIcon } from 'lucide-react'
+import { Upload, X, Loader2, ImageIcon, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authFetch } from '@/lib/partners/auth-fetch'
 
@@ -16,9 +16,17 @@ interface ImageUploadProps {
 export function ImageUpload({ value, onChange, type = 'other', label, className }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleUpload = useCallback(async (file: File) => {
+    setError(null)
+    const maxSize = type === 'design' ? 10 * 1024 * 1024 : 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      setError(`El archivo es demasiado grande (máximo ${type === 'design' ? '10MB' : '5MB'})`)
+      return
+    }
+
     setUploading(true)
     try {
       const formData = new FormData()
@@ -33,9 +41,12 @@ export function ImageUpload({ value, onChange, type = 'other', label, className 
       if (res.ok) {
         const data = await res.json()
         onChange(data.url)
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error || 'No se pudo subir la imagen. Probá con otro archivo.')
       }
     } catch {
-      // Upload failed silently
+      setError('Error de conexión al subir la imagen. Intentá nuevamente.')
     } finally {
       setUploading(false)
     }
@@ -53,6 +64,7 @@ export function ImageUpload({ value, onChange, type = 'other', label, className 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) handleUpload(file)
+    e.target.value = ''
   }, [handleUpload])
 
   return (
@@ -67,7 +79,10 @@ export function ImageUpload({ value, onChange, type = 'other', label, className 
             className="w-full h-32 object-cover rounded-lg border border-zinc-700"
           />
           <button
-            onClick={() => onChange(null)}
+            onClick={() => {
+              setError(null)
+              onChange(null)
+            }}
             className="absolute top-2 right-2 p-1 rounded-full bg-zinc-900/80 text-zinc-400 hover:text-zinc-100 opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <X className="w-3.5 h-3.5" />
@@ -75,7 +90,10 @@ export function ImageUpload({ value, onChange, type = 'other', label, className 
         </div>
       ) : (
         <div
-          onClick={() => inputRef.current?.click()}
+          onClick={() => {
+            setError(null)
+            inputRef.current?.click()
+          }}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
@@ -98,10 +116,17 @@ export function ImageUpload({ value, onChange, type = 'other', label, className 
         </div>
       )}
 
+      {error && (
+        <div className="flex items-center gap-1.5 text-xs text-red-400 mt-1">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/svg+xml"
+        accept="image/*"
         onChange={handleFileChange}
         className="hidden"
       />

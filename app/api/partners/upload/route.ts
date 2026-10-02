@@ -3,11 +3,40 @@ import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getDesignUploadLimit } from '@/lib/partners/plan-limits'
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
-const DESIGN_UPLOAD_TYPES = ['image/png', 'image/svg+xml']
-const MAX_SIZE = 5 * 1024 * 1024 // 5MB
-const DESIGN_MAX_SIZE = 10 * 1024 * 1024 // 10MB for design uploads
+export const ALLOWED_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/svg+xml',
+  'image/jpg',
+  'image/pjpeg',
+  'image/x-png',
+  'image/heic',
+  'image/heif',
+]
+export const DESIGN_UPLOAD_TYPES = ['image/png', 'image/svg+xml', 'image/x-png']
+export const MAX_SIZE = 5 * 1024 * 1024 // 5MB
+export const DESIGN_MAX_SIZE = 10 * 1024 * 1024 // 10MB for design uploads
 const BUCKET = 'partner-assets'
+
+export function normalizeUploadMimeType(rawMime: string, filename: string): string {
+  const rawType = (rawMime || '').toLowerCase()
+  const ext = (filename || '').split('.').pop()?.toLowerCase() || 'png'
+  let effectiveType = rawType
+  if (!effectiveType || effectiveType === 'application/octet-stream') {
+    if (ext === 'jpg' || ext === 'jpeg') effectiveType = 'image/jpeg'
+    else if (ext === 'png') effectiveType = 'image/png'
+    else if (ext === 'webp') effectiveType = 'image/webp'
+    else if (ext === 'svg') effectiveType = 'image/svg+xml'
+    else if (ext === 'heic') effectiveType = 'image/heic'
+    else if (ext === 'heif') effectiveType = 'image/heif'
+  } else if (effectiveType === 'image/jpg' || effectiveType === 'image/pjpeg') {
+    effectiveType = 'image/jpeg'
+  } else if (effectiveType === 'image/x-png') {
+    effectiveType = 'image/png'
+  }
+  return effectiveType
+}
 
 // Tipos de asset que este endpoint de subida libre puede aceptar. Relevado
 // contra los callers reales (grep de `formData.append('type', ...)` y
@@ -57,9 +86,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const effectiveType = normalizeUploadMimeType(file.type, file.name)
+    const ext = (file.name || '').split('.').pop()?.toLowerCase() || 'png'
+
     // For design uploads: enforce PNG/SVG only and 10MB limit
     if (source === 'uploaded' && type === 'design') {
-      if (!DESIGN_UPLOAD_TYPES.includes(file.type)) {
+      if (!DESIGN_UPLOAD_TYPES.includes(effectiveType)) {
         return NextResponse.json(
           { error: 'Solo PNG o SVG. Otros formatos no están permitidos para diseños.' },
           { status: 400 }
@@ -94,7 +126,7 @@ export async function POST(request: NextRequest) {
         )
       }
     } else {
-      if (!ALLOWED_TYPES.includes(file.type)) {
+      if (!ALLOWED_TYPES.includes(effectiveType)) {
         return NextResponse.json(
           { error: 'Tipo de archivo no permitido. Usa JPG, PNG, WebP o SVG' },
           { status: 400 }
@@ -108,7 +140,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const ext = file.name.split('.').pop() || 'png'
     const filename = `${auth.tenant.id}/${type}/${Date.now()}.${ext}`
 
     const buffer = Buffer.from(await file.arrayBuffer())
@@ -116,7 +147,7 @@ export async function POST(request: NextRequest) {
     const { error: uploadError } = await supabaseAdmin.storage
       .from(BUCKET)
       .upload(filename, buffer, {
-        contentType: file.type,
+        contentType: effectiveType || file.type || 'image/png',
         upsert: false,
       })
 
