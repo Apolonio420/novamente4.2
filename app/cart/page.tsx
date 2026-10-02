@@ -123,7 +123,7 @@ export default function CartPage() {
         <div className="max-w-2xl mx-auto text-center">
           <ShoppingBag className="mx-auto h-24 w-24 text-muted-foreground mb-6" />
           <h1 className="text-3xl font-bold mb-4">Tu carrito está vacío</h1>
-          <p className="text-muted-foreground mb-8">¡Agrega algunos productos increíbles para comenzar!</p>
+          <p className="text-muted-foreground mb-8">¡Agregá algunos productos increíbles para empezar!</p>
           <Link href="/#generator-section" data-cta="cart-empty-continue-designing">
             <Button size="lg">
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -231,7 +231,7 @@ export default function CartPage() {
                 <div className="flex gap-4">
                   {/* Imagen del producto - priorizar mockup */}
                   <div 
-                    className="relative w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:bg-gray-200 transition-colors"
+                    className="relative w-24 h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:bg-muted/70 transition-colors"
                     onDoubleClick={() => {
                       const imageSrc = item.mockupUrl || item.frontMockup || item.backMockup || item.image
                       openZoomModal(normalizeSrc(imageSrc), item.name)
@@ -331,7 +331,7 @@ export default function CartPage() {
                     {(item.frontMockup || item.backMockup) && (
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         {item.frontMockup && (
-                          <div className="relative w-full h-20 bg-gray-100 rounded overflow-hidden">
+                          <div className="relative w-full h-20 bg-muted rounded overflow-hidden">
                             <Image 
                               src={normalizeSrc(item.frontMockup)} 
                               alt="Mockup frontal" 
@@ -347,7 +347,7 @@ export default function CartPage() {
                           </div>
                         )}
                         {item.backMockup && (
-                          <div className="relative w-full h-20 bg-gray-100 rounded overflow-hidden">
+                          <div className="relative w-full h-20 bg-muted rounded overflow-hidden">
                             <Image 
                               src={normalizeSrc(item.backMockup)} 
                               alt="Mockup trasero" 
@@ -379,12 +379,12 @@ export default function CartPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Urgency banner */}
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
-                <p className="text-sm font-medium text-amber-800">
-                  Produccion sale hoy a las 18hs
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-center">
+                <p className="text-sm font-medium text-amber-200">
+                  Producción sale hoy a las 18 h
                 </p>
-                <p className="text-xs text-amber-600 mt-0.5">
-                  Completa tu pedido para entrar en esta tanda
+                <p className="text-xs text-amber-300/80 mt-0.5">
+                  Completá tu pedido para entrar en esta tanda
                 </p>
               </div>
 
@@ -393,20 +393,25 @@ export default function CartPage() {
                   <span>Subtotal</span>
                   <span>{formatCurrency(getTotalPrice())}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Envio</span>
-                  <span className="text-green-600">
-                    {getTotalPrice() >= SHIPPING.FREE_THRESHOLD ? "Gratis" : `desde ${formatCurrency(ENVIO_DISTANCIA.AMBA_MIN)} (exacto por CP en el checkout)`}
-                  </span>
+                <div className="flex justify-between gap-3">
+                  <span>Envío</span>
+                  {getTotalPrice() >= SHIPPING.FREE_THRESHOLD ? (
+                    <span className="text-green-500">Gratis</span>
+                  ) : (
+                    <span className="text-right text-sm text-muted-foreground">
+                      desde {formatCurrency(ENVIO_DISTANCIA.AMBA_MIN)}
+                      <span className="block text-xs">se calcula con tu CP en el checkout</span>
+                    </span>
+                  )}
                 </div>
                 {getTotalPrice() >= SHIPPING.FREE_THRESHOLD && (
-                  <div className="text-sm text-green-600">
-                    Envio gratis por compras mayores a {formatCurrency(SHIPPING.FREE_THRESHOLD)}!
+                  <div className="text-sm text-green-500">
+                    ¡Envío gratis por compras desde {formatCurrency(SHIPPING.FREE_THRESHOLD)}!
                   </div>
                 )}
                 {getTotalPrice() < SHIPPING.FREE_THRESHOLD && (
-                  <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-                    Agrega {formatCurrency(SHIPPING.FREE_THRESHOLD - getTotalPrice())} mas para envio gratuito
+                  <div className="text-xs text-blue-200 bg-blue-500/10 p-2 rounded">
+                    Agregá {formatCurrency(SHIPPING.FREE_THRESHOLD - getTotalPrice())} más para envío gratis
                   </div>
                 )}
               </div>
