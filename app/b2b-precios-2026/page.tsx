@@ -134,7 +134,7 @@ export default function B2BPricesPage() {
           <div className="rounded-xl border border-border bg-card p-5">
             <p className="text-sm text-muted-foreground">
               Envio bonificado a partir de{" "}
-              <strong className="text-foreground">$150.000</strong>.
+              <strong className="text-foreground">$250.000</strong>.
             </p>
           </div>
           <div className="rounded-xl border border-primary/25 bg-primary/5 p-5">

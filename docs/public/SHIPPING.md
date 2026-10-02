@@ -14,7 +14,7 @@
 | CABA y GBA | $10.000 ARS | 24 a 72 horas hábiles |
 | Resto del país | $15.000 ARS | 2 a 4 días hábiles |
 
-**Envío gratis** en pedidos desde $150.000 ARS.
+**Envío gratis** en pedidos desde $250.000 ARS.
 
 ## Transportista
 - **Andreani:** Envío a todo el país con seguimiento

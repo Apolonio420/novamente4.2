@@ -32,7 +32,7 @@ export function newsletterWelcomeHtml(opts: { unsubscribeUrl: string }): string 
           beneficios</b> antes que nadie.
         </p>
         <p style="font-size:14px;color:#555;line-height:1.5;margin:0 0 18px">
-          Un dato útil: el envío es <b>gratis</b> en compras desde $150.000.
+          Un dato útil: el envío es <b>gratis</b> en compras desde $250.000.
         </p>
         <a href="https://www.novamente.ar" style="display:inline-block;background:#111;color:#fff;text-decoration:none;font-size:15px;font-weight:bold;padding:13px 30px;border-radius:8px;margin:0 0 12px">
           Conocer la tienda →

@@ -15,7 +15,7 @@
  */
 export const SHIPPING = {
   /** Envío gratis a partir de este subtotal */
-  FREE_THRESHOLD: 150000,
+  FREE_THRESHOLD: 250000,
   /** CABA / GBA — cerca del depósito */
   BA: 10000,
   /** Resto del país */
