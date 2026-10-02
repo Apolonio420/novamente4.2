@@ -11,6 +11,7 @@ import {
   PRODUCT_IMAGE_ORIGIN_ERROR,
   MAX_PRODUCT_IMAGES,
 } from '@/lib/partners/product-image-origin'
+import { garmentRequiresColorChoice, productHasColorInfo } from '@/lib/partners/product-colors'
 
 function normalizePricingPlan(plan: string | null | undefined): 'starter' | 'growth' | 'pro' {
   const p = (plan || '').toLowerCase()
@@ -111,6 +112,21 @@ export async function POST(request: NextRequest) {
       const badColorImage = await findFirstDisallowedColorImage(tenant.id, tenant.slug, colorsInput)
       if (badColorImage) {
         return NextResponse.json({ error: PRODUCT_IMAGE_ORIGIN_ERROR }, { status: 400 })
+      }
+    }
+
+    // Guard espejo del front (app/workspace/catalog/page.tsx handleSave): si la
+    // prenda del catálogo tiene colores definidos, no se puede publicar sin
+    // elegir ninguno. Prendas sin colores en el catálogo (láminas, lienzos,
+    // accesorios) no lo exigen. Cuenta como "tiene color" cualquiera de los 3
+    // formatos vigentes (colors[], available_colors legacy, color singular) —
+    // ver lib/partners/product-colors.ts.
+    if (body.status === 'published') {
+      const garmentKey = typeof (body.metadata as Record<string, unknown> | null)?.garmentKey === 'string'
+        ? ((body.metadata as Record<string, unknown>).garmentKey as string)
+        : undefined
+      if (garmentRequiresColorChoice(garmentKey) && !productHasColorInfo(body.metadata as Record<string, unknown> | null)) {
+        return NextResponse.json({ error: 'Elegí al menos un color antes de publicar' }, { status: 422 })
       }
     }
 

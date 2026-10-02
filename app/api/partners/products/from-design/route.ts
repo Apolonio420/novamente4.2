@@ -35,6 +35,7 @@ import {
   PRODUCT_IMAGE_ORIGIN_ERROR,
 } from '@/lib/partners/product-image-origin'
 import { getCatalogProduct } from '@/lib/catalog/products'
+import { buildPartnerColorEntry } from '@/lib/partners/product-colors'
 import { renderProductMockup, type MockupPlacement, type MockupSize } from '@/lib/mockup/compose'
 import { uploadFile } from '@/lib/cloudflare-r2'
 import { saveDesignAsset } from '@/lib/partners/design-engine'
@@ -199,7 +200,9 @@ export async function POST(request: NextRequest) {
     if (badImage) {
       return NextResponse.json({ error: PRODUCT_IMAGE_ORIGIN_ERROR }, { status: 400 })
     }
-    const metadataColors = colors.map((color) => ({ key: color, images: colorImages[color] }))
+    // name/hex resueltos desde el catálogo (no solo `key`) — sin esto la PDP
+    // pública no puede mostrar el selector de color (bug la-blancq, 01/10).
+    const metadataColors = colors.map((color) => buildPartnerColorEntry(garmentKey, color, colorImages[color]))
     const badColorImage = await findFirstDisallowedColorImage(tenant.id, tenant.slug, metadataColors)
     if (badColorImage) {
       return NextResponse.json({ error: PRODUCT_IMAGE_ORIGIN_ERROR }, { status: 400 })

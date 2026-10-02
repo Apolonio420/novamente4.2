@@ -6,6 +6,7 @@ import { getTenantBySlug } from '@/lib/partners/tenant'
 import { getProductBySlug, getPublishedProducts } from '@/lib/partners/catalog'
 import { getPlanFeatures } from '@/lib/partners/plans'
 import { getCatalogProduct } from '@/lib/catalog/products'
+import { parsePartnerProductColors, resolveInitialSelectedColor } from '@/lib/partners/product-colors'
 import type { Tenant, PartnerProduct } from '@/lib/partners/types'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -163,45 +164,22 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const features = getPlanFeatures(tenant.plan)
 
   // Colores disponibles para el selector de la tienda. El catálogo del partner
-  // guarda los colores en metadata.colors ({ name, value, hex, images }); el
-  // botón de compra espera { name, code }. Mapeamos acá (antes solo se leía
-  // metadata.available_colors, que el catálogo nunca escribe → el selector
-  // nunca aparecía y la prenda se veía "en un solo color").
+  // guarda los colores en metadata.colors ({ name, value, hex, images } o,
+  // legacy roto de from-design pre-01/10, { key, images } sin name — ver
+  // parsePartnerProductColors, que resuelve ese caso contra el catálogo por
+  // garmentKey). El botón de compra espera { name, code }.
+  const garmentKey = (product.metadata as any)?.garmentKey as string | undefined
   const rawColors = (product.metadata as any)?.colors
   const legacyColors = (product.metadata as any)?.available_colors
   // parsedColors conserva las images (front/back) de cada color además de
   // name/code — availableColors (lo que consume AddToCartButtons) sigue
   // siendo exactamente { name, code }[], sin cambios respecto a antes.
-  const parsedColors:
-    | { name: string; code: string; images?: { front?: string; back?: string } }[]
-    | undefined =
-    Array.isArray(rawColors) && rawColors.length > 0
-      ? rawColors
-          .filter((c: any) => c && typeof c.name === 'string' && c.name.trim())
-          .map((c: any) => ({
-            name: c.name,
-            code: c.hex || c.code || '#000000',
-            images:
-              c.images && typeof c.images === 'object'
-                ? {
-                    front:
-                      typeof c.images.front === 'string' && c.images.front
-                        ? c.images.front
-                        : undefined,
-                    back:
-                      typeof c.images.back === 'string' && c.images.back
-                        ? c.images.back
-                        : undefined,
-                  }
-                : undefined,
-          }))
-      : undefined
+  const parsedColorsList = parsePartnerProductColors(garmentKey, rawColors, legacyColors)
+  const parsedColors = parsedColorsList.length > 0 ? parsedColorsList : undefined
   const availableColors: { name: string; code: string }[] | undefined =
     parsedColors && parsedColors.length > 0
       ? parsedColors.map(({ name, code }) => ({ name, code }))
-      : Array.isArray(legacyColors) && legacyColors.length > 0
-        ? legacyColors
-        : undefined
+      : undefined
 
   // Mapa color -> { front, back } — solo entradas con al menos una imagen
   // válida. Si queda vacío (la gran mayoría de productos: DROP 002/003 y el
@@ -216,13 +194,11 @@ export default async function ProductDetailPage({ params }: PageProps) {
     : {}
   const hasColorImages = Object.keys(colorImagesMap).length > 0
   const defaultColorMeta = (product.metadata as any)?.color ?? undefined
-  // Misma fórmula que AddToCartButtons usa para su initialColor interno —
+  // Mismo criterio que AddToCartButtons usa para su initialColor interno —
   // se duplica acá solo para inicializar el estado de ProductMediaBuy con el
-  // mismo valor que el picker mostraría de entrada.
-  const initialColorForGallery =
-    defaultColorMeta && availableColors?.some((c) => c.name === defaultColorMeta)
-      ? defaultColorMeta
-      : (availableColors?.[0]?.name ?? '')
+  // mismo valor que el picker mostraría de entrada. Con >1 color NO se
+  // preselecciona nada: el comprador tiene que elegir a propósito.
+  const initialColorForGallery = resolveInitialSelectedColor(availableColors, defaultColorMeta)
 
   // ---------------------------------------------------------------------
   // JSX compartido entre el árbol original (sin colors-con-images) y el

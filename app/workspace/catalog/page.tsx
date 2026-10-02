@@ -33,6 +33,7 @@ import { readPrintArt, writePrintArt } from '@/lib/partners/print-art'
 import { formatPrice as formatGarmentPrice } from '@/lib/partners/format-price'
 import { isTrustedAssetUrl } from '@/lib/partners/trusted-asset-url'
 import { validateFrontAndBackForPublish, MISSING_SIDES_ERROR } from '@/lib/partners/product-sides'
+import { garmentRequiresColorChoice, productHasColorInfo } from '@/lib/partners/product-colors'
 import type { PublicGarmentPricing } from '@/lib/partners/garment-pricing.server'
 import { MarginBreakdown } from '@/components/workspace/MarginBreakdown'
 
@@ -503,6 +504,18 @@ export default function CatalogPage() {
       // stripSensitiveMetadata). Escribe metadata.print.{front,back} + dualSide, que es
       // lo que el checkout manda a producción, y deriva los campos viejos.
       metadata = writePrintArt(metadata, { front: formPrintFront, back: formPrintBack })
+
+      // Publicar sin color: si la prenda del catálogo TIENE colores definidos
+      // (no es el caso de láminas/lienzos/accesorios), exigimos que el
+      // producto tenga al menos uno cargado — en cualquiera de los 3 formatos
+      // que coexisten (colors[], available_colors legacy, color singular).
+      // Sin esto, la PDP no muestra selector y el carrito termina con
+      // color "" (caso la-blancq, 01/10).
+      if (formStatus === 'published' && garmentRequiresColorChoice(formGarmentKey.trim()) && !productHasColorInfo(metadata)) {
+        showToast('Elegí al menos un color antes de publicar', 'error')
+        setSaving(false)
+        return
+      }
 
       const body: Record<string, unknown> = {
         name: formName.trim(),

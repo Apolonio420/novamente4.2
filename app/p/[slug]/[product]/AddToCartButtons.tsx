@@ -8,6 +8,7 @@ import { useCart } from "@/lib/cartStore"
 import { useToast } from "@/hooks/use-toast"
 import * as fpixel from "@/lib/fpixel"
 import { buttonColors } from "@/lib/color/contrast"
+import { resolveInitialSelectedColor, isColorSelectionMissing } from "@/lib/partners/product-colors"
 
 const DEFAULT_SIZES = ["S", "M", "L", "XL", "XXL"] as const
 
@@ -101,11 +102,13 @@ export function AddToCartButtons({
   // Precio efectivo según la medida elegida (variant pricing); si no hay tabla, usa el base.
   const currentPrice = (sizePrices && sizePrices[selectedSize] != null) ? sizePrices[selectedSize] : price
   const hasColors = availableColors && availableColors.length > 0
-  // Sin selector de color (producto de un solo color): el color del producto
-  // (metadata.color). Antes quedaba "" y el pedido llegaba con color "unknown".
-  const initialColor = defaultColor && availableColors?.some(c => c.name === defaultColor)
-    ? defaultColor
-    : (availableColors?.[0]?.name ?? defaultColor ?? "")
+  // Con 1 solo color se usa automáticamente. Con MÁS de 1, NO se preselecciona
+  // nada — el comprador tiene que elegir a propósito (antes se preseleccionaba
+  // el primero o el de `defaultColor` y el pedido podía salir con un color que
+  // el cliente nunca miró). Sin colors[] definidos, se mantiene el viejo
+  // fallback a `defaultColor` (metadata.color singular) — antes quedaba "" acá
+  // y el pedido llegaba con color "unknown".
+  const initialColor = resolveInitialSelectedColor(availableColors, defaultColor)
   // Estado interno (uncontrolled) — se usa siempre que el caller no pase
   // selectedColor/onSelectColor. Si los pasa (modo controlado), esos props
   // ganan y este estado queda sin usar (no se pierde nada al no controlarlo).
@@ -113,6 +116,9 @@ export function AddToCartButtons({
   const selectedColor = selectedColorProp !== undefined ? selectedColorProp : internalSelectedColor
   const setSelectedColor = onSelectColor ?? setInternalSelectedColor
   const [adding, setAdding] = useState(false)
+  // Aviso en rojo cuando el comprador intenta agregar/comprar sin elegir color
+  // habiendo más de una opción. Se limpia apenas toca un swatch.
+  const [colorError, setColorError] = useState(false)
   const { addItem } = useCart()
   const { toast } = useToast()
   const router = useRouter()
@@ -175,7 +181,21 @@ export function AddToCartButtons({
     })
   }
 
+  // Bloquea agregar/comprar si hay más de 1 color y todavía no se eligió
+  // ninguno — en vez de mandar el pedido con color "" o adivinado.
+  const blockForMissingColor = () => {
+    if (!isColorSelectionMissing(availableColors, selectedColor)) return false
+    setColorError(true)
+    toast({
+      title: "Elegí un color",
+      description: "Este producto tiene más de un color disponible — elegí uno antes de continuar.",
+      variant: "destructive",
+    })
+    return true
+  }
+
   const handleAddToCart = () => {
+    if (blockForMissingColor()) return
     setAdding(true)
     doAdd()
     toast({
@@ -186,6 +206,7 @@ export function AddToCartButtons({
   }
 
   const handleBuyNow = () => {
+    if (blockForMissingColor()) return
     doAdd()
     fpixel.event("InitiateCheckout", {
       content_ids: [productId],
@@ -209,21 +230,28 @@ export function AddToCartButtons({
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="text-xs uppercase tracking-wider text-zinc-500">Color</span>
-            <span className="text-xs text-zinc-400">{selectedColor || "Elegí color"}</span>
+            <span className={`text-xs ${colorError ? "text-red-400 font-medium" : "text-zinc-400"}`}>
+              {selectedColor || "Elegí color"}
+            </span>
           </div>
           <div className="flex flex-wrap gap-2">
             {availableColors!.map(c => (
               <button
                 key={c.name}
                 type="button"
-                onClick={() => setSelectedColor(c.name)}
+                onClick={() => {
+                  setSelectedColor(c.name)
+                  setColorError(false)
+                }}
                 title={c.name}
                 aria-label={`Color ${c.name}`}
                 aria-pressed={selectedColor === c.name}
                 className={`relative w-12 h-12 rounded-full border-2 transition ${
                   selectedColor === c.name
                     ? "border-white shadow-md scale-105"
-                    : "border-zinc-700 hover:border-zinc-400"
+                    : colorError
+                      ? "border-red-500"
+                      : "border-zinc-700 hover:border-zinc-400"
                 }`}
                 style={{ backgroundColor: c.code }}
               >
@@ -236,9 +264,13 @@ export function AddToCartButtons({
               </button>
             ))}
           </div>
-          <span className="text-[11px] text-zinc-500 italic">
-            El mockup muestra un color · el resto se produce a pedido sin recargo
-          </span>
+          {colorError ? (
+            <span className="text-[11px] text-red-400 font-medium">Elegí un color antes de continuar</span>
+          ) : (
+            <span className="text-[11px] text-zinc-500 italic">
+              El mockup muestra un color · el resto se produce a pedido sin recargo
+            </span>
+          )}
         </div>
       )}
 

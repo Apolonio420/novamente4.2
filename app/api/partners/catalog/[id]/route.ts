@@ -20,6 +20,7 @@ import {
   MAX_PRODUCT_IMAGES,
 } from '@/lib/partners/product-image-origin'
 import { validateFrontAndBackForPublish } from '@/lib/partners/product-sides'
+import { garmentRequiresColorChoice, productHasColorInfo } from '@/lib/partners/product-colors'
 
 async function getProductById(productId: string) {
   const { data, error } = await (supabaseAdmin as any)
@@ -151,6 +152,18 @@ export async function PUT(
       const sidesCheck = validateFrontAndBackForPublish(resolvedImages, resolvedColors)
       if (!sidesCheck.ok) {
         return NextResponse.json({ error: sidesCheck.reason }, { status: 400 })
+      }
+
+      // Guard espejo de POST /api/partners/catalog: si la prenda del catálogo
+      // tiene colores definidos, no se puede publicar sin elegir ninguno —
+      // esta es la transición real draft→published en el panel (handleSave
+      // manda PUT acá, no POST). Prendas sin colores en el catálogo (láminas,
+      // lienzos, accesorios) no lo exigen. Ver lib/partners/product-colors.ts.
+      const resolvedGarmentKey = typeof (resolvedMeta as Record<string, unknown> | null)?.garmentKey === 'string'
+        ? ((resolvedMeta as Record<string, unknown>).garmentKey as string)
+        : undefined
+      if (garmentRequiresColorChoice(resolvedGarmentKey) && !productHasColorInfo(resolvedMeta)) {
+        return NextResponse.json({ error: 'Elegí al menos un color antes de publicar' }, { status: 422 })
       }
     }
 

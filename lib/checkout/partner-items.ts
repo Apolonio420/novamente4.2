@@ -17,9 +17,22 @@
  *  - `product_color`: si el carrito no trajo color, el del producto.
  * Para ítems que no son de partner (/crear, liquidación), `doble_estampa` sale
  * del arte que va a producción (frente y dorso).
+ *
+ * Actualización 01/10 (caso la-blancq): antes esto solo miraba
+ * `metadata.color` (singular). Productos con `metadata.colors` PLURAL (el
+ * selector de color de la PDP) no tenían forma de completar un color
+ * faltante, y si el carrito mandaba el `key` interno (ej. "stone-wash") en vez
+ * del nombre visible ("Stone Wash") no se normalizaba. Ahora:
+ *  - con 1 solo color definido en `colors[]`, se usa como default (igual que
+ *    el singular).
+ *  - si el carrito trae un color que matchea por `key` o por `name` contra
+ *    `colors[]`, se normaliza al `name` canónico.
+ *  - si no hay forma de resolverlo, se deja 'unknown' (no bloquea la compra)
+ *    pero se loguea con console.warn para poder encontrarlo después.
  */
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { esDobleEstampa } from '@/lib/partners/partner-cost'
+import { parsePartnerProductColors, type ParsedPartnerColor } from '@/lib/partners/product-colors'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -27,7 +40,13 @@ export interface DatosPartnerItem {
   productId: string
   tenantId: string | null
   dobleEstampa: boolean
+  /** Color a usar cuando el carrito no trajo ninguno (metadata.color singular, o
+   *  el único color de metadata.colors[] si hay exactamente uno). */
   color: string | null
+  /** Colores definidos en metadata.colors[] (ya resueltos a name/hex/key) —
+   *  usado para normalizar lo que mande el carrito. Vacío si el producto no
+   *  define `colors[]`. */
+  colorOptions?: ParsedPartnerColor[]
 }
 
 export async function datosPartnerDeItems(ids: Array<string | null | undefined>): Promise<Map<string, DatosPartnerItem>> {
@@ -45,11 +64,16 @@ export async function datosPartnerDeItems(ids: Array<string | null | undefined>)
     }
     for (const p of data || []) {
       const meta = (p.metadata || {}) as Record<string, unknown>
+      const garmentKey = typeof meta.garmentKey === 'string' ? meta.garmentKey : undefined
+      const colorOptions = parsePartnerProductColors(garmentKey, meta.colors, meta.available_colors)
+      const singular = typeof meta.color === 'string' && meta.color.trim() ? meta.color.trim() : null
+      const colorDefault = singular || (colorOptions.length === 1 ? colorOptions[0].name : null)
       out.set(String(p.id).toLowerCase(), {
         productId: p.id,
         tenantId: p.tenant_id ?? null,
         dobleEstampa: esDobleEstampa(meta),
-        color: typeof meta.color === 'string' && meta.color.trim() ? meta.color.trim() : null,
+        color: colorDefault,
+        colorOptions,
       })
     }
   } catch (e: any) {
@@ -79,11 +103,34 @@ export function enriquecerItemPartner<T extends OrderItemDraft>(
     return { ...item, partner_product_id: null, metadata }
   }
   metadata.doble_estampa = d.dobleEstampa
-  const sinColor = !item.product_color || item.product_color === 'unknown'
+
+  const rawColor = typeof item.product_color === 'string' ? item.product_color.trim() : ''
+  const sinColor = !rawColor || rawColor.toLowerCase() === 'unknown'
+  // El carrito puede mandar el `key` interno (ej. "stone-wash") en vez del
+  // nombre visible — normalizamos al name canónico de metadata.colors[].
+  const matched = !sinColor
+    ? (d.colorOptions || []).find(
+        (c) => c.name.toLowerCase() === rawColor.toLowerCase() || (c.key && c.key.toLowerCase() === rawColor.toLowerCase()),
+      )
+    : undefined
+
+  let finalColor: string | null | undefined = item.product_color
+  if (matched) {
+    finalColor = matched.name
+  } else if (sinColor && d.color) {
+    finalColor = d.color
+  }
+
+  if (!finalColor || finalColor.toLowerCase() === 'unknown') {
+    // No bloquea la compra — solo queda identificable en los logs para ir a
+    // buscar qué producto sigue sin color cargado.
+    console.warn('[checkout] item sin color', { partnerProductId: d.productId, itemName: (item as Record<string, unknown>).item_name })
+  }
+
   return {
     ...item,
     partner_product_id: d.productId,
-    product_color: sinColor && d.color ? d.color : item.product_color,
+    product_color: finalColor,
     metadata,
   }
 }
