@@ -229,14 +229,18 @@ export default function CheckoutPage() {
   const sentViewRef = useRef(false)
   useEffect(() => {
     if (sentViewRef.current) return
-    if (getTotalItems() === 0) return
+    // Contar desde `items` (los de ESTE render), no con getTotalItems(): ese lee
+    // el store ya rehidratado mientras `items` todavía viene vacío, y la vista
+    // salía con cart_value 0 (visto en prod 02/10/2026).
+    const cantidad = items.reduce((n, i) => n + i.quantity, 0)
+    if (cantidad === 0) return
     sentViewRef.current = true
     const tenantId = items.find((i) => i.tenantId)?.tenantId ?? null
     sendCheckoutEvent({
       event: "checkout_view",
       session_id: getOrCreateFunnelSessionId(),
-      cart_value: subtotal,
-      items: getTotalItems(),
+      cart_value: items.reduce((t, i) => t + i.price * i.quantity, 0),
+      items: cantidad,
       payment_method: paymentMethod,
       tenant_id: tenantId,
     })

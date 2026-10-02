@@ -212,6 +212,8 @@ for (const vp of VIEWPORTS) {
       expect(cap.transfer.length + cap.checkout.length, 'no debe llamar al backend con datos inválidos').toBe(0)
       // Embudo: vista del checkout + clicks inválidos con qué campo faltó
       await expect.poll(() => cap.events.filter((e) => e.event === 'checkout_view').length).toBe(1)
+      // la vista lleva el valor real del carrito (antes salía 0 por la rehidratación)
+      expect(cap.events.find((e) => e.event === 'checkout_view')!.cart_value).toBeGreaterThan(0)
       const clicks = () => cap.events.filter((e) => e.event === 'confirm_click')
       await expect.poll(() => clicks().length).toBe(2)
       expect(clicks()[0]).toMatchObject({ valid: false, missing_fields: [...FIELDS] })
