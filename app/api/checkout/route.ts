@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { items, customer, total, cartItems, subtotal, shippingCost, shippingZone, tenantId, discountCode, attribution } =
+    const { items, customer, total, cartItems, subtotal, shippingCost, shippingZone, tenantId, discountCode, attribution, funnelSessionId } =
       await request.json()
 
     // Atribución de marketing (UTMs/fbclid/gclid/referrer/landing_page), capturada
@@ -314,6 +314,22 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("✅ Order ready:", newOrder.id, "Number:", newOrder.order_number)
+
+    // Embudo de checkout (ver lib/checkout/funnel.ts): registra que el pedido
+    // quedó creado, para poder cruzarlo después con 'checkout_view'/'confirm_click'
+    // de la misma sesión. Fail-soft — nunca puede frenar la creación de la
+    // preferencia de MP.
+    {
+      const { registrarEventoCheckout } = await import("@/lib/checkout/funnel")
+      await registrarEventoCheckout({
+        event: "order_created",
+        session_id: typeof funnelSessionId === "string" ? funnelSessionId : "server",
+        payment_method: "mercadopago",
+        order_id: newOrder.id!,
+        tenant_id: validTenantId,
+        cart_value: chargeTotal,
+      })
+    }
 
     // Crear preferencia de MercadoPago con precios exactos
     const preference = new Preference(client)

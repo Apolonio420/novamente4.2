@@ -114,6 +114,25 @@ export async function POST(req: NextRequest) {
   } as any)
   if (!ok) return page("No se pudo actualizar", "updateOrder devolvió false. Revisá la DB.", false)
 
+  // Embudo de checkout (ver lib/checkout/funnel.ts): la transferencia recién
+  // cuenta como "pago aprobado" acá, cuando un humano la confirma — load()
+  // de arriba ya cortó temprano si la orden estaba approved, así que esto no
+  // se duplica en un reintento del mismo link. Fail-soft, nunca bloquea la
+  // confirmación.
+  try {
+    const { registrarEventoCheckout } = await import("@/lib/checkout/funnel")
+    await registrarEventoCheckout({
+      event: "payment_approved",
+      session_id: "server",
+      order_id: o.id,
+      tenant_id: o.tenant_id || null,
+      payment_method: "transferencia",
+      cart_value: Number(o.total) || null,
+    })
+  } catch (funnelErr: any) {
+    console.warn("[checkout-funnel] no se pudo marcar payment_approved (transferencia, fail-soft):", funnelErr?.message)
+  }
+
   // Venta de tienda partner: mismos efectos que un pago MP (ganancia al ledger,
   // bridge a partner_orders, mail al partner, aviso de deuda). Antes este
   // camino NO acreditaba nada al partner. Si algo falla acá, el barrido diario

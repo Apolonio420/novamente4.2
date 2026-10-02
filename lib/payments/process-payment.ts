@@ -397,6 +397,29 @@ async function runConfirmedOrderEffects(
   {
     console.log("🎉 Pago aprobado! Orden confirmada:", order.order_number)
 
+    // Embudo de checkout (ver lib/checkout/funnel.ts): registra el pago
+    // aprobado. Guard propio en metadata — este bloque se re-corre en cada
+    // retry idempotente (mismo pago reintentado por MP), así que sin el guard
+    // se insertaría un evento duplicado por cada reintento. Fail-soft: nunca
+    // puede frenar el resto de los efectos de la venta.
+    if (!meta.funnel_payment_approved_at) {
+      try {
+        const { registrarEventoCheckout } = await import("@/lib/checkout/funnel")
+        await registrarEventoCheckout({
+          event: "payment_approved",
+          session_id: "server",
+          order_id: order.id!,
+          tenant_id: (order as any).tenant_id || null,
+          payment_method: order.payment_method || "mercadopago",
+          cart_value: Number(paymentDetails.transaction_amount) || Number(order.total) || null,
+        })
+        meta.funnel_payment_approved_at = new Date().toISOString()
+        await updateOrder(order.id!, { metadata: meta })
+      } catch (funnelErr: any) {
+        console.warn("[checkout-funnel] no se pudo marcar payment_approved (fail-soft):", funnelErr?.message)
+      }
+    }
+
     // Venta de tienda partner: ganancia al ledger, bridge a partner_orders, mail
     // al partner y aviso de deuda a Novamente — lib/partners/sale-effects.ts, el
     // mismo camino que usa la confirmación de transferencias (antes esto vivía

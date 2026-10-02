@@ -6,7 +6,7 @@ import { sanitizeAttribution } from "@/lib/attribution"
 
 export async function POST(request: NextRequest) {
   try {
-    const { customer, items, subtotal, shippingCost, total, discountCode, attribution } = await request.json()
+    const { customer, items, subtotal, shippingCost, total, discountCode, attribution, funnelSessionId } = await request.json()
 
     // Atribución de marketing opcional (ver lib/attribution.ts) — nunca bloquea el pedido.
     const sanitizedAttribution = sanitizeAttribution(attribution) || {}
@@ -166,6 +166,22 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("✅ Transfer order created in database:", newOrder.id, "Number:", newOrder.order_number)
+
+    // Embudo de checkout (ver lib/checkout/funnel.ts): registra el pedido por
+    // transferencia creado, para cruzarlo con 'checkout_view'/'confirm_click'
+    // de la misma sesión. Fail-soft — nunca puede frenar el resto del flujo
+    // (avisos/emails de abajo).
+    {
+      const { registrarEventoCheckout } = await import("@/lib/checkout/funnel")
+      await registrarEventoCheckout({
+        event: "order_created",
+        session_id: typeof funnelSessionId === "string" ? funnelSessionId : "server",
+        payment_method: "transferencia",
+        order_id: newOrder.id!,
+        tenant_id: tenantId,
+        cart_value: finalTotal,
+      })
+    }
 
     // DROP7 (piloto lanzamiento 7 días): "🚀 DROP7 · <Marca>" si algún tenant
     // del carrito está en su semana de lanzamiento (tenants.metadata.drop7).
