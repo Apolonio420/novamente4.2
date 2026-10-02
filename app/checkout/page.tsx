@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,7 +12,7 @@ import * as fpixel from "@/lib/fpixel"
 import { setPixelUser } from "@/lib/pixel-user"
 import { trackBeginCheckout } from "@/lib/analytics"
 import { formatCurrency } from "@/lib/utils"
-import { Loader2, ArrowLeft, CreditCard, Smartphone, Building2, Shield, Truck, Clock, X, Shirt, Image as ImageIcon, Camera, ShoppingBag } from "lucide-react"
+import { Loader2, ArrowLeft, CreditCard, Smartphone, Building2, Shield, Truck, Clock, X, Shirt, Image as ImageIcon, Camera, ShoppingBag, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Separator } from "@/components/ui/separator"
@@ -32,6 +32,49 @@ interface CustomerData {
   postalCode: string
 }
 
+// ── Embudo de checkout (ver lib/checkout/funnel.ts y migrations/20261001_checkout_events.sql) ──
+// Hoy no hay forma de medir cuánta gente entra acá y no llega a pagar. Esto es
+// puramente instrumentación: nunca debe frenar ni romper el checkout, por eso
+// todo va en try/catch y nunca se awaitea en el click de "Confirmar".
+const FUNNEL_SID_KEY = "nm_checkout_sid"
+
+/** Id de sesión por pestaña — uno solo por visita, generado una vez. */
+function getOrCreateFunnelSessionId(): string {
+  try {
+    const existente = sessionStorage.getItem(FUNNEL_SID_KEY)
+    if (existente) return existente
+    const nuevo =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID().replace(/-/g, "")
+        : `${Date.now()}${Math.random().toString(36).slice(2)}`
+    sessionStorage.setItem(FUNNEL_SID_KEY, nuevo)
+    return nuevo
+  } catch {
+    // Modo privado u otra razón por la que sessionStorage no está disponible —
+    // un id efímero igual sirve para no romper el envío del evento.
+    return `tmp${Date.now()}${Math.random().toString(36).slice(2)}`
+  }
+}
+
+/** Dispara un evento del embudo sin bloquear ni poder romper el checkout. */
+function sendCheckoutEvent(payload: Record<string, unknown>) {
+  try {
+    const body = JSON.stringify(payload)
+    if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+      navigator.sendBeacon("/api/checkout/events", new Blob([body], { type: "application/json" }))
+    } else {
+      fetch("/api/checkout/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
+      }).catch(() => {})
+    }
+  } catch {
+    // Instrumentación: un fallo acá nunca debe afectar al cliente comprando.
+  }
+}
+
 const AUTOCOMPLETE: Record<keyof CustomerData, string> = {
   email: "email",
   firstName: "given-name",
@@ -46,6 +89,15 @@ export default function CheckoutPage() {
   const { items, getTotalPrice, getTotalItems, clearCart, removeItem } = useCart()
   const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(false)
+  // Pedido por transferencia ya creado: el carrito se vacía y, mientras
+  // navega a /checkout/transfer, no mostramos "Tu carrito está vacío".
+  const [pedidoCreado, setPedidoCreado] = useState(false)
+  // El carrito vive en localStorage (zustand persist): el server siempre lo ve
+  // vacío. Hasta montar en el navegador mostramos un cargando — si no, el HTML
+  // del server ("Tu carrito está vacío") no coincide con el del cliente y React
+  // tira error de hidratación (QA 01/10/2026).
+  const [montado, setMontado] = useState(false)
+  useEffect(() => setMontado(true), [])
   const [paymentMethod, setPaymentMethod] = useState<'mercadopago' | 'transferencia'>('mercadopago')
   const [shippingZone, setShippingZone] = useState<'BA' | 'RESTO'>('BA')
   // Estado para previsualización
@@ -96,13 +148,19 @@ export default function CheckoutPage() {
   // carga. Si todavía no lo escribió, cae a la zona gruesa que eligió.
   const envio = envioPorDistancia(subtotal, customerInfo.postalCode, shippingZone)
   const shippingCost = envio.costo
+  // Con un CP legible la zona la decide el CP (es lo que se cobra); los botones
+  // sólo valen mientras no hay CP. Antes con CP 1414 y "Resto del país" el
+  // botón decía "desde $13.500", se cobraba AMBA y la fecha seguía al botón
+  // (QA 01/10/2026).
+  const zonaPorCP = !envio.estimado
+  const zonaEfectiva: 'BA' | 'RESTO' = zonaPorCP ? (envio.zona === 'AMBA' ? 'BA' : 'RESTO') : shippingZone
 
   // Estimación llegada — días hábiles desde hoy: BA 3-5, Resto 5-7
   // (incluye producción on-demand DTG ~2 días + envío)
   const estimatedDelivery = (() => {
     const now = new Date()
-    const min = shippingZone === 'BA' ? 5 : 7
-    const max = shippingZone === 'BA' ? 7 : 10
+    const min = zonaEfectiva === 'BA' ? 5 : 7
+    const max = zonaEfectiva === 'BA' ? 7 : 10
     const addBusinessDays = (start: Date, days: number) => {
       const d = new Date(start)
       let added = 0
@@ -165,6 +223,26 @@ export default function CheckoutPage() {
   // queda bien (pedido de Juan 01/10/2026).
   const [errores, setErrores] = useState<ErroresCampos>({})
 
+  // Embudo de checkout: un solo 'checkout_view' por visita (recién cuando hay
+  // carrito — no tiene sentido medir la vista vacía/en-tránsito). Ver nota de
+  // "Embudo de checkout" más arriba.
+  const sentViewRef = useRef(false)
+  useEffect(() => {
+    if (sentViewRef.current) return
+    if (getTotalItems() === 0) return
+    sentViewRef.current = true
+    const tenantId = items.find((i) => i.tenantId)?.tenantId ?? null
+    sendCheckoutEvent({
+      event: "checkout_view",
+      session_id: getOrCreateFunnelSessionId(),
+      cart_value: subtotal,
+      items: getTotalItems(),
+      payment_method: paymentMethod,
+      tenant_id: tenantId,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items])
+
   const handleInputChange = (field: CampoObligatorio, value: string) => {
     setCustomerInfo((prev) => ({ ...prev, [field]: value }))
     setErrores((prev) => {
@@ -224,6 +302,18 @@ export default function CheckoutPage() {
   const handleCheckout = async () => {
     const erroresActuales = erroresCampos(customerInfo)
     const conError = Object.keys(erroresActuales) as CampoObligatorio[]
+    // Embudo de checkout: cada click en "Confirmar" cuenta, sea válido o no —
+    // es la única forma de distinguir "nadie toca el botón" de "lo tocan y
+    // falla la validación" (ver nota de "Embudo de checkout" más arriba).
+    const funnelSessionId = getOrCreateFunnelSessionId()
+    sendCheckoutEvent({
+      event: "confirm_click",
+      session_id: funnelSessionId,
+      valid: conError.length === 0,
+      missing_fields: conError,
+      payment_method: paymentMethod,
+      cart_value: subtotal,
+    })
     if (conError.length) {
       // El botón ya NO se deshabilita por formulario incompleto (01/10/2026,
       // reporte la-blancq): deshabilitado, tocarlo no hacía nada y parecía que
@@ -299,10 +389,11 @@ export default function CheckoutPage() {
           cartItems: items, // Enviar items completos del carrito
           subtotal: subtotal,
           shippingCost: shippingCost,
-          shippingZone: shippingZone, // 'BA' | 'RESTO'
+          shippingZone: zonaEfectiva, // 'BA' | 'RESTO' (la del CP si hay)
           tenantId: tenantId,
           discountCode: appliedDiscount?.code ?? null, // el server lo revalida contra partner_discount_codes
           attribution: getStoredAttribution(), // UTMs/fbclid/gclid last-touch — null si no hay nada capturado
+          funnelSessionId, // embudo de checkout — ver lib/checkout/funnel.ts
         }
 
         console.log("📤 Request body:", JSON.stringify(requestBody, null, 2))
@@ -377,10 +468,11 @@ export default function CheckoutPage() {
             items: items,
             subtotal: subtotal,
             shippingCost: shippingCost,
-            shippingZone: shippingZone,
+            shippingZone: zonaEfectiva,
             total: total,
             discountCode: appliedDiscount?.code ?? null,
             attribution: getStoredAttribution(),
+            funnelSessionId, // embudo de checkout — ver lib/checkout/funnel.ts
           }),
         })
 
@@ -417,6 +509,12 @@ export default function CheckoutPage() {
         console.log("🔄 Guardando datos de transferencia:", transferData)
         localStorage.setItem('transferData', JSON.stringify(transferData))
         
+        // El pedido ya existe: vaciar el carrito para que volver atrás o
+        // tocar "Confirmar" de nuevo no cree un pedido duplicado (QA 01/10).
+        // MP lo vacía en /checkout/success; la transferencia no pasa por ahí.
+        setPedidoCreado(true)
+        clearCart()
+
         // Redirigir a página de transferencia
         router.push('/checkout/transfer')
       }
@@ -436,7 +534,24 @@ export default function CheckoutPage() {
   // useEffect de arriba redirigía a /cart. Ahora se explica y se da una
   // salida — cubre el link de MP viejo, volver atrás después de vaciar el
   // carrito, o entrar directo a /checkout sin haber agregado nada.
+  if (!montado) {
+    return (
+      <div className="container mx-auto px-4 py-16 flex justify-center" aria-busy="true">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   if (getTotalItems() === 0) {
+    if (pedidoCreado) {
+      return (
+        <div className="container mx-auto px-4 py-16 flex flex-col items-center text-center gap-4">
+          <CheckCircle className="w-12 h-12 text-green-600" />
+          <h1 className="text-xl font-semibold">¡Pedido creado!</h1>
+          <p className="text-muted-foreground max-w-sm">Te llevamos a los datos para transferir…</p>
+        </div>
+      )
+    }
     return (
       <div className="container mx-auto px-4 py-16 flex flex-col items-center text-center gap-4">
         <ShoppingBag className="w-12 h-12 text-muted-foreground" />
@@ -462,15 +577,15 @@ export default function CheckoutPage() {
         <span className="text-muted-foreground">—</span>
         <span className="font-semibold text-primary">Checkout</span>
         <span className="text-muted-foreground">—</span>
-        <span className="text-muted-foreground">Confirmacion</span>
+        <span className="text-muted-foreground">Confirmación</span>
       </div>
 
       {/* Urgency banner */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center mb-6">
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 text-center mb-6">
         <div className="flex items-center justify-center gap-2">
-          <Clock className="w-4 h-4 text-amber-600" />
-          <p className="text-sm font-medium text-amber-800">
-            Produccion sale hoy — completa tu pedido para entrar en esta tanda
+          <Clock className="w-4 h-4 text-amber-400" />
+          <p className="text-sm font-medium text-amber-200">
+            Producción sale hoy — completá tu pedido para entrar en esta tanda
           </p>
         </div>
       </div>
@@ -512,7 +627,7 @@ export default function CheckoutPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Urgency badge: fecha estimada de llegada */}
-              <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-900 flex items-center gap-2">
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 text-sm text-emerald-200 flex items-center gap-2">
                 <Truck className="w-4 h-4" />
                 <span>
                   Comprando ahora <strong>te llega entre el {estimatedDelivery}</strong>
@@ -524,18 +639,19 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setShippingZone('BA')}
-                  aria-pressed={shippingZone === 'BA'}
+                  disabled={zonaPorCP}
+                  aria-pressed={zonaEfectiva === 'BA'}
                   className={`p-4 border-2 rounded-lg text-left transition-colors ${
-                    shippingZone === 'BA'
+                    zonaEfectiva === 'BA'
                       ? 'border-primary bg-primary/5'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : `border-border ${zonaPorCP ? 'opacity-50' : 'hover:border-muted-foreground'}`
                   }`}
                 >
                   <div className="font-medium">Buenos Aires</div>
                   <div className="text-sm text-muted-foreground">
                     {subtotal >= shippingThreshold
                       ? 'Gratis'
-                      : shippingZone === 'BA' && !envio.estimado
+                      : zonaEfectiva === 'BA' && zonaPorCP
                         ? `$${envio.costo.toLocaleString('es-AR')}`
                         : `$${SHIPPING_RANGO.AMBA_MIN.toLocaleString('es-AR')} a $${SHIPPING_RANGO.AMBA_MAX.toLocaleString('es-AR')}`}
                   </div>
@@ -544,24 +660,30 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setShippingZone('RESTO')}
-                  aria-pressed={shippingZone === 'RESTO'}
+                  disabled={zonaPorCP}
+                  aria-pressed={zonaEfectiva === 'RESTO'}
                   className={`p-4 border-2 rounded-lg text-left transition-colors ${
-                    shippingZone === 'RESTO'
+                    zonaEfectiva === 'RESTO'
                       ? 'border-primary bg-primary/5'
-                      : 'border-gray-200 hover:border-gray-300'
+                      : `border-border ${zonaPorCP ? 'opacity-50' : 'hover:border-muted-foreground'}`
                   }`}
                 >
                   <div className="font-medium">Resto del país</div>
                   <div className="text-sm text-muted-foreground">
                     {subtotal >= shippingThreshold
                       ? 'Gratis'
-                      : shippingZone === 'RESTO' && !envio.estimado
+                      : zonaEfectiva === 'RESTO' && zonaPorCP
                         ? `$${envio.costo.toLocaleString('es-AR')}`
                         : `desde $${SHIPPING_RANGO.INTERIOR_MIN.toLocaleString('es-AR')}`}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">Interior · llega en 5-7 días hábiles</div>
                 </button>
               </div>
+              {zonaPorCP && (
+                <p className="-mt-2 text-xs text-muted-foreground" data-testid="zona-por-cp">
+                  Zona según tu código postal: <strong>{envio.donde}</strong>
+                </p>
+              )}
 
               {/* Dirección opcional pre-pago — se completa post-pago si la dejan vacía */}
               {/* Datos de envío OBLIGATORIOS antes de pagar. Antes era un
@@ -569,7 +691,7 @@ export default function CheckoutPage() {
                   quedaba PENDIENTE_POST_PAGO y si el cliente no volvía a la página
                   de éxito no había adónde despachar (caso Marcelo NOV-20260813-7038,
                   pagó por transferencia 20 días después y no hay dirección). */}
-              <div className="rounded-lg border border-gray-300 p-3">
+              <div className="rounded-lg border border-border p-3">
                 <p className="text-sm font-medium mb-1">Datos de envío</p>
                 <p className="text-xs text-muted-foreground mb-3">
                   Los necesitamos para despachar tu pedido por Andreani.
@@ -595,7 +717,7 @@ export default function CheckoutPage() {
                   className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
                     paymentMethod === 'mercadopago' 
                       ? 'border-primary bg-primary/5' 
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-border hover:border-muted-foreground'
                   }`}
                   onClick={() => setPaymentMethod('mercadopago')}
                 >
@@ -603,7 +725,7 @@ export default function CheckoutPage() {
                     <div className={`w-4 h-4 rounded-full border-2 ${
                       paymentMethod === 'mercadopago' 
                         ? 'border-primary bg-primary' 
-                        : 'border-gray-300'
+                        : 'border-border'
                     }`}>
                       {paymentMethod === 'mercadopago' && (
                         <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
@@ -623,7 +745,7 @@ export default function CheckoutPage() {
                   className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
                     paymentMethod === 'transferencia' 
                       ? 'border-primary bg-primary/5' 
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-border hover:border-muted-foreground'
                   }`}
                   onClick={() => setPaymentMethod('transferencia')}
                 >
@@ -631,7 +753,7 @@ export default function CheckoutPage() {
                     <div className={`w-4 h-4 rounded-full border-2 ${
                       paymentMethod === 'transferencia' 
                         ? 'border-primary bg-primary' 
-                        : 'border-gray-300'
+                        : 'border-border'
                     }`}>
                       {paymentMethod === 'transferencia' && (
                         <div className="w-2 h-2 bg-white rounded-full m-0.5"></div>
@@ -667,7 +789,7 @@ export default function CheckoutPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="relative w-full aspect-square sm:h-96 sm:aspect-auto rounded-xl overflow-hidden bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 border border-zinc-200/40 dark:border-zinc-800/60">
+                <div className="relative w-full aspect-square sm:h-96 sm:aspect-auto rounded-xl overflow-hidden bg-muted border border-border">
                   <Image
                     src={selectedPreviewUrl || "/placeholder.svg"}
                     alt={selectedItem.name}
@@ -757,7 +879,7 @@ export default function CheckoutPage() {
                     }`}
                     onClick={() => setSelectedItemIndex(idx)}
                   >
-                    <div className="w-16 h-16 relative rounded-md overflow-hidden flex-shrink-0 bg-zinc-100 dark:bg-zinc-900">
+                    <div className="w-16 h-16 relative rounded-md overflow-hidden flex-shrink-0 bg-muted">
                       <Image
                         src={item.mockupUrl || item.frontMockup || item.backMockup || item.frontDesign || item.image || "/placeholder.svg"}
                         alt={item.name}
@@ -831,11 +953,11 @@ export default function CheckoutPage() {
                   </span>
                 </div>
                 {subtotal < shippingThreshold && (
-                  <div className="bg-blue-50 p-2 rounded space-y-1.5">
-                    <p className="text-xs font-medium text-blue-900">
+                  <div className="bg-blue-500/10 p-2 rounded space-y-1.5">
+                    <p className="text-xs font-medium text-blue-200">
                       Te faltan {formatCurrency(shippingThreshold - subtotal)} para envío gratuito
                     </p>
-                    <div className="w-full bg-blue-200 rounded-full h-1.5">
+                    <div className="w-full bg-blue-500/20 rounded-full h-1.5">
                       <div
                         className="bg-blue-600 h-1.5 rounded-full transition-all"
                         style={{ width: `${Math.min(100, (subtotal / shippingThreshold) * 100)}%` }}
@@ -908,14 +1030,14 @@ export default function CheckoutPage() {
             </span>
             <span className="flex items-center gap-1">
               <Truck className="w-3.5 h-3.5" />
-              Envio a todo el pais
+              Envío a todo el país
             </span>
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
             {paymentMethod === 'mercadopago'
-              ? 'Seras redirigido a MercadoPago para completar tu compra de forma segura.'
-              : 'Veras los datos de transferencia bancaria para completar tu pago.'
+              ? 'Vas a ser redirigido a Mercado Pago para completar tu compra de forma segura.'
+              : 'Vas a ver los datos de transferencia bancaria para completar tu pago.'
             }
           </p>
         </div>

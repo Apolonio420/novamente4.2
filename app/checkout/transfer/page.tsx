@@ -13,7 +13,6 @@ import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import ReceiptUploader from "@/components/ReceiptUploader"
-import { Logo } from "@/components/Logo"
 import { getWhatsAppLink } from "@/lib/config/links"
 import { envioAMostrar } from "@/lib/checkout/form-checkout"
 
@@ -111,10 +110,6 @@ export default function TransferPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between gap-4 mb-4">
-        <Logo />
-      </div>
-
       <div className="flex items-center gap-4 mb-8">
         <Link href="/checkout">
           <Button variant="ghost" size="sm">
@@ -190,18 +185,18 @@ export default function TransferPage() {
 
               </div>
 
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <h3 className="font-medium text-blue-900 mb-2">Importante:</h3>
-                <ul className="text-sm text-blue-800 space-y-1">
+              <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <h3 className="font-medium text-blue-200 mb-2">Importante:</h3>
+                <ul className="text-sm text-blue-100 space-y-1">
                   <li>• Pedido: <strong>{transferData.order_number || transferData.order_id}</strong></li>
-                  <li>• Realiza la transferencia por el monto exacto: <strong>{formatCurrency(transferData.amount)}</strong></li>
+                  <li>• Realizá la transferencia por el monto exacto: <strong>{formatCurrency(transferData.amount)}</strong></li>
                   <li>
-                    • Envía el comprobante a nuestro WhatsApp:{" "}
+                    • Enviá el comprobante a nuestro WhatsApp:{" "}
                     <a
                       href={getWhatsAppLink(`Hola Novamente! Te mando el comprobante de mi transferencia del pedido ${transferData.order_number || transferData.order_id || ""}. (ref · NV-TRANSFERENCIA)`)}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-medium underline text-blue-900 hover:text-blue-700"
+                      className="font-medium underline text-blue-200 hover:text-blue-100"
                     >
                       +54 9 223 516-9720
                     </a>
@@ -261,9 +256,9 @@ export default function TransferPage() {
                 {transferData.items.map((item) => (
                   <div key={item.id} className="space-y-4">
                     {/* Imagen grande del producto */}
-                    <div className="relative w-full h-48 rounded-lg overflow-hidden bg-gray-100 group">
+                    <div className="relative w-full h-48 rounded-lg overflow-hidden bg-muted group">
                       <Image 
-                        src={item.frontMockup || item.backMockup || item.image || "/placeholder.svg"} 
+                        src={item.mockupUrl || item.frontMockup || item.backMockup || item.frontDesign || item.image || "/placeholder.svg"} 
                         alt={item.name} 
                         fill 
                         sizes="(max-width: 768px) 100vw, 50vw"
@@ -273,10 +268,10 @@ export default function TransferPage() {
                           target.src = "/placeholder.svg"
                         }}
                         onDoubleClick={() => handleImageDoubleClick(
-                          item.frontMockup || item.backMockup || item.image || "/placeholder.svg",
+                          item.mockupUrl || item.frontMockup || item.backMockup || item.frontDesign || item.image || "/placeholder.svg",
                           item.name
                         )}
-                        unoptimized={(item.frontMockup || item.backMockup || item.image || "").startsWith('/api/')}
+                        unoptimized={(item.mockupUrl || item.frontMockup || item.backMockup || item.frontDesign || item.image || "").startsWith('/api/')}
                       />
                       {/* Leyenda de zoom */}
                       <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">

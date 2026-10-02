@@ -29,6 +29,11 @@ export function GlobalChrome({ children }: { children: React.ReactNode }) {
   //   · EmailCaptureLoader  → modal a pantalla completa que tapa la tienda y se
   //                           queda con el mail del cliente del partner.
   const isStore = pathname?.startsWith("/p/") ?? false
+  // /checkout/*: el cliente está pagando. La burbuja de Nova (y el modal de
+  // email) tapaban en mobile el campo CP y el recuadro con el monto a
+  // transferir (QA 01/10/2026). Queda sólo el botón de WhatsApp —es la ayuda
+  // si se traba— y el contenido lleva margen abajo para que nada quede debajo.
+  const isCheckout = pathname?.startsWith("/checkout") ?? false
 
   if (isCrear) {
     // Full-screen design tool — sin navbar global, sin footer, sin flotantes.
@@ -58,15 +63,15 @@ export function GlobalChrome({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main id="main-content" className="flex-1">
+      <main id="main-content" className={isCheckout ? "flex-1 pb-24" : "flex-1"}>
         {children}
       </main>
       <Footer />
       {!isStore && (
         <>
           <WhatsAppButton />
-          <PublicAssistantLoader />
-          <EmailCaptureLoader />
+          {!isCheckout && <PublicAssistantLoader />}
+          {!isCheckout && <EmailCaptureLoader />}
         </>
       )}
     </div>

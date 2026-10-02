@@ -39,11 +39,11 @@ const VALID: Record<(typeof FIELDS)[number], string> = {
 }
 const MP_INIT_POINT = 'https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=QA-MOCK'
 
-type Captured = { checkout: any[]; transfer: any[]; leaked: string[] }
+type Captured = { checkout: any[]; transfer: any[]; events: any[]; leaked: string[] }
 
 /** Intercepta TODO lo que escribe o cobra. Devuelve los payloads capturados. */
 async function mockPayments(page: Page): Promise<Captured> {
-  const cap: Captured = { checkout: [], transfer: [], leaked: [] }
+  const cap: Captured = { checkout: [], transfer: [], events: [], leaked: [] }
   // Red de seguridad: cualquier POST/PUT/PATCH/DELETE a la API que no esté
   // mockeado abajo se aborta (no queremos escribir nada en la base real).
   await page.route('**/api/**', (route) => {
@@ -76,6 +76,11 @@ async function mockPayments(page: Page): Promise<Captured> {
     })
   })
   await page.route('**/api/checkout/transfer/viewed', (r) => r.fulfill({ status: 200, body: '{}' }))
+  // Embudo (lib/checkout/funnel.ts): se capturan, no llegan a la base.
+  await page.route('**/api/checkout/events', async (route) => {
+    try { cap.events.push(route.request().postDataJSON()) } catch {}
+    await route.fulfill({ status: 204, body: '' })
+  })
   await page.route('**/api/discounts/validate', async (route) => {
     const body = route.request().postDataJSON() as { code: string; subtotal: number }
     if (body.code === 'QA10') {
@@ -130,10 +135,10 @@ async function invalidFields(page: Page): Promise<string[]> {
   return page.$$eval('input[aria-invalid="true"]', (els) => els.map((e) => e.id))
 }
 
-/** formatCurrency del sitio usa en-US ("$35,750.00"): coma de miles, punto decimal. */
+/** Precios en es-AR sin decimales ("$35.750"): el punto es separador de miles. */
 function money(s: string): number {
-  const m = s.match(/\$\s?([\d.,]+)/)
-  return m ? Math.round(Number(m[1].replace(/,/g, ''))) : NaN
+  const m = s.match(/\$\s?([\d.]+)/)
+  return m ? Number(m[1].replace(/\./g, '')) : NaN
 }
 
 const findings: Record<string, unknown> = {}
@@ -205,6 +210,13 @@ for (const vp of VIEWPORTS) {
       await page.locator('#email').scrollIntoViewIfNeeded()
       await shot(page, `${vp.name}-c-email-invalido`, false)
       expect(cap.transfer.length + cap.checkout.length, 'no debe llamar al backend con datos inválidos').toBe(0)
+      // Embudo: vista del checkout + clicks inválidos con qué campo faltó
+      await expect.poll(() => cap.events.filter((e) => e.event === 'checkout_view').length).toBe(1)
+      const clicks = () => cap.events.filter((e) => e.event === 'confirm_click')
+      await expect.poll(() => clicks().length).toBe(2)
+      expect(clicks()[0]).toMatchObject({ valid: false, missing_fields: [...FIELDS] })
+      expect(clicks()[1]).toMatchObject({ valid: false, missing_fields: ['email'] })
+      expect(clicks()[0].session_id).toMatch(/^[A-Za-z0-9_-]{8,64}$/)
       await page.fill('#email', VALID.email)
       await expect.poll(() => invalidFields(page)).toEqual([])
 
@@ -224,6 +236,8 @@ for (const vp of VIEWPORTS) {
       expect(p.shippingZone).toBe('BA')
       expect(p.shippingCost).toBeGreaterThan(0) // un producto < umbral de envío gratis
       expect(money(btnText)).toBe(p.total)
+      await expect.poll(() => cap.events.filter((e) => e.event === 'confirm_click').at(-1)).toMatchObject({ valid: true, payment_method: 'transferencia' })
+      expect(p.funnelSessionId, 'el pedido viaja con la sesión del embudo').toBe(cap.events[0].session_id)
 
       await expect(page.getByText('Total a Transferir')).toBeVisible()
       await expect(page.locator('div.font-mono', { hasText: /^novamente$/ })).toBeVisible()
@@ -316,7 +330,7 @@ for (const vp of VIEWPORTS) {
       await seedCart(page, [item()])
       await page.goto('/checkout')
       await expect(page.getByRole('heading', { name: 'Checkout' })).toBeVisible({ timeout: 60_000 })
-      const code = page.getByPlaceholder('HOTSALE15')
+      const code = page.getByPlaceholder('Tu código')
       await code.fill('NOEXISTE')
       await page.getByRole('button', { name: 'Aplicar' }).click()
       await expect(page.getByText('Código no válido')).toBeVisible()
@@ -376,10 +390,120 @@ for (const vp of VIEWPORTS) {
       await shot(page, `${vp.name}-h-varios-transfer`)
     })
 
+    test('j: transferencia creada → carrito vacío, volver atrás no duplica el pedido', async ({ page }) => {
+      const cap = await mockPayments(page)
+      await seedCart(page, [item()])
+      await page.goto('/checkout')
+      await expect(page.getByRole('heading', { name: 'Checkout' })).toBeVisible({ timeout: 60_000 })
+      await fillAll(page)
+      await page.getByText('Transferencia Bancaria').click()
+      await (await confirmButton(page)).click()
+      await page.waitForURL('**/checkout/transfer')
+      expect(cap.transfer).toHaveLength(1)
+      // el pedido sigue visible en /checkout/transfer (sale de transferData, no del carrito)
+      await expect(page.getByText('Total a Transferir')).toBeVisible()
+      const cartItems = await page.evaluate(() => JSON.parse(localStorage.getItem('cart-storage') || '{}')?.state?.items ?? null)
+      expect(cartItems, 'carrito vaciado al crear el pedido').toEqual([])
+      // volver atrás → /checkout sin productos y sin botón de confirmar
+      await page.goBack()
+      await expect(page.getByRole('heading', { name: 'Tu carrito está vacío' })).toBeVisible({ timeout: 30_000 })
+      await expect(page.getByRole('button', { name: /Confirmar (y Pagar|Pedido)/ })).toHaveCount(0)
+      expect(cap.transfer).toHaveLength(1)
+      await shot(page, `${vp.name}-j-carrito-vacio-tras-pedido`, false)
+    })
+
+    test('k: la zona de envío sale del CP (cobro, botón, fecha y payload coherentes)', async ({ page }) => {
+      const cap = await mockPayments(page)
+      await seedCart(page, [item()])
+      await page.goto('/checkout')
+      await expect(page.getByRole('heading', { name: 'Checkout' })).toBeVisible({ timeout: 60_000 })
+      const ba = page.getByRole('button', { name: /Buenos Aires/ })
+      const resto = page.getByRole('button', { name: /Resto del país/ })
+      const fecha = () => page.getByText(/te llega entre el/).innerText()
+      const envioResumen = async () =>
+        money(await page.locator('div.flex.justify-between', { has: page.getByText('Envío', { exact: true }) }).last().innerText())
+      // sin CP: manda el botón
+      const fechaBA = await fecha()
+      await resto.click()
+      await expect(resto).toHaveAttribute('aria-pressed', 'true')
+      const fechaResto = await fecha()
+      expect(fechaResto).not.toBe(fechaBA)
+      // CP de AMBA con "Resto del país" elegido → manda el CP
+      await fillAll(page)
+      await expect(ba).toHaveAttribute('aria-pressed', 'true')
+      await expect(resto).toHaveAttribute('aria-pressed', 'false')
+      await expect(resto).toBeDisabled()
+      await expect(page.getByTestId('zona-por-cp')).toBeVisible()
+      expect(await fecha()).toBe(fechaBA)
+      const envioAmba = await envioResumen()
+      expect(money(await ba.innerText())).toBe(envioAmba)
+      await page.getByTestId('zona-por-cp').scrollIntoViewIfNeeded()
+      await shot(page, `${vp.name}-k-zona-por-cp`, false)
+      // CP del interior (Córdoba 5000) → Resto, cobro y fecha del interior
+      await page.fill('#postalCode', '5000')
+      await expect(resto).toHaveAttribute('aria-pressed', 'true')
+      expect(await fecha()).toBe(fechaResto)
+      const envioInterior = await envioResumen()
+      expect(envioInterior).toBeGreaterThan(envioAmba)
+      expect(money(await resto.innerText())).toBe(envioInterior)
+      await page.getByText('Transferencia Bancaria').click()
+      await (await confirmButton(page)).click()
+      await page.waitForURL('**/checkout/transfer')
+      expect(cap.transfer[0].shippingZone).toBe('RESTO')
+      expect(cap.transfer[0].shippingCost).toBe(envioInterior)
+    })
+
+    test('l: precios en es-AR sin decimales y sin burbuja de Nova en checkout', async ({ page }) => {
+      await mockPayments(page)
+      await seedCart(page, [item()])
+      await page.goto('/checkout')
+      await expect(page.getByRole('heading', { name: 'Checkout' })).toBeVisible({ timeout: 60_000 })
+      const body = await page.locator('main').innerText()
+      expect(body).toContain('$35.750')
+      expect(body).not.toMatch(/\$\d{1,3}(,\d{3})+\.\d{2}/) // nada de "$35,750.00"
+      expect(body).not.toMatch(/Confirmacion|Produccion|Envio a todo|Seras|Veras/)
+      await page.waitForTimeout(2500) // Nova aparece con delay en el resto del sitio
+      await expect(page.locator('.nova-fab')).toHaveCount(0)
+      await expect(page.locator('.whatsapp-float-btn')).toHaveCount(1)
+    })
+
+    test('m: /products/[id] tiene compra directa con talle obligatorio', async ({ page }) => {
+      const cap = await mockPayments(page)
+      await page.goto('/products/aura-tshirt-blanco')
+      const box = page.getByTestId('product-buy-box')
+      await expect(box).toBeVisible({ timeout: 60_000 })
+      await shot(page, `${vp.name}-m-pdp-compra`, false)
+      // sin talle → aviso en rojo y no agrega
+      await box.getByRole('button', { name: 'Comprar ahora' }).click()
+      await expect(page.locator('#talle-error')).toHaveText('Elegí un talle')
+      expect(await page.evaluate(() => JSON.parse(localStorage.getItem('cart-storage') || '{}')?.state?.items?.length ?? 0)).toBe(0)
+      await shot(page, `${vp.name}-m-pdp-sin-talle`, false)
+      // talle L → Agregar al carrito → queda en el carrito
+      await box.getByRole('button', { name: 'L', exact: true }).click()
+      await box.getByRole('button', { name: /Agregar al carrito/ }).click()
+      await expect(box.getByRole('button', { name: /Agregado/ })).toBeVisible()
+      // Comprar ahora → checkout con los dos
+      await box.getByRole('button', { name: 'Comprar ahora' }).click()
+      await page.waitForURL('**/checkout')
+      await expect(page.getByRole('heading', { name: 'Checkout' })).toBeVisible({ timeout: 60_000 })
+      await fillAll(page)
+      await (await confirmButton(page)).click()
+      await page.waitForURL(/mercadopago/, { timeout: 30_000 })
+      const p = cap.checkout[0]
+      expect(p.cartItems).toHaveLength(2)
+      for (const it of p.cartItems) {
+        expect(it.size).toBe('L')
+        expect(it.color, 'color de la prenda').toBeTruthy()
+        expect(it.tenantId).toBeUndefined()
+      }
+      expect(p.tenantId).toBeNull()
+      findings[`${vp.name}-m-items`] = p.cartItems.map((i: any) => `${i.name} | ${i.color} | ${i.size} | ${i.price}`)
+    })
+
     test('i: web propia (no partner) → /products quick-add → checkout', async ({ page }) => {
       const cap = await mockPayments(page)
-      // La ficha /products/[id] no tiene botón de compra (sólo WhatsApp / Diseñá):
-      // se registra como hallazgo y se compra desde el listado /products.
+      // La ficha /products/[id] ahora tiene compra directa (test m); este caso
+      // cubre el quick-add del listado /products.
       await page.goto('/products/aura-tshirt-blanco')
       findings[`${vp.name}-i-pdp-tiene-boton-compra`] = (await page.getByRole('button', { name: /Agregar|Comprar/i }).count()) > 0
       await page.goto('/products')

@@ -27,7 +27,7 @@ export function DiscountInput({ subtotal, onApply, onRemove, applied }: Discount
       })
       const data = await res.json()
       if (!data.valid) {
-        setError(data.reason || "Codigo no valido")
+        setError(data.reason || "Código no válido")
         return
       }
       onApply({
@@ -39,7 +39,7 @@ export function DiscountInput({ subtotal, onApply, onRemove, applied }: Discount
       })
       setCode("")
     } catch {
-      setError("Error validando codigo")
+      setError("Error validando el código")
     } finally {
       setValidating(false)
     }
@@ -56,7 +56,7 @@ export function DiscountInput({ subtotal, onApply, onRemove, applied }: Discount
         <button
           onClick={onRemove}
           className="text-xs text-zinc-500 hover:text-zinc-300 transition inline-flex items-center gap-1"
-          aria-label="Quitar codigo"
+          aria-label="Quitar código"
         >
           <X className="w-3 h-3" />
           Quitar
@@ -69,7 +69,7 @@ export function DiscountInput({ subtotal, onApply, onRemove, applied }: Discount
     <div className="space-y-1.5">
       <div className="flex items-center gap-2">
         <Tag className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-        <span className="text-xs text-zinc-400">Codigo de descuento</span>
+        <span className="text-xs text-zinc-400">Código de descuento</span>
       </div>
       <div className="flex gap-2">
         <input
@@ -85,7 +85,7 @@ export function DiscountInput({ subtotal, onApply, onRemove, applied }: Discount
               handleValidate()
             }
           }}
-          placeholder="HOTSALE15"
+          placeholder="Tu código"
           maxLength={32}
           className="flex-1 px-3 py-2 text-sm bg-zinc-900 border border-zinc-800 rounded-md text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600"
           disabled={validating}

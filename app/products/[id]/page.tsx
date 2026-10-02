@@ -17,6 +17,7 @@ import { productDisplayName, productModelName } from "@/lib/product-names"
 import { loadProductNameOverrides } from "@/lib/product-names-db"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 import { StockPerSize } from "@/components/StockPerSize"
+import { ProductBuyBox } from "@/components/ProductBuyBox"
 import { shippingDetailsJsonLd, RETURN_POLICY_REF, SHIPPING, SHIPPING_ZONES_PUBLIC, formatShippingARS } from "@/lib/shipping-config"
 import { ProductReviews } from "@/components/partners/product-reviews"
 import { getApprovedReviewStats } from "@/lib/partners/reviews"
@@ -75,10 +76,10 @@ function getSizeChartKey(productId: string, category: string): string {
 }
 
 const CARE_INSTRUCTIONS = [
-  { icon: WashingMachine, title: "Lavar del reves", desc: "Agua fria (max 30°C)" },
+  { icon: WashingMachine, title: "Lavar del revés", desc: "Agua fría (máx. 30°C)" },
   { icon: ThermometerSnowflake, title: "No usar secadora", desc: "Secar a la sombra" },
   { icon: Droplets, title: "No usar lavandina", desc: "Detergente suave" },
-  { icon: Shirt, title: "Planchar al reves", desc: "Temperatura baja" },
+  { icon: Shirt, title: "Planchar al revés", desc: "Temperatura baja" },
 ]
 
 // Nota: acá vivía generateReviews(), que fabricaba reseñas con nombres y textos
@@ -112,7 +113,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   return {
     title: `${displayName} — Personalizable con IA | Novamente`,
-    description: `${displayName} a ${product.price}. ${product.description.slice(0, 140)}... Algodon 100% premium con estampado DTG. Personalizalo con inteligencia artificial.`,
+    description: `${displayName} a ${product.price}. ${product.description.slice(0, 140)}... Algodón 100% premium con estampado DTG. Personalizalo con inteligencia artificial.`,
     keywords: [
       displayName.toLowerCase(),
       `${product.category.toLowerCase()} personalizado`,
@@ -145,6 +146,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const numericPrice = parsePrice(product.price)
   const baseUrl = "https://www.novamente.ar"
   const sizeChart = SIZE_CHARTS[getSizeChartKey(product.id, product.category)]
+  // Talles para comprar desde la ficha. Arte (lienzos) queda afuera: el precio
+  // depende de la medida ("Desde $34.000") y se cotiza aparte.
+  const buySizes = sizeChart?.sizes ?? (product.category === "Accesorios" ? ["Único"] : null)
   const overrides = await loadProductNameOverrides()
   const displayName = productDisplayName({ id: product.id, name: product.name, color: product.color }, overrides)
   const modelName = productModelName({ id: product.id, name: product.name }, overrides)
@@ -178,7 +182,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     image: allImages.map((img) => `${baseUrl}${img}`),
     brand: { "@type": "Brand", name: "Novamente" },
     color: product.color,
-    material: "Algodon 100%",
+    material: "Algodón 100%",
     category: product.category,
     offers: {
       "@type": "Offer",
@@ -333,7 +337,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <p className="text-base text-muted-foreground/60 line-through -mb-1">{anchorPriceLabel(product.price)}</p>
             )}
             <p className="text-4xl font-bold text-primary mb-4">{product.price}</p>
-            <p className="text-sm text-muted-foreground mb-6">6 cuotas sin interes de ${(numericPrice / 6).toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
+            <p className="text-sm text-muted-foreground mb-6">6 cuotas sin interés de ${(numericPrice / 6).toLocaleString("es-AR", { maximumFractionDigits: 0 })}</p>
 
             <p className="text-muted-foreground mb-6 leading-relaxed" data-speakable>{product.description}</p>
 
@@ -347,7 +351,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <div className="grid grid-cols-2 gap-3 mb-6">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <ShieldCheck className="w-4 h-4 text-green-500" />
-                <span>Algodon 100% premium</span>
+                <span>Algodón 100% premium</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Sparkles className="w-4 h-4 text-primary" />
@@ -355,16 +359,26 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Truck className="w-4 h-4 text-blue-500" />
-                <span>Envio a todo el pais</span>
+                <span>Envío a todo el país</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Ruler className="w-4 h-4 text-orange-500" />
-                <span>{product.category === "Remeras Infantiles" ? "Talles 4 a 16" : product.category === "Accesorios" ? "Tamaño único" : `Talles S a ${product.category === "Remeras Crop" || product.category === "Musculosas" || product.category === "Remeras Mujer" ? "XL" : "XXL"}`}</span>
+                <span>{product.category === "Accesorios" ? "Tamaño único" : sizeChart ? `Talles ${sizeChart.sizes[0]} a ${sizeChart.sizes[sizeChart.sizes.length - 1]}` : "Consultá medidas"}</span>
               </div>
             </div>
 
             {/* Stock por talle (solo prendas de liquidacion, ver lib/stock/liquidation.ts) */}
             <StockPerSize productId={product.id} />
+
+            {/* Compra directa (talle + Comprar ahora / Agregar al carrito) */}
+            {buySizes && (
+              <ProductBuyBox
+                product={{ id: product.id, name: product.name, color: product.color, image: product.images.main }}
+                displayName={displayName}
+                price={numericPrice}
+                sizes={buySizes}
+              />
+            )}
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -386,7 +400,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Truck className="w-4 h-4 text-primary" />
-                  <span className="font-medium text-sm">Envios</span>
+                  <span className="font-medium text-sm">Envíos</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
                   {SHIPPING_ZONES_PUBLIC.map((z) => (
@@ -394,9 +408,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  {`Envio gratis desde ${formatShippingARS(SHIPPING.FREE_THRESHOLD)}`}
+                  {`Envío gratis desde ${formatShippingARS(SHIPPING.FREE_THRESHOLD)}`}
                 </p>
-                <p className="text-xs text-muted-foreground mt-2">Produccion: 2-5 dias habiles</p>
+                <p className="text-xs text-muted-foreground mt-2">Producción: 2-5 días hábiles</p>
               </CardContent>
             </Card>
           </div>
