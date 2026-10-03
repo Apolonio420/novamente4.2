@@ -18,18 +18,30 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const SALES_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN_SALES || BOT_TOKEN;
 const ERRORS_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN_ERRORS || BOT_TOKEN;
 
+// "SALES" es el nombre legacy de este chat/token: el grupo hoy se llama
+// "Chats Novamente" y recibe todo lo que NO es una venta/pago en sí
+// (solicitudes de partner, suscripciones, leads, deudas/payout, doble cobro,
+// etc. — ver la función de cada aviso más abajo). El bot es el mismo de
+// siempre (SALES_BOT_TOKEN); lo que cambia es que ahora también integra un
+// grupo nuevo, "Ventas Novamente" (VENTAS_CHAT_ID), que recibe SOLO avisos de
+// venta/pago posible o concretada — ver sendToVentas.
 const SALES_CHAT_ID = process.env.TELEGRAM_CHAT_ID_SALES;
 const ERRORS_CHAT_ID = process.env.TELEGRAM_CHAT_ID_ERRORS;
+/**
+ * Chat id del grupo "Ventas Novamente" (creado 10/2026). Default hardcodeado
+ * a propósito: un chat id de Telegram no es un secreto (a diferencia del bot
+ * token), así que no hace falta forzar la env var en todos los entornos.
+ */
+const VENTAS_CHAT_ID = process.env.TELEGRAM_CHAT_ID_VENTAS || '-5481590647';
 
 /**
- * Common function to send a Telegram message
+ * Envío crudo a la Bot API de Telegram: devuelve el JSON tal cual llega
+ * (ok:true con result, u ok:false con error_code/description/parameters) para
+ * que sendToVentas pueda inspeccionar el error antes de decidir si reintenta.
+ * null solo ante fallo de red/parseo (fetch que tira excepción) — eso nunca
+ * se reintenta (ver sendToVentas).
  */
-async function sendToTelegram(chatId: string | undefined, message: string, token: string | undefined) {
-    if (!token || !chatId) {
-        console.warn('⚠️ Telegram notifications not configured: Missing token or chat ID');
-        return null;
-    }
-
+async function sendToTelegramRaw(chatId: string, message: string, token: string): Promise<any | null> {
     try {
         const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST',
@@ -43,26 +55,90 @@ async function sendToTelegram(chatId: string | undefined, message: string, token
             }),
         });
 
-        const data = await response.json();
-        if (!data.ok) {
-            console.error('❌ Telegram API error:', data.description);
-            return null;
-        }
-
-        return data;
+        return await response.json();
     } catch (error: any) {
         console.error('❌ Error sending Telegram notification:', error.message);
         return null;
     }
 }
 
-/** Mensaje libre (HTML) al canal de VENTAS de Novamente. null si falló. */
+/**
+ * Common function to send a Telegram message
+ */
+async function sendToTelegram(chatId: string | undefined, message: string, token: string | undefined) {
+    if (!token || !chatId) {
+        console.warn('⚠️ Telegram notifications not configured: Missing token or chat ID');
+        return null;
+    }
+
+    const data = await sendToTelegramRaw(chatId, message, token);
+    if (!data) return null;
+
+    if (!data.ok) {
+        console.error('❌ Telegram API error:', data.description);
+        return null;
+    }
+
+    return data;
+}
+
+const VENTAS_FALLBACK_PREFIX = '⚠️ (no se pudo mandar a Ventas Novamente) ';
+
+/**
+ * Envía un aviso de venta/pago al grupo "Ventas Novamente" (mismo bot que
+ * Chats, SALES_BOT_TOKEN — ver nota junto a VENTAS_CHAT_ID). La llaman
+ * notifySale y notifyTeamManualSale — el resto de los avisos de este archivo
+ * sigue yendo a Chats (sendToTelegram con SALES_CHAT_ID) sin cambios.
+ *
+ * Robustez SOLO para este chat ante un 400/403 de Telegram (grupo no
+ * encontrado, bot expulsado del grupo, o grupo migrado a supergrupo).
+ * Reintenta UNA sola vez:
+ *   - si Telegram mandó parameters.migrate_to_chat_id (caso supergrupo):
+ *     reintenta al chat id nuevo y deja un console.warn para actualizar
+ *     TELEGRAM_CHAT_ID_VENTAS a mano;
+ *   - si no (chat_id inválido, bot expulsado): reintenta al grupo viejo de
+ *     Chats con el prefijo VENTAS_FALLBACK_PREFIX, para que el aviso no se
+ *     pierda mientras se arregla el grupo nuevo.
+ * Ante timeout o 5xx NUNCA reintenta acá — mismo contrato que sendToTelegram:
+ * se devuelve null y el caller idempotente (guards sale_notified_at, etc.)
+ * reintenta solo, en su próximo retry normal.
+ */
+async function sendToVentas(message: string) {
+    if (!SALES_BOT_TOKEN || !VENTAS_CHAT_ID) {
+        console.warn('⚠️ Telegram notifications not configured: Missing token or chat ID');
+        return null;
+    }
+
+    const data = await sendToTelegramRaw(VENTAS_CHAT_ID, message, SALES_BOT_TOKEN);
+    if (!data) return null; // timeout/excepción de red: nunca reintentar
+
+    if (data.ok) return data;
+
+    const errorCode = data.error_code;
+    if (errorCode !== 400 && errorCode !== 403) {
+        // 5xx u otro código: mismo contrato que sendToTelegram, no reintenta.
+        console.error('❌ Telegram API error (Ventas):', data.description);
+        return null;
+    }
+
+    const migrateTo = data.parameters?.migrate_to_chat_id;
+    if (migrateTo) {
+        console.warn(`⚠️ Grupo "Ventas Novamente" migrado a supergrupo (nuevo chat id ${migrateTo}) — actualizar TELEGRAM_CHAT_ID_VENTAS.`);
+        return sendToTelegram(String(migrateTo), message, SALES_BOT_TOKEN);
+    }
+
+    console.warn(`⚠️ No se pudo mandar a "Ventas Novamente" (${data.description || errorCode}) — cae a Chats.`);
+    return sendToTelegram(SALES_CHAT_ID, `${VENTAS_FALLBACK_PREFIX}${message}`, SALES_BOT_TOKEN);
+}
+
+/** Mensaje libre (HTML) al canal de Chats de Novamente (SALES_CHAT_ID — nombre legacy de la variable; hoy el grupo se llama "Chats Novamente", distinto de "Ventas Novamente", ver sendToVentas). null si falló. */
 export async function sendSalesTelegram(message: string) {
     return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
 }
 
 /**
- * Notifies a successful sale/payment
+ * Notifies a successful sale/payment.
+ * Va al grupo "Ventas Novamente" (sendToVentas), no al de Chats.
  */
 export async function notifySale(order: {
     orderNumber: string;
@@ -110,7 +186,7 @@ ${itemsText}
 ${order.footer ?? '✅ <i>Pago aprobado. ¡A preparar el pedido!</i>'}
   `.trim();
 
-    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
+    return sendToVentas(message);
 }
 
 /**
@@ -478,6 +554,7 @@ function ars(n: number): string {
  * Solo para cargas que NO disparan producción — cuando sí producen, el aviso
  * con economía completa (incluye costo proveedor) lo manda platform-master.
  * Incluye PVP + precio partner; NUNCA costo del proveedor (este repo no lo tiene).
+ * Va al grupo "Ventas Novamente" (sendToVentas), no al de Chats.
  */
 export async function notifyTeamManualSale(tenantName: string, order: ManualOrderNotice) {
     const message = `
@@ -494,7 +571,7 @@ ${itemsLines(order.items)}
 <b>Precio partner (nos transfiere):</b> ${ars(order.partnerTotal)}
   `.trim();
 
-    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
+    return sendToVentas(message);
 }
 
 /**
