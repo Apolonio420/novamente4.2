@@ -6,9 +6,11 @@ import Image from 'next/image'
 interface Props {
   images: string[]
   name: string
+  /** Las 2 primeras vienen dorso → frente (estampa solo en la espalda). */
+  backFirst?: boolean
 }
 
-export default function ImageGalleryClient({ images, name }: Props) {
+export default function ImageGalleryClient({ images, name, backFirst = false }: Props) {
   const [activeIdx, setActiveIdx] = useState(0)
   const [zoomed, setZoomed] = useState(false)
   const mainImage = images[activeIdx]
@@ -53,7 +55,7 @@ export default function ImageGalleryClient({ images, name }: Props) {
       {images.length > 1 && (
         <div className="grid grid-cols-4 gap-3">
           {images.slice(0, 4).map((img, i) => {
-            const sideLabel = i === 0 ? 'Frente' : i === 1 ? 'Dorso' : null
+            const sideLabel = i === 0 ? (backFirst ? 'Dorso' : 'Frente') : i === 1 ? (backFirst ? 'Frente' : 'Dorso') : null
             return (
               <button
                 type="button"

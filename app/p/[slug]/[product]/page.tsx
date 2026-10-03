@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { JsonLd } from '@/components/partners/json-ld'
 import { ProductCardImage } from '@/components/partners/product-card-image'
-import { resolveCardFrames } from '@/lib/partners/product-card-frames'
+import { isBackOnlyPrint, resolveDisplayImages } from '@/lib/partners/product-card-frames'
 import ImageGalleryClient from './ImageGalleryClient'
 import ProductMediaBuy from './ProductMediaBuy'
 import {
@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     type: 'product',
     color: tenant.primary_color,
   }).toString()}`
-  const ogImage = product.images?.[0] || dynamicOgImage
+  const ogImage = resolveDisplayImages(product as any).images[0] || dynamicOgImage
   const ogImages = product.images?.length
     ? product.images.map((url) => ({ url, width: 1200, height: 630 }))
     : [{ url: dynamicOgImage, width: 1200, height: 630 }]
@@ -477,6 +477,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             images={product.images || []}
             productName={product.name}
             colorImages={colorImagesMap}
+            backFirst={isBackOnlyPrint((product as any).metadata)}
             initialColor={initialColorForGallery}
             hotSaleBadge={hotSaleBadge}
             infoTop={infoTop}
@@ -567,13 +568,8 @@ function ImageGallery({ product }: { product: PartnerProduct }) {
   // frente (el dorso real del color mostrado vive en metadata.colors[]).
   // Después de frente+dorso van el resto de `images[]` (lifestyle, fotos del
   // partner, detalles): antes se descartaban y la galería quedaba en 2.
-  const frames = resolveCardFrames(product as any)
-  const all = product.images || []
-  const images =
-    frames.back && frames.front
-      ? [frames.front, frames.back, ...all.filter((u) => u !== frames.front && u !== frames.back)]
-      : all
-  return <ImageGalleryClient images={images} name={product.name} />
+  const { images, backFirst } = resolveDisplayImages(product as any)
+  return <ImageGalleryClient images={images} name={product.name} backFirst={backFirst} />
 }
 
 // ---------------------------------------------------------------------------
@@ -597,12 +593,7 @@ function RelatedProductCard({
       <div className="relative aspect-square w-full overflow-hidden bg-zinc-800">
         {product.images?.length ? (
           <ProductCardImage
-            images={(() => {
-              const frames = resolveCardFrames(product as any)
-              return frames.back
-                ? [frames.front!, frames.back, ...product.images.filter((u) => u !== frames.front && u !== frames.back)]
-                : product.images
-            })()}
+            images={resolveDisplayImages(product as any).images}
             alt={product.name}
           />
         ) : (

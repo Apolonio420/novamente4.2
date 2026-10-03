@@ -19,6 +19,8 @@ interface ProductMediaBuyProps {
   // Mapa color -> { front, back }. Solo trae entradas con al menos una imagen
   // válida (filtrado ya en page.tsx).
   colorImages: Record<string, ColorImages>
+  // Estampa solo en la espalda: el dorso va primero (el frente es la prenda lisa).
+  backFirst?: boolean
   // Color inicial — misma fórmula que AddToCartButtons usa para su propio
   // useState interno (defaultColor si es válido, si no el primer color).
   initialColor: string
@@ -43,6 +45,7 @@ export default function ProductMediaBuy({
   images,
   productName,
   colorImages,
+  backFirst = false,
   initialColor,
   hotSaleBadge,
   infoTop,
@@ -56,7 +59,7 @@ export default function ProductMediaBuy({
   const colorImg = colorImages[selectedColor]
   const hasImagesForColor = !!(colorImg && (colorImg.front || colorImg.back))
   const galleryImages = hasImagesForColor
-    ? ([colorImg!.front, colorImg!.back].filter(Boolean) as string[])
+    ? ((backFirst ? [colorImg!.back, colorImg!.front] : [colorImg!.front, colorImg!.back]).filter(Boolean) as string[])
     : images
 
   return (
@@ -69,6 +72,7 @@ export default function ProductMediaBuy({
           key={hasImagesForColor ? selectedColor : undefined}
           images={galleryImages}
           name={productName}
+          backFirst={hasImagesForColor && backFirst && !!colorImg!.front && !!colorImg!.back}
         />
         {hotSaleBadge}
       </div>

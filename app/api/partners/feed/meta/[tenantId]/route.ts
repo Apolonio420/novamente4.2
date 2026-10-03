@@ -3,6 +3,7 @@ import { getTenantById } from '@/lib/partners/tenant'
 import { getPlanFeatures } from '@/lib/partners/plans'
 import { getPublishedProducts } from '@/lib/partners/catalog'
 import { generateMetaCommerceTsv } from '@/lib/partners/feed-generator'
+import { isBackOnlyPrint, resolveDisplayImages } from '@/lib/partners/product-card-frames'
 
 /**
  * GET /api/partners/feed/meta/[tenantId]
@@ -39,7 +40,8 @@ export async function GET(
         slug: p.slug,
         description: p.description,
         price: p.price,
-        images: p.images,
+        // Estampa solo en la espalda → la foto principal del feed es el dorso.
+        images: isBackOnlyPrint((p as any).metadata) ? resolveDisplayImages(p as any).images : p.images,
         category: p.category,
         currency: p.currency,
         availability: p.availability,

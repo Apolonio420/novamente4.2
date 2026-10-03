@@ -35,6 +35,7 @@ import { isTrustedAssetUrl } from '@/lib/partners/trusted-asset-url'
 import { validateFrontAndBackForPublish, MISSING_SIDES_ERROR } from '@/lib/partners/product-sides'
 import { garmentRequiresColorChoice, productHasColorInfo } from '@/lib/partners/product-colors'
 import type { PublicGarmentPricing } from '@/lib/partners/garment-pricing.server'
+import { resolveDisplayImages } from '@/lib/partners/product-card-frames'
 import { MarginBreakdown } from '@/components/workspace/MarginBreakdown'
 
 // ---------------------------------------------------------------------------
@@ -875,7 +876,7 @@ export default function CatalogPage() {
               <div className="h-[200px] relative overflow-hidden">
                 {product.images.length > 0 ? (
                   <img
-                    src={product.images[0]}
+                    src={resolveDisplayImages(product as any).images[0] ?? product.images[0]}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
