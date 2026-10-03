@@ -64,9 +64,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     type: 'product',
     color: tenant.primary_color,
   }).toString()}`
-  const ogImage = resolveDisplayImages(product as any).images[0] || dynamicOgImage
-  const ogImages = product.images?.length
-    ? product.images.map((url) => ({ url, width: 1200, height: 630 }))
+  const displayImages = resolveDisplayImages(product as any).images
+  const ogImage = displayImages[0] || dynamicOgImage
+  const ogImages = displayImages.length
+    ? displayImages.map((url) => ({ url, width: 1200, height: 630 }))
     : [{ url: dynamicOgImage, width: 1200, height: 630 }]
 
   return {
