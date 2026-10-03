@@ -22,6 +22,7 @@ import { runPartnerSaleEffects, partnerSaleKey } from "@/lib/partners/sale-effec
 import { sendEmail } from "@/lib/email"
 import { matchGarmentKey, matchStockColor, normalizeStockSize } from "@/lib/stock/liquidation"
 import { registrarUsoDescuento } from "@/lib/checkout/discount-guard"
+import { markPaidAtIfMissing } from "@/lib/payments/paid-at"
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -440,6 +441,14 @@ async function runConfirmedOrderEffects(
   // (bloque preservado tal cual del camino inline original de processPaymentById)
   {
     console.log("🎉 Pago aprobado! Orden confirmada:", order.order_number)
+
+    // Fecha de venta = fecha de COBRO (decisión del founder 03/10/2026): esta
+    // función corre tanto en el camino normal (PASO 6, pago recién aprobado)
+    // como en cada retry idempotente (PASO 3, orden ya confirmada con el
+    // mismo pago) — markPaidAtIfMissing es un UPDATE condicional
+    // (.is('paid_at', null)), así que llamarla más de una vez es seguro y
+    // nunca pisa un paid_at ya seteado. Ver lib/payments/paid-at.ts.
+    await markPaidAtIfMissing(supabaseAdmin, order.id as string)
 
     // Embudo de checkout (ver lib/checkout/funnel.ts): registra el pago
     // aprobado. Guard propio en metadata — este bloque se re-corre en cada

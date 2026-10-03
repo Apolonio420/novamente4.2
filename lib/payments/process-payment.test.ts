@@ -23,6 +23,7 @@ const h = vi.hoisted(() => {
     garmentClaimWins: true,
     garmentClaimCalls: [] as Array<{ orderId: string; updates: any }>,
     rpcCalls: [] as Array<{ fn: string; args: any }>,
+    paidAtCalls: [] as Array<{ orderId: string; updates: any }>,
   }
   return { state }
 })
@@ -68,6 +69,15 @@ vi.mock('@/lib/supabase-admin', () => ({
           filter(field: string, _op: string, _value: unknown) {
             if (field === 'metadata->>garment_stock_decremented_at') garmentClaim = true
             return chain
+          },
+          // markPaidAtIfMissing (lib/payments/paid-at.ts): UPDATE condicional
+          // `.update({paid_at}).eq('id', id).is('paid_at', null)` — awaited
+          // directamente, sin `.select()`. Registra el intento para que los
+          // tests puedan verificar que se llamó (o no) sin acoplarse al resto
+          // del claim de status/garment_stock de arriba.
+          is: async (field: string, _value: null) => {
+            if (field === 'paid_at') h.state.paidAtCalls.push({ orderId, updates })
+            return { data: null, error: null }
           },
           select: async (_cols: string) => {
             if (table === 'orders' && garmentClaim) {
@@ -144,6 +154,7 @@ beforeEach(() => {
   h.state.garmentClaimWins = true
   h.state.garmentClaimCalls = []
   h.state.rpcCalls = []
+  h.state.paidAtCalls = []
 })
 
 describe('processPaymentById — guard de idempotencia PASO 3', () => {
@@ -743,5 +754,112 @@ describe('processPaymentById — PASO 4.5: pago aprobado por menos que el total'
     expect(result.orderStatus).toBe('confirmed')
     expect(h.state.claimCalls.at(-1)!.updates.metadata.amount_mismatch).toBeUndefined()
     expect(notifyErrorMock).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * Cobertura de `paid_at` (decisión del founder 03/10/2026, ver
+ * auditoria-datos-2026-10/fecha-de-cobro-diseno.md): markPaidAtIfMissing
+ * corre dentro de runConfirmedOrderEffects, así que se dispara TANTO en el
+ * camino normal (PASO 6, pago recién aprobado) como en el retry idempotente
+ * (PASO 3, orden ya confirmada con el mismo pago) — es un UPDATE condicional
+ * (`.is('paid_at', null)`), llamarlo de más es seguro y nunca pisa un
+ * paid_at ya seteado.
+ */
+describe('processPaymentById — paid_at (fecha de venta = fecha de cobro)', () => {
+  it('camino nuevo (PASO 6, pago recién aprobado): marca paid_at de la orden', async () => {
+    h.state.order = {
+      id: 'order-60',
+      order_number: 'NM-060',
+      status: 'pending',
+      payment_id: null,
+      tenant_id: null,
+      items: [],
+    }
+    h.state.paymentGet = {
+      id: 'pay-60',
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 1000,
+      external_reference: 'ext-60',
+    }
+
+    const result = await processPaymentById('pay-60')
+
+    expect(result.orderStatus).toBe('confirmed')
+    expect(h.state.paidAtCalls).toHaveLength(1)
+    expect(h.state.paidAtCalls[0]!.orderId).toBe('order-60')
+    expect(h.state.paidAtCalls[0]!.updates).toEqual({ paid_at: expect.any(String) })
+  })
+
+  it('retry idempotente (PASO 3, orden ya confirmada con el mismo pago): TAMBIÉN intenta marcar paid_at (UPDATE condicional, no pisa uno ya seteado)', async () => {
+    h.state.order = {
+      id: 'order-61',
+      order_number: 'NM-061',
+      status: 'confirmed',
+      payment_id: 'pay-61',
+      tenant_id: null,
+      items: [],
+    }
+    h.state.paymentGet = {
+      id: 'pay-61',
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 1000,
+      external_reference: 'ext-61',
+    }
+
+    const result = await processPaymentById('pay-61')
+
+    expect(result.reason).toBe('already_confirmed')
+    expect(h.state.paidAtCalls).toHaveLength(1)
+    expect(h.state.paidAtCalls[0]!.orderId).toBe('order-61')
+  })
+
+  it('pago insuficiente (queda pending, PASO 4.5): NO marca paid_at (la orden no quedó confirmada)', async () => {
+    h.state.order = {
+      id: 'order-62',
+      order_number: 'NM-062',
+      status: 'pending',
+      payment_id: null,
+      tenant_id: null,
+      total: 50000,
+      items: [],
+    }
+    h.state.paymentGet = {
+      id: 'pay-62',
+      status: 'approved',
+      status_detail: 'accredited',
+      transaction_amount: 1,
+      external_reference: 'ext-62',
+    }
+
+    const result = await processPaymentById('pay-62')
+
+    expect(result.orderStatus).toBe('pending')
+    expect(h.state.paidAtCalls).toHaveLength(0)
+  })
+
+  it('pago rechazado: NO marca paid_at', async () => {
+    h.state.order = {
+      id: 'order-63',
+      order_number: 'NM-063',
+      status: 'pending',
+      payment_id: null,
+      tenant_id: null,
+      items: [],
+    }
+    h.state.paymentGet = {
+      id: 'pay-63',
+      status: 'rejected',
+      status_detail: 'cc_rejected',
+      transaction_amount: 1000,
+      external_reference: 'ext-63',
+    }
+
+    const result = await processPaymentById('pay-63')
+
+    expect(result.orderStatus).toBe('cancelled')
+    expect(h.state.paidAtCalls).toHaveLength(0)
   })
 })

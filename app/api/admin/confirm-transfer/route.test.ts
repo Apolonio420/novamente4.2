@@ -9,10 +9,13 @@ const saleEffects = vi.hoisted(() => ({
   runPartnerSaleEffects: vi.fn(async (..._args: any[]) => ({ meta: {}, credit: { margin: 0, needsReview: false, credits: [], excluded: [] } })),
   partnerSaleKey: vi.fn((..._args: any[]) => "transfer:NOV-20260926-9852"),
 }))
+const paidAt = vi.hoisted(() => ({ markPaidAtIfMissing: vi.fn(async () => undefined) }))
 vi.mock("@/lib/db", () => db)
 vi.mock("@/lib/email", () => mail)
 vi.mock("@/lib/notifications", () => ({ notifySale: vi.fn() }))
 vi.mock("@/lib/partners/sale-effects", () => saleEffects)
+vi.mock("@/lib/supabase-admin", () => ({ supabaseAdmin: {} }))
+vi.mock("@/lib/payments/paid-at", () => paidAt)
 
 import { GET, POST } from "./route"
 import { transferConfirmSig } from "@/lib/payments/transfer-confirm"
@@ -53,6 +56,8 @@ describe("confirm-transfer", () => {
     expect(res.status).toBe(200)
     expect(db.updateOrder).toHaveBeenCalledWith("o1", expect.objectContaining({ payment_status: "approved", payment_id: "manual" }))
     expect(mail.sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "cliente@example.com" }))
+    // Fecha de venta = fecha de COBRO (03/10/2026): confirmar transferencia marca paid_at.
+    expect(paidAt.markPaidAtIfMissing).toHaveBeenCalledWith({}, "o1")
   })
 
   it("POST con firma inválida no toca nada", async () => {
@@ -67,6 +72,7 @@ describe("confirm-transfer", () => {
     expect(await res.text()).toContain("ya estaba confirmado")
     expect(db.updateOrder).not.toHaveBeenCalled()
     expect(saleEffects.runPartnerSaleEffects).not.toHaveBeenCalled()
+    expect(paidAt.markPaidAtIfMissing).not.toHaveBeenCalled()
   })
 
   // 27/09/2026 (NOV-20260926-9852): una transferencia confirmada por este link

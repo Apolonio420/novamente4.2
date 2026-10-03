@@ -22,6 +22,8 @@ import { timingSafeEqual } from "crypto"
 import { getOrderByNumber, updateOrder } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
 import { transferConfirmSig } from "@/lib/payments/transfer-confirm"
+import { supabaseAdmin } from "@/lib/supabase-admin"
+import { markPaidAtIfMissing } from "@/lib/payments/paid-at"
 
 export const dynamic = "force-dynamic"
 // 30 s: además de los mails, una venta de tienda partner acredita al ledger y avisa al partner.
@@ -113,6 +115,11 @@ export async function POST(req: NextRequest) {
     notes: `PAGADA POR TRANSFERENCIA (confirmada por link admin ${now.slice(0, 10)}) — op. ${op}.${o.notes ? ` | Antes: ${o.notes}` : ""}`,
   } as any)
   if (!ok) return page("No se pudo actualizar", "updateOrder devolvió false. Revisá la DB.", false)
+
+  // Fecha de venta = fecha de COBRO (decisión del founder 03/10/2026): confirmación
+  // de transferencia en 1-click — primera vez que esta orden queda pagada, nunca
+  // se pisa un paid_at ya seteado. Ver lib/payments/paid-at.ts.
+  await markPaidAtIfMissing(supabaseAdmin, o.id)
 
   // Embudo de checkout (ver lib/checkout/funnel.ts): la transferencia recién
   // cuenta como "pago aprobado" acá, cuando un humano la confirma — load()
