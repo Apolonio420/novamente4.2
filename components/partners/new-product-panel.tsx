@@ -24,9 +24,11 @@ import type { MockupPlacement, MockupSide, MockupSize } from '@/lib/mockup/compo
 import {
   buildFromDesignPayload,
   prettifyDesignFileName,
+  resolveBackDesign,
   suggestProductName,
   validatePriceLive,
   type NewProductFormState,
+  type SideMode,
   type SidePick,
 } from '@/lib/partners/new-product-payload'
 
@@ -55,8 +57,6 @@ const PLACEMENT_LABEL: Record<MockupPlacement, string> = {
   centro: 'Centro',
   nuca: 'Nuca',
 }
-
-type SideMode = 'front' | 'back' | 'both'
 
 interface GarmentColorOption {
   key: string
@@ -267,7 +267,7 @@ export function NewProductPanel({
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const previewSeq = useRef(0)
 
-  const effectiveBackDesign = sideMode === 'both' && sameDesignBothSides ? frontDesign : backDesign
+  const effectiveBackDesign = resolveBackDesign(sideMode, sameDesignBothSides, frontDesign, backDesign)
   const wantsFront = sideMode === 'front' || sideMode === 'both'
   const wantsBack = sideMode === 'back' || sideMode === 'both'
 

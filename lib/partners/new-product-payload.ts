@@ -63,6 +63,26 @@ export function buildFromDesignPayload(state: NewProductFormState): FromDesignPa
   }
 }
 
+export type SideMode = 'front' | 'back' | 'both'
+
+/**
+ * Qué diseño va en la espalda. El bloque "1. Tu diseño" del panel siempre
+ * carga en `frontDesign`; con "Espalda" sola ese es EL diseño del producto y
+ * tiene que ir al dorso (antes se leía `backDesign`, que en ese modo nunca se
+ * carga, y el dorso salía liso). `backDesign` solo se usa con "Los dos" +
+ * "diseño distinto en la espalda".
+ */
+export function resolveBackDesign<T>(
+  sideMode: SideMode,
+  sameDesignBothSides: boolean,
+  frontDesign: T | null,
+  backDesign: T | null,
+): T | null {
+  if (sideMode === 'back') return frontDesign ?? backDesign
+  if (sideMode === 'both' && sameDesignBothSides) return frontDesign
+  return backDesign
+}
+
 export interface PriceValidation {
   ok: boolean
   reason: string | null
