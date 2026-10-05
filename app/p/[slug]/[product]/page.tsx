@@ -475,7 +475,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           // reacciona al color elegido en el picker. Estado compartido vive
           // en ProductMediaBuy (client component).
           <ProductMediaBuy
-            images={product.images || []}
+            images={resolveDisplayImages(product as any).images}
             productName={product.name}
             colorImages={colorImagesMap}
             backFirst={isBackOnlyPrint((product as any).metadata)}

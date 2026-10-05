@@ -72,7 +72,7 @@ export default function ProductMediaBuy({
           key={hasImagesForColor ? selectedColor : undefined}
           images={galleryImages}
           name={productName}
-          backFirst={hasImagesForColor && backFirst && !!colorImg!.front && !!colorImg!.back}
+          backFirst={backFirst && (hasImagesForColor ? !!colorImg!.front && !!colorImg!.back : galleryImages.length >= 2)}
         />
         {hotSaleBadge}
       </div>
