@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, Truck, Package, RefreshCw } from 'lucide-react'
-import { SHIPPING_ZONES_PUBLIC, formatShippingRangeARS } from '@/lib/shipping-config'
+import { SHIPPING, SHIPPING_ZONES_PUBLIC, formatShippingRangeARS, formatShippingARS } from '@/lib/shipping-config'
 
 export const metadata: Metadata = {
   title: 'Envios y Devoluciones — Novamente',
@@ -120,7 +120,7 @@ export default function EnviosPage() {
               </table>
             </div>
             <p className="mt-3 text-sm text-white/40">
-              Envio gratuito: no disponible actualmente.
+              Envío sin cargo en compras desde {formatShippingARS(SHIPPING.FREE_THRESHOLD)}.
             </p>
           </section>
 
