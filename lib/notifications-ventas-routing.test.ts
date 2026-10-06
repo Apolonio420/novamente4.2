@@ -1,12 +1,15 @@
 /**
- * Ruteo de avisos de venta/pago al grupo nuevo "Ventas Novamente" (chat id
+ * Ruteo de avisos de PLATA al grupo nuevo "Ventas Novamente" (chat id
  * -5481590647, creado 10/2026) vs. el resto de los avisos, que se quedan en
  * "Chats Novamente" (TELEGRAM_CHAT_ID_SALES — nombre legacy de la env var).
  *
- * notifySale y notifyTeamManualSale son los ÚNICOS avisos que se movieron a
- * Ventas (sendToVentas en lib/notifications.ts). Todo lo demás (solicitudes
- * de partner, suscripciones, leads, deudas/payout, doble cobro) sigue yendo a
- * Chats sin cambios — ver el describe de "no se mueven" más abajo.
+ * notifySale, notifyTeamManualSale, notifyPartnerDebt y
+ * notifyPossibleDoubleCharge van a Ventas (sendToVentas en
+ * lib/notifications.ts) — venta nueva/confirmada, venta manual del equipo,
+ * deuda/payout de partner y doble cobro son todos avisos de plata. Todo lo
+ * demás (solicitudes de partner, suscripciones, leads) NO es plata en sí y
+ * sigue yendo a Chats sin cambios — ver el describe de "no se mueven" más
+ * abajo.
  *
  * Se prueba contra la implementación real mockeando fetch, mismo patrón que
  * __tests__/partners/drop7-sale-notice.test.ts (vi.resetModules + import
@@ -32,7 +35,7 @@ function textsSent(fetchMock: any): string[] {
   return fetchMock.mock.calls.map((call: any[]) => JSON.parse(call[1].body).text)
 }
 
-describe('notifySale y notifyTeamManualSale van a "Ventas Novamente"', () => {
+describe('avisos de plata van a "Ventas Novamente"', () => {
   it('sin TELEGRAM_CHAT_ID_VENTAS seteada, notifySale usa el default hardcodeado -5481590647', async () => {
     global.fetch = vi.fn().mockResolvedValue({ json: async () => ({ ok: true, result: {} }) }) as any
 
@@ -59,6 +62,36 @@ describe('notifySale y notifyTeamManualSale van a "Ventas Novamente"', () => {
     const { notifyTeamManualSale } = await import('./notifications')
     await notifyTeamManualSale('Tienda X', { items: [], pvpTotal: 1000, partnerTotal: 800, produce: false })
 
+    expect(chatIdsSent(global.fetch)).toEqual([VENTAS_DEFAULT_CHAT_ID])
+  })
+
+  it('notifyPartnerDebt (deuda/payout de venta partner) va a Ventas', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ json: async () => ({ ok: true, result: {} }) }) as any
+
+    const { notifyPartnerDebt } = await import('./notifications')
+    await notifyPartnerDebt({
+      tenantSlug: 'x',
+      orderNumber: 'NOV-1',
+      amount: 1000,
+      needsReview: false,
+      hasBankData: true,
+      partnerNotified: true,
+    })
+    expect(chatIdsSent(global.fetch)).toEqual([VENTAS_DEFAULT_CHAT_ID])
+  })
+
+  it('notifyPossibleDoubleCharge (doble cobro) va a Ventas', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ json: async () => ({ ok: true, result: {} }) }) as any
+
+    const { notifyPossibleDoubleCharge } = await import('./notifications')
+    await notifyPossibleDoubleCharge({
+      tenantName: 'X',
+      amountArs: 1000,
+      previousPaymentId: 'p1',
+      newPaymentId: 'p2',
+      previousPaymentDate: new Date().toISOString(),
+      newPaymentDate: new Date().toISOString(),
+    })
     expect(chatIdsSent(global.fetch)).toEqual([VENTAS_DEFAULT_CHAT_ID])
   })
 })
@@ -94,32 +127,6 @@ describe('avisos que NO son venta/pago se quedan en Chats, aunque Ventas tenga o
   it('notifyNewLead (lead) sigue en Chats', async () => {
     const { notifyNewLead } = await import('./notifications')
     await notifyNewLead({ tenantName: 'X', tenantSlug: 'x', leadName: 'L', leadEmail: 'l@l.com' })
-    expect(chatIdsSent(global.fetch)).toEqual(['test-chat-id-sales'])
-  })
-
-  it('notifyPartnerDebt (deuda/payout de venta partner) sigue en Chats', async () => {
-    const { notifyPartnerDebt } = await import('./notifications')
-    await notifyPartnerDebt({
-      tenantSlug: 'x',
-      orderNumber: 'NOV-1',
-      amount: 1000,
-      needsReview: false,
-      hasBankData: true,
-      partnerNotified: true,
-    })
-    expect(chatIdsSent(global.fetch)).toEqual(['test-chat-id-sales'])
-  })
-
-  it('notifyPossibleDoubleCharge (doble cobro) sigue en Chats', async () => {
-    const { notifyPossibleDoubleCharge } = await import('./notifications')
-    await notifyPossibleDoubleCharge({
-      tenantName: 'X',
-      amountArs: 1000,
-      previousPaymentId: 'p1',
-      newPaymentId: 'p2',
-      previousPaymentDate: new Date().toISOString(),
-      newPaymentDate: new Date().toISOString(),
-    })
     expect(chatIdsSent(global.fetch)).toEqual(['test-chat-id-sales'])
   })
 

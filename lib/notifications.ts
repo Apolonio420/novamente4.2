@@ -19,12 +19,13 @@ const SALES_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN_SALES || BOT_TOKEN;
 const ERRORS_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN_ERRORS || BOT_TOKEN;
 
 // "SALES" es el nombre legacy de este chat/token: el grupo hoy se llama
-// "Chats Novamente" y recibe todo lo que NO es una venta/pago en sí
-// (solicitudes de partner, suscripciones, leads, deudas/payout, doble cobro,
-// etc. — ver la función de cada aviso más abajo). El bot es el mismo de
-// siempre (SALES_BOT_TOKEN); lo que cambia es que ahora también integra un
-// grupo nuevo, "Ventas Novamente" (VENTAS_CHAT_ID), que recibe SOLO avisos de
-// venta/pago posible o concretada — ver sendToVentas.
+// "Chats Novamente" y recibe todo lo que NO es plata en sí (solicitudes de
+// partner, suscripciones, leads — ver la función de cada aviso más abajo).
+// El bot es el mismo de siempre (SALES_BOT_TOKEN); lo que cambia es que ahora
+// también integra un grupo nuevo, "Ventas Novamente" (VENTAS_CHAT_ID), que
+// recibe TODO aviso de plata: venta nueva, venta/transferencia confirmada,
+// venta manual del equipo, deuda/payout de partner y doble cobro — ver
+// sendToVentas y los callers que la usan más abajo.
 const SALES_CHAT_ID = process.env.TELEGRAM_CHAT_ID_SALES;
 const ERRORS_CHAT_ID = process.env.TELEGRAM_CHAT_ID_ERRORS;
 /**
@@ -85,10 +86,12 @@ async function sendToTelegram(chatId: string | undefined, message: string, token
 const VENTAS_FALLBACK_PREFIX = '⚠️ (no se pudo mandar a Ventas Novamente) ';
 
 /**
- * Envía un aviso de venta/pago al grupo "Ventas Novamente" (mismo bot que
- * Chats, SALES_BOT_TOKEN — ver nota junto a VENTAS_CHAT_ID). La llaman
- * notifySale y notifyTeamManualSale — el resto de los avisos de este archivo
- * sigue yendo a Chats (sendToTelegram con SALES_CHAT_ID) sin cambios.
+ * Envía un aviso de PLATA al grupo "Ventas Novamente" (mismo bot que Chats,
+ * SALES_BOT_TOKEN — ver nota junto a VENTAS_CHAT_ID). La llaman notifySale,
+ * notifyTeamManualSale, notifyPartnerDebt y notifyPossibleDoubleCharge — todo
+ * lo que NO es venta/pago (solicitudes de partner, altas/vencimientos de
+ * suscripción, leads) sigue yendo a Chats (sendToTelegram con SALES_CHAT_ID)
+ * sin cambios.
  *
  * Robustez SOLO para este chat ante un 400/403 de Telegram (grupo no
  * encontrado, bot expulsado del grupo, o grupo migrado a supergrupo).
@@ -323,6 +326,7 @@ export async function notifySubscriptionActivatedEmails(details: {
  * docs/reviews/REVIEW-caminos-de-plata-2026-07-03.md). No bloquea el cobro:
  * el pago se procesa normal, esto es solo una alerta para que el equipo audite
  * manualmente si corresponde reembolsar el segundo cobro.
+ * Es un aviso de plata (cobro duplicado) → va a "Ventas Novamente" (sendToVentas).
  */
 export async function notifyPossibleDoubleCharge(alert: {
   tenantName: string
@@ -350,7 +354,7 @@ suscripción activo. El pago nuevo se procesó normalmente — revisar si
 corresponde reembolsar uno de los dos.</i>
   `.trim()
 
-  return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN)
+  return sendToVentas(message)
 }
 
 /**
@@ -725,6 +729,7 @@ export async function notifyPartnerWebSale(
  * Telegram a Novamente cuando se acredita la ganancia de un partner por una venta
  * web: es plata que hay que transferirle en el pago semanal. Una vez por
  * crédito (el caller lo llama solo cuando la entry se insertó en esa corrida).
+ * Va a "Ventas Novamente" (sendToVentas) — es deuda/payout, plata igual que una venta.
  */
 export async function notifyPartnerDebt(d: {
     tenantSlug: string;
@@ -750,7 +755,7 @@ export async function notifyPartnerDebt(d: {
             ? `Se descuenta cuando le tomemos un pedido propio → <a href="${PARTNER_ADMIN_VENTAS_URL}">admin ventas partners</a>`
             : `Se paga en la tanda semanal → <a href="${PARTNER_ADMIN_VENTAS_URL}">admin ventas partners</a>`,
     ].filter(Boolean).join('\n');
-    return sendToTelegram(SALES_CHAT_ID, msg, SALES_BOT_TOKEN);
+    return sendToVentas(msg);
 }
 
 /**
