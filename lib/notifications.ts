@@ -44,7 +44,7 @@ const VENTAS_CHAT_ID = process.env.TELEGRAM_CHAT_ID_VENTAS || '-5481590647';
  * null solo ante fallo de red/parseo (fetch que tira excepción) — eso nunca
  * se reintenta (ver sendToVentas).
  */
-async function sendToTelegramRaw(chatId: string, message: string, token: string): Promise<any | null> {
+async function sendToTelegramRaw(chatId: string, message: string, token: string, silent?: boolean): Promise<any | null> {
     try {
         const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST',
@@ -55,6 +55,11 @@ async function sendToTelegramRaw(chatId: string, message: string, token: string)
                 parse_mode: 'HTML',
                 // Sin preview: Telegram hace GET a los links para armarlo (ej. el de confirmar transferencia).
                 disable_web_page_preview: true,
+                // Limpieza de avisos Telegram (07/10/2026, Juan): avisos informativos
+                // (vencimiento/degradación de suscripción) siguen quedando registrados
+                // en el chat, pero sin sonido/push — ver notifySubscriptionExpiring,
+                // notifySubscriptionSuspended y notifySubscriptionDegraded abajo.
+                disable_notification: silent === true,
             }),
         });
 
@@ -66,15 +71,16 @@ async function sendToTelegramRaw(chatId: string, message: string, token: string)
 }
 
 /**
- * Common function to send a Telegram message
+ * Common function to send a Telegram message. `silent` → disable_notification
+ * (el aviso entra sin sonido/push, pero queda en el chat como cualquier otro).
  */
-async function sendToTelegram(chatId: string | undefined, message: string, token: string | undefined) {
+async function sendToTelegram(chatId: string | undefined, message: string, token: string | undefined, silent?: boolean) {
     if (!token || !chatId) {
         console.warn('⚠️ Telegram notifications not configured: Missing token or chat ID');
         return null;
     }
 
-    const data = await sendToTelegramRaw(chatId, message, token);
+    const data = await sendToTelegramRaw(chatId, message, token, silent);
     if (!data) return null;
 
     if (!data.ok) {
@@ -262,7 +268,11 @@ ${application.message || 'Sin mensaje adicional.'}
 }
 
 /**
- * Notifies a new partner subscription payment
+ * Notifies a new partner subscription payment.
+ *
+ * Es plata (ingreso recurrente nuevo) → va a "Ventas Novamente" (sendToVentas),
+ * no a Chats (limpieza de avisos Telegram, 07/10/2026, pedido de Juan: cada
+ * aviso de plata real va a Ventas, igual que notifySale/notifyTeamManualSale).
  */
 export async function notifyPartnerSubscription(subscription: {
     tenantName: string;
@@ -286,7 +296,7 @@ export async function notifyPartnerSubscription(subscription: {
 💰 <i>¡Nuevo ingreso recurrente!</i>
   `.trim();
 
-    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
+    return sendToVentas(message);
 }
 
 /**
@@ -373,7 +383,11 @@ corresponde reembolsar uno de los dos.</i>
 }
 
 /**
- * Notifies a partner subscription expiring soon
+ * Notifies a partner subscription expiring soon.
+ *
+ * Informativo (limpieza de avisos Telegram, 07/10/2026, pedido de Juan):
+ * sigue en Chats pero SILENCIOSO (disable_notification) — no es una acción
+ * urgente en sí, el cron de vencimiento/degradación ya se encarga solo.
  */
 export async function notifySubscriptionExpiring(tenant: { name: string; plan: string; expiresAt: string }) {
     const message = `
@@ -385,7 +399,7 @@ export async function notifySubscriptionExpiring(tenant: { name: string; plan: s
 
 📌 <i>Contactar al partner para renovación.</i>
   `.trim();
-    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
+    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN, true);
 }
 
 /**
@@ -395,6 +409,9 @@ export async function notifySubscriptionExpiring(tenant: { name: string; plan: s
  * vez de suspender — ver notifySubscriptionDegraded abajo). Se conserva para
  * la suspensión MANUAL por fraude/abuso, que sigue existiendo como acción de
  * admin (tenant.status='suspended').
+ *
+ * Informativo (limpieza de avisos Telegram, 07/10/2026, pedido de Juan):
+ * sigue en Chats pero SILENCIOSO (disable_notification).
  */
 export async function notifySubscriptionSuspended(tenant: { name: string; plan: string; email: string }) {
     const message = `
@@ -407,7 +424,7 @@ export async function notifySubscriptionSuspended(tenant: { name: string; plan: 
 
 ⛔ <i>Storefront desactivado. Contactar para resolver.</i>
   `.trim();
-    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
+    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN, true);
 }
 
 /**
@@ -415,6 +432,9 @@ export async function notifySubscriptionSuspended(tenant: { name: string; plan: 
  * impago ya no suspende la cuenta, degrada features — ver
  * app/api/cron/partners/check-subscriptions/route.ts). A diferencia de la
  * suspensión, la tienda sigue online.
+ *
+ * Informativo (limpieza de avisos Telegram, 07/10/2026, pedido de Juan):
+ * sigue en Chats pero SILENCIOSO (disable_notification).
  */
 export async function notifySubscriptionDegraded(tenant: { name: string; plan: string; email: string }) {
     const message = `
@@ -427,7 +447,7 @@ export async function notifySubscriptionDegraded(tenant: { name: string; plan: s
 
 ℹ️ <i>Tienda sigue online con features de plan gratis. Contactar para reactivar el plan pago.</i>
   `.trim();
-    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN);
+    return sendToTelegram(SALES_CHAT_ID, message, SALES_BOT_TOKEN, true);
 }
 
 /**

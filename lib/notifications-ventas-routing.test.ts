@@ -3,13 +3,18 @@
  * -5481590647, creado 10/2026) vs. el resto de los avisos, que se quedan en
  * "Chats Novamente" (TELEGRAM_CHAT_ID_SALES — nombre legacy de la env var).
  *
- * notifySale, notifyTeamManualSale, notifyPartnerDebt y
- * notifyPossibleDoubleCharge van a Ventas (sendToVentas en
- * lib/notifications.ts) — venta nueva/confirmada, venta manual del equipo,
- * deuda/payout de partner y doble cobro son todos avisos de plata. Todo lo
- * demás (solicitudes de partner, suscripciones, leads) NO es plata en sí y
- * sigue yendo a Chats sin cambios — ver el describe de "no se mueven" más
- * abajo.
+ * notifySale, notifyTeamManualSale, notifyPartnerDebt, notifyPossibleDoubleCharge
+ * y (desde la limpieza de avisos Telegram del 07/10/2026) notifyPartnerSubscription
+ * van a Ventas (sendToVentas en lib/notifications.ts) — venta nueva/confirmada,
+ * venta manual del equipo, deuda/payout de partner, doble cobro y alta de
+ * suscripción paga son todos avisos de plata. Todo lo demás (solicitudes de
+ * partner, leads) NO es plata en sí y sigue yendo a Chats sin cambios — ver
+ * el describe de "no se mueven" más abajo.
+ *
+ * La misma limpieza del 07/10 puso notifySubscriptionExpiring/Suspended/
+ * Degraded en SILENCIOSO (disable_notification) — siguen en Chats, pero sin
+ * sonido/push, porque son informativos (el cron de impago ya actúa solo) —
+ * ver el describe dedicado más abajo.
  *
  * Se prueba contra la implementación real mockeando fetch, mismo patrón que
  * __tests__/partners/drop7-sale-notice.test.ts (vi.resetModules + import
@@ -33,6 +38,10 @@ function chatIdsSent(fetchMock: any): string[] {
 
 function textsSent(fetchMock: any): string[] {
   return fetchMock.mock.calls.map((call: any[]) => JSON.parse(call[1].body).text)
+}
+
+function silentFlagsSent(fetchMock: any): boolean[] {
+  return fetchMock.mock.calls.map((call: any[]) => JSON.parse(call[1].body).disable_notification)
 }
 
 describe('avisos de plata van a "Ventas Novamente"', () => {
@@ -94,23 +103,10 @@ describe('avisos de plata van a "Ventas Novamente"', () => {
     })
     expect(chatIdsSent(global.fetch)).toEqual([VENTAS_DEFAULT_CHAT_ID])
   })
-})
 
-describe('avisos que NO son venta/pago se quedan en Chats, aunque Ventas tenga otro chat id configurado', () => {
-  beforeEach(() => {
-    // Distinto del de Chats a propósito: si alguno de estos avisos se
-    // cruzara a Ventas por error, el test lo detectaría.
-    process.env.TELEGRAM_CHAT_ID_VENTAS = '-100999888777'
+  it('notifyPartnerSubscription (alta de suscripción paga, 07/10/2026) va a Ventas — antes se quedaba en Chats', async () => {
     global.fetch = vi.fn().mockResolvedValue({ json: async () => ({ ok: true, result: {} }) }) as any
-  })
 
-  it('notifyPartnerApplication (solicitud de partner) sigue en Chats', async () => {
-    const { notifyPartnerApplication } = await import('./notifications')
-    await notifyPartnerApplication({ fullName: 'Juan', email: 'j@j.com' })
-    expect(chatIdsSent(global.fetch)).toEqual(['test-chat-id-sales'])
-  })
-
-  it('notifyPartnerSubscription (suscripción) sigue en Chats', async () => {
     const { notifyPartnerSubscription } = await import('./notifications')
     await notifyPartnerSubscription({
       tenantName: 'Tienda X',
@@ -121,7 +117,23 @@ describe('avisos que NO son venta/pago se quedan en Chats, aunque Ventas tenga o
       tenantEmail: 't@t.com',
       tenantSlug: 'x',
     })
+    expect(chatIdsSent(global.fetch)).toEqual([VENTAS_DEFAULT_CHAT_ID])
+  })
+})
+
+describe('avisos que NO son venta/pago se quedan en Chats, aunque Ventas tenga otro chat id configurado', () => {
+  beforeEach(() => {
+    // Distinto del de Chats a propósito: si alguno de estos avisos se
+    // cruzara a Ventas por error, el test lo detectaría.
+    process.env.TELEGRAM_CHAT_ID_VENTAS = '-100999888777'
+    global.fetch = vi.fn().mockResolvedValue({ json: async () => ({ ok: true, result: {} }) }) as any
+  })
+
+  it('notifyPartnerApplication (solicitud de partner — requiere acción) sigue en Chats y AUDIBLE', async () => {
+    const { notifyPartnerApplication } = await import('./notifications')
+    await notifyPartnerApplication({ fullName: 'Juan', email: 'j@j.com' })
     expect(chatIdsSent(global.fetch)).toEqual(['test-chat-id-sales'])
+    expect(silentFlagsSent(global.fetch)).toEqual([false])
   })
 
   it('notifyNewLead (lead) sigue en Chats', async () => {
@@ -134,6 +146,43 @@ describe('avisos que NO son venta/pago se quedan en Chats, aunque Ventas tenga o
     const { sendSalesTelegram } = await import('./notifications')
     await sendSalesTelegram('aviso libre')
     expect(chatIdsSent(global.fetch)).toEqual(['test-chat-id-sales'])
+  })
+})
+
+describe('limpieza de avisos Telegram 07/10/2026 — ciclo de vida de suscripción, informativo, en Chats pero SILENCIOSO', () => {
+  beforeEach(() => {
+    global.fetch = vi.fn().mockResolvedValue({ json: async () => ({ ok: true, result: {} }) }) as any
+  })
+
+  it('notifySubscriptionExpiring sigue en Chats, con disable_notification:true', async () => {
+    const { notifySubscriptionExpiring } = await import('./notifications')
+    await notifySubscriptionExpiring({ name: 'Tienda X', plan: 'growth', expiresAt: new Date().toISOString() })
+    expect(chatIdsSent(global.fetch)).toEqual(['test-chat-id-sales'])
+    expect(silentFlagsSent(global.fetch)).toEqual([true])
+  })
+
+  it('notifySubscriptionSuspended sigue en Chats, con disable_notification:true', async () => {
+    const { notifySubscriptionSuspended } = await import('./notifications')
+    await notifySubscriptionSuspended({ name: 'Tienda X', plan: 'growth', email: 't@t.com' })
+    expect(chatIdsSent(global.fetch)).toEqual(['test-chat-id-sales'])
+    expect(silentFlagsSent(global.fetch)).toEqual([true])
+  })
+
+  it('notifySubscriptionDegraded sigue en Chats, con disable_notification:true', async () => {
+    const { notifySubscriptionDegraded } = await import('./notifications')
+    await notifySubscriptionDegraded({ name: 'Tienda X', plan: 'growth', email: 't@t.com' })
+    expect(chatIdsSent(global.fetch)).toEqual(['test-chat-id-sales'])
+    expect(silentFlagsSent(global.fetch)).toEqual([true])
+  })
+
+  it('notifyPartnerSubscription (plata, va a Ventas) sigue AUDIBLE — no se le pegó el silencio de arriba', async () => {
+    const { notifyPartnerSubscription } = await import('./notifications')
+    await notifyPartnerSubscription({
+      tenantName: 'Tienda X', plan: 'growth', priceUsd: 10, priceArs: 10000,
+      billingCycle: 'monthly', tenantEmail: 't@t.com', tenantSlug: 'x',
+    })
+    expect(chatIdsSent(global.fetch)).toEqual([VENTAS_DEFAULT_CHAT_ID])
+    expect(silentFlagsSent(global.fetch)).toEqual([false])
   })
 })
 
