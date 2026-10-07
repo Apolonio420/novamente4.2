@@ -11,6 +11,8 @@ import {
 } from './partners/subscription-activated-email';
 import { updateOrder, type PartnerOrder } from './partners/orders';
 import { buildOrderShippingEmail } from './partners/order-shipping-email';
+import { checkAlertCooldown, formatRepeatedSuffix } from './alerts/alert-cooldown';
+import { deriveErrorAlertKey } from './alerts/dedupe-key';
 
 const ADMIN_NOTIFICATIONS_EMAIL = process.env.ADMIN_NOTIFICATIONS_EMAIL || 'sambujuan@gmail.com';
 
@@ -193,14 +195,27 @@ ${order.footer ?? '✅ <i>Pago aprobado. ¡A preparar el pedido!</i>'}
 }
 
 /**
- * Notifies a critical system error
+ * Notifies a critical system error.
+ *
+ * Cooldown central (07/10/2026, cambio #4 de la auditoría de notificaciones):
+ * la MISMA alerta (misma área+endpoint+mensaje normalizado, o `dedupeKey`
+ * explícito) no se re-manda antes de 30 min — ver lib/alerts/alert-cooldown.ts.
+ * Sin esto, un proveedor externo (Gemini/remove-bg) cayendo en loop generaba
+ * ruido audible ilimitado en "🔔 Contenido". Fail-open: si el chequeo de
+ * cooldown falla, se manda igual (nunca se pierde una alerta real).
  */
 export async function notifyError(error: {
     endpoint: string;
     message: string;
     area?: string;
     debugId?: string;
+    /** Clave de dedupe explícita para el cooldown; si se omite se deriva de área+endpoint+mensaje (ver deriveErrorAlertKey). */
+    dedupeKey?: string;
 }) {
+    const key = error.dedupeKey || deriveErrorAlertKey(error);
+    const decision = await checkAlertCooldown(key);
+    if (!decision.send) return null; // suprimida por cooldown — no se pierde, solo no vuelve a sonar todavía
+
     const message = `
 🚨 <b>ERROR DEL SISTEMA</b> 🚨
 
@@ -209,7 +224,7 @@ export async function notifyError(error: {
 <b>Mensaje:</b> <code>${error.message}</code>
 ${error.debugId ? `<b>Debug ID:</b> <code>${error.debugId}</code>` : ''}
 
-⚠️ <i>Se requiere atención inmediata.</i>
+⚠️ <i>Se requiere atención inmediata.</i>${formatRepeatedSuffix(decision.repeatedCount)}
   `.trim();
 
     return sendToTelegram(ERRORS_CHAT_ID, message, ERRORS_BOT_TOKEN);
