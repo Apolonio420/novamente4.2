@@ -189,3 +189,36 @@ export async function countPublishedProducts(tenantId: string): Promise<number> 
   if (error) return 0
   return count || 0
 }
+
+/**
+ * Variante de countPublishedProducts para el AUTO-publish del storefront:
+ * cuenta solo productos 'published' que esten "en regla" — con al menos 1
+ * imagen y precio > 0. Mismo criterio que ya usan feed-generator.ts
+ * (filtros `p.price && p.price > 0 && p.images.length > 0`, lineas 63/130) y
+ * daily-attention.ts (missingPrice/missingImage) para decidir si un producto
+ * esta listo para mostrarse.
+ *
+ * Caso real que motiva esto: un buzo quedo 'published' sin imagenes
+ * ("Imagenes 0/8") y countPublishedProducts (que cuenta CUALQUIER published)
+ * alcanzaba para disparar el auto-publish del storefront aunque la vidriera
+ * mostrara ese producto en blanco. computeAutoUnpublishUpdates sigue usando
+ * countPublishedProducts sin cambios — el auto-UNpublish debe seguir
+ * disparando con 0 productos published a secas, no con 0 "en regla".
+ *
+ * `images` es JSONB en partner_products (default '[]'): PostgREST no tiene
+ * un operador simple para "array jsonb no vacio", asi que traemos
+ * price+images (el volumen por tenant es chico, tope max_products) y
+ * filtramos en JS — mismo patron que feed-generator.ts/daily-attention.ts.
+ */
+export async function countPublishedProductsReady(tenantId: string): Promise<number> {
+  const { data, error } = await db()
+    .from('partner_products')
+    .select('price, images')
+    .eq('tenant_id', tenantId)
+    .eq('status', 'published')
+
+  if (error || !data) return 0
+  return (data as Pick<PartnerProduct, 'price' | 'images'>[]).filter(
+    (p) => !!p.price && Number(p.price) > 0 && Array.isArray(p.images) && p.images.length > 0,
+  ).length
+}

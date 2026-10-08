@@ -19,6 +19,10 @@ const h = vi.hoisted(() => ({
   tenant: {} as Record<string, unknown>,
   updateTenantMock: vi.fn(),
   countPublishedProductsMock: vi.fn(async (_tenantId: string) => 1),
+  // onProductPublished (ver lib/partners/auto-publish.ts) usa la variante
+  // "en regla" (imagen + precio > 0) para decidir el AUTO-publish — ver
+  // lib/partners/catalog.ts.
+  countPublishedProductsReadyMock: vi.fn(async (_tenantId: string) => 1),
   tenantWriteCalls: [] as { vals: Record<string, unknown> }[],
 }))
 
@@ -61,6 +65,7 @@ vi.mock('@/lib/partners/catalog', () => ({
   createProduct: (tenantId: string, input: Record<string, unknown>) => createProductMock(tenantId, input),
   countProducts: vi.fn(async () => 0),
   countPublishedProducts: (tenantId: string) => h.countPublishedProductsMock(tenantId),
+  countPublishedProductsReady: (tenantId: string) => h.countPublishedProductsReadyMock(tenantId),
 }))
 
 vi.mock('@/lib/partners/tenant', () => ({
@@ -146,6 +151,7 @@ beforeEach(() => {
     return { ...h.tenant }
   })
   h.countPublishedProductsMock.mockImplementation(async () => 1)
+  h.countPublishedProductsReadyMock.mockImplementation(async () => 1)
 })
 
 describe('POST /api/partners/products/from-design — auto-publish del storefront', () => {
@@ -225,5 +231,48 @@ describe('POST /api/partners/products/from-design — auto-publish del storefron
 
     expect(body.auto_published).toBe(false)
     expect(h.updateTenantMock).not.toHaveBeenCalled()
+  })
+
+  // Requerimiento del dueño (08/10): "que sea automatica siempre y cuando
+  // tenga MINIMAMENTE un producto EN REGLA publicado" — countPublishedProducts
+  // (cualquier status='published') no alcanza: un producto publicado sin
+  // imagenes o con precio 0 no deberia disparar el auto-publish (caso real:
+  // buzo publicado con "Imagenes 0/8" que mostraba la vidriera en blanco).
+  // onProductPublished usa countPublishedProductsReady para esto — acá
+  // simulamos su resultado (0 "en regla" aunque el producto creado haya
+  // nacido published).
+  it('producto publicado SIN IMAGENES (no esta en regla) => NO publica el storefront', async () => {
+    h.tenant.logo_url = 'https://cdn/logo.png'
+    h.tenant.tagline = 'Ropa con onda'
+    h.tenant.storefront_published = false
+    h.tenant.status = 'onboarding'
+    h.countPublishedProductsReadyMock.mockResolvedValue(0)
+
+    const res = await POST(makeRequest(baseBody))
+    expect(res.status).toBe(201)
+    const body = await res.json()
+
+    expect(body.auto_published).toBe(false)
+    expect(h.updateTenantMock).not.toHaveBeenCalled()
+    const storefrontAtWrite = h.tenantWriteCalls.find((c) => 'storefront_published_at' in c.vals)
+    expect(storefrontAtWrite).toBeUndefined()
+  })
+
+  it('producto publicado CON IMAGENES Y PRECIO (en regla) => publica el storefront', async () => {
+    h.tenant.logo_url = 'https://cdn/logo.png'
+    h.tenant.tagline = 'Ropa con onda'
+    h.tenant.storefront_published = false
+    h.tenant.status = 'onboarding'
+    h.countPublishedProductsReadyMock.mockResolvedValue(1)
+
+    const res = await POST(makeRequest(baseBody))
+    expect(res.status).toBe(201)
+    const body = await res.json()
+
+    expect(body.auto_published).toBe(true)
+    expect(h.updateTenantMock).toHaveBeenCalledWith('tenant-1', {
+      storefront_published: true,
+      status: 'active',
+    })
   })
 })

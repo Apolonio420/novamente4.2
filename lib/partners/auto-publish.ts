@@ -1,6 +1,6 @@
 import type { Tenant } from './types'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { countPublishedProducts } from './catalog'
+import { countPublishedProductsReady } from './catalog'
 import { updateTenant } from './tenant'
 import { sendEmail } from '@/lib/email'
 import { buildStorefrontReactivatedEmail } from './storefront-reactivated-email'
@@ -168,7 +168,10 @@ export async function onProductPublished(tenant: Tenant): Promise<boolean> {
     .eq('id', tenant.id)
     .is('first_product_published_at', null)
 
-  const publishedCount = await countPublishedProducts(tenant.id)
+  // countPublishedProductsReady (no countPublishedProducts): para AUTO-publicar
+  // hace falta ≥1 producto 'published' EN REGLA (con imagen y precio > 0) — ver
+  // su doc en lib/partners/catalog.ts.
+  const publishedCount = await countPublishedProductsReady(tenant.id)
   const autoPublishUpdates = computeAutoPublishUpdates(tenant, publishedCount)
   if (!autoPublishUpdates) return false
 

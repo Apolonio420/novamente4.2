@@ -29,6 +29,10 @@ vi.mock('@/lib/partners/catalog', () => ({
   deleteProduct: vi.fn(),
   generateUniqueSlug: vi.fn(async () => 'slug'),
   countPublishedProducts: vi.fn(async () => 1),
+  // onProductPublished (lib/partners/auto-publish.ts) usa esta variante "en
+  // regla" para el auto-publish — ver lib/partners/catalog.ts. Este archivo
+  // no testea esa regla, solo necesita que el mock exista.
+  countPublishedProductsReady: vi.fn(async () => 1),
 }))
 
 vi.mock('@/lib/supabase-admin', () => {

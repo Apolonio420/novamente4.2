@@ -6,7 +6,7 @@ import type { Plan } from '@/lib/partners/types'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { computeAutoPublishUpdates } from '@/lib/partners/auto-publish'
 import { computeLogoToneFromUrl } from '@/lib/partners/logo-tone'
-import { countPublishedProducts } from '@/lib/partners/catalog'
+import { countPublishedProductsReady } from '@/lib/partners/catalog'
 import { sendEmail } from '@/lib/email'
 import { buildStorefrontReactivatedEmail } from '@/lib/partners/storefront-reactivated-email'
 import { parseHeroFocal, DEFAULT_HERO_FOCAL } from '@/lib/partners/hero-focal'
@@ -157,7 +157,9 @@ export async function PUT(request: NextRequest) {
     // visible aunque haya cargado todo el branding (caso DUB SHIRTS). Regla
     // compartida con catalog/[id]/route.ts — ver lib/partners/auto-publish.ts.
     const merged = { ...tenant, ...updates } as typeof tenant
-    const publishedCount = await countPublishedProducts(tenant.id)
+    // countPublishedProductsReady: exige ≥1 producto published EN REGLA
+    // (con imagen y precio > 0) — ver lib/partners/catalog.ts.
+    const publishedCount = await countPublishedProductsReady(tenant.id)
     const autoPublish = computeAutoPublishUpdates(merged, publishedCount)
     if (autoPublish) {
       Object.assign(updates, autoPublish)

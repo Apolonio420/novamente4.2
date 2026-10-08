@@ -20,6 +20,9 @@ const h = vi.hoisted(() => ({
   // Por default hay 1 producto publicado (el propio, ya updateado) — los
   // tests de "0 productos" lo pisan con .mockResolvedValue(0).
   countPublishedProductsMock: vi.fn(async (_tenantId: string) => 1),
+  // Contraparte "en regla" (imagen + precio > 0) usada por el camino de
+  // AUTO-publish (onProductPublished) — ver lib/partners/catalog.ts.
+  countPublishedProductsReadyMock: vi.fn(async (_tenantId: string) => 1),
   tenantWriteCalls: [] as { vals: Record<string, unknown> }[],
 }))
 
@@ -39,6 +42,7 @@ vi.mock('@/lib/partners/catalog', () => ({
   deleteProduct: vi.fn(),
   generateUniqueSlug: vi.fn(async (_tenantId: string, name: string) => name),
   countPublishedProducts: (tenantId: string) => h.countPublishedProductsMock(tenantId),
+  countPublishedProductsReady: (tenantId: string) => h.countPublishedProductsReadyMock(tenantId),
 }))
 
 // Mockeamos variants.ts entero: evita tener que simular las queries reales de
@@ -139,6 +143,7 @@ beforeEach(() => {
     return { ...h.tenant }
   })
   h.countPublishedProductsMock.mockImplementation(async () => 1)
+  h.countPublishedProductsReadyMock.mockImplementation(async () => 1)
 })
 
 describe('PUT /api/partners/catalog/[id] — auto-publish del storefront', () => {
@@ -251,7 +256,7 @@ describe('PUT /api/partners/catalog/[id] — auto-publish del storefront', () =>
     h.tenant.tagline = 'Ropa con onda'
     h.tenant.storefront_published = false
     h.tenant.status = 'onboarding'
-    h.countPublishedProductsMock.mockResolvedValue(0)
+    h.countPublishedProductsReadyMock.mockResolvedValue(0)
 
     const res = await PUT(makeRequest({ status: 'published' }), { params })
     expect(res.status).toBe(200)
@@ -259,6 +264,46 @@ describe('PUT /api/partners/catalog/[id] — auto-publish del storefront', () =>
 
     expect(body.auto_published).toBe(false)
     expect(h.updateTenantMock).not.toHaveBeenCalled()
+  })
+
+  // Requerimiento del dueño (08/10): el producto 'published' que sostiene el
+  // auto-publish tiene que estar "en regla" (imagen + precio > 0), no basta
+  // con status='published' a secas (caso real: buzo publicado con "Imagenes
+  // 0/8" que mostraba la vidriera en blanco).
+  it('(h) branding minimo + tienda apagada + el publicado NO esta en regla (sin imagen) => NO publica', async () => {
+    h.tenant.logo_url = 'https://cdn/logo.png'
+    h.tenant.tagline = 'Ropa con onda'
+    h.tenant.storefront_published = false
+    h.tenant.status = 'onboarding'
+    // countPublishedProductsReady ya filtra sin-imagen/precio-0 antes de
+    // llegar acá — simulamos ese resultado (0 "en regla") aunque haya 1
+    // published a secas.
+    h.countPublishedProductsReadyMock.mockResolvedValue(0)
+
+    const res = await PUT(makeRequest({ status: 'published' }), { params })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+
+    expect(body.auto_published).toBe(false)
+    expect(h.updateTenantMock).not.toHaveBeenCalled()
+  })
+
+  it('(i) branding minimo + tienda apagada + el publicado SI esta en regla (imagen + precio) => publica', async () => {
+    h.tenant.logo_url = 'https://cdn/logo.png'
+    h.tenant.tagline = 'Ropa con onda'
+    h.tenant.storefront_published = false
+    h.tenant.status = 'onboarding'
+    h.countPublishedProductsReadyMock.mockResolvedValue(1)
+
+    const res = await PUT(makeRequest({ status: 'published' }), { params })
+    expect(res.status).toBe(200)
+    const body = await res.json()
+
+    expect(body.auto_published).toBe(true)
+    expect(h.updateTenantMock).toHaveBeenCalledWith('tenant-1', {
+      storefront_published: true,
+      status: 'active',
+    })
   })
 
   it('(f) auto-unpublish: bajar a draft el ÚLTIMO producto publicado apaga la tienda sola', async () => {
