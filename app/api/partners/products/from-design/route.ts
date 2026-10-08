@@ -41,6 +41,7 @@ import { uploadFile } from '@/lib/cloudflare-r2'
 import { saveDesignAsset } from '@/lib/partners/design-engine'
 import { fetchDesignBuffer, resolveRequestOrigin } from '@/lib/partners/design-fetch'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { onProductPublished } from '@/lib/partners/auto-publish'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -248,13 +249,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No se pudo crear el producto' }, { status: 500 })
     }
 
-    ;(supabaseAdmin as any)
-      .from('tenants')
-      .update({ first_product_draft_at: new Date().toISOString() })
-      .eq('id', tenant.id)
-      .is('first_product_draft_at', null)
+    // El producto puede nacer 'published' directo (Studio "Aplicar a
+    // prenda") — a diferencia del flujo draft->published del panel
+    // (catalog/[id]/route.ts PUT), acá no hay transición que dispare el
+    // auto-publish del storefront, así que lo corremos nosotros mismos.
+    // Antes de este fix, nacer publicado nunca marcaba
+    // first_product_published_at ni corría computeAutoPublishUpdates: un
+    // tenant con productos publicados y branding completo podía quedar con
+    // storefront_published=false para siempre (caso lumina, 10/2026).
+    let autoPublished = false
+    if (status === 'published') {
+      autoPublished = await onProductPublished(tenant)
+    } else {
+      // Fire-and-forget: set first_product_draft_at once
+      ;(supabaseAdmin as any)
+        .from('tenants')
+        .update({ first_product_draft_at: new Date().toISOString() })
+        .eq('id', tenant.id)
+        .is('first_product_draft_at', null)
+    }
 
-    return NextResponse.json({ product }, { status: 201 })
+    return NextResponse.json({ product, auto_published: autoPublished }, { status: 201 })
   } catch (error: any) {
     console.error('POST /api/partners/products/from-design error:', error)
     return NextResponse.json({ error: error.message || 'Error interno' }, { status: 500 })

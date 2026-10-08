@@ -1,4 +1,9 @@
 import type { Tenant } from './types'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { countPublishedProducts } from './catalog'
+import { updateTenant } from './tenant'
+import { sendEmail } from '@/lib/email'
+import { buildStorefrontReactivatedEmail } from './storefront-reactivated-email'
 
 /**
  * Regla compartida de "storefront listo para publicarse solo".
@@ -134,4 +139,60 @@ export function computeStorefrontHiddenReason(
   if (!tenant.banner_url && !tenant.tagline && !tenant.about_text) return 'missing_cover_or_description'
   if (publishedCount < 1) return 'no_products'
   return 'ready_not_published'
+}
+
+/**
+ * Efecto compartido cuando un producto partner nace o pasa a 'published':
+ * marca `first_product_published_at` y corre la regla de auto-publish del
+ * storefront (computeAutoPublishUpdates arriba) — si corresponde, prende
+ * `storefront_published` + `storefront_published_at` y manda el email de
+ * reactivacion.
+ *
+ * A diferencia de computeAutoPublishUpdates (puro), ESTE helper SI toca la
+ * base. Es la extraccion del bloque que antes vivia solo en
+ * catalog/[id]/route.ts (PUT, draft->published desde el panel) — el POST de
+ * products/from-design (crea el producto YA publicado, flow "Aplicar a
+ * prenda" de Studio) nunca lo corria, asi que un tenant podia tener 4
+ * productos publicados + branding completo y seguir con storefront_published
+ * = false, invisible en /p/<slug> sin aviso (caso lumina, detectado por el
+ * healthcheck como "tienda muerta silenciosa", 10/2026).
+ *
+ * Devuelve si el storefront se auto-publico, para que el caller lo refleje
+ * en su response (`auto_published`).
+ */
+export async function onProductPublished(tenant: Tenant): Promise<boolean> {
+  // Fire-and-forget: set first_product_published_at once.
+  ;(supabaseAdmin as any)
+    .from('tenants')
+    .update({ first_product_published_at: new Date().toISOString() })
+    .eq('id', tenant.id)
+    .is('first_product_published_at', null)
+
+  const publishedCount = await countPublishedProducts(tenant.id)
+  const autoPublishUpdates = computeAutoPublishUpdates(tenant, publishedCount)
+  if (!autoPublishUpdates) return false
+
+  const updatedTenant = await updateTenant(tenant.id, autoPublishUpdates)
+  if (!updatedTenant) return false
+
+  const now = new Date().toISOString()
+  ;(supabaseAdmin as any)
+    .from('tenants')
+    .update({ storefront_published_at: now })
+    .eq('id', tenant.id)
+    .is('storefront_published_at', null)
+
+  // Best-effort: avisar al partner que su tienda volvio a estar online.
+  // Nunca debe romper la respuesta del endpoint si falla el envio.
+  try {
+    const { subject, html } = buildStorefrontReactivatedEmail({
+      tenantName: tenant.name,
+      slug: tenant.slug,
+    })
+    await sendEmail({ to: tenant.email, subject, html })
+  } catch (emailError) {
+    console.error('Error enviando email de reactivacion de tienda:', emailError)
+  }
+
+  return true
 }

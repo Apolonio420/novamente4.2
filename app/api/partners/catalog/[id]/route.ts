@@ -9,10 +9,8 @@ import {
   validateProductForPublish,
 } from '@/lib/partners/variants'
 import { updateTenant } from '@/lib/partners/tenant'
-import { computeAutoPublishUpdates, computeAutoUnpublishUpdates } from '@/lib/partners/auto-publish'
+import { computeAutoUnpublishUpdates, onProductPublished } from '@/lib/partners/auto-publish'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { sendEmail } from '@/lib/email'
-import { buildStorefrontReactivatedEmail } from '@/lib/partners/storefront-reactivated-email'
 import {
   findFirstDisallowedProductImage,
   findFirstDisallowedColorImage,
@@ -200,46 +198,11 @@ export async function PUT(
     let autoUnpublished = false
 
     if (updates.status === 'published') {
-      // Fire-and-forget: set first_product_published_at once
-      ;(supabaseAdmin as any)
-        .from('tenants')
-        .update({ first_product_published_at: new Date().toISOString() })
-        .eq('id', auth.tenant.id)
-        .is('first_product_published_at', null)
-
-      // AUTO-PUBLISH: publicar el primer producto no publica la tienda por si
-      // sola — si el tenant ya tiene branding minimo cargado, YA tiene al
-      // menos 1 producto publicado (este mismo) y el storefront sigue
-      // apagado (caso Orlando: onboarding cargo branding, publico productos,
-      // y su /p/<slug> quedo en 404 un mes sin aviso), lo publicamos
-      // automaticamente. Misma regla que branding/route.ts — ver
-      // lib/partners/auto-publish.ts.
-      const publishedCount = await countPublishedProducts(auth.tenant.id)
-      const autoPublishUpdates = computeAutoPublishUpdates(auth.tenant, publishedCount)
-      if (autoPublishUpdates) {
-        const updatedTenant = await updateTenant(auth.tenant.id, autoPublishUpdates)
-        if (updatedTenant) {
-          autoPublished = true
-          const now = new Date().toISOString()
-          ;(supabaseAdmin as any)
-            .from('tenants')
-            .update({ storefront_published_at: now })
-            .eq('id', auth.tenant.id)
-            .is('storefront_published_at', null)
-
-          // Best-effort: avisar al partner que su tienda volvio a estar online.
-          // Nunca debe romper la respuesta del endpoint si falla el envio.
-          try {
-            const { subject, html } = buildStorefrontReactivatedEmail({
-              tenantName: auth.tenant.name,
-              slug: auth.tenant.slug,
-            })
-            await sendEmail({ to: auth.tenant.email, subject, html })
-          } catch (emailError) {
-            console.error('Error enviando email de reactivacion de tienda:', emailError)
-          }
-        }
-      }
+      // Fire-and-forget first_product_published_at + AUTO-PUBLISH del
+      // storefront (branding minimo + ≥1 publicado) — ver
+      // lib/partners/auto-publish.ts (onProductPublished). Misma regla que
+      // branding/route.ts y products/from-design/route.ts.
+      autoPublished = await onProductPublished(auth.tenant)
     } else if (
       updates.status !== undefined
       && updates.status !== 'published'
