@@ -13,6 +13,7 @@ import { updateOrder, type PartnerOrder } from './partners/orders';
 import { buildOrderShippingEmail } from './partners/order-shipping-email';
 import { checkAlertCooldown, formatRepeatedSuffix } from './alerts/alert-cooldown';
 import { deriveErrorAlertKey } from './alerts/dedupe-key';
+import { enqueueOpsDigest } from './alerts/ops-digest';
 
 const ADMIN_NOTIFICATIONS_EMAIL = process.env.ADMIN_NOTIFICATIONS_EMAIL || 'sambujuan@gmail.com';
 
@@ -36,6 +37,14 @@ const ERRORS_CHAT_ID = process.env.TELEGRAM_CHAT_ID_ERRORS;
  * token), así que no hace falta forzar la env var en todos los entornos.
  */
 const VENTAS_CHAT_ID = process.env.TELEGRAM_CHAT_ID_VENTAS || '-5481590647';
+
+/**
+ * "🚨 Urgente Novamente" (Juan 08/10/2026): solo lo que frena ventas o la
+ * atención y pide que alguien actúe ya. Lo manda el bot de ventas
+ * (SALES_BOT_TOKEN, el único bot de ese grupo). Fallback hardcodeado igual
+ * que VENTAS_CHAT_ID.
+ */
+const URGENT_CHAT_ID = process.env.TELEGRAM_CHAT_ID_URGENT || '-5494888775';
 
 /**
  * Envío crudo a la Bot API de Telegram: devuelve el JSON tal cual llega
@@ -201,14 +210,33 @@ ${order.footer ?? '✅ <i>Pago aprobado. ¡A preparar el pedido!</i>'}
 }
 
 /**
- * Notifies a critical system error.
+ * Aviso a "🚨 Urgente". Si no sale (bot fuera del grupo, sin token, Telegram
+ * caído), se manda a "🔔 Contenido" como antes para no perderlo.
+ */
+export async function notifyUrgent(message: string) {
+    const sent = await sendToTelegram(URGENT_CHAT_ID, message, SALES_BOT_TOKEN);
+    if (sent) return sent;
+    return sendToTelegram(ERRORS_CHAT_ID, message, ERRORS_BOT_TOKEN);
+}
+
+/**
+ * Notifies a system error.
+ *
+ * Ruteo (Juan 08/10/2026 — "🔔 Contenido" queda solo para contenido):
+ * - `urgent: true` → "🚨 Urgente" (frena una venta o un pago y alguien tiene
+ *   que actuar: checkout bloqueado, pago con monto distinto, pedido de partner
+ *   que no entró a producción). Con cooldown.
+ * - default → resumen técnico diario en "📊 Rutinas & Reportes" (lo arma el
+ *   cron ops-digest del admin con lib/alerts/ops-digest.ts). No suena. Si no se
+ *   pudo guardar, sale como antes a "🔔 Contenido".
  *
  * Cooldown central (07/10/2026, cambio #4 de la auditoría de notificaciones):
  * la MISMA alerta (misma área+endpoint+mensaje normalizado, o `dedupeKey`
  * explícito) no se re-manda antes de 30 min — ver lib/alerts/alert-cooldown.ts.
  * Sin esto, un proveedor externo (Gemini/remove-bg) cayendo en loop generaba
  * ruido audible ilimitado en "🔔 Contenido". Fail-open: si el chequeo de
- * cooldown falla, se manda igual (nunca se pierde una alerta real).
+ * cooldown falla, se manda igual (nunca se pierde una alerta real). El resumen
+ * no usa cooldown: cuenta las repeticiones él mismo.
  */
 export async function notifyError(error: {
     endpoint: string;
@@ -217,7 +245,17 @@ export async function notifyError(error: {
     debugId?: string;
     /** Clave de dedupe explícita para el cooldown; si se omite se deriva de área+endpoint+mensaje (ver deriveErrorAlertKey). */
     dedupeKey?: string;
+    /** true = frena ventas/pagos y pide acción ya → "🚨 Urgente". Default: resumen diario. */
+    urgent?: boolean;
 }) {
+    if (!error.urgent) {
+        const saved = await enqueueOpsDigest(
+            'tienda',
+            `${error.area || 'Desconocida'} · ${error.endpoint}: ${error.message}${error.debugId ? ` (debug ${error.debugId})` : ''}`,
+        );
+        if (saved) return { digest: true };
+    }
+
     const key = error.dedupeKey || deriveErrorAlertKey(error);
     const decision = await checkAlertCooldown(key);
     if (!decision.send) return null; // suprimida por cooldown — no se pierde, solo no vuelve a sonar todavía
@@ -233,6 +271,7 @@ ${error.debugId ? `<b>Debug ID:</b> <code>${error.debugId}</code>` : ''}
 ⚠️ <i>Se requiere atención inmediata.</i>${formatRepeatedSuffix(decision.repeatedCount)}
   `.trim();
 
+    if (error.urgent) return notifyUrgent(message);
     return sendToTelegram(ERRORS_CHAT_ID, message, ERRORS_BOT_TOKEN);
 }
 
@@ -523,7 +562,8 @@ export function buildStorefrontHealthMessage(alert: StorefrontHealthAlert): stri
  * cron NO prueba que el mensaje llegó.
  */
 export async function notifyStorefrontHealthIssues(alert: StorefrontHealthAlert) {
-  return sendToTelegram(ERRORS_CHAT_ID, buildStorefrontHealthMessage(alert), ERRORS_BOT_TOKEN)
+  // Tienda de partner caída = clientes que no pueden comprar → 🚨 Urgente (Juan 08/10/2026).
+  return notifyUrgent(buildStorefrontHealthMessage(alert))
 }
 
 /**

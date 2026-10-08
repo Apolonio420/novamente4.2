@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
       console.error('❌ Precio por debajo del real:', chequeo.subfacturados, chequeo.bajoCosto)
       const { notifyError } = await import('@/lib/notifications')
       await notifyError({
+        urgent: true,
         area: 'Checkout',
         endpoint: 'POST /api/checkout',
         message:

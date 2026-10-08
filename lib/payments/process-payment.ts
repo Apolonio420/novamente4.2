@@ -361,6 +361,7 @@ export async function processPaymentById(paymentId: string, webhookBody?: any): 
     try {
       const { notifyError } = await import("@/lib/notifications")
       await notifyError({
+        urgent: true,
         area: "Pagos",
         endpoint: "processPaymentById",
         message:

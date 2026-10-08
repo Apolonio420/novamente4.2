@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { notifyUrgent } from "@/lib/notifications"
 
 /**
  * Daily health-check for /crear conversion flow.
@@ -9,7 +10,7 @@ import { NextRequest, NextResponse } from "next/server"
  *   3. /api/generate-image returns a valid image URL
  *   4. /api/public/design/mockup-lifestyle composes with that design
  *
- * If anything fails, sends a Telegram alert to OPS chat.
+ * If anything fails, sends a Telegram alert to 🚨 Urgente (notifyUrgent).
  * Cost target: < $0.10 USD/run (1 gen-image + 1 mockup).
  */
 
@@ -17,8 +18,6 @@ export const runtime = "nodejs"
 export const maxDuration = 300
 
 const ORIGIN = "https://www.novamente.ar"
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN_OPS
-const CHAT_ID = process.env.TELEGRAM_CHAT_ID_OPS
 
 type CheckResult = {
   name: string
@@ -53,14 +52,12 @@ async function check(name: string, fn: () => Promise<{ ok: boolean; status?: num
   }
 }
 
+// Antes usaba TELEGRAM_*_OPS, que no existen en prod: la alerta nunca salía
+// (08/10/2026). /crear roto = clientes que no pueden armar su diseño →
+// 🚨 Urgente con el bot de ventas (fallback Contenido, ver notifyUrgent).
 async function notifyTelegram(text: string) {
-  if (!BOT_TOKEN || !CHAT_ID) return
   try {
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: "HTML", disable_web_page_preview: true }),
-    })
+    await notifyUrgent(text)
   } catch (e) {
     console.error("[healthcheck] telegram failed", e)
   }

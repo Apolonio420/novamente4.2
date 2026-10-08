@@ -236,6 +236,7 @@ export async function POST(request: NextRequest) {
           // seguro DESPUÉS de verificar, nunca antes.
           const incierto = prod.code !== 'rechazado'
           await notifyError({
+            urgent: true,
             area: 'Pedidos de partners',
             endpoint: 'POST /api/partners/orders → sendToProduction',
             message: incierto

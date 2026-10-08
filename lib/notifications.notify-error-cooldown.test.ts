@@ -12,6 +12,8 @@ vi.mock('./alerts/alert-cooldown', () => ({
 }));
 
 vi.mock('@/lib/supabase-admin', () => ({ supabaseAdmin: {} }));
+// Estos casos prueban el envío directo: el resumen diario "no se pudo guardar" (ver notifications.routing.test.ts).
+vi.mock('./alerts/ops-digest', () => ({ enqueueOpsDigest: vi.fn(async () => false) }));
 vi.mock('@/lib/email', () => ({ sendEmail: vi.fn(async () => ({ ok: true })) }));
 
 import { notifyError } from './notifications';
