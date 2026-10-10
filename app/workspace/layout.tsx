@@ -41,7 +41,9 @@ import WorkspaceTour, { START_TOUR_EVENT, OPEN_SIDEBAR_EVENT, CLOSE_SIDEBAR_EVEN
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { authFetch } from '@/lib/partners/auth-fetch'
+import { useSessionCookieSync } from '@/lib/partners/use-session-sync'
 import { supabase } from '@/lib/supabase'
+import { getWhatsAppLink, WHATSAPP_MESSAGES } from '@/lib/config/links'
 
 interface NavItem {
   label: string
@@ -167,6 +169,7 @@ export default function WorkspaceLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [tenant, setTenant] = useState<TenantInfo | null>(null)
+  const [tenantStatus, setTenantStatus] = useState<'loading' | 'ok' | 'no_tenant' | 'error'>('loading')
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [allTenants, setAllTenants] = useState<TenantOption[]>([])
   const [isAdmin, setIsAdmin] = useState(false)
@@ -175,6 +178,11 @@ export default function WorkspaceLayout({
   const pathname = usePathname()
   const router = useRouter()
 
+  // Mantiene la cookie sb-<ref>-auth-token al día con el access_token vigente
+  // de supabase-js — ver lib/partners/use-session-sync.ts (ORIGEN: la sesión
+  // dropeaba ~1h después del login porque la cookie nunca se re-escribía).
+  useSessionCookieSync()
+
   useEffect(() => {
     async function fetchTenant() {
       try {
@@ -182,9 +190,38 @@ export default function WorkspaceLayout({
         if (res.ok) {
           const json = await res.json()
           setTenant(json.tenant)
+          setTenantStatus('ok')
+          return
         }
+
+        const body = await res.json().catch(() => null)
+
+        if (body?.code === 'TENANT_NOT_ALLOWED') {
+          // Selección stale (x-tenant-id de una tienda a la que ya no
+          // pertenece, ej. lo sacaron del equipo) — limpiar y reintentar con
+          // la membership por defecto ANTES de mostrarle "sin tienda" a un
+          // partner que en realidad sí tiene una.
+          try {
+            localStorage.removeItem(ACTIVE_TENANT_STORAGE_KEY)
+          } catch {}
+          const retry = await authFetch('/api/partners/me')
+          if (retry.ok) {
+            const retryJson = await retry.json()
+            setTenant(retryJson.tenant)
+            setTenantStatus('ok')
+            return
+          }
+          const retryBody = await retry.json().catch(() => null)
+          setTenantStatus(retryBody?.code === 'NO_TENANT' ? 'no_tenant' : 'error')
+          return
+        }
+
+        // 401 (sesión realmente vencida) → se mantiene el comportamiento de
+        // siempre: el middleware ya debería haber redirigido antes de llegar
+        // acá; no mostramos ninguna pantalla especial.
+        setTenantStatus(body?.code === 'NO_TENANT' ? 'no_tenant' : 'error')
       } catch {
-        // Silently fail
+        setTenantStatus('error')
       }
     }
     fetchTenant()
@@ -293,6 +330,11 @@ export default function WorkspaceLayout({
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
+    // signOut() dispara SIGNED_OUT → useSessionCookieSync ya encola un DELETE,
+    // pero lo hacemos también acá, explícito y esperado, para no depender del
+    // timing del listener antes de navegar fuera de /workspace (mismo patrón
+    // que components/Navbar.tsx).
+    await fetch('/api/auth/set-session', { method: 'DELETE' }).catch(() => {})
     router.push('/')
   }
 
@@ -525,6 +567,62 @@ export default function WorkspaceLayout({
       </div>
     </nav>
   )
+
+  // Sesión válida pero sin membership aceptada en ningún tenant. Antes esto
+  // quedaba silencioso (fetchTenant tragaba el error) y el partner veía un
+  // workspace vacío sin ninguna pista de qué pasaba (bug reportado 08/10).
+  // No aplica a admins de plataforma: ellos no tienen tienda propia y usan el
+  // selector de tiendas para elegir una — no hay nada "roto" en su caso.
+  if (tenantStatus === 'no_tenant' && !isAdmin) {
+    const pendingInvites = allTenants.filter((t) => t.pending)
+    return (
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center px-4">
+        <div className="max-w-md w-full text-center">
+          <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-6 h-6 text-amber-400" />
+          </div>
+          <h1 className="text-lg font-semibold text-zinc-100 mb-2">
+            Todavía no tenés una tienda asociada
+          </h1>
+          <p className="text-sm text-zinc-400 mb-6">
+            Tu usuario todavía no tiene una tienda asociada. Si te invitaron, aceptá
+            la invitación desde el mail; si no, escribinos por WhatsApp.
+          </p>
+
+          {pendingInvites.length > 0 && (
+            <div className="mb-6 space-y-2 text-left">
+              <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">
+                Invitaciones pendientes
+              </p>
+              {pendingInvites.map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2"
+                >
+                  <span className="text-sm text-zinc-200 truncate">{t.name}</span>
+                  <button
+                    onClick={() => acceptInvitation(t)}
+                    className="text-xs font-medium text-amber-400 hover:text-amber-300 shrink-0 ml-2"
+                  >
+                    Aceptar
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <a
+            href={getWhatsAppLink(WHATSAPP_MESSAGES.WORKSPACE_SUPPORT)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block bg-violet-600 hover:bg-violet-500 text-white font-medium px-6 py-2.5 rounded-lg transition-colors"
+          >
+            Escribinos por WhatsApp
+          </a>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <AssistantProvider>

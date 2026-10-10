@@ -1,12 +1,20 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useEffect, useRef, useState, Suspense } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { buildAuthRedirect } from '@/lib/auth-redirect'
+import { safeRedirect, mapAuthError } from '@/lib/partners/login-helpers'
 import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react'
+
+// Guard anti-loop del rescate de sesión: si en los últimos 30s ya intentamos
+// rescatar y volvimos acá (p. ej. el middleware la rechazó), no reintentar
+// solos — mostrar el formulario en vez de rebotar login→workspace→login para
+// siempre.
+const RESCUE_GUARD_KEY = 'nv_login_rescue_at'
+const RESCUE_GUARD_WINDOW_MS = 30_000
 
 export default function PartnerLoginPage() {
   return (
@@ -24,26 +32,107 @@ function LoginForm() {
   const [resetSent, setResetSent] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
+  const emailRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') || '/workspace'
+  const redirectTo = safeRedirect(searchParams.get('redirect'))
+
+  // Recién después de hidratar el botón de submit deja de estar disabled —
+  // un submit nativo (sin el handler de React todavía enganchado) sólo
+  // recarga la página sin mostrar ningún error ("la UI no muestra nada").
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+
+  // Rescate de sesión: un partner que vuelve horas después (F5, o un link
+  // guardado) puede tener la cookie vencida pero una sesión perfectamente
+  // válida en supabase-js (que la renueva sola). Sin esto, el middleware lo
+  // rebota a /partners/login aunque su sesión esté bien.
+  useEffect(() => {
+    let active = true
+
+    async function rescue() {
+      try {
+        const lastAttempt = Number(sessionStorage.getItem(RESCUE_GUARD_KEY) || '0')
+        if (Date.now() - lastAttempt < RESCUE_GUARD_WINDOW_MS) {
+          if (active) setCheckingSession(false)
+          return
+        }
+        sessionStorage.setItem(RESCUE_GUARD_KEY, String(Date.now()))
+      } catch {
+        // sessionStorage no disponible (privado/bloqueado) — seguimos sin guard.
+      }
+
+      try {
+        const { data: sessionData } = await supabase.auth.getSession()
+        const session = sessionData.session
+        if (!session?.access_token) {
+          if (active) setCheckingSession(false)
+          return
+        }
+
+        // getSession() sólo mira el storage local. Antes de redirigir solos,
+        // validamos contra el server con getUser(): una sesión revocada en
+        // otro dispositivo puede seguir "vigente" para el cliente hasta que
+        // el access_token expire.
+        const { data: userData, error: userError } = await supabase.auth.getUser()
+        if (userError || !userData?.user) {
+          await supabase.auth.signOut({ scope: 'local' })
+          if (active) setCheckingSession(false)
+          return
+        }
+
+        await fetch('/api/auth/set-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          }),
+        })
+
+        if (active) window.location.replace(redirectTo)
+      } catch {
+        if (active) setCheckingSession(false)
+      }
+    }
+
+    rescue()
+    return () => {
+      active = false
+    }
+  }, [redirectTo])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+
+    // El autofill de algunos navegadores/gestores de contraseñas escribe el
+    // valor directo en el DOM sin pasar por el onChange de React, así que el
+    // state puede quedar vacío aunque el input se vea lleno. Leemos el DOM
+    // como respaldo antes de validar — si no, se manda un login vacío y
+    // Supabase devuelve un error en inglés que antes se mostraba crudo (o,
+    // en el peor caso con el form sin hidratar, ni eso).
+    const emailValue = (emailRef.current?.value ?? email).trim()
+    const passwordValue = passwordRef.current?.value ?? password
+
+    if (!emailValue || !passwordValue) {
+      setError('Completá tu email y contraseña.')
+      return
+    }
+
     setLoading(true)
 
     try {
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: emailValue,
+        password: passwordValue,
       })
 
       if (authError) {
-        setError(
-          authError.message === 'Invalid login credentials'
-            ? 'Email o contraseña incorrectos'
-            : authError.message
-        )
+        setError(mapAuthError(authError.message, 'No pudimos iniciar sesión. Revisá email y contraseña e intentá de nuevo.'))
         setLoading(false)
         return
       }
@@ -62,7 +151,7 @@ function LoginForm() {
 
       window.location.href = redirectTo
     } catch {
-      setError('Error al iniciar sesión. Intentá de nuevo.')
+      setError(mapAuthError(null, 'No pudimos iniciar sesión. Revisá email y contraseña e intentá de nuevo.'))
       setLoading(false)
     }
   }
@@ -77,7 +166,7 @@ function LoginForm() {
         },
       })
       if (oauthError) {
-        setError(oauthError.message)
+        setError(mapAuthError(oauthError.message, 'No pudimos iniciar sesión con Google. Intentá de nuevo.'))
       }
     } catch {
       setError('Error al iniciar sesión con Google')
@@ -99,7 +188,7 @@ function LoginForm() {
       })
 
       if (resetError) {
-        setError(resetError.message)
+        setError(mapAuthError(resetError.message, 'No pudimos enviar el email de recuperación. Intentá de nuevo.'))
       } else {
         setResetSent(true)
       }
@@ -108,6 +197,17 @@ function LoginForm() {
     } finally {
       setResetLoading(false)
     }
+  }
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-violet-500 mx-auto" />
+          <p className="text-zinc-400 mt-4 text-sm">Recuperando tu sesión…</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -164,6 +264,7 @@ function LoginForm() {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <input
                   id="email"
+                  ref={emailRef}
                   type="email"
                   required
                   value={email}
@@ -183,6 +284,7 @@ function LoginForm() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <input
                   id="password"
+                  ref={passwordRef}
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
@@ -227,10 +329,12 @@ function LoginForm() {
               </button>
             </div>
 
-            {/* Submit */}
+            {/* Submit — disabled hasta hidratar: un submit nativo antes de que
+                React enganche el onSubmit sólo recarga la página sin mostrar
+                ningún error ("la UI no muestra nada"). */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !hydrated}
               className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (

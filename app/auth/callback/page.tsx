@@ -95,8 +95,10 @@ function CallbackHandler() {
         if (res.ok) {
           // User has a tenant — redirect to workspace
           window.location.href = next
-        } else if (res.status === 401 || res.status === 404) {
-          // No tenant — redirect to partner signup
+        } else if (res.status === 401 || res.status === 403 || res.status === 404) {
+          // Sin tenant (403 {code:'NO_TENANT'}), tenant ajeno (404) o sesión
+          // inválida (401) — en todos los casos todavía no hay workspace al
+          // que entrar, así que mandamos a armar la tienda.
           window.location.href = '/partners/join?from=oauth'
         } else {
           window.location.href = next
