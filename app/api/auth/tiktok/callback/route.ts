@@ -18,6 +18,30 @@ interface TikTokTokenResponse {
   error_description?: string
 }
 
+const INTEGRATION_PAGE = '/workspace/integrations/tiktok'
+
+/**
+ * Códigos cortos para el ?error= de la UI (app/workspace/integrations/tiktok/page.tsx),
+ * NUNCA el texto crudo de TikTok/Supabase — ver TikTokErrorCode ahí para el
+ * mapeo a mensaje en español.
+ */
+type TikTokCallbackErrorCode =
+  | 'denied'
+  | 'missing_params'
+  | 'invalid_state'
+  | 'not_configured'
+  | 'token_exchange_failed'
+  | 'invalid_state_encoding'
+  | 'tenant_not_found'
+  | 'save_failed'
+
+/** Redirige a la pantalla de integración con un código corto y borra la cookie de state (antes los errores devolvían JSON crudo y el partner veía una pantalla en blanco sin saber qué pasó ni cómo reintentar). */
+function redirectWithError(origin: string, code: TikTokCallbackErrorCode) {
+  const res = NextResponse.redirect(`${origin}${INTEGRATION_PAGE}?error=${code}`)
+  res.cookies.delete('tiktok_oauth_state')
+  return res
+}
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url)
 
@@ -30,24 +54,27 @@ export async function GET(req: NextRequest) {
   const code = url.searchParams.get('code')
   const state = url.searchParams.get('state')
   const error = url.searchParams.get('error')
-  const errorDesc = url.searchParams.get('error_description')
 
   if (error) {
-    return NextResponse.json({ error, error_description: errorDesc }, { status: 400 })
+    // El usuario canceló/denegó en la pantalla de TikTok, o TikTok devolvió
+    // otro error OAuth — el detalle (error_description) solo queda en logs.
+    console.warn('[tiktok/callback] OAuth error de TikTok:', error, url.searchParams.get('error_description'))
+    return redirectWithError(url.origin, 'denied')
   }
   if (!code || !state) {
-    return NextResponse.json({ error: 'Missing code or state' }, { status: 400 })
+    return redirectWithError(url.origin, 'missing_params')
   }
 
   const cookieState = req.cookies.get('tiktok_oauth_state')?.value
   if (!cookieState || cookieState !== state) {
-    return NextResponse.json({ error: 'Invalid OAuth state' }, { status: 400 })
+    return redirectWithError(url.origin, 'invalid_state')
   }
 
   const clientKey = process.env.TIKTOK_CLIENT_KEY
   const clientSecret = process.env.TIKTOK_CLIENT_SECRET
   if (!clientKey || !clientSecret) {
-    return NextResponse.json({ error: 'TikTok credentials not configured' }, { status: 500 })
+    console.error('[tiktok/callback] TIKTOK_CLIENT_KEY/SECRET no configurados')
+    return redirectWithError(url.origin, 'not_configured')
   }
 
   const redirectUri = `${url.origin}/api/auth/tiktok/callback`
@@ -66,26 +93,25 @@ export async function GET(req: NextRequest) {
 
   const data = (await tokenRes.json()) as TikTokTokenResponse
   if (!tokenRes.ok || !data.access_token) {
-    return NextResponse.json({
-      error: 'Token exchange failed',
-      tiktok: data,
-    }, { status: 502 })
+    console.error('[tiktok/callback] Token exchange falló:', data.error, data.error_description)
+    return redirectWithError(url.origin, 'token_exchange_failed')
   }
 
   // Multi-tenant: state encodes tenantId before the random nonce.
   // Persist tokens in tenants.metadata.tiktok_integration so each partner has their own.
   const tenantId = state.split(':')[0]
   if (!tenantId) {
-    return NextResponse.json({ error: 'Invalid state encoding' }, { status: 400 })
+    return redirectWithError(url.origin, 'invalid_state_encoding')
   }
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl || !serviceKey) {
-    return NextResponse.json({ error: 'Supabase not configured' }, { status: 500 })
+    console.error('[tiktok/callback] Supabase no configurado')
+    return redirectWithError(url.origin, 'not_configured')
   }
   const tenant = await getTenantById(tenantId)
   if (!tenant) {
-    return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
+    return redirectWithError(url.origin, 'tenant_not_found')
   }
   const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
   const integration = {
@@ -107,19 +133,11 @@ export async function GET(req: NextRequest) {
     })
     .eq('id', tenantId)
   if (updateError) {
-    return NextResponse.json(
-      {
-        error: 'Failed to persist TikTok integration',
-        detail: updateError.message,
-        hint: /column.*metadata/i.test(updateError.message)
-          ? 'Run scripts/sql/add_tenants_metadata.sql in Supabase to add the missing column'
-          : undefined,
-      },
-      { status: 500 },
-    )
+    console.error('[tiktok/callback] No se pudo persistir la integración:', updateError.message)
+    return redirectWithError(url.origin, 'save_failed')
   }
 
-  const res = NextResponse.redirect(`${url.origin}/workspace/integrations/tiktok?connected=1`)
+  const res = NextResponse.redirect(`${url.origin}${INTEGRATION_PAGE}?connected=1`)
   res.cookies.delete('tiktok_oauth_state')
   return res
 }

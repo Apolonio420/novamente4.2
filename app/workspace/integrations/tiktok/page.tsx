@@ -52,6 +52,7 @@ export default function TikTokIntegrationPage() {
   const params = useSearchParams()
   const justConnected = params.get('connected') === '1'
   const justPosted = params.get('posted') === '1'
+  const errorCode = params.get('error')
 
   useEffect(() => {
     let cancelled = false
@@ -117,7 +118,7 @@ export default function TikTokIntegrationPage() {
   }
 
   if (!isConnected) {
-    return <DisconnectedView />
+    return <DisconnectedView errorCode={errorCode} />
   }
 
   const stats = computeStats(posts)
@@ -518,9 +519,40 @@ function DetailRow({ label, value, mono }: { label: string; value: string; mono?
   )
 }
 
-function DisconnectedView() {
+// Mensajes en español por código corto — ver redirectWithError en
+// app/api/auth/tiktok/callback/route.ts. El callback NUNCA manda el texto
+// crudo de TikTok/Supabase en la URL (antes devolvía el JSON del error tal
+// cual, y el partner se encontraba con una pantalla en blanco sin boton
+// para reintentar).
+const TIKTOK_ERROR_MESSAGES: Record<string, string> = {
+  denied: 'Cancelaste la conexión en la pantalla de TikTok. Podés intentarlo de nuevo cuando quieras.',
+  missing_params: 'La conexión con TikTok quedó incompleta. Probá conectar de nuevo.',
+  invalid_state: 'La conexión con TikTok no se pudo validar (puede ser que haya pasado mucho tiempo entre que la iniciaste y la confirmaste). Probá conectar de nuevo.',
+  not_configured: 'La integración con TikTok no está disponible en este momento. Contactanos si lo necesitás urgente.',
+  token_exchange_failed: 'TikTok no autorizó la conexión. Probá conectar de nuevo; si se repite, puede ser un problema temporal de TikTok.',
+  invalid_state_encoding: 'Hubo un problema al identificar tu cuenta durante la conexión. Probá conectar de nuevo.',
+  tenant_not_found: 'No pudimos identificar tu cuenta durante la conexión. Volvé a entrar a tu panel e intentá de nuevo.',
+  save_failed: 'TikTok autorizó la conexión pero no pudimos guardarla de nuestro lado. Probá de nuevo; si se repite, avisanos.',
+}
+
+function tiktokErrorMessage(code: string | null): string | null {
+  if (!code) return null
+  return TIKTOK_ERROR_MESSAGES[code] ?? 'No pudimos completar la conexión con TikTok. Probá de nuevo.'
+}
+
+function DisconnectedView({ errorCode }: { errorCode?: string | null }) {
+  const errorMessage = tiktokErrorMessage(errorCode ?? null)
   return (
     <div className="max-w-2xl mx-auto pt-8">
+      {errorMessage && (
+        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-red-300">No pudimos conectar tu cuenta de TikTok</p>
+            <p className="text-sm text-red-200/80 mt-1">{errorMessage}</p>
+          </div>
+        </div>
+      )}
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 overflow-hidden">
         <div className="relative p-8 text-center border-b border-zinc-800">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#25F4EE22,transparent_50%),radial-gradient(circle_at_center,#FE2C5522,transparent_55%)]" />
@@ -548,7 +580,7 @@ function DisconnectedView() {
             className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#25F4EE] to-[#FE2C55] px-4 py-3 text-sm font-bold text-black hover:opacity-90 transition-opacity shadow-lg shadow-[#FE2C55]/20"
           >
             <Plug className="w-4 h-4" />
-            Conectar con TikTok
+            {errorMessage ? 'Volver a intentar' : 'Conectar con TikTok'}
           </a>
           <p className="mt-3 text-[11px] text-zinc-600 text-center">
             Scopes: <code className="text-zinc-400">user.info.basic</code> ·{' '}
