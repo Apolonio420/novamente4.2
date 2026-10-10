@@ -407,7 +407,7 @@ export default function SettingsPage() {
                 <Label htmlFor="name" className="text-zinc-300">Nombre</Label>
                 <Input
                   id="name"
-                  value={settings.name}
+                  value={settings.name ?? ''}
                   onChange={(e) => updateField('name', e.target.value)}
                   placeholder="Mi marca"
                   className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
@@ -418,7 +418,7 @@ export default function SettingsPage() {
                 <Input
                   id="email"
                   type="email"
-                  value={settings.email}
+                  value={settings.email ?? ''}
                   onChange={(e) => updateField('email', e.target.value)}
                   placeholder="contacto@marca.com"
                   className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
@@ -429,17 +429,20 @@ export default function SettingsPage() {
                 <Input
                   id="phone"
                   type="tel"
-                  value={settings.phone}
+                  value={settings.phone ?? ''}
                   onChange={(e) => updateField('phone', e.target.value)}
                   placeholder="+54 11 1234 5678"
                   className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
                 />
+                <p className="text-xs text-zinc-500">
+                  Con código de área. Ej: 11 2345 6789 — lo usamos para el botón de WhatsApp de tu tienda.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="industry" className="text-zinc-300">Industria</Label>
                 <select
                   id="industry"
-                  value={settings.industry}
+                  value={settings.industry ?? ''}
                   onChange={(e) => updateField('industry', e.target.value)}
                   className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
@@ -452,7 +455,7 @@ export default function SettingsPage() {
                 </select>
                 <Input
                   id="industry_raw"
-                  value={settings.industry_raw}
+                  value={settings.industry_raw ?? ''}
                   onChange={(e) => updateField('industry_raw', e.target.value)}
                   placeholder="Contanos más (opcional)"
                   className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500 text-xs h-8"
@@ -462,7 +465,7 @@ export default function SettingsPage() {
                 <Label htmlFor="website" className="text-zinc-300">Sitio web</Label>
                 <Input
                   id="website"
-                  value={settings.website}
+                  value={settings.website ?? ''}
                   onChange={(e) => updateField('website', e.target.value)}
                   placeholder="https://mimarca.com"
                   className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
@@ -472,7 +475,7 @@ export default function SettingsPage() {
                 <Label htmlFor="instagram" className="text-zinc-300">Instagram</Label>
                 <Input
                   id="instagram"
-                  value={settings.instagram}
+                  value={settings.instagram ?? ''}
                   onChange={(e) => updateField('instagram', e.target.value)}
                   placeholder="@mimarca"
                   className="bg-zinc-950 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
@@ -482,7 +485,7 @@ export default function SettingsPage() {
                 <Label htmlFor="country" className="text-zinc-300">Pais</Label>
                 <select
                   id="country"
-                  value={settings.country}
+                  value={settings.country ?? ''}
                   onChange={(e) => updateField('country', e.target.value)}
                   className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
@@ -498,7 +501,7 @@ export default function SettingsPage() {
                 <Label htmlFor="currency" className="text-zinc-300">Moneda</Label>
                 <select
                   id="currency"
-                  value={settings.currency}
+                  value={settings.currency ?? ''}
                   onChange={(e) => updateField('currency', e.target.value)}
                   className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
@@ -518,7 +521,7 @@ export default function SettingsPage() {
                 <Label htmlFor="commerce_mode" className="text-zinc-300">Modo de comercio</Label>
                 <select
                   id="commerce_mode"
-                  value={settings.commerce_mode}
+                  value={settings.commerce_mode ?? ''}
                   onChange={(e) => updateField('commerce_mode', e.target.value)}
                   className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >

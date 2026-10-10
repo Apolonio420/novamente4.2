@@ -3,6 +3,7 @@ import { requireTenantPermission } from '@/lib/partners/permissions'
 import { updateTenantResult } from '@/lib/partners/tenant'
 import { normalizeIndustry, isIndustrySlug, cleanIndustryText } from '@/lib/partners/industry'
 import { PLAN_FEATURES } from '@/lib/partners/plans'
+import { normalizePartnerPhone } from '@/lib/partners/phone'
 
 const SETTINGS_FIELDS = [
   'name', 'slug', 'email', 'phone', 'website', 'instagram',
@@ -195,6 +196,30 @@ export async function PUT(request: NextRequest) {
       } else {
         return NextResponse.json({ error: 'Alias inválido: solo letras, números, punto y guion (máx 50 caracteres)' }, { status: 400 })
       }
+    }
+
+    // Normaliza el teléfono a formato WhatsApp (549 + área + abonado para
+    // Argentina — ver lib/partners/phone.ts). Bug (auditoría workspace
+    // 08/10/2026): se guardaba tal cual lo tipeara el partner, y la tienda
+    // pública arma el link de wa.me con ese valor sin validar nada — un
+    // celular sin el "9" o con "0"/"15" de marcación local rompe el botón
+    // de WhatsApp de la tienda.
+    //
+    // Solo se valida si el valor REALMENTE cambió respecto al guardado: el
+    // form de Configuración manda `phone` en CADA guardado (edite el campo
+    // que edite el partner), así que validar siempre bloquearía con un 422
+    // cualquier guardado no relacionado para un partner con un teléfono
+    // legacy mal formado ya en la base — el mismo tipo de trampa que
+    // custom_faqs más abajo. "No reescribir filas existentes" = esto, no
+    // una migración que las re-normalice en masa.
+    if ('phone' in updates && updates.phone !== tenant.phone) {
+      const result = normalizePartnerPhone(updates.phone, { country: tenant.country })
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: 422 })
+      }
+      updates.phone = result.value
+    } else if ('phone' in updates) {
+      delete updates.phone // sin cambios reales: no reescribe la fila
     }
 
     // custom_faqs es Pro-only, pero el panel manda el campo aunque el partner
