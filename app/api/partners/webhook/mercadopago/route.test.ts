@@ -23,6 +23,9 @@ const h = vi.hoisted(() => ({
   // mp_subscription_id) y por registerRecurringCharge (lee subscription_expires_at
   // + metadata). Configurable por test; default abajo en beforeEach.
   tenantsSelectSingleResult: null as any,
+  // Error devuelto por el UPDATE a tenants (null = OK). Auditoría 08/10.
+  tenantsUpdateError: null as any,
+  notifyError: vi.fn(),
 }))
 
 vi.mock('mercadopago', () => ({
@@ -44,6 +47,8 @@ vi.mock('@/lib/notifications', () => ({
   notifyPartnerSubscription: h.notifyPartnerSubscription,
   notifyPossibleDoubleCharge: h.notifyPossibleDoubleCharge,
   notifySubscriptionActivatedEmails: h.notifySubscriptionActivatedEmails,
+  notifyError: h.notifyError,
+  escapeTelegramHtml: (s: string) => s,
 }))
 
 vi.mock('@/lib/meta/capi', () => ({
@@ -58,7 +63,7 @@ vi.mock('@/lib/supabase-admin', () => ({
           update: (updates: any) => {
             h.tenantsUpdate(updates)
             return {
-              eq: async () => ({ error: null }),
+              eq: async () => ({ error: h.tenantsUpdateError }),
               select: () => ({ single: async () => ({ data: null }) }),
             }
           },
@@ -107,6 +112,8 @@ beforeEach(() => {
   h.notifySubscriptionActivatedEmails.mockResolvedValue(undefined)
   h.sendCapiPurchase.mockResolvedValue({ ok: true })
   h.tenantsSelectSingleResult = null
+  h.tenantsUpdateError = null
+  h.notifyError.mockResolvedValue(undefined)
 })
 
 describe('isPaymentAlreadyProcessed (unidad)', () => {
@@ -548,5 +555,144 @@ describe('POST /api/partners/webhook/mercadopago — subscription_authorized_pay
     expect(h.updateTenant).toHaveBeenCalledTimes(1)
     const [, updates] = h.updateTenant.mock.calls[0]
     expect(updates.payment_failures).toBe(1)
+  })
+})
+
+// Auditoría workspace partner 08/10: un cobro aprobado que no se pudo aplicar
+// al tenant respondía 200 (MP no reintentaba) y solo dejaba un console.error.
+describe('POST /api/partners/webhook/mercadopago — cobro aprobado que no se pudo aplicar', () => {
+  const externalReference = 'partner_sub_tenant-1_1751500000000_monthly_growth'
+
+  function preapprovalRequest(id: string) {
+    return new NextRequest('http://localhost/api/partners/webhook/mercadopago', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'subscription_preapproval', data: { id } }),
+    })
+  }
+  function authorizedPaymentRequest(id: string) {
+    return new NextRequest('http://localhost/api/partners/webhook/mercadopago', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'subscription_authorized_payment', data: { id } }),
+    })
+  }
+  function mockApprovedAuthorizedPayment() {
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ preapproval_id: 'preapproval-x', payment: { status: 'approved' }, status: 'processed' }),
+    })) as any
+  }
+
+  it('pago único: si updateTenant falla → 500 (MP reintenta) + alerta urgente, sin avisos de venta', async () => {
+    h.getTenantById.mockResolvedValue({ ...baseTenant })
+    h.paymentGet.mockResolvedValue({ id: 'p-1', status: 'approved', external_reference: externalReference, transaction_amount: 25000 })
+    h.updateTenant.mockResolvedValue(null)
+
+    const res = await POST(webhookRequest('p-1'))
+    expect(res.status).toBe(500)
+    expect(h.notifyError).toHaveBeenCalledTimes(1)
+    expect(h.notifyError.mock.calls[0][0]).toMatchObject({ urgent: true, dedupeKey: 'mp-partner-unapplied:p-1' })
+    expect(h.notifyPartnerSubscription).not.toHaveBeenCalled()
+    expect(h.sendCapiPurchase).not.toHaveBeenCalled()
+  })
+
+  it('pago único: el reintento de MP después de la falla activa exactamente una vez', async () => {
+    h.getTenantById.mockResolvedValue({ ...baseTenant })
+    h.paymentGet.mockResolvedValue({ id: 'p-2', status: 'approved', external_reference: externalReference, transaction_amount: 25000 })
+    h.updateTenant.mockResolvedValueOnce(null)
+    expect((await POST(webhookRequest('p-2'))).status).toBe(500)
+
+    // El UPDATE fallido no escribió last_mp_payment_id → el guard deja pasar el reintento.
+    h.updateTenant.mockResolvedValueOnce({ ...baseTenant, plan: 'growth', status: 'active' })
+    expect((await POST(webhookRequest('p-2'))).status).toBe(200)
+    expect(h.notifyPartnerSubscription).toHaveBeenCalledTimes(1)
+
+    // Un tercer reenvío, ya con la marca escrita, no re-aplica.
+    h.getTenantById.mockResolvedValue({ ...baseTenant, metadata: { last_mp_payment_id: 'p-2' } })
+    const third = await POST(webhookRequest('p-2'))
+    expect((await third.json()).already_processed).toBe(true)
+    expect(h.updateTenant).toHaveBeenCalledTimes(2)
+  })
+
+  it('pago único aprobado de un tenant que no aparece → 500 + alerta (no se descarta la plata)', async () => {
+    h.getTenantById.mockResolvedValue(null)
+    h.paymentGet.mockResolvedValue({ id: 'p-3', status: 'approved', external_reference: externalReference, transaction_amount: 25000 })
+    const res = await POST(webhookRequest('p-3'))
+    expect(res.status).toBe(500)
+    expect(h.notifyError).toHaveBeenCalledTimes(1)
+  })
+
+  it('pago único NO aprobado de un tenant que no aparece → 200 sin alerta (como antes)', async () => {
+    h.getTenantById.mockResolvedValue(null)
+    h.paymentGet.mockResolvedValue({ id: 'p-4', status: 'rejected', external_reference: externalReference, transaction_amount: 25000 })
+    const res = await POST(webhookRequest('p-4'))
+    expect(res.status).toBe(200)
+    expect(h.notifyError).not.toHaveBeenCalled()
+  })
+
+  it('si no se puede leer el pago en MP → 500 para que reintente', async () => {
+    h.paymentGet.mockRejectedValue(new Error('MP timeout'))
+    const res = await POST(webhookRequest('p-5'))
+    expect(res.status).toBe(500)
+    expect(h.updateTenant).not.toHaveBeenCalled()
+  })
+
+  it('preapproval authorized: si el UPDATE falla → 500 + alerta, sin avisos de alta', async () => {
+    h.getTenantById.mockResolvedValue({ ...baseTenant, status: 'onboarding', mp_subscription_id: null, subscription_expires_at: null })
+    h.preapprovalGet.mockResolvedValue({ id: 'pre-1', status: 'authorized', external_reference: 'partner_sub_tenant-1_1751500000000_monthly', auto_recurring: { transaction_amount: 25000 } })
+    h.tenantsUpdateError = { message: 'connection reset' }
+
+    const res = await POST(preapprovalRequest('pre-1'))
+    expect(res.status).toBe(500)
+    expect(h.notifyError).toHaveBeenCalledTimes(1)
+    expect(h.notifyError.mock.calls[0][0].message).toContain('connection reset')
+    expect(h.notifyPartnerSubscription).not.toHaveBeenCalled()
+    expect(h.notifySubscriptionActivatedEmails).not.toHaveBeenCalled()
+  })
+
+  it('cobro recurrente: si el UPDATE falla → 500 + alerta; el reintento lo aplica una sola vez', async () => {
+    mockApprovedAuthorizedPayment()
+    h.tenantsSelectSingleResult = { id: 'tenant-1', name: 'Marca Test', metadata: { foo: 'bar' }, subscription_expires_at: '2026-07-29T00:00:00.000Z', payment_failures: 0 }
+    h.tenantsUpdateError = { message: 'timeout' }
+    expect((await POST(authorizedPaymentRequest('ap-1'))).status).toBe(500)
+    expect(h.notifyError).toHaveBeenCalledTimes(1)
+
+    h.tenantsUpdateError = null
+    expect((await POST(authorizedPaymentRequest('ap-1'))).status).toBe(200)
+    const lastUpdate = h.tenantsUpdate.mock.calls.at(-1)![0]
+    expect(lastUpdate.metadata).toEqual({ foo: 'bar', last_mp_authorized_payment_id: 'ap-1' })
+  })
+
+  it('cobro recurrente: si la consulta a MP falla → 500 y no toca el tenant', async () => {
+    global.fetch = vi.fn(async () => { throw new Error('ECONNRESET') }) as any
+    const res = await POST(authorizedPaymentRequest('ap-2'))
+    expect(res.status).toBe(500)
+    expect(h.tenantsUpdate).not.toHaveBeenCalled()
+  })
+
+  it('cobro recurrente: MP responde HTTP 500 → 500 (reintento)', async () => {
+    global.fetch = vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) })) as any
+    expect((await POST(authorizedPaymentRequest('ap-3'))).status).toBe(500)
+  })
+
+  it('cobro recurrente: consultado OK pero sin preapproval → 200 (no es de partner)', async () => {
+    global.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ preapproval_id: null, status: 'processed' }) })) as any
+    expect((await POST(authorizedPaymentRequest('ap-4'))).status).toBe(200)
+  })
+
+  it('preapproval authorized con tenant no encontrado (blip de DB) → 500 + alerta', async () => {
+    h.getTenantById.mockResolvedValue(null)
+    h.preapprovalGet.mockResolvedValue({ id: 'pre-2', status: 'authorized', external_reference: 'partner_sub_tenant-1_1751500000000_monthly' })
+    const res = await POST(preapprovalRequest('pre-2'))
+    expect(res.status).toBe(500)
+    expect(h.notifyError).toHaveBeenCalledTimes(1)
+  })
+
+  it('preapproval cancelled con tenant no encontrado → 200 sin alerta', async () => {
+    h.getTenantById.mockResolvedValue(null)
+    h.preapprovalGet.mockResolvedValue({ id: 'pre-3', status: 'cancelled', external_reference: 'partner_sub_tenant-1_1751500000000_monthly' })
+    expect((await POST(preapprovalRequest('pre-3'))).status).toBe(200)
+    expect(h.notifyError).not.toHaveBeenCalled()
   })
 })

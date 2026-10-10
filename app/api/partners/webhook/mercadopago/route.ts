@@ -73,6 +73,38 @@ function calculateNewExpiration(billingCycle: 'monthly' | 'annual', currentExpir
   return computeRenewalExpiration(currentExpiresAt, nowISO, months)
 }
 
+/**
+ * Un cobro aprobado que no se pudo aplicar al tenant (plan sin activar /
+ * período sin extender) es plata cobrada sin servicio. Antes solo quedaba un
+ * console.error y el webhook respondía 200, así que MP no reintentaba y nadie
+ * se enteraba (auditoría workspace partner 08/10). Ahora: aviso a "🚨 Urgente"
+ * (cooldown por id de MP, ver notifyError) y el caller responde 500 para que
+ * MP reintente — los guards de idempotencia hacen seguro el reintento.
+ */
+async function alertUnappliedCharge(ctx: { kind: string; mpId: string; tenantLabel: string; error?: unknown }) {
+  const detail = ctx.error instanceof Error ? ctx.error.message : ctx.error ? String(ctx.error) : 'sin detalle'
+  console.error('Cobro aprobado sin aplicar al tenant:', ctx.kind, ctx.mpId, ctx.tenantLabel, detail)
+  try {
+    const { notifyError, escapeTelegramHtml } = await import('@/lib/notifications')
+    await notifyError({
+      urgent: true,
+      area: 'Suscripción partner (MercadoPago)',
+      endpoint: '/api/partners/webhook/mercadopago',
+      message: escapeTelegramHtml(
+        `${ctx.kind}: cobro ${ctx.mpId} aprobado pero NO aplicado a ${ctx.tenantLabel}. MP va a reintentar; si en 1 h no se activó, activar el plan a mano. Detalle: ${detail}`,
+      ),
+      dedupeKey: `mp-partner-unapplied:${ctx.mpId}`,
+    })
+  } catch (e) {
+    console.error('No se pudo avisar el cobro sin aplicar:', e)
+  }
+}
+
+/** Respuesta para que MP reintente la notificación. */
+function retryLater(reason: string) {
+  return NextResponse.json({ received: false, retry: reason }, { status: 500 })
+}
+
 /** data.id de un evento de suscripción (body o querystring). */
 function resolveSubscriptionId(body: any, request: NextRequest): string | null {
   const bodyId = body?.data?.id
@@ -101,7 +133,15 @@ async function handlePreapprovalEvent(body: any, request: NextRequest) {
       return NextResponse.json({ received: true })
     }
     const tenant = await getTenantById(tenantId)
-    if (!tenant) return NextResponse.json({ received: true })
+    if (!tenant) {
+      // getTenantById devuelve null también ante un blip de DB: si es un alta
+      // autorizada, no descartarla — avisar y que MP reintente.
+      if (status === 'authorized') {
+        await alertUnappliedCharge({ kind: 'Alta de suscripción recurrente (tenant no encontrado)', mpId: id, tenantLabel: `tenant ${tenantId}` })
+        return retryLater('tenant_not_found')
+      }
+      return NextResponse.json({ received: true })
+    }
 
     const now = new Date().toISOString()
 
@@ -114,7 +154,12 @@ async function handlePreapprovalEvent(body: any, request: NextRequest) {
         console.log('Preapproval authorized pero tenant ya activo en este preapproval — evento no representa un cobro nuevo, no se extiende:', tenant.name)
         return NextResponse.json({ received: true, skipped: 'already_active_on_preapproval' })
       }
-      await activateRecurringTenant(tenant, id, now)
+      try {
+        await activateRecurringTenant(tenant, id, now)
+      } catch (activationError) {
+        await alertUnappliedCharge({ kind: 'Alta de suscripción recurrente', mpId: id, tenantLabel: `${tenant.name} (${tenant.id})`, error: activationError })
+        return retryLater('activation_failed')
+      }
       console.log('Suscripción recurrente ACTIVADA:', tenant.name)
       const activatedPlan = ((tenant.metadata as any)?.pending_plan || tenant.plan) as Plan
       const activatedAmountArs = preapproval?.auto_recurring?.transaction_amount || 0
@@ -151,13 +196,16 @@ async function handlePreapprovalEvent(body: any, request: NextRequest) {
       }
     } else if (status === 'cancelled' || status === 'paused') {
       const meta = { ...((tenant.metadata as any) ?? {}), subscription_type: status }
-      await updateTenant(tenant.id, { metadata: meta } as any)
+      const saved = await updateTenant(tenant.id, { metadata: meta } as any)
+      if (!saved) return retryLater('status_update_failed')
       console.log(`Suscripción ${status} para`, tenant.name)
     }
     return NextResponse.json({ received: true })
   } catch (error: any) {
+    // Falla de MP (GET preapproval) o de DB: 500 para que MP reintente. Seguro
+    // porque el alta solo se aplica si isGenuinePreapprovalActivation.
     console.error('Error handling preapproval:', error?.message || error)
-    return NextResponse.json({ received: true })
+    return retryLater('preapproval_error')
   }
 }
 
@@ -169,14 +217,31 @@ async function handleAuthorizedPaymentEvent(body: any, request: NextRequest) {
   const id = resolveSubscriptionId(body, request)
   if (!id) return NextResponse.json({ received: true })
   try {
-    const ap = await getAuthorizedPayment(id)
-    if (!ap?.preapprovalId) return NextResponse.json({ received: true })
+    let ap: Awaited<ReturnType<typeof getAuthorizedPayment>>
+    try {
+      ap = await getAuthorizedPayment(id)
+    } catch (fetchError: any) {
+      console.error('Authorized payment: no se pudo consultar en MP', id, fetchError?.message || fetchError)
+      if (!process.env.MP_ACCESS_TOKEN) {
+        // Sin token se pierden TODOS los cobros: avisar (con cooldown).
+        await alertUnappliedCharge({ kind: 'Cobro mensual recurrente (falta MP_ACCESS_TOKEN)', mpId: id, tenantLabel: 'tenant desconocido', error: fetchError })
+      }
+      return retryLater('authorized_payment_fetch_failed')
+    }
+    // Consultado OK pero sin preapproval: no es de una suscripción de partner.
+    if (!ap.preapprovalId) return NextResponse.json({ received: true })
 
-    const { data: tenant } = await (supabaseAdmin as any)
+    const { data: tenant, error: tenantError } = await (supabaseAdmin as any)
       .from('tenants')
       .select('*')
       .eq('mp_subscription_id', ap.preapprovalId)
       .single()
+    // PGRST116 = 0 filas (de verdad no hay tenant). Cualquier otro error es un
+    // blip de DB: reintentar en vez de descartar un cobro.
+    if (tenantError && tenantError.code !== 'PGRST116') {
+      console.error('Authorized payment: error buscando tenant', ap.preapprovalId, tenantError.message)
+      return retryLater('tenant_lookup_failed')
+    }
     if (!tenant) {
       console.warn('Authorized payment sin tenant para preapproval', ap.preapprovalId)
       return NextResponse.json({ received: true })
@@ -194,16 +259,24 @@ async function handleAuthorizedPaymentEvent(body: any, request: NextRequest) {
         console.log('Authorized payment ya procesado, saltando — no se extiende de nuevo:', id, tenant.name)
         return NextResponse.json({ received: true, already_processed: true })
       }
-      await registerRecurringCharge(tenant.id, now, id)
+      try {
+        await registerRecurringCharge(tenant.id, now, id)
+      } catch (chargeError) {
+        await alertUnappliedCharge({ kind: 'Cobro mensual recurrente', mpId: id, tenantLabel: `${tenant.name} (${tenant.id})`, error: chargeError })
+        return retryLater('charge_not_registered')
+      }
       console.log('Cobro recurrente OK:', tenant.name)
     } else {
-      await updateTenant(tenant.id, { payment_failures: (tenant.payment_failures || 0) + 1 } as any)
+      const saved = await updateTenant(tenant.id, { payment_failures: (tenant.payment_failures || 0) + 1 } as any)
+      if (!saved) return retryLater('failure_not_registered')
       console.log('Cobro recurrente FALLÓ:', tenant.name, ap.status)
     }
     return NextResponse.json({ received: true })
   } catch (error: any) {
+    // Falla de MP o de DB: 500 para que MP reintente (idempotente vía
+    // isAuthorizedPaymentAlreadyProcessed).
     console.error('Error handling authorized payment:', error?.message || error)
-    return NextResponse.json({ received: true })
+    return retryLater('authorized_payment_error')
   }
 }
 
@@ -257,8 +330,9 @@ export async function POST(request: NextRequest) {
     try {
       paymentDetails = await payment.get({ id: paymentId })
     } catch (paymentError: any) {
+      // Sin el detalle del pago no sabemos si fue aprobado: que MP reintente.
       console.error('Error fetching payment details:', paymentError.message)
-      return NextResponse.json({ received: true })
+      return retryLater('payment_fetch_failed')
     }
 
     console.log('Partner payment details:', {
@@ -283,6 +357,12 @@ export async function POST(request: NextRequest) {
     const tenant = await getTenantById(tenantId)
     if (!tenant) {
       console.error('Tenant not found:', tenantId)
+      // Un pago aprobado sin tenant (blip de DB o tenant borrado) es plata sin
+      // destino: avisar y reintentar. Pagos no aprobados se descartan como antes.
+      if (paymentDetails.status === 'approved') {
+        await alertUnappliedCharge({ kind: 'Pago de plan (tenant no encontrado)', mpId: String(paymentId), tenantLabel: `tenant ${tenantId}` })
+        return retryLater('tenant_not_found')
+      }
       return NextResponse.json({ received: true })
     }
 
@@ -415,7 +495,8 @@ export async function POST(request: NextRequest) {
           console.error('❌ Exception Meta CAPI (partner):', capiErr.message)
         }
       } else {
-        console.error('Failed to activate tenant:', tenantId)
+        await alertUnappliedCharge({ kind: 'Pago de plan (único/anual)', mpId: String(paymentId), tenantLabel: `${tenant.name} (${tenant.id})` })
+        return retryLater('activation_failed')
       }
     } else if (paymentDetails.status === 'rejected' || paymentDetails.status === 'cancelled') {
       console.log('Partner payment rejected/cancelled for tenant:', tenant.name)
@@ -426,8 +507,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (error) {
+    // Idempotente vía isPaymentAlreadyProcessed: reintentar es seguro.
     console.error('Error processing partner webhook:', error)
-    return NextResponse.json({ received: true })
+    return retryLater('payment_error')
   }
 }
 

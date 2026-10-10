@@ -374,7 +374,7 @@ export async function activateRecurringTenant(tenant: Tenant, preapprovalId: str
   meta.subscription_type = 'recurring'
   delete meta.pending_plan // ya activado
 
-  await db()
+  const { error } = await db()
     .from('tenants')
     .update({
       plan,
@@ -395,6 +395,15 @@ export async function activateRecurringTenant(tenant: Tenant, preapprovalId: str
       updated_at: nowISO,
     })
     .eq('id', tenant.id)
+
+  // Auditoría workspace 08/10: antes no se leía `error` — si el UPDATE fallaba
+  // (blip de Supabase) el partner quedaba cobrado y sin plan, sin que nadie se
+  // enterara. Tirar acá deja que el webhook responda 500 (MP reintenta; el
+  // reintento es seguro porque isGenuinePreapprovalActivation mira el estado
+  // del tenant, que no cambió) y alerte a Urgente.
+  if (error) {
+    throw new Error(`activateRecurringTenant: no se pudo activar el tenant ${tenant.id}: ${error.message}`)
+  }
 }
 
 /**
@@ -411,55 +420,69 @@ export async function activateRecurringTenant(tenant: Tenant, preapprovalId: str
  * función si los hubiera.
  */
 export async function registerRecurringCharge(tenantId: string, nowISO: string, authorizedPaymentId?: string): Promise<void> {
-  const { data: tenant } = await db()
+  const { data: tenant, error: readError } = await db()
     .from('tenants')
     .select('subscription_expires_at, metadata')
     .eq('id', tenantId)
     .single()
 
+  // Sin el tenant no se puede calcular el vencimiento ni preservar metadata:
+  // seguir de largo escribía `metadata = { last_mp_authorized_payment_id }`
+  // pisando toda la metadata del tenant. Tirar → el webhook responde 500 y MP
+  // reintenta (la marca de idempotencia todavía no se escribió).
+  if (readError || !tenant) {
+    throw new Error(`registerRecurringCharge: no se pudo leer el tenant ${tenantId}: ${readError?.message ?? 'sin datos'}`)
+  }
+
   const updates: Record<string, any> = {
     status: 'active',
     last_payment_at: nowISO,
-    subscription_expires_at: computeRenewalExpiration(tenant?.subscription_expires_at, nowISO, 1),
+    subscription_expires_at: computeRenewalExpiration(tenant.subscription_expires_at, nowISO, 1),
     payment_failures: 0,
     updated_at: nowISO,
   }
   if (authorizedPaymentId) {
-    updates.metadata = { ...(tenant?.metadata ?? {}), last_mp_authorized_payment_id: String(authorizedPaymentId) }
+    updates.metadata = { ...(tenant.metadata ?? {}), last_mp_authorized_payment_id: String(authorizedPaymentId) }
   }
 
-  await db()
+  const { error } = await db()
     .from('tenants')
     .update(updates)
     .eq('id', tenantId)
+
+  // La marca de idempotencia (last_mp_authorized_payment_id) va en este mismo
+  // UPDATE: si falla, no quedó escrita y el reintento de MP vuelve a aplicar
+  // el cobro exactamente una vez.
+  if (error) {
+    throw new Error(`registerRecurringCharge: no se pudo registrar el cobro del tenant ${tenantId}: ${error.message}`)
+  }
 }
 
 /**
  * Consulta un authorized_payment (cobro recurrente) por la REST API de MP.
  * El SDK v2.9.0 no tiene cliente para este recurso, así que vamos directo.
- * Devuelve el preapproval_id y si el cobro fue exitoso.
+ * Devuelve el preapproval_id y si el cobro fue exitoso. Tira si no pudo
+ * consultarlo (sin token, HTTP != 200, red).
  */
 export async function getAuthorizedPayment(
   authorizedPaymentId: string,
-): Promise<{ preapprovalId: string | null; approved: boolean; status: string } | null> {
+): Promise<{ preapprovalId: string | null; approved: boolean; status: string }> {
+  // Auditoría workspace 08/10: antes devolvía null ante cualquier falla (sin
+  // token, HTTP != 200, red) y el webhook lo trataba igual que "no es de una
+  // suscripción" → 200 y el cobro mensual se perdía. Ahora tira: el webhook
+  // responde 500 y MP reintenta.
   const token = process.env.MP_ACCESS_TOKEN
-  if (!token) return null
-  try {
-    const res = await fetch(`https://api.mercadopago.com/authorized_payments/${authorizedPaymentId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (!res.ok) {
-      console.error('[subscription] getAuthorizedPayment HTTP', res.status)
-      return null
-    }
-    const data: any = await res.json()
-    const paymentStatus: string = data?.payment?.status || data?.status || 'unknown'
-    const approved = data?.payment?.status === 'approved' || data?.status === 'processed'
-    return { preapprovalId: data?.preapproval_id ?? null, approved, status: paymentStatus }
-  } catch (e: any) {
-    console.error('[subscription] getAuthorizedPayment failed:', e?.message || e)
-    return null
+  if (!token) throw new Error('MP_ACCESS_TOKEN no configurado')
+  const res = await fetch(`https://api.mercadopago.com/authorized_payments/${authorizedPaymentId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    throw new Error(`getAuthorizedPayment HTTP ${res.status}`)
   }
+  const data: any = await res.json()
+  const paymentStatus: string = data?.payment?.status || data?.status || 'unknown'
+  const approved = data?.payment?.status === 'approved' || data?.status === 'processed'
+  return { preapprovalId: data?.preapproval_id ?? null, approved, status: paymentStatus }
 }
 
 /**
