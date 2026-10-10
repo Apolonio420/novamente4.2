@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createHash } from 'crypto'
+import { artDayKey, artWindowStartIso, lastNArtDayKeys } from '@/lib/partners/analytics-dates'
 
 const db = () => supabaseAdmin as any
 
@@ -43,9 +44,8 @@ export async function getMetricTimeSeries(
   metric: 'page_views' | 'unique_visitors' | 'leads' | 'orders',
   days: number = 7
 ): Promise<number[]> {
-  const since = new Date()
-  since.setDate(since.getDate() - days)
-  const sinceStr = since.toISOString()
+  const now = new Date()
+  const sinceStr = artWindowStartIso(days, now)
 
   // Map metric to event type
   const eventTypeMap: Record<string, string> = {
@@ -66,32 +66,26 @@ export async function getMetricTimeSeries(
 
   if (error || !data) return new Array(days).fill(0)
 
-  // Group by day
-  const buckets = new Map<string, Set<string>>()
-  for (let i = 0; i < days; i++) {
-    const d = new Date()
-    d.setDate(d.getDate() - (days - 1 - i))
-    buckets.set(d.toISOString().slice(0, 10), new Set())
-  }
+  // Group by día ART (no UTC: una visita/venta 21:00-23:59 ART no se corre al día siguiente)
+  const dayKeys = lastNArtDayKeys(days, now)
+  const counts = new Map<string, number>(dayKeys.map((k) => [k, 0]))
+  const visitorsByDay = new Map<string, Set<string>>(dayKeys.map((k) => [k, new Set<string>()]))
 
   for (const row of data as Array<{ created_at: string; visitor_id: string | null }>) {
-    const day = row.created_at.slice(0, 10)
-    if (buckets.has(day)) {
-      buckets.get(day)!.add(row.visitor_id || row.created_at)
-    }
+    const day = artDayKey(row.created_at)
+    if (!counts.has(day)) continue
+    counts.set(day, (counts.get(day) || 0) + 1)
+    visitorsByDay.get(day)!.add(row.visitor_id || row.created_at)
   }
 
   if (metric === 'unique_visitors') {
-    return Array.from(buckets.values()).map(s => s.size)
+    return dayKeys.map((k) => visitorsByDay.get(k)!.size)
   }
 
-  // For page_views, leads, orders — count all events
-  // Re-query with count approach for accuracy
-  const counts: number[] = []
-  for (const [, visitors] of buckets) {
-    counts.push(visitors.size)
-  }
-  return counts
+  // page_views / leads / orders: contar EVENTOS, no visitantes únicos. Dos
+  // pedidos del mismo visitor_id el mismo día son 2 ventas, no 1 (antes se
+  // reusaba el Set de-dup de visitantes para estas métricas por error).
+  return dayKeys.map((k) => counts.get(k) || 0)
 }
 
 // ---------------------------------------------------------------------------

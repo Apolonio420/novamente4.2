@@ -15,6 +15,9 @@ const h = vi.hoisted(() => {
       eq: () => chain,
       order: () => chain,
       limit: () => chain,
+      // partner_ledger_entries ahora pagea con .range() (antes .limit(1000)
+      // podía cortar partners grandes); el mock devuelve siempre todo el set.
+      range: () => chain,
       then: (resolve: any) => {
         if (table === 'partner_ledger_entries') return resolve({ data: state.entries, error: null })
         if (table === 'partner_payouts') return resolve({ data: state.payouts, error: null })

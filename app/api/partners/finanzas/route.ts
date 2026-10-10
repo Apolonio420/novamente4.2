@@ -15,6 +15,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { computeFinancials } from '@/lib/partners/payouts'
 import { buildPartnerSales } from '@/lib/partners/partner-sales'
 import { payoutModeDe } from '@/lib/partners/payout-mode'
+import { paginateRange } from '@/lib/partners/analytics-queries'
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,14 +25,21 @@ export async function GET(request: NextRequest) {
     const sb = supabaseAdmin as any
 
     // Todas las entries del tenant (el estado de cada venta es FIFO contra los
-    // pagos, necesita la historia completa). Un partner tiene decenas, no miles.
-    const [{ data: allEntries, error: entriesErr }, { data: payouts, error: payoutsErr }] = await Promise.all([
-      sb
-        .from('partner_ledger_entries')
-        .select('id, type, amount, concept, status, source, order_id, metadata, created_at')
-        .eq('tenant_id', tenant.id)
-        .order('created_at', { ascending: true })
-        .limit(1000),
+    // pagos, necesita la historia completa). Un partner tiene decenas, no
+    // miles, pero el .limit(1000) de antes podía cortar en silencio a un
+    // partner grande — se pagea en vez de cortar. Orden created_at ASC se
+    // mantiene igual (FIFO); se agrega `id` como desempate solo para que la
+    // paginación con .range() sea determinística entre páginas.
+    const [allEntries, { data: payouts, error: payoutsErr }] = await Promise.all([
+      paginateRange<any>(({ from, to }) =>
+        sb
+          .from('partner_ledger_entries')
+          .select('id, type, amount, concept, status, source, order_id, metadata, created_at')
+          .eq('tenant_id', tenant.id)
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to)
+      ),
       sb
         .from('partner_payouts')
         .select('id, amount, status, method, requested_at, resolved_at, metadata')
@@ -39,7 +47,7 @@ export async function GET(request: NextRequest) {
         .order('requested_at', { ascending: false })
         .limit(50),
     ])
-    if (entriesErr || payoutsErr) throw new Error(entriesErr?.message || payoutsErr?.message)
+    if (payoutsErr) throw new Error(payoutsErr?.message)
 
     const entries = allEntries ?? []
     const financials = computeFinancials(entries, payouts ?? [])

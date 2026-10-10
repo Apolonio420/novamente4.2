@@ -3,6 +3,7 @@
  */
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { isPartnerOrderPaid } from '@/lib/partners/order-payment'
+import { artDayKey, lastNArtDayKeys } from '@/lib/partners/analytics-dates'
 
 const db = () => supabaseAdmin as any
 
@@ -89,15 +90,17 @@ export async function getDashboardKPIs(tenantId: string): Promise<DashboardKPIs>
   const approvedOrders = orders.filter(o => isPaid(o) && !isFulfilled(o)).length
   const fulfilledOrders = orders.filter(isFulfilled).length
 
-  // Daily breakdown (30 dias)
+  // Daily breakdown (30 dias en día ART — una venta 21:00-23:59 ART no se
+  // corre al día siguiente). Se itera sobre `orders` (ventana de 60 dias ya
+  // traída) y no sobre `last30`: los buckets ART de 30 dias no coinciden
+  // exactamente con el corte UTC de `last30`, así que el propio Map descarta
+  // lo que cae fuera de la ventana en vez de depender de dos cortes distintos.
   const byDay = new Map<string, { count: number; revenue: number }>()
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(now.getTime() - i * MS_DAY)
-    const key = d.toISOString().slice(0, 10)
+  for (const key of lastNArtDayKeys(30, now)) {
     byDay.set(key, { count: 0, revenue: 0 })
   }
-  for (const o of last30.filter(isPaid)) {
-    const key = o.created_at.slice(0, 10)
+  for (const o of orders.filter(isPaid)) {
+    const key = artDayKey(o.created_at)
     const entry = byDay.get(key)
     if (entry) {
       entry.count += 1
