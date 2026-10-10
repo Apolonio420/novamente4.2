@@ -142,7 +142,8 @@ export async function GET(req: NextRequest) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            designUrl,
+            // la API espera designImageUrl (con designUrl devolvía 400 siempre)
+            designImageUrl: designUrl,
             garmentType: "aldea-classic-tshirt",
             garmentColor: "black",
             side: "front",
