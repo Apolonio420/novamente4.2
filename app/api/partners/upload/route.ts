@@ -3,6 +3,17 @@ import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getDesignUploadLimit } from '@/lib/partners/plan-limits'
 
+// HEIC/HEIF quedaron AFUERA a propósito (bug verificado 10/10/2026): el
+// binario de `sharp` instalado (libvips prebuilt, igual en Vercel/Linux)
+// NO trae el decoder HEVC — `sharp(heicBuffer).jpeg()` tira
+// "heif: Error while loading plugin: Support for this compression format
+// has not been built in", confirmado con un HEIC real generado con
+// `sips -s format heic` en macOS. Antes de este fix se aceptaba el archivo
+// crudo (sin convertir) y Chrome/la mayoría de navegadores no lo pueden
+// renderizar → imagen rota en la tienda/panel. iOS ya convierte a JPEG
+// solo si se le niega HEIC (ver normalizeUploadMimeType, que SIGUE
+// mapeando la extensión .heic/.heif — se usa para dar el 415 específico
+// más abajo, no para aceptarlo).
 export const ALLOWED_TYPES = [
   'image/jpeg',
   'image/png',
@@ -11,8 +22,6 @@ export const ALLOWED_TYPES = [
   'image/jpg',
   'image/pjpeg',
   'image/x-png',
-  'image/heic',
-  'image/heif',
 ]
 export const DESIGN_UPLOAD_TYPES = ['image/png', 'image/svg+xml', 'image/x-png']
 export const MAX_SIZE = 5 * 1024 * 1024 // 5MB
@@ -127,6 +136,15 @@ export async function POST(request: NextRequest) {
       }
     } else {
       if (!ALLOWED_TYPES.includes(effectiveType)) {
+        if (effectiveType === 'image/heic' || effectiveType === 'image/heif') {
+          return NextResponse.json(
+            {
+              error:
+                'Las fotos HEIC de iPhone no se pueden subir todavía. En Fotos de tu iPhone, tocá Compartir → "Más opciones" → "Compartir como JPG" (o en Ajustes → Cámara → Formatos, elegí "Más compatible") y volvé a subirla.',
+            },
+            { status: 415 },
+          )
+        }
         return NextResponse.json(
           { error: 'Tipo de archivo no permitido. Usa JPG, PNG, WebP o SVG' },
           { status: 400 }

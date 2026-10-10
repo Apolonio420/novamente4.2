@@ -21,6 +21,9 @@ describe('normalizeUploadMimeType & upload guards', () => {
     expect(normalizeUploadMimeType('application/octet-stream', 'banner.jpg')).toBe('image/jpeg')
     expect(normalizeUploadMimeType('', 'banner.webp')).toBe('image/webp')
     expect(normalizeUploadMimeType('', 'vector.svg')).toBe('image/svg+xml')
+    // La extensión .heic/.heif SIGUE mapeándose (se usa para dar el 415
+    // específico de iPhone en la ruta) aunque HEIC ya no esté en
+    // ALLOWED_TYPES — ver el test de abajo y el comentario en el route.
     expect(normalizeUploadMimeType('', 'photo.heic')).toBe('image/heic')
   })
 
@@ -29,7 +32,11 @@ describe('normalizeUploadMimeType & upload guards', () => {
     expect(ALLOWED_TYPES).toContain('image/png')
     expect(ALLOWED_TYPES).toContain('image/webp')
     expect(ALLOWED_TYPES).toContain('image/jpg')
-    expect(ALLOWED_TYPES).toContain('image/heic')
+  })
+
+  it('HEIC/HEIF NO está en ALLOWED_TYPES — el sharp instalado no puede decodificarlo (verificado 10/10/2026 con un HEIC real: "heif: Error while loading plugin: Support for this compression format has not been built in")', () => {
+    expect(ALLOWED_TYPES).not.toContain('image/heic')
+    expect(ALLOWED_TYPES).not.toContain('image/heif')
   })
 
   it('los límites de tamaño estándar son 5MB', () => {

@@ -18,12 +18,21 @@ export function ImageUpload({ value, onChange, type = 'other', label, className 
   const [dragOver, setDragOver] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  // Guard contra doble click/doble drop: el estado `uploading` solo se
+  // actualiza en el próximo render, así que dos clicks rápidos (o un click
+  // seguido de un drop) ven `uploading === false` los dos y disparan dos
+  // subidas en paralelo. El ref es sincrónico — se marca ANTES de que
+  // arranque cualquier await, cerrando la ventana de carrera.
+  const uploadingRef = useRef(false)
 
   const handleUpload = useCallback(async (file: File) => {
+    if (uploadingRef.current) return
+    uploadingRef.current = true
     setError(null)
     const maxSize = type === 'design' ? 10 * 1024 * 1024 : 5 * 1024 * 1024
     if (file.size > maxSize) {
       setError(`El archivo es demasiado grande (máximo ${type === 'design' ? '10MB' : '5MB'})`)
+      uploadingRef.current = false
       return
     }
 
@@ -48,6 +57,7 @@ export function ImageUpload({ value, onChange, type = 'other', label, className 
     } catch {
       setError('Error de conexión al subir la imagen. Intentá nuevamente.')
     } finally {
+      uploadingRef.current = false
       setUploading(false)
     }
   }, [type, onChange])
@@ -55,6 +65,7 @@ export function ImageUpload({ value, onChange, type = 'other', label, className 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setDragOver(false)
+    if (uploadingRef.current) return
     const file = e.dataTransfer.files[0]
     if (file && file.type.startsWith('image/')) {
       handleUpload(file)
@@ -91,14 +102,16 @@ export function ImageUpload({ value, onChange, type = 'other', label, className 
       ) : (
         <div
           onClick={() => {
+            if (uploadingRef.current) return
             setError(null)
             inputRef.current?.click()
           }}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+          onDragOver={(e) => { e.preventDefault(); if (!uploadingRef.current) setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           className={cn(
-            'flex flex-col items-center justify-center h-32 rounded-lg border-2 border-dashed cursor-pointer transition-colors',
+            'flex flex-col items-center justify-center h-32 rounded-lg border-2 border-dashed transition-colors',
+            uploading ? 'cursor-wait' : 'cursor-pointer',
             dragOver
               ? 'border-violet-500 bg-violet-500/10'
               : 'border-zinc-700 hover:border-zinc-500 bg-zinc-900/30'
@@ -128,6 +141,7 @@ export function ImageUpload({ value, onChange, type = 'other', label, className 
         type="file"
         accept="image/*"
         onChange={handleFileChange}
+        disabled={uploading}
         className="hidden"
       />
     </div>
