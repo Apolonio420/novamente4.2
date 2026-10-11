@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { notifySuperActionRequested, runAfterResponse } from '@/lib/partners/support-notify'
 
 export const runtime = 'nodejs'
 
@@ -85,6 +86,16 @@ export async function POST(request: NextRequest) {
         if (insertError) {
             return NextResponse.json({ error: 'Error al crear la solicitud' }, { status: 500 })
         }
+
+        // Una super acción es un pedido que un humano de Novamente tiene que ejecutar.
+        runAfterResponse(() =>
+            notifySuperActionRequested({
+                tenantName: tenant.name,
+                actionType: parsed.data.actionType,
+                description: parsed.data.description,
+                requestId: actionData?.id,
+            }),
+        )
 
         return NextResponse.json({
             id: actionData?.id,

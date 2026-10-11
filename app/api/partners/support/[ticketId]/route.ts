@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { getTicketById, addMessage, updateTicketStatus } from '@/lib/partners/support'
+import { notifySupportPartnerMessage, runAfterResponse } from '@/lib/partners/support-notify'
 
 export async function GET(
   request: NextRequest,
@@ -57,6 +58,18 @@ export async function POST(
     if (!msg) {
       return NextResponse.json({ error: 'Error al enviar mensaje' }, { status: 500 })
     }
+
+    // Esta ruta solo la usa el partner (sender 'partner'); los mensajes del
+    // staff nunca pasan por acá, así que no hay aviso para ellos. Máx. un aviso
+    // por ticket cada 30 min (cooldown por ticket dentro del helper).
+    runAfterResponse(() =>
+      notifySupportPartnerMessage({
+        tenantName: auth.tenant.name,
+        subject: ticket.subject,
+        message: msg.message,
+        ticketId,
+      }),
+    )
 
     return NextResponse.json({ message: msg }, { status: 201 })
   } catch (error) {

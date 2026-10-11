@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { createTicket, getTickets } from '@/lib/partners/support'
+import { notifySupportTicketCreated, runAfterResponse } from '@/lib/partners/support-notify'
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,6 +57,17 @@ export async function POST(request: NextRequest) {
     // if (triageUrl) {
     //   fetch(triageUrl, { headers: { 'x-cron-secret': process.env.CRON_SECRET || '' } }).catch(() => {})
     // }
+
+    // Aviso a Telegram "Urgente" (un partner pidió ayuda). No bloquea ni rompe el alta.
+    runAfterResponse(() =>
+      notifySupportTicketCreated({
+        tenantName: auth.tenant.name,
+        subject: ticket.subject,
+        description: ticket.description,
+        ticketId: ticket.id,
+        priority: ticket.priority,
+      }),
+    )
 
     return NextResponse.json({ ticket }, { status: 201 })
   } catch (error) {
