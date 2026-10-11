@@ -322,6 +322,8 @@ for (const { path: pagePath, name: pageName } of PAGES) {
 // Chequeo final: todos los <a href> internos recolectados deben resolver
 // ---------------------------------------------------------------------------
 test('todos los links internos recolectados resuelven (no 404)', async ({ browser }) => {
+  // En dev (compilación on-demand) ~100 links superan el timeout default de 30s.
+  test.setTimeout(240_000)
   const context = await browser.newContext({ storageState: AUTH_FILE })
   const page = await context.newPage()
   const checked = new Set<string>()
