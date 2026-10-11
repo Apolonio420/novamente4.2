@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect } from 'react'
-import { AlertTriangle, RefreshCw, MessageCircle, Home } from 'lucide-react'
-import { useAssistant } from '@/lib/assistant/assistant-context'
+import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
+import { useAutoReportError } from '@/lib/errors/workspace-error-report'
+import { ErrorTicketButton } from '@/components/workspace/error-ticket-button'
 
 export default function WorkspaceError({
   error,
@@ -11,20 +12,12 @@ export default function WorkspaceError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  const { openWithBugReport } = useAssistant()
-
   useEffect(() => {
     console.error('[Workspace Error]', error)
   }, [error])
 
-  const handleReport = () => {
-    openWithBugReport({
-      errorMessage: error.message,
-      errorStack: error.stack,
-      errorDigest: error.digest,
-      sourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
-    })
-  }
+  // Aviso automático (una vez por error): guarda en bug_reports y avisa al equipo.
+  useAutoReportError(error)
 
   return (
     <div className="flex items-center justify-center min-h-[60vh] p-6">
@@ -38,8 +31,8 @@ export default function WorkspaceError({
             Algo salio mal
           </h2>
           <p className="text-sm text-zinc-400">
-            Ocurrio un error inesperado. Podes intentar recargar o reportar el problema al asistente
-            para que se solucione automaticamente.
+            Ocurrió un error inesperado. Ya le avisamos a nuestro equipo. Podés reintentar, o
+            tocar &ldquo;Avisar a Novamente&rdquo; para que te escribamos por Soporte.
           </p>
           {error.digest && (
             <p className="text-xs text-zinc-600 mt-2 font-mono">
@@ -57,13 +50,7 @@ export default function WorkspaceError({
             Reintentar
           </button>
 
-          <button
-            onClick={handleReport}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 px-4 py-2.5 text-sm font-medium text-amber-400 transition-colors"
-          >
-            <MessageCircle className="w-4 h-4" />
-            Reportar al asistente
-          </button>
+          <ErrorTicketButton error={error} />
         </div>
 
         <a

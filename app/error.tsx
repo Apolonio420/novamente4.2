@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { useAutoReportError } from '@/lib/errors/workspace-error-report'
+import { ErrorTicketButton } from '@/components/workspace/error-ticket-button'
 
 export default function Error({
   error,
@@ -12,6 +14,15 @@ export default function Error({
   useEffect(() => {
     console.error('[App Error]', error)
   }, [error])
+
+  // Un error en app/workspace/layout.tsx NO lo atrapa app/workspace/error.tsx
+  // (el boundary no cubre su propio layout) y cae acá. Solo se reporta si es
+  // del workspace del partner; el resto del sitio tiene otros avisos.
+  const [inWorkspace, setInWorkspace] = useState(false)
+  useEffect(() => {
+    setInWorkspace(window.location.pathname.startsWith('/workspace'))
+  }, [])
+  useAutoReportError(error, inWorkspace)
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">
@@ -44,6 +55,12 @@ export default function Error({
             Volver al inicio
           </a>
         </div>
+
+        {inWorkspace && (
+          <div className="flex justify-center">
+            <ErrorTicketButton error={error} />
+          </div>
+        )}
       </div>
     </div>
   )

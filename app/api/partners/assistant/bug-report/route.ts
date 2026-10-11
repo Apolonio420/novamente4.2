@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getRequestTenant } from '@/lib/partners/permissions'
+import { notifyUrgent, escapeTelegramHtml } from '@/lib/notifications'
+import { checkAlertCooldown, formatRepeatedSuffix } from '@/lib/alerts/alert-cooldown'
+import { hashAlertKey, normalizeAlertText } from '@/lib/alerts/dedupe-key'
+import { runAfterResponse } from '@/lib/partners/support-notify'
 
 export const runtime = 'nodejs'
 
@@ -13,36 +18,33 @@ const BugReportSchema = z.object({
     screenshotUrl: z.string().url().optional(),
 })
 
-async function getAuthenticatedUser(request: NextRequest) {
-    const authHeader = request.headers.get('authorization')
-    let token: string | null = authHeader?.replace('Bearer ', '') ?? null
+/** Tope por tenant: un loop de errores en el navegador no puede llenar la tabla ni el bot. */
+export const BUG_REPORT_LIMIT = 5
+export const BUG_REPORT_WINDOW_MS = 10 * 60 * 1000
 
-    if (!token) {
-        for (const cookie of request.cookies.getAll()) {
-            if (cookie.name.startsWith('sb-') && cookie.name.endsWith('-auth-token')) {
-                try {
-                    const parsed = JSON.parse(cookie.value)
-                    token = Array.isArray(parsed) ? parsed[0] : parsed
-                } catch {
-                    token = cookie.value
-                }
-                break
-            }
-        }
+function pathOf(sourceUrl?: string): string {
+    if (!sourceUrl) return 'desconocida'
+    try {
+        return new URL(sourceUrl).pathname
+    } catch {
+        return sourceUrl.split('?')[0].split('#')[0].slice(0, 200)
     }
-
-    if (!token) return null
-    const { data, error } = await supabaseAdmin.auth.getUser(token)
-    if (error || !data?.user) return null
-    return data.user
 }
 
+/**
+ * El partner chocó con un error del workspace. Se guarda SIEMPRE en bug_reports
+ * (el cooldown solo limita Telegram) y se avisa a "🚨 Urgente" con cooldown de
+ * 30 min por tenant+ruta+mensaje normalizado, para que un loop no spamee.
+ */
 export async function POST(request: NextRequest) {
     try {
-        const user = await getAuthenticatedUser(request)
-        if (!user) {
+        // Cualquier rol con membresía aceptada (un viewer también se topa con
+        // errores — por eso no se exige un permiso de escritura).
+        const ctx = await getRequestTenant(request)
+        if (!ctx) {
             return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
         }
+        const tenant = ctx.tenant
 
         let body: unknown
         try {
@@ -57,15 +59,32 @@ export async function POST(request: NextRequest) {
         }
 
         const { description, errorMessage, errorStack, errorDigest, sourceUrl, screenshotUrl } = parsed.data
+        const db = supabaseAdmin as any
 
-        // Get tenant_id from user metadata
-        const tenantId = user.user_metadata?.tenant_id ?? null
+        // Rate limit durable (cuenta en la base, vale entre instancias serverless).
+        // Fail-open: si el conteo falla, se deja pasar.
+        try {
+            const since = new Date(Date.now() - BUG_REPORT_WINDOW_MS).toISOString()
+            const { count, error: countError } = await db
+                .from('bug_reports')
+                .select('id', { count: 'exact', head: true })
+                .eq('tenant_id', tenant.id)
+                .gte('created_at', since)
+            if (!countError && (count ?? 0) >= BUG_REPORT_LIMIT) {
+                return NextResponse.json(
+                    { error: 'Ya recibimos varios reportes tuyos hace un momento. Nos están llegando, gracias.' },
+                    { status: 429, headers: { 'Retry-After': String(Math.ceil(BUG_REPORT_WINDOW_MS / 1000)) } },
+                )
+            }
+        } catch (e) {
+            console.error('[Bug Report] rate-limit check falló (fail-open):', e instanceof Error ? e.message : e)
+        }
 
         // bug_reports table created by migration 13
-        const { data, error } = await (supabaseAdmin as ReturnType<typeof supabaseAdmin['from']> & { from: (table: string) => ReturnType<typeof supabaseAdmin['from']> })
-            .from('bug_reports' as 'tenants')
+        const { data, error } = await db
+            .from('bug_reports')
             .insert({
-                tenant_id: tenantId,
+                tenant_id: tenant.id,
                 reporter_type: 'partner',
                 description,
                 error_message: errorMessage ?? null,
@@ -74,12 +93,33 @@ export async function POST(request: NextRequest) {
                 source_url: sourceUrl ?? null,
                 screenshot_url: screenshotUrl ?? null,
                 status: 'new',
-            } as never)
+            })
             .select('id')
             .single()
 
         if (error) {
             console.error('[Bug Report] Insert error:', error.message)
+        }
+
+        // Aviso a Urgente aunque el insert haya fallado: perder el reporte en
+        // silencio es justo lo que se quiere evitar.
+        const path = pathOf(sourceUrl)
+        const msgForKey = errorMessage || description
+        runAfterResponse(async () => {
+            const key = hashAlertKey(['bug', tenant.id, path, normalizeAlertText(msgForKey)])
+            const decision = await checkAlertCooldown(key)
+            if (!decision.send) return
+            const lines = [
+                `🐞 <b>ERROR EN EL WORKSPACE — ${escapeTelegramHtml(tenant.name)}</b>`,
+                `<b>Ruta:</b> <code>${escapeTelegramHtml(path)}</code>`,
+                `<b>Error:</b> <code>${escapeTelegramHtml((errorMessage || description).slice(0, 300))}</code>`,
+                errorDigest ? `<b>Digest:</b> <code>${escapeTelegramHtml(errorDigest)}</code>` : '',
+                error ? '⚠️ <i>No se pudo guardar en bug_reports.</i>' : '',
+            ].filter(Boolean)
+            await notifyUrgent(`${lines.join('\n')}${formatRepeatedSuffix(decision.repeatedCount)}`)
+        })
+
+        if (error) {
             return NextResponse.json(
                 { error: 'No se pudo guardar el reporte. Intenta de nuevo.' },
                 { status: 500 },
