@@ -1531,7 +1531,7 @@ export default function DesignStudioPage() {
           cerrar tocando afuera (affordance de que se abrió un panel). */}
       {rightPanelOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-[55] bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={() => setRightPanelOpen(false)}
           aria-hidden="true"
         />
@@ -1539,9 +1539,9 @@ export default function DesignStudioPage() {
 
       {/* ---- Right Panel: Garments + Pricing ---- */}
       <div className={`
-        fixed inset-y-0 right-0 z-40 w-80 bg-zinc-900/95 backdrop-blur border-l border-zinc-800
+        fixed inset-y-0 right-0 z-[60] w-80 bg-zinc-900/95 backdrop-blur border-l border-zinc-800
         transform transition-transform duration-200
-        lg:relative lg:translate-x-0
+        lg:relative lg:z-auto lg:translate-x-0
         ${rightPanelOpen ? 'translate-x-0' : 'translate-x-full'}
       `}>
         <div className="flex flex-col h-full">
@@ -1813,11 +1813,6 @@ export default function DesignStudioPage() {
           </div>
         </div>
       </div>
-
-      {/* Right panel overlay (mobile) */}
-      {rightPanelOpen && (
-        <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setRightPanelOpen(false)} />
-      )}
 
       {/* ---- Style Modal ---- */}
       {styleModalOpen && (
