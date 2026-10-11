@@ -139,7 +139,9 @@ export function ImageUpload({ value, onChange, type = 'other', label, className 
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        // Lista explícita (sin HEIC): así el iPhone convierte la foto a JPG
+        // antes de subirla — el servidor no puede decodificar HEIC.
+        accept="image/jpeg,image/png,image/webp,image/svg+xml"
         onChange={handleFileChange}
         disabled={uploading}
         className="hidden"

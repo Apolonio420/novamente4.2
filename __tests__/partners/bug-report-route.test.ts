@@ -10,6 +10,7 @@ import { NextRequest } from 'next/server'
 const h = vi.hoisted(() => ({
   ctx: { userId: 'u1', tenant: { id: 't1', name: 'Marca <A>' }, role: 'viewer' } as any,
   notifyUrgent: vi.fn(async (_m: string) => ({ ok: true })),
+  notifyError: vi.fn(async (_e: unknown) => ({ digest: true })),
   cooldown: vi.fn(async (_k: string) => ({ send: true, repeatedCount: 0 })),
   count: 0,
   insertRow: vi.fn(),
@@ -25,6 +26,7 @@ vi.mock('next/server', async (orig) => ({
 vi.mock('@/lib/partners/permissions', () => ({ getRequestTenant: vi.fn(async () => h.ctx) }))
 vi.mock('@/lib/notifications', () => ({
   notifyUrgent: (m: string) => h.notifyUrgent(m),
+  notifyError: (e: unknown) => h.notifyError(e),
   escapeTelegramHtml: (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
 }))
 vi.mock('@/lib/alerts/alert-cooldown', () => ({
@@ -127,6 +129,16 @@ describe('POST /api/partners/assistant/bug-report', () => {
     await tick()
     expect(h.notifyUrgent).toHaveBeenCalledTimes(1)
     expect(h.notifyUrgent.mock.calls[0][0]).toContain('No se pudo guardar')
+  })
+
+  it('error pasajero (chunk viejo tras deploy / red): guarda pero va al resumen, no a Urgente', async () => {
+    const res = await POST(req({ ...payload, errorMessage: 'ChunkLoadError: Loading chunk 123 failed.' }))
+    expect(res.status).toBe(200)
+    await tick()
+    expect(h.insertRow).toHaveBeenCalledTimes(1)
+    expect(h.notifyUrgent).not.toHaveBeenCalled()
+    expect(h.notifyError).toHaveBeenCalledTimes(1)
+    expect(h.notifyError.mock.calls[0][0]).not.toHaveProperty('urgent', true)
   })
 
   it('body inválido → 400', async () => {

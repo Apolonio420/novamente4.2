@@ -7,6 +7,11 @@ describe('normalizePartnerPhone — Argentina', () => {
     expect(normalizePartnerPhone('541123456789')).toEqual({ ok: true, value: '5491123456789' })
   })
 
+  it('área + "15" + abonado sin el "0" (ej. "11 15 2345 6789") saca el "15"', () => {
+    expect(normalizePartnerPhone('11 15 2345 6789')).toEqual({ ok: true, value: '5491123456789' })
+    expect(normalizePartnerPhone('221 15 456 7890')).toEqual({ ok: true, value: '5492214567890' })
+  })
+
   it('ya viene en formato WhatsApp ("549" + 10) y se devuelve igual', () => {
     expect(normalizePartnerPhone('5491123456789')).toEqual({ ok: true, value: '5491123456789' })
   })

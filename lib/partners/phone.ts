@@ -86,6 +86,14 @@ function normalizeArgentina(digits: string): string | null {
     return null
   }
 
+  // Área + "15" + abonado sin el "0" adelante (ej. "11 15 2345 6789"), la
+  // forma más común de copiar un celular argentino.
+  if (digits.length === AR_LOCAL_LENGTH + 2) {
+    const extracted = stripAreaCode15(digits)
+    if (extracted) return `549${extracted}`
+    return null
+  }
+
   if (digits.length === AR_LOCAL_LENGTH) {
     if (digits.startsWith('15')) {
       // Sin código de área: se asume CABA/GBA ("11"), el caso de uso real de

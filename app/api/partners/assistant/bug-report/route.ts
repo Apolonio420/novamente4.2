@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getRequestTenant } from '@/lib/partners/permissions'
-import { notifyUrgent, escapeTelegramHtml } from '@/lib/notifications'
+import { notifyUrgent, notifyError, escapeTelegramHtml } from '@/lib/notifications'
 import { checkAlertCooldown, formatRepeatedSuffix } from '@/lib/alerts/alert-cooldown'
 import { hashAlertKey, normalizeAlertText } from '@/lib/alerts/dedupe-key'
 import { runAfterResponse } from '@/lib/partners/support-notify'
@@ -29,6 +29,18 @@ function pathOf(sourceUrl?: string): string {
     } catch {
         return sourceUrl.split('?')[0].split('#')[0].slice(0, 200)
     }
+}
+
+/**
+ * Errores pasajeros del navegador (deploy nuevo con chunks viejos, red caída):
+ * no son accionables para el equipo y después de cada deploy le saltarían a
+ * varios partners a la vez. Se guardan igual en bug_reports, pero van al
+ * resumen diario en vez de "🚨 Urgente" (política: alertas pocas y accionables).
+ */
+const TRANSIENT_ERROR_RE = /ChunkLoadError|Loading (CSS )?chunk|dynamically imported module|Failed to fetch|NetworkError|Load failed|network error/i
+
+export function isTransientClientError(message?: string): boolean {
+    return !!message && TRANSIENT_ERROR_RE.test(message)
 }
 
 /**
@@ -105,7 +117,15 @@ export async function POST(request: NextRequest) {
         // silencio es justo lo que se quiere evitar.
         const path = pathOf(sourceUrl)
         const msgForKey = errorMessage || description
-        runAfterResponse(async () => {
+        if (isTransientClientError(msgForKey)) {
+            runAfterResponse(async () => {
+                await notifyError({
+                    area: 'Workspace partner',
+                    endpoint: path,
+                    message: `${tenant.name}: ${msgForKey.slice(0, 200)}`,
+                })
+            })
+        } else runAfterResponse(async () => {
             const key = hashAlertKey(['bug', tenant.id, path, normalizeAlertText(msgForKey)])
             const decision = await checkAlertCooldown(key)
             if (!decision.send) return
