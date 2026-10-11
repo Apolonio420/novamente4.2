@@ -972,9 +972,9 @@ export default function DesignStudioPage() {
     <div className="flex h-full min-h-0 overflow-hidden">
       {/* ---- Sidebar ---- */}
       <div className={`
-        fixed inset-y-0 left-0 z-40 w-72 bg-zinc-900/95 backdrop-blur border-r border-zinc-800
+        fixed inset-y-0 left-0 z-[60] w-72 bg-zinc-900/95 backdrop-blur border-r border-zinc-800
         transform transition-all duration-200 overflow-hidden
-        lg:relative lg:flex-shrink-0
+        lg:relative lg:z-auto lg:flex-shrink-0
         ${sidebarOpen ? 'translate-x-0 lg:w-72' : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-r-0'}
       `}>
         <div className="flex flex-col h-full">
@@ -1049,7 +1049,9 @@ export default function DesignStudioPage() {
 
       {/* Sidebar overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        // z-[55]/z-[60] en mobile: el header del sitio (sticky z-50) tapaba el
+        // título y el botón de cerrar del panel de sesiones (igual que el de prendas).
+        <div className="fixed inset-0 bg-black/50 z-[55] lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* ---- Main chat area ---- */}
