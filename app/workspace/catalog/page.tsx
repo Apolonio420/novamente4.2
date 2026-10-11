@@ -535,11 +535,16 @@ export default function CatalogPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
+        // 422 EN REGLA (precio/margen/frente+dorso/color): el mensaje del
+        // servidor se muestra tal cual en el toast, no uno genérico.
+        const data = await res.json().catch(() => ({}))
         if (!res.ok) {
-          const data = await res.json()
-          throw new Error(data.error || 'Error al crear producto')
+          throw new Error(data.error || `Error al crear producto (${res.status})`)
         }
-        showToast('Producto creado', 'success')
+        // El servidor es la fuente de verdad del status final (puede exigir
+        // EN REGLA antes de publicar — ver POST /api/partners/catalog): el
+        // toast refleja data.product.status, no lo que se mandó.
+        showToast(data.product?.status === 'published' ? 'Producto publicado' : 'Borrador guardado', 'success')
       } else if (formMode === 'edit' && editingProduct) {
         const res = await authFetch(`/api/partners/catalog/${editingProduct.id}`, {
           method: 'PUT',

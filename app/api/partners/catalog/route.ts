@@ -12,6 +12,9 @@ import {
   MAX_PRODUCT_IMAGES,
 } from '@/lib/partners/product-image-origin'
 import { garmentRequiresColorChoice, productHasColorInfo } from '@/lib/partners/product-colors'
+import { resolveProductCost, validateProductForPublish } from '@/lib/partners/variants'
+import { validateFrontAndBackForPublish } from '@/lib/partners/product-sides'
+import { onProductPublished } from '@/lib/partners/auto-publish'
 
 function normalizePricingPlan(plan: string | null | undefined): 'starter' | 'growth' | 'pro' {
   const p = (plan || '').toLowerCase()
@@ -115,18 +118,50 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // El panel manda status ('draft' | 'published') — antes este endpoint lo
+    // ignoraba por completo y createProduct() siempre caía al default
+    // ('draft'), así que crear un producto como "Publicado" quedaba guardado
+    // como borrador en silencio (la UI mostraba "Producto creado" igual,
+    // sin avisar nada). Un producto puede nacer publicado directo (igual que
+    // products/from-design), así que acá hace falta pasar por EL MISMO gate
+    // "EN REGLA" que exige el PUT (catalog/[id]/route.ts) antes de publicar:
+    // precio > 0 con margen sobre el costo, y frente+dorso (E3). El guard de
+    // color de arriba ya corre con la misma condición.
+    const status: 'draft' | 'published' = body.status === 'published' ? 'published' : 'draft'
+
     // Guard espejo del front (app/workspace/catalog/page.tsx handleSave): si la
     // prenda del catálogo tiene colores definidos, no se puede publicar sin
     // elegir ninguno. Prendas sin colores en el catálogo (láminas, lienzos,
     // accesorios) no lo exigen. Cuenta como "tiene color" cualquiera de los 3
     // formatos vigentes (colors[], available_colors legacy, color singular) —
     // ver lib/partners/product-colors.ts.
-    if (body.status === 'published') {
+    if (status === 'published') {
       const garmentKey = typeof (body.metadata as Record<string, unknown> | null)?.garmentKey === 'string'
         ? ((body.metadata as Record<string, unknown>).garmentKey as string)
         : undefined
       if (garmentRequiresColorChoice(garmentKey) && !productHasColorInfo(body.metadata as Record<string, unknown> | null)) {
         return NextResponse.json({ error: 'Elegí al menos un color antes de publicar' }, { status: 422 })
+      }
+
+      // Mismo piso que validateProductForPublish en el PUT: precio > 0 y con
+      // margen sobre el costo real del plan (lib/partners/variants.ts). Un
+      // producto recién creado no tiene variantes todavía, así que no se
+      // pasan (el publish gate de variantes se revalida más adelante si el
+      // partner las agrega vía PUT).
+      const numericPrice = body.price != null ? Number(body.price) : null
+      const cost = resolveProductCost(body.metadata as Record<string, unknown> | null, tenant.plan)
+      const publishCheck = validateProductForPublish({ price: numericPrice, cost })
+      if (!publishCheck.ok) {
+        return NextResponse.json({ error: publishCheck.reason }, { status: 422 })
+      }
+
+      // E3 — frente y dorso siempre: mismo gate que el PUT y from-design.
+      const sidesCheck = validateFrontAndBackForPublish(
+        Array.isArray(body.images) ? body.images : [],
+        (body.metadata as Record<string, unknown> | null)?.colors,
+      )
+      if (!sidesCheck.ok) {
+        return NextResponse.json({ error: sidesCheck.reason }, { status: 422 })
       }
     }
 
@@ -140,20 +175,32 @@ export async function POST(request: NextRequest) {
       tags: Array.isArray(body.tags) ? body.tags : undefined,
       collection: body.collection || undefined,
       metadata: body.metadata || undefined,
+      status,
     })
 
     if (!product) {
       return NextResponse.json({ error: 'No se pudo crear el producto' }, { status: 500 })
     }
 
-    // Fire-and-forget: set first_product_draft_at once
-    ;(supabaseAdmin as any)
-      .from('tenants')
-      .update({ first_product_draft_at: new Date().toISOString() })
-      .eq('id', tenant.id)
-      .is('first_product_draft_at', null)
+    // Igual que products/from-design/route.ts: un producto puede nacer
+    // 'published' directo (sin transición draft->published), así que no hay
+    // PUT que dispare el auto-publish del storefront (onProductPublished,
+    // lib/partners/auto-publish.ts) — lo corremos nosotros mismos. Si nace
+    // draft, se mantiene el fire-and-forget de first_product_draft_at de
+    // siempre.
+    let autoPublished = false
+    if (status === 'published') {
+      autoPublished = await onProductPublished(tenant)
+    } else {
+      // Fire-and-forget: set first_product_draft_at once
+      ;(supabaseAdmin as any)
+        .from('tenants')
+        .update({ first_product_draft_at: new Date().toISOString() })
+        .eq('id', tenant.id)
+        .is('first_product_draft_at', null)
+    }
 
-    return NextResponse.json({ product }, { status: 201 })
+    return NextResponse.json({ product, auto_published: autoPublished }, { status: 201 })
   } catch (error) {
     console.error('POST /api/partners/catalog error:', error)
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })
