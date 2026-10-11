@@ -221,6 +221,12 @@ export default function DesignStudioPage() {
   const [garmentPricing, setGarmentPricing] = useState<Record<string, PublicGarmentPricing>>({})
   const [accessAllowed, setAccessAllowed] = useState(false)
   const [accessReason, setAccessReason] = useState('')
+  // Separado de `error` (abajo, usado por el chat) a propósito: si falla el
+  // fetch de /api/partners/design/config (blip de red, 500 pasajero),
+  // accessAllowed se queda en su default `false` y, sin este estado, el
+  // render gate mostraba la pantalla "Actualiza tu plan" — un problema de
+  // red se veía igual que "no tenés el plan" (auditoría workspace 10/10).
+  const [configError, setConfigError] = useState<string | null>(null)
 
   // Chat state
   const [session, setSession] = useState<StudioSession>(() => createStudioSession())
@@ -271,8 +277,15 @@ export default function DesignStudioPage() {
   // Usage
   const [usage, setUsage] = useState<UsageInfo | null>(null)
 
-  // Right panel
-  const [rightPanelOpen, setRightPanelOpen] = useState(true)
+  // Right panel ("Prendas Base"): arranca CERRADO — en mobile el panel es
+  // `fixed` con un backdrop que tapa toda la pantalla (translate-x-0 cuando
+  // está abierto); si arranca en `true` el partner entra a Studio y ve el
+  // backdrop oscuro sin poder tocar nada hasta cerrarlo a mano (bug real,
+  // auditoría 10/10). En desktop el panel es `lg:relative lg:translate-x-0`
+  // — SIEMPRE visible sin importar este estado, así que no se ve afectado.
+  // El botón "Elegir prenda y color" (abajo, `lg:hidden`) sigue abriendo el
+  // panel en mobile cuando el partner lo necesita.
+  const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [showPricingTable, setShowPricingTable] = useState(false)
 
   // Lightbox
@@ -295,12 +308,16 @@ export default function DesignStudioPage() {
   } | null>(null)
   const [catalogProductName, setCatalogProductName] = useState('')
   const [catalogProductPrice, setCatalogProductPrice] = useState('')
-  const [catalogCreating, setCatalogCreating] = useState(false)
   const [catalogToast, setCatalogToast] = useState<string | null>(null)
 
   // Upload propio (logo / imagen ya creada)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+
+  // Guard de handleMockup: sin esto, doble click en "Aplicar a prenda"
+  // disparaba 2 llamadas a /api/partners/design/mockup (2 mockups con IA,
+  // 2x costo) porque el botón nunca se deshabilitaba durante la generación.
+  const [mockupGenerating, setMockupGenerating] = useState(false)
 
   // Lados afianzados — para producto doble estampa frente + espalda
   // Cuando el partner afianza frente y espalda DE LA MISMA prenda+color, aparece
@@ -340,31 +357,38 @@ export default function DesignStudioPage() {
   // Load config + sessions + usage
   // ---------------------------------------------------------------------------
 
-  useEffect(() => {
-    async function init() {
-      try {
-        const res = await authFetch('/api/partners/design/config')
-        if (!res.ok) throw new Error('Error cargando configuracion')
-        const data = await res.json()
-        setAccessAllowed(data.access?.allowed ?? false)
-        setAccessReason(data.access?.reason || '')
-        setPlan(data.plan || '')
-        setStyles(data.styles || [])
-        setGarments(data.garments || [])
-        setGarmentPricing(data.pricing || {})
-        // No autoseleccionar estilo. Default "sin estilo" para que el prompt del
-        // partner mande sin sesgos. Si quiere un estilo, lo abre del modal y elige.
-        // (antes auto-seleccionaba el primero, lo que cambiaba el output sin que
-        // el partner lo pidiera).
-        if (data.garments?.length > 0) setSelectedGarment(data.garments[0].key)
-        else setSelectedGarment(GARMENT_OPTIONS[0].key)
-      } catch (e: any) {
-        setError(e.message)
-      } finally {
-        setLoading(false)
-      }
+  const loadConfig = useCallback(async () => {
+    setLoading(true)
+    setConfigError(null)
+    try {
+      const res = await authFetch('/api/partners/design/config')
+      if (!res.ok) throw new Error('Error cargando configuracion')
+      const data = await res.json()
+      setAccessAllowed(data.access?.allowed ?? false)
+      setAccessReason(data.access?.reason || '')
+      setPlan(data.plan || '')
+      setStyles(data.styles || [])
+      setGarments(data.garments || [])
+      setGarmentPricing(data.pricing || {})
+      // No autoseleccionar estilo. Default "sin estilo" para que el prompt del
+      // partner mande sin sesgos. Si quiere un estilo, lo abre del modal y elige.
+      // (antes auto-seleccionaba el primero, lo que cambiaba el output sin que
+      // el partner lo pidiera).
+      if (data.garments?.length > 0) setSelectedGarment(data.garments[0].key)
+      else setSelectedGarment(GARMENT_OPTIONS[0].key)
+    } catch (e: any) {
+      // No tocar accessAllowed (se queda en su último valor / default false):
+      // este es un error de RED, no una decisión de plan — el render gate
+      // distingue configError de "sin acceso por plan" más abajo.
+      setConfigError(e.message || 'Error cargando el Studio')
+    } finally {
+      setLoading(false)
     }
-    init()
+  }, [])
+
+  useEffect(() => {
+    loadConfig()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -615,6 +639,8 @@ export default function DesignStudioPage() {
   }
 
   const handleMockup = async (designImageUrl: string) => {
+    if (mockupGenerating) return
+    setMockupGenerating(true)
     const sessionId = await ensureRemoteSession()
     const sysMsg = createStudioMessage('system', `Mockup: ${selectedGarment} · ${selectedColor} · ${selectedSide}`)
     const placeholderId = crypto.randomUUID()
@@ -646,7 +672,10 @@ export default function DesignStudioPage() {
         }),
       })
 
-      const data = await res.json()
+      // parseApiResponse (no res.json() crudo): un 413/504 de Vercel/el proxy
+      // responde texto plano, no JSON — res.json() tiraba "Unexpected token"
+      // y el partner veía ese jeroglífico en vez de un error en español.
+      const data = await parseApiResponse(res)
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`)
 
       const assistantMsg: StudioMessage = {
@@ -674,6 +703,8 @@ export default function DesignStudioPage() {
       updateMessages(msgs =>
         msgs.map(m => m.id === placeholderId ? { ...m, isLoading: false, error: err.message } : m)
       )
+    } finally {
+      setMockupGenerating(false)
     }
   }
 
@@ -799,6 +830,20 @@ export default function DesignStudioPage() {
       setTimeout(() => setCatalogToast(null), 3500)
       return
     }
+    // partner_design_messages todavía no persiste designImageUrl/stampMode/
+    // placement/stampWidthCm (pendiente migración, ver lib/partners/studio/
+    // session-service.ts saveStudioMessage) — un mockup afianzado DESPUÉS de
+    // recargar la página o reabrir una sesión vieja llega sin esos campos
+    // (printSpecOf los deja undefined) aunque la imagen se vea igual. Sin
+    // este guard, el producto se creaba con el arte de impresión vacío y
+    // producción no sabía qué estampar. Un mockup recién generado en esta
+    // misma sesión siempre trae designUrl (handleMockup lo pide para
+    // generarlo), así que esto solo bloquea el caso realmente roto.
+    if (!pinnedFront.print?.designUrl || !pinnedBack.print?.designUrl) {
+      setCatalogToast('Este mockup es de una sesión anterior y no guarda los datos de impresión. Volvé a aplicarlo a la prenda para crear el producto.')
+      setTimeout(() => setCatalogToast(null), 5000)
+      return
+    }
     const cat = CATALOG_PRODUCTS.find(p => p.key === pinnedFront.garmentKey)
     setCatalogProductName(cat ? `${cat.name} ${COLOR_LABELS[pinnedFront.garmentColor] || ''} doble estampa` : 'Producto doble estampa')
     setCatalogProductPrice(cat ? String(cat.retailARS + 3500) : '32000') // +$3.500 por doble estampa (política 29/08, mismo número que cobra Novamente)
@@ -888,6 +933,27 @@ export default function DesignStudioPage() {
     )
   }
 
+  // Un blip de red al cargar /api/partners/design/config no es lo mismo que
+  // "no tenés acceso por tu plan" — antes ambos casos caían en la misma
+  // pantalla de "Actualiza tu plan", así que un error pasajero parecía un
+  // problema de plan. Se chequea ANTES de accessAllowed (que se queda en su
+  // default `false` cuando el fetch falla).
+  if (configError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[80vh] text-center px-4">
+        <Sparkles className="h-12 w-12 text-amber-500 mb-4" />
+        <h2 className="text-xl font-semibold mb-2">No pudimos cargar el Studio</h2>
+        <p className="text-zinc-400 mb-4">Hubo un error de conexión. Puede ser algo pasajero.</p>
+        <button
+          onClick={() => loadConfig()}
+          className="px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium transition-colors"
+        >
+          Reintentar
+        </button>
+      </div>
+    )
+  }
+
   if (!accessAllowed) {
     return (
       <div className="flex flex-col items-center justify-center h-[80vh] text-center px-4">
@@ -933,10 +999,24 @@ export default function DesignStudioPage() {
               <p className="text-zinc-500 text-xs text-center py-8">Sin sesiones aún</p>
             ) : (
               sessions.map(s => (
-                <button
+                // Fila como `div role="button"` (no <button>): la fila entera
+                // es clickeable para seleccionar la sesión, pero el botón de
+                // borrar (Trash2) tiene que ser un botón HERMANO, no anidado
+                // — <button> dentro de <button> es HTML inválido y React
+                // tira error de hidratación. stopPropagation en el botón de
+                // borrar evita que también dispare handleSelectSession.
+                <div
                   key={s.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleSelectSession(s.id)}
-                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors group flex items-start gap-2 ${
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      handleSelectSession(s.id)
+                    }
+                  }}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors group flex items-start gap-2 cursor-pointer ${
                     s.id === remoteSessionId ? 'bg-violet-600/20 text-violet-300' : 'hover:bg-zinc-800 text-zinc-400'
                   }`}
                 >
@@ -954,12 +1034,13 @@ export default function DesignStudioPage() {
                     </p>
                   </div>
                   <button
+                    type="button"
                     onClick={(e) => { e.stopPropagation(); handleDeleteSession(s.id) }}
                     className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/20 text-red-400 transition-all"
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>
-                </button>
+                </div>
               ))
             )}
           </div>
@@ -1098,6 +1179,7 @@ export default function DesignStudioPage() {
                 msg={msg}
                 onZoom={(url) => setLightboxUrl(url)}
                 onMockup={(url) => handleMockup(url)}
+                mockupGenerating={mockupGenerating}
                 onDownload={(url) => handleDownload(url)}
                 onPublish={(url) => { setPublishUrl(url); setPublishSlot('hero') }}
                 onAddToCatalog={(url, gKey, gColor) => {
@@ -1910,27 +1992,17 @@ export default function DesignStudioPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setCatalogModal(null)}
-                disabled={catalogCreating}
                 className="flex-1 px-4 py-2 rounded-lg border border-zinc-700 text-sm hover:bg-zinc-800 transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleCreateCatalogProduct}
-                disabled={catalogCreating || !catalogProductName.trim()}
+                disabled={!catalogProductName.trim()}
                 className="flex-1 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50 transition-colors inline-flex items-center justify-center gap-1.5"
               >
-                {catalogCreating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Creando...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4" />
-                    Crear producto
-                  </>
-                )}
+                <Plus className="w-4 h-4" />
+                Crear producto
               </button>
             </div>
 
@@ -1961,6 +2033,7 @@ function ChatBubble({
   msg,
   onZoom,
   onMockup,
+  mockupGenerating,
   onDownload,
   onPublish,
   onAddToCatalog,
@@ -1970,6 +2043,7 @@ function ChatBubble({
   msg: StudioMessage
   onZoom: (url: string) => void
   onMockup: (url: string) => void
+  mockupGenerating: boolean
   onDownload: (url: string) => void
   onPublish: (url: string) => void
   onAddToCatalog: (url: string, garmentKey?: string, color?: string) => void
@@ -2045,11 +2119,16 @@ function ChatBubble({
               {msg.type === 'design' && (
                 <button
                   onClick={() => onMockup(msg.imageUrl!)}
-                  className="px-4 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold inline-flex items-center gap-2 shadow-lg shadow-violet-600/30 transition-all"
+                  disabled={mockupGenerating}
+                  className="px-4 py-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold inline-flex items-center gap-2 shadow-lg shadow-violet-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Aplicar a una prenda Novamente"
                 >
-                  <Shirt className="h-4 w-4" />
-                  Aplicar a prenda
+                  {mockupGenerating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Shirt className="h-4 w-4" />
+                  )}
+                  {mockupGenerating ? 'Generando...' : 'Aplicar a prenda'}
                 </button>
               )}
               {msg.type === 'mockup' && (
