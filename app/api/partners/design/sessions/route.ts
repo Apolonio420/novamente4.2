@@ -21,8 +21,12 @@ export async function GET(request: NextRequest) {
       .limit(50)
 
     if (error) {
+      // Antes devolvía { sessions: [] } con 200 ante un error real de
+      // Supabase — indistinguible de "todavía no generó ninguna sesión"
+      // (auditoría workspace 10/10). 500 explícito para que la UI pueda
+      // distinguir vacío de error.
       console.error('[studio sessions] list error:', error)
-      return NextResponse.json({ sessions: [] })
+      return NextResponse.json({ error: 'Error al cargar las sesiones del Studio' }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -39,7 +43,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (err: any) {
     console.error('[studio sessions] GET error:', err)
-    return NextResponse.json({ sessions: [] })
+    return NextResponse.json({ error: 'Error al cargar las sesiones del Studio' }, { status: 500 })
   }
 }
 

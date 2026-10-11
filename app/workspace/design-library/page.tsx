@@ -6,7 +6,7 @@ import Image from "next/image"
 import { authFetch } from "@/lib/partners/auth-fetch"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Sparkles, Wand2, Image as ImageIcon, Shirt, ExternalLink, Copy, Check } from "lucide-react"
+import { Sparkles, Wand2, Image as ImageIcon, Shirt, ExternalLink, Copy, Check, AlertTriangle, RotateCw } from "lucide-react"
 
 interface AssetItem {
   id: string
@@ -18,25 +18,42 @@ interface AssetItem {
 
 type Filter = 'all' | 'design' | 'mockup'
 
+type LoadError = 'auth' | 'server' | null
+
 export default function DesignLibraryPage() {
   const [assets, setAssets] = useState<AssetItem[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<Filter>('all')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  // Antes un 401/500 nunca se distinguía de "no hay diseños" — la pantalla
+  // vacía ("Todavía no generaste ningún diseño") se mostraba igual que una
+  // sesión vencida o un error real de Supabase (auditoría workspace 10/10).
+  const [loadError, setLoadError] = useState<LoadError>(null)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
+    setLoadError(null)
     authFetch(`/api/partners/design/library?type=${filter}&limit=120`)
-      .then(r => r.json())
-      .then(data => {
+      .then(async (r) => {
         if (cancelled) return
+        if (!r.ok) {
+          setAssets([])
+          setLoadError(r.status === 401 ? 'auth' : 'server')
+          return
+        }
+        const data = await r.json()
         setAssets(Array.isArray(data?.assets) ? data.assets : [])
       })
-      .catch(() => !cancelled && setAssets([]))
+      .catch(() => {
+        if (cancelled) return
+        setAssets([])
+        setLoadError('server')
+      })
       .finally(() => !cancelled && setLoading(false))
     return () => { cancelled = true }
-  }, [filter])
+  }, [filter, reloadKey])
 
   const handleCopyUrl = async (asset: AssetItem) => {
     try {
@@ -112,6 +129,8 @@ export default function DesignLibraryPage() {
             <div key={i} className="aspect-square rounded-lg bg-zinc-900 animate-pulse" />
           ))}
         </div>
+      ) : loadError ? (
+        <ErrorState kind={loadError} onRetry={() => setReloadKey((k) => k + 1)} />
       ) : assets.length === 0 ? (
         <EmptyState filter={filter} />
       ) : (
@@ -183,6 +202,36 @@ export default function DesignLibraryPage() {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function ErrorState({ kind, onRetry }: { kind: 'auth' | 'server'; onRetry: () => void }) {
+  if (kind === 'auth') {
+    return (
+      <div className="text-center py-20 max-w-md mx-auto">
+        <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Tu sesión venció</h2>
+        <p className="text-sm text-zinc-400 mb-6">
+          Volvé a entrar para ver tu biblioteca de diseños.
+        </p>
+        <Link href="/partners/login?redirect=/workspace/design-library">
+          <Button>Volver a entrar</Button>
+        </Link>
+      </div>
+    )
+  }
+  return (
+    <div className="text-center py-20 max-w-md mx-auto">
+      <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+      <h2 className="text-xl font-semibold mb-2">No pudimos cargar tu biblioteca</h2>
+      <p className="text-sm text-zinc-400 mb-6">
+        Hubo un error de conexión. Puede ser algo pasajero — probá de nuevo.
+      </p>
+      <Button onClick={onRetry}>
+        <RotateCw className="w-4 h-4 mr-2" />
+        Reintentar
+      </Button>
     </div>
   )
 }

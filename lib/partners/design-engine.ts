@@ -325,6 +325,15 @@ export function __resetSaveDesignAssetAlertThrottle() {
 // getDesignAssets
 // ---------------------------------------------------------------------------
 
+/**
+ * Antes, un error real de Supabase (timeout, RLS, blip de red) se tragaba
+ * devolviendo `[]` — indistinguible de "el partner todavía no generó nada".
+ * design-library/page.tsx mostraba "Todavía no generaste ningún diseño"
+ * ante un 401/500, lo que parecía un estado vacío en vez de un error real
+ * (auditoría workspace 10/10). Ahora tira: los callers (GET
+ * design/assets y design/library) ya atrapan el error y devuelven 500, así
+ * la UI puede distinguir "vacío" de "error" y ofrecer "Reintentar".
+ */
 export async function getDesignAssets(
   tenantId: string,
   typeFilter?: 'design' | 'mockup',
@@ -344,7 +353,11 @@ export async function getDesignAssets(
 
   const { data, error } = await query
 
-  if (error || !data) return []
+  if (error) {
+    console.error('getDesignAssets error:', error)
+    throw new Error('Error al cargar la biblioteca de diseños')
+  }
+  if (!data) return []
   return data as PartnerAsset[]
 }
 

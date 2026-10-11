@@ -17,27 +17,36 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
-  const result = await getRequestTenant(request)
-  if (!result) {
-    return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  try {
+    const result = await getRequestTenant(request)
+    if (!result) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+    const { tenant } = result
+
+    const { searchParams } = new URL(request.url)
+    const type = searchParams.get('type') as 'design' | 'mockup' | 'all' | null
+    const limit = Math.min(Number(searchParams.get('limit')) || 60, 200)
+
+    const filter = type && type !== 'all' ? type : undefined
+    // getDesignAssets ahora tira si Supabase falla (antes devolvia [] y un
+    // error real se mostraba igual que "no hay diseños" en la UI) — lo
+    // atrapamos acá para devolver un 500 explicito en vez de que la
+    // excepcion se propague sin forma.
+    const assets = await getDesignAssets(tenant.id, filter, limit)
+
+    return NextResponse.json({
+      assets: assets.map(a => ({
+        id: a.id,
+        type: a.type,
+        url: a.public_url,
+        storageKey: a.storage_key,
+        metadata: a.metadata,
+        createdAt: a.created_at,
+      })),
+    })
+  } catch (error) {
+    console.error('GET /api/partners/design/library error:', error)
+    return NextResponse.json({ error: 'Error al cargar la biblioteca de diseños' }, { status: 500 })
   }
-  const { tenant } = result
-
-  const { searchParams } = new URL(request.url)
-  const type = searchParams.get('type') as 'design' | 'mockup' | 'all' | null
-  const limit = Math.min(Number(searchParams.get('limit')) || 60, 200)
-
-  const filter = type && type !== 'all' ? type : undefined
-  const assets = await getDesignAssets(tenant.id, filter, limit)
-
-  return NextResponse.json({
-    assets: assets.map(a => ({
-      id: a.id,
-      type: a.type,
-      url: a.public_url,
-      storageKey: a.storage_key,
-      metadata: a.metadata,
-      createdAt: a.created_at,
-    })),
-  })
 }
