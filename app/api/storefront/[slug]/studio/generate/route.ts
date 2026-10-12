@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getTenantBySlug } from '@/lib/partners/tenant'
 import { getPlanFeatures, effectivePlan } from '@/lib/partners/plans'
+import { studioDesignModel } from '@/lib/partners/studio/design-model'
 import {
   getDesignConfig,
   buildTenantPrompt,
@@ -125,7 +126,8 @@ export async function POST(
     console.log(`[storefront-studio] Generating for ${slug} (customer):`, optimizedPrompt.substring(0, 100))
 
     // Generate
-    const modelName = process.env.GEMINI_DESIGN_MODEL || process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image'
+    // (12/10/2026) flash para todos, pro solo para Growth/Pro — ver lib/partners/studio/design-model.ts
+    const modelName = studioDesignModel(effectivePlan(tenant))
     const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({
       model: modelName,

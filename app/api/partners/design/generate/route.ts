@@ -16,6 +16,7 @@ import { checkUsageLimit, recordUsage } from '@/lib/partners/studio/usage-tracke
 import { extractBrandEssence, buildBrandAwarePrompt } from '@/lib/partners/studio/prompt-builder'
 import { meterPublicImageGen } from '@/lib/security/meter-usage'
 import { effectivePlan } from '@/lib/partners/plans'
+import { studioDesignModel } from '@/lib/partners/studio/design-model'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -91,7 +92,8 @@ export async function POST(request: NextRequest) {
     // el preview del 3.1 (que sigue en preview) o setear GEMINI_DESIGN_MODEL
     // explicito en env. Antes hardcodeaba gemini-2.5-flash-image que ya
     // no resuelve = causa del bug "no genera imagenes" reportado.
-    const modelName = process.env.GEMINI_DESIGN_MODEL || process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image'
+    // (12/10/2026) flash para todos, pro solo para Growth/Pro — ver lib/partners/studio/design-model.ts
+    const modelName = studioDesignModel(effectivePlan(tenant))
     const genAI = getGeminiClient()
     const model = genAI.getGenerativeModel({
       model: modelName,
