@@ -117,4 +117,22 @@ describe('handleAuthEventForSync — debounce, dedupe y orden POST/DELETE', () =
     await flush()
     expect(global.fetch).toHaveBeenCalledTimes(3)
   })
+
+  it('respuesta no-ok (500) → NO marca el token como sincronizado: el próximo evento reintenta', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 500 })
+    handleAuthEventForSync('TOKEN_REFRESHED', { access_token: 'tok-r', refresh_token: 'r' })
+    await flush()
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+
+    handleAuthEventForSync('TOKEN_REFRESHED', { access_token: 'tok-r', refresh_token: 'r' })
+    await flush()
+    expect(global.fetch).toHaveBeenCalledTimes(2) // reintentó
+
+    global.fetch = vi.fn().mockResolvedValue({ ok: true })
+    handleAuthEventForSync('TOKEN_REFRESHED', { access_token: 'tok-r', refresh_token: 'r' })
+    await flush()
+    handleAuthEventForSync('TOKEN_REFRESHED', { access_token: 'tok-r', refresh_token: 'r' })
+    await flush()
+    expect(global.fetch).toHaveBeenCalledTimes(1) // ok → ahora sí dedupea
+  })
 })

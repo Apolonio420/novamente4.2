@@ -63,7 +63,7 @@ function enqueueWrite(job: () => Promise<void>): void {
 
 async function postSetSession(session: MinimalSession): Promise<void> {
   try {
-    await fetch('/api/auth/set-session', {
+    const res = await fetch('/api/auth/set-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -71,7 +71,9 @@ async function postSetSession(session: MinimalSession): Promise<void> {
         refresh_token: session.refresh_token || '',
       }),
     })
-    lastSyncedToken = session.access_token
+    // Sólo marcamos como sincronizado si el server aceptó: con 4xx/5xx la
+    // cookie NO se escribió, y marcarlo bloquearía el reintento (dedupe).
+    if (res.ok) lastSyncedToken = session.access_token
   } catch {
     // Best-effort — el próximo evento de auth, focus o visibilitychange reintenta.
   }
