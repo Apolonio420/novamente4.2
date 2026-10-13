@@ -437,11 +437,31 @@ export async function POST(request: NextRequest) {
     // (`partner_sub_{tenant}_{ts}_monthly`, sin sufijo de plan) y manda además
     // `subscription_authorized_payment`. El período de ese cobro lo suma SOLO
     // registerRecurringCharge (idempotente por authorized_payment id); si este
-    // flujo de pago único también lo aplicara, 1 cobro = 2 meses. Los pagos
-    // únicos propios llevan `_annual_{plan}` (subscribe/route.ts), nunca esto.
+    // flujo también lo aplicara, 1 cobro = 2 meses. Se corta SOLO si el payment
+    // se identifica como débito recurrente (operation_type 'recurring_payment').
+    // Los `_monthly` sin plan anteriores (pagos únicos viejos) siguen su curso;
+    // si no se puede determinar, no se corta (no perder plata) y se avisa.
     if (isRecurringChargeReference(externalReference)) {
-      console.log('Partner webhook: payment de suscripción recurrente, lo aplica subscription_authorized_payment — no se suma acá:', paymentId, externalReference)
-      return NextResponse.json({ received: true, skipped: 'recurring_charge_handled_by_authorized_payment' })
+      if (paymentDetails.operation_type === 'recurring_payment') {
+        console.log('Partner webhook: payment de suscripción recurrente, lo aplica subscription_authorized_payment — no se suma acá:', paymentId, externalReference)
+        return NextResponse.json({ received: true, skipped: 'recurring_charge_handled_by_authorized_payment' })
+      }
+      if (paymentDetails.status === 'approved') {
+        try {
+          const { notifyError, escapeTelegramHtml } = await import('@/lib/notifications')
+          await notifyError({
+            urgent: true,
+            area: 'Suscripción partner (MercadoPago)',
+            endpoint: '/api/partners/webhook/mercadopago',
+            message: escapeTelegramHtml(
+              `payment ${paymentId} aprobado con referencia mensual (${externalReference}) sin operation_type 'recurring_payment': no se pudo determinar si es un débito recurrente. Se procesó por el flujo de pago único; si el tenant tiene suscripción recurrente, revisar que no haya sumado un mes de más junto al subscription_authorized_payment.`,
+            ),
+            dedupeKey: `mp-partner-monthly-ambiguous:${paymentId}`,
+          })
+        } catch (e) {
+          console.error('No se pudo avisar el payment mensual ambiguo:', e)
+        }
+      }
     }
 
     // Guard de idempotencia — MP reenvía webhooks (reintentos, notificaciones

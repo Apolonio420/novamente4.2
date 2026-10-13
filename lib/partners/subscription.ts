@@ -50,6 +50,9 @@ export interface SubscriptionMeta {
   // true = un humano está gestionando el cobro con este partner mano a mano;
   // el cron pending-subscription-followup NO le manda emails automáticos.
   subscription_followup_optout?: boolean
+  // true = subscription_expires_at es el mes de activación puesto por el alta
+  // (todavía sin primer cobro); registerRecurringCharge lo reemplaza, no lo suma.
+  expiry_is_activation_grace?: boolean
   [k: string]: unknown
 }
 
@@ -355,9 +358,10 @@ export function isGenuinePreapprovalActivation(
  * Aplica las features del plan, incluido design_engine_mode (esto arregla que
  * antes el Studio quedaba `disabled` aún pagando).
  *
- * NO toca subscription_expires_at: el período lo extiende únicamente
- * registerRecurringCharge (un authorized_payment = un mes, idempotente por id).
- * Antes el alta sumaba 1 mes y el primer cobro sumaba otro: 2 meses por 1 cobro.
+ * No suma mes encima de un cobro: el período lo extiende registerRecurringCharge
+ * (un authorized_payment = un mes, idempotente por id). Sin vencimiento futuro
+ * deja hoy + 1 mes marcado como `expiry_is_activation_grace`. Antes el alta
+ * sumaba 1 mes y el primer cobro otro: 2 meses por 1 cobro.
  *
  * IMPORTANTE (hallazgo [15]): el caller (handlePreapprovalEvent) debe llamar
  * a esta función SOLO cuando isGenuinePreapprovalActivation(...) es true — acá
@@ -374,6 +378,20 @@ export async function activateRecurringTenant(tenant: Tenant, preapprovalId: str
   meta.subscription_type = 'recurring'
   delete meta.pending_plan // ya activado
 
+  // Invariante "un cobro = un mes" SIN dejar el vencimiento en null: el alta no
+  // suma un mes "de regalo" encima de un cobro, pero si no hay un vencimiento
+  // futuro (alta nueva o vencido) pone el período de activación (hoy + 1 mes)
+  // marcado como gracia. registerRecurringCharge lo reemplaza por hoy + 1 mes
+  // (no suma encima) al llegar el primer cobro; si el cobro nunca llega y MP
+  // cancela, el partner igual vence en 1 mes y el cron lo degrada. Si ya hay un
+  // vencimiento FUTURO (el cobro llegó antes que el alta), no se toca ni se marca.
+  const hasFutureExpiry = !!tenant.subscription_expires_at && new Date(tenant.subscription_expires_at).getTime() > new Date(nowISO).getTime()
+  const expiryUpdate: Record<string, any> = {}
+  if (!hasFutureExpiry) {
+    expiryUpdate.subscription_expires_at = addMonths(nowISO, 1)
+    meta.expiry_is_activation_grace = true
+  }
+
   const { error } = await db()
     .from('tenants')
     .update({
@@ -388,12 +406,7 @@ export async function activateRecurringTenant(tenant: Tenant, preapprovalId: str
       billing_cycle: 'monthly',
       mp_subscription_id: preapprovalId,
       subscription_started_at: tenant.subscription_started_at ?? nowISO,
-      // Invariante "un cobro de MP = un mes": el alta NO suma período. Los meses
-      // los suma SOLO registerRecurringCharge, una vez por authorized_payment id
-      // (el primer cobro llega como authorized_payment, en cualquier orden
-      // respecto de este evento). Si el alta sumara también, 1 cobro = 2 meses.
-      // subscription_expires_at queda como está (null en un alta nueva, o el
-      // período vigente/ya extendido por un cobro que llegó antes).
+      ...expiryUpdate, // ver arriba: gracia de activación solo si no hay vencimiento futuro
       last_payment_at: nowISO,
       payment_failures: 0,
       metadata: meta,
@@ -439,15 +452,24 @@ export async function registerRecurringCharge(tenantId: string, nowISO: string, 
     throw new Error(`registerRecurringCharge: no se pudo leer el tenant ${tenantId}: ${readError?.message ?? 'sin datos'}`)
   }
 
+  // Si el vencimiento actual es la gracia de activación del alta, ESE mes es
+  // el del primer cobro: se cuenta desde hoy (no se suma encima) y se borra la
+  // marca en el mismo UPDATE.
+  const graceActive = !!(tenant.metadata as any)?.expiry_is_activation_grace
   const updates: Record<string, any> = {
     status: 'active',
     last_payment_at: nowISO,
-    subscription_expires_at: computeRenewalExpiration(tenant.subscription_expires_at, nowISO, 1),
+    subscription_expires_at: graceActive
+      ? addMonths(nowISO, 1)
+      : computeRenewalExpiration(tenant.subscription_expires_at, nowISO, 1),
     payment_failures: 0,
     updated_at: nowISO,
   }
-  if (authorizedPaymentId) {
-    updates.metadata = { ...(tenant.metadata ?? {}), last_mp_authorized_payment_id: String(authorizedPaymentId) }
+  if (authorizedPaymentId || graceActive) {
+    const newMeta: Record<string, any> = { ...(tenant.metadata ?? {}) }
+    if (graceActive) delete newMeta.expiry_is_activation_grace
+    if (authorizedPaymentId) newMeta.last_mp_authorized_payment_id = String(authorizedPaymentId)
+    updates.metadata = newMeta
   }
 
   const { error } = await db()
