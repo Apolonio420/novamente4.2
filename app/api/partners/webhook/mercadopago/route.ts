@@ -91,7 +91,7 @@ async function alertUnappliedCharge(ctx: { kind: string; mpId: string; tenantLab
       area: 'Suscripción partner (MercadoPago)',
       endpoint: '/api/partners/webhook/mercadopago',
       message: escapeTelegramHtml(
-        `${ctx.kind}: cobro ${ctx.mpId} aprobado pero NO aplicado a ${ctx.tenantLabel}. MP va a reintentar; si en 1 h no se activó, activar el plan a mano. Detalle: ${detail}`,
+        `${ctx.kind}: cobro ${ctx.mpId} aprobado pero NO aplicado a ${ctx.tenantLabel}. MP va a reintentar y lo aplica solo. NO activar a mano sin registrar también la marca last_mp_authorized_payment_id (o last_mp_payment_id) del cobro en la metadata del tenant: si no, el reintento de MP suma OTRO mes. Si en 1 h no se aplicó, registrar esa marca junto con la activación. Detalle: ${detail}`,
       ),
       dedupeKey: `mp-partner-unapplied:${ctx.mpId}`,
     })

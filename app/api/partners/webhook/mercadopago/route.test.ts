@@ -750,4 +750,15 @@ describe('POST /api/partners/webhook/mercadopago — cobro aprobado que no se pu
     expect((await POST(authorizedPaymentRequest('ap-500'))).status).toBe(500)
     expect(h.notifyError).not.toHaveBeenCalled()
   })
+
+  it('texto de la alerta de cobro sin aplicar: no invita a activar a mano sin la marca de idempotencia', async () => {
+    h.getTenantById.mockResolvedValue({ ...baseTenant })
+    h.paymentGet.mockResolvedValue({ id: 'p-t', status: 'approved', external_reference: externalReference, transaction_amount: 25000 })
+    h.updateTenant.mockResolvedValue(null)
+    await POST(webhookRequest('p-t'))
+    const msg: string = h.notifyError.mock.calls[0][0].message
+    expect(msg).toContain('last_mp_authorized_payment_id')
+    expect(msg).toContain('OTRO mes')
+    expect(msg).not.toContain('activar el plan a mano')
+  })
 })
