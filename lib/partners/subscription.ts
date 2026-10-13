@@ -355,9 +355,9 @@ export function isGenuinePreapprovalActivation(
  * Aplica las features del plan, incluido design_engine_mode (esto arregla que
  * antes el Studio quedaba `disabled` aún pagando).
  *
- * El vencimiento se calcula con computeRenewalExpiration: si el tenant venía
- * de una suscripción todavía vigente (ej. reactivación antes de vencer), el
- * mes nuevo se suma desde ese vencimiento vigente, no desde hoy (hallazgo [19]).
+ * NO toca subscription_expires_at: el período lo extiende únicamente
+ * registerRecurringCharge (un authorized_payment = un mes, idempotente por id).
+ * Antes el alta sumaba 1 mes y el primer cobro sumaba otro: 2 meses por 1 cobro.
  *
  * IMPORTANTE (hallazgo [15]): el caller (handlePreapprovalEvent) debe llamar
  * a esta función SOLO cuando isGenuinePreapprovalActivation(...) es true — acá
@@ -388,7 +388,12 @@ export async function activateRecurringTenant(tenant: Tenant, preapprovalId: str
       billing_cycle: 'monthly',
       mp_subscription_id: preapprovalId,
       subscription_started_at: tenant.subscription_started_at ?? nowISO,
-      subscription_expires_at: computeRenewalExpiration(tenant.subscription_expires_at, nowISO, 1),
+      // Invariante "un cobro de MP = un mes": el alta NO suma período. Los meses
+      // los suma SOLO registerRecurringCharge, una vez por authorized_payment id
+      // (el primer cobro llega como authorized_payment, en cualquier orden
+      // respecto de este evento). Si el alta sumara también, 1 cobro = 2 meses.
+      // subscription_expires_at queda como está (null en un alta nueva, o el
+      // período vigente/ya extendido por un cobro que llegó antes).
       last_payment_at: nowISO,
       payment_failures: 0,
       metadata: meta,

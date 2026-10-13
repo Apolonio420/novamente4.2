@@ -52,6 +52,11 @@ function extractBillingCycle(externalReference: string): 'monthly' | 'annual' {
 }
 
 /** The requested paid plan is embedded by /api/partners/subscribe. */
+/** External reference de un preapproval mensual: `partner_sub_{tenant}_{ts}_monthly` (sin plan). */
+function isRecurringChargeReference(externalReference: string): boolean {
+  return /^partner_sub_.+_\d+_monthly$/.test(externalReference)
+}
+
 function extractPlan(externalReference: string): Exclude<Plan, 'starter'> | null {
   const match = externalReference.match(/^partner_sub_.+_\d+_(?:monthly|annual)_(growth|pro)$/)
   return (match?.[1] as Exclude<Plan, 'starter'> | undefined) ?? null
@@ -425,6 +430,18 @@ export async function POST(request: NextRequest) {
         return retryLater('tenant_not_found')
       }
       return NextResponse.json({ received: true })
+    }
+
+    // Cobro de la suscripción RECURRENTE: MP crea un `payment` por cada débito
+    // automático con el MISMO external_reference del preapproval
+    // (`partner_sub_{tenant}_{ts}_monthly`, sin sufijo de plan) y manda además
+    // `subscription_authorized_payment`. El período de ese cobro lo suma SOLO
+    // registerRecurringCharge (idempotente por authorized_payment id); si este
+    // flujo de pago único también lo aplicara, 1 cobro = 2 meses. Los pagos
+    // únicos propios llevan `_annual_{plan}` (subscribe/route.ts), nunca esto.
+    if (isRecurringChargeReference(externalReference)) {
+      console.log('Partner webhook: payment de suscripción recurrente, lo aplica subscription_authorized_payment — no se suma acá:', paymentId, externalReference)
+      return NextResponse.json({ received: true, skipped: 'recurring_charge_handled_by_authorized_payment' })
     }
 
     // Guard de idempotencia — MP reenvía webhooks (reintentos, notificaciones
