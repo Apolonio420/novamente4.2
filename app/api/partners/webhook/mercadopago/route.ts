@@ -100,6 +100,45 @@ async function alertUnappliedCharge(ctx: { kind: string; mpId: string; tenantLab
   }
 }
 
+/**
+ * Clasifica una falla al consultar a MP según su status HTTP (en el SDK viene
+ * en `err.status`; en getAuthorizedPayment, también `err.status`).
+ *  - 'drop':  400/404 → id inexistente/ajeno: reintentar no sirve → 200 + log.
+ *  - 'auth':  401/403 → token vencido/revocado: reintentar tampoco sirve hasta
+ *             que un humano lo arregle, pero MP reintenta igual → 500 + alerta.
+ *  - 'retry': 429, 5xx, red o sin status → 500 para que MP reintente.
+ */
+function classifyMpError(err: any): 'drop' | 'auth' | 'retry' {
+  const raw = err?.status ?? err?.statusCode ?? err?.cause?.status
+  const status = Number(raw)
+  if (status === 400 || status === 404) return 'drop'
+  if (status === 401 || status === 403) return 'auth'
+  return 'retry'
+}
+
+/**
+ * Token de MP vencido/revocado: TODOS los cobros de partners fallan. dedupeKey
+ * GLOBAL (no por id de cobro) para no spamear una alerta por cada reintento.
+ */
+async function alertMpTokenInvalid(ctx: { where: string; mpId: string; error?: unknown }) {
+  const detail = ctx.error instanceof Error ? ctx.error.message : ctx.error ? String(ctx.error) : 'sin detalle'
+  console.error('MP rechazó el token (401/403):', ctx.where, ctx.mpId, detail)
+  try {
+    const { notifyError, escapeTelegramHtml } = await import('@/lib/notifications')
+    await notifyError({
+      urgent: true,
+      area: 'Suscripción partner (MercadoPago)',
+      endpoint: '/api/partners/webhook/mercadopago',
+      message: escapeTelegramHtml(
+        `MP_ACCESS_TOKEN rechazado (401/403) al consultar ${ctx.where} ${ctx.mpId}. Los cobros de partners NO se están aplicando: renovar/revisar el token en Vercel. Detalle: ${detail}`,
+      ),
+      dedupeKey: 'mp-partner-token',
+    })
+  } catch (e) {
+    console.error('No se pudo avisar el token de MP inválido:', e)
+  }
+}
+
 /** Respuesta para que MP reintente la notificación. */
 function retryLater(reason: string) {
   return NextResponse.json({ received: false, retry: reason }, { status: 500 })
@@ -122,7 +161,18 @@ async function handlePreapprovalEvent(body: any, request: NextRequest) {
   const id = resolveSubscriptionId(body, request)
   if (!id) return NextResponse.json({ received: true })
   try {
-    const preapproval: any = await new PreApproval(client).get({ id })
+    let preapproval: any
+    try {
+      preapproval = await new PreApproval(client).get({ id })
+    } catch (getError: any) {
+      const kind = classifyMpError(getError)
+      if (kind === 'drop') {
+        console.warn('Preapproval inexistente/ajeno en MP (400/404), no se reintenta:', id, getError?.message || getError)
+        return NextResponse.json({ received: true, skipped: 'preapproval_not_found' })
+      }
+      if (kind === 'auth') await alertMpTokenInvalid({ where: 'preapproval', mpId: id, error: getError })
+      throw getError
+    }
     const status = preapproval?.status
     const externalReference = preapproval?.external_reference || ''
     console.log('Preapproval event:', { id, status, externalReference })
@@ -222,6 +272,11 @@ async function handleAuthorizedPaymentEvent(body: any, request: NextRequest) {
       ap = await getAuthorizedPayment(id)
     } catch (fetchError: any) {
       console.error('Authorized payment: no se pudo consultar en MP', id, fetchError?.message || fetchError)
+      const kind = classifyMpError(fetchError)
+      if (kind === 'drop') {
+        return NextResponse.json({ received: true, skipped: 'authorized_payment_not_found' })
+      }
+      if (kind === 'auth') await alertMpTokenInvalid({ where: 'authorized_payment', mpId: id, error: fetchError })
       if (!process.env.MP_ACCESS_TOKEN) {
         // Sin token se pierden TODOS los cobros: avisar (con cooldown).
         await alertUnappliedCharge({ kind: 'Cobro mensual recurrente (falta MP_ACCESS_TOKEN)', mpId: id, tenantLabel: 'tenant desconocido', error: fetchError })
@@ -332,6 +387,12 @@ export async function POST(request: NextRequest) {
     } catch (paymentError: any) {
       // Sin el detalle del pago no sabemos si fue aprobado: que MP reintente.
       console.error('Error fetching payment details:', paymentError.message)
+      const kind = classifyMpError(paymentError)
+      if (kind === 'drop') {
+        console.warn('Pago inexistente/ajeno en MP (400/404), no se reintenta:', paymentId)
+        return NextResponse.json({ received: true, skipped: 'payment_not_found' })
+      }
+      if (kind === 'auth') await alertMpTokenInvalid({ where: 'payment', mpId: String(paymentId), error: paymentError })
       return retryLater('payment_fetch_failed')
     }
 

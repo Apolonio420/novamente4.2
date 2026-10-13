@@ -695,4 +695,59 @@ describe('POST /api/partners/webhook/mercadopago — cobro aprobado que no se pu
     expect((await POST(preapprovalRequest('pre-3'))).status).toBe(200)
     expect(h.notifyError).not.toHaveBeenCalled()
   })
+
+  // Clasificación de fallas de MP: 400/404 no se reintentan, 401/403 alertan, el resto reintenta.
+  const mpErr = (status: number) => Object.assign(new Error(`MP ${status}`), { status })
+
+  it('payment.get 404 → 200 (id ajeno/inexistente), sin alerta ni reintento', async () => {
+    h.paymentGet.mockRejectedValue(mpErr(404))
+    expect((await POST(webhookRequest('p-404'))).status).toBe(200)
+    expect(h.notifyError).not.toHaveBeenCalled()
+  })
+
+  it('payment.get 401 → 500 + alerta Urgente con dedupeKey global mp-partner-token', async () => {
+    h.paymentGet.mockRejectedValue(mpErr(401))
+    expect((await POST(webhookRequest('p-401'))).status).toBe(500)
+    expect(h.notifyError).toHaveBeenCalledTimes(1)
+    expect(h.notifyError.mock.calls[0][0]).toMatchObject({ urgent: true, dedupeKey: 'mp-partner-token' })
+  })
+
+  it('payment.get 429 y 503 → 500 sin alerta (MP reintenta)', async () => {
+    for (const st of [429, 503]) {
+      h.paymentGet.mockRejectedValue(mpErr(st))
+      expect((await POST(webhookRequest('p-x'))).status).toBe(500)
+    }
+    expect(h.notifyError).not.toHaveBeenCalled()
+  })
+
+  it('preapproval.get 404 → 200; 403 → 500 + alerta global; 502 → 500 sin alerta', async () => {
+    h.preapprovalGet.mockRejectedValue(mpErr(404))
+    expect((await POST(preapprovalRequest('pre-404'))).status).toBe(200)
+    expect(h.notifyError).not.toHaveBeenCalled()
+
+    h.preapprovalGet.mockRejectedValue(mpErr(403))
+    expect((await POST(preapprovalRequest('pre-403'))).status).toBe(500)
+    expect(h.notifyError.mock.calls[0][0]).toMatchObject({ urgent: true, dedupeKey: 'mp-partner-token' })
+
+    h.notifyError.mockClear()
+    h.preapprovalGet.mockRejectedValue(mpErr(502))
+    expect((await POST(preapprovalRequest('pre-502'))).status).toBe(500)
+    expect(h.notifyError).not.toHaveBeenCalled()
+  })
+
+  it('authorized_payment HTTP 404 → 200; 401 → 500 + alerta global; 500 → 500 sin alerta', async () => {
+    global.fetch = vi.fn(async () => ({ ok: false, status: 404, json: async () => ({}) })) as any
+    expect((await POST(authorizedPaymentRequest('ap-404'))).status).toBe(200)
+    expect(h.tenantsUpdate).not.toHaveBeenCalled()
+    expect(h.notifyError).not.toHaveBeenCalled()
+
+    global.fetch = vi.fn(async () => ({ ok: false, status: 401, json: async () => ({}) })) as any
+    expect((await POST(authorizedPaymentRequest('ap-401'))).status).toBe(500)
+    expect(h.notifyError.mock.calls[0][0]).toMatchObject({ urgent: true, dedupeKey: 'mp-partner-token' })
+
+    h.notifyError.mockClear()
+    global.fetch = vi.fn(async () => ({ ok: false, status: 500, json: async () => ({}) })) as any
+    expect((await POST(authorizedPaymentRequest('ap-500'))).status).toBe(500)
+    expect(h.notifyError).not.toHaveBeenCalled()
+  })
 })

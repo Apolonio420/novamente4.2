@@ -477,7 +477,8 @@ export async function getAuthorizedPayment(
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) {
-    throw new Error(`getAuthorizedPayment HTTP ${res.status}`)
+    // `status` en el error: el webhook lo usa para decidir si MP debe reintentar.
+    throw Object.assign(new Error(`getAuthorizedPayment HTTP ${res.status}`), { status: res.status })
   }
   const data: any = await res.json()
   const paymentStatus: string = data?.payment?.status || data?.status || 'unknown'
