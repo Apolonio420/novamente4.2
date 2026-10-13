@@ -53,7 +53,7 @@ const URGENT_CHAT_ID = process.env.TELEGRAM_CHAT_ID_URGENT || '-5494888775';
  * null solo ante fallo de red/parseo (fetch que tira excepción) — eso nunca
  * se reintenta (ver sendToVentas).
  */
-async function sendToTelegramRaw(chatId: string, message: string, token: string, silent?: boolean): Promise<any | null> {
+async function sendToTelegramRaw(chatId: string, message: string, token: string, silent?: boolean, plain?: boolean): Promise<any | null> {
     try {
         const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST',
@@ -61,7 +61,7 @@ async function sendToTelegramRaw(chatId: string, message: string, token: string,
             body: JSON.stringify({
                 chat_id: chatId,
                 text: message,
-                parse_mode: 'HTML',
+                ...(plain ? {} : { parse_mode: 'HTML' }),
                 // Sin preview: Telegram hace GET a los links para armarlo (ej. el de confirmar transferencia).
                 disable_web_page_preview: true,
                 // Limpieza de avisos Telegram (07/10/2026, Juan): avisos informativos
@@ -135,6 +135,17 @@ async function sendToVentas(message: string) {
     if (data.ok) return data;
 
     const errorCode = data.error_code;
+
+    // 13/10/2026: un 400 "can't parse entities" (HTML mal formado: &, <, un href raro) NO es un
+    // problema del grupo — antes caía al grupo de Chats con el MISMO HTML y fallaba igual, y el
+    // aviso de venta se perdía. Se reintenta en Ventas como TEXTO PLANO (sin parse_mode).
+    if (errorCode === 400 && /parse entities|unsupported start tag|can't find end/i.test(String(data.description || ''))) {
+        console.warn(`⚠️ Aviso a Ventas con HTML inválido (${data.description}) — reintenta como texto plano.`);
+        const plainMsg = message.replace(/<[^>]+>/g, '');
+        const retry = await sendToTelegramRaw(VENTAS_CHAT_ID, plainMsg, SALES_BOT_TOKEN, undefined, true);
+        if (retry?.ok) return retry;
+    }
+
     if (errorCode !== 400 && errorCode !== 403) {
         // 5xx u otro código: mismo contrato que sendToTelegram, no reintenta.
         console.error('❌ Telegram API error (Ventas):', data.description);
@@ -187,7 +198,11 @@ export async function notifySale(order: {
                 detail += `\n  └ Precio unit: $${item.price.toLocaleString('es-AR')}`;
             }
             if (item.imageUrl) {
-                detail += `\n  🔗 <a href="${item.imageUrl}">Ver Imagen/Mockup</a>`;
+                // Algunos mockups guardan una ruta relativa (/api/proxy-image?key=...): se
+                // hace absoluta para que el link del aviso abra desde Telegram.
+                const base = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.novamente.ar').replace(/\/$/, '');
+                const href = item.imageUrl.startsWith('/') ? `${base}${item.imageUrl}` : item.imageUrl;
+                detail += `\n  🔗 <a href="${href.replace(/&/g, '&amp;')}">Ver Imagen/Mockup</a>`;
             }
             return detail;
         })

@@ -229,6 +229,36 @@ describe('sendToVentas — robustez 400/403 SOLO para el chat de Ventas', () => 
     warnSpy.mockRestore()
   })
 
+  it('400 "can\'t parse entities" (HTML inválido) → reintenta en VENTAS como texto plano (sin parse_mode), NO cae a Chats con el mismo HTML', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        json: async () => ({ ok: false, error_code: 400, description: "Bad Request: can't parse entities: Can't find end of the entity starting at byte offset 10" }),
+      })
+      .mockResolvedValueOnce({ json: async () => ({ ok: true, result: {} }) }) as any
+
+    const { notifySale } = await import('./notifications')
+    const result = await notifySale({ orderNumber: 'NOV-1', total: 10000, email: 'a@a.com', items: [{ name: 'Remera <rara> & co', quantity: 1 }] })
+
+    expect(global.fetch).toHaveBeenCalledTimes(2)
+    expect(chatIdsSent(global.fetch)).toEqual([VENTAS_DEFAULT_CHAT_ID, VENTAS_DEFAULT_CHAT_ID])
+    const bodies = (global.fetch as any).mock.calls.map((c: any[]) => JSON.parse(c[1].body))
+    expect(bodies[0].parse_mode).toBe('HTML')
+    expect(bodies[1].parse_mode).toBeUndefined()
+    expect(bodies[1].text).not.toMatch(/<b>|<a /)
+    expect(result).toBeTruthy()
+    warnSpy.mockRestore()
+  })
+
+  it('link de imagen RELATIVO (/api/proxy-image?key=..) → se manda como link absoluto', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ json: async () => ({ ok: true, result: {} }) }) as any
+    const { notifySale } = await import('./notifications')
+    await notifySale({ orderNumber: 'NOV-1', total: 10000, email: 'a@a.com', items: [{ name: 'Remera', quantity: 1, imageUrl: '/api/proxy-image?key=v1%2Fx.png&w=1' }] })
+    const text = textsSent(global.fetch)[0]
+    expect(text).toContain('https://www.novamente.ar/api/proxy-image?key=v1%2Fx.png&amp;w=1')
+  })
+
   it('timeout (fetch tira excepción) → NUNCA reintenta: un solo intento y devuelve null', async () => {
     global.fetch = vi.fn().mockRejectedValue(new Error('timeout')) as any
 

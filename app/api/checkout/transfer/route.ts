@@ -235,7 +235,11 @@ export async function POST(request: NextRequest) {
     // este es el ÚNICO momento en que el sistema puede avisar. Caso Marcelo
     // NOV-20260813-7038 (13/08→02/09/2026): pedido de $41.000 creado sin aviso,
     // el cliente transfirió 20 días después y Juan se enteró por el ingreso en MP.
-    // Fire-and-forget: un fallo acá nunca rompe el checkout del cliente.
+    // Un fallo acá nunca rompe el checkout del cliente, PERO los avisos se ESPERAN antes de
+    // responder (ver más abajo): en Vercel una promesa suelta (`void`) puede quedar cortada
+    // cuando la función ya respondió — caso NOV-20261013-4186 (13/10/2026): llegó el mail a
+    // Juan y el Telegram a "Ventas Novamente" no.
+    const pendingNotices: Array<{ name: string; promise: Promise<unknown> }> = []
     try {
       const [{ notifySale }, { sendEmail }, { transferConfirmUrl }] = await Promise.all([
         import("@/lib/notifications"),
@@ -246,7 +250,7 @@ export async function POST(request: NextRequest) {
       // comprobante). Sirve para los clientes que transfieren sin avisar: Juan ve
       // la plata en MP y confirma desde este mismo aviso.
       const confirmUrl = newOrder.order_number ? transferConfirmUrl(newOrder.order_number) : null
-      void notifySale({
+      pendingNotices.push({ name: "telegram_ventas", promise: notifySale({
         orderNumber: `🟡 TRANSFERENCIA PENDIENTE — ${newOrder.order_number || newOrder.id}`,
         total: finalTotal,
         email: customer.email,
@@ -259,16 +263,22 @@ export async function POST(request: NextRequest) {
           imageUrl: it.image_url || it.mockup_url || undefined,
         })),
         footer: confirmUrl
-          ? `🟡 <i>Transferencia PENDIENTE. Cuando veas la plata en MP:</i> <a href="${confirmUrl}">✅ Confirmar pago en un click</a>`
+          ? `🟡 <i>Transferencia PENDIENTE. Cuando veas la plata en MP:</i> <a href="${confirmUrl.replace(/&/g, "&amp;")}">✅ Confirmar pago en un click</a>`
           : `🟡 <i>Transferencia PENDIENTE. Confirmar cuando entre la plata en MP.</i>`,
         label: drop7Label,
-      }).catch((e: any) => console.error("❌ notifySale (transfer) falló:", e?.message))
+      }).then((r: any) => {
+        if (!r) console.error("❌ notifySale (transfer): Telegram no confirmó el envío a Ventas — NOV:", newOrder.order_number)
+        return r
+      }).catch((e: any) => {
+        console.error("❌ notifySale (transfer) falló:", e?.message)
+        return null
+      }) })
       const salesEmail = process.env.SALES_NOTIFY_EMAIL || "juan@novamente.ar"
       const itemsHtml = orderItems
         .map((it: any) => `<li><b>${it.item_name}</b> x${it.quantity} — Talle ${it.product_size || "-"} · ${it.product_color || "-"}</li>`)
         .join("")
       const drop7Prefix = drop7Label ? `${drop7Label} — ` : ""
-      void sendEmail({
+      pendingNotices.push({ name: "email_ventas", promise: sendEmail({
         to: salesEmail,
         subject: `${drop7Prefix}🟡 PEDIDO POR TRANSFERENCIA ${newOrder.order_number || ""} — $${finalTotal.toLocaleString("es-AR")} (${customer.firstName || ""} ${customer.lastName || ""})`,
         html: `<h2>${drop7Label ? `${drop7Label}<br/>` : ""}Pedido por transferencia creado — esperando el pago 🟡</h2>
@@ -281,7 +291,11 @@ ${confirmUrl ? `<p><a href="${confirmUrl}" style="display:inline-block;padding:1
 <p>Si en unos días no llega el pago, el pedido queda pending y lo persigue el rescate. Ficha: admin.novamente.ar/dashboard/orders/fichas</p>`,
       }).then((sent) => {
         if (!sent.ok) console.error("❌ Email de pedido por transferencia falló:", sent.error)
-      }).catch((e: any) => console.error("❌ Exception email transferencia:", e?.message))
+        return sent
+      }).catch((e: any) => {
+        console.error("❌ Exception email transferencia:", e?.message)
+        return null
+      }) })
     } catch (notifErr: any) {
       console.error("❌ Aviso de pedido por transferencia falló (no bloquea):", notifErr?.message)
     }
@@ -296,7 +310,7 @@ ${confirmUrl ? `<p><a href="${confirmUrl}" style="display:inline-block;padding:1
       const itemsHtmlCliente = orderItems
         .map((it: any) => `<li><b>${it.item_name}</b> x${it.quantity} — Talle ${it.product_size || "-"} · ${it.product_color || "-"}</li>`)
         .join("")
-      void sendEmail({
+      pendingNotices.push({ name: "email_cliente", promise: sendEmail({
         to: customer.email,
         subject: `Tu pedido ${newOrder.order_number || ""} — datos para transferir 💳`,
         html: `<h2>¡Gracias por tu pedido, ${customer.firstName || ""}!</h2>
@@ -313,9 +327,28 @@ ${confirmUrl ? `<p><a href="${confirmUrl}" style="display:inline-block;padding:1
 <p>— Equipo Novamente · novamente.ar</p>`,
       }).then((sent) => {
         if (!sent.ok) console.error("❌ Email de pedido al cliente falló:", sent.error)
-      }).catch((e: any) => console.error("❌ Exception email cliente transferencia:", e?.message))
+        return sent
+      }).catch((e: any) => {
+        console.error("❌ Exception email cliente transferencia:", e?.message)
+        return null
+      }) })
     } catch (e: any) {
       console.error("❌ Email al cliente (transfer) no se pudo preparar:", e?.message)
+    }
+
+    // ⏳ Esperar los avisos (en paralelo, con tope de 8 s) ANTES de responder. Nunca falla el checkout.
+    try {
+      const { awaitTransferNotices } = await import("@/lib/payments/transfer-notices")
+      const result = await awaitTransferNotices(pendingNotices, 8000)
+      console.log("🔔 Avisos de transferencia:", JSON.stringify(result), "NOV:", newOrder.order_number)
+      // Registro en la orden de qué avisos salieron (para detectar un aviso perdido).
+      const { supabaseAdmin: db } = await import("@/lib/supabase-admin")
+      await (db as any)
+        .from("orders")
+        .update({ metadata: { ...((newOrder as any).metadata || {}), transfer_notices: { ...result, at: new Date().toISOString() } } })
+        .eq("id", newOrder.id)
+    } catch (e: any) {
+      console.error("❌ Registro de avisos de transferencia falló (no bloquea):", e?.message)
     }
 
     return NextResponse.json({
