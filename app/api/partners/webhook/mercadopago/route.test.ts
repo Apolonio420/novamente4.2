@@ -335,8 +335,10 @@ describe('POST /api/partners/webhook/mercadopago — subscription_preapproval no
     expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
     const [updates] = h.tenantsUpdate.mock.calls[0]
     expect(updates.status).toBe('active')
-    // Un cobro = un mes: el alta no toca el vencimiento (registerRecurringCharge lo suma).
-    expect(updates).not.toHaveProperty('subscription_expires_at')
+    // El primer cobro REEMPLAZA esta gracia (no suma encima): ver recurring-un-mes-por-cobro.test.ts.
+    // Sin vencimiento futuro: hoy + 1 mes marcado como gracia de activación.
+    expect(updates.subscription_expires_at).toBeTruthy()
+    expect(updates.metadata.expiry_is_activation_grace).toBe(true)
     // Hallazgo [9]: tras un authorized real, activateRecurringTenant deja
     // subscription_type en 'recurring' (nunca 'recurring_pending').
     expect(updates.metadata.subscription_type).toBe('recurring')
