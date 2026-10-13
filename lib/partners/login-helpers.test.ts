@@ -25,6 +25,32 @@ describe('safeRedirect — sanitiza ?redirect= del login', () => {
     expect(safeRedirect('/\\evil.com')).toBe('/workspace')
   })
 
+  it('control chars decodificados (/%09/evil.com, /%0A/evil.com) → fallback (open redirect real)', () => {
+    for (const encoded of ['/%09/evil.com', '/%0A/evil.com', '/%0D/evil.com']) {
+      const decoded = new URLSearchParams('redirect=' + encoded).get('redirect')
+      expect(safeRedirect(decoded)).toBe('/workspace')
+      expect(safeRedirect(encoded)).toBe(encoded) // sin decodificar es una ruta interna inofensiva
+    }
+    expect(safeRedirect('/\t/evil.com')).toBe('/workspace')
+    expect(safeRedirect('/\n/evil.com')).toBe('/workspace')
+  })
+
+  it('"/%2F/evil.com" decodificado → "///evil.com" → fallback; literal queda como ruta interna', () => {
+    const decoded = new URLSearchParams('redirect=/%2F/evil.com').get('redirect')
+    expect(safeRedirect(decoded)).toBe('/workspace')
+    expect(safeRedirect('/%2F/evil.com')).toBe('/%2F/evil.com')
+  })
+
+  it('esquemas no-ruta (javascript:, data:) → fallback', () => {
+    expect(safeRedirect('javascript:alert(1)')).toBe('/workspace')
+    expect(safeRedirect('data:text/html,x')).toBe('/workspace')
+  })
+
+  it('rutas válidas conservan path, query y hash', () => {
+    expect(safeRedirect('/workspace')).toBe('/workspace')
+    expect(safeRedirect('/workspace/orders?x=1#a')).toBe('/workspace/orders?x=1#a')
+  })
+
   it('respeta un fallback custom', () => {
     expect(safeRedirect(null, '/partners/join')).toBe('/partners/join')
   })

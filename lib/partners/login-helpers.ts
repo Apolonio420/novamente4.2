@@ -16,8 +16,20 @@
 export function safeRedirect(raw: string | null | undefined, fallback = '/workspace'): string {
   if (!raw) return fallback
   if (!raw.startsWith('/')) return fallback
-  if (raw.startsWith('//') || raw.startsWith('/\\')) return fallback
-  return raw
+  // Tab/CR/LF/NUL y otros control chars: la spec de URL los ELIMINA al parsear,
+  // así que "/<TAB>/evil.com" termina siendo "//evil.com" (host externo).
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f]/.test(raw)) return fallback
+  const ORIGIN = 'http://redirect-check.invalid'
+  try {
+    const u = new URL(raw, ORIGIN)
+    // Mismo origin que la base ficticia = fue una ruta relativa interna de verdad
+    // ("//host" y "/\\host" resuelven a otro host y quedan afuera).
+    if (u.origin !== ORIGIN) return fallback
+    return u.pathname + u.search + u.hash
+  } catch {
+    return fallback
+  }
 }
 
 const KNOWN_AUTH_ERRORS: Record<string, string> = {
