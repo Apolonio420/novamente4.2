@@ -316,7 +316,7 @@ describe('POST /api/partners/webhook/mercadopago — subscription_preapproval no
     })
   }
 
-  it('alta nueva (tenant no activo en este preapproval): SÍ activa y extiende', async () => {
+  it('alta nueva (tenant no activo en este preapproval): SÍ activa el plan, SIN sumar mes (lo suma el primer cobro)', async () => {
     h.getTenantById.mockResolvedValue({
       ...baseTenant,
       status: 'onboarding',
@@ -335,7 +335,8 @@ describe('POST /api/partners/webhook/mercadopago — subscription_preapproval no
     expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
     const [updates] = h.tenantsUpdate.mock.calls[0]
     expect(updates.status).toBe('active')
-    expect(updates.subscription_expires_at).toBeTruthy()
+    // Un cobro = un mes: el alta no toca el vencimiento (registerRecurringCharge lo suma).
+    expect(updates).not.toHaveProperty('subscription_expires_at')
     // Hallazgo [9]: tras un authorized real, activateRecurringTenant deja
     // subscription_type en 'recurring' (nunca 'recurring_pending').
     expect(updates.metadata.subscription_type).toBe('recurring')
