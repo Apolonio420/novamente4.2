@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Payment, PreApproval } from 'mercadopago'
 import { updateTenant, getTenantById } from '@/lib/partners/tenant'
 import { PLAN_FEATURES, PLAN_PRICING_USD } from '@/lib/partners/plans'
-import { activateRecurringTenant, registerRecurringCharge, casUpdateTenant, getAuthorizedPayment, computeRenewalExpiration, isGenuinePreapprovalActivation } from '@/lib/partners/subscription'
+import { activateRecurringTenant, registerRecurringCharge, registerPaymentFailure, casUpdateTenant, getAuthorizedPayment, computeRenewalExpiration, isGenuinePreapprovalActivation } from '@/lib/partners/subscription'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import type { Plan } from '@/lib/partners/types'
 import { isPaymentAlreadyProcessed, isSuspectedDoubleCharge, isAuthorizedPaymentAlreadyProcessed } from '@/lib/partners/webhook-guards'
@@ -337,8 +337,18 @@ async function handleAuthorizedPaymentEvent(body: any, request: NextRequest) {
       }
       console.log('Cobro recurrente OK:', tenant.name)
     } else {
-      const saved = await updateTenant(tenant.id, { payment_failures: (tenant.payment_failures || 0) + 1 } as any)
-      if (!saved) return retryLater('failure_not_registered')
+      // CAS sobre fila fresca + marca de id ya contado: ver registerPaymentFailure.
+      let failureOutcome: 'applied' | 'duplicate'
+      try {
+        failureOutcome = await registerPaymentFailure(tenant.id, now, id)
+      } catch (failureError) {
+        console.error('Cobro recurrente fallido: no se pudo registrar la falla', id, (failureError as any)?.message)
+        return retryLater('failure_not_registered')
+      }
+      if (failureOutcome === 'duplicate') {
+        console.log('Cobro recurrente fallido ya contado, no suma de nuevo:', id, tenant.name)
+        return NextResponse.json({ received: true, already_processed: true })
+      }
       console.log('Cobro recurrente FALLÓ:', tenant.name, ap.status)
     }
     return NextResponse.json({ received: true })

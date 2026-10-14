@@ -457,7 +457,7 @@ export async function casUpdateTenant(
   for (let attempt = 0; attempt < CAS_MAX_ATTEMPTS; attempt++) {
     const { data: row, error: readError } = await db()
       .from('tenants')
-      .select('plan, status, subscription_expires_at, subscription_started_at, metadata, updated_at')
+      .select('plan, status, subscription_expires_at, subscription_started_at, payment_failures, metadata, updated_at')
       .eq('id', tenantId)
       .single()
     // Sin el tenant no se puede calcular el vencimiento ni preservar metadata:
@@ -534,6 +534,34 @@ export async function registerRecurringCharge(
         meta.last_mp_authorized_payment_id = apId
         meta.mp_authorized_payment_ids = [...collectAppliedAuthorizedPaymentIds(meta).filter((x) => x !== apId), apId].slice(-MAX_APPLIED_AUTHORIZED_PAYMENTS)
       }
+      updates.metadata = meta
+    }
+    return updates
+  })
+  return wrote ? 'applied' : 'duplicate'
+}
+
+/**
+ * Suma UNA falla de pago al contador `payment_failures` (columna de tenants, no
+ * metadata) con CAS sobre fila fresca: dos rechazos simultaneos suman +2 y un
+ * cobro aprobado intercalado (que resetea a 0 y escribe sus marcas) ni se pisa
+ * ni se pierde el fallo. Solo cambia su propia clave + la marca acotada
+ * metadata.mp_failed_payment_ids (ultimos 12 ids ya contados): el mismo rechazo
+ * reenviado por MP suma una sola vez. Sin id no hay idempotencia posible y suma.
+ */
+export async function registerPaymentFailure(
+  tenantId: string,
+  nowISO: string,
+  authorizedPaymentId?: string,
+): Promise<'applied' | 'duplicate'> {
+  const apId = authorizedPaymentId ? String(authorizedPaymentId) : null
+  const wrote = await casUpdateTenant('registerPaymentFailure', tenantId, nowISO, (row) => {
+    const meta: Record<string, any> = { ...(row.metadata ?? {}) }
+    const counted: string[] = Array.isArray(meta.mp_failed_payment_ids) ? meta.mp_failed_payment_ids.map(String) : []
+    if (apId && counted.includes(apId)) return null
+    const updates: Record<string, any> = { payment_failures: (row.payment_failures || 0) + 1 }
+    if (apId) {
+      meta.mp_failed_payment_ids = [...counted, apId].slice(-MAX_APPLIED_AUTHORIZED_PAYMENTS)
       updates.metadata = meta
     }
     return updates

@@ -560,10 +560,12 @@ describe('POST /api/partners/webhook/mercadopago — subscription_authorized_pay
     const res = await POST(authorizedPaymentWebhookRequest('ap-failed'))
     expect(res.status).toBe(200)
 
-    // El camino rechazado usa updateTenant (no el `db()` directo de registerRecurringCharge).
-    expect(h.updateTenant).toHaveBeenCalledTimes(1)
-    const [, updates] = h.updateTenant.mock.calls[0]
+    // El camino rechazado escribe por CAS (registerPaymentFailure, `db()` directo), no por updateTenant.
+    expect(h.updateTenant).not.toHaveBeenCalled()
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
+    const [updates] = h.tenantsUpdate.mock.calls[0]
     expect(updates.payment_failures).toBe(1)
+    expect(updates.metadata.mp_failed_payment_ids).toEqual(['ap-failed'])
   })
 })
 
