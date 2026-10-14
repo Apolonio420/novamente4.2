@@ -569,6 +569,58 @@ export async function registerPaymentFailure(
   return wrote ? 'applied' : 'duplicate'
 }
 
+/** Campos de plan que activa un pago único aprobado (derivados de PLAN_FEATURES por el caller). */
+export interface SinglePaymentPlanFields {
+  plan: string
+  billingCycle: 'monthly' | 'annual'
+  designEngineMode: string
+  maxProducts: number
+  maxLeadsPerMonth: number
+  seoIndexable: boolean
+}
+
+/**
+ * Registra un PAGO ÚNICO aprobado (pagos `partner_sub_..._<monthly|annual>_<plan>`
+ * y mensuales viejos) por CAS sobre la fila FRESCA, igual que el cobro
+ * recurrente: el período se suma sobre el vencimiento fresco, `payment_failures`
+ * vuelve a 0 y la marca de idempotencia (`last_mp_payment_id` + conjunto
+ * acotado `mp_single_payment_ids`, últimos 12) viaja en el MISMO UPDATE. Preserva
+ * todas las demás claves de metadata. El mismo payment id reenviado (simultáneo
+ * o posterior) devuelve 'duplicate' sin sumar período.
+ */
+export async function registerSinglePayment(
+  tenantId: string,
+  nowISO: string,
+  paymentId: string,
+  f: SinglePaymentPlanFields,
+): Promise<'applied' | 'duplicate'> {
+  const pid = String(paymentId)
+  const wrote = await casUpdateTenant('registerSinglePayment', tenantId, nowISO, (row) => {
+    const meta: Record<string, any> = { ...(row.metadata ?? {}) }
+    const applied: string[] = Array.isArray(meta.mp_single_payment_ids) ? meta.mp_single_payment_ids.map(String) : []
+    if (applied.includes(pid) || (meta.last_mp_payment_id != null && String(meta.last_mp_payment_id) === pid)) return null
+    meta.last_mp_payment_id = pid
+    meta.mp_single_payment_ids = [...applied, pid].slice(-MAX_APPLIED_AUTHORIZED_PAYMENTS)
+    return {
+      plan: f.plan,
+      status: 'active',
+      storefront_published: true,
+      onboarding_completed: true,
+      design_engine_mode: f.designEngineMode,
+      max_products: f.maxProducts,
+      max_leads_per_month: f.maxLeadsPerMonth,
+      seo_indexable: f.seoIndexable,
+      billing_cycle: f.billingCycle,
+      last_payment_at: nowISO,
+      subscription_started_at: row.subscription_started_at ?? nowISO,
+      subscription_expires_at: computeRenewalExpiration(row.subscription_expires_at, nowISO, f.billingCycle === 'annual' ? 12 : 1),
+      payment_failures: 0,
+      metadata: meta,
+    }
+  })
+  return wrote ? 'applied' : 'duplicate'
+}
+
 /**
  * Consulta un authorized_payment (cobro recurrente) por la REST API de MP.
  * El SDK v2.9.0 no tiene cliente para este recurso, así que vamos directo.

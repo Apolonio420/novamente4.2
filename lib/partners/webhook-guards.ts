@@ -19,8 +19,9 @@ export function isPaymentAlreadyProcessed(
   tenantMetadata: Record<string, unknown> | null | undefined,
   paymentId: string,
 ): boolean {
-  const lastProcessed = (tenantMetadata as any)?.last_mp_payment_id
-  return lastProcessed != null && String(lastProcessed) === String(paymentId)
+  const m = (tenantMetadata ?? {}) as any
+  if (Array.isArray(m.mp_single_payment_ids) && m.mp_single_payment_ids.map(String).includes(String(paymentId))) return true
+  return m.last_mp_payment_id != null && String(m.last_mp_payment_id) === String(paymentId)
 }
 
 /**
