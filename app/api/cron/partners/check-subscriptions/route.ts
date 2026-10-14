@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { updateTenant } from '@/lib/partners/tenant'
 import { bumpPromoToStandardIfDue, casUpdateTenant } from '@/lib/partners/subscription'
 import { PLAN_FEATURES } from '@/lib/partners/plans'
 import { notifyError, notifySubscriptionExpiring, notifySubscriptionDegraded } from '@/lib/notifications'
@@ -92,12 +91,21 @@ export async function GET(request: NextRequest) {
 
           if (currentFailures < 3) {
             // Grace period: increment failures, keep active
-            await updateTenant(tenant.id, {
-              payment_failures: currentFailures + 1,
-            } as any)
+            // CAS sobre fila fresca: incrementa el valor ACTUAL (no el de la
+            // lectura de arriba) y no cuenta si mientras tanto un cobro renovó
+            // el vencimiento o dejó al tenant en 'recurring'.
+            let nextFailures = currentFailures + 1
+            const counted = await casUpdateTenant('check-subscriptions grace', tenant.id, now, (row) => {
+              if ((row.metadata as any)?.subscription_type === 'recurring') return null
+              if (row.plan === 'starter' || row.status !== 'active') return null
+              if (!row.subscription_expires_at || row.subscription_expires_at >= now) return null
+              nextFailures = (row.payment_failures || 0) + 1
+              return { payment_failures: nextFailures }
+            })
+            if (!counted) continue
             results.grace_period++
 
-            console.log(`Tenant ${tenant.name}: payment failure ${currentFailures + 1}/3 (grace period)`)
+            console.log(`Tenant ${tenant.name}: payment failure ${nextFailures}/3 (grace period)`)
           } else {
             // 3+ failures: DEGRADAR a Starter, NO suspender. Freemium: el
             // impago ya no tira la cuenta offline (caso real: Pablo/Origen
