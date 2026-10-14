@@ -10,7 +10,6 @@ const h = vi.hoisted(() => ({
   paymentGet: vi.fn(),
   preapprovalGet: vi.fn(),
   getTenantById: vi.fn(),
-  updateTenant: vi.fn(),
   notifyPartnerSubscription: vi.fn(),
   notifyPossibleDoubleCharge: vi.fn(),
   notifySubscriptionActivatedEmails: vi.fn(),
@@ -40,7 +39,6 @@ vi.mock('mercadopago', () => ({
 
 vi.mock('@/lib/partners/tenant', () => ({
   getTenantById: h.getTenantById,
-  updateTenant: h.updateTenant,
 }))
 
 vi.mock('@/lib/notifications', () => ({
@@ -112,7 +110,6 @@ const baseTenant = {
 beforeEach(() => {
   vi.clearAllMocks()
   process.env.MP_ACCESS_TOKEN = 'test-token'
-  h.updateTenant.mockResolvedValue({ ...baseTenant, plan: 'growth', status: 'active' })
   h.notifyPartnerSubscription.mockResolvedValue(undefined)
   h.notifyPossibleDoubleCharge.mockResolvedValue(undefined)
   h.notifySubscriptionActivatedEmails.mockResolvedValue(undefined)
@@ -150,8 +147,8 @@ describe('POST /api/partners/webhook/mercadopago — idempotencia de payment apr
     const res = await POST(webhookRequest('payment-1'))
     expect(res.status).toBe(200)
 
-    expect(h.updateTenant).toHaveBeenCalledTimes(1)
-    const [, updates] = h.updateTenant.mock.calls[0]
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
+    const [updates] = h.tenantsUpdate.mock.calls[0]
     expect(updates.metadata.last_mp_payment_id).toBe('payment-1')
     expect(updates.status).toBe('active')
     expect(h.notifyPartnerSubscription).toHaveBeenCalledTimes(1)
@@ -172,7 +169,7 @@ describe('POST /api/partners/webhook/mercadopago — idempotencia de payment apr
     const body = await res.json()
     expect(body.already_processed).toBe(true)
 
-    expect(h.updateTenant).not.toHaveBeenCalled()
+    expect(h.tenantsUpdate).not.toHaveBeenCalled()
     expect(h.notifyPartnerSubscription).not.toHaveBeenCalled()
     expect(h.sendCapiPurchase).not.toHaveBeenCalled()
   })
@@ -190,7 +187,7 @@ describe('POST /api/partners/webhook/mercadopago — idempotencia de payment apr
 
     const res = await POST(webhookRequest('payment-jan'))
     expect(res.status).toBe(200)
-    expect(h.updateTenant).not.toHaveBeenCalled()
+    expect(h.tenantsUpdate).not.toHaveBeenCalled()
   })
 
   it('un SEGUNDO payment id distinto y aprobado sí corre los efectos (no es replay)', async () => {
@@ -204,8 +201,8 @@ describe('POST /api/partners/webhook/mercadopago — idempotencia de payment apr
 
     const res = await POST(webhookRequest('payment-2'))
     expect(res.status).toBe(200)
-    expect(h.updateTenant).toHaveBeenCalledTimes(1)
-    const [, updates] = h.updateTenant.mock.calls[0]
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
+    const [updates] = h.tenantsUpdate.mock.calls[0]
     expect(updates.metadata.last_mp_payment_id).toBe('payment-2')
   })
 })
@@ -266,8 +263,8 @@ describe('POST /api/partners/webhook/mercadopago — alerta de doble cobro', () 
     expect(res.status).toBe(200)
 
     // (a) el pago se procesa normal — no se bloquea el flujo de activación.
-    expect(h.updateTenant).toHaveBeenCalledTimes(1)
-    const [, updates] = h.updateTenant.mock.calls[0]
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
+    const [updates] = h.tenantsUpdate.mock.calls[0]
     expect(updates.status).toBe('active')
     expect(updates.metadata.last_mp_payment_id).toBe('payment-new')
 
@@ -300,7 +297,7 @@ describe('POST /api/partners/webhook/mercadopago — alerta de doble cobro', () 
 
     const res = await POST(webhookRequest('payment-renewal'))
     expect(res.status).toBe(200)
-    expect(h.updateTenant).toHaveBeenCalledTimes(1)
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
     expect(h.notifyPossibleDoubleCharge).not.toHaveBeenCalled()
   })
 })
@@ -410,7 +407,7 @@ describe('POST /api/partners/webhook/mercadopago — subscription_preapproval no
     // No debe haber tocado el tenant: ni extendido vencimiento, ni refrescado
     // last_payment_at, ni notificado una "nueva" activación.
     expect(h.tenantsUpdate).not.toHaveBeenCalled()
-    expect(h.updateTenant).not.toHaveBeenCalled()
+    expect(h.tenantsUpdate).not.toHaveBeenCalled()
     expect(h.notifyPartnerSubscription).not.toHaveBeenCalled()
   })
 
@@ -560,12 +557,12 @@ describe('POST /api/partners/webhook/mercadopago — subscription_authorized_pay
     const res = await POST(authorizedPaymentWebhookRequest('ap-failed'))
     expect(res.status).toBe(200)
 
-    // El camino rechazado escribe por CAS (registerPaymentFailure, `db()` directo), no por updateTenant.
-    expect(h.updateTenant).not.toHaveBeenCalled()
+    // El camino rechazado escribe por CAS (registerPaymentFailure, `db()` directo); el route ya no usa updateTenant.
     expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
     const [updates] = h.tenantsUpdate.mock.calls[0]
     expect(updates.payment_failures).toBe(1)
     expect(updates.metadata.mp_failed_payment_ids).toEqual(['ap-failed'])
+    expect(updates.metadata.last_mp_payment_id).toBeUndefined()
   })
 })
 
@@ -595,10 +592,10 @@ describe('POST /api/partners/webhook/mercadopago — cobro aprobado que no se pu
     })) as any
   }
 
-  it('pago único: si updateTenant falla → 500 (MP reintenta) + alerta urgente, sin avisos de venta', async () => {
+  it('pago único: si el UPDATE por CAS falla → 500 (MP reintenta) + alerta urgente, sin avisos de venta', async () => {
     h.getTenantById.mockResolvedValue({ ...baseTenant })
     h.paymentGet.mockResolvedValue({ id: 'p-1', status: 'approved', external_reference: externalReference, transaction_amount: 25000 })
-    h.updateTenant.mockResolvedValue(null)
+    h.tenantsUpdateError = { message: 'db caida' }
 
     const res = await POST(webhookRequest('p-1'))
     expect(res.status).toBe(500)
@@ -611,11 +608,11 @@ describe('POST /api/partners/webhook/mercadopago — cobro aprobado que no se pu
   it('pago único: el reintento de MP después de la falla activa exactamente una vez', async () => {
     h.getTenantById.mockResolvedValue({ ...baseTenant })
     h.paymentGet.mockResolvedValue({ id: 'p-2', status: 'approved', external_reference: externalReference, transaction_amount: 25000 })
-    h.updateTenant.mockResolvedValueOnce(null)
+    h.tenantsUpdateError = { message: 'db caida' }
     expect((await POST(webhookRequest('p-2'))).status).toBe(500)
 
     // El UPDATE fallido no escribió last_mp_payment_id → el guard deja pasar el reintento.
-    h.updateTenant.mockResolvedValueOnce({ ...baseTenant, plan: 'growth', status: 'active' })
+    h.tenantsUpdateError = null
     expect((await POST(webhookRequest('p-2'))).status).toBe(200)
     expect(h.notifyPartnerSubscription).toHaveBeenCalledTimes(1)
 
@@ -623,7 +620,7 @@ describe('POST /api/partners/webhook/mercadopago — cobro aprobado que no se pu
     h.getTenantById.mockResolvedValue({ ...baseTenant, metadata: { last_mp_payment_id: 'p-2' } })
     const third = await POST(webhookRequest('p-2'))
     expect((await third.json()).already_processed).toBe(true)
-    expect(h.updateTenant).toHaveBeenCalledTimes(2)
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(2)
   })
 
   it('pago único aprobado de un tenant que no aparece → 500 + alerta (no se descarta la plata)', async () => {
@@ -646,7 +643,7 @@ describe('POST /api/partners/webhook/mercadopago — cobro aprobado que no se pu
     h.paymentGet.mockRejectedValue(new Error('MP timeout'))
     const res = await POST(webhookRequest('p-5'))
     expect(res.status).toBe(500)
-    expect(h.updateTenant).not.toHaveBeenCalled()
+    expect(h.tenantsUpdate).not.toHaveBeenCalled()
   })
 
   it('preapproval authorized: si el UPDATE falla → 500 + alerta, sin avisos de alta', async () => {
@@ -765,7 +762,7 @@ describe('POST /api/partners/webhook/mercadopago — cobro aprobado que no se pu
   it('texto de la alerta de cobro sin aplicar: no invita a activar a mano sin la marca de idempotencia', async () => {
     h.getTenantById.mockResolvedValue({ ...baseTenant })
     h.paymentGet.mockResolvedValue({ id: 'p-t', status: 'approved', external_reference: externalReference, transaction_amount: 25000 })
-    h.updateTenant.mockResolvedValue(null)
+    h.tenantsUpdateError = { message: 'db caida' }
     await POST(webhookRequest('p-t'))
     const msg: string = h.notifyError.mock.calls[0][0].message
     expect(msg).toContain('last_mp_authorized_payment_id')

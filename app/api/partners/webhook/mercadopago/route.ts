@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Payment, PreApproval } from 'mercadopago'
-import { updateTenant, getTenantById } from '@/lib/partners/tenant'
+import { getTenantById } from '@/lib/partners/tenant'
 import { PLAN_FEATURES, PLAN_PRICING_USD } from '@/lib/partners/plans'
-import { activateRecurringTenant, registerRecurringCharge, registerPaymentFailure, casUpdateTenant, getAuthorizedPayment, computeRenewalExpiration, isGenuinePreapprovalActivation } from '@/lib/partners/subscription'
+import { activateRecurringTenant, registerRecurringCharge, registerPaymentFailure, registerSinglePayment, casUpdateTenant, getAuthorizedPayment, computeRenewalExpiration, isGenuinePreapprovalActivation } from '@/lib/partners/subscription'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import type { Plan } from '@/lib/partners/types'
 import { isPaymentAlreadyProcessed, isSuspectedDoubleCharge, isAuthorizedPaymentAlreadyProcessed } from '@/lib/partners/webhook-guards'
@@ -60,22 +60,6 @@ function isRecurringChargeReference(externalReference: string): boolean {
 function extractPlan(externalReference: string): Exclude<Plan, 'starter'> | null {
   const match = externalReference.match(/^partner_sub_.+_\d+_(?:monthly|annual)_(growth|pro)$/)
   return (match?.[1] as Exclude<Plan, 'starter'> | undefined) ?? null
-}
-
-/**
- * Calculate new subscription_expires_at based on billing cycle.
- *
- * If the subscription is still active at payment time (on-time / early
- * renewal), the new period is added on top of the CURRENT due date instead
- * of today — otherwise a payment arriving a few days before the due date
- * would "steal" days from the partner. If it's already expired (late
- * payment), the new period starts from today (the payment date), with no
- * retroactive dead period lost or gained (hallazgo [19] del review).
- */
-function calculateNewExpiration(billingCycle: 'monthly' | 'annual', currentExpiresAt: string | null | undefined): string {
-  const nowISO = new Date().toISOString()
-  const months = billingCycle === 'annual' ? 12 : 1
-  return computeRenewalExpiration(currentExpiresAt, nowISO, months)
 }
 
 /**
@@ -504,9 +488,7 @@ export async function POST(request: NextRequest) {
 
       // Extract billing cycle and calculate new expiration
       const billingCycle = extractBillingCycle(externalReference)
-      const subscriptionExpiresAt = calculateNewExpiration(billingCycle, tenant.subscription_expires_at)
       const now = new Date().toISOString()
-      const metadata = { ...((tenant.metadata as any) ?? {}), last_mp_payment_id: String(paymentId) }
 
       // Sospecha de doble cobro (hallazgo [18]): un payment id distinto llega
       // aprobado mientras el período activo actual todavía no venció. NO
@@ -529,23 +511,27 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Activate tenant + update subscription fields
-      const updated = await updateTenant(tenantId, {
-        plan: paidPlan,
-        status: 'active',
-        storefront_published: true,
-        onboarding_completed: true,
-        design_engine_mode: features?.designEngine ?? 'disabled', // prende el Studio al pagar
-        max_products: features?.maxProducts ?? 999999,
-        max_leads_per_month: features?.maxLeadsPerMonth ?? 999999,
-        seo_indexable: features?.seoIndexable ?? false,
-        billing_cycle: billingCycle,
-        last_payment_at: now,
-        subscription_started_at: tenant.subscription_started_at ?? now,
-        subscription_expires_at: subscriptionExpiresAt,
-        payment_failures: 0,
-        metadata,
-      } as any)
+      // Activar tenant + período por CAS sobre la fila FRESCA (no sobre la lectura
+      // de arriba): preserva metadata ajena y la marca de idempotencia viaja en el
+      // mismo UPDATE. 'duplicate' = otro webhook del mismo payment id ya lo aplicó.
+      let outcome: 'applied' | 'duplicate' | null = null
+      try {
+        outcome = await registerSinglePayment(tenantId, now, String(paymentId), {
+          plan: paidPlan,
+          billingCycle,
+          designEngineMode: features?.designEngine ?? 'disabled', // prende el Studio al pagar
+          maxProducts: features?.maxProducts ?? 999999,
+          maxLeadsPerMonth: features?.maxLeadsPerMonth ?? 999999,
+          seoIndexable: features?.seoIndexable ?? false,
+        })
+      } catch (e) {
+        console.error('registerSinglePayment falló:', e)
+      }
+      if (outcome === 'duplicate') {
+        console.log('Partner webhook: payment ya aplicado (CAS), sin re-notificar:', paymentId, tenant.name)
+        return NextResponse.json({ received: true, already_processed: true })
+      }
+      const updated = outcome === 'applied'
 
       if (updated) {
         console.log('Tenant activated:', tenant.name, 'Plan:', paidPlan)
