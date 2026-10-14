@@ -42,19 +42,11 @@ vi.mock('@/lib/notifications', () => ({
 }))
 vi.mock('@/lib/meta/capi', () => ({ sendCapiPurchase: async () => ({ ok: true }) }))
 
-vi.mock('@/lib/supabase-admin', () => ({
-  supabaseAdmin: {
-    from: () => ({
-      select: () => ({ eq: () => ({ single: async () => ({ data: h.store.tenant ? { ...h.store.tenant } : null, error: null }) }) }),
-      update: (u: any) => ({
-        eq: async () => {
-          h.store.tenant = { ...h.store.tenant, ...u }
-          return { error: null }
-        },
-      }),
-    }),
-  },
-}))
+// Tenant en memoria con UPDATE condicional (compare-and-swap), ver fake-tenants-db.
+vi.mock('@/lib/supabase-admin', async () => {
+  const m = await import('@/lib/partners/test-helpers/fake-tenants-db')
+  return { supabaseAdmin: m.createFakeSupabase(h.store) }
+})
 
 import { POST } from './route'
 import { addMonths } from '@/lib/partners/subscription'

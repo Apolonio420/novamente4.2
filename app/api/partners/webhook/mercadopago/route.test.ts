@@ -62,14 +62,20 @@ vi.mock('@/lib/supabase-admin', () => ({
         return {
           update: (updates: any) => {
             h.tenantsUpdate(updates)
-            return {
-              eq: async () => ({ error: h.tenantsUpdateError }),
-              select: () => ({ single: async () => ({ data: null }) }),
+            // Encadenable (compare-and-swap de subscription.ts: .eq().eq()/.is().select()) y
+            // awaitable; con .select() devuelve la fila escrita (1 fila = el UPDATE matcheó).
+            const q: any = {
+              eq: () => q,
+              is: () => q,
+              select: () => ({ ...q, single: async () => ({ data: null }), then: (res: any, rej: any) => Promise.resolve({ data: [{ id: 't' }], error: h.tenantsUpdateError }).then(res, rej) }),
+              then: (res: any, rej: any) => Promise.resolve({ error: h.tenantsUpdateError }).then(res, rej),
             }
+            return q
           },
           select: () => ({
             eq: () => ({
-              single: async () => ({ data: h.tenantsSelectSingleResult ?? { subscription_expires_at: null } }),
+              // activateRecurringTenant relee la fila fresca: sin resultado explícito, el tenant del test (getTenantById).
+              single: async () => ({ data: h.tenantsSelectSingleResult ?? (await h.getTenantById()) ?? { subscription_expires_at: null } }),
               maybeSingle: async () => ({ data: null }),
             }),
           }),
@@ -664,7 +670,7 @@ describe('POST /api/partners/webhook/mercadopago — cobro aprobado que no se pu
     h.tenantsUpdateError = null
     expect((await POST(authorizedPaymentRequest('ap-1'))).status).toBe(200)
     const lastUpdate = h.tenantsUpdate.mock.calls.at(-1)![0]
-    expect(lastUpdate.metadata).toEqual({ foo: 'bar', last_mp_authorized_payment_id: 'ap-1' })
+    expect(lastUpdate.metadata).toEqual({ foo: 'bar', last_mp_authorized_payment_id: 'ap-1', mp_authorized_payment_ids: ['ap-1'] })
   })
 
   it('cobro recurrente: si la consulta a MP falla → 500 y no toca el tenant', async () => {

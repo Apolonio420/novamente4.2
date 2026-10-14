@@ -13,6 +13,7 @@ import { getUsdToArs } from './currency'
 import { PLAN_NAMES, PLAN_FEATURES, GROWTH_PROMO, GROWTH_PROMO_PCT, resolvePriceUsd, resolveAnnualPriceUsd } from './plans'
 import type { Plan, Tenant } from './types'
 import type { PaidPlan } from './plans'
+import { collectAppliedAuthorizedPaymentIds } from './webhook-guards'
 
 const db = () => supabaseAdmin as any
 
@@ -53,6 +54,10 @@ export interface SubscriptionMeta {
   // true = subscription_expires_at es el mes de activación puesto por el alta
   // (todavía sin primer cobro); registerRecurringCharge lo reemplaza, no lo suma.
   expiry_is_activation_grace?: boolean
+  // Últimos MAX_APPLIED_AUTHORIZED_PAYMENTS ids de authorized_payment ya
+  // aplicados (1 id = 1 mes). Cubre el reenvío fuera de orden (ap-1 después de
+  // ap-2) que last_mp_authorized_payment_id (solo el último) no detecta.
+  mp_authorized_payment_ids?: string[]
   [k: string]: unknown
 }
 
@@ -369,32 +374,34 @@ export function isGenuinePreapprovalActivation(
  * no en "cuándo". Ver el comentario de isGenuinePreapprovalActivation arriba.
  */
 export async function activateRecurringTenant(tenant: Tenant, preapprovalId: string, nowISO: string): Promise<void> {
-  const meta: SubscriptionMeta = { ...(tenant.metadata ?? {}) }
-  const plan: PaidPlan = (meta.pending_plan as PaidPlan) || (tenant.plan === 'starter' ? 'growth' : (tenant.plan as PaidPlan))
-  const features = PLAN_FEATURES[plan]
+  // Read-modify-write con compare-and-swap (ver casUpdateTenant): relee el tenant
+  // en cada intento para no pisar con `tenant` (leído por el caller, posiblemente
+  // viejo) lo que escribió un cobro simultáneo (marcas de idempotencia, gracia).
+  await casUpdateTenant('activateRecurringTenant', tenant.id, nowISO, (row) => {
+    const meta: SubscriptionMeta = { ...(row.metadata ?? {}) }
+    const plan: PaidPlan = (meta.pending_plan as PaidPlan) || (row.plan === 'starter' ? 'growth' : (row.plan as PaidPlan))
+    const features = PLAN_FEATURES[plan]
 
-  // Hallazgo [9]: acá (y SOLO acá, tras un authorized real) pasa de
-  // 'recurring_pending' a 'recurring'. Ver persistPendingSubscription.
-  meta.subscription_type = 'recurring'
-  delete meta.pending_plan // ya activado
+    // Hallazgo [9]: acá (y SOLO acá, tras un authorized real) pasa de
+    // 'recurring_pending' a 'recurring'. Ver persistPendingSubscription.
+    meta.subscription_type = 'recurring'
+    delete meta.pending_plan // ya activado
 
-  // Invariante "un cobro = un mes" SIN dejar el vencimiento en null: el alta no
-  // suma un mes "de regalo" encima de un cobro, pero si no hay un vencimiento
-  // futuro (alta nueva o vencido) pone el período de activación (hoy + 1 mes)
-  // marcado como gracia. registerRecurringCharge lo reemplaza por hoy + 1 mes
-  // (no suma encima) al llegar el primer cobro; si el cobro nunca llega y MP
-  // cancela, el partner igual vence en 1 mes y el cron lo degrada. Si ya hay un
-  // vencimiento FUTURO (el cobro llegó antes que el alta), no se toca ni se marca.
-  const hasFutureExpiry = !!tenant.subscription_expires_at && new Date(tenant.subscription_expires_at).getTime() > new Date(nowISO).getTime()
-  const expiryUpdate: Record<string, any> = {}
-  if (!hasFutureExpiry) {
-    expiryUpdate.subscription_expires_at = addMonths(nowISO, 1)
-    meta.expiry_is_activation_grace = true
-  }
+    // Invariante "un cobro = un mes" SIN dejar el vencimiento en null: el alta no
+    // suma un mes "de regalo" encima de un cobro, pero si no hay un vencimiento
+    // futuro (alta nueva o vencido) pone el período de activación (hoy + 1 mes)
+    // marcado como gracia. registerRecurringCharge lo reemplaza por hoy + 1 mes
+    // (no suma encima) al llegar el primer cobro; si el cobro nunca llega y MP
+    // cancela, el partner igual vence en 1 mes y el cron lo degrada. Si ya hay un
+    // vencimiento FUTURO (el cobro llegó antes que el alta), no se toca ni se marca.
+    const hasFutureExpiry = !!row.subscription_expires_at && new Date(row.subscription_expires_at).getTime() > new Date(nowISO).getTime()
+    const expiryUpdate: Record<string, any> = {}
+    if (!hasFutureExpiry) {
+      expiryUpdate.subscription_expires_at = addMonths(nowISO, 1)
+      meta.expiry_is_activation_grace = true
+    }
 
-  const { error } = await db()
-    .from('tenants')
-    .update({
+    return {
       plan,
       status: 'active',
       storefront_published: true,
@@ -405,84 +412,131 @@ export async function activateRecurringTenant(tenant: Tenant, preapprovalId: str
       seo_indexable: features.seoIndexable,
       billing_cycle: 'monthly',
       mp_subscription_id: preapprovalId,
-      subscription_started_at: tenant.subscription_started_at ?? nowISO,
+      subscription_started_at: row.subscription_started_at ?? tenant.subscription_started_at ?? nowISO,
       ...expiryUpdate, // ver arriba: gracia de activación solo si no hay vencimiento futuro
       last_payment_at: nowISO,
       payment_failures: 0,
       metadata: meta,
-      updated_at: nowISO,
-    })
-    .eq('id', tenant.id)
+    }
+  })
+}
 
-  // Auditoría workspace 08/10: antes no se leía `error` — si el UPDATE fallaba
-  // (blip de Supabase) el partner quedaba cobrado y sin plan, sin que nadie se
-  // enterara. Tirar acá deja que el webhook responda 500 (MP reintenta; el
-  // reintento es seguro porque isGenuinePreapprovalActivation mira el estado
-  // del tenant, que no cambió) y alerte a Urgente.
-  if (error) {
-    throw new Error(`activateRecurringTenant: no se pudo activar el tenant ${tenant.id}: ${error.message}`)
+/** Cuántos ids de authorized_payment ya aplicados se recuerdan por tenant. */
+export const MAX_APPLIED_AUTHORIZED_PAYMENTS = 12
+
+/**
+ * Compare-and-swap sobre la fila del tenant. Supabase/PostgREST no da
+ * transacciones de lectura-escritura desde el cliente, y estos caminos de plata
+ * (alta + cobros mensuales) leen `subscription_expires_at`/`metadata`, calculan
+ * y escriben: dos webhooks simultáneos leían el mismo estado y el segundo update
+ * pisaba al primero (mes de más o cobro perdido, marcas borradas). Acá el UPDATE
+ * solo aplica si `updated_at` y `subscription_expires_at` siguen siendo los
+ * leídos; si otro webhook escribió en el medio no matchea ninguna fila, se
+ * relee y se recalcula sobre el estado nuevo (reintento acotado). Si se agotan
+ * los intentos tira → el webhook responde 500 y MP reintenta (seguro: la marca
+ * de idempotencia viaja en el mismo UPDATE y no quedó escrita).
+ *
+ * `compute` recibe la fila fresca y devuelve los campos a escribir, o null si
+ * no hay nada que hacer (p. ej. el cobro ya estaba aplicado). Devuelve true si
+ * escribió, false si compute devolvió null.
+ *
+ * Límite: solo es atómico frente a escritores que también bumpean `updated_at`
+ * (updateTenant y todos los de este módulo lo hacen). La garantía total sería
+ * una función SQL (ver migrations/tenant_apply_recurring_charge.sql, pendiente).
+ */
+const CAS_MAX_ATTEMPTS = 6
+
+async function casUpdateTenant(
+  label: string,
+  tenantId: string,
+  nowISO: string,
+  compute: (row: any) => Record<string, any> | null,
+): Promise<boolean> {
+  for (let attempt = 0; attempt < CAS_MAX_ATTEMPTS; attempt++) {
+    const { data: row, error: readError } = await db()
+      .from('tenants')
+      .select('plan, status, subscription_expires_at, subscription_started_at, metadata, updated_at')
+      .eq('id', tenantId)
+      .single()
+    // Sin el tenant no se puede calcular el vencimiento ni preservar metadata:
+    // seguir de largo escribía `metadata = { last_mp_authorized_payment_id }`
+    // pisando toda la metadata del tenant. Tirar → el webhook responde 500 y MP
+    // reintenta (la marca de idempotencia todavía no se escribió).
+    if (readError || !row) {
+      throw new Error(`${label}: no se pudo leer el tenant ${tenantId}: ${readError?.message ?? 'sin datos'}`)
+    }
+
+    const fields = compute(row)
+    if (!fields) return false
+
+    // updated_at tiene que CAMBIAR en cada escritura (si no, un escritor
+    // concurrente con el mismo nowISO no se detectaría).
+    let newUpdatedAt = nowISO
+    if (row.updated_at && new Date(row.updated_at).getTime() >= new Date(nowISO).getTime()) {
+      newUpdatedAt = new Date(new Date(row.updated_at).getTime() + 1).toISOString()
+    }
+
+    let q = db().from('tenants').update({ ...fields, updated_at: newUpdatedAt }).eq('id', tenantId)
+    q = row.updated_at ? q.eq('updated_at', row.updated_at) : q.is('updated_at', null)
+    q = row.subscription_expires_at ? q.eq('subscription_expires_at', row.subscription_expires_at) : q.is('subscription_expires_at', null)
+    const { data: written, error } = await q.select('id')
+
+    // La marca de idempotencia va en este mismo UPDATE: si falla, no quedó
+    // escrita y el reintento de MP vuelve a aplicar el cobro exactamente una vez.
+    if (error) {
+      throw new Error(`${label}: no se pudo escribir el tenant ${tenantId}: ${error.message}`)
+    }
+    if (Array.isArray(written) ? written.length > 0 : true) return true
+    // 0 filas: otro escritor ganó la carrera → releer y recalcular.
   }
+  throw new Error(`${label}: contención al escribir el tenant ${tenantId} (${CAS_MAX_ATTEMPTS} intentos); MP reintenta`)
 }
 
 /**
  * Registra un cobro recurrente exitoso: extiende el período y limpia fallas.
  * Usa computeRenewalExpiration para no robarle días al partner que paga antes
- * de vencer (hallazgo [19]) — necesita leer el vencimiento vigente del tenant.
+ * de vencer (hallazgo [19]) — lee el vencimiento vigente del tenant.
  *
  * `authorizedPaymentId` (síntoma [1] de la auditoría de idempotencia de MP,
  * 2026-08-29): si se pasa, se persiste en metadata.last_mp_authorized_payment_id
- * — el caller (handleAuthorizedPaymentEvent) debe chequear
- * isAuthorizedPaymentAlreadyProcessed ANTES de llamar a esta función; acá solo
- * se guarda la marca para que el próximo reenvío del mismo id sea detectable.
- * Opcional (no rompe callers existentes) para no afectar otros usos de esta
- * función si los hubiera.
+ * y en el conjunto acotado metadata.mp_authorized_payment_ids. La idempotencia
+ * se re-chequea ACÁ sobre la fila fresca de cada intento (el guard del webhook
+ * es solo un atajo): dos avisos simultáneos del mismo id → uno aplica, el otro
+ * ve la marca al reintentar y no suma. Devuelve 'duplicate' si ya estaba aplicado.
  */
-export async function registerRecurringCharge(tenantId: string, nowISO: string, authorizedPaymentId?: string): Promise<void> {
-  const { data: tenant, error: readError } = await db()
-    .from('tenants')
-    .select('subscription_expires_at, metadata')
-    .eq('id', tenantId)
-    .single()
+export async function registerRecurringCharge(
+  tenantId: string,
+  nowISO: string,
+  authorizedPaymentId?: string,
+): Promise<'applied' | 'duplicate'> {
+  const apId = authorizedPaymentId ? String(authorizedPaymentId) : null
+  const wrote = await casUpdateTenant('registerRecurringCharge', tenantId, nowISO, (row) => {
+    const meta: Record<string, any> = { ...(row.metadata ?? {}) }
+    if (apId && collectAppliedAuthorizedPaymentIds(meta).includes(apId)) return null
 
-  // Sin el tenant no se puede calcular el vencimiento ni preservar metadata:
-  // seguir de largo escribía `metadata = { last_mp_authorized_payment_id }`
-  // pisando toda la metadata del tenant. Tirar → el webhook responde 500 y MP
-  // reintenta (la marca de idempotencia todavía no se escribió).
-  if (readError || !tenant) {
-    throw new Error(`registerRecurringCharge: no se pudo leer el tenant ${tenantId}: ${readError?.message ?? 'sin datos'}`)
-  }
-
-  // Si el vencimiento actual es la gracia de activación del alta, ESE mes es
-  // el del primer cobro: se cuenta desde hoy (no se suma encima) y se borra la
-  // marca en el mismo UPDATE.
-  const graceActive = !!(tenant.metadata as any)?.expiry_is_activation_grace
-  const updates: Record<string, any> = {
-    status: 'active',
-    last_payment_at: nowISO,
-    subscription_expires_at: graceActive
-      ? addMonths(nowISO, 1)
-      : computeRenewalExpiration(tenant.subscription_expires_at, nowISO, 1),
-    payment_failures: 0,
-    updated_at: nowISO,
-  }
-  if (authorizedPaymentId || graceActive) {
-    const newMeta: Record<string, any> = { ...(tenant.metadata ?? {}) }
-    if (graceActive) delete newMeta.expiry_is_activation_grace
-    if (authorizedPaymentId) newMeta.last_mp_authorized_payment_id = String(authorizedPaymentId)
-    updates.metadata = newMeta
-  }
-
-  const { error } = await db()
-    .from('tenants')
-    .update(updates)
-    .eq('id', tenantId)
-
-  // La marca de idempotencia (last_mp_authorized_payment_id) va en este mismo
-  // UPDATE: si falla, no quedó escrita y el reintento de MP vuelve a aplicar
-  // el cobro exactamente una vez.
-  if (error) {
-    throw new Error(`registerRecurringCharge: no se pudo registrar el cobro del tenant ${tenantId}: ${error.message}`)
-  }
+    // Si el vencimiento actual es la gracia de activación del alta, ESE mes es
+    // el del primer cobro: se cuenta desde hoy (no se suma encima) y se borra la
+    // marca en el mismo UPDATE.
+    const graceActive = !!meta.expiry_is_activation_grace
+    const updates: Record<string, any> = {
+      status: 'active',
+      last_payment_at: nowISO,
+      subscription_expires_at: graceActive
+        ? addMonths(nowISO, 1)
+        : computeRenewalExpiration(row.subscription_expires_at, nowISO, 1),
+      payment_failures: 0,
+    }
+    if (apId || graceActive) {
+      if (graceActive) delete meta.expiry_is_activation_grace
+      if (apId) {
+        meta.last_mp_authorized_payment_id = apId
+        meta.mp_authorized_payment_ids = [...collectAppliedAuthorizedPaymentIds(meta).filter((x) => x !== apId), apId].slice(-MAX_APPLIED_AUTHORIZED_PAYMENTS)
+      }
+      updates.metadata = meta
+    }
+    return updates
+  })
+  return wrote ? 'applied' : 'duplicate'
 }
 
 /**

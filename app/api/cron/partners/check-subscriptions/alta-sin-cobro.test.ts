@@ -19,7 +19,9 @@ vi.mock('@/lib/email', () => ({ sendEmail: async () => ({ ok: true }) }))
 vi.mock('mercadopago', () => ({ MercadoPagoConfig: class {}, PreApproval: class { get = async () => ({}) }, Payment: class {} }))
 
 // Query builder encadenable: solo la consulta de vencidos (.lt) devuelve el tenant si venció.
-vi.mock('@/lib/supabase-admin', () => {
+vi.mock('@/lib/supabase-admin', async () => {
+  const { createFakeSupabase } = await import('@/lib/partners/test-helpers/fake-tenants-db')
+  const fakeFrom = () => createFakeSupabase(h.store).from()
   const chain = (ops: string[], ltValue?: string): any => new Proxy({}, {
     get: (_t, prop: string) => {
       if (prop === 'then') {
@@ -27,7 +29,8 @@ vi.mock('@/lib/supabase-admin', () => {
         const rows = ops.includes('lt') && t && t.subscription_expires_at && t.subscription_expires_at < ltValue! && t.plan !== 'starter' && t.status === 'active' ? [t] : []
         return (res: any) => res({ data: rows, error: null })
       }
-      if (prop === 'update') return (u: any) => ({ eq: async () => { h.store.tenant = { ...h.store.tenant, ...u }; return { error: null } } })
+      if (prop === 'update') return (u: any) => fakeFrom().update(u)
+      if (prop === 'single') return async () => ({ data: { ...h.store.tenant }, error: null })
       return (...a: any[]) => chain([...ops, prop], prop === 'lt' ? a[1] : ltValue)
     },
   })

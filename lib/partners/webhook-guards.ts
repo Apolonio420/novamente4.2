@@ -62,6 +62,19 @@ export function isAuthorizedPaymentAlreadyProcessed(
   tenantMetadata: Record<string, unknown> | null | undefined,
   authorizedPaymentId: string,
 ): boolean {
-  const lastProcessed = (tenantMetadata as any)?.last_mp_authorized_payment_id
-  return lastProcessed != null && String(lastProcessed) === String(authorizedPaymentId)
+  return collectAppliedAuthorizedPaymentIds(tenantMetadata).includes(String(authorizedPaymentId))
+}
+
+/**
+ * Ids de authorized_payment ya aplicados: el conjunto acotado
+ * `mp_authorized_payment_ids` (cubre reenvíos fuera de orden, ap-1 después de
+ * ap-2) más `last_mp_authorized_payment_id` (tenants anteriores al conjunto).
+ */
+export function collectAppliedAuthorizedPaymentIds(
+  tenantMetadata: Record<string, unknown> | null | undefined,
+): string[] {
+  const m = (tenantMetadata ?? {}) as any
+  const ids: string[] = Array.isArray(m.mp_authorized_payment_ids) ? m.mp_authorized_payment_ids.map(String) : []
+  if (m.last_mp_authorized_payment_id != null) ids.push(String(m.last_mp_authorized_payment_id))
+  return Array.from(new Set(ids))
 }
