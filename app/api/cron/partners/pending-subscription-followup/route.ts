@@ -20,7 +20,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail } from '@/lib/email'
-import { updateTenant } from '@/lib/partners/tenant'
+import { casUpdateTenant } from '@/lib/partners/subscription'
 import {
   decideNextFollowup,
   buildPendingSubscriptionFollowupEmail,
@@ -95,11 +95,12 @@ export async function GET(request: NextRequest) {
         continue
       }
 
-      const followups = Array.isArray(meta.subscription_followups) ? [...meta.subscription_followups] : []
-      followups.push(nowISO)
-      await updateTenant(tenant.id, {
-        metadata: { ...meta, subscription_followups: followups } as any,
-      } as any)
+      // CAS sobre metadata FRESCA: cambia solo `subscription_followups`. Antes
+      // reescribía la metadata leída al principio y, si el alta ya había pasado
+      // el tenant a 'recurring', lo devolvía a 'recurring_pending'.
+      await casUpdateTenant('pending-subscription-followup', tenant.id, nowISO, (row) => ({
+        metadata: { ...(row.metadata ?? {}), subscription_followups: [...(Array.isArray(row.metadata?.subscription_followups) ? row.metadata.subscription_followups : []), nowISO] },
+      }))
 
       results.push({ slug: tenant.slug, status: `✅ stage ${decision.stage} enviado a ${tenant.email}` })
     } catch (e: any) {

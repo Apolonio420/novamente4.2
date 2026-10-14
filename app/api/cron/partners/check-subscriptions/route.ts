@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { updateTenant } from '@/lib/partners/tenant'
-import { bumpPromoToStandardIfDue } from '@/lib/partners/subscription'
+import { bumpPromoToStandardIfDue, casUpdateTenant } from '@/lib/partners/subscription'
 import { PLAN_FEATURES } from '@/lib/partners/plans'
 import { notifyError, notifySubscriptionExpiring, notifySubscriptionDegraded } from '@/lib/notifications'
 import { sendEmail } from '@/lib/email'
@@ -118,23 +118,23 @@ export async function GET(request: NextRequest) {
             // criterio que se aplicó a mano hoy con el tenant 'origen') para
             // que NO seleccionar 'recurring_pending' en la reconciliación del
             // bloque 4 mas abajo, que si no re-alertaría cada corrida.
-            const currentMeta = (tenant.metadata as Record<string, unknown>) || {}
-            const { pending_plan: _droppedPendingPlan, pending_since: _droppedPendingSince, ...restMeta } = currentMeta as any
             const degradedFeatures = PLAN_FEATURES.starter
 
-            await updateTenant(tenant.id, {
-              plan: 'starter',
-              max_products: degradedFeatures.maxProducts,
-              max_leads_per_month: degradedFeatures.maxLeadsPerMonth,
-              design_engine_mode: degradedFeatures.designEngine,
-              seo_indexable: degradedFeatures.seoIndexable,
-              metadata: {
-                ...restMeta,
-                subscription_type: 'cancelled',
-                degraded_at: now,
-                degraded_reason: 'payment_failures',
-              },
-            } as any)
+            // CAS sobre fila FRESCA: si mientras tanto el alta/cobro dejó al
+            // tenant en 'recurring', NO se degrada (el cobro está en curso).
+            const degraded = await casUpdateTenant('check-subscriptions degrade', tenant.id, now, (row) => {
+              if ((row.metadata as any)?.subscription_type === 'recurring') return null
+              const { pending_plan: _pp, pending_since: _ps, ...rest } = (row.metadata ?? {}) as any
+              return {
+                plan: 'starter',
+                max_products: degradedFeatures.maxProducts,
+                max_leads_per_month: degradedFeatures.maxLeadsPerMonth,
+                design_engine_mode: degradedFeatures.designEngine,
+                seo_indexable: degradedFeatures.seoIndexable,
+                metadata: { ...rest, subscription_type: 'cancelled', degraded_at: now, degraded_reason: 'payment_failures' },
+              }
+            })
+            if (!degraded) continue
             results.degraded++
 
             console.log(`Tenant ${tenant.name}: DEGRADADO a starter (${currentFailures}+ payment failures)`)
@@ -160,15 +160,9 @@ export async function GET(request: NextRequest) {
                 const { subject, html } = buildSubscriptionDegradedEmail({ name: tenant.name, plan: tenant.plan })
                 const sent = await sendEmail({ to: tenant.email, subject, html })
                 if (sent.ok) {
-                  await updateTenant(tenant.id, {
-                    metadata: {
-                      ...restMeta,
-                      subscription_type: 'cancelled',
-                      degraded_at: now,
-                      degraded_reason: 'payment_failures',
-                      degraded_email_sent_for: tenant.subscription_expires_at,
-                    },
-                  } as any)
+                  await casUpdateTenant('check-subscriptions degraded email', tenant.id, now, (row) => ({
+                    metadata: { ...(row.metadata ?? {}), degraded_email_sent_for: tenant.subscription_expires_at },
+                  }))
                   results.degraded_email_sent++
                 } else {
                   results.errors.push(`Degraded email ${tenant.id}: ${sent.error}`)
@@ -229,12 +223,11 @@ export async function GET(request: NextRequest) {
             )
             const sent = await sendEmail({ to: tenant.email, subject, html })
             if (sent.ok) {
-              await updateTenant(tenant.id, {
-                metadata: {
-                  ...((tenant.metadata as Record<string, unknown>) || {}),
-                  expiry_email_sent_for: tenant.subscription_expires_at,
-                },
-              } as any)
+              // CAS sobre fila FRESCA: este cron lee antes de mandar el mail y el
+              // cobro puede aplicarse en el medio (ventana de 3 días previos).
+              await casUpdateTenant('check-subscriptions expiry email', tenant.id, now, (row) => ({
+                metadata: { ...(row.metadata ?? {}), expiry_email_sent_for: tenant.subscription_expires_at },
+              }))
               results.dunning_email_sent++
             } else {
               results.errors.push(`Dunning email ${tenant.id}: ${sent.error}`)

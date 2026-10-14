@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { MercadoPagoConfig, Payment, PreApproval } from 'mercadopago'
 import { updateTenant, getTenantById } from '@/lib/partners/tenant'
 import { PLAN_FEATURES, PLAN_PRICING_USD } from '@/lib/partners/plans'
-import { activateRecurringTenant, registerRecurringCharge, getAuthorizedPayment, computeRenewalExpiration, isGenuinePreapprovalActivation } from '@/lib/partners/subscription'
+import { activateRecurringTenant, registerRecurringCharge, casUpdateTenant, getAuthorizedPayment, computeRenewalExpiration, isGenuinePreapprovalActivation } from '@/lib/partners/subscription'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import type { Plan } from '@/lib/partners/types'
 import { isPaymentAlreadyProcessed, isSuspectedDoubleCharge, isAuthorizedPaymentAlreadyProcessed } from '@/lib/partners/webhook-guards'
@@ -250,9 +250,14 @@ async function handlePreapprovalEvent(body: any, request: NextRequest) {
         console.error('Subscription activated email failed:', e)
       }
     } else if (status === 'cancelled' || status === 'paused') {
-      const meta = { ...((tenant.metadata as any) ?? {}), subscription_type: status }
-      const saved = await updateTenant(tenant.id, { metadata: meta } as any)
-      if (!saved) return retryLater('status_update_failed')
+      // CAS sobre metadata FRESCA: no pisa las marcas de un cobro concurrente.
+      try {
+        await casUpdateTenant('preapproval cancelled/paused', tenant.id, now, (row) => ({
+          metadata: { ...(row.metadata ?? {}), subscription_type: status },
+        }))
+      } catch {
+        return retryLater('status_update_failed')
+      }
       console.log(`Suscripción ${status} para`, tenant.name)
     }
     return NextResponse.json({ received: true })
@@ -319,11 +324,16 @@ async function handleAuthorizedPaymentEvent(body: any, request: NextRequest) {
         console.log('Authorized payment ya procesado, saltando — no se extiende de nuevo:', id, tenant.name)
         return NextResponse.json({ received: true, already_processed: true })
       }
+      let outcome: 'applied' | 'duplicate'
       try {
-        await registerRecurringCharge(tenant.id, now, id)
+        outcome = await registerRecurringCharge(tenant.id, now, id)
       } catch (chargeError) {
         await alertUnappliedCharge({ kind: 'Cobro mensual recurrente', mpId: id, tenantLabel: `${tenant.name} (${tenant.id})`, error: chargeError })
         return retryLater('charge_not_registered')
+      }
+      if (outcome === 'duplicate') {
+        console.log('Authorized payment duplicado (detectado al escribir), sin extender de nuevo:', id, tenant.name)
+        return NextResponse.json({ received: true, already_processed: true })
       }
       console.log('Cobro recurrente OK:', tenant.name)
     } else {

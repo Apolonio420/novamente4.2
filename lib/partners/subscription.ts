@@ -440,13 +440,15 @@ export const MAX_APPLIED_AUTHORIZED_PAYMENTS = 12
  * no hay nada que hacer (p. ej. el cobro ya estaba aplicado). Devuelve true si
  * escribió, false si compute devolvió null.
  *
- * Límite: solo es atómico frente a escritores que también bumpean `updated_at`
- * (updateTenant y todos los de este módulo lo hacen). La garantía total sería
- * una función SQL (ver migrations/tenant_apply_recurring_charge.sql, pendiente).
+ * Límite: solo es atómico frente a los escritores que TAMBIÉN pasan por acá
+ * (cobro, alta, bump de promo, crons de vencimiento/follow-up, webhook de
+ * cancelación). Un escritor que haga updateTenant/update directo con una
+ * lectura vieja sigue pudiendo pisar la metadata. La garantía total sería una
+ * función SQL (ver migrations/tenant_apply_recurring_charge.sql, pendiente).
  */
 const CAS_MAX_ATTEMPTS = 6
 
-async function casUpdateTenant(
+export async function casUpdateTenant(
   label: string,
   tenantId: string,
   nowISO: string,
@@ -486,7 +488,7 @@ async function casUpdateTenant(
     if (error) {
       throw new Error(`${label}: no se pudo escribir el tenant ${tenantId}: ${error.message}`)
     }
-    if (Array.isArray(written) ? written.length > 0 : true) return true
+    if (Array.isArray(written) && written.length > 0) return true
     // 0 filas: otro escritor ganó la carrera → releer y recalcular.
   }
   throw new Error(`${label}: contención al escribir el tenant ${tenantId} (${CAS_MAX_ATTEMPTS} intentos); MP reintenta`)
@@ -591,8 +593,11 @@ export async function bumpPromoToStandardIfDue(tenant: Tenant, nowISO: string): 
         },
       },
     })
-    meta.promo = null
-    await db().from('tenants').update({ metadata: meta, updated_at: nowISO }).eq('id', tenant.id)
+    // La llamada de red ya se hizo arriba; la escritura va por CAS sobre la fila
+    // FRESCA (cambia solo `promo`, no pisa las marcas de cobro de otros).
+    await casUpdateTenant('bumpPromoToStandardIfDue', tenant.id, nowISO, (row) => ({
+      metadata: { ...(row.metadata ?? {}), promo: null },
+    }))
     console.log(`[subscription] promo bump → standard for ${tenant.name} ($${standardARS} ARS)`)
     return true
   } catch (e: any) {
