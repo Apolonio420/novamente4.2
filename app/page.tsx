@@ -22,6 +22,8 @@ import { INTERNAL_LINKS } from "@/lib/config/links"
 import { shippingSummaryWithFreeThreshold, totalDeliveryLine } from "@/lib/shipping-config"
 import { PRODUCTS as CATALOG_PRODUCTS, formatPrice as formatCatalogPrice } from "@/lib/catalog"
 
+export const revalidate = 1800 // ISR: 30 min (seccion de ofertas)
+
 export const metadata = {
   title: "Remeras y Buzos Personalizados con IA",
   description: "Diseñá remeras, hoodies y buzos con inteligencia artificial. Estampado DTG premium y envíos a todo el país. Empezá gratis.",

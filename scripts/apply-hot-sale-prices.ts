@@ -69,7 +69,7 @@ async function main() {
   let skipped = 0
   let missing = 0
 
-  for (const offer of OFFERS) {
+  for (const offer of OFFERS.filter((o) => o.campaign === "Hot Sale")) {
     const productSlug = extractProductSlug(offer.url)
 
     const { data: product, error: prodErr } = await admin

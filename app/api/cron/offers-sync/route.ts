@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { OFFERS } from "@/lib/offers"
-import { decidePriceSync, parseOfferTarget } from "@/lib/offers-sync"
+import { decidePriceSync, parseOfferTarget, STALE_AFTER_MS } from "@/lib/offers-sync"
 
 /**
  * Sincroniza partner_products.price / compare_at_price con lib/offers.ts.
@@ -19,28 +19,43 @@ export async function GET(request: NextRequest) {
   const dry = request.nextUrl.searchParams.get("dry") === "1"
   const now = new Date()
   const results: Array<Record<string, unknown>> = []
+  let failed = false
 
   for (const offer of OFFERS) {
     const target = parseOfferTarget(offer.url)
     if (!target) continue
     // Ofertas que no empezaron no hacen nada.
     if (now.getTime() < new Date(offer.startsAt).getTime()) continue
+    // Ofertas viejas (>48h desde endsAt) no se tocan nunca mas.
+    if (now.getTime() > new Date(offer.endsAt).getTime() + STALE_AFTER_MS) continue
 
-    const { data: tenant } = await supabaseAdmin
+    const { data: tenant, error: tenantErr } = await supabaseAdmin
       .from("tenants")
       .select("id")
       .eq("slug", target.tenantSlug)
       .maybeSingle()
+    if (tenantErr) {
+      console.error("[offers-sync] tenant select failed", offer.slug, tenantErr)
+      failed = true
+      results.push({ offer: offer.slug, result: "error", error: tenantErr.message })
+      continue
+    }
     if (!tenant) {
       results.push({ offer: offer.slug, result: "tenant_not_found" })
       continue
     }
-    const { data: row } = await supabaseAdmin
+    const { data: row, error: rowErr } = await supabaseAdmin
       .from("partner_products")
       .select("id, price, compare_at_price")
       .eq("tenant_id", (tenant as { id: string }).id)
       .eq("slug", target.productSlug)
       .maybeSingle()
+    if (rowErr) {
+      console.error("[offers-sync] product select failed", offer.slug, rowErr)
+      failed = true
+      results.push({ offer: offer.slug, result: "error", error: rowErr.message })
+      continue
+    }
     if (!row) {
       results.push({ offer: offer.slug, result: "product_not_found" })
       continue
@@ -61,6 +76,8 @@ export async function GET(request: NextRequest) {
         .update({ price: decision.price, compare_at_price: decision.compare_at_price } as never)
         .eq("id", r.id)
       if (error) {
+        console.error("[offers-sync] update failed", offer.slug, error)
+        failed = true
         results.push({ offer: offer.slug, result: "error", error: error.message })
         continue
       }
@@ -68,5 +85,8 @@ export async function GET(request: NextRequest) {
     results.push({ offer: offer.slug, result: dry ? `would_${decision.reason}` : decision.reason })
   }
 
-  return NextResponse.json({ ok: true, dry, now: now.toISOString(), results })
+  return NextResponse.json(
+    { ok: !failed, dry, now: now.toISOString(), results },
+    { status: failed ? 500 : 200 },
+  )
 }

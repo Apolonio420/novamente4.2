@@ -34,6 +34,8 @@ export type SyncDecision =
  * - Terminada: restaura SOLO si la fila todavia tiene price === priceCurrent
  *   (si alguien la edito a mano, no se pisa).
  */
+export const STALE_AFTER_MS = 48 * 3600_000
+
 export function decidePriceSync(
   offer: Pick<Offer, "priceCurrent" | "priceOriginal" | "startsAt" | "endsAt">,
   row: RowPrices,
@@ -43,21 +45,19 @@ export function decidePriceSync(
   const start = new Date(offer.startsAt).getTime()
   const end = new Date(offer.endsAt).getTime()
   if (ts < start) return { action: "none", reason: "not_started" }
+  if (ts > end + STALE_AFTER_MS) return { action: "none", reason: "stale_offer" }
+
+  const applied = row.price === offer.priceCurrent && row.compare_at_price === offer.priceOriginal
 
   if (ts <= end) {
-    if (row.price === offer.priceCurrent && row.compare_at_price === offer.priceOriginal) {
-      return { action: "none", reason: "already_applied" }
-    }
-    return {
-      action: "update",
-      price: offer.priceCurrent,
-      compare_at_price: offer.priceOriginal,
-      reason: "apply",
-    }
+    if (applied) return { action: "none", reason: "already_applied" }
+    if (row.price !== offer.priceOriginal) return { action: "none", reason: "price_mismatch" }
+    return { action: "update", price: offer.priceCurrent, compare_at_price: offer.priceOriginal, reason: "apply" }
   }
 
-  if (row.price === offer.priceCurrent) {
+  // Terminada: restaurar solo si la fila la escribio el cron.
+  if (applied) {
     return { action: "update", price: offer.priceOriginal, compare_at_price: null, reason: "restore" }
   }
-  return { action: "none", reason: "ended_no_change" }
+  return { action: "none", reason: "ended_not_cron_written" }
 }

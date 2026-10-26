@@ -32,6 +32,29 @@ describe("decidePriceSync", () => {
   it("no pisa ediciones manuales al terminar", () => {
     expect(decidePriceSync(offer, { price: 30000, compare_at_price: 35000 }, after).action).toBe("none")
   })
+  it("no restaura si compare_at_price no coincide (no lo escribio el cron)", () => {
+    expect(decidePriceSync(offer, { price: 24500, compare_at_price: null }, after)).toMatchObject({
+      action: "none", reason: "ended_not_cron_written",
+    })
+  })
+  it("ignora ofertas que terminaron hace mas de 48h", () => {
+    const old = new Date("2026-11-07T00:00:00-03:00")
+    expect(decidePriceSync(offer, { price: 24500, compare_at_price: 35000 }, old)).toMatchObject({
+      action: "none", reason: "stale_offer",
+    })
+  })
+  it("sigue restaurando dentro de las 48h", () => {
+    const t = new Date("2026-11-06T12:00:00-03:00")
+    expect(decidePriceSync(offer, { price: 24500, compare_at_price: 35000 }, t).action).toBe("update")
+  })
+  it("apply con precio distinto al original -> price_mismatch", () => {
+    expect(decidePriceSync(offer, { price: 31000, compare_at_price: null }, during)).toMatchObject({
+      action: "none", reason: "price_mismatch",
+    })
+  })
+  it("apply cuando price===priceCurrent pero sin compare_at -> price_mismatch", () => {
+    expect(decidePriceSync(offer, { price: 24500, compare_at_price: null }, during).reason).toBe("price_mismatch")
+  })
   it("despues de restaurar no hace nada", () => {
     expect(decidePriceSync(offer, { price: 35000, compare_at_price: null }, after).action).toBe("none")
   })
