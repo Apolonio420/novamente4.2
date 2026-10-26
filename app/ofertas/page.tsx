@@ -4,40 +4,53 @@ import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Flame, Clock, MessageCircle } from "lucide-react"
-import { getActiveOffers, formatARS, getDiscountPercent, type Offer } from "@/lib/offers"
+import { getActiveOffers, formatARS, getDiscountPercent, getCampaignLabel, absoluteImageUrl, type Offer } from "@/lib/offers"
 import { shippingDetailsJsonLd, RETURN_POLICY_REF } from "@/lib/shipping-config"
 
 export const revalidate = 1800 // ISR: 30 min
 
-export const metadata: Metadata = {
-  title: "Ofertas Hot Sale — Remeras Novamente con hasta 30% OFF",
-  description:
-    "Hot Sale Novamente: remeras oversize personalizadas con descuentos de hasta 30%. Remera Pasión Infinita $32.900, Cielo Eterno $29.900, Argentina Eterna $31.900 y más. Stock limitado, envíos a todo el país.",
-  alternates: { canonical: "https://www.novamente.ar/ofertas" },
-  openGraph: {
-    title: "Hot Sale Novamente — Remeras desde $29.900",
-    description: "5 remeras oversize con hasta 30% OFF. Diseños exclusivos del mundial argentino, estampado DTG premium.",
-    url: "https://www.novamente.ar/ofertas",
-    type: "website",
-    images: ["https://www.novamente.ar/marketing/hot-sale/pasion-infinita.jpeg"],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Hot Sale Novamente — hasta 30% OFF",
-    description: "Remeras oversize con diseños exclusivos. Stock limitado.",
-  },
+const pageUrl = "https://www.novamente.ar/ofertas"
+
+export function generateMetadata(): Metadata {
+  const offers = getActiveOffers()
+  const campaign = getCampaignLabel(offers)
+  const maxDiscount = offers.length ? Math.max(...offers.map(getDiscountPercent)) : 0
+  const title = offers.length
+    ? `Ofertas ${campaign} — Novamente con hasta ${maxDiscount}% OFF`
+    : "Ofertas — Novamente"
+  const description = offers.length
+    ? `${campaign} Novamente: ${offers.length} ${offers.length === 1 ? "producto" : "productos"} con hasta ${maxDiscount}% OFF, producidos bajo demanda. Envíos a todo el país.`
+    : "Promociones de Novamente. Cuando haya una campaña vigente la vas a encontrar acá."
+  const ogImage = offers.length ? absoluteImageUrl(offers[0].image) : undefined
+  return {
+    title,
+    description,
+    alternates: { canonical: pageUrl },
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      type: "website",
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  }
 }
 
 const baseUrl = "https://www.novamente.ar"
 
 function buildOffersSchema(offers: Offer[]) {
+  const campaign = getCampaignLabel(offers)
   const itemList = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
     "@id": `${baseUrl}/ofertas#webpage`,
-    name: "Ofertas Hot Sale — Novamente",
-    description:
-      "Remeras oversize con descuentos Hot Sale. Diseños exclusivos del mundial argentino con estampado DTG premium.",
+    name: `Ofertas ${campaign} — Novamente`,
+    description: `Prendas Novamente con descuentos ${campaign}, estampado DTG premium y producción bajo demanda.`,
     url: `${baseUrl}/ofertas`,
     isPartOf: { "@id": `${baseUrl}/#website` },
     about: { "@id": `${baseUrl}/#organization` },
@@ -52,7 +65,7 @@ function buildOffersSchema(offers: Offer[]) {
           "@id": `${o.url}#product`,
           name: o.name,
           description: o.shortDescription || o.name,
-          image: `${baseUrl}${o.image}`,
+          image: absoluteImageUrl(o.image, baseUrl),
           url: o.url,
           brand: { "@type": "Brand", name: "Novamente" },
           offers: {
@@ -110,6 +123,7 @@ export default function OfertasPage() {
     )
   }
 
+  const campaign = getCampaignLabel(offers)
   const { itemList, breadcrumb } = buildOffersSchema(offers)
   const endsAt = offers[0]?.endsAt
   const endDate = endsAt ? new Date(endsAt) : null
@@ -123,14 +137,14 @@ export default function OfertasPage() {
       <header className="text-center mb-12 md:mb-16">
         <Badge className="mb-4 bg-orange-500/15 text-orange-400 border-orange-500/40 text-xs tracking-widest uppercase hover:bg-orange-500/20">
           <Flame className="w-3 h-3 mr-1.5" />
-          Hot Sale Activo
+          {campaign} Activo
         </Badge>
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-4" data-speakable>
-          Ofertas Hot Sale
+          Ofertas {campaign}
         </h1>
         <p className="text-muted-foreground text-lg max-w-3xl mx-auto leading-relaxed" data-speakable>
-          {offers.length} {offers.length === 1 ? "remera oversize con descuento" : "remeras oversize con descuento"}.
-          Diseños exclusivos, estampado DTG premium y stock limitado. Envíos a todo el país.
+          {offers.length} {offers.length === 1 ? "producto con descuento" : "productos con descuento"}.
+          Estampado DTG premium, producido bajo demanda. Envíos a todo el país.
         </p>
         {endDate && (
           <div className="inline-flex items-center gap-2 mt-6 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/30 text-sm text-orange-300">
@@ -201,7 +215,7 @@ export default function OfertasPage() {
                   </a>
                   <a
                     href={`https://wa.me/5492235169720?text=${encodeURIComponent(
-                      `Hola! Vi la oferta Hot Sale de "${offer.name}" a ${formatARS(offer.priceCurrent)}. Quiero comprarla.`
+                      `Hola! Vi la oferta ${campaign} de "${offer.name}" a ${formatARS(offer.priceCurrent)}. Quiero comprarla.`
                     )}`}
                     target="_blank"
                     rel="noopener"
