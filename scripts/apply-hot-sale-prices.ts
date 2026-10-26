@@ -2,7 +2,7 @@
  * Aplica (o revierte) precios Hot Sale a los productos del tenant
  * novamente-mundial.
  *
- * Lee HOT_SALE_OFFERS desde lib/offers.ts (source of truth), encuentra los
+ * Lee OFFERS desde lib/offers.ts (source of truth), encuentra los
  * productos en partner_products por slug, y setea:
  *
  *   APPLY  (default):
@@ -23,7 +23,7 @@
  */
 import { createClient } from "@supabase/supabase-js"
 import { config as loadEnv } from "dotenv"
-import { HOT_SALE_OFFERS } from "../lib/offers"
+import { OFFERS } from "../lib/offers"
 
 loadEnv({ path: ".env.local" })
 
@@ -69,7 +69,7 @@ async function main() {
   let skipped = 0
   let missing = 0
 
-  for (const offer of HOT_SALE_OFFERS) {
+  for (const offer of OFFERS.filter((o) => o.campaign === "Hot Sale")) {
     const productSlug = extractProductSlug(offer.url)
 
     const { data: product, error: prodErr } = await admin

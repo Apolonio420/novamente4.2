@@ -211,7 +211,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     <div className="pointer-events-none absolute left-4 top-4 z-10 flex items-center gap-2">
       <span className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-orange-500 to-red-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-orange-500/30">
         <Flame className="h-3.5 w-3.5" />
-        Hot Sale
+        {hotSaleOffer.campaign}
       </span>
       <span className="inline-flex items-center rounded-md bg-black/60 px-2.5 py-1.5 text-xs font-bold text-orange-400 backdrop-blur-sm">
         -{getDiscountPercent(hotSaleOffer)}%
@@ -244,7 +244,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           {hotSaleOffer && (
             <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-orange-400">
               <Flame className="h-3.5 w-3.5" />
-              Precio Hot Sale
+              Precio {hotSaleOffer.campaign}
             </div>
           )}
           <div className="flex items-baseline gap-3 flex-wrap">

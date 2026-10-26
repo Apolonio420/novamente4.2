@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { ArrowRight, Zap, Shirt, Star, Sparkles, Palette, Wand2, Quote, Users, TrendingUp, ShieldCheck, Globe, Store, Eye, Flame } from "lucide-react"
-import { getActiveOffers, formatARS, getDiscountPercent } from "@/lib/offers"
+import { getActiveOffers, formatARS, getDiscountPercent, getCampaignLabel } from "@/lib/offers"
 import Link from "next/link"
 import Image from "next/image"
 // Image history now fetches via /api/images/history (session-based)
@@ -21,6 +21,8 @@ import { ScrollButton } from "@/components/scroll-button"
 import { INTERNAL_LINKS } from "@/lib/config/links"
 import { shippingSummaryWithFreeThreshold, totalDeliveryLine } from "@/lib/shipping-config"
 import { PRODUCTS as CATALOG_PRODUCTS, formatPrice as formatCatalogPrice } from "@/lib/catalog"
+
+export const revalidate = 1800 // ISR: 30 min (seccion de ofertas)
 
 export const metadata = {
   title: "Remeras y Buzos Personalizados con IA",
@@ -417,11 +419,11 @@ export default function Home() {
           <div className="text-center mb-10">
             <Badge className="mb-4 bg-orange-500/15 text-orange-400 border-orange-500/40 text-xs tracking-widest uppercase hover:bg-orange-500/20">
               <Flame className="w-3 h-3 mr-1.5" />
-              Hot Sale
+              {getCampaignLabel(activeOffers)}
             </Badge>
             <h2 className="novamente-heading text-3xl md:text-4xl mb-3">OFERTAS DE LA SEMANA</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto text-base md:text-lg">
-              {activeOffers.length} {activeOffers.length === 1 ? "oferta" : "ofertas"} con descuento — stock limitado.
+              {activeOffers.length} {activeOffers.length === 1 ? "oferta" : "ofertas"} con descuento.
             </p>
           </div>
 

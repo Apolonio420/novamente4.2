@@ -1,5 +1,5 @@
 /**
- * Ofertas activas / Hot Sale.
+ * Ofertas por campana (Hot Sale, Cyber Monday, etc.).
  *
  * Source of truth para promociones temporales. Las URLs apuntan a storefronts
  * de partners (ej: novamente-mundial) o a productos del catalogo principal.
@@ -23,7 +23,7 @@ export interface Offer {
   badge?: string
 }
 
-export const HOT_SALE_OFFERS: Offer[] = [
+export const OFFERS: Offer[] = [
   {
     slug: "pasion-infinita",
     name: "Remera Oversize Pasión Infinita",
@@ -93,11 +93,125 @@ export const HOT_SALE_OFFERS: Offer[] = [
     shortDescription: "Crest circular Campeón del Mundo 2022 — doble estampa frente y espalda.",
     badge: "Doble estampa",
   },
+
+  // ---- Cyber Monday 2026 (lun 2/11 00:00 a mie 4/11 23:59 ART) ----
+  {
+    slug: "cm26-buzo-novamente-originals",
+    name: "Buzo Oversize Novamente Originals",
+    image: "/partners/novamente-originals/products/buzo-novamente-originals-negro-front.png",
+    alt: "Buzo Oversize Novamente Originals — Cyber Monday Novamente 30% OFF",
+    url: "https://www.novamente.ar/p/novamente-originals/buzo-novamente-originals",
+    priceCurrent: 40600,
+    priceOriginal: 58000,
+    campaign: "Cyber Monday",
+    startsAt: "2026-11-02T00:00:00-03:00",
+    endsAt: "2026-11-04T23:59:59-03:00",
+    shortDescription: "Buzo oversize Novamente Originals, estampado DTG premium, producido bajo demanda.",
+    badge: "30% OFF",
+  },
+  {
+    slug: "cm26-remera-novamente-originals",
+    name: "Remera Oversize Novamente Originals",
+    image: "/partners/novamente-originals/products/remera-novamente-originals-negro-front.png",
+    alt: "Remera Oversize Novamente Originals — Cyber Monday Novamente 30% OFF",
+    url: "https://www.novamente.ar/p/novamente-originals/remera-novamente-originals",
+    priceCurrent: 24500,
+    priceOriginal: 35000,
+    campaign: "Cyber Monday",
+    startsAt: "2026-11-02T00:00:00-03:00",
+    endsAt: "2026-11-04T23:59:59-03:00",
+    shortDescription: "Remera oversize Novamente Originals, estampado DTG premium, producida bajo demanda.",
+    badge: "30% OFF",
+  },
+  {
+    slug: "cm26-remera-oversize-bench-break",
+    name: "Remera Oversize Bench Break",
+    image: "https://fvsjvvyohaarivametxq.supabase.co/storage/v1/object/public/partner-assets/c803246a-ad52-4889-aafd-c4f58b6a916b/product/1774878096555.png",
+    alt: "Remera Oversize Bench Break — Cyber Monday Novamente 30% OFF",
+    url: "https://www.novamente.ar/p/novamente-training/remera-oversize-bench-break",
+    priceCurrent: 23200,
+    priceOriginal: 33200,
+    campaign: "Cyber Monday",
+    startsAt: "2026-11-02T00:00:00-03:00",
+    endsAt: "2026-11-04T23:59:59-03:00",
+    shortDescription: "Remera oversize de Novamente Training, estampa Bench Break.",
+    badge: "30% OFF",
+  },
+  {
+    slug: "cm26-remera-oversize-bob",
+    name: "Remera Oversize Bob",
+    image: "https://fvsjvvyohaarivametxq.supabase.co/storage/v1/object/public/partner-assets/c803246a-ad52-4889-aafd-c4f58b6a916b/product/1774877336680.png",
+    alt: "Remera Oversize Bob — Cyber Monday Novamente 30% OFF",
+    url: "https://www.novamente.ar/p/novamente-training/remera-oversize-bob",
+    priceCurrent: 23200,
+    priceOriginal: 33198,
+    campaign: "Cyber Monday",
+    startsAt: "2026-11-02T00:00:00-03:00",
+    endsAt: "2026-11-04T23:59:59-03:00",
+    shortDescription: "Remera oversize de Novamente Training, estampa Bob.",
+    badge: "30% OFF",
+  },
+  {
+    slug: "cm26-remera-oversize-take-the-risk",
+    name: "Remera Oversize Take the Risk",
+    image: "https://fvsjvvyohaarivametxq.supabase.co/storage/v1/object/public/partner-assets/c803246a-ad52-4889-aafd-c4f58b6a916b/product/1774877981411.png",
+    alt: "Remera Oversize Take the Risk — Cyber Monday Novamente 30% OFF",
+    url: "https://www.novamente.ar/p/novamente-training/remera-oversize-take-the-risk",
+    priceCurrent: 23500,
+    priceOriginal: 33600,
+    campaign: "Cyber Monday",
+    startsAt: "2026-11-02T00:00:00-03:00",
+    endsAt: "2026-11-04T23:59:59-03:00",
+    shortDescription: "Remera oversize de Novamente Training, estampa Take the Risk.",
+    badge: "30% OFF",
+  },
+  {
+    slug: "cm26-hoodie-oversize-walking-pr",
+    name: "Hoodie Oversize Walking PR",
+    image: "https://fvsjvvyohaarivametxq.supabase.co/storage/v1/object/public/partner-assets/c803246a-ad52-4889-aafd-c4f58b6a916b/product/1774878416400.png",
+    alt: "Hoodie Oversize Walking PR — Cyber Monday Novamente 30% OFF",
+    url: "https://www.novamente.ar/p/novamente-training/hoodie-oversize-walking-pr",
+    priceCurrent: 41200,
+    priceOriginal: 58900,
+    campaign: "Cyber Monday",
+    startsAt: "2026-11-02T00:00:00-03:00",
+    endsAt: "2026-11-04T23:59:59-03:00",
+    shortDescription: "Hoodie oversize de Novamente Training, estampa Walking PR.",
+    badge: "30% OFF",
+  },
+  {
+    slug: "cm26-remera-oversize-patricio",
+    name: "Remera Oversize Patricio",
+    image: "https://fvsjvvyohaarivametxq.supabase.co/storage/v1/object/public/partner-assets/c803246a-ad52-4889-aafd-c4f58b6a916b/product/1774878316970.png",
+    alt: "Remera Oversize Patricio — Cyber Monday Novamente 30% OFF",
+    url: "https://www.novamente.ar/p/novamente-training/remera-oversize-patricio",
+    priceCurrent: 23200,
+    priceOriginal: 33200,
+    campaign: "Cyber Monday",
+    startsAt: "2026-11-02T00:00:00-03:00",
+    endsAt: "2026-11-04T23:59:59-03:00",
+    shortDescription: "Remera oversize de Novamente Training, estampa Patricio.",
+    badge: "30% OFF",
+  },
+  {
+    slug: "cm26-remera-oversize-allergic-to-burpees",
+    name: "Remera Oversize Allergic to Burpees",
+    image: "https://fvsjvvyohaarivametxq.supabase.co/storage/v1/object/public/partner-assets/c803246a-ad52-4889-aafd-c4f58b6a916b/product/1774877855535.png",
+    alt: "Remera Oversize Allergic to Burpees — Cyber Monday Novamente 30% OFF",
+    url: "https://www.novamente.ar/p/novamente-training/remera-oversize-allergic-to-burpees",
+    priceCurrent: 23200,
+    priceOriginal: 33200,
+    campaign: "Cyber Monday",
+    startsAt: "2026-11-02T00:00:00-03:00",
+    endsAt: "2026-11-04T23:59:59-03:00",
+    shortDescription: "Remera oversize de Novamente Training, estampa Allergic to Burpees.",
+    badge: "30% OFF",
+  },
 ]
 
 export function getActiveOffers(now: Date = new Date()): Offer[] {
   const ts = now.getTime()
-  return HOT_SALE_OFFERS.filter(o => {
+  return OFFERS.filter(o => {
     const start = new Date(o.startsAt).getTime()
     const end = new Date(o.endsAt).getTime()
     return ts >= start && ts <= end
@@ -142,4 +256,15 @@ export function getActiveOfferForProduct(
     }
   }
   return null
+}
+
+/** Nombre de campania para copy/metadata. Fallback generico "Ofertas". */
+export function getCampaignLabel(offers: Offer[]): string {
+  const names = Array.from(new Set(offers.map(o => o.campaign)))
+  return names.length === 1 ? names[0] : "Ofertas"
+}
+
+/** Imagen absoluta (para JSON-LD / OpenGraph). */
+export function absoluteImageUrl(image: string, baseUrl = "https://www.novamente.ar"): string {
+  return /^https?:\/\//.test(image) ? image : `${baseUrl}${image}`
 }
