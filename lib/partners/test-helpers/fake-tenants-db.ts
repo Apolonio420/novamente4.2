@@ -17,6 +17,8 @@ export function createFakeSupabase(store: FakeTenantStore) {
           eq: () => q,
           single: async () => { await tick(); return { data: snapshot, error: null } },
           maybeSingle: async () => { await tick(); return { data: snapshot, error: null } },
+          // Búsqueda por mp_subscription_id del cobro recurrente (.limit(2)).
+          limit: async () => { await tick(); return { data: snapshot ? [snapshot] : [], error: null } },
         }
         return q
       },
