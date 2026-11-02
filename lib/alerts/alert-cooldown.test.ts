@@ -18,7 +18,7 @@ const { selectRow, maybeSingleMock, upsertMock, fromMock } = vi.hoisted(() => {
 
 vi.mock('@/lib/supabase-admin', () => ({ supabaseAdmin: { from: fromMock } }));
 
-import { checkAlertCooldown, formatRepeatedSuffix, DEFAULT_ALERT_COOLDOWN_MS } from './alert-cooldown';
+import { checkAlertCooldown, formatRepeatedSuffix, wasAlertSentRecently, markAlertSent, DEFAULT_ALERT_COOLDOWN_MS } from './alert-cooldown';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -118,5 +118,36 @@ describe('formatRepeatedSuffix', () => {
 
   it('acepta una ventana personalizada', () => {
     expect(formatRepeatedSuffix(2, '24 h')).toContain('24 h');
+  });
+});
+
+describe('wasAlertSentRecently / markAlertSent (coordinación bug-report ↔ ticket)', () => {
+  it('sin fila → false; no escribe ni cuenta supresiones', async () => {
+    expect(await wasAlertSentRecently('k-peek')).toBe(false);
+    expect(upsertMock).not.toHaveBeenCalled();
+  });
+
+  it('fila fresca → true y NO modifica el estado (solo lectura)', async () => {
+    selectRow.value = { value: { lastSentAt: new Date().toISOString(), suppressedCount: 0 } };
+    expect(await wasAlertSentRecently('k-peek')).toBe(true);
+    expect(upsertMock).not.toHaveBeenCalled();
+  });
+
+  it('fila vieja (> ventana) → false', async () => {
+    selectRow.value = { value: { lastSentAt: new Date(Date.now() - 31 * 60 * 1000).toISOString(), suppressedCount: 2 } };
+    expect(await wasAlertSentRecently('k-peek')).toBe(false);
+  });
+
+  it('error de Supabase → false (fail-open: se manda igual)', async () => {
+    selectRow.error = { message: 'boom' };
+    expect(await wasAlertSentRecently('k-peek')).toBe(false);
+  });
+
+  it('markAlertSent persiste lastSentAt con el prefijo alert_cooldown:', async () => {
+    await markAlertSent('bug-digest:t:d');
+    expect(upsertMock).toHaveBeenCalledWith(
+      { key: 'alert_cooldown:bug-digest:t:d', value: expect.objectContaining({ suppressedCount: 0 }) },
+      { onConflict: 'key' },
+    );
   });
 });

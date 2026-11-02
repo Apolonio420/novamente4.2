@@ -99,6 +99,8 @@ export async function createErrorTicket(error: ReportableError): Promise<string 
         subject: `Error en ${path}`.slice(0, 200),
         description,
         category: 'technical',
+        // Para que el aviso a Telegram no duplique el del auto-reporte del mismo error.
+        errorContext: { digest: error.digest, path, message: error.message },
       }),
     })
     if (!res.ok) return null

@@ -14,7 +14,13 @@
  */
 import { after } from 'next/server'
 import { notifyUrgent, escapeTelegramHtml } from '@/lib/notifications'
-import { checkAlertCooldown, formatRepeatedSuffix } from '@/lib/alerts/alert-cooldown'
+import { checkAlertCooldown, formatRepeatedSuffix, wasAlertSentRecently } from '@/lib/alerts/alert-cooldown'
+import {
+  WORKSPACE_ERROR_DEDUPE_WINDOW_MS,
+  bugDigestKey,
+  bugPathMessageKey,
+  type ErrorTicketContext,
+} from '@/lib/alerts/workspace-error-keys'
 
 const ADMIN_TICKETS_URL = 'https://admin.novamente.ar/dashboard/tickets'
 const SNIPPET_MAX = 200
@@ -48,19 +54,48 @@ export function runAfterResponse(fn: () => Promise<unknown>): void {
   }
 }
 
+/**
+ * ¿El bug-report automático de ESTE mismo error ya avisó a Urgente hace < 30 min?
+ * Un crash genera dos avisos (auto-reporte + ticket "Avisar a Novamente"); el
+ * segundo es ruido. Mira tenant+digest y, si no, tenant+ruta+mensaje.
+ */
+export async function wasErrorAlreadyAlerted(tenantId: string, ctx: ErrorTicketContext): Promise<boolean> {
+  if (ctx.digest && (await wasAlertSentRecently(bugDigestKey(tenantId, ctx.digest), WORKSPACE_ERROR_DEDUPE_WINDOW_MS))) {
+    return true
+  }
+  if (ctx.path && ctx.message) {
+    return wasAlertSentRecently(bugPathMessageKey(tenantId, ctx.path, ctx.message), WORKSPACE_ERROR_DEDUPE_WINDOW_MS)
+  }
+  return false
+}
+
 export async function notifySupportTicketCreated(input: {
   tenantName: string
   subject: string
   description: string
   ticketId: string
   priority?: string
+  /** Para tickets creados desde la pantalla de error del workspace. */
+  tenantId?: string
+  errorContext?: ErrorTicketContext | null
 }) {
+  const ctx = input.errorContext
+  if (ctx && input.tenantId && (await wasErrorAlreadyAlerted(input.tenantId, ctx))) {
+    // Mismo error que el aviso automático (ya en Urgente): el ticket queda
+    // creado y visible en el admin, pero no se manda un segundo ping.
+    return null
+  }
   const msg = [
     `🆘 <b>TICKET DE SOPORTE — ${escapeTelegramHtml(input.tenantName || 'Partner')}</b>${input.priority === 'priority' ? ' (plan Pro, prioridad)' : ''}`,
     `<b>Asunto:</b> ${escapeTelegramHtml(snippet(input.subject))}`,
     escapeTelegramHtml(snippet(input.description)),
+    ctx
+      ? `<i>Viene de la pantalla de error del workspace${ctx.digest ? ` — Error ID: <code>${escapeTelegramHtml(ctx.digest)}</code>` : ''}.</i>`
+      : '',
     `<a href="${ticketUrl(input.ticketId)}">Abrir ticket en el admin</a>`,
-  ].join('\n')
+  ]
+    .filter(Boolean)
+    .join('\n')
   return notifyUrgent(msg)
 }
 

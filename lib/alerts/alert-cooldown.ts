@@ -116,6 +116,38 @@ export async function checkAlertCooldown(
   }
 }
 
+/**
+ * Solo lectura (NO cuenta supresiones): ¿se mandó una alerta con esta `key`
+ * en los últimos `windowMs`? Para coordinar DOS emisores de la misma situación
+ * (ej. bug-report y ticket de la pantalla de error): el segundo consulta, no
+ * consume el cooldown del primero. Fail-open: ante error/timeout → false
+ * (se manda igual, nunca se pierde una alerta por un problema del cooldown).
+ */
+export async function wasAlertSentRecently(
+  key: string,
+  windowMs: number = DEFAULT_ALERT_COOLDOWN_MS,
+): Promise<boolean> {
+  try {
+    const { data, error } = await withTimeout(
+      db().from('app_settings').select('value').eq('key', `${SETTINGS_KEY_PREFIX}${key}`).maybeSingle() as PromiseLike<{
+        data: { value: CooldownState } | null;
+        error: { message: string } | null;
+      }>,
+      DB_TIMEOUT_MS,
+      { data: null, error: { message: 'timeout' } },
+    );
+    if (error) return false;
+    return isFreshEnough((data?.value as CooldownState | undefined) ?? null, windowMs);
+  } catch {
+    return false;
+  }
+}
+
+/** Marca `key` como "alertada ahora" (sin chequear nada). Best-effort: nunca lanza. */
+export async function markAlertSent(key: string): Promise<void> {
+  await writeState(`${SETTINGS_KEY_PREFIX}${key}`, { lastSentAt: new Date().toISOString(), suppressedCount: 0 });
+}
+
 async function writeState(settingsKey: string, state: CooldownState): Promise<void> {
   try {
     await withTimeout(

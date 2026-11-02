@@ -3,8 +3,8 @@ import { z } from 'zod'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getRequestTenant } from '@/lib/partners/permissions'
 import { notifyUrgent, notifyError, escapeTelegramHtml } from '@/lib/notifications'
-import { checkAlertCooldown, formatRepeatedSuffix } from '@/lib/alerts/alert-cooldown'
-import { hashAlertKey, normalizeAlertText } from '@/lib/alerts/dedupe-key'
+import { checkAlertCooldown, formatRepeatedSuffix, markAlertSent } from '@/lib/alerts/alert-cooldown'
+import { bugDigestKey, bugPathMessageKey } from '@/lib/alerts/workspace-error-keys'
 import { runAfterResponse } from '@/lib/partners/support-notify'
 
 export const runtime = 'nodejs'
@@ -126,8 +126,13 @@ export async function POST(request: NextRequest) {
                 })
             })
         } else runAfterResponse(async () => {
-            const key = hashAlertKey(['bug', tenant.id, path, normalizeAlertText(msgForKey)])
+            const key = bugPathMessageKey(tenant.id, path, msgForKey)
             const decision = await checkAlertCooldown(key)
+            // Marca tenant+digest: si el partner además toca "Avisar a Novamente"
+            // en la pantalla de error, el ticket NO manda un segundo Urgente
+            // (ver notifySupportTicketCreated). Se marca aunque el cooldown haya
+            // suprimido este envío: ese error ya está avisado.
+            if (errorDigest) await markAlertSent(bugDigestKey(tenant.id, errorDigest))
             if (!decision.send) return
             const lines = [
                 `🐞 <b>ERROR EN EL WORKSPACE — ${escapeTelegramHtml(tenant.name)}</b>`,

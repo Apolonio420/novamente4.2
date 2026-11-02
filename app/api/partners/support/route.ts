@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { createTicket, getTickets } from '@/lib/partners/support'
 import { notifySupportTicketCreated, runAfterResponse } from '@/lib/partners/support-notify'
+import { parseErrorTicketContext } from '@/lib/alerts/workspace-error-keys'
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,6 +27,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { subject, description, category } = body
+    // Solo para deduplicar el aviso (no se guarda): ticket de la pantalla de error.
+    const errorContext = parseErrorTicketContext(body.errorContext)
 
     if (!subject || !description) {
       return NextResponse.json(
@@ -66,6 +69,8 @@ export async function POST(request: NextRequest) {
         description: ticket.description,
         ticketId: ticket.id,
         priority: ticket.priority,
+        tenantId: auth.tenant.id,
+        errorContext,
       }),
     )
 
