@@ -49,9 +49,17 @@ export async function fetchStudioSessions(): Promise<SessionSummary[]> {
   return Array.isArray(data?.sessions) ? data.sessions : []
 }
 
+/** Mensajes de una sesión. TIRA StudioSessionsError si falla: antes devolvía [] y una sesión con trabajo se veía vacía. */
 export async function fetchSessionMessages(sessionId: string): Promise<StudioMessage[]> {
-  const res = await authFetch(`${API_BASE}/${sessionId}/messages`)
-  if (!res.ok) return []
+  let res: Response
+  try {
+    res = await authFetch(`${API_BASE}/${sessionId}/messages`)
+  } catch {
+    throw new StudioSessionsError('server', 'No pudimos abrir esa sesión')
+  }
+  if (!res.ok) {
+    throw new StudioSessionsError(res.status === 401 ? 'auth' : 'server', res.status === 401 ? 'Tu sesión venció' : 'No pudimos abrir esa sesión')
+  }
   const data = await res.json()
   return (data.messages || []).map((m: any) => ({
     id: m.id,

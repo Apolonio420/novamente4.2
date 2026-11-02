@@ -1,5 +1,6 @@
 "use client"
 
+import { getWhatsAppLink, WHATSAPP_MESSAGES } from '@/lib/config/links'
 import { useState, useEffect, useRef, useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { useCart } from "@/lib/cartStore"
@@ -570,7 +571,11 @@ function AssistantInner({
         setMessages(prev => [...prev, {
           id: `m-${Date.now()}`,
           role: "model" as const,
-          text: '❌ No se pudo crear el ticket. Intentá de nuevo.',
+          // 401 = la cookie de sesión venció (fuera del workspace no se re-sincroniza):
+          // ofrecer volver a entrar o seguir por WhatsApp en vez de "intentá de nuevo".
+          text: res.status === 401
+            ? `❌ Tu sesión venció y no pudimos crear el ticket. Volvé a entrar en /partners/login o escribinos por WhatsApp: ${getWhatsAppLink(WHATSAPP_MESSAGES.GENERIC)}`
+            : '❌ No se pudo crear el ticket. Intentá de nuevo.',
           timestamp: Date.now(),
         }])
       }

@@ -479,6 +479,7 @@ export default function DesignStudioPage() {
 
   const handleSelectSession = async (id: string) => {
     if (id === remoteSessionId) return
+    const previousId = remoteSessionId
     setRemoteSessionId(id)
     const summary = sessions.find(s => s.id === id)
     try {
@@ -490,7 +491,13 @@ export default function DesignStudioPage() {
         updatedAt: summary ? new Date(summary.updatedAt).getTime() : Date.now(),
         title: summary?.title || undefined,
       })
-    } catch {}
+    } catch (e) {
+      // No abrir la sesión como si estuviera vacía: queda la actual y se avisa.
+      setRemoteSessionId(previousId)
+      if (e instanceof StudioSessionsError && e.kind === 'auth') setSessionsError('auth')
+      setError(e instanceof Error ? `${e.message}. Probá de nuevo.` : 'No pudimos abrir esa sesión. Probá de nuevo.')
+      return
+    }
     setSidebarOpen(false)
   }
 

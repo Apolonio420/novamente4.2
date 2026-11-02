@@ -4,7 +4,7 @@ import {
   ALLOWED_TYPES,
   DESIGN_UPLOAD_TYPES,
   MAX_SIZE,
-} from '@/app/api/partners/upload/route'
+} from '@/lib/partners/upload-validation'
 
 describe('normalizeUploadMimeType & upload guards', () => {
   it('normaliza image/jpg e image/pjpeg a image/jpeg', () => {
