@@ -848,6 +848,23 @@ describe('POST /api/partners/webhook/mercadopago — pendientes auditoría 11/20
     expect(h.tenantsUpdate).not.toHaveBeenCalled()
   })
 
+  it('firmado sin data.id en la query (id solo en el body) → válida: el par id se omite del manifest', async () => {
+    process.env.MP_WEBHOOK_SECRET = SECRET
+    process.env.MP_WEBHOOK_SIGNATURE_MODE = 'enforce'
+    approvedPayment('s-5')
+    const ts = '1751500000000'
+    const v1 = createHmac('sha256', SECRET).update(buildMpManifest(null, 'req-9', ts)).digest('hex')
+    const req = new NextRequest('http://localhost/api/partners/webhook/mercadopago', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-signature': `ts=${ts},v1=${v1}`, 'x-request-id': 'req-9' },
+      body: JSON.stringify({ type: 'payment', data: { id: 's-5' } }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(200)
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
+    expect(h.notifyError).not.toHaveBeenCalled()
+  })
+
   it('sin header x-signature (IPN viejo) → se procesa igual aunque esté en enforce', async () => {
     process.env.MP_WEBHOOK_SECRET = SECRET
     process.env.MP_WEBHOOK_SIGNATURE_MODE = 'enforce'
@@ -906,6 +923,7 @@ describe('POST /api/partners/webhook/mercadopago — pendientes auditoría 11/20
     expect(h.tenantsUpdate).not.toHaveBeenCalled()
     expect(h.notifyError).toHaveBeenCalledTimes(1)
     expect(h.notifyError.mock.calls[0][0].message).toContain('2+ tenants')
+    expect(h.notifyError.mock.calls[0][0].message).toContain('único tenant')
   })
 
   it('cobro aprobado sin ningún tenant con ese preapproval → 200 + alerta', async () => {
@@ -914,6 +932,8 @@ describe('POST /api/partners/webhook/mercadopago — pendientes auditoría 11/20
     const res = await POST(authorizedPaymentRequest('ap-none'))
     expect(res.status).toBe(200)
     expect(h.notifyError).toHaveBeenCalledTimes(1)
+    expect(h.notifyError.mock.calls[0][0].message).toContain('NO se reintenta')
+    expect(h.notifyError.mock.calls[0][0].message).not.toContain('lo aplica solo')
   })
 
   it('cobro RECHAZADO sin tenant → 200 sin alerta', async () => {

@@ -71,7 +71,7 @@ function extractPlan(externalReference: string): Exclude<Plan, 'starter'> | null
  * (cooldown por id de MP, ver notifyError) y el caller responde 500 para que
  * MP reintente — los guards de idempotencia hacen seguro el reintento.
  */
-async function alertUnappliedCharge(ctx: { kind: string; mpId: string; tenantLabel: string; error?: unknown }) {
+async function alertUnappliedCharge(ctx: { kind: string; mpId: string; tenantLabel: string; error?: unknown; note?: string }) {
   const detail = ctx.error instanceof Error ? ctx.error.message : ctx.error ? String(ctx.error) : 'sin detalle'
   console.error('Cobro aprobado sin aplicar al tenant:', ctx.kind, ctx.mpId, ctx.tenantLabel, detail)
   try {
@@ -81,7 +81,7 @@ async function alertUnappliedCharge(ctx: { kind: string; mpId: string; tenantLab
       area: 'Suscripción partner (MercadoPago)',
       endpoint: '/api/partners/webhook/mercadopago',
       message: escapeTelegramHtml(
-        `${ctx.kind}: cobro ${ctx.mpId} aprobado pero NO aplicado a ${ctx.tenantLabel}. MP va a reintentar y lo aplica solo. NO activar a mano sin registrar también la marca last_mp_authorized_payment_id (o last_mp_payment_id) del cobro en la metadata del tenant: si no, el reintento de MP suma OTRO mes. Si en 1 h no se aplicó, registrar esa marca junto con la activación. Detalle: ${detail}`,
+        `${ctx.kind}: cobro ${ctx.mpId} aprobado pero NO aplicado a ${ctx.tenantLabel}. ${ctx.note ?? 'MP va a reintentar y lo aplica solo.'} NO activar a mano sin registrar también la marca last_mp_authorized_payment_id (o last_mp_payment_id) del cobro en la metadata del tenant: si no, el reintento de MP suma OTRO mes. Si en 1 h no se aplicó, registrar esa marca junto con la activación. Detalle: ${detail}`,
       ),
       dedupeKey: `mp-partner-unapplied:${ctx.mpId}`,
     })
@@ -300,6 +300,7 @@ async function handleAuthorizedPaymentEvent(body: any, request: NextRequest) {
         kind: 'Cobro mensual recurrente (2+ tenants con el mismo preapproval)',
         mpId: id,
         tenantLabel: `preapproval ${ap.preapprovalId}: ${matches.map((t: any) => `${t.name} (${t.id})`).join(', ')}`,
+        note: 'MP reintenta, pero solo se aplica cuando quede un único tenant con ese preapproval (sacarle el mp_subscription_id al que no corresponde).',
       })
       return retryLater('duplicate_preapproval')
     }
@@ -309,7 +310,12 @@ async function handleAuthorizedPaymentEvent(body: any, request: NextRequest) {
       if (ap.approved) {
         // Cobro aprobado sin dueño: reintentar no lo arregla, pero alguien
         // tiene que mirarlo (plata cobrada sin plan).
-        await alertUnappliedCharge({ kind: 'Cobro mensual recurrente (ningún tenant con ese preapproval)', mpId: id, tenantLabel: `preapproval ${ap.preapprovalId}` })
+        await alertUnappliedCharge({
+          kind: 'Cobro mensual recurrente (ningún tenant con ese preapproval)',
+          mpId: id,
+          tenantLabel: `preapproval ${ap.preapprovalId}`,
+          note: 'NO se reintenta: revisar a mano (posible preapproval viejo de un upgrade que siguió cobrando — cancelarlo en MP y ver si hay que devolver).',
+        })
       }
       return NextResponse.json({ received: true })
     }
@@ -381,7 +387,9 @@ async function checkMpSignature(request: NextRequest, body: any): Promise<NextRe
   const result = verifyMpSignature({
     xSignature: request.headers.get('x-signature'),
     xRequestId: request.headers.get('x-request-id'),
-    dataId: url.searchParams.get('data.id') ?? (body?.data?.id != null ? String(body.data.id) : null),
+    // Solo el data.id de la URL (doc oficial): si la query no lo trae, el par
+    // "id:" se omite del manifest. Tomarlo del body daría falsos "inválida".
+    dataId: url.searchParams.get('data.id'),
     secret,
   })
   if (result === 'valid') return null
