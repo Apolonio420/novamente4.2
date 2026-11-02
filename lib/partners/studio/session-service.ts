@@ -21,11 +21,32 @@ function fetchWithTimeout(url: string, opts: RequestInit, timeoutMs = 120_000): 
   return authFetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(timer))
 }
 
+export type StudioSessionsErrorKind = 'auth' | 'server'
+
+/**
+ * fetchStudioSessions falló. `kind` distingue sesión vencida (401) de error de
+ * servidor/red — antes se devolvía [] y la UI mostraba "Sin sesiones aún".
+ */
+export class StudioSessionsError extends Error {
+  kind: StudioSessionsErrorKind
+  constructor(kind: StudioSessionsErrorKind, message?: string) {
+    super(message || (kind === 'auth' ? 'Sesión vencida' : 'No se pudieron cargar las sesiones'))
+    this.name = 'StudioSessionsError'
+    this.kind = kind
+  }
+}
+
+/** Lista las sesiones del Studio. TIRA StudioSessionsError si falla (no devuelve [] ante un error). */
 export async function fetchStudioSessions(): Promise<SessionSummary[]> {
-  const res = await authFetch(API_BASE)
-  if (!res.ok) return []
-  const data = await res.json()
-  return data.sessions || []
+  let res: Response
+  try {
+    res = await authFetch(API_BASE)
+  } catch {
+    throw new StudioSessionsError('server')
+  }
+  if (!res.ok) throw new StudioSessionsError(res.status === 401 ? 'auth' : 'server')
+  const data = await res.json().catch(() => ({}))
+  return Array.isArray(data?.sessions) ? data.sessions : []
 }
 
 export async function fetchSessionMessages(sessionId: string): Promise<StudioMessage[]> {

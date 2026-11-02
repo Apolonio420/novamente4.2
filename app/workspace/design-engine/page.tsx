@@ -25,8 +25,11 @@ import {
   saveStudioMessage,
   deleteStudioSession,
   fetchUsageStats,
+  StudioSessionsError,
   type SessionSummary,
+  type StudioSessionsErrorKind,
 } from '@/lib/partners/studio/session-service'
+import { StudioSessionsError as StudioSessionsErrorState } from '@/components/workspace/studio-sessions-error'
 
 // ---------------------------------------------------------------------------
 // Anti-413 (25/08, caso Pablo/Origen): Vercel corta cualquier request >4.5MB
@@ -233,6 +236,9 @@ export default function DesignStudioPage() {
   const [remoteSessionId, setRemoteSessionId] = useState<string | null>(null)
   const [sessions, setSessions] = useState<SessionSummary[]>([])
   const [loadingSessions, setLoadingSessions] = useState(true)
+  // Error al listar sesiones (401 → sesión vencida / otro → reintentar). No se confunde con "Sin sesiones aún".
+  const [sessionsError, setSessionsError] = useState<StudioSessionsErrorKind | null>(null)
+  const [sessionsReloadKey, setSessionsReloadKey] = useState(0)
 
   // UI state
   const [prompt, setPrompt] = useState('')
@@ -394,10 +400,13 @@ export default function DesignStudioPage() {
   useEffect(() => {
     async function loadSessions() {
       setLoadingSessions(true)
+      setSessionsError(null)
       try {
         const remote = await fetchStudioSessions()
         setSessions(remote)
-        if (remote.length > 0) {
+        // En un reintento (sessionsReloadKey > 0) solo se repuebla la lista: el
+        // partner pudo haber empezado a chatear mientras fallaba, no se le pisa la conversación.
+        if (remote.length > 0 && sessionsReloadKey === 0) {
           const latest = remote[0]
           setRemoteSessionId(latest.id)
           const msgs = await fetchSessionMessages(latest.id)
@@ -411,11 +420,13 @@ export default function DesignStudioPage() {
             })
           }
         }
-      } catch {}
+      } catch (e) {
+        if (e instanceof StudioSessionsError) setSessionsError(e.kind)
+      }
       setLoadingSessions(false)
     }
     loadSessions()
-  }, [])
+  }, [sessionsReloadKey])
 
   useEffect(() => {
     fetchUsageStats().then((u) => { if (u) setUsage(normalizeUsage(u)) }).catch(() => {})
@@ -994,6 +1005,8 @@ export default function DesignStudioPage() {
               <div className="flex justify-center py-8">
                 <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
               </div>
+            ) : sessionsError ? (
+              <StudioSessionsErrorState kind={sessionsError} onRetry={() => setSessionsReloadKey(k => k + 1)} />
             ) : sessions.length === 0 ? (
               <p className="text-zinc-500 text-xs text-center py-8">Sin sesiones aún</p>
             ) : (
