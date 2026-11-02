@@ -22,6 +22,8 @@ const h = vi.hoisted(() => ({
   // mp_subscription_id) y por registerRecurringCharge (lee subscription_expires_at
   // + metadata). Configurable por test; default abajo en beforeEach.
   tenantsSelectSingleResult: null as any,
+  // Override del resultado de la búsqueda por mp_subscription_id (.limit(2)).
+  tenantsSelectLimitResult: null as any,
   // Error devuelto por el UPDATE a tenants (null = OK). Auditoría 08/10.
   tenantsUpdateError: null as any,
   notifyError: vi.fn(),
@@ -75,6 +77,12 @@ vi.mock('@/lib/supabase-admin', () => ({
               // activateRecurringTenant relee la fila fresca: sin resultado explícito, el tenant del test (getTenantById).
               single: async () => ({ data: h.tenantsSelectSingleResult ?? (await h.getTenantById()) ?? { subscription_expires_at: null } }),
               maybeSingle: async () => ({ data: null }),
+              // handleAuthorizedPaymentEvent busca por mp_subscription_id con .limit(2)
+              // (detecta 2+ tenants con el mismo preapproval).
+              limit: async () => ({
+                data: h.tenantsSelectLimitResult ?? (h.tenantsSelectSingleResult ? [h.tenantsSelectSingleResult] : []),
+                error: null,
+              }),
             }),
           }),
         }
@@ -87,6 +95,8 @@ vi.mock('@/lib/supabase-admin', () => ({
 }))
 
 import { POST } from './route'
+import { createHmac } from 'crypto'
+import { buildMpManifest } from '@/lib/partners/mp-signature'
 import { isPaymentAlreadyProcessed, isSuspectedDoubleCharge, isAuthorizedPaymentAlreadyProcessed } from '@/lib/partners/webhook-guards'
 
 function webhookRequest(paymentId: string) {
@@ -115,6 +125,9 @@ beforeEach(() => {
   h.notifySubscriptionActivatedEmails.mockResolvedValue(undefined)
   h.sendCapiPurchase.mockResolvedValue({ ok: true })
   h.tenantsSelectSingleResult = null
+  h.tenantsSelectLimitResult = null
+  delete process.env.MP_WEBHOOK_SECRET
+  delete process.env.MP_WEBHOOK_SIGNATURE_MODE
   h.tenantsUpdateError = null
   h.notifyError.mockResolvedValue(undefined)
 })
@@ -768,5 +781,145 @@ describe('POST /api/partners/webhook/mercadopago — cobro aprobado que no se pu
     expect(msg).toContain('last_mp_authorized_payment_id')
     expect(msg).toContain('OTRO mes')
     expect(msg).not.toContain('activar el plan a mano')
+  })
+})
+
+// Pendientes de la auditoría del workspace (11/2026): firma x-signature,
+// alerta de doble cobro que se repetía en reintentos y preapproval compartido.
+describe('POST /api/partners/webhook/mercadopago — pendientes auditoría 11/2026', () => {
+  const externalReference = 'partner_sub_tenant-1_1751500000000_monthly_growth'
+  const SECRET = 'secreto-de-prueba'
+
+  function signedRequest(paymentId: string, opts: { sign?: 'good' | 'bad' | 'none' } = {}) {
+    const ts = '1751500000000'
+    const requestId = 'req-123'
+    const key = opts.sign === 'bad' ? 'otro-secreto' : SECRET
+    const v1 = createHmac('sha256', key).update(buildMpManifest(paymentId, requestId, ts)).digest('hex')
+    const headers: Record<string, string> = { 'content-type': 'application/json' }
+    if (opts.sign !== 'none') {
+      headers['x-signature'] = `ts=${ts},v1=${v1}`
+      headers['x-request-id'] = requestId
+    }
+    return new NextRequest(`http://localhost/api/partners/webhook/mercadopago?data.id=${paymentId}&type=payment`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ type: 'payment', data: { id: paymentId } }),
+    })
+  }
+
+  function approvedPayment(id: string) {
+    h.getTenantById.mockResolvedValue({ ...baseTenant })
+    h.paymentGet.mockResolvedValue({ id, status: 'approved', external_reference: externalReference, transaction_amount: 25000 })
+  }
+
+  it('sin MP_WEBHOOK_SECRET no se valida nada (comportamiento de siempre)', async () => {
+    approvedPayment('s-0')
+    const res = await POST(signedRequest('s-0', { sign: 'bad' }))
+    expect(res.status).toBe(200)
+    expect(h.notifyError).not.toHaveBeenCalled()
+  })
+
+  it('firma válida → procesa sin alertas', async () => {
+    process.env.MP_WEBHOOK_SECRET = SECRET
+    approvedPayment('s-1')
+    const res = await POST(signedRequest('s-1'))
+    expect(res.status).toBe(200)
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
+    expect(h.notifyError).not.toHaveBeenCalled()
+  })
+
+  it('modo monitor (default): firma inválida → alerta pero procesa igual', async () => {
+    process.env.MP_WEBHOOK_SECRET = SECRET
+    approvedPayment('s-2')
+    const res = await POST(signedRequest('s-2', { sign: 'bad' }))
+    expect(res.status).toBe(200)
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
+    expect(h.notifyError).toHaveBeenCalledTimes(1)
+    expect(h.notifyError.mock.calls[0][0]).toMatchObject({ urgent: true, dedupeKey: 'mp-partner-signature-invalid' })
+  })
+
+  it('modo enforce: firma inválida → 401 sin tocar el tenant', async () => {
+    process.env.MP_WEBHOOK_SECRET = SECRET
+    process.env.MP_WEBHOOK_SIGNATURE_MODE = 'enforce'
+    approvedPayment('s-3')
+    const res = await POST(signedRequest('s-3', { sign: 'bad' }))
+    expect(res.status).toBe(401)
+    expect(h.paymentGet).not.toHaveBeenCalled()
+    expect(h.tenantsUpdate).not.toHaveBeenCalled()
+  })
+
+  it('sin header x-signature (IPN viejo) → se procesa igual aunque esté en enforce', async () => {
+    process.env.MP_WEBHOOK_SECRET = SECRET
+    process.env.MP_WEBHOOK_SIGNATURE_MODE = 'enforce'
+    approvedPayment('s-4')
+    const res = await POST(signedRequest('s-4', { sign: 'none' }))
+    expect(res.status).toBe(200)
+    expect(h.tenantsUpdate).toHaveBeenCalledTimes(1)
+  })
+
+  it('doble cobro: si el apply falla NO alerta (el reintento de MP no la repite); cuando se aplica, alerta una vez', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-07-15T00:00:00.000Z'))
+    try {
+      h.getTenantById.mockResolvedValue({
+        ...baseTenant,
+        metadata: { last_mp_payment_id: 'payment-old' },
+        last_payment_at: '2026-06-20T10:00:00.000Z',
+        subscription_expires_at: '2026-08-20T10:00:00.000Z',
+      })
+      h.paymentGet.mockResolvedValue({ id: 'payment-new', status: 'approved', external_reference: externalReference, transaction_amount: 25000 })
+
+      h.tenantsUpdateError = { message: 'timeout' }
+      expect((await POST(webhookRequest('payment-new'))).status).toBe(500)
+      expect(h.notifyPossibleDoubleCharge).not.toHaveBeenCalled()
+
+      h.tenantsUpdateError = null
+      expect((await POST(webhookRequest('payment-new'))).status).toBe(200)
+      expect(h.notifyPossibleDoubleCharge).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  function authorizedPaymentRequest(id: string) {
+    return new NextRequest('http://localhost/api/partners/webhook/mercadopago', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'subscription_authorized_payment', data: { id } }),
+    })
+  }
+  function mockAuthorizedPayment(approved: boolean) {
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ preapproval_id: 'preapproval-dup', payment: { status: approved ? 'approved' : 'rejected' }, status: approved ? 'processed' : 'rejected' }),
+    })) as any
+  }
+
+  it('2 tenants con el mismo preapproval → 500 + alerta, sin aplicar a ninguno', async () => {
+    mockAuthorizedPayment(true)
+    h.tenantsSelectLimitResult = [
+      { id: 't-a', name: 'A', metadata: {} },
+      { id: 't-b', name: 'B', metadata: {} },
+    ]
+    const res = await POST(authorizedPaymentRequest('ap-dup'))
+    expect(res.status).toBe(500)
+    expect(h.tenantsUpdate).not.toHaveBeenCalled()
+    expect(h.notifyError).toHaveBeenCalledTimes(1)
+    expect(h.notifyError.mock.calls[0][0].message).toContain('2+ tenants')
+  })
+
+  it('cobro aprobado sin ningún tenant con ese preapproval → 200 + alerta', async () => {
+    mockAuthorizedPayment(true)
+    h.tenantsSelectLimitResult = []
+    const res = await POST(authorizedPaymentRequest('ap-none'))
+    expect(res.status).toBe(200)
+    expect(h.notifyError).toHaveBeenCalledTimes(1)
+  })
+
+  it('cobro RECHAZADO sin tenant → 200 sin alerta', async () => {
+    mockAuthorizedPayment(false)
+    h.tenantsSelectLimitResult = []
+    expect((await POST(authorizedPaymentRequest('ap-none-2'))).status).toBe(200)
+    expect(h.notifyError).not.toHaveBeenCalled()
   })
 })

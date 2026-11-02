@@ -5,6 +5,7 @@ import { PLAN_FEATURES, PLAN_PRICING_USD } from '@/lib/partners/plans'
 import { activateRecurringTenant, registerRecurringCharge, registerPaymentFailure, registerSinglePayment, casUpdateTenant, getAuthorizedPayment, computeRenewalExpiration, isGenuinePreapprovalActivation } from '@/lib/partners/subscription'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import type { Plan } from '@/lib/partners/types'
+import { verifyMpSignature } from '@/lib/partners/mp-signature'
 import { isPaymentAlreadyProcessed, isSuspectedDoubleCharge, isAuthorizedPaymentAlreadyProcessed } from '@/lib/partners/webhook-guards'
 
 const client = new MercadoPagoConfig({
@@ -280,19 +281,36 @@ async function handleAuthorizedPaymentEvent(body: any, request: NextRequest) {
     // Consultado OK pero sin preapproval: no es de una suscripción de partner.
     if (!ap.preapprovalId) return NextResponse.json({ received: true })
 
-    const { data: tenant, error: tenantError } = await (supabaseAdmin as any)
+    // limit(2) en vez de .single(): .single() devuelve el MISMO error
+    // (PGRST116) con 0 filas que con 2+, y dos tenants con el mismo
+    // preapproval se descartaban en silencio como "sin tenant".
+    const { data: matches, error: tenantError } = await (supabaseAdmin as any)
       .from('tenants')
       .select('*')
       .eq('mp_subscription_id', ap.preapprovalId)
-      .single()
-    // PGRST116 = 0 filas (de verdad no hay tenant). Cualquier otro error es un
-    // blip de DB: reintentar en vez de descartar un cobro.
-    if (tenantError && tenantError.code !== 'PGRST116') {
+      .limit(2)
+    if (tenantError) {
       console.error('Authorized payment: error buscando tenant', ap.preapprovalId, tenantError.message)
       return retryLater('tenant_lookup_failed')
     }
+    if ((matches?.length ?? 0) > 1) {
+      // No se puede saber a quién aplicarlo: alerta y 500 para que el
+      // reintento de MP lo aplique cuando alguien deje un solo tenant.
+      await alertUnappliedCharge({
+        kind: 'Cobro mensual recurrente (2+ tenants con el mismo preapproval)',
+        mpId: id,
+        tenantLabel: `preapproval ${ap.preapprovalId}: ${matches.map((t: any) => `${t.name} (${t.id})`).join(', ')}`,
+      })
+      return retryLater('duplicate_preapproval')
+    }
+    const tenant = matches?.[0] ?? null
     if (!tenant) {
       console.warn('Authorized payment sin tenant para preapproval', ap.preapprovalId)
+      if (ap.approved) {
+        // Cobro aprobado sin dueño: reintentar no lo arregla, pero alguien
+        // tiene que mirarlo (plata cobrada sin plan).
+        await alertUnappliedCharge({ kind: 'Cobro mensual recurrente (ningún tenant con ese preapproval)', mpId: id, tenantLabel: `preapproval ${ap.preapprovalId}` })
+      }
       return NextResponse.json({ received: true })
     }
 
@@ -344,6 +362,52 @@ async function handleAuthorizedPaymentEvent(body: any, request: NextRequest) {
   }
 }
 
+/**
+ * Firma `x-signature` de MP (pendiente de la auditoría 08/10). Se activa recién
+ * cuando Juan carga MP_WEBHOOK_SECRET (Suas integrações → Webhooks → clave
+ * secreta). Modo por MP_WEBHOOK_SIGNATURE_MODE:
+ *  - 'monitor' (default): firma inválida → alerta (con cooldown) y se procesa
+ *    igual. Sirve para confirmar que el secreto está bien antes de bloquear:
+ *    con un secreto mal cargado, 'enforce' rechazaría TODOS los cobros.
+ *  - 'enforce': firma inválida → 401 (MP reintenta).
+ * Sin header (notificaciones viejas tipo IPN) se procesa igual: la defensa de
+ * fondo sigue siendo re-consultar el recurso a MP con nuestro token.
+ * Devuelve una respuesta solo si hay que cortar.
+ */
+async function checkMpSignature(request: NextRequest, body: any): Promise<NextResponse | null> {
+  const secret = process.env.MP_WEBHOOK_SECRET?.trim()
+  if (!secret) return null
+  const url = new URL(request.url)
+  const result = verifyMpSignature({
+    xSignature: request.headers.get('x-signature'),
+    xRequestId: request.headers.get('x-request-id'),
+    dataId: url.searchParams.get('data.id') ?? (body?.data?.id != null ? String(body.data.id) : null),
+    secret,
+  })
+  if (result === 'valid') return null
+  if (result === 'missing') {
+    console.warn('Partners MP webhook sin x-signature (se procesa igual, fetch-to-verify)')
+    return null
+  }
+  const enforce = process.env.MP_WEBHOOK_SIGNATURE_MODE === 'enforce'
+  console.error('Partners MP webhook: x-signature inválida', { enforce })
+  try {
+    const { notifyError } = await import('@/lib/notifications')
+    await notifyError({
+      urgent: true,
+      area: 'Suscripción partner (MercadoPago)',
+      endpoint: '/api/partners/webhook/mercadopago',
+      message: enforce
+        ? 'Webhook de MP con firma inválida RECHAZADO (401). Si son todos, revisar MP_WEBHOOK_SECRET en Vercel: con el secreto mal cargado no entra ningún cobro.'
+        : 'Webhook de MP con firma inválida (modo monitor: se procesó igual). Revisar que MP_WEBHOOK_SECRET sea la clave de Webhooks de la app antes de pasar a enforce.',
+      dedupeKey: 'mp-partner-signature-invalid',
+    })
+  } catch (e) {
+    console.error('No se pudo avisar la firma inválida:', e)
+  }
+  return enforce ? NextResponse.json({ error: 'invalid signature' }, { status: 401 }) : null
+}
+
 export async function POST(request: NextRequest) {
   let body: any = {}
   try {
@@ -351,6 +415,9 @@ export async function POST(request: NextRequest) {
   } catch {
     // Empty body — continue
   }
+
+  const signatureRejection = await checkMpSignature(request, body)
+  if (signatureRejection) return signatureRejection
 
   console.log('Partners MP webhook received:', {
     type: body.type,
@@ -493,23 +560,10 @@ export async function POST(request: NextRequest) {
       // Sospecha de doble cobro (hallazgo [18]): un payment id distinto llega
       // aprobado mientras el período activo actual todavía no venció. NO
       // bloquea el cobro — solo alerta para auditoría manual.
-      if (isSuspectedDoubleCharge(tenant, String(paymentId), now)) {
-        const previousPaymentId = String((tenant.metadata as any)?.last_mp_payment_id)
-        console.warn('⚠️ Posible doble cobro detectado:', tenant.name, previousPaymentId, '→', paymentId)
-        try {
-          const { notifyPossibleDoubleCharge } = await import('@/lib/notifications')
-          await notifyPossibleDoubleCharge({
-            tenantName: tenant.name,
-            amountArs: Number(paymentDetails.transaction_amount) || 0,
-            previousPaymentId,
-            newPaymentId: String(paymentId),
-            previousPaymentDate: tenant.last_payment_at || 'desconocida',
-            newPaymentDate: now,
-          })
-        } catch (e) {
-          console.error('Error enviando alerta de doble cobro:', e)
-        }
-      }
+      // Se evalúa sobre la lectura previa al apply, pero la alerta sale recién
+      // cuando el pago quedó aplicado: antes salía antes del UPDATE y, si éste
+      // fallaba (500 → MP reintenta), se repetía en cada reintento.
+      const suspectedDoubleCharge = isSuspectedDoubleCharge(tenant, String(paymentId), now)
 
       // Activar tenant + período por CAS sobre la fila FRESCA (no sobre la lectura
       // de arriba): preserva metadata ajena y la marca de idempotencia viaja en el
@@ -535,6 +589,24 @@ export async function POST(request: NextRequest) {
 
       if (updated) {
         console.log('Tenant activated:', tenant.name, 'Plan:', paidPlan)
+
+        if (suspectedDoubleCharge) {
+          const previousPaymentId = String((tenant.metadata as any)?.last_mp_payment_id)
+          console.warn('⚠️ Posible doble cobro detectado:', tenant.name, previousPaymentId, '→', paymentId)
+          try {
+            const { notifyPossibleDoubleCharge } = await import('@/lib/notifications')
+            await notifyPossibleDoubleCharge({
+              tenantName: tenant.name,
+              amountArs: Number(paymentDetails.transaction_amount) || 0,
+              previousPaymentId,
+              newPaymentId: String(paymentId),
+              previousPaymentDate: tenant.last_payment_at || 'desconocida',
+              newPaymentDate: now,
+            })
+          } catch (e) {
+            console.error('Error enviando alerta de doble cobro:', e)
+          }
+        }
 
         // Notify sales team via Telegram
         const paidBillingCycle = externalReference.includes('_annual_') ? 'annual' : 'monthly'
