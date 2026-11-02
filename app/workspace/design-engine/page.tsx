@@ -470,7 +470,11 @@ export default function DesignStudioPage() {
     try {
       const updated = await fetchStudioSessions()
       setSessions(updated)
-    } catch {}
+      setSessionsError(null)
+    } catch (e) {
+      // Sesión vencida: se avisa. Un fallo pasajero deja la lista anterior (no se la tapa con un error).
+      if (e instanceof StudioSessionsError && e.kind === 'auth') setSessionsError('auth')
+    }
   }
 
   const handleSelectSession = async (id: string) => {
