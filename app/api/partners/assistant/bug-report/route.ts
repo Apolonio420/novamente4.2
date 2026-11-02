@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getRequestTenant } from '@/lib/partners/permissions'
 import { notifyUrgent, notifyError, escapeTelegramHtml } from '@/lib/notifications'
 import { checkAlertCooldown, formatRepeatedSuffix, markAlertSent } from '@/lib/alerts/alert-cooldown'
+import { BUG_REPORT_LIMIT, BUG_REPORT_WINDOW_MS, isTransientClientError } from '@/lib/errors/bug-report-guards'
 import { bugDigestKey, bugPathMessageKey } from '@/lib/alerts/workspace-error-keys'
 import { runAfterResponse } from '@/lib/partners/support-notify'
 
@@ -18,10 +19,6 @@ const BugReportSchema = z.object({
     screenshotUrl: z.string().url().optional(),
 })
 
-/** Tope por tenant: un loop de errores en el navegador no puede llenar la tabla ni el bot. */
-export const BUG_REPORT_LIMIT = 5
-export const BUG_REPORT_WINDOW_MS = 10 * 60 * 1000
-
 function pathOf(sourceUrl?: string): string {
     if (!sourceUrl) return 'desconocida'
     try {
@@ -29,18 +26,6 @@ function pathOf(sourceUrl?: string): string {
     } catch {
         return sourceUrl.split('?')[0].split('#')[0].slice(0, 200)
     }
-}
-
-/**
- * Errores pasajeros del navegador (deploy nuevo con chunks viejos, red caída):
- * no son accionables para el equipo y después de cada deploy le saltarían a
- * varios partners a la vez. Se guardan igual en bug_reports, pero van al
- * resumen diario en vez de "🚨 Urgente" (política: alertas pocas y accionables).
- */
-const TRANSIENT_ERROR_RE = /ChunkLoadError|Loading (CSS )?chunk|dynamically imported module|Failed to fetch|NetworkError|Load failed|network error/i
-
-export function isTransientClientError(message?: string): boolean {
-    return !!message && TRANSIENT_ERROR_RE.test(message)
 }
 
 /**

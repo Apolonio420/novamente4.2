@@ -45,7 +45,8 @@ vi.mock('@/lib/supabase-admin', () => ({
   },
 }))
 
-import { POST, BUG_REPORT_LIMIT } from '@/app/api/partners/assistant/bug-report/route'
+import { POST } from '@/app/api/partners/assistant/bug-report/route'
+import { BUG_REPORT_LIMIT } from '@/lib/errors/bug-report-guards'
 
 const req = (body: unknown) =>
   new NextRequest('http://l/api/partners/assistant/bug-report', {
