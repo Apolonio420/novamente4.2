@@ -117,7 +117,8 @@ export async function POST(request: NextRequest) {
             // en la pantalla de error, el ticket NO manda un segundo Urgente
             // (ver notifySupportTicketCreated). Se marca aunque el cooldown haya
             // suprimido este envío: ese error ya está avisado.
-            if (errorDigest) await markAlertSent(bugDigestKey(tenant.id, errorDigest))
+            // (best-effort: una falla acá nunca debe impedir el aviso)
+            if (errorDigest) await markAlertSent(bugDigestKey(tenant.id, errorDigest)).catch(() => {})
             if (!decision.send) return
             const lines = [
                 `🐞 <b>ERROR EN EL WORKSPACE — ${escapeTelegramHtml(tenant.name)}</b>`,

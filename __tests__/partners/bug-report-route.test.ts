@@ -32,6 +32,7 @@ vi.mock('@/lib/notifications', () => ({
 vi.mock('@/lib/alerts/alert-cooldown', () => ({
   checkAlertCooldown: (k: string) => h.cooldown(k),
   formatRepeatedSuffix: (n: number) => (n > 0 ? ` (x${n})` : ''),
+  markAlertSent: async () => {},
 }))
 vi.mock('@/lib/supabase-admin', () => ({
   supabaseAdmin: {
