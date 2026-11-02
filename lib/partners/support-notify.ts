@@ -78,6 +78,8 @@ export async function notifySupportTicketCreated(input: {
   /** Para tickets creados desde la pantalla de error del workspace. */
   tenantId?: string
   errorContext?: ErrorTicketContext | null
+  /** Texto libre sobre dónde se originó el ticket (ej. el asistente). Se escapa. */
+  originNote?: string
 }) {
   const ctx = input.errorContext
   if (ctx && input.tenantId && (await wasErrorAlreadyAlerted(input.tenantId, ctx))) {
@@ -92,11 +94,57 @@ export async function notifySupportTicketCreated(input: {
     ctx
       ? `<i>Viene de la pantalla de error del workspace${ctx.digest ? ` — Error ID: <code>${escapeTelegramHtml(ctx.digest)}</code>` : ''}.</i>`
       : '',
+    input.originNote ? `<i>${escapeTelegramHtml(snippet(input.originNote))}</i>` : '',
     `<a href="${ticketUrl(input.ticketId)}">Abrir ticket en el admin</a>`,
   ]
     .filter(Boolean)
     .join('\n')
   return notifyUrgent(msg)
+}
+
+/** Ventana de silencio por partner para pedidos de ayuda del asistente (anti-flood). */
+export const ASSISTANT_TICKET_COOLDOWN_MS = 10 * 60 * 1000
+
+/**
+ * Ticket pedido desde el asistente de Novamente (POST /api/assistant/ticket):
+ * un partner (logueado) pidió ayuda humana. Mismo destino que los tickets de
+ * Soporte del workspace — "🚨 Urgente", ver notifySupportTicketCreated — pero con
+ * cooldown POR PARTNER (10 min): un partner que dispara el asistente en loop no
+ * puede inundar el grupo. Los tickets sí se crean todos (quedan en el admin);
+ * lo que se suprime es solo el ping, y el siguiente aviso cuenta cuántos se
+ * silenciaron. Best-effort: nunca lanza.
+ */
+export async function notifyAssistantTicketCreated(input: {
+  tenantId: string
+  tenantName: string
+  subject: string
+  description: string
+  ticketId: string
+  priority?: string
+  pageUrl?: string
+}) {
+  try {
+    const decision = await checkAlertCooldown(`assistant-ticket:${input.tenantId}`, ASSISTANT_TICKET_COOLDOWN_MS)
+    if (!decision.send) return null
+    const origin = [
+      'Pedido de ayuda desde el asistente',
+      input.pageUrl ? `(página: ${input.pageUrl})` : '',
+      decision.repeatedCount > 0 ? `— se silenciaron ${decision.repeatedCount} pedidos más de este partner en los últimos 10 min` : '',
+    ]
+      .filter(Boolean)
+      .join(' ')
+    return await notifySupportTicketCreated({
+      tenantName: input.tenantName,
+      subject: input.subject,
+      description: input.description,
+      ticketId: input.ticketId,
+      priority: input.priority,
+      originNote: origin,
+    })
+  } catch (e) {
+    console.error('[support-notify] aviso de ticket del asistente falló (no bloquea):', e instanceof Error ? e.message : e)
+    return null
+  }
 }
 
 export async function notifySupportPartnerMessage(input: {

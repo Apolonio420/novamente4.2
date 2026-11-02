@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getTenantByUserId } from '@/lib/partners/tenant'
 import { createTicket } from '@/lib/partners/support'
+import { notifyAssistantTicketCreated, runAfterResponse } from '@/lib/partners/support-notify'
 import type { Plan } from '@/lib/partners/types'
 
 export const runtime = 'nodejs'
@@ -121,6 +122,23 @@ export async function POST(request: NextRequest) {
     // if (triageUrl) {
     //   fetch(triageUrl, { headers: { 'x-cron-secret': process.env.CRON_SECRET || '' } }).catch(() => {})
     // }
+
+    // Aviso a Telegram (antes nadie se enteraba hasta abrir el admin). Los admins
+    // del equipo que abren tickets de prueba no avisan. Con cooldown por partner;
+    // after() para que no se pierda al congelar la función, y nunca rompe el alta.
+    if (!isAdmin) {
+      runAfterResponse(() =>
+        notifyAssistantTicketCreated({
+          tenantId: tenant!.id,
+          tenantName: (tenant as any).name || 'Partner',
+          subject: ticket.subject,
+          description: description || ticket.subject,
+          ticketId: ticket.id,
+          priority: ticket.priority,
+          pageUrl: typeof pageUrl === 'string' ? pageUrl.slice(0, 200) : undefined,
+        }),
+      )
+    }
 
     return NextResponse.json({ ticket }, { status: 201 })
   } catch (error) {
