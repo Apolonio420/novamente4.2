@@ -1,5 +1,6 @@
 import { authFetch } from '@/lib/partners/auth-fetch'
 import type { StudioMessage, StudioSession } from './types'
+import { buildMessageMeta, messageFieldsFromMeta } from './message-meta'
 
 export interface SessionSummary {
   id: string
@@ -44,6 +45,9 @@ export async function fetchSessionMessages(sessionId: string): Promise<StudioMes
     garmentKey: m.garment_key,
     moderationStatus: m.moderation_status,
     error: m.error,
+    // print spec persistido (side, garmentColor, designImageUrl, stampMode, placement,
+    // stampWidthCm). Mensajes guardados antes de 11/2026 tienen meta null → sin estos campos.
+    ...messageFieldsFromMeta(m.meta),
     timestamp: new Date(m.created_at).getTime(),
   }))
 }
@@ -81,6 +85,8 @@ export async function saveStudioMessage(
       garment_key: msg.garmentKey,
       moderation_status: msg.moderationStatus,
       error: msg.error,
+      // null para mensajes que no son mockup/design → el server no escribe la columna
+      meta: buildMessageMeta(msg),
     }),
   })
 }

@@ -830,13 +830,12 @@ export default function DesignStudioPage() {
       setTimeout(() => setCatalogToast(null), 3500)
       return
     }
-    // partner_design_messages todavía no persiste designImageUrl/stampMode/
-    // placement/stampWidthCm (pendiente migración, ver lib/partners/studio/
-    // session-service.ts saveStudioMessage) — un mockup afianzado DESPUÉS de
-    // recargar la página o reabrir una sesión vieja llega sin esos campos
-    // (printSpecOf los deja undefined) aunque la imagen se vea igual. Sin
-    // este guard, el producto se creaba con el arte de impresión vacío y
-    // producción no sabía qué estampar. Un mockup recién generado en esta
+    // partner_design_messages.meta persiste side/garmentColor/designImageUrl/
+    // stampMode/placement/stampWidthCm desde 11/2026 (lib/partners/studio/
+    // message-meta.ts) — pero los mensajes guardados ANTES (meta NULL) siguen
+    // llegando sin esos campos al recargar (printSpecOf los deja undefined)
+    // aunque la imagen se vea igual. Sin este guard, el producto se creaba con
+    // el arte de impresión vacío y producción no sabía qué estampar. Un mockup recién generado en esta
     // misma sesión siempre trae designUrl (handleMockup lo pide para
     // generarlo), así que esto solo bloquea el caso realmente roto.
     if (!pinnedFront.print?.designUrl || !pinnedBack.print?.designUrl) {

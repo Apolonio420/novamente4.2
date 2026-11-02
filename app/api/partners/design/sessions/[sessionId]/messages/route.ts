@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { insertMessageWithMeta, sanitizeMessageMeta } from '@/lib/partners/studio/message-meta'
 
 const db = () => supabaseAdmin as any
 
@@ -71,9 +72,11 @@ export async function POST(
 
     const body = await request.json()
 
-    const { error } = await db()
-      .from('partner_design_messages')
-      .insert({
+    // `meta` (print spec del mockup) — si la columna no existe en este entorno
+    // (PGRST204/42703) se reintenta sin ella: el mensaje se guarda igual.
+    const { error, metaDropped } = await insertMessageWithMeta(
+      (row) => db().from('partner_design_messages').insert(row),
+      {
         session_id: sessionId,
         tenant_id: tenant.id,
         role: body.role,
@@ -87,7 +90,10 @@ export async function POST(
         garment_key: body.garment_key || null,
         moderation_status: body.moderation_status || 'passed',
         error: body.error || null,
-      })
+      },
+      sanitizeMessageMeta(body.meta),
+    )
+    if (metaDropped) console.warn('[studio messages] columna meta ausente, guardado sin meta')
 
     if (error) {
       console.error('[studio messages] save error:', error)
