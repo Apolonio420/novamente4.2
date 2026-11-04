@@ -17,6 +17,7 @@ import { CANONICAL_PRODUCTS } from "./product-aliases";
 
 export const CANONICAL_COLORS = [
   "STONE WASH",
+  "WASH AZUL", // = stone wash de la remera clásica Aldea (04/11/2026)
   "VISON",
   "CREMA",
   "BLANCO",
@@ -80,7 +81,7 @@ REGLAS:
 1. Si el texto menciona varios productos distintos, generá un item por cada uno.
 2. Si la cantidad no se aclara, asumí 1.
 3. "Doble estampa" / "estampa adelante y atrás" / "frente y espalda" → doble_estampa: "Si". "Estampa chica" / "estampita" / "estampa pequeña" / "logo chico" → doble_estampa: "Chica". Default: "No".
-4. Si el color no matchea exactamente uno del catálogo, elegí el más cercano (ej. "off white" → "CREMA", "vino" → "ROJO", "navy" → "AZUL"). Si no podés inferir, dejá string vacío y agregá warning.
+4. Si el color no matchea exactamente uno del catálogo, elegí el más cercano (ej. "off white" → "CREMA", "vino" → "ROJO", "navy" → "AZUL"). "WASH AZUL" es el stone wash de la remera clásica (Aldea); si dicen "stone wash" para la clásica usá "WASH AZUL", y "STONE WASH" para el resto de las prendas. Si no podés inferir, dejá string vacío y agregá warning.
 5. Si el talle no se especifica, dejá string vacío y agregá warning "Línea X: falta talle".
 6. Detalles de la estampa (dónde va, tamaño en cm, posición, técnica, número de tinta, etc.) van al campo "comments" del item.
 7. La "fuente" es el canal por donde llegó el pedido (Instagram, WhatsApp, mail, presencial, etc.). Si no se menciona, dejá string vacío.

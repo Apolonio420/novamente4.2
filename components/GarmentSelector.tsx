@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import Image from "next/image"
 import { matchGarmentKey, matchStockColor, normalizeStockSize, type LiquidationStockRow } from "@/lib/stock/liquidation"
 import { useProductNames } from "@/lib/product-names-context"
+import { colorLabelFor } from "@/lib/aldea-wash-azul"
 
 interface GarmentSelectorProps {
   selectedGarment: string
@@ -193,7 +194,7 @@ export function GarmentSelector({
                                 : color,
                   }}
                 />
-                {colorNames[color] || color}
+                {colorLabelFor(selectedGarment, color, colorNames[color] || color)}
               </Button>
             ))}
           </div>

@@ -97,7 +97,7 @@ describe('datosPartnerDeItems', () => {
       error: null,
     }
     const out = await datosPartnerDeItems([PID])
-    expect(out.get(PID)?.color).toBe('Stone Wash')
+    expect(out.get(PID)?.color).toBe('Wash Azul')
   })
 
   it('dedupea ids repetidos antes de consultar', async () => {
@@ -174,5 +174,32 @@ describe('enriquecerItemPartner — metadata.colors[] plural (caso la-blancq, 01
     expect(out.product_color).toBe('unknown')
     expect(warnSpy).toHaveBeenCalledWith('[checkout] item sin color', expect.objectContaining({ partnerProductId: PID, itemName: 'Buzo X' }))
     warnSpy.mockRestore()
+  })
+})
+
+describe('enriquecerItemPartner — alias Aldea "Wash Azul" / legacy "Stone Wash" (04/11)', () => {
+  const mk = (garmentKey: string, name: string) =>
+    new Map([[PID, { productId: PID, tenantId: 'tenant-1', dobleEstampa: false, color: null as string | null, garmentKey, colorOptions: [{ name, code: '#9a9085', key: 'stone-wash' }] }]])
+
+  it('Aldea con name "Wash Azul": el carrito con "Stone Wash" legacy normaliza a "Wash Azul"', () => {
+    const out = enriquecerItemPartner({ partner_product_id: PID, product_color: 'Stone Wash' }, mk('aldea-classic-tshirt', 'Wash Azul'))
+    expect(out.product_color).toBe('Wash Azul')
+  })
+
+  it('Aldea con name legacy "Stone Wash" (DB sin migrar): el carrito con "Wash Azul" normaliza al name guardado', () => {
+    const out = enriquecerItemPartner({ partner_product_id: PID, product_color: 'wash azul' }, mk('aldea-classic-tshirt', 'Stone Wash'))
+    expect(out.product_color).toBe('Stone Wash')
+  })
+
+  it('Aldea: "wash-azul" y "wash_azul" también resuelven', () => {
+    const d = mk('aldea-classic-tshirt', 'Wash Azul')
+    expect(enriquecerItemPartner({ partner_product_id: PID, product_color: 'wash-azul' }, d).product_color).toBe('Wash Azul')
+    expect(enriquecerItemPartner({ partner_product_id: PID, product_color: 'wash_azul' }, d).product_color).toBe('Wash Azul')
+  })
+
+  it('Aura (oversize) NO se ve afectada: "Stone Wash" sigue igual y "Wash Azul" no se convierte en Stone Wash', () => {
+    const d = mk('aura-oversize-tshirt', 'Stone Wash')
+    expect(enriquecerItemPartner({ partner_product_id: PID, product_color: 'Stone Wash' }, d).product_color).toBe('Stone Wash')
+    expect(enriquecerItemPartner({ partner_product_id: PID, product_color: 'Wash Azul' }, d).product_color).toBe('Wash Azul')
   })
 })

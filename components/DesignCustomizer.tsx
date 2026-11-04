@@ -21,6 +21,7 @@ import { ImageGenerator } from "./ImageGenerator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 import { smoothScrollIntoView } from "@/utils/scroll"
 import { toPublicR2Url } from "@/lib/r2"
+import { colorLabelFor, sizeChartImageFor } from "@/lib/aldea-wash-azul"
 
 interface DesignCustomizerProps {
   initialImageUrl: string
@@ -1781,7 +1782,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                   aria-label="Ver guia de talles ampliada"
                 >
                   <img
-                    src={SIZE_CHART_BY_GARMENT[selectedGarment]}
+                    src={sizeChartImageFor(selectedGarment, selectedColor, SIZE_CHART_BY_GARMENT[selectedGarment])}
                     alt="Guia de talles"
                     className="w-full h-auto"
                   />
@@ -2311,7 +2312,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                               : "border-muted hover:border-muted-foreground"
                               }`}
                           >
-                            {({
+                            {colorLabelFor(selectedGarment, color, ({
                               "black": "Negro",
                               "white": "Blanco",
                               "caramel": "Caramelo",
@@ -2320,7 +2321,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                               "stone-wash": "Stone Wash",
                               "chocolate": "Chocolate",
                               "yellow": "Amarillo",
-                            } as Record<string, string>)[color] || color}
+                            } as Record<string, string>)[color] || color)}
                           </button>
                         ))}
                       </div>
@@ -2387,7 +2388,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
           {selectedGarment && SIZE_CHART_BY_GARMENT[selectedGarment] && (
             <div className="p-6 pt-2">
               <img
-                src={SIZE_CHART_BY_GARMENT[selectedGarment]}
+                src={sizeChartImageFor(selectedGarment, selectedColor, SIZE_CHART_BY_GARMENT[selectedGarment])}
                 alt="Guia de talles ampliada"
                 className="w-full h-auto rounded-md"
               />

@@ -15,7 +15,7 @@ const GARMENT = 'aldea-classic-tshirt'
 describe('buildPartnerColorEntry', () => {
   it('resuelve name/hex desde el catálogo a partir de garmentKey + colorKey', () => {
     const entry = buildPartnerColorEntry(GARMENT, 'stone-wash', { front: 'f.jpg', back: 'b.jpg' })
-    expect(entry).toEqual({ key: 'stone-wash', name: 'Stone Wash', hex: '#9a9085', images: { front: 'f.jpg', back: 'b.jpg' } })
+    expect(entry).toEqual({ key: 'stone-wash', name: 'Wash Azul', hex: '#9a9085', images: { front: 'f.jpg', back: 'b.jpg' } })
   })
 
   it('si el color no matchea el catálogo, cae al key tal cual como name (no lo esconde)', () => {
@@ -33,7 +33,7 @@ describe('parsePartnerProductColors', () => {
 
   it('BUG la-blancq: { key, images } SIN name se resuelve contra el catálogo', () => {
     const out = parsePartnerProductColors(GARMENT, [{ key: 'stone-wash', images: { front: 'f', back: 'b' } }])
-    expect(out).toEqual([{ name: 'Stone Wash', code: '#9a9085', key: 'stone-wash', images: { front: 'f', back: 'b' } }])
+    expect(out).toEqual([{ name: 'Wash Azul', code: '#9a9085', key: 'stone-wash', images: { front: 'f', back: 'b' } }])
   })
 
   it('{ key } sin garmentKey o sin match en el catálogo: usa el key como name en vez de ocultar el color', () => {

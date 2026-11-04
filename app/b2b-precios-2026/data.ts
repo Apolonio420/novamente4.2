@@ -204,7 +204,7 @@ export const MODELS: B2BModel[] = [
         ],
       },
       {
-        name: "Stone Wash",
+        name: "Wash Azul",
         swatch: "#9b9588",
         images: [
           "/products/tshirt-aldea-stone-wash-front.jpeg",

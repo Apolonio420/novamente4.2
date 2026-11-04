@@ -21,7 +21,7 @@ test.describe('Productos nuevos 2026-06', () => {
 
   test('PDP Aldea stone wash renderiza', async ({ page }) => {
     await page.goto('/products/aldea-tshirt-stone-wash')
-    await expect(page.getByText('Aldea Classic Fit T-Shirt - Stone Wash').first()).toBeVisible()
+    await expect(page.getByText('Aldea Classic Fit T-Shirt - Wash Azul').first()).toBeVisible()
     await expect(page.getByText('$28.600').first()).toBeVisible()
     await page.screenshot({ path: 'e2e/screenshots/aldea-stone-wash.png', fullPage: false })
   })

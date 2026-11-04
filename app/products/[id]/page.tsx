@@ -23,6 +23,7 @@ import { ProductReviews } from "@/components/partners/product-reviews"
 import { getApprovedReviewStats } from "@/lib/partners/reviews"
 import { getTenantBySlug } from "@/lib/partners/tenant"
 import { OWN_CATALOG_TENANT_SLUG, staticProductUuid } from "@/lib/partners/catalog-reviews"
+import { WASH_AZUL_SIZE_CHART } from "@/lib/aldea-wash-azul"
 
 // Size data — keyed by chart key. T-Shirts split into Aura/Aldea (different charts despite same category)
 type SizeChart = { sizes: string[]; width: string[]; length: string[] }
@@ -47,6 +48,8 @@ const SIZE_CHARTS: Record<string, SizeChart> = {
     width: ["48", "52", "56", "58", "60"],
     length: ["63", "68", "72", "75", "77"],
   },
+  // Aldea clásica en Wash Azul ("clásica especial", otra tabla — Juan 04/11). Ver lib/aldea-wash-azul.ts
+  "Aldea Wash Azul": WASH_AZUL_SIZE_CHART,
   "Remeras Crop": {
     sizes: ["S", "M", "L", "XL", "2XL"],
     width: ["46", "48", "50", "52", "53"],
@@ -71,6 +74,7 @@ const SIZE_CHARTS: Record<string, SizeChart> = {
 
 function getSizeChartKey(productId: string, category: string): string {
   if (productId.startsWith("aura-tshirt")) return "Aura T-Shirt"
+  if (productId === "aldea-tshirt-stone-wash") return "Aldea Wash Azul"
   if (productId.startsWith("aldea-tshirt")) return "Aldea T-Shirt"
   return category
 }

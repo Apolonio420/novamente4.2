@@ -33,6 +33,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { esDobleEstampa } from '@/lib/partners/partner-cost'
 import { parsePartnerProductColors, type ParsedPartnerColor } from '@/lib/partners/product-colors'
+import { resolveAldeaColorAlias } from '@/lib/aldea-wash-azul'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -47,6 +48,8 @@ export interface DatosPartnerItem {
    *  usado para normalizar lo que mande el carrito. Vacío si el producto no
    *  define `colors[]`. */
   colorOptions?: ParsedPartnerColor[]
+  /** garmentKey del producto (metadata.garmentKey) — habilita alias por prenda (Aldea: "Wash Azul"/"Stone Wash" => key stone-wash). */
+  garmentKey?: string
 }
 
 export async function datosPartnerDeItems(ids: Array<string | null | undefined>): Promise<Map<string, DatosPartnerItem>> {
@@ -74,6 +77,7 @@ export async function datosPartnerDeItems(ids: Array<string | null | undefined>)
         dobleEstampa: esDobleEstampa(meta),
         color: colorDefault,
         colorOptions,
+        garmentKey,
       })
     }
   } catch (e: any) {
@@ -108,9 +112,14 @@ export function enriquecerItemPartner<T extends OrderItemDraft>(
   const sinColor = !rawColor || rawColor.toLowerCase() === 'unknown'
   // El carrito puede mandar el `key` interno (ej. "stone-wash") en vez del
   // nombre visible — normalizamos al name canónico de metadata.colors[].
+  // Aldea: "Wash Azul" y el legacy "Stone Wash" resuelven a la key stone-wash
+  // (el name guardado en la DB puede ser cualquiera de los dos).
+  const aliasKey = !sinColor ? resolveAldeaColorAlias(d.garmentKey, rawColor).toLowerCase() : ''
   const matched = !sinColor
     ? (d.colorOptions || []).find(
-        (c) => c.name.toLowerCase() === rawColor.toLowerCase() || (c.key && c.key.toLowerCase() === rawColor.toLowerCase()),
+        (c) =>
+          c.name.toLowerCase() === rawColor.toLowerCase() ||
+          (c.key && (c.key.toLowerCase() === rawColor.toLowerCase() || c.key.toLowerCase() === aliasKey)),
       )
     : undefined
 

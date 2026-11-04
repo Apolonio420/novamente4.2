@@ -12,13 +12,15 @@ import { PRODUCTS } from '@/lib/products'
 import { CATALOG_PRODUCTS } from '@/lib/catalog/products'
 import { getGarmentMapping } from '@/lib/garment-mappings'
 
-describe('Aldea Classic Fit T-Shirt — Stone Wash', () => {
+describe('Aldea Classic Fit T-Shirt — Wash Azul (key stone-wash)', () => {
   it('lib/products.ts tiene la entrada B2C con el mismo precio que el resto de la línea', () => {
     const product = PRODUCTS.find((p) => p.id === 'aldea-tshirt-stone-wash')
     expect(product).toBeDefined()
-    expect(product?.name).toBe('Aldea Classic Fit T-Shirt - Stone Wash')
+    expect(product?.name).toBe('Aldea Classic Fit T-Shirt - Wash Azul')
     expect(product?.price).toBe('$28.600')
-    expect(product?.color).toBe('Stone Wash')
+    expect(product?.description).not.toMatch(/gris/i)
+    expect(product?.images.measurements).toBe('/products/tshirt-aldea-wash-azul-medidas.webp')
+    expect(product?.color).toBe('Wash Azul')
     expect(product?.available).toBe(true)
   })
 
@@ -27,7 +29,7 @@ describe('Aldea Classic Fit T-Shirt — Stone Wash', () => {
     expect(aldea).toBeDefined()
     const stoneWash = aldea?.colors.find((c) => c.key === 'stone-wash')
     expect(stoneWash).toBeDefined()
-    expect(stoneWash?.name).toBe('Stone Wash')
+    expect(stoneWash?.name).toBe('Wash Azul')
     expect(stoneWash?.thumbnail).toBeTruthy()
     expect(stoneWash?.hero).toBeTruthy()
     const thumbPath = path.join(process.cwd(), 'public', stoneWash!.thumbnail!.replace(/^\//, ''))

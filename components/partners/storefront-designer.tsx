@@ -5,6 +5,7 @@ import {
   Sparkles, Loader2, Shirt, X, Send, Download, ZoomIn, ChevronDown,
 } from 'lucide-react'
 import { formatPrice as formatGarmentPrice } from '@/lib/partners/format-price'
+import { colorLabelFor } from '@/lib/aldea-wash-azul'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -307,7 +308,7 @@ export function StorefrontDesigner({
                       backgroundColor: COLOR_MAP[c] || c,
                       borderColor: selectedColor === c ? primaryColor : undefined,
                     }}
-                    title={COLOR_LABELS[c] || c}
+                    title={colorLabelFor(selectedGarment, c, COLOR_LABELS[c] || c)}
                   />
                 ))}
               </div>

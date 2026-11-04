@@ -6,6 +6,8 @@
  * Si cambia una caja de impresión o un template, actualizar ambos lugares.
  */
 
+import { resolveAldeaColorAlias } from "@/lib/aldea-wash-azul"
+
 export type PrintBox = { x: number; y: number; w: number; h: number }
 
 // Canvas/coordenada base: todos los templates de prenda son 1:1 (600×600).
@@ -92,7 +94,8 @@ const COLOR_MAP: Record<string, string> = {
 
 /** Lista de URLs candidatas (en orden de prioridad) del template de la prenda. */
 export function resolveGarmentTemplate(garmentType: string, color: string, side: "front" | "back"): string[] {
-  const mappedColor = COLOR_MAP[color.toLowerCase()] ?? color
+  const aliased = resolveAldeaColorAlias(garmentType, color) // "wash azul" -> stone-wash (solo Aldea)
+  const mappedColor = COLOR_MAP[aliased.toLowerCase()] ?? aliased
   const c = mappedColor.toLowerCase().replace(/\s+/g, "-")
   const s = side
 
