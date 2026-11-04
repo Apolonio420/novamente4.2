@@ -22,7 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 import { smoothScrollIntoView } from "@/utils/scroll"
 import { toPublicR2Url } from "@/lib/r2"
 import { colorLabelFor, sizeChartImageFor } from "@/lib/aldea-wash-azul"
-import { sizesForHoodieColor } from "@/lib/stock/liquidation"
+import { sizesForAuraColor, sizesForHoodieColor } from "@/lib/stock/liquidation"
 
 interface DesignCustomizerProps {
   initialImageUrl: string
@@ -133,11 +133,13 @@ const SIZES_BY_GARMENT: Record<string, string[]> = {
 }
 const DEFAULT_SIZES = ["S", "M", "L", "XL"]
 
-// Talles por prenda Y color: el hoodie en marron/crema/gris (liquidacion) solo existe S-XL.
+// Talles por prenda Y color: hoodie en marron/crema/gris y Aura caramel (liquidacion) solo existen S-XL.
 function sizesFor(garment: string | null, color: string): string[] {
   if (!garment) return DEFAULT_SIZES
   const all = SIZES_BY_GARMENT[garment] || DEFAULT_SIZES
-  return garment === "buzo-hoodie-unisex" ? sizesForHoodieColor(color, all) : all
+  if (garment === "buzo-hoodie-unisex") return sizesForHoodieColor(color, all)
+  if (garment === "aura-oversize-tshirt") return sizesForAuraColor(color, all)
+  return all
 }
 
 // Política 29/08: el dorso vale $3.500 en todos los canales (mismo número que

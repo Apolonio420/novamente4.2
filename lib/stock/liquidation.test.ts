@@ -5,6 +5,7 @@ import {
   matchGarmentKey,
   matchStockColor,
   normalizeStockSize,
+  sizesForAuraColor,
   sizesForHoodieColor,
 } from "./liquidation"
 
@@ -113,7 +114,20 @@ describe("hoodie liquidacion: solo S-XL", () => {
     expect(isHoodieSizeAllowed("Buzo Hoodie", "Gris Melange", "2XS")).toBe(false)
     expect(isHoodieSizeAllowed("Buzo Hoodie", "Marron", "L")).toBe(true)
     expect(isHoodieSizeAllowed("Buzo Hoodie", "Negro", "2XL")).toBe(true)
-    // La Aura caramel (remera) no es hoodie: no se toca.
-    expect(isHoodieSizeAllowed("Aura Oversize", "Caramel", "2XL")).toBe(true)
+  })
+
+  it("Aura Caramel: solo S-XL (Juan 04/11); negro/blanco/stone wash 2XS-2XL", () => {
+    expect(isHoodieSizeAllowed("Aura Oversize", "Caramel", "2XL")).toBe(false)
+    expect(isHoodieSizeAllowed("Aura Oversize", "Caramel", "XS")).toBe(false)
+    expect(isHoodieSizeAllowed("Aura Oversize", "caramel", "2XS")).toBe(false)
+    expect(isHoodieSizeAllowed("Aura Oversize", "Caramel", "M")).toBe(true)
+    expect(isHoodieSizeAllowed("Aura Oversize", "Negro", "2XS")).toBe(true)
+    expect(isHoodieSizeAllowed("Aura Oversize", "Stone Wash", "2XL")).toBe(true)
+    const AURA = ["2XS", "XS", "S", "M", "L", "XL", "2XL"]
+    expect(sizesForAuraColor("Caramel", AURA)).toEqual(["S", "M", "L", "XL"])
+    expect(sizesForAuraColor("caramel", AURA)).toEqual(["S", "M", "L", "XL"])
+    for (const c of ["Negro", "black", "Blanco", "white", "Stone Wash", "stone-wash"]) {
+      expect(sizesForAuraColor(c, AURA)).toEqual(AURA)
+    }
   })
 })

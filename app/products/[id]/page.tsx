@@ -24,7 +24,7 @@ import { getApprovedReviewStats } from "@/lib/partners/reviews"
 import { getTenantBySlug } from "@/lib/partners/tenant"
 import { OWN_CATALOG_TENANT_SLUG, staticProductUuid } from "@/lib/partners/catalog-reviews"
 import { WASH_AZUL_SIZE_CHART } from "@/lib/aldea-wash-azul"
-import { isLiquidationHoodieColor, LIQUIDATION_HOODIE_SIZES } from "@/lib/stock/liquidation"
+import { isLiquidationHoodieColor, isLiquidationTeeColor, LIQUIDATION_HOODIE_SIZES } from "@/lib/stock/liquidation"
 
 // Size data — keyed by chart key. T-Shirts split into Aura/Aldea (different charts despite same category)
 type SizeChart = { sizes: string[]; width: string[]; length: string[] }
@@ -151,9 +151,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const numericPrice = parsePrice(product.price)
   const baseUrl = "https://www.novamente.ar"
   const fullSizeChart = SIZE_CHARTS[getSizeChartKey(product.id, product.category)]
-  // Hoodie en Crema / Gris Melange / Marron (liquidacion): solo S-XL (Juan 04/11).
+  // Liquidacion: hoodie en Crema / Gris Melange / Marron y Aura Caramel, solo S-XL (Juan 04/11).
+  const isLiquidation =
+    (product.category === "Hoodies" && isLiquidationHoodieColor(product.color)) ||
+    (product.id.startsWith("aura-") && isLiquidationTeeColor(product.color))
   const sizeChart: SizeChart | undefined =
-    fullSizeChart && product.category === "Hoodies" && isLiquidationHoodieColor(product.color)
+    fullSizeChart && isLiquidation
       ? (() => {
           const keep = fullSizeChart.sizes.map((s) => (LIQUIDATION_HOODIE_SIZES as readonly string[]).includes(s))
           const pick = (arr: string[]) => arr.filter((_, i) => keep[i])

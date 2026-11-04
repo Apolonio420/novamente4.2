@@ -129,8 +129,13 @@ describe('validarStock — hoodie de liquidación: talles que no existen (Juan 0
     expect((await v('Gris Melange', '2XS')).ok).toBe(false)
     expect((await v('Gris Melange', 'XL')).ok).toBe(true)
   })
-  it('remera Aura caramel 2XL no se toca', async () => {
-    expect((await v('Caramel', '2XL', 'Aura Oversize')).ok).toBe(true)
+  it('remera Aura caramel 2XL/XS/2XS -> rechazados (solo S-XL, Juan 04/11)', async () => {
+    expect((await v('Caramel', '2XL', 'Aura Oversize')).ok).toBe(false)
+    expect((await v('Caramel', 'XS', 'Aura Oversize')).ok).toBe(false)
+    expect((await v('Caramel', '2XS', 'Aura Oversize')).ok).toBe(false)
+  })
+  it('remera Aura negro 2XL -> ok', async () => {
+    expect((await v('Negro', '2XL', 'Aura Oversize')).ok).toBe(true)
   })
 })
 

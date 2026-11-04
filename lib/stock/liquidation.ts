@@ -87,20 +87,48 @@ export function sizesForHoodieColor(color: string | null | undefined, allSizes: 
 }
 
 /**
- * false si es un hoodie de color de liquidacion con un talle que no existe
- * (XS, 2XS, 2XL, XXL...). Cualquier otra combinacion devuelve true.
+ * Remera Aura (oversize) en Caramel = remera marron de liquidacion: tambien
+ * existe solo en S-XL. 2XS, XS y 2XL no hay (Juan 04/11). Negro, Blanco y
+ * Stone Wash siguen 2XS-2XL.
+ */
+export const LIQUIDATION_TEE_SIZES: readonly LiquidationSize[] = ["S", "M", "L", "XL"]
+
+/** true si el color de la Aura es el de liquidacion (caramel / marron). */
+export function isLiquidationTeeColor(color: string | null | undefined): boolean {
+  return matchStockColor(String(color ?? "")) === "marron"
+}
+
+/** Talles ofrecibles de la Aura para un color: S-XL en Caramel, `allSizes` en el resto. */
+export function sizesForAuraColor(color: string | null | undefined, allSizes: string[]): string[] {
+  if (!isLiquidationTeeColor(color)) return allSizes
+  return allSizes.filter((s) => (LIQUIDATION_TEE_SIZES as readonly string[]).includes(s.trim().toUpperCase()))
+}
+
+/**
+ * false si es una prenda de liquidacion (hoodie en crema / gris melange /
+ * marron, o Aura en caramel) con un talle que no existe (XS, 2XS, 2XL,
+ * XXL...). Cualquier otra combinacion devuelve true.
  */
 export function isHoodieSizeAllowed(
   garmentText: string | null | undefined,
   color: string | null | undefined,
   size: string | null | undefined,
 ): boolean {
-  if (matchGarmentKey(String(garmentText ?? "")) !== "buzo-oversize") return true
-  if (!isLiquidationHoodieColor(color)) return true
+  const garment = matchGarmentKey(String(garmentText ?? ""))
+  if (garment === "buzo-oversize") {
+    if (!isLiquidationHoodieColor(color)) return true
+  } else if (garment === "remera-oversize") {
+    if (!isLiquidationTeeColor(color)) return true
+  } else {
+    return true
+  }
   const t = String(size ?? "").trim()
   if (!t) return true
   return normalizeStockSize(t) !== null
 }
+
+/** Alias con nombre general: cubre hoodie y Aura de liquidacion. */
+export const isLiquidationSizeAllowed = isHoodieSizeAllowed
 
 /**
  * Lee las filas activas de `garment_stock` con el cliente admin (service role).

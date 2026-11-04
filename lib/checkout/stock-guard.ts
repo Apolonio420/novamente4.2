@@ -97,8 +97,8 @@ export async function validarStock(items: ItemAValidarStock[]): Promise<Resultad
       continue
     }
 
-    // Hoodie en color de liquidacion: solo existen S/M/L/XL. Un talle fuera de
-    // ese rango NO es "venta libre": no existe (Juan 04/11).
+    // Hoodie (crema/gris/marron) y Aura Caramel son de liquidacion: solo existen
+    // S/M/L/XL. Un talle fuera de ese rango NO es "venta libre": no existe (Juan 04/11).
     const rawSize = String(item.size || item.product_size || '')
     if (
       !isHoodieSizeAllowed(
@@ -108,7 +108,7 @@ export async function validarStock(items: ItemAValidarStock[]): Promise<Resultad
       )
     ) {
       agotados.push({
-        item: String(item.garmentType || item.product_type || 'Buzo Hoodie'),
+        item: String(item.garmentType || item.product_type || 'Prenda'),
         talle: rawSize.trim().toUpperCase(),
         disponible: 0,
         pedido: qty,
