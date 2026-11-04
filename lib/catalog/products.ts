@@ -303,8 +303,10 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     measurementsImage: '/products/size-charts/hoodie.png',
     hasDrawstrings: false,
     shortDescription: 'Buzo hoodie oversize, algodon frizado 300 g/m². Sin cordones, capucha tipica de oversize.',
-    // Colores actuales en venta: blanco, negro, stone wash. Otros colores (marron,
-    // crema, gris melange) tienen assets fisicos pero no estan en oferta actual.
+    // Colores basicos (reposicion): blanco, negro, stone wash, talles XS-2XL.
+    // Marron, crema y gris melange son de LIQUIDACION (se venden en la tienda,
+    // lib/products.ts) y solo existen en S-XL: ver LIQUIDATION_HOODIE_SIZES en
+    // lib/stock/liquidation.ts. Este array `sizes` es el de los colores basicos.
     colors: [
       {
         key: 'black',

@@ -102,6 +102,38 @@ describe('validarStock — liquidación por talle (garment_stock)', () => {
   })
 })
 
+describe('validarStock — hoodie de liquidación: talles que no existen (Juan 04/11)', () => {
+  const v = (color: string, size: string, garmentType = 'Buzo Hoodie') =>
+    validarStock([{ garmentType, color, size, quantity: 1 }])
+
+  it('hoodie marrón 2XL -> rechazado', async () => {
+    const r = await v('Marrón', '2XL')
+    expect(r.ok).toBe(false)
+    expect(r.agotados[0]).toMatchObject({ talle: '2XL', noExiste: true })
+    expect(mensajeStockAgotado(r.agotados)).toContain('S, M, L y XL')
+  })
+  it('hoodie marrón XXL -> rechazado', async () => {
+    expect((await v('Marrón', 'XXL')).ok).toBe(false)
+  })
+  it('hoodie marrón L (con stock 0 en tracker = sin fila) -> ok', async () => {
+    expect((await v('Marrón', 'L')).ok).toBe(true)
+  })
+  it('hoodie negro 2XL -> ok', async () => {
+    expect((await v('Negro', '2XL')).ok).toBe(true)
+  })
+  it('hoodie crema XS -> rechazado', async () => {
+    expect((await v('Crema', 'XS')).ok).toBe(false)
+  })
+  it('hoodie gris melange 2XL y 2XS -> rechazados; XL -> ok', async () => {
+    expect((await v('Gris Melange', '2XL')).ok).toBe(false)
+    expect((await v('Gris Melange', '2XS')).ok).toBe(false)
+    expect((await v('Gris Melange', 'XL')).ok).toBe(true)
+  })
+  it('remera Aura caramel 2XL no se toca', async () => {
+    expect((await v('Caramel', '2XL', 'Aura Oversize')).ok).toBe(true)
+  })
+})
+
 describe('mensajeStockAgotado', () => {
   it('arma un mensaje legible con el detalle de cada item agotado', () => {
     const msg = mensajeStockAgotado([{ item: 'Buzo Oversize Marrón', talle: 'S', disponible: 0, pedido: 1 }])

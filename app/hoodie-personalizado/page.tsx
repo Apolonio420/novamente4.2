@@ -141,7 +141,7 @@ export default function HoodiePersonalizado() {
         name: "Los hoodies son unisex?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Si, todos nuestros modelos de hoodie son unisex. Disponibles en talles S a XXL. El Buzo Hoodie Oversize tiene calce amplio con capucha, mientras que el Cuello Redondo tiene un calce relajado sin capucha.",
+          text: "Si, todos nuestros modelos de hoodie son unisex. Disponibles en talles S a XXL en blanco, negro y stone wash; en marron, crema y gris melange, talles S a XL. El Buzo Hoodie Oversize tiene calce amplio con capucha, mientras que el Cuello Redondo tiene un calce relajado sin capucha.",
         },
       },
     ],
@@ -462,7 +462,7 @@ export default function HoodiePersonalizado() {
                 <ul className="space-y-2 text-sm text-white/70 mb-4">
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> 6 colores: negro, blanco, stone-wash, marron, crema, gris</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Algodon premium, calce oversize</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Talles S a XXL</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Talles S a XL</li>
                 </ul>
                 <p className="text-xs text-green-400 mb-4 font-medium">
                   Venta sugerida: $85.000-95.000 (+60% margen)
@@ -503,7 +503,7 @@ export default function HoodiePersonalizado() {
                 <ul className="space-y-2 text-sm text-white/70 mb-4">
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> 6 colores: negro, blanco, stone-wash, marron, crema, gris</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Algodon premium, calce oversize</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Talles S a XXL</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" /> Talles S a XL</li>
                 </ul>
                 <p className="text-xs text-green-400 mb-4 font-medium">
                   Venta sugerida: $95.000-110.000 (+60% margen)

@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { getLiquidationStock, matchGarmentKey, matchStockColor, normalizeStockSize } from '@/lib/stock/liquidation'
+import { getLiquidationStock, isHoodieSizeAllowed, matchGarmentKey, matchStockColor, normalizeStockSize } from '@/lib/stock/liquidation'
 
 /**
  * Validación de stock EN EL SUBMIT del pedido (server-side).
@@ -31,6 +31,8 @@ export interface ItemAgotado {
   talle: string
   disponible: number
   pedido: number
+  /** El talle no existe para ese color (hoodie liquidacion: solo S-XL). */
+  noExiste?: boolean
 }
 
 export interface ResultadoStock {
@@ -95,6 +97,26 @@ export async function validarStock(items: ItemAValidarStock[]): Promise<Resultad
       continue
     }
 
+    // Hoodie en color de liquidacion: solo existen S/M/L/XL. Un talle fuera de
+    // ese rango NO es "venta libre": no existe (Juan 04/11).
+    const rawSize = String(item.size || item.product_size || '')
+    if (
+      !isHoodieSizeAllowed(
+        String(item.garmentType || item.product_type || ''),
+        String(item.color || item.product_color || ''),
+        rawSize,
+      )
+    ) {
+      agotados.push({
+        item: String(item.garmentType || item.product_type || 'Buzo Hoodie'),
+        talle: rawSize.trim().toUpperCase(),
+        disponible: 0,
+        pedido: qty,
+        noExiste: true,
+      })
+      continue
+    }
+
     const productKey = matchGarmentKey(String(item.garmentType || item.product_type || ''))
     const color = matchStockColor(String(item.color || item.product_color || ''))
     const size = normalizeStockSize(String(item.size || item.product_size || ''))
@@ -117,7 +139,11 @@ export async function validarStock(items: ItemAValidarStock[]): Promise<Resultad
 /** Mensaje legible para el 400 del checkout. */
 export function mensajeStockAgotado(agotados: ItemAgotado[]): string {
   const detalle = agotados
-    .map((a) => `${a.item}${a.talle ? ` (talle ${a.talle})` : ''} — quedan ${a.disponible}, pediste ${a.pedido}`)
+    .map((a) =>
+      a.noExiste
+        ? `${a.item} (talle ${a.talle}) — ese color solo existe en talles S, M, L y XL`
+        : `${a.item}${a.talle ? ` (talle ${a.talle})` : ''} — quedan ${a.disponible}, pediste ${a.pedido}`,
+    )
     .join(' · ')
   return `Sin stock suficiente: ${detalle}. Actualizá el carrito y probá de nuevo.`
 }

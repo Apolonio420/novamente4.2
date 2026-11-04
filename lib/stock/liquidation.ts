@@ -66,6 +66,43 @@ export function normalizeStockSize(text: string): LiquidationSize | null {
 }
 
 /**
+ * Talles que EXISTEN del hoodie (Boston) en los colores de liquidacion
+ * (Crema, Gris Melange, Marron). XS, 2XS y 2XL/XXL no hay ni hubo nunca
+ * (Juan 04/11). Blanco/Negro/Stone Wash NO pasan por esta regla (XS-2XL).
+ */
+export const LIQUIDATION_HOODIE_SIZES: readonly LiquidationSize[] = ["S", "M", "L", "XL"]
+
+/** true si el color es de liquidacion del hoodie (crema / gris melange / marron). */
+export function isLiquidationHoodieColor(color: string | null | undefined): boolean {
+  return matchStockColor(String(color ?? "")) !== null
+}
+
+/**
+ * Talles ofrecibles del hoodie para un color: S-XL si es de liquidacion, o
+ * `allSizes` sin tocar (colores basicos). Puro, usable en cliente y servidor.
+ */
+export function sizesForHoodieColor(color: string | null | undefined, allSizes: string[]): string[] {
+  if (!isLiquidationHoodieColor(color)) return allSizes
+  return allSizes.filter((s) => (LIQUIDATION_HOODIE_SIZES as readonly string[]).includes(s.trim().toUpperCase()))
+}
+
+/**
+ * false si es un hoodie de color de liquidacion con un talle que no existe
+ * (XS, 2XS, 2XL, XXL...). Cualquier otra combinacion devuelve true.
+ */
+export function isHoodieSizeAllowed(
+  garmentText: string | null | undefined,
+  color: string | null | undefined,
+  size: string | null | undefined,
+): boolean {
+  if (matchGarmentKey(String(garmentText ?? "")) !== "buzo-oversize") return true
+  if (!isLiquidationHoodieColor(color)) return true
+  const t = String(size ?? "").trim()
+  if (!t) return true
+  return normalizeStockSize(t) !== null
+}
+
+/**
  * Lee las filas activas de `garment_stock` con el cliente admin (service role).
  * Server-only: usa import() dinamico para no arrastrar @/lib/supabase-admin
  * al bundle de cliente cuando este modulo se importa desde componentes

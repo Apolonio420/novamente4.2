@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest"
-import { matchGarmentKey, matchStockColor, normalizeStockSize } from "./liquidation"
+import {
+  isHoodieSizeAllowed,
+  LIQUIDATION_HOODIE_SIZES,
+  matchGarmentKey,
+  matchStockColor,
+  normalizeStockSize,
+  sizesForHoodieColor,
+} from "./liquidation"
 
 describe("matchGarmentKey", () => {
   it("matchea buzo/hoodie/boston -> buzo-oversize", () => {
@@ -77,5 +84,36 @@ describe("normalizeStockSize", () => {
     expect(normalizeStockSize("XXL")).toBe(null)
     expect(normalizeStockSize("Unico")).toBe(null)
     expect(normalizeStockSize("40x50cm")).toBe(null)
+  })
+})
+
+describe("hoodie liquidacion: solo S-XL", () => {
+  const TODOS = ["XS", "S", "M", "L", "XL", "2XL"]
+
+  it("LIQUIDATION_HOODIE_SIZES = S M L XL", () => {
+    expect([...LIQUIDATION_HOODIE_SIZES]).toEqual(["S", "M", "L", "XL"])
+  })
+
+  it("sizesForHoodieColor filtra marron/crema/gris (y sus claves de DesignCustomizer)", () => {
+    for (const c of ["Marron", "marron", "Crema", "cream", "Gris Melange", "gray"]) {
+      expect(sizesForHoodieColor(c, TODOS)).toEqual(["S", "M", "L", "XL"])
+    }
+  })
+
+  it("sizesForHoodieColor no toca blanco/negro/stone wash", () => {
+    for (const c of ["Negro", "black", "Blanco", "white", "Stone Wash", "stone-wash"]) {
+      expect(sizesForHoodieColor(c, TODOS)).toEqual(TODOS)
+    }
+  })
+
+  it("isHoodieSizeAllowed", () => {
+    expect(isHoodieSizeAllowed("Buzo Hoodie", "Marron", "2XL")).toBe(false)
+    expect(isHoodieSizeAllowed("Buzo Hoodie", "Crema", "XS")).toBe(false)
+    expect(isHoodieSizeAllowed("Buzo Hoodie", "Gris Melange", "XXL")).toBe(false)
+    expect(isHoodieSizeAllowed("Buzo Hoodie", "Gris Melange", "2XS")).toBe(false)
+    expect(isHoodieSizeAllowed("Buzo Hoodie", "Marron", "L")).toBe(true)
+    expect(isHoodieSizeAllowed("Buzo Hoodie", "Negro", "2XL")).toBe(true)
+    // La Aura caramel (remera) no es hoodie: no se toca.
+    expect(isHoodieSizeAllowed("Aura Oversize", "Caramel", "2XL")).toBe(true)
   })
 })

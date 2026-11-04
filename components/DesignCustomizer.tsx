@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 import { smoothScrollIntoView } from "@/utils/scroll"
 import { toPublicR2Url } from "@/lib/r2"
 import { colorLabelFor, sizeChartImageFor } from "@/lib/aldea-wash-azul"
+import { sizesForHoodieColor } from "@/lib/stock/liquidation"
 
 interface DesignCustomizerProps {
   initialImageUrl: string
@@ -131,6 +132,13 @@ const SIZES_BY_GARMENT: Record<string, string[]> = {
   "remera-crop-mujer": ["S", "M", "L", "XL", "2XL"],
 }
 const DEFAULT_SIZES = ["S", "M", "L", "XL"]
+
+// Talles por prenda Y color: el hoodie en marron/crema/gris (liquidacion) solo existe S-XL.
+function sizesFor(garment: string | null, color: string): string[] {
+  if (!garment) return DEFAULT_SIZES
+  const all = SIZES_BY_GARMENT[garment] || DEFAULT_SIZES
+  return garment === "buzo-hoodie-unisex" ? sizesForHoodieColor(color, all) : all
+}
 
 // Política 29/08: el dorso vale $3.500 en todos los canales (mismo número que
 // cobra el bot y que valida el checkout server-side en lib/checkout/precio-real.ts).
@@ -448,11 +456,11 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
   // Update available sizes when garment changes
   useEffect(() => {
     if (!selectedGarment || selectedGarment === 'lienzo') return
-    const availableSizes = SIZES_BY_GARMENT[selectedGarment] || DEFAULT_SIZES
+    const availableSizes = sizesFor(selectedGarment, selectedColor)
     if (!availableSizes.includes(selectedSize)) {
       setSelectedSize(availableSizes.includes("M") ? "M" : availableSizes[0])
     }
-  }, [selectedGarment, selectedSize])
+  }, [selectedGarment, selectedColor, selectedSize])
 
   // Funciones para manejar el flujo dinámico
   const handleGarmentSelect = (garment: string) => {
@@ -2332,7 +2340,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
                     <div data-section="size-selection">
                       <h4 className="font-medium mb-3">Talle</h4>
                       <div className="grid grid-cols-4 gap-2">
-                        {(selectedGarment ? (SIZES_BY_GARMENT[selectedGarment] || DEFAULT_SIZES) : DEFAULT_SIZES).map((size) => (
+                        {sizesFor(selectedGarment, selectedColor).map((size) => (
                           <button
                             key={size}
                             onClick={() => handleSizeSelect(size)}
