@@ -22,6 +22,7 @@ const PATH_BUILDERS: Record<string, (color: string, side: "front" | "back") => s
     return `buzo-hoodie-unisex-${hoodieColor}-${s}`
   },
   "musculosa-bali": (c, s) => `musculosa-bali-${c}-${s}`,
+  "remera-sin-mangas-bondi": (c, s) => `remera-sin-mangas-bondi-${c}-${s}`,
   "remera-clasica-mujer": (c, s) => `remera-clasica-mujer-${c}-${s}`,
   "remera-crop-mujer": (c, s) => `remera-crop-mujer-${c}-${s}`,
   "remera-infantil": (c, s) => `remera-infantil-${c}-${s}`,

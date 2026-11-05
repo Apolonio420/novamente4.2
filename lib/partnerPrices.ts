@@ -21,6 +21,10 @@ export const PARTNER_PRICE_BY_ID_ARS: Record<string, number> = {
     "musculosa-bali-blanca": 17400,
     "musculosa-bali-gris": 17400,
 
+    // Remera Sin Mangas Bondi - 25800 ARS (partner on_demand; alta 05/11/2026)
+    "remera-sin-mangas-bondi-blanca": 25800,
+    "remera-sin-mangas-bondi-negra": 25800,
+
     // Buzo Hoodie Oversize - 38700 ARS
     "buzo-hoodie-negro": 38700,
     "buzo-hoodie-stone-wash": 38700,

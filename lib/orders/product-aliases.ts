@@ -5,7 +5,7 @@
  * Catálogo canónico (fuente de verdad):
  *   Remera clásica man, Remera clásica woman, Remera Oversize unisex,
  *   Remera infantil, Remera Crop, Hoodie unisex, Buzo cuello redondo,
- *   Musculosa mujer morley
+ *   Musculosa mujer morley, Remera Sin Mangas Bondi
  *
  * Si el input no matchea ningún alias, se devuelve tal cual (Apps Script
  * reportará el error de catálogo — mejor que alias silencioso equivocado).
@@ -20,6 +20,7 @@ export const CANONICAL_PRODUCTS = [
   "Hoodie unisex",
   "Buzo cuello redondo",
   "Musculosa mujer morley",
+  "Remera Sin Mangas Bondi",
 ] as const;
 
 function normalizeKey(s: string): string {
@@ -137,6 +138,19 @@ const ALIASES: Record<string, string> = {
   "musculosa mujer": "Musculosa mujer morley",
   "musculosa morley": "Musculosa mujer morley",
   "musculosa mujer morley": "Musculosa mujer morley",
+
+  // ── Remera Sin Mangas Bondi ───────────────────────────────────────────
+  // Alta 05/11/2026. Ganan sobre "remera clasica"/"remera" (→ Aldea) y NO
+  // pisan "musculosa" (→ Bali, otra prenda).
+  "bondi": "Remera Sin Mangas Bondi",
+  "remera bondi": "Remera Sin Mangas Bondi",
+  "sin mangas": "Remera Sin Mangas Bondi",
+  "sin manga": "Remera Sin Mangas Bondi",
+  "remera sin mangas": "Remera Sin Mangas Bondi",
+  "remera sin manga": "Remera Sin Mangas Bondi",
+  "remera clasica sin mangas": "Remera Sin Mangas Bondi",
+  "remera clasica sin manga": "Remera Sin Mangas Bondi",
+  "remera sin mangas bondi": "Remera Sin Mangas Bondi",
 };
 
 /**
@@ -169,6 +183,9 @@ export function resolveProduct(input: string): string {
   if (key.includes("infantil") || key.includes("kids") || key.includes("bambino") || key.includes("nene") || key.includes("nena")) {
     return "Remera infantil";
   }
+  // Remera sin mangas (Bondi): antes que "clasica"/"remera" genéricos (→ Aldea).
+  // "musculosa sin mangas" ya salió arriba como Bali.
+  if (key.includes("sin manga") || key.includes("bondi")) return "Remera Sin Mangas Bondi";
   // nombres comerciales web: "Remera Aura Oversize Custom — Novamente" = oversize,
   // "Remera Aldea Classic Fit Custom — Novamente" o "Remera Clasica Mujer Custom — Novamente" = clásica (caso NOV-20260823-7495).
   if (key.includes("aura")) return "Remera Oversize unisex";

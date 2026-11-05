@@ -184,6 +184,34 @@ export const PRODUCTS: Product[] = [
         available: true
     },
     {
+        id: "remera-sin-mangas-bondi-blanca",
+        name: "Remera Sin Mangas Bondi - Blanca",
+        price: "$28.600",
+        description: "Remera clásica sin mangas en algodón 100% peinado, color blanco. Calce regular y sisa amplia, ideal para verano, gym y eventos.",
+        images: {
+            main: "/products/remera-sin-mangas-bondi-blanca/front.png",
+            lifestyle: ["/products/remera-sin-mangas-bondi-blanca/back.png"],
+            measurements: "/products/remera-sin-mangas-bondi-medidas.png"
+        },
+        category: "Remeras Sin Mangas",
+        color: "Blanca",
+        available: true
+    },
+    {
+        id: "remera-sin-mangas-bondi-negra",
+        name: "Remera Sin Mangas Bondi - Negra",
+        price: "$28.600",
+        description: "Remera clásica sin mangas en algodón 100% peinado, color negro. Calce regular y sisa amplia, ideal para verano, gym y eventos.",
+        images: {
+            main: "/products/remera-sin-mangas-bondi-negra/front.png",
+            lifestyle: ["/products/remera-sin-mangas-bondi-negra/back.png"],
+            measurements: "/products/remera-sin-mangas-bondi-medidas.png"
+        },
+        category: "Remeras Sin Mangas",
+        color: "Negra",
+        available: true
+    },
+    {
         id: "buzo-hoodie-negro",
         name: "Buzo Hoodie Oversize - Negro",
         price: "$55.000",

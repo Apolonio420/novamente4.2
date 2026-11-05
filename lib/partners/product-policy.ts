@@ -21,6 +21,7 @@ export const ALLOWED_PARTNER_CATEGORIES = [
   "Remera Mujer",
   "Remera Crop",
   "Remera Crop Mujer",
+  "Remera Sin Mangas",
   "Musculosa",
   // Sweatshirts / Buzos
   "Buzo",

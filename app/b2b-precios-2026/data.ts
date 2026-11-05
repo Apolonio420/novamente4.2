@@ -45,6 +45,7 @@ export const MODEL_TO_GARMENT_KEY: Record<string, string> = {
   bahamas: "remera-crop-mujer",
   bambino: "remera-infantil",
   bali: "musculosa-bali",
+  bondi: "remera-sin-mangas-bondi",
   bahia: "totebag",
 }
 
@@ -360,6 +361,34 @@ export const MODELS: B2BModel[] = [
         images: [
           "/products/musculosa-bali-gris/front.png",
           "/products/musculosa-bali-gris/back.png",
+        ],
+      },
+    ],
+  },
+  {
+    id: "bondi",
+    name: "Remera Sin Mangas",
+    subtitle: "Modelo Bondi",
+    category: "Remeras Sin Mangas",
+    fabric: "Algodon 100% peinado 250 g/m², calce regular y sisa amplia",
+    sizes: ["S", "M", "L", "XL", "2XL"],
+    measurementsChart: "/products/remera-sin-mangas-bondi-medidas.png",
+    prices: { partner: 25800, starter: 25100, pro: 24400, drop: 23800, bulk: 23600 },
+    colors: [
+      {
+        name: "Blanca",
+        swatch: "#f5f5f0",
+        images: [
+          "/products/remera-sin-mangas-bondi-blanca/front.png",
+          "/products/remera-sin-mangas-bondi-blanca/back.png",
+        ],
+      },
+      {
+        name: "Negra",
+        swatch: "#111111",
+        images: [
+          "/products/remera-sin-mangas-bondi-negra/front.png",
+          "/products/remera-sin-mangas-bondi-negra/back.png",
         ],
       },
     ],

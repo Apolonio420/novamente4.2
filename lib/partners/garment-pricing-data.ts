@@ -186,6 +186,20 @@ export const EXTRA_GARMENT_PRICING: Record<string, GarmentPricing> = {
     b2b_bulk: 20100,
     b2c_suggested: 21800,
   },
+  // Remera Sin Mangas Bondi (alta 2026-11-05, Juan). Producción igual que la Aldea
+  // (Dreamful). cost = Cost_2_Print del peor color (Negra), ya con -3 % transferencia.
+  // Precios de venta = tabla de la Aldea.
+  'remera-sin-mangas-bondi': {
+    key: 'remera-sin-mangas-bondi',
+    name: 'Remera Sin Mangas Bondi',
+    cost: 21990,
+    on_demand: 25800,
+    b2b_starter: 25100,
+    b2b_pro: 24400,
+    b2b_drop: 23800,
+    b2b_bulk: 23600,
+    b2c_suggested: 28600,
+  },
   // Bahía totebag (alta 2026-07-13). La entrada nació en garment-pricing.ts
   // pre-extracción; movida acá al resolver el merge con el fix del hallazgo [1]
   // (el catálogo con `cost` vive solo en este módulo server-only).

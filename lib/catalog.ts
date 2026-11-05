@@ -91,6 +91,14 @@ export const PRODUCTS: Product[] = [
     category: 'musculosa',
   },
   {
+    name: 'Remera Sin Mangas Bondi',
+    garmentType: 'remera-sin-mangas-bondi',
+    price: 28600,
+    colors: ['blanca', 'negra'],
+    image: '/products/remera-sin-mangas-bondi-blanca/front.png',
+    category: 'remera',
+  },
+  {
     // Precio de entrada (medida 20×30cm). Desglose real por medida en
     // lib/products.ts:131 (id "lienzo") — fuente de verdad, coincide con el
     // b2c_web del motor de cotización del bot. Este es el precio "desde".

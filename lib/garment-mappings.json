@@ -812,5 +812,77 @@
       "height": 310
     },
     "timestamp": 1763000000017
+  },
+  {
+    "id": "1767000000001",
+    "name": "Remera Sin Mangas Bondi Blanca Frontal",
+    "garmentPath": "/garments/remera-sin-mangas-bondi-white-front.png",
+    "margins": {
+      "top": 25,
+      "right": 25,
+      "bottom": 17,
+      "left": 24
+    },
+    "coordinates": {
+      "x": 96,
+      "y": 125,
+      "width": 204,
+      "height": 290
+    },
+    "timestamp": 1767000000001
+  },
+  {
+    "id": "1767000000002",
+    "name": "Remera Sin Mangas Bondi Blanca Trasero",
+    "garmentPath": "/garments/remera-sin-mangas-bondi-white-back.png",
+    "margins": {
+      "top": 22,
+      "right": 27,
+      "bottom": 18,
+      "left": 28
+    },
+    "coordinates": {
+      "x": 112,
+      "y": 110,
+      "width": 180,
+      "height": 300
+    },
+    "timestamp": 1767000000002
+  },
+  {
+    "id": "1767000000003",
+    "name": "Remera Sin Mangas Bondi Negra Frontal",
+    "garmentPath": "/garments/remera-sin-mangas-bondi-black-front.png",
+    "margins": {
+      "top": 25,
+      "right": 25,
+      "bottom": 17,
+      "left": 24
+    },
+    "coordinates": {
+      "x": 96,
+      "y": 125,
+      "width": 204,
+      "height": 290
+    },
+    "timestamp": 1767000000003
+  },
+  {
+    "id": "1767000000004",
+    "name": "Remera Sin Mangas Bondi Negra Trasero",
+    "garmentPath": "/garments/remera-sin-mangas-bondi-black-back.png",
+    "margins": {
+      "top": 22,
+      "right": 27,
+      "bottom": 18,
+      "left": 28
+    },
+    "coordinates": {
+      "x": 112,
+      "y": 110,
+      "width": 180,
+      "height": 300
+    },
+    "timestamp": 1767000000004
   }
 ]

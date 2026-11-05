@@ -252,6 +252,37 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     ],
   },
   {
+    key: 'remera-sin-mangas-bondi',
+    name: 'Remera Sin Mangas Bondi',
+    category: 'Remera Sin Mangas',
+    garmentType: 'tank',
+    fit: 'regular',
+    fabric: 'algodon 100% peinado',
+    weightGsm: 250,
+    // costARS = precio partner on_demand (publico en el storefront), NO el costo del proveedor.
+    costARS: 25800,
+    retailARS: 28600,
+    sizes: ['S', 'M', 'L', 'XL', '2XL'],
+    measurementsImage: '/products/remera-sin-mangas-bondi-medidas.png',
+    shortDescription: 'Remera clasica sin mangas en algodon 100% peinado. Calce regular y sisa amplia, ideal para verano, gym y eventos.',
+    colors: [
+      {
+        key: 'white',
+        name: 'Blanca',
+        hex: '#f5f5f5',
+        thumbnail: '/garments/remera-sin-mangas-bondi-white-front.png',
+        hero: '/products/remera-sin-mangas-bondi-blanca/front.png',
+      },
+      {
+        key: 'black',
+        name: 'Negra',
+        hex: '#111111',
+        thumbnail: '/garments/remera-sin-mangas-bondi-black-front.png',
+        hero: '/products/remera-sin-mangas-bondi-negra/front.png',
+      },
+    ],
+  },
+  {
     key: 'buzo-cuello-redondo',
     name: 'Buzo Cuello Redondo',
     category: 'Buzo Crewneck',

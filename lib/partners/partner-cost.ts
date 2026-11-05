@@ -31,6 +31,8 @@ type Meta = Record<string, unknown> | null | undefined
 /** Heurística model/categoría → garment key del pricing. */
 export function guessGarmentKey(raw: string): string | null {
   const s = raw.toLowerCase()
+  // Bondi (remera sin mangas) antes de "remera" genérico; "musculosa" sigue siendo la Bali.
+  if (/bondi|sin mangas?/.test(s) && !/musculosa|bali/.test(s)) return 'remera-sin-mangas-bondi'
   if (/aura|oversize/.test(s) && /remera|tshirt|t-shirt|shirt/.test(s)) return 'aura-oversize-tshirt'
   if (/aldea|classic/.test(s) && /remera|tshirt|t-shirt|shirt/.test(s)) return 'aldea-classic-tshirt'
   if (/hoodie|boston|capucha/.test(s)) return 'buzo-hoodie-unisex'
