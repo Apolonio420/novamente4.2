@@ -53,6 +53,20 @@ test.describe('Productos nuevos 2026-06', () => {
     await page.screenshot({ path: 'e2e/screenshots/bambino-talles.png', fullPage: true })
   })
 
+  test('PDP Remera Sin Mangas Bondi (blanca y negra): precio, modelo y medidas S-2XL', async ({ page }) => {
+    await page.goto('/products/remera-sin-mangas-bondi-blanca')
+    await expect(page.getByText('Remera sin mangas - Blanca').first()).toBeVisible()
+    await expect(page.getByText('$28.600').first()).toBeVisible()
+    // Medidas del spec: 2XL = 59,5 de ancho x 83 de largo
+    await expect(page.getByRole('cell', { name: '59,5' }).first()).toBeVisible()
+    await expect(page.getByRole('cell', { name: '83' }).first()).toBeVisible()
+    await page.screenshot({ path: 'e2e/screenshots/bondi-blanca.png', fullPage: false })
+
+    await page.goto('/products/remera-sin-mangas-bondi-negra')
+    await expect(page.getByText('Remera sin mangas - Negra').first()).toBeVisible()
+    await expect(page.getByText('$28.600').first()).toBeVisible()
+  })
+
   test('Musculosa Bali: gris y blanca con bases nuevas, negra fuera de catálogo', async ({ page }) => {
     await page.goto('/products/musculosa-bali-gris')
     await expect(page.getByText('Musculosa Bali - Gris').first()).toBeVisible()
