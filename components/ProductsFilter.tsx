@@ -14,7 +14,7 @@ import { useProductNames } from "@/lib/product-names-context"
 import { anchorPriceLabel } from "@/lib/catalog/anchor-price"
 import { matchGarmentKey, matchStockColor, normalizeStockSize, type LiquidationStockRow } from "@/lib/stock/liquidation"
 
-const CATEGORIES = ["Todos", "Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Mujer", "Remeras Infantiles", "Arte", "Accesorios"] as const
+const CATEGORIES = ["Todos", "Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Sin Mangas", "Remeras Mujer", "Remeras Infantiles", "Arte", "Accesorios"] as const
 
 const PRICE_RANGES = [
   { label: "Todos", min: 0, max: Infinity },
@@ -101,7 +101,7 @@ export default function ProductsFilter({ products }: { products: Product[] }) {
     if (activeCategory !== "Todos") {
       return [{ name: activeCategory, items: filtered }]
     }
-    const cats = ["Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Mujer", "Remeras Infantiles", "Arte", "Accesorios"]
+    const cats = ["Hoodies", "Buzos (Crewneck)", "T-Shirts", "Remeras Crop", "Musculosas", "Remeras Sin Mangas", "Remeras Mujer", "Remeras Infantiles", "Arte", "Accesorios"]
     return cats.map(c => ({ name: c, items: filtered.filter(p => p.category === c) })).filter(g => g.items.length > 0)
   }, [filtered, activeCategory])
 

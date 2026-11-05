@@ -169,6 +169,7 @@ const FEATURED_GARMENTS = [
   "remera-clasica-mujer",
   "remera-crop-mujer",
   "musculosa-bali",
+  "remera-sin-mangas-bondi",
   "buzo-cuello-redondo",
   "buzo-hoodie-unisex",
 ]

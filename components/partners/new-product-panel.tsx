@@ -40,6 +40,7 @@ const COMMERCIAL_NAME: Record<string, string> = {
   'remera-clasica-mujer': 'Buenos Aires',
   'remera-crop-mujer': 'Bahamas',
   'musculosa-bali': 'Bali',
+  'remera-sin-mangas-bondi': 'Bondi',
   'buzo-cuello-redondo': 'Berlin',
   'buzo-hoodie-unisex': 'Boston',
   'remera-infantil': 'Bambino',

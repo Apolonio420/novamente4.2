@@ -106,6 +106,11 @@ function getGarmentDescription(garmentKey: string): string {
     return "oversize crewneck pullover sweatshirt (ribbed crew neckline, NO HOOD, NO zipper, dropped shoulders, long sleeves with ribbed cuffs) — buzo cuello redondo argentino"
   }
 
+  // Bondi: remera clásica SIN MANGAS (cuello redondo de remera, no el escote scoop de la musculosa)
+  if (p.key === "remera-sin-mangas-bondi") {
+    return "classic fit unisex sleeveless t-shirt (regular fit, round crew neckline like a t-shirt, wide armholes, NO sleeves, 100% cotton jersey — not a ribbed tank)"
+  }
+
   // tank = musculosa sin mangas
   if (p.garmentType === "tank") {
     return "sleeveless tank top (musculosa) with wide armholes, ribbed scoop neckline"

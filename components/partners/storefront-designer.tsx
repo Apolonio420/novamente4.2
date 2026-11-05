@@ -55,6 +55,10 @@ const GARMENT_THUMBNAILS: Record<string, Record<string, string>> = {
     white: '/garments/musculosa-bali-white-front.png',
     gray: '/garments/musculosa-bali-gray-front.png',
   },
+  'remera-sin-mangas-bondi': {
+    white: '/garments/remera-sin-mangas-bondi-white-front.png',
+    black: '/garments/remera-sin-mangas-bondi-black-front.png',
+  },
   'buzo-cuello-redondo': {
     black: '/garments/buzo-cuello-redondo-black-front.png',
     white: '/garments/buzo-cuello-redondo-white-front.png',

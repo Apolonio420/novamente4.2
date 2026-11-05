@@ -113,6 +113,10 @@ export function resolveGarmentTemplate(garmentType: string, color: string, side:
     case "remera-crop-mujer":
       candidates.push(`/garments/remera-crop-mujer-${c}-${s}.png`)
       break
+    case "remera-sin-mangas-bondi":
+      // Bondi (alta 05/11/2026): área de estampa = la de la Aldea (garmentKind → "tshirt").
+      candidates.push(`/garments/remera-sin-mangas-bondi-${c}-${s}.png`)
+      break
     case "musculosa-bali":
       candidates.push(`/garments/musculosa-bali-${c}-${s}.png`)
       break
@@ -131,6 +135,7 @@ export function resolveGarmentTemplate(garmentType: string, color: string, side:
       else if (garmentType.includes("buzo")) candidates.push(`/garments/buzo-cuello-redondo-${c}-${s}.png`)
       else if (garmentType.includes("crop")) candidates.push(`/garments/remera-crop-mujer-${c}-${s}.png`)
       else if (garmentType.includes("musculosa")) candidates.push(`/garments/musculosa-bali-${c}-${s}.png`)
+      else if (garmentType.includes("sin-manga") || garmentType.includes("bondi")) candidates.push(`/garments/remera-sin-mangas-bondi-${c}-${s}.png`)
       else if (garmentType.includes("tote")) candidates.push(`/garments/totebag-${c}-${s}.jpeg`)
       else candidates.push(`/garments/tshirt-${c}-classic-${s}.jpeg`)
   }

@@ -38,6 +38,7 @@ const GARMENT_PRICES = {
   "musculosa-bali": 21800,
   "remera-clasica-mujer": 28600,
   "remera-crop-mujer": 23500,
+  "remera-sin-mangas-bondi": 28600,
 }
 
 // Nombres descriptivos al cliente (PLAN-NOMBRES-DESCRIPTIVOS.md). Estas keys
@@ -51,6 +52,7 @@ const GARMENT_NAMES = {
   "musculosa-bali": "Musculosa Personalizada",
   "remera-clasica-mujer": "Remera Clásica Mujer Personalizada",
   "remera-crop-mujer": "Remera Crop Mujer Personalizada",
+  "remera-sin-mangas-bondi": "Remera Sin Mangas Personalizada",
 }
 
 // Función para obtener la imagen de la prenda según el tipo y color
@@ -83,6 +85,8 @@ const getGarmentImage = (garmentType: string, color: string) => {
       return `/garments/remera-clasica-mujer-${color}-front.png`
     case 'remera-crop-mujer':
       return `/garments/remera-crop-mujer-${color}-front.png`
+    case 'remera-sin-mangas-bondi':
+      return `/garments/remera-sin-mangas-bondi-${color}-front.png`
     case 'lienzo':
       return '/garments/lienzo-main.png'
     default:
@@ -99,6 +103,7 @@ const GARMENT_DEFAULT_IMAGES = {
   "musculosa-bali": "/garments/musculosa-bali-white-front.png",
   "remera-clasica-mujer": "/garments/remera-clasica-mujer-black-front.png",
   "remera-crop-mujer": "/garments/remera-crop-mujer-chocolate-front.png",
+  "remera-sin-mangas-bondi": "/garments/remera-sin-mangas-bondi-white-front.png",
 }
 
 const COLORS_BY_GARMENT: Record<string, string[]> = {
@@ -110,6 +115,7 @@ const COLORS_BY_GARMENT: Record<string, string[]> = {
   "remera-clasica-mujer": ["black", "white"],
   // La crop NO existe en negro (decisión Juan 28/09/2026) — colores reales.
   "remera-crop-mujer": ["chocolate", "gray", "yellow"],
+  "remera-sin-mangas-bondi": ["white", "black"],
 }
 
 const SIZE_CHART_BY_GARMENT: Record<string, string> = {
@@ -121,6 +127,7 @@ const SIZE_CHART_BY_GARMENT: Record<string, string> = {
   "remera-clasica-mujer": "/products/remera-clasica-woman-blanca/Medidas2.png",
   "remera-crop-mujer": "/products/remera-crop-de-mujer-negra/Medidas1.png",
   "remera-infantil": "/products/remera-infantil-medidas.png",
+  "remera-sin-mangas-bondi": "/products/remera-sin-mangas-bondi-medidas.png",
 }
 
 // Talles por prenda Y color desde el catálogo (lib/catalog/sizes.ts): antes
@@ -1493,6 +1500,7 @@ export const DesignCustomizer = forwardRef<any, DesignCustomizerProps>(({ initia
         'musculosa-bali': { type: 'tshirt', variant: 'classic' },
         'remera-clasica-mujer': { type: 'tshirt', variant: 'classic' },
         'remera-crop-mujer': { type: 'tshirt', variant: 'classic' },
+        'remera-sin-mangas-bondi': { type: 'tshirt', variant: 'classic' },
         'lienzo': { type: 'lienzo', variant: 'classic' }
       }
 

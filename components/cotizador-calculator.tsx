@@ -33,6 +33,7 @@ const COTIZADOR_PRODUCTS: CotizadorProduct[] = [
   { id: "aldea-classic", name: "Remera clásica", price: 28600, category: "Remeras" },
   { id: "clasica-mujer", name: "Remera Clasica Mujer", price: 28600, category: "Remeras" },
   { id: "crop-mujer", name: "Remera Crop Mujer", price: 23500, category: "Remeras" },
+  { id: "remera-sin-mangas-bondi", name: "Remera Sin Mangas", price: 28600, category: "Remeras" },
   { id: "musculosa-bali", name: "Musculosa", price: 21800, category: "Musculosas" },
   {
     id: "gorra-gabardina",
