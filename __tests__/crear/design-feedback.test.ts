@@ -55,9 +55,13 @@ describe("parseImageFeedback", () => {
     expect(r.ok).toBe(false)
     expect("error" in r && r.error).toMatch(campo)
   })
-  it("acepta el proxy propio y corta el prompt largo", () => {
-    const r = parseImageFeedback({ ...good, imageUrl: "/api/proxy-image?key=v1/raw-designs/x.png", prompt: "a".repeat(5000) })
-    expect(r.ok && r.value.prompt?.length).toBe(1000)
+  it("acepta el proxy propio (formato real de prod) y lo guarda ABSOLUTO para que se vea en admin.novamente.ar", () => {
+    // Formato real que devuelve toPublicR2Url en prod (verificado 05/11).
+    const r = parseImageFeedback({ ...good, imageUrl: "/api/proxy-image?key=v1%2Fedited-designs%2F1793899072521-gu3u9.png", prompt: "a".repeat(5000) })
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.value.prompt?.length).toBe(1000)
+    expect(r.value.imageUrl).toMatch(/^https:\/\/[^/]+\/api\/proxy-image\?key=v1%2Fedited-designs/)
   })
 })
 

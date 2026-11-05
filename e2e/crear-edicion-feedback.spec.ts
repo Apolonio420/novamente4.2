@@ -106,7 +106,7 @@ test('si la edición sale igual, avisa y ofrece generar de cero (no la muestra c
   await deCero.click()
   await expect.poll(() => generate.length).toBe(2)
   // de cero = concepto original + el cambio pedido
-  expect(generate[1].prompt).toContain(CONCEPT)
+  expect(generate[1].prompt.startsWith(CONCEPT)).toBe(true)
   expect(generate[1].prompt).toContain(EDIT)
   await expect(page.getByTestId('image-feedback')).toHaveCount(2)
 })

@@ -64,6 +64,7 @@ import { productDisplayName } from "@/lib/product-names"
 import { useProductNames } from "@/lib/product-names-context"
 import * as fpixel from "@/lib/fpixel"
 import { ImageFeedback } from "./ImageFeedback"
+import { appendEditToConcept } from "@/lib/designer/concept-prompt"
 import type { FeedbackOperation } from "@/lib/designer/image-feedback"
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"]
@@ -932,7 +933,7 @@ export function DesignChat({
               : "Lo probé dos veces y la imagen me salió prácticamente igual, así que no te la muestro como nueva. Probá pedirlo más concreto (por ejemplo «el delfín la mitad de grande» o «la camioneta más chica y a la izquierda»), o lo genero de cero con tu pedido:",
             // De cero solo tiene sentido sobre un diseño nuestro: con una foto
             // del cliente se perdería la foto.
-            regenPrompt: hasAttachment ? undefined : concept ? `${concept}. ${text}` : text,
+            regenPrompt: hasAttachment ? undefined : concept ? appendEditToConcept(concept, text) : text,
           },
         ])
         return
@@ -950,7 +951,7 @@ export function DesignChat({
       // variante" o el detector de concepto nuevo trabajaban sobre eso.
       lastPromptRef.current =
         useEdit && !hasAttachment && lastPromptRef.current
-          ? `${lastPromptRef.current}. ${text}`.slice(-800)
+          ? appendEditToConcept(lastPromptRef.current, text)
           : promptUsed
 
       const assistantMsg: Msg = {

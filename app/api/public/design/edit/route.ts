@@ -6,6 +6,10 @@ import { guardPublicImageGen } from "@/lib/security/public-image-guard"
 import { meterPublicImageGen } from "@/lib/security/meter-usage"
 
 export const runtime = "nodejs"
+// Puede hacer 2 generaciones en serie (reintento si salió igual) + descarga,
+// comparación, limpieza de fondo y upload. Sin esto, el caso que se arregla
+// terminaba en 504.
+export const maxDuration = 120
 
 // Editar tiene su PROPIA variable, antes que la de generar: el A/B ciego de
 // 17/07 dio pro ganador para edicion (6-3-10) mientras que para generar habia

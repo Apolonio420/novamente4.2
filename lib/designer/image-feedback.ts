@@ -55,6 +55,15 @@ function isOwnImageUrl(url: string): boolean {
   }
 }
 
+// En prod las imágenes vienen RELATIVAS (/api/proxy-image?key=…, del dominio
+// de la web). El admin vive en admin.novamente.ar: guardadas así se romperían
+// allá. Se guardan absolutas contra el sitio público (origen FIJO, nunca el
+// header Origin del request, que lo controla el cliente).
+export function toStoredImageUrl(url: string, siteOrigin = process.env.NEXT_PUBLIC_BASE_URL || "https://novamente.ar"): string {
+  if (!url.startsWith("/")) return url
+  return `${siteOrigin.replace(/\/+$/, "")}${url}`
+}
+
 function shortText(v: unknown, max: number): string | null {
   if (typeof v !== "string") return null
   const t = v.trim()
@@ -78,7 +87,7 @@ export function parseImageFeedback(body: unknown): { ok: true; value: ImageFeedb
       rating: b.rating,
       operation: b.operation as FeedbackOperation,
       prompt: shortText(b.prompt, PROMPT_MAX),
-      imageUrl,
+      imageUrl: toStoredImageUrl(imageUrl),
       garmentType: shortText(b.garmentType, 40),
       garmentColor: shortText(b.garmentColor, 40),
     },

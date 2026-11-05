@@ -25,7 +25,17 @@ export function ImageFeedback({
   garmentType?: string
   garmentColor?: string
 }) {
-  const id = useMemo(() => crypto.randomUUID(), [])
+  // Fallback: sin crypto.randomUUID (navegadores viejos / http) el chat entero
+  // de /crear no puede romperse por las caritas.
+  const id = useMemo(() => {
+    try {
+      return crypto.randomUUID()
+    } catch {
+      return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (ch) =>
+        (Number(ch) ^ (Math.random() * 16) >> (Number(ch) / 4)).toString(16),
+      )
+    }
+  }, [])
   const [rating, setRating] = useState<FeedbackRating | null>(null)
 
   function vote(value: FeedbackRating) {
