@@ -70,6 +70,15 @@ describe('el precio lo decide el servidor, no el navegador', () => {
       .toBe(28600 + RECARGO_DOBLE_ESTAMPA)
   })
 
+  it('la Bondi (alta 05/11) cobra 28.600 y 32.100 con dorso en el checkout de /crear', async () => {
+    expect(await precioRealDelItem({ garmentType: 'remera-sin-mangas-bondi' })).toBe(28600)
+    expect(await precioRealDelItem({ garmentType: 'remera-sin-mangas-bondi', doble_estampa: 'Si' })).toBe(32100)
+    const r = await validarPrecios([
+      { garmentType: 'remera-sin-mangas-bondi', unit_price: 32100, quantity: 2, doble_estampa: 'Si' },
+    ])
+    expect(r.ok).toBe(true)
+  })
+
   it('en un producto de partner gana el precio por talle', async () => {
     expect(await precioRealDelItem({ productId: 'p1', size: 'M' })).toBe(30000)
     expect(await precioRealDelItem({ productId: 'p1', size: 'XL' })).toBe(34000)
