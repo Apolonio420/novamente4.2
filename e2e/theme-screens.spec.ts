@@ -35,7 +35,8 @@ const VIEWPORTS = {
 if (process.env.PW_CHANNEL) test.use({ channel: process.env.PW_CHANNEL })
 
 const only = process.env.THEME_PAGES?.split(",")
-const OUT = "test-results/theme-screens"
+// test-results/ se borra en cada corrida; THEME_SHOTS_DIR guarda las capturas en otro lado.
+const OUT = process.env.THEME_SHOTS_DIR ?? "test-results/theme-screens"
 
 /** Textos visibles con contraste < 3:1 contra el primer fondo opaco de sus ancestros. */
 async function lowContrast(page: Page) {
