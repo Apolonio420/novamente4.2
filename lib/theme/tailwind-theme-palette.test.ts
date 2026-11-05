@@ -45,3 +45,13 @@ describe("paleta temable", () => {
     expect(scopes).not.toContain('[class~="bg-purple-300"]')
   })
 })
+
+describe("fondos casi sólidos", () => {
+  it("bg-violet-600/80 y bg-amber-900/60 conservan los originales; los tintes /10 no", () => {
+    const scopes = originalColorScopes()
+    expect(scopes).toContain('[class~="bg-violet-600/80"]')
+    expect(scopes).toContain('[class~="bg-amber-900/60"]')
+    expect(scopes).toContain('[class~="from-primary/90"]')
+    expect(scopes).not.toContain('[class~="bg-purple-500/10"]')
+  })
+})

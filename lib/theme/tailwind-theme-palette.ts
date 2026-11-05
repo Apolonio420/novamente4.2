@@ -111,10 +111,15 @@ export function originalColorScopes(): string[] {
   // Fondos de marca sólidos (shadcn y novamente-*): texto blanco encima.
   for (const token of ["primary", "accent", "destructive", "novamente-purple", "novamente-magenta", "novamente-blue"]) {
     selectors.push(`[class~="bg-${token}"]`, `[class~="from-${token}"]`)
+    for (const o of ["80", "90"]) selectors.push(`[class~="bg-${token}/${o}"]`, `[class~="from-${token}/${o}"]`)
   }
   for (const color of HUES) {
     for (const s of SOLID_SHADES) {
       selectors.push(`[class~="bg-${color}-${s}"]`, `[class~="from-${color}-${s}"]`)
+      // Casi sólidos (/80, /90) y, desde 700, superficies oscuras teñidas (/50-/95)
+      // con texto claro encima: también conservan los originales.
+      const opacities = Number(s) >= 700 ? ["50", "60", "70", "80", "90", "95"] : ["80", "90"]
+      for (const o of opacities) selectors.push(`[class~="bg-${color}-${s}/${o}"]`, `[class~="from-${color}-${s}/${o}"]`)
     }
   }
   return selectors

@@ -113,6 +113,31 @@ for (const theme of ["light", "dark"] as const) {
   }
 }
 
+// Barrido de landings (pauta/SEO): solo claro, captura de la primera pantalla.
+// THEME_SWEEP=1 lo activa (son ~35 rutas).
+const SWEEP = [
+  "/ayuda", "/b2b-precios-2026", "/blog", "/buzos-egresados", "/buzos-personalizados", "/comparar",
+  "/cotizador", "/despedidas-personalizadas", "/disena-tu-remera", "/drops", "/dtg-vs-serigrafia",
+  "/envios", "/estampar-remeras", "/faq", "/guia-estampado", "/hoodie-personalizado",
+  "/indumentaria-deportiva", "/lanza-tu-marca", "/merch", "/merch-para-bandas", "/merch-para-creadores",
+  "/nosotros", "/regalos-dia-del-padre", "/regalos-empresariales", "/regalos-personalizados",
+  "/remeras-cumpleanos", "/remeras-para-eventos", "/remeras-personalizadas", "/remeras-por-mayor",
+  "/uniformes-personalizados", "/studio", "/terminos", "/quote", "/products",
+]
+for (const path of process.env.THEME_SWEEP ? SWEEP : []) {
+  for (const [vp, size] of Object.entries(VIEWPORTS)) {
+    test(`barrido light ${vp} ${path}`, async ({ page }) => {
+      test.setTimeout(120_000)
+      await page.setViewportSize(size)
+      await page.addInitScript(() => localStorage.setItem("email-capture-dismissed", "1"))
+      await page.goto(path, { waitUntil: "domcontentloaded" })
+      await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {})
+      await page.waitForTimeout(1000)
+      await page.screenshot({ path: `${OUT}/sweep-${vp}-${path.slice(1).replace(/\//g, "_")}.png` })
+    })
+  }
+}
+
 test("el botón cambia el tema y lo recuerda", async ({ page }) => {
   await page.setViewportSize(VIEWPORTS.desktop)
   await page.goto("/", { waitUntil: "domcontentloaded" })
