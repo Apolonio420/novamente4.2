@@ -61,6 +61,12 @@ const SIZE_CHARTS: Record<string, SizeChart> = {
     width: ["28", "30", "32", "34", "36"],
     length: ["44", "46", "48", "50", "52"],
   },
+  // Remera Sin Mangas Bondi (alta 05/11/2026). Ancho axila a axila / largo, en cm.
+  "Remeras Sin Mangas": {
+    sizes: ["S", "M", "L", "XL", "2XL"],
+    width: ["52", "54", "55", "57,5", "59,5"],
+    length: ["75", "77", "79", "81", "83"],
+  },
   "Remeras Mujer": {
     sizes: ["S", "M", "L", "XL", "2XL"],
     width: ["47", "49", "51", "53", "55"],

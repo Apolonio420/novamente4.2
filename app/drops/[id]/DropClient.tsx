@@ -35,11 +35,18 @@ const SIZE_CHARTS: Record<string, SizeChart> = {
     width: ["55", "57", "59", "61", "63", "66", "69"],
     length: ["69", "71", "73", "75", "77", "79", "81"],
   },
+  // Remera Sin Mangas Bondi (alta 05/11/2026) — idem SIZE_CHARTS de products/[id] y el PDF.
+  "remera-sin-mangas-bondi": {
+    sizes: ["S", "M", "L", "XL", "2XL"],
+    width: ["52", "54", "55", "57,5", "59,5"],
+    length: ["75", "77", "79", "81", "83"],
+  },
 };
 
 function getSizeChartForGarment(garmentKey: string | null): SizeChart {
   if (!garmentKey) return SIZE_CHARTS["remera-classic"]!;
   if (garmentKey.startsWith("hoodie")) return SIZE_CHARTS.hoodie!;
+  if (garmentKey.includes("sin-mangas") || garmentKey.includes("bondi")) return SIZE_CHARTS["remera-sin-mangas-bondi"]!;
   if (garmentKey.includes("oversize")) return SIZE_CHARTS["remera-oversize"]!;
   return SIZE_CHARTS["remera-classic"]!;
 }

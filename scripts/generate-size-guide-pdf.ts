@@ -72,6 +72,13 @@ const SIZE_CHARTS: SizeChart[] = [
     image: 'garments/remera-clasica-mujer-black-front.png',
   },
   {
+    title: 'Remera Sin Mangas Bondi (clásica unisex)',
+    sizes: ['S', 'M', 'L', 'XL', '2XL'],
+    width: ['52', '54', '55', '57,5', '59,5'],
+    length: ['75', '77', '79', '81', '83'],
+    image: 'garments/remera-sin-mangas-bondi-white-front.png',
+  },
+  {
     title: 'Remera Bambino (infantil unisex)',
     sizes: ['4', '6', '8', '10', '12', '14', '16'],
     width: ['38', '40', '42', '44', '46', '48', '50'],
