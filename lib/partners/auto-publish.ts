@@ -96,6 +96,30 @@ export function computeAutoUnpublishUpdates(
 }
 
 /**
+ * Campos del paso 8 del onboarding (activar la cuenta Starter). Antes el paso
+ * prendia storefront_published=true siempre, aunque el partner todavia no
+ * tuviera ni un producto: asi quedaron black-ry, dinuba, ultra y milk
+ * (sep-oct 2026) publicadas y vacias, listadas en /marcas (relevamiento
+ * Partners 05/11). Ahora la cuenta se activa igual, pero la tienda solo se
+ * publica si ya tiene ≥1 producto en regla; si no, la prende sola
+ * onProductPublished cuando publique el primero (no se marca
+ * storefront_hidden_manually, asi que el auto-publish no queda bloqueado).
+ */
+export function computeOnboardingActivationUpdates(publishedCount: number): {
+  status: 'active'
+  onboarding_completed: true
+  onboarding_step: 8
+  storefront_published: boolean
+} {
+  return {
+    status: 'active',
+    onboarding_completed: true,
+    onboarding_step: 8,
+    storefront_published: publishedCount > 0,
+  }
+}
+
+/**
  * Motivo por el que el storefront no esta visible, para que el UI del
  * workspace pueda explicarselo al partner en vez de solo avisar "esta
  * oculta". null cuando el storefront YA esta publicado (nada que mostrar).

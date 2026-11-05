@@ -16,6 +16,7 @@ import {
   computeAutoPublishUpdates,
   computeAutoUnpublishUpdates,
   computeStorefrontHiddenReason,
+  computeOnboardingActivationUpdates,
 } from './auto-publish'
 
 function tenant(overrides: Partial<{
@@ -259,5 +260,31 @@ describe('computeStorefrontHiddenReason', () => {
       1,
     )
     expect(reason).toBe('ready_not_published')
+  })
+})
+
+// Relevamiento Partners 05/11/2026: el paso 8 del onboarding publicaba la tienda
+// con 0 productos (black-ry, dinuba, ultra, milk quedaron vacias en /marcas).
+describe('computeOnboardingActivationUpdates', () => {
+  it('0 productos publicados → activa la cuenta pero NO publica la tienda', () => {
+    expect(computeOnboardingActivationUpdates(0)).toEqual({
+      status: 'active',
+      onboarding_completed: true,
+      onboarding_step: 8,
+      storefront_published: false,
+    })
+  })
+
+  it('≥1 producto publicado → activa y publica', () => {
+    expect(computeOnboardingActivationUpdates(1).storefront_published).toBe(true)
+  })
+
+  it('una tienda activada sin productos se auto-publica al publicar el primero', () => {
+    const activated = computeOnboardingActivationUpdates(0)
+    const next = computeAutoPublishUpdates(
+      tenant({ logo_url: 'x', tagline: 'y', storefront_published: activated.storefront_published, status: activated.status }),
+      1,
+    )
+    expect(next).toEqual({ storefront_published: true })
   })
 })

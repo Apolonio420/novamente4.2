@@ -6,6 +6,8 @@ import { normalizeIndustry } from '@/lib/partners/industry'
 import { requireTenantPermission } from '@/lib/partners/permissions'
 import { sendEmail } from '@/lib/email'
 import { buildPartnerWelcomeEmail } from '@/lib/partners/partner-welcome-email'
+import { countPublishedProductsReady } from '@/lib/partners/catalog'
+import { computeOnboardingActivationUpdates } from '@/lib/partners/auto-publish'
 
 const db = () => supabaseAdmin as any
 
@@ -339,12 +341,9 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const updates: Record<string, any> = {
-        status: 'active',
-        onboarding_completed: true,
-        storefront_published: true,
-        onboarding_step: 8,
-      }
+      // Nunca publicar una vidriera vacia: ver computeOnboardingActivationUpdates.
+      const publishedCount = await countPublishedProductsReady(auth.tenant.id)
+      const updates: Record<string, any> = computeOnboardingActivationUpdates(publishedCount)
 
       const updated = await updateTenant(auth.tenant.id, updates)
 
