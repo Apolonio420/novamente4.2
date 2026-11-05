@@ -150,7 +150,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   const numericPrice = parsePrice(product.price)
   const baseUrl = "https://www.novamente.ar"
-  const fullSizeChart = SIZE_CHARTS[getSizeChartKey(product.id, product.category)]
+  const sizeChartKey = getSizeChartKey(product.id, product.category)
+  const fullSizeChart = SIZE_CHARTS[sizeChartKey]
   // Liquidacion: hoodie en Crema / Gris Melange / Marron y Aura Caramel, solo S-XL (Juan 04/11).
   const isLiquidation =
     (product.category === "Hoodies" && isLiquidationHoodieColor(product.color)) ||
@@ -463,9 +464,16 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                     ))}
                   </tbody>
                 </table>
-                <p className="text-xs text-muted-foreground mt-3">
-                  * Las medidas pueden variar +/- 1cm. Si estás entre dos talles, te recomendamos elegir el más grande.
-                </p>
+                {sizeChartKey === "Buzos (Crewneck)" ? (
+                  // Berlin: horma amplia (Juan 05/11/2026; a Paola el XS le quedó grande, 30/10).
+                  <p className="text-xs text-muted-foreground mt-3">
+                    * El Berlin es un buzo de horma amplia (oversize): las medidas son de la prenda apoyada, no del cuerpo. Si querés un calce más ajustado, pedí un talle menos. Las medidas pueden variar +/- 1cm.
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-3">
+                    * Las medidas pueden variar +/- 1cm. Si estás entre dos talles, te recomendamos elegir el más grande.
+                  </p>
+                )}
                 <a
                   href="/guia-de-talles-novamente.pdf"
                   target="_blank"
