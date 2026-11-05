@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { getLiquidationStock, isHoodieSizeAllowed, matchGarmentKey, matchStockColor, normalizeStockSize } from '@/lib/stock/liquidation'
+import { isKidsGarment, isSizeValidForGarment, KIDS_SIZES } from '@/lib/catalog/sizes'
 
 /**
  * Validación de stock EN EL SUBMIT del pedido (server-side).
@@ -33,6 +34,8 @@ export interface ItemAgotado {
   pedido: number
   /** El talle no existe para ese color (hoodie liquidacion: solo S-XL). */
   noExiste?: boolean
+  /** Talles que sí existen, si no son los de liquidación (ej. infantil 4 a 16). */
+  tallesValidos?: string
 }
 
 export interface ResultadoStock {
@@ -100,6 +103,21 @@ export async function validarStock(items: ItemAValidarStock[]): Promise<Resultad
     // Hoodie (crema/gris/marron) y Aura Caramel son de liquidacion: solo existen
     // S/M/L/XL. Un talle fuera de ese rango NO es "venta libre": no existe (Juan 04/11).
     const rawSize = String(item.size || item.product_size || '')
+    // Remera infantil (Bambino): solo 4-16; y una prenda de adulto no lleva un
+    // talle infantil. Pedido NOV-20261105-9051 salió infantil talle "L" (05/11).
+    if (!isSizeValidForGarment(String(item.garmentType || item.product_type || ''), rawSize)) {
+      agotados.push({
+        item: String(item.garmentType || item.product_type || 'Prenda'),
+        talle: rawSize.trim().toUpperCase(),
+        disponible: 0,
+        pedido: qty,
+        noExiste: true,
+        tallesValidos: isKidsGarment(String(item.garmentType || item.product_type || ''))
+          ? KIDS_SIZES.join(', ')
+          : 'S, M, L, XL y más (talles de adulto)',
+      })
+      continue
+    }
     if (
       !isHoodieSizeAllowed(
         String(item.garmentType || item.product_type || ''),
@@ -141,7 +159,9 @@ export function mensajeStockAgotado(agotados: ItemAgotado[]): string {
   const detalle = agotados
     .map((a) =>
       a.noExiste
-        ? `${a.item} (talle ${a.talle}) — ese color solo existe en talles S, M, L y XL`
+        ? a.tallesValidos
+          ? `${a.item} (talle ${a.talle}) — esa prenda viene en talles ${a.tallesValidos}`
+          : `${a.item} (talle ${a.talle}) — ese color solo existe en talles S, M, L y XL`
         : `${a.item}${a.talle ? ` (talle ${a.talle})` : ''} — quedan ${a.disponible}, pediste ${a.pedido}`,
     )
     .join(' · ')

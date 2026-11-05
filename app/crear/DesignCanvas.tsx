@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { pickSizeFor, sizesForGarment } from "@/lib/catalog/sizes"
 import { Stage, Layer, Image as KonvaImage, Transformer, Rect, Text } from "react-konva"
 import type Konva from "konva"
 import {
@@ -131,8 +132,6 @@ const MAX_HISTORY = 30
 const MIN_SCALE = 0.05 // ahora se puede achicar mucho
 const MAX_SCALE = 4.0  // y agrandar mas
 
-const SIZES = ["S", "M", "L", "XL", "XXL"] as const
-type Size = (typeof SIZES)[number]
 
 // Fuentes curadas — Google Fonts populares para apparel
 const FONT_OPTIONS = [
@@ -776,7 +775,15 @@ export function DesignCanvas({
   }, [session.currentDesignUrl])
 
   // Size & cart
-  const [selectedSize, setSelectedSize] = useState<Size>("M")
+  const [selectedSize, setSelectedSize] = useState("M")
+  // Talles de LA prenda (catálogo), no S-XXL fijo: la infantil es 4-16.
+  const sizeOptions = useMemo(
+    () => sizesForGarment(session.garmentType, session.garmentColor),
+    [session.garmentType, session.garmentColor],
+  )
+  useEffect(() => {
+    setSelectedSize((prev) => pickSizeFor(sizeOptions, prev))
+  }, [sizeOptions])
   const [applying, setApplying] = useState(false)
 
   // UI state
@@ -1646,7 +1653,7 @@ export function DesignCanvas({
       {/* Size selector + Apply */}
       <div className="flex flex-wrap items-center gap-3 justify-center w-full max-w-lg">
         <div className="flex items-center gap-1">
-          {SIZES.map((s) => (
+          {sizeOptions.map((s) => (
             <button
               key={s}
               onClick={() => setSelectedSize(s)}

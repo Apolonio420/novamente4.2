@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -65,9 +65,9 @@ import { useProductNames } from "@/lib/product-names-context"
 import * as fpixel from "@/lib/fpixel"
 import { ImageFeedback } from "./ImageFeedback"
 import { appendEditToConcept } from "@/lib/designer/concept-prompt"
+import { isKidsGarment, KIDS_SIZE_TABLE, pickSizeFor, sizesForGarment } from "@/lib/catalog/sizes"
 import type { FeedbackOperation } from "@/lib/designer/image-feedback"
 
-const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"]
 
 // Helpers usando el catalog como fuente de verdad. Nombre descriptivo al
 // cliente (PLAN-NOMBRES-DESCRIPTIVOS.md) — `key` (garmentType) sigue viajando
@@ -280,6 +280,16 @@ export function DesignChat({
   }, [session.currentMockupUrl, router])
   const [pendingAttachment, setPendingAttachment] = useState<string | null>(null)
   const [selectedSize, setSelectedSize] = useState("M")
+  // Talles de LA prenda elegida (catálogo): antes era XS-XXL fijo para todas
+  // y la remera infantil se vendía en "L" (NOV-20261105-9051, Juan 05/11).
+  const sizeOptions = useMemo(
+    () => sizesForGarment(session.garmentType, session.garmentColor),
+    [session.garmentType, session.garmentColor],
+  )
+  useEffect(() => {
+    setSelectedSize((prev) => pickSizeFor(sizeOptions, prev))
+  }, [sizeOptions])
+  const [showKidsTable, setShowKidsTable] = useState(false)
   // Lightbox de zoom: clickear el diseño del chat o el mockup lo abre full-screen
   const [zoomUrl, setZoomUrl] = useState<string | null>(null)
   useEffect(() => {
@@ -2493,7 +2503,7 @@ export function DesignChat({
           <div className="mt-4 space-y-1.5">
             <label className="text-xs text-zinc-500 uppercase tracking-wider">Talle</label>
             <div className="flex gap-1.5 flex-wrap">
-              {SIZE_OPTIONS.map((sz) => (
+              {sizeOptions.map((sz) => (
                 <button
                   key={sz}
                   type="button"
@@ -2509,6 +2519,37 @@ export function DesignChat({
               ))}
             </div>
           </div>
+          {isKidsGarment(session.garmentType) && (
+            <div className="mt-2 text-xs text-zinc-400" data-testid="kids-size-table">
+              <button
+                type="button"
+                onClick={() => setShowKidsTable((v) => !v)}
+                className="underline underline-offset-2 hover:text-zinc-200"
+              >
+                {showKidsTable ? "Ocultar medidas" : "Ver medidas (talles por edad, 4 a 16)"}
+              </button>
+              {showKidsTable && (
+                <table className="mt-2 w-full max-w-xs text-center border border-zinc-700 rounded">
+                  <thead>
+                    <tr className="text-zinc-500">
+                      <th className="py-1 font-medium">Talle</th>
+                      <th className="py-1 font-medium">Pecho</th>
+                      <th className="py-1 font-medium">Largo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {KIDS_SIZE_TABLE.map((r) => (
+                      <tr key={r.size} className={`border-t border-zinc-800 ${selectedSize === r.size ? "text-white" : ""}`}>
+                        <td className="py-0.5">{r.size}</td>
+                        <td className="py-0.5">{r.chestCm} cm</td>
+                        <td className="py-0.5">{r.lengthCm} cm</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
 
           {/* P6-01: Probar otra variante — para users que casi gustan el resultado */}
           {session.currentDesignUrl && lastPromptRef.current && (

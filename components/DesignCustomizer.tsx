@@ -22,7 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 import { smoothScrollIntoView } from "@/utils/scroll"
 import { toPublicR2Url } from "@/lib/r2"
 import { colorLabelFor, sizeChartImageFor } from "@/lib/aldea-wash-azul"
-import { sizesForAuraColor, sizesForHoodieColor } from "@/lib/stock/liquidation"
+import { sizesForGarment } from "@/lib/catalog/sizes"
 
 interface DesignCustomizerProps {
   initialImageUrl: string
@@ -120,26 +120,16 @@ const SIZE_CHART_BY_GARMENT: Record<string, string> = {
   "musculosa-bali": "/products/musculosa-bali-blanca/Medidas3.png",
   "remera-clasica-mujer": "/products/remera-clasica-woman-blanca/Medidas2.png",
   "remera-crop-mujer": "/products/remera-crop-de-mujer-negra/Medidas1.png",
+  "remera-infantil": "/products/remera-infantil-medidas.png",
 }
 
-const SIZES_BY_GARMENT: Record<string, string[]> = {
-  "aura-oversize-tshirt": ["2XS", "XS", "S", "M", "L", "XL", "2XL"],
-  "aldea-classic-tshirt": ["S", "M", "L", "XL", "XXL"],
-  "buzo-hoodie-unisex": ["XS", "S", "M", "L", "XL", "2XL"],
-  "buzo-cuello-redondo-unisex": ["XS", "S", "M", "L", "XL", "2XL"],
-  "musculosa-bali": ["S", "M", "L", "XL", "2XL"],
-  "remera-clasica-mujer": ["S", "M", "L", "XL", "2XL"],
-  "remera-crop-mujer": ["S", "M", "L", "XL", "2XL"],
-}
+// Talles por prenda Y color desde el catálogo (lib/catalog/sizes.ts): antes
+// había una tabla propia sin la remera infantil (caía en S-XL). Hoodie en
+// marron/crema/gris y Aura caramel (liquidacion) solo existen S-XL.
 const DEFAULT_SIZES = ["S", "M", "L", "XL"]
-
-// Talles por prenda Y color: hoodie en marron/crema/gris y Aura caramel (liquidacion) solo existen S-XL.
 function sizesFor(garment: string | null, color: string): string[] {
   if (!garment) return DEFAULT_SIZES
-  const all = SIZES_BY_GARMENT[garment] || DEFAULT_SIZES
-  if (garment === "buzo-hoodie-unisex") return sizesForHoodieColor(color, all)
-  if (garment === "aura-oversize-tshirt") return sizesForAuraColor(color, all)
-  return all
+  return sizesForGarment(garment, color)
 }
 
 // Política 29/08: el dorso vale $3.500 en todos los canales (mismo número que

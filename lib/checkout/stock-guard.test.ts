@@ -148,3 +148,21 @@ describe('mensajeStockAgotado', () => {
     expect(msg).toContain('pediste 1')
   })
 })
+
+// Pedido real NOV-20261105-9051 (05/11): remera infantil talle "L" desde /crear.
+// El proveedor solo trabaja 4 a 16 — el checkout lo rechaza antes de cobrar.
+describe('validarStock — talles de la remera infantil', () => {
+  const item = (size: string, garmentType = 'remera-infantil') => ({ garmentType, color: 'white', size, quantity: 1 })
+  it('infantil talle L → rechazado, con los talles que sí existen', async () => {
+    const r = await validarStock([item('L')])
+    expect(r.ok).toBe(false)
+    expect(r.agotados[0]).toMatchObject({ talle: 'L', noExiste: true })
+    expect(mensajeStockAgotado(r.agotados)).toContain('4, 6, 8, 10, 12, 14, 16')
+  })
+  it('infantil talle 8 → ok', async () => {
+    expect((await validarStock([item('8')])).ok).toBe(true)
+  })
+  it('remera de adulto con talle infantil → rechazado', async () => {
+    expect((await validarStock([item('8', 'aldea-classic-tshirt')])).ok).toBe(false)
+  })
+})
