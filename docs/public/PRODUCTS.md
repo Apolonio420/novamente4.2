@@ -32,6 +32,13 @@ Todos los productos son 100% algodón premium, optimizados para impresión DTG d
 - **Talles:** S, M, L, XL, XXL
 - **Descripción:** Crop top femenino. Ideal para diseños pequeños y centrados.
 
+### Remera Sin Mangas Bondi
+- **Precio:** $28,600 ARS
+- **Material:** Algodón 100% peinado, 250 g/m²
+- **Colores:** Blanca, Negra
+- **Talles:** S, M, L, XL, 2XL
+- **Descripción:** Remera clásica sin mangas en algodón 100% peinado. Calce regular y sisa amplia, ideal para verano, gym y eventos.
+
 ## Musculosas
 
 ### Musculosa Bali
