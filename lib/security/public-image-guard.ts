@@ -123,6 +123,11 @@ function hashIp(ip: string): string {
   return createHash("sha256").update(ip).digest("hex").slice(0, 32)
 }
 
+/** Mismo hash de IP que usa el guard (para cruzar tablas sin guardar la IP cruda). */
+export function hashClientIp(request: NextRequest): string {
+  return hashIp(getClientIp(request))
+}
+
 function isKillSwitchOff(): boolean {
   return (process.env.PUBLIC_IMAGEGEN_ENABLED ?? "true").toLowerCase() === "false"
 }

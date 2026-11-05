@@ -47,6 +47,12 @@ type Msg = {
   // para que el user pueda reintentar sin re-escribir.
   retryPrompt?: string
   retryAttachment?: string | null
+  // Qué produjo la imagen: habilita las caritas de feedback (solo imágenes
+  // que generamos nosotros, no la foto que subió el cliente).
+  operation?: FeedbackOperation
+  // La edición salió igual dos veces: ofrece generar de cero con este prompt
+  // (concepto + el cambio pedido) en vez de seguir editando la misma imagen.
+  regenPrompt?: string
 }
 
 // ============================================================
@@ -57,6 +63,8 @@ import { CATALOG_PRODUCTS, getCatalogProduct, getCatalogProductColor } from "@/l
 import { productDisplayName } from "@/lib/product-names"
 import { useProductNames } from "@/lib/product-names-context"
 import * as fpixel from "@/lib/fpixel"
+import { ImageFeedback } from "./ImageFeedback"
+import type { FeedbackOperation } from "@/lib/designer/image-feedback"
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL"]
 
@@ -571,7 +579,7 @@ export function DesignChat({
       const imageUrl: string = data.images[0].url
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", text: "Otra variante del mismo concepto:", imageUrl, prompt: variantPrompt },
+        { role: "assistant", text: "Otra variante del mismo concepto:", imageUrl, prompt: variantPrompt, operation: "variant" },
       ])
       setSession((prev) => ({
         ...prev,
@@ -597,7 +605,7 @@ export function DesignChat({
     }
   }, [loading, session.garmentColor, session.garmentType, session.printArea, session.sessionId, setSession, toast, shouldGateGeneration, recordGenGateGeneration])
 
-  const handleSend = useCallback(async (overridePrompt?: string) => {
+  const handleSend = useCallback(async (overridePrompt?: string, opts?: { forceNew?: boolean }) => {
     const text = (overridePrompt ?? input).trim()
     if (!text || loading) return
 
@@ -819,6 +827,8 @@ export function DesignChat({
             role: "assistant",
             text: "Listo, te lo dejé con fondo transparente:",
             imageUrl: cleanUrl,
+            prompt: text,
+            operation: "remove-bg",
           },
         ])
         setSession((prev) => ({
@@ -848,10 +858,11 @@ export function DesignChat({
       // desde cero en vez de mandar al endpoint de edit que itera la imagen
       // anterior. Solo aplica cuando NO hay attachment (porque attachment
       // siempre va por edit).
+      // forceNew: botón "Generar de cero" cuando la edición salió igual.
       const isNewConcept =
         hasPreviousDesign &&
         !hasAttachment &&
-        isLikelyNewConcept(text, lastPromptRef.current)
+        (opts?.forceNew === true || isLikelyNewConcept(text, lastPromptRef.current))
 
       if (hasAttachment || (hasPreviousDesign && !isNewConcept)) {
         endpoint = "/api/public/design/edit"
@@ -906,6 +917,27 @@ export function DesignChat({
       })
       const data = await res.json()
 
+      // La edición devolvió la misma imagen (se reintentó una vez en el
+      // server). Antes se mostraba como "Acá va la versión actualizada" y el
+      // cliente veía la misma foto (caso real 05/11). Ahora se avisa, NO se
+      // pisa el diseño actual y se ofrece generarlo de cero.
+      if (useEdit && data.unchanged) {
+        const concept = lastPromptRef.current.trim()
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            text: hasAttachment
+              ? "Lo probé dos veces y tu foto me salió prácticamente igual, así que no te la muestro como nueva. Probá pedirlo más concreto (qué cambiar, cuánto y dónde)."
+              : "Lo probé dos veces y la imagen me salió prácticamente igual, así que no te la muestro como nueva. Probá pedirlo más concreto (por ejemplo «el delfín la mitad de grande» o «la camioneta más chica y a la izquierda»), o lo genero de cero con tu pedido:",
+            // De cero solo tiene sentido sobre un diseño nuestro: con una foto
+            // del cliente se perdería la foto.
+            regenPrompt: hasAttachment ? undefined : concept ? `${concept}. ${text}` : text,
+          },
+        ])
+        return
+      }
+
       if (!res.ok || !data.images?.[0]?.url) {
         throw new Error(data.error ?? "No se pudo generar la imagen")
       }
@@ -913,7 +945,13 @@ export function DesignChat({
       recordGenGateGeneration()
       const imageUrl: string = data.images[0].url
       const promptUsed: string = data.promptUsed ?? text
-      lastPromptRef.current = promptUsed
+      // En una edición el concepto sigue siendo el original MÁS los cambios:
+      // antes quedaba solo "haceme el delfín más chico", y "Probar otra
+      // variante" o el detector de concepto nuevo trabajaban sobre eso.
+      lastPromptRef.current =
+        useEdit && !hasAttachment && lastPromptRef.current
+          ? `${lastPromptRef.current}. ${text}`.slice(-800)
+          : promptUsed
 
       const assistantMsg: Msg = {
         role: "assistant",
@@ -927,7 +965,8 @@ export function DesignChat({
               ? "Vi que pediste algo distinto — generé un diseño nuevo desde cero:"
               : "Acá está tu diseño:",
         imageUrl,
-        prompt: promptUsed,
+        prompt: useEdit ? text : promptUsed,
+        operation: useEdit ? (hasAttachment ? "edit-photo" : "edit") : "generate",
       }
       setMessages((prev) => [...prev, assistantMsg])
 
@@ -1050,6 +1089,7 @@ export function DesignChat({
           role: "assistant",
           text: `La prenda sola, ${session.side === "back" ? "espalda" : "frente"} · ${PRINT_AREA_LABEL[session.printArea] ?? session.printArea}. Acá se ve bien dónde queda la estampa.`,
           imageUrl: url,
+          operation: "mockup-prenda",
         },
       ])
       toast({ title: "Listo", description: "Te dejé la prenda sola en el chat 👇" })
@@ -1125,6 +1165,7 @@ export function DesignChat({
           role: "assistant",
           text: `Así queda en ${garmentLabel(session.garmentType)} ${colorLabel(session.garmentType, session.garmentColor)} · ${effSide === "back" ? "espalda" : "frente"} · ${PRINT_AREA_LABEL[effPrintArea] ?? effPrintArea}`,
           imageUrl: mockupUrl,
+          operation: "mockup-lifestyle",
         },
       ])
       toast({ title: "Mockup listo", description: "Te lo dejé en el chat 👇" })
@@ -1781,6 +1822,27 @@ export function DesignChat({
                       className="object-contain bg-white/5"
                     />
                   </button>
+                )}
+                {msg.imageUrl && msg.operation && (
+                  <ImageFeedback
+                    imageUrl={msg.imageUrl}
+                    prompt={msg.prompt}
+                    operation={msg.operation}
+                    garmentType={session.garmentType}
+                    garmentColor={session.garmentColor}
+                  />
+                )}
+                {msg.regenPrompt && !loading && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSend(msg.regenPrompt!, { forceNew: true })}
+                      className="inline-flex items-center gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 rounded-md transition"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      Generar de cero con este pedido
+                    </button>
+                  </div>
                 )}
                 {/* Error: reintentar, y si sigue fallando que lo terminemos por WhatsApp
                     (el prompt viaja en el mensaje, asi no lo tiene que reescribir) */}

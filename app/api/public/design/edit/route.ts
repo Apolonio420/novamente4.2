@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { uploadFile } from "@/lib/cloudflare-r2"
-import { optimizeDesignPrompt } from "@/lib/designer/prompt-optimizer"
 import { corsHeaders, preflightResponse } from "@/lib/security/cors"
 import { guardPublicImageGen } from "@/lib/security/public-image-guard"
 import { meterPublicImageGen } from "@/lib/security/meter-usage"
@@ -17,6 +16,16 @@ const IMAGE_MODEL =
   process.env.GEMINI_PUBLIC_DESIGN_MODEL ||
   process.env.GEMINI_IMAGE_MODEL ||
   "gemini-2.5-flash-image"
+
+// Reintento cuando la primera edición devuelve la misma imagen. Prueba real
+// 05/11 (playa + delfín + combi, input de prod): gemini-2.5-flash-image dio la
+// MISMA imagen con el prompt viejo, con el nuevo y con 3 reformulaciones
+// (0,5–1,8 % de cambio); gemini-3.1-flash-image (flash, NO pro) aplicó bien
+// tamaño, proporción y posición al primer intento. Cuesta US$0,067 contra
+// 0,039, pero solo corre en el ~10 % de ediciones que salen iguales.
+// gemini-3-pro-image NO va acá sin OK de Juan (tope Gemini US$75/mes).
+const RETRY_IMAGE_MODEL =
+  process.env.GEMINI_PUBLIC_EDIT_RETRY_MODEL || "gemini-3.1-flash-image"
 
 export async function OPTIONS(req: NextRequest) {
   return preflightResponse(req)
@@ -57,7 +66,7 @@ export async function POST(req: NextRequest) {
     const { previousImageUrl, instruction } = body
     // 'photo' = user-uploaded photo (preserva personas/fondo real)
     // 'illustration' = iterar sobre un design generado
-    // raw=true → no aplica optimizer en illustration mode (prompt as-is)
+    // raw=true → diseño para estampa: limpia el fondo blanco/damero al subir
     const mode = body.mode ?? "illustration"
     const rawMode = body.raw === true || mode === "photo"
 
@@ -77,64 +86,84 @@ export async function POST(req: NextRequest) {
     const contentType = imgRes.headers.get("content-type") || "image/png"
     const base64Data = imgBuffer.toString("base64")
 
-    // Modo PHOTO: respetar el contenido original (personas, mascotas, etc).
-    // Modo ILLUSTRATION: forzar estilo textile/vectorial para uso en estampa.
-    let editInstruction: string
-    if (mode === "photo") {
-      editInstruction = [
-        `Apply this change to the image: ${instruction.trim()}.`,
-        "PRESERVE the original subjects (faces, pets, objects), proportions, identity and overall composition exactly.",
-        "Only apply the requested modification (e.g. remove background, change color, add element). Do NOT replace the subjects with something else.",
-        "If the user asks to 'remove background' or 'sin fondo', output a transparent PNG with only the main subject isolated, clean alpha edges, no halo.",
-        "If the user asks to make it suitable for a textile print/stamp, keep the subject realistic but simplify shadows and ensure clean edges.",
-        "Respond ONLY with an image (inlineData). No text.",
-      ].join(" ")
-    } else if (rawMode) {
-      // Raw illustration: respect user prompt as-is, + print-ready layer
-      // según el color de la prenda destino.
-      const { buildPrintReadyPrompt } = await import("@/lib/designer/print-ready-prompt")
-      const printReady = buildPrintReadyPrompt(
-        `Edit this image with the following instruction: ${instruction.trim()}. Apply the change while preserving the overall composition.`,
-        { garmentColor: body.garmentColor },
-      )
-      editInstruction = `${printReady} Respond ONLY with an image (inlineData). No text.`
-    } else {
-      const { optimizedPrompt } = optimizeDesignPrompt(instruction)
-      editInstruction = [
-        `Edit this illustration: ${optimizedPrompt}.`,
-        "Keep the same general composition and style but apply the requested change.",
-        "SOLO una ilustración aislada. PROHIBIDO: prendas, remeras, buzos, hoodies, mockups, marcos, texto superpuesto.",
-        "Respond ONLY with an image (inlineData). No text.",
-      ].join(" ")
-    }
+    // Prompt de EDICIÓN propio (ver lib/designer/edit-prompt.ts): antes se
+    // reusaba el stack de generar, que enterraba la instrucción y le pedía
+    // "preservar la composición" — Gemini devolvía la misma imagen o hacía lo
+    // contrario con tamaños/posiciones (caso real 05/11, delfín + combi).
+    const { buildEditPrompt } = await import("@/lib/designer/edit-prompt")
+    const { measureImageChange, isUnchanged } = await import("@/lib/designer/image-change")
 
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: IMAGE_MODEL })
 
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          mimeType: contentType as "image/png" | "image/jpeg" | "image/webp",
-          data: base64Data,
+    async function runEdit(attempt: number, modelName: string) {
+      const prompt = buildEditPrompt(instruction, { mode, garmentColor: body.garmentColor, attempt })
+      const model = genAI.getGenerativeModel({ model: modelName })
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: contentType as "image/png" | "image/jpeg" | "image/webp",
+            data: base64Data,
+          },
         },
-      },
-      editInstruction,
-    ])
-
-    // Extract image from response
-    let imageBase64: string | null = null
-    for (const cand of result.response?.candidates ?? []) {
-      for (const part of cand?.content?.parts ?? []) {
-        // @ts-ignore
-        const inline = part?.inlineData
-        // @ts-ignore
-        if (inline?.mimeType?.startsWith("image/") && typeof inline?.data === "string") {
+        prompt,
+      ])
+      // Cada llamada a Gemini se factura — se mide TODAS, también el reintento.
+      // usageMetadata real: este modelo puede facturar "thinking" tokens aparte
+      // del precio plano por imagen (ver lib/security/meter-usage.ts).
+      await meterPublicImageGen({
+        endpoint: "public/design/edit",
+        model: modelName,
+        usageMetadata: (result.response as any)?.usageMetadata,
+        metadata: { attempt },
+      })
+      let imageBase64: string | null = null
+      for (const cand of result.response?.candidates ?? []) {
+        for (const part of cand?.content?.parts ?? []) {
           // @ts-ignore
-          imageBase64 = inline.data
-          break
+          const inline = part?.inlineData
+          // @ts-ignore
+          if (inline?.mimeType?.startsWith("image/") && typeof inline?.data === "string") {
+            // @ts-ignore
+            imageBase64 = inline.data
+            break
+          }
+        }
+        if (imageBase64) break
+      }
+      return { prompt, imageBase64 }
+    }
+
+    // Gemini a veces devuelve la MISMA imagen re-codificada en vez de aplicar
+    // el pedido (9 de 91 ediciones, 07/10–05/11). Se compara contra la de
+    // entrada y, si casi no cambió, se reintenta UNA vez con un prompt más
+    // fuerte y con RETRY_IMAGE_MODEL, dentro del mismo request (no descuenta
+    // otro diseño del cupo).
+    // Si sigue igual, se avisa (unchanged) en vez de mostrarla como nueva.
+    let attempt = 1
+    let { prompt: editInstruction, imageBase64 } = await runEdit(attempt, IMAGE_MODEL)
+    let changePct: number | null = null
+    if (imageBase64) {
+      changePct = await measureImageChange(imgBuffer, Buffer.from(imageBase64, "base64")).catch(() => null)
+      if (changePct !== null && isUnchanged(changePct)) {
+        console.log(`EDIT unchanged on attempt 1 (${changePct.toFixed(2)}% changed) — retrying`)
+        attempt = 2
+        // Si el reintento falla (500/503 de Gemini) no se tira abajo el
+        // request: cae al aviso de "salió igual" de abajo.
+        const retry = await runEdit(attempt, RETRY_IMAGE_MODEL).catch((e) => {
+          console.warn("EDIT retry failed:", (e as Error)?.message)
+          return { prompt: editInstruction, imageBase64: null as string | null }
+        })
+        if (retry.imageBase64) {
+          const retryPct = await measureImageChange(imgBuffer, Buffer.from(retry.imageBase64, "base64")).catch(() => null)
+          // Falla la medición → se toma igual el reintento (no hay cómo saber
+          // que salió peor, y el primero ya sabemos que salió igual).
+          if (retryPct === null || retryPct > changePct) {
+            imageBase64 = retry.imageBase64
+            editInstruction = retry.prompt
+            changePct = retryPct
+          }
         }
       }
-      if (imageBase64) break
     }
 
     if (!imageBase64) {
@@ -142,6 +171,17 @@ export async function POST(req: NextRequest) {
         { error: "Gemini no devolvió imagen. Intentá un prompt más específico." },
         502,
       )
+    }
+
+    if (changePct !== null && isUnchanged(changePct)) {
+      console.log(`EDIT still unchanged after retry (${changePct.toFixed(2)}% changed)`)
+      return ok({
+        success: false,
+        unchanged: true,
+        attempts: attempt,
+        changePct: Number(changePct.toFixed(2)),
+        error: "No logré aplicar ese cambio: la imagen salió prácticamente igual.",
+      })
     }
 
     // Upload to R2
@@ -178,20 +218,12 @@ export async function POST(req: NextRequest) {
     const key = `v1/edited-designs/${Date.now()}-${Math.random().toString(36).substring(2, 7)}.png`
     const { url } = await uploadFile(buffer, key, "image/png")
 
-    // usageMetadata real de la respuesta de Gemini — este modelo puede
-    // facturar "thinking" tokens aparte del precio plano por imagen (ver
-    // lib/security/meter-usage.ts). Mismo patrón que
-    // app/api/partners/design/generate/route.ts.
-    await meterPublicImageGen({
-      endpoint: "public/design/edit",
-      model: IMAGE_MODEL,
-      usageMetadata: (result.response as any)?.usageMetadata,
-    })
-
     return ok({
       success: true,
       images: [{ url }],
       prompt: editInstruction,
+      attempts: attempt,
+      changePct: changePct === null ? null : Number(changePct.toFixed(2)),
     })
   } catch (e: any) {
     return ok({ error: e?.message ?? "Error editando imagen" }, 500)
