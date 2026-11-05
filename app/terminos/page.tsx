@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function TerminosPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-screen bg-zinc-950">
       <div className="max-w-3xl mx-auto px-4 py-12">
         <Link
           href="/"

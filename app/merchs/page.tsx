@@ -60,7 +60,7 @@ const faqs = [
 
 export default function MerchsPage() {
     return (
-        <div className="bg-white min-h-screen">
+        <div className="theme-fixed bg-white min-h-screen">
             <StickyCTA />
 
             {/* HERO con form inline */}

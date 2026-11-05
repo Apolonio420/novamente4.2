@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss"
+import plugin from "tailwindcss/plugin"
+import { lightVars, novamenteBlack, originalColorScopes, originalVars, themedColors } from "./lib/theme/tailwind-theme-palette"
 
 const config = {
   darkMode: ["class"],
@@ -20,6 +22,8 @@ const config = {
     },
     extend: {
       colors: {
+        // Paleta temable (claro por defecto): ver lib/theme/tailwind-theme-palette.ts
+        ...themedColors(),
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -58,7 +62,7 @@ const config = {
           blue: "#00BFFF",
           purple: "#7000FF",
           magenta: "#FF00FF",
-          black: "#121212",
+          black: novamenteBlack,
           white: "#FFFFFF",
         },
       },
@@ -88,7 +92,13 @@ const config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    plugin(({ addBase }) => {
+      addBase({ ":root": lightVars() })
+      addBase({ [originalColorScopes().join(",")]: originalVars() })
+    }),
+  ],
 } satisfies Config
 
 export default config

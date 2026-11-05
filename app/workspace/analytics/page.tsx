@@ -194,7 +194,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#71717a' }} tickFormatter={d => d.slice(5)} />
                 <YAxis tick={{ fontSize: 11, fill: '#71717a' }} />
-                <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: 8 }} />
+                <Tooltip contentStyle={{ backgroundColor: 'rgb(var(--tw-zinc-900))', border: '1px solid rgb(var(--tw-zinc-700))', borderRadius: 8 }} />
                 <Line type="monotone" dataKey="total" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Total" />
                 <Line type="monotone" dataKey="unique" stroke="#06b6d4" strokeWidth={2} dot={false} name="Unicos" />
                 <Legend />
@@ -226,7 +226,7 @@ export default function AnalyticsPage() {
                       <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: 8 }} />
+                  <Tooltip contentStyle={{ backgroundColor: 'rgb(var(--tw-zinc-900))', border: '1px solid rgb(var(--tw-zinc-700))', borderRadius: 8 }} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -251,7 +251,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis type="number" tick={{ fontSize: 11, fill: '#71717a' }} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#a1a1aa' }} width={90} />
-                <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: 8 }} />
+                <Tooltip contentStyle={{ backgroundColor: 'rgb(var(--tw-zinc-900))', border: '1px solid rgb(var(--tw-zinc-700))', borderRadius: 8 }} />
                 <Bar dataKey="views" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>

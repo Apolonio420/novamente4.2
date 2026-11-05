@@ -34,7 +34,7 @@ function Cross() {
 
 export default function CompararPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
+    <div className="min-h-screen bg-zinc-950">
       {/* Navigation */}
       <nav className="max-w-4xl mx-auto px-4 py-6 flex items-center justify-between">
         <Link

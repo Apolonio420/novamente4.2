@@ -10,6 +10,7 @@ import { GlobalChrome } from "@/components/GlobalChrome"
 import { Toaster } from "@/components/Toaster"
 import { ImageHistoryProvider } from "@/contexts/ImageHistoryContext"
 import { Background } from "@/components/ui/Background"
+import { ThemeProvider } from "@/components/theme-provider"
 import FacebookPixel from "@/components/FacebookPixel"
 import GoogleAdsPixel from "@/components/GoogleAdsPixel"
 import AttributionTracker from "@/components/AttributionTracker"
@@ -237,6 +238,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             no toca el HTML server-rendered). Ver lib/wa-ref.ts. */}
         <WhatsAppRefTagger />
         <WebVitals />
+        {/* Claro por defecto (Juan 05/11); el botón de la navbar guarda la elección. */}
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="novamente-theme" disableTransitionOnChange>
         <Background />
         <ProductNamesProvider overrides={productNameOverrides}>
           <ImageHistoryProvider>
@@ -247,6 +250,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             <Toaster />
           </ImageHistoryProvider>
         </ProductNamesProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

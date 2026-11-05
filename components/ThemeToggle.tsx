@@ -5,29 +5,34 @@ import { Button } from "@/components/ui/button"
 import { Moon, Sun } from "lucide-react"
 import { useEffect, useState } from "react"
 
-export function ThemeToggle() {
-  const { theme, setTheme } = useTheme()
+/**
+ * Botón claro/oscuro. El tema elegido queda en localStorage ("novamente-theme")
+ * vía next-themes; sin elección, la web arranca en claro (ver app/layout.tsx).
+ */
+export function ThemeToggle({ withLabel = false }: { withLabel?: boolean }) {
+  const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  if (!mounted) {
-    return (
-      <Button variant="ghost" size="icon" disabled>
-        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        <span className="sr-only">Toggle theme</span>
-      </Button>
-    )
-  }
+  const isDark = mounted && resolvedTheme === "dark"
+  const label = isDark ? "Cambiar a tema claro" : "Cambiar a tema oscuro"
 
   return (
-    <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
-      <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-      <span className="sr-only">Toggle theme</span>
+    <Button
+      variant="ghost"
+      size={withLabel ? "default" : "icon"}
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      disabled={!mounted}
+      aria-label={label}
+      title={label}
+      data-testid="theme-toggle"
+      className={withLabel ? "gap-2 justify-start" : undefined}
+    >
+      {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+      {withLabel && <span className="text-sm">{isDark ? "Tema claro" : "Tema oscuro"}</span>}
     </Button>
   )
 }

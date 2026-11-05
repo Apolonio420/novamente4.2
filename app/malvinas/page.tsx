@@ -222,7 +222,7 @@ export default function MalvinasPage() {
       />
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-[#08080b] px-4 py-16 md:py-20">
+      <section className="relative overflow-hidden bg-zinc-950 px-4 py-16 md:py-20">
         <div className="absolute inset-x-0 top-0 h-px bg-white/10" />
         <div className="container relative z-10 mx-auto grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="max-w-2xl">
@@ -275,7 +275,7 @@ export default function MalvinasPage() {
       </section>
 
       {/* Grid de diseños */}
-      <section id="disenos" className="scroll-mt-20 bg-[#08080b] px-4 py-16 md:py-20 border-t border-white/10">
+      <section id="disenos" className="scroll-mt-20 bg-zinc-950 px-4 py-16 md:py-20 border-t border-white/10">
         <div className="container mx-auto">
           <div className="mb-12 max-w-2xl">
             <h2 className="novamente-heading text-2xl md:text-3xl text-white mb-4">La serie</h2>
@@ -343,7 +343,7 @@ export default function MalvinasPage() {
       </section>
 
       {/* Para tu pared — lienzo, mismo arte que "Carta náutica" */}
-      <section className="bg-[#0c0c10] px-4 py-16 md:py-20 border-t border-white/10">
+      <section className="bg-zinc-950 px-4 py-16 md:py-20 border-t border-white/10">
         <div className="container mx-auto">
           <div className="mb-10 max-w-2xl">
             <h2 className="novamente-heading text-2xl md:text-3xl text-white mb-4">Para tu pared</h2>
@@ -404,7 +404,7 @@ export default function MalvinasPage() {
       </section>
 
       {/* Para llevar — totebags de lona cruda, tamaño único 35×40 */}
-      <section className="bg-[#0c0c10] px-4 py-16 md:py-20 border-t border-white/10">
+      <section className="bg-zinc-950 px-4 py-16 md:py-20 border-t border-white/10">
         <div className="container mx-auto">
           <div className="mb-10 max-w-2xl">
             <h2 className="novamente-heading text-2xl md:text-3xl text-white mb-4">Para llevar</h2>
@@ -481,7 +481,7 @@ export default function MalvinasPage() {
       </section>
 
       {/* Colección Minimal */}
-      <section className="bg-[#0c0c10] px-4 py-16 md:py-20 border-t border-white/10">
+      <section className="bg-zinc-950 px-4 py-16 md:py-20 border-t border-white/10">
         <div className="container mx-auto">
           <div className="mb-12 max-w-2xl">
             <p className="mb-4 inline-flex rounded-full border border-sky-400/30 bg-sky-400/10 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-sky-200">
@@ -562,7 +562,7 @@ export default function MalvinasPage() {
       </section>
 
       {/* Cierre */}
-      <section className="bg-[#0c0c10] px-4 py-16 md:py-20 border-t border-white/10">
+      <section className="bg-zinc-950 px-4 py-16 md:py-20 border-t border-white/10">
         <div className="container mx-auto text-center max-w-2xl">
           <h2 className="novamente-heading text-2xl md:text-3xl text-white mb-4">
             Las Malvinas son argentinas

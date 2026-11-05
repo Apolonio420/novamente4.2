@@ -190,7 +190,7 @@ export default function Home() {
       />
 
       {/* Hero Section con estética de Novamente */}
-      <section className="relative overflow-hidden bg-[#08080b] px-4 py-16 md:py-20">
+      <section className="relative overflow-hidden bg-zinc-950 px-4 py-16 md:py-20">
         <div className="absolute inset-x-0 top-0 h-px bg-white/10"></div>
         <div className="container relative z-10 mx-auto grid min-h-[calc(100vh-96px)] items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
           <div className="max-w-3xl text-left">
@@ -381,7 +381,7 @@ export default function Home() {
       </section>
 
       {/* Serie Malvinas — banner destacado */}
-      <section className="border-t border-white/10 bg-[#0c0c10] px-4 py-10 md:py-12">
+      <section className="border-t border-white/10 bg-zinc-950 px-4 py-10 md:py-12">
         <div className="container mx-auto">
           <Link
             href="/malvinas"

@@ -3,6 +3,7 @@
 
 import Link from "next/link"
 import { CartBadge } from "./CartBadge"
+import { ThemeToggle } from "./ThemeToggle"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { AuthModal } from "@/components/AuthModal"
@@ -239,6 +240,10 @@ export function Navbar() {
             </DropdownMenu>
           )}
 
+          <div className="hidden md:block">
+            <ThemeToggle />
+          </div>
+
           <CartBadge />
 
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -254,6 +259,9 @@ export function Navbar() {
               <div className="flex flex-col gap-2 mt-8">
                 <div className="flex items-center justify-center mb-4">
                   <Logo />
+                </div>
+                <div className="flex justify-center mb-2">
+                  <ThemeToggle withLabel />
                 </div>
                 {navItems.map((item) => {
                   if ((item as any).isButton) {
