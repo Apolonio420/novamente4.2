@@ -149,3 +149,14 @@ test("el botón cambia el tema y lo recuerda", async ({ page }) => {
   await page.getByTestId("theme-toggle").first().click()
   await expect(page.locator("html")).not.toHaveClass(/dark/)
 })
+
+test("en mobile el botón del menú cambia el tema y lo recuerda", async ({ page }) => {
+  await page.setViewportSize(VIEWPORTS.mobile)
+  await page.goto("/", { waitUntil: "domcontentloaded" })
+  await expect(page.locator("html")).not.toHaveClass(/dark/)
+  await page.getByRole("button", { name: /men[uú]/i }).or(page.locator("header button.md\\:hidden")).first().click()
+  await page.getByRole("dialog").getByTestId("theme-toggle").click()
+  await expect(page.locator("html")).toHaveClass(/dark/)
+  await page.reload({ waitUntil: "domcontentloaded" })
+  await expect(page.locator("html")).toHaveClass(/dark/)
+})
