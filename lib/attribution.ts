@@ -8,9 +8,17 @@
  *
  * Reglas del modelo:
  *  - Si la URL trae AL MENOS UN parámetro de campaña → pisa lo guardado (last-touch).
- *  - Si la URL NO trae ninguno (navegación directa o interna) → NO pisa nada.
+ *  - Si la URL NO trae ninguno pero la visita viene de un referrer EXTERNO
+ *    (Instagram, Google, ChatGPT… sin UTM) y NO hay nada guardado vigente →
+ *    se guarda ese primer touch orgánico (referrer + landing). Nunca pisa un
+ *    touch guardado (ni de campaña ni orgánico): primer touch orgánico, y una
+ *    campaña posterior sí lo pisa.
+ *  - Directa (sin referrer), interna (referrer novamente.ar o subdominio) o
+ *    vuelta de un pago/login (MercadoPago, Google accounts…) → NO toca nada.
  *    Así el usuario que entra por un ad y después navega 5 páginas sigue
- *    atribuido a ese ad al llegar al checkout.
+ *    atribuido a ese ad al llegar al checkout. Ojo: en navegación SPA
+ *    `document.referrer` sigue siendo el externo original toda la sesión; por
+ *    eso el touch orgánico solo se escribe si el storage está vacío.
  *  - Pasados 30 días desde el último touch, el registro se descarta.
  *
  * Este módulo es isomórfico: las funciones de storage se auto-anulan en el
@@ -119,6 +127,38 @@ export function sanitizeAttribution(raw: unknown): Attribution | null {
   return hasAny ? out : null
 }
 
+/**
+ * Hosts que NO son fuente de tráfico aunque vengan de afuera: vueltas de
+ * pago (MercadoPago/MercadoLibre) y de login (Google accounts, Supabase auth).
+ * Si los tomáramos como touch orgánico, el que vuelve de pagar quedaría
+ * "atribuido" a MercadoPago.
+ */
+const NON_SOURCE_REFERRER_RX =
+  /(^|\.)(mercadopago\.com(\.[a-z]{2})?|mercadolibre\.com(\.[a-z]{2})?|mercadolivre\.com(\.[a-z]{2})?|mpago\.la|mpago\.li|accounts\.google\.com|supabase\.co)$/
+
+/**
+ * Host externo del referrer, o null si es interno (novamente.ar, www,
+ * subdominios de partners/admin), una vuelta de pago/login, vacío o no
+ * parseable. Mismo criterio de "interno" que `externalReferrerHost` en
+ * lib/payments/web-sale-attribution.ts (rama atribucion-web).
+ */
+export function externalSourceHost(referrer: string | null | undefined, currentHost?: string): string | null {
+  const value = normalizeValue(referrer)
+  if (!value) return null
+  let host: string
+  try {
+    host = new URL(value).host.toLowerCase().replace(/^www\./, "")
+  } catch {
+    return null
+  }
+  if (!host) return null
+  if (/(^|\.)novamente\.ar$/.test(host)) return null
+  const own = (currentHost ?? "").toLowerCase().replace(/^www\./, "")
+  if (own && host === own) return null // preview de Vercel, localhost, etc.
+  if (NON_SOURCE_REFERRER_RX.test(host)) return null
+  return host
+}
+
 /** Lo que vive en localStorage en runtime: Attribution + ts + utm_id crudo. */
 type PersistedAttribution = StoredAttribution & { utm_id: string | null }
 
@@ -171,12 +211,16 @@ export function getStoredAdAttribution(): StoredAdAttribution | null {
 }
 
 /**
- * Captura last-touch. Se llama en cada navegación desde AttributionTracker.
+ * Captura de atribución. Se llama en cada navegación desde AttributionTracker.
+ *  - Con parámetros de campaña → last-touch, pisa lo guardado.
+ *  - Sin campaña, con referrer externo y storage vacío/vencido → guarda el
+ *    primer touch orgánico (referrer + landing). Si ya hay algo, no lo toca.
+ *  - Cualquier otro caso → no toca nada.
  *
  * @param search  query string de la URL actual (con o sin '?')
  * @param landingPage  path+query donde aterrizó (default: location actual)
  * @param referrer  document.referrer (default: el del documento)
- * @returns lo que quedó guardado, o null si no había campaña y no se tocó nada.
+ * @returns lo que quedó guardado, o null si no se escribió nada.
  */
 export function captureAttribution(
   search?: string,
@@ -188,24 +232,25 @@ export function captureAttribution(
     const params = new URLSearchParams(search ?? window.location.search)
     const campaign = parseAttributionParams(params)
     const utmId = normalizeValue(params.get(ATTRIBUTION_AD_ID_PARAM))
+    const isCampaign = hasCampaignTouch(campaign) || !!utmId
 
-    // Sin parámetros de campaña (ni utm_id) => navegación directa/interna => NO pisar.
-    if (!hasCampaignTouch(campaign) && !utmId) return null
+    const rawReferrer = referrer ?? (typeof document !== "undefined" ? document.referrer : "")
+    const externalHost = externalSourceHost(rawReferrer, window.location.host)
+
+    if (!isCampaign) {
+      // Sin campaña: solo un referrer externo real cuenta, y solo si no hay
+      // nada vigente guardado (no pisar campaña ni el primer touch orgánico;
+      // readStored ya descarta lo vencido).
+      if (!externalHost) return null
+      if (readStored()) return null
+    }
 
     const resolvedLanding =
       normalizeValue(landingPage) ??
       normalizeValue(`${window.location.pathname}${window.location.search}`)
 
-    // Un referrer del mismo host es navegación interna, no una fuente externa.
-    const rawReferrer = referrer ?? (typeof document !== "undefined" ? document.referrer : "")
-    let resolvedReferrer = normalizeValue(rawReferrer)
-    if (resolvedReferrer) {
-      try {
-        if (new URL(resolvedReferrer).host === window.location.host) resolvedReferrer = null
-      } catch {
-        // Referrer no parseable — lo dejamos tal cual, es informativo.
-      }
-    }
+    // Referrer interno, de pago/login o no parseable no es una fuente: null.
+    const resolvedReferrer = externalHost ? normalizeValue(rawReferrer) : null
 
     const record: PersistedAttribution = {
       ...campaign,
