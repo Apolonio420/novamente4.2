@@ -16,6 +16,8 @@ vi.mock("@/lib/notifications", () => ({ notifySale: vi.fn() }))
 vi.mock("@/lib/partners/sale-effects", () => saleEffects)
 vi.mock("@/lib/supabase-admin", () => ({ supabaseAdmin: {} }))
 vi.mock("@/lib/payments/paid-at", () => paidAt)
+const webAttr = vi.hoisted(() => ({ recordWebSaleAttribution: vi.fn(async (..._args: any[]) => "inserted") }))
+vi.mock("@/lib/payments/web-sale-attribution", () => webAttr)
 
 import { GET, POST } from "./route"
 import { transferConfirmSig } from "@/lib/payments/transfer-confirm"
@@ -60,6 +62,16 @@ describe("confirm-transfer", () => {
     expect(paidAt.markPaidAtIfMissing).toHaveBeenCalledWith({}, "o1")
   })
 
+  // 09/11/2026: la venta web confirmada por transferencia también deja su fila
+  // en sale_attributions (source web, confirmado = total del pedido).
+  it("POST registra la venta en sale_attributions como transferencia", async () => {
+    await POST(post())
+    expect(webAttr.recordWebSaleAttribution).toHaveBeenCalledTimes(1)
+    const [orderArg, confArg] = webAttr.recordWebSaleAttribution.mock.calls[0]
+    expect(orderArg).toMatchObject({ order_number: ORDER, total: 111400 })
+    expect(confArg).toEqual({ confirmedTotalArs: 111400, paymentMethod: "transfer" })
+  })
+
   it("POST con firma inválida no toca nada", async () => {
     const res = await POST(post("x".repeat(64)))
     expect(res.status).toBe(400)
@@ -73,6 +85,7 @@ describe("confirm-transfer", () => {
     expect(db.updateOrder).not.toHaveBeenCalled()
     expect(saleEffects.runPartnerSaleEffects).not.toHaveBeenCalled()
     expect(paidAt.markPaidAtIfMissing).not.toHaveBeenCalled()
+    expect(webAttr.recordWebSaleAttribution).not.toHaveBeenCalled()
   })
 
   // 27/09/2026 (NOV-20260926-9852): una transferencia confirmada por este link

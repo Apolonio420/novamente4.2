@@ -23,6 +23,7 @@ import { sendEmail } from "@/lib/email"
 import { matchGarmentKey, matchStockColor, normalizeStockSize } from "@/lib/stock/liquidation"
 import { registrarUsoDescuento } from "@/lib/checkout/discount-guard"
 import { markPaidAtIfMissing } from "@/lib/payments/paid-at"
+import { recordWebSaleAttribution } from "@/lib/payments/web-sale-attribution"
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN!,
@@ -471,6 +472,26 @@ async function runConfirmedOrderEffects(
         await updateOrder(order.id!, { metadata: meta })
       } catch (funnelErr: any) {
         console.warn("[checkout-funnel] no se pudo marcar payment_approved (fail-soft):", funnelErr?.message)
+      }
+    }
+
+    // Atribución de la venta web en sale_attributions (source='web', origen
+    // desde UTM/fbclid/gclid/referrer de la orden, cotizado = total, confirmado
+    // = lo cobrado). Solo acá: pago aprobado + orden confirmada (cotización ≠
+    // venta). Idempotente (guard en metadata + lookup por order_ref + índice
+    // único) y fail-soft. Ver lib/payments/web-sale-attribution.ts.
+    if (!meta.sale_attribution_recorded_at) {
+      try {
+        const r = await recordWebSaleAttribution(order, {
+          confirmedTotalArs: Number(paymentDetails?.transaction_amount) || null,
+          paymentMethod: "mercadopago",
+        })
+        if (r === "inserted" || r === "exists") {
+          meta.sale_attribution_recorded_at = new Date().toISOString()
+          await updateOrder(order.id!, { metadata: meta })
+        }
+      } catch (attrErr: any) {
+        console.warn("[SALE_ATTRIBUTION][web] fail-soft:", attrErr?.message)
       }
     }
 

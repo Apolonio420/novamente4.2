@@ -140,6 +140,18 @@ export async function POST(req: NextRequest) {
     console.warn("[checkout-funnel] no se pudo marcar payment_approved (transferencia, fail-soft):", funnelErr?.message)
   }
 
+  // Atribución de la venta web (source='web'): mismo registro que un pago MP
+  // aprobado (lib/payments/process-payment.ts). Confirmado = total del pedido
+  // (la transferencia la valida una persona contra el comprobante). Fail-soft.
+  if (!meta.sale_attribution_recorded_at) {
+    const { recordWebSaleAttribution } = await import("@/lib/payments/web-sale-attribution")
+    const r = await recordWebSaleAttribution(o, { confirmedTotalArs: Number(o.total) || null, paymentMethod: "transfer" })
+    if (r === "inserted" || r === "exists") {
+      meta.sale_attribution_recorded_at = new Date().toISOString()
+      await updateOrder(o.id, { metadata: meta } as any)
+    }
+  }
+
   // Venta de tienda partner: mismos efectos que un pago MP (ganancia al ledger,
   // bridge a partner_orders, mail al partner, aviso de deuda). Antes este
   // camino NO acreditaba nada al partner. Si algo falla acá, el barrido diario

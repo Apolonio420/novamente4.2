@@ -137,6 +137,13 @@ vi.mock('@/lib/meta/capi', () => ({
   sendCapiPurchase: async () => ({ ok: false, skipped: 'not_configured' }),
 }))
 
+// Atribución de la venta web (lib/payments/web-sale-attribution.ts): acá solo
+// importa CUÁNDO y CON QUÉ se la llama; su lógica vive en su propio test.
+const recordWebSaleAttributionMock = vi.fn(async (_order: any, _conf: any): Promise<string> => 'inserted')
+vi.mock('@/lib/payments/web-sale-attribution', () => ({
+  recordWebSaleAttribution: (order: any, conf: any) => recordWebSaleAttributionMock(order, conf),
+}))
+
 process.env.MP_ACCESS_TOKEN = 'test-token'
 
 import { processPaymentById } from './process-payment'
@@ -861,5 +868,95 @@ describe('processPaymentById — paid_at (fecha de venta = fecha de cobro)', () 
 
     expect(result.orderStatus).toBe('cancelled')
     expect(h.state.paidAtCalls).toHaveLength(0)
+  })
+})
+
+/**
+ * Atribución de la venta web (09/11/2026): la única venta cobrada de noviembre
+ * (NOV-20261105-9051) no dejó fila en sale_attributions. Se registra SOLO con
+ * el pago aprobado y la orden confirmada (cotización ≠ venta), una vez.
+ */
+describe('processPaymentById — atribución de la venta web (sale_attributions)', () => {
+  const orden9051 = (over: any = {}) => ({
+    id: '4e229956-ce9f-4171-be31-41a41dc6385f',
+    order_number: 'NOV-20261105-9051',
+    status: 'pending',
+    payment_id: null,
+    tenant_id: null,
+    total: 41030,
+    customer_phone: '005492364507764',
+    customer_email: null,
+    items: [],
+    metadata: {},
+    ...over,
+  })
+  const pago = (status: string, monto = 41030) => ({
+    id: '186902202349',
+    status,
+    status_detail: status === 'approved' ? 'accredited' : 'x',
+    transaction_amount: monto,
+    external_reference: 'ext-9051',
+  })
+
+  beforeEach(() => {
+    recordWebSaleAttributionMock.mockReset()
+    recordWebSaleAttributionMock.mockResolvedValue('inserted')
+  })
+
+  it('pago aprobado nuevo: registra la venta una vez con lo cobrado y marca el guard en metadata', async () => {
+    h.state.order = orden9051()
+    h.state.paymentGet = pago('approved')
+
+    const result = await processPaymentById('186902202349')
+
+    expect(result.orderStatus).toBe('confirmed')
+    expect(recordWebSaleAttributionMock).toHaveBeenCalledTimes(1)
+    const [orderArg, confArg] = recordWebSaleAttributionMock.mock.calls[0]
+    expect(orderArg).toMatchObject({ order_number: 'NOV-20261105-9051', total: 41030 })
+    expect(confArg).toEqual({ confirmedTotalArs: 41030, paymentMethod: 'mercadopago' })
+  })
+
+  it('reintento de MP con el guard ya puesto: no vuelve a registrar', async () => {
+    h.state.order = orden9051({
+      status: 'confirmed',
+      payment_id: '186902202349',
+      metadata: { sale_attribution_recorded_at: '2026-11-09T12:00:00Z' },
+    })
+    h.state.paymentGet = pago('approved')
+
+    const result = await processPaymentById('186902202349')
+
+    expect(result.reason).toBe('already_confirmed')
+    expect(recordWebSaleAttributionMock).not.toHaveBeenCalled()
+  })
+
+  it('reintento sin guard (el proceso murió antes de marcarlo): vuelve a llamar y el módulo resuelve "exists"', async () => {
+    recordWebSaleAttributionMock.mockResolvedValue('exists')
+    h.state.order = orden9051({ status: 'confirmed', payment_id: '186902202349', metadata: {} })
+    h.state.paymentGet = pago('approved')
+
+    await processPaymentById('186902202349')
+
+    expect(recordWebSaleAttributionMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('si la atribución falla, el resto de los efectos de la venta siguen (aviso de venta)', async () => {
+    recordWebSaleAttributionMock.mockRejectedValue(new Error('db caída'))
+    h.state.order = orden9051()
+    h.state.paymentGet = pago('approved')
+
+    const result = await processPaymentById('186902202349')
+
+    expect(result.orderStatus).toBe('confirmed')
+    expect(notifySaleMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('pago pendiente, rechazado o aprobado por menos: NO registra nada (no es venta)', async () => {
+    for (const p of [pago('pending'), pago('rejected'), pago('approved', 1)]) {
+      h.state.order = orden9051()
+      h.state.paymentGet = p
+      await processPaymentById('186902202349')
+    }
+    expect(recordWebSaleAttributionMock).not.toHaveBeenCalled()
   })
 })
