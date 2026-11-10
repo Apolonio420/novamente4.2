@@ -121,3 +121,27 @@ describe("confirm-transfer", () => {
     })
   })
 })
+
+// 10/11/2026 (Juan, Ruta $100M): una línea de referido en el mail "Recibimos tu pago".
+describe("pedido de referido en el mail al cliente", () => {
+  const clienteMail = () => mail.sendEmail.mock.calls.map((c: any[]) => c[0]).find((m: any) => m.to === "cliente@example.com")
+  it("pedido propio: el mail trae el link con el código y se guarda referral_code en metadata", async () => {
+    const { referralCodeFor, buildReferralShareLink } = await import("@/lib/payments/referral-code")
+    const code = referralCodeFor("web", "o1")
+    await POST(post())
+    const m = clienteMail()
+    expect(m.html).toContain(buildReferralShareLink(code))
+    expect(m.html).toMatch(/boceto extra/)
+    expect(m.html).not.toMatch(/descuento|cup[oó]n|prioridad|gratis/i)
+    const metaWrite = db.updateOrder.mock.calls.map((c: any[]) => c[1]).find((u: any) => u?.metadata?.confirmation_email_sent_at)
+    expect(metaWrite.metadata.referral_code).toBe(code)
+  })
+  it("pedido de tienda partner: sin pedido de referido (el comprador es del partner)", async () => {
+    db.getOrderByNumber.mockResolvedValue(pending("tenant-sponsors"))
+    await POST(post())
+    const m = clienteMail()
+    expect(m.html).not.toContain("wa.me/")
+    const metaWrite = db.updateOrder.mock.calls.map((c: any[]) => c[1]).find((u: any) => u?.metadata?.confirmation_email_sent_at)
+    expect(metaWrite?.metadata?.referral_code).toBeUndefined()
+  })
+})

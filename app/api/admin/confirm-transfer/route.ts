@@ -24,6 +24,7 @@ import { sendEmail } from "@/lib/email"
 import { transferConfirmSig } from "@/lib/payments/transfer-confirm"
 import { supabaseAdmin } from "@/lib/supabase-admin"
 import { markPaidAtIfMissing } from "@/lib/payments/paid-at"
+import { referralEmailParagraph } from "@/lib/payments/referral-code"
 
 export const dynamic = "force-dynamic"
 // 30 s: además de los mails, una venta de tienda partner acredita al ledger y avisa al partner.
@@ -192,6 +193,8 @@ export async function POST(req: NextRequest) {
 
   // 1) Mail al CLIENTE: pago recibido / pedido confirmado.
   let mailCliente = "sin email"
+  // Pedido de referido (decisión de Juan 09/11): una línea, solo pedidos propios (no partner).
+  const referral = referralEmailParagraph({ id: String(o.id), tenant_id: o.tenant_id })
   if (o.customer_email) {
     const sent = await sendEmail({
       to: o.customer_email,
@@ -204,11 +207,13 @@ ${sinDireccion
   ? `<p>Para poder despacharlo por Andreani <b>solo nos falta la dirección de envío</b>: respondé este mail con calle y número, localidad, código postal y DNI de quien recibe.</p>`
   : `<p><b>Envío a:</b> ${o.shipping_address}, ${o.shipping_city || ""}${o.shipping_postal_code ? ` (CP ${o.shipping_postal_code})` : ""}. Te avisamos con el número de seguimiento apenas se despache.</p>`}
 <p>¡Gracias por tu compra! Cualquier duda, respondé este mail.</p>
-<p>— Novamente · <a href="${BASE}">novamente.ar</a></p>`,
+${referral ? referral.html + "\n" : ""}<p>— Novamente · <a href="${BASE}">novamente.ar</a></p>`,
     })
     mailCliente = sent.ok ? `enviado a ${o.customer_email}` : `FALLÓ (${sent.error || "?"})`
     if (sent.ok) {
       meta.confirmation_email_sent_at = new Date().toISOString()
+      // El bot resuelve el código a este pedido cuando el amigo escribe (orders.metadata.referral_code).
+      if (referral) meta.referral_code = referral.code
       await updateOrder(o.id, { metadata: meta } as any)
     }
   }
