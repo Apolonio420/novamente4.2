@@ -25,7 +25,8 @@ export function referralCodeFor(kind: ReferralSourceKind, orderId: string): stri
 }
 
 export function referralPrefilledText(code: string): string {
-  return `Hola Novamente! Me pasaron su contacto y quiero ver un boceto para mi pedido. (ref · ${code})`
+  // Igual que el bot: neutro, sin "boceto"/"pedido" (no dispara fast-paths ni el tipo de cliente).
+  return `Hola Novamente! Me pasaron su contacto. (ref · ${code})`
 }
 
 export function buildReferralShareLink(code: string): string {
@@ -43,6 +44,6 @@ export function referralEmailParagraph(order: { id: string; tenant_id?: string |
   const link = buildReferralShareLink(code)
   return {
     code,
-    html: `<p>¿Quién de tu grupo, curso o equipo se copa con algo así? <a href="${link}">Pasale este link</a> y nos escribe directo: le armamos el boceto sin cargo y, cuando nos escriba, a vos te hacemos un boceto extra de regalo y te agradecemos en nuestras historias (si querés) 🙌</p>`,
+    html: `<p>¿Quién de tu grupo, curso o equipo se copa con algo así? <a href="${link}">Pasale este link</a> y nos escribe directo: le armamos el boceto sin cargo. Y cuando nos escriba, pedinos tu boceto extra de regalo por WhatsApp (desde este mismo número de teléfono); si querés, también te agradecemos en nuestras historias 🙌</p>`,
   }
 }
