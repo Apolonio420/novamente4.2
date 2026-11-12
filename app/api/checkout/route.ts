@@ -119,8 +119,12 @@ export async function POST(request: NextRequest) {
     const chequeo = await validarPrecios(itemsParaValidar)
     if (!chequeo.ok) {
       console.error('❌ Precio por debajo del real:', chequeo.subfacturados, chequeo.bajoCosto)
+      // Black Friday 2026: un carrito que cruzó las 23:59 del 30/11 (o sumó la
+      // 5ª prenda) trae el precio BF de buena fe — no es un intento de fraude,
+      // no se alerta como urgente. El resto sigue alertando igual.
+      const soloPromoVencida = chequeo.ofertaTerminada && chequeo.bajoCosto.length === 0
       const { notifyError } = await import('@/lib/notifications')
-      await notifyError({
+      if (!soloPromoVencida) await notifyError({
         urgent: true,
         area: 'Checkout',
         endpoint: 'POST /api/checkout',

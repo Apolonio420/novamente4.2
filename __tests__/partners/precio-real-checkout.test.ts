@@ -6,7 +6,16 @@
  *
  * Con postear `unit_price: 1` alcanzaba para pagar $1 un buzo de $55.000.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest'
+
+// Precios de LISTA: el reloj (solo Date) queda fuera de la ventana de Black
+// Friday 2026, si no estos tests fallan si se corren entre el 27/11 y el 30/11.
+// La promo se testea en __tests__/checkout/black-friday-2026.test.ts.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-11-12T12:00:00-03:00'))
+})
+afterAll(() => vi.useRealTimers())
 import { validarPrecios, precioRealDelItem, RECARGO_DOBLE_ESTAMPA } from '@/lib/checkout/precio-real'
 
 // Store table-aware: `partner_products` y `tenants` se leen por separado (la

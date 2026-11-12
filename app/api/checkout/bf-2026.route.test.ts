@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { envioPorDistancia } from '@/lib/shipping-config'
 
-const h = vi.hoisted(() => ({ preferences: [] as any[], orders: [] as any[], descuento: { valid: false, discountARS: 0 } as any }))
+const h = vi.hoisted(() => ({ preferences: [] as any[], orders: [] as any[], alertas: [] as any[], descuento: { valid: false, discountARS: 0 } as any }))
 
 vi.mock('mercadopago', () => {
   class MercadoPagoConfig { constructor(_o: any) {} }
@@ -24,7 +24,7 @@ vi.mock('@/lib/db', () => ({
 vi.mock('@/lib/checkout/stock-guard', () => ({ validarStock: async () => ({ ok: true }), mensajeStockAgotado: () => '' }))
 vi.mock('@/lib/checkout/partner-items', () => ({ enriquecerItemsPartner: async (items: any[]) => items }))
 vi.mock('@/lib/checkout/funnel', () => ({ registrarEventoCheckout: async () => undefined }))
-vi.mock('@/lib/notifications', () => ({ notifyError: async () => undefined, notifyNewOrder: async () => undefined, notifyTransferOrder: async () => undefined }))
+vi.mock('@/lib/notifications', () => ({ notifyError: async (a: any) => { h.alertas.push(a) }, notifyNewOrder: async () => undefined, notifyTransferOrder: async () => undefined }))
 vi.mock('@/lib/email', () => ({}))
 vi.mock('@/lib/partners/drop7', () => ({}))
 vi.mock('@/lib/partners/garment-pricing.server', () => ({ ALL_GARMENT_PRICING: {}, getPartnerPlanPrice: () => 10000 }))
@@ -55,7 +55,7 @@ function cuerpoTransfer(items: any[], extra: Record<string, unknown> = {}) {
 }
 const at = (iso: string) => { vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date(iso)) }
 
-beforeEach(() => { h.preferences = []; h.orders = []; h.descuento = { valid: false, discountARS: 0 } })
+beforeEach(() => { h.preferences = []; h.orders = []; h.alertas = []; h.descuento = { valid: false, discountARS: 0 } })
 afterEach(() => vi.useRealTimers())
 
 describe('Black Friday 2026 — /api/checkout (Mercado Pago)', () => {
@@ -82,6 +82,8 @@ describe('Black Friday 2026 — /api/checkout (Mercado Pago)', () => {
     expect(json.code).toBe('BF_2026_NO_APLICA')
     expect(json.error).toMatch(/Black Friday/)
     expect(h.orders).toHaveLength(0)
+    // Cliente de buena fe con el carrito vencido: no es alerta urgente de fraude.
+    expect(h.alertas.filter((a) => a?.urgent)).toHaveLength(0)
   })
   it('5 prendas a precio BF → 400 (5+ quedan afuera)', async () => {
     at('2026-11-28T15:00:00-03:00')
@@ -99,6 +101,16 @@ describe('Black Friday 2026 — /api/checkout (Mercado Pago)', () => {
     expect(res.status).toBe(400)
     expect((await res.json()).code).toBe('BF_2026_SIN_CODIGO')
     expect(h.orders).toHaveLength(0)
+  })
+})
+
+describe('Black Friday 2026 — la alerta de fraude sigue para lo demás', () => {
+  it('Aura a $1 el 28/11 → 400 y alerta urgente', async () => {
+    at('2026-11-28T15:00:00-03:00')
+    const { POST } = await import('./route')
+    const res = await POST(req('http://localhost:3000/api/checkout', cuerpo(aura(1))))
+    expect(res.status).toBe(400)
+    expect(h.alertas.filter((a) => a?.urgent)).toHaveLength(1)
   })
 })
 
