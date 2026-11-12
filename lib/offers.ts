@@ -1,3 +1,6 @@
+import { getCatalogProduct } from "@/lib/catalog/products"
+import { recargoDorsoPara } from "@/lib/pricing/recargo-doble-estampa"
+
 /**
  * Ofertas por campana (Hot Sale, Cyber Monday, etc.).
  *
@@ -267,4 +270,163 @@ export function getCampaignLabel(offers: Offer[]): string {
 /** Imagen absoluta (para JSON-LD / OpenGraph). */
 export function absoluteImageUrl(image: string, baseUrl = "https://www.novamente.ar"): string {
   return /^https?:\/\//.test(image) ? image : `${baseUrl}${image}`
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// BLACK FRIDAY 2026 — /crear (prendas personalizadas de Novamente)
+// ════════════════════════════════════════════════════════════════════════════
+// Decisión 12/11/2026 (Juan la delegó en Contenido + Finanzas): hasta 10 % OFF
+// solo en pedidos MINORISTAS de 1 a 4 prendas, del viernes 27/11 00:00 al lunes
+// 30/11 23:59 (hora de Argentina). Afuera: 5+ prendas, grupos, productos de
+// partners (tiendas /p/...), envío, la musculosa Bali y la tote; no se suma con
+// códigos de descuento. Sin tope de pedidos.
+//
+// Es una regla APARTE de OFFERS a propósito: OFFERS se sincroniza a
+// compare_at_price de productos de partners (offers-sync) y esto no toca
+// ninguna tienda partner. El fin es automático por fecha (no depende de
+// ninguna máquina ni cron): fuera de la ventana todo vuelve al precio de lista.
+//
+// FUENTE ÚNICA de los números: CATALOG[key].bf_2026 del bot
+// (chatbot-whastapp/lib/payments/payment-link.ts). Esta tabla es su espejo con
+// las keys de la web; `npm run validate:pricing` del bot la compara y falla si
+// difieren. Regla: web × 0,90 redondeado arriba a $100, siempre por encima de
+// la tarifa partner y sin coincidir con otro monto del catálogo.
+
+export const BF_2026 = {
+  promo: "bf-2026",
+  /** Primer instante incluido. */
+  startsAt: "2026-11-27T00:00:00-03:00",
+  /** Primer instante EXCLUIDO (30/11 23:59:59 ART todavía entra). */
+  endsAtExclusive: "2026-12-01T00:00:00-03:00",
+  maxGarments: 4,
+} as const
+
+/** Precio Black Friday por prenda de /crear (key del catálogo web). Sin Bali ni tote. */
+export const BF_2026_PRICES: Record<string, number> = {
+  "aldea-classic-tshirt": 26000,
+  "aura-oversize-tshirt": 27900,
+  "remera-clasica-mujer": 26000,
+  "remera-crop-mujer": 21200,
+  "buzo-cuello-redondo": 38800,
+  "buzo-hoodie-unisex": 49500,
+  "remera-sin-mangas-bondi": 26000,
+  "remera-infantil": 21200,
+}
+
+/** Mensaje cuando el carrito traía precio BF y ya no corresponde (fin de la ventana o 5+ prendas). */
+export const MENSAJE_BF_2026_NO_APLICA =
+  "El precio de Black Friday ya no aplica a este carrito: la promo es del 27/11 al 30/11 a las 23:59 y para pedidos de 1 a 4 prendas. Actualizamos el carrito con los precios vigentes: revisalo y volvé a confirmar."
+
+/** Mensaje cuando se intenta sumar un código de descuento a Black Friday. */
+export const MENSAJE_BF_2026_SIN_CODIGO =
+  "Black Friday no se suma con códigos de descuento. Sacá el código para pagar con el precio de Black Friday."
+
+/** Keys que no son prendas (no cuentan para el tope de 1-4). */
+const NO_PRENDA = new Set(["totebag"])
+
+export function isBf2026Window(now: Date | number = Date.now()): boolean {
+  const t = typeof now === "number" ? now : now.getTime()
+  return t >= Date.parse(BF_2026.startsAt) && t < Date.parse(BF_2026.endsAtExclusive)
+}
+
+/** Item mínimo de carrito para la promo (CartItem / cartItems del checkout). */
+export interface BfCartItem {
+  productId?: string | null
+  partner_product_id?: string | null
+  garmentType?: string | null
+  product_type?: string | null
+  quantity?: number | null
+  doble_estampa?: string | null
+}
+
+function prendaKey(it: BfCartItem): string | null {
+  const k = String(it.garmentType || it.product_type || "").trim()
+  return k || null
+}
+
+/** Prendas del carrito: todo lo que no sea tote (los productos de partners también cuentan). */
+export function bf2026CartGarments(items: BfCartItem[]): number {
+  let n = 0
+  for (const it of items || []) {
+    const k = prendaKey(it)
+    if (k && NO_PRENDA.has(k)) continue
+    const q = Math.floor(Number(it.quantity ?? 1))
+    n += Number.isFinite(q) && q > 0 ? q : 1
+  }
+  return n
+}
+
+/**
+ * Precio BF (sin dorso) de UNA prenda propia de /crear dentro de este carrito,
+ * o null si no corresponde: fuera de fecha, producto de partner, Bali/tote,
+ * o el carrito tiene 5+ prendas.
+ */
+export function bf2026PriceFor(it: BfCartItem, cartItems: BfCartItem[], now: Date | number = Date.now()): number | null {
+  if (it.productId || it.partner_product_id) return null
+  const k = prendaKey(it)
+  if (!k || typeof BF_2026_PRICES[k] !== "number") return null
+  if (!isBf2026Window(now)) return null
+  const n = bf2026CartGarments(cartItems)
+  if (n < 1 || n > BF_2026.maxGarments) return null
+  return BF_2026_PRICES[k]
+}
+
+/**
+ * Precio que se muestra en /crear al elegir prenda (un solo ítem): el BF si hoy
+ * corre la promo, o null. Para el tachado: original = retailARS, actual = esto.
+ */
+export function bf2026DisplayPrice(garmentKey: string, now: Date | number = Date.now()): number | null {
+  return bf2026PriceFor({ garmentType: garmentKey, quantity: 1 }, [{ garmentType: garmentKey, quantity: 1 }], now)
+}
+
+/** Precio de lista de una prenda propia de /crear (catálogo + recargo de dorso), o null. */
+export function precioListaPrendaPropia(it: BfCartItem): number | null {
+  if (it.productId || it.partner_product_id) return null
+  const k = prendaKey(it)
+  const producto = k ? getCatalogProduct(k) : undefined
+  if (!producto || typeof producto.retailARS !== "number") return null
+  return producto.retailARS + (it.doble_estampa === "Si" ? recargoDorsoPara(k!) : 0)
+}
+
+/**
+ * Precio REAL de una prenda propia de /crear dentro de este carrito: el de Black
+ * Friday (+ dorso) si corresponde, o el de lista. null si no es prenda propia.
+ * Es la misma regla que valida el servidor (lib/checkout/precio-real.ts).
+ */
+export function precioPrendaPropiaEnCarrito(it: BfCartItem, cartItems: BfCartItem[], now: Date | number = Date.now()): number | null {
+  const lista = precioListaPrendaPropia(it)
+  if (lista === null) return null
+  const bf = bf2026PriceFor(it, cartItems, now)
+  if (bf === null) return lista
+  const k = prendaKey(it)!
+  return bf + (it.doble_estampa === "Si" ? recargoDorsoPara(k) : 0)
+}
+
+/**
+ * Reprecia el carrito para mostrar y para mandar al checkout. Solo toca prendas
+ * propias de /crear a PRECIO DE LISTA (o que ya tenían BF aplicado): sale a su
+ * precio BF cuando corresponde y vuelve al de lista cuando deja de corresponder
+ * (5ª prenda, fin de la ventana). Cualquier otro ítem (partner, drop con precio
+ * propio) queda igual. Devuelve una copia; los ítems con BF llevan
+ * `bfOriginalPrice` (precio de lista) para el tachado.
+ */
+export function aplicarBf2026<T extends BfCartItem & { price: number; bfOriginalPrice?: number }>(
+  items: T[],
+  now: Date | number = Date.now(),
+): Array<T & { bfOriginalPrice?: number }> {
+  type Out = T & { bfOriginalPrice?: number }
+  return (items || []).map((it): Out => {
+    const lista = precioListaPrendaPropia(it)
+    if (lista === null) return it
+    const aLista = it.price === lista || it.bfOriginalPrice === lista
+    if (!aLista) return it
+    const real = precioPrendaPropiaEnCarrito(it, items, now)!
+    const { bfOriginalPrice: _drop, ...rest } = it
+    return real < lista ? ({ ...rest, price: real, bfOriginalPrice: lista } as Out) : ({ ...rest, price: lista } as Out)
+  })
+}
+
+/** ¿El carrito (ya repreciado) tiene al menos una prenda con precio Black Friday? */
+export function carritoConBf2026(items: Array<{ bfOriginalPrice?: number; price: number }>): boolean {
+  return (items || []).some((it) => typeof it.bfOriginalPrice === "number" && it.price < it.bfOriginalPrice)
 }

@@ -4,6 +4,8 @@ import Image from "next/image"
 import { CATALOG_PRODUCTS } from "@/lib/catalog/products"
 import { useProductNames } from "@/lib/product-names-context"
 import { Check } from "lucide-react"
+import { useBf2026Now } from "@/lib/use-bf-2026"
+import { bf2026DisplayPrice } from "@/lib/offers"
 
 /**
  * Catálogo visual de prendas — usa CATALOG_PRODUCTS como fuente de verdad
@@ -32,6 +34,7 @@ export function GarmentCatalog({
 }) {
   const fmt = (n: number) => `$${n.toLocaleString("es-AR")}`
   const { productDisplayName } = useProductNames()
+  const bfNow = useBf2026Now()
 
   return (
     <div className="space-y-4">
@@ -105,7 +108,18 @@ export function GarmentCatalog({
               <div className="text-[11px] font-medium text-white leading-tight line-clamp-2 min-h-[28px]">
                 {productDisplayName({ id: product.key, name: product.name })}
               </div>
-              <div className="text-xs font-bold text-violet-400 mt-1">{fmt(product.retailARS)}</div>
+              {(() => {
+                // Black Friday 2026: tachado con el precio de lista (misma fuente que valida el checkout).
+                const bf = bfNow !== null ? bf2026DisplayPrice(product.key, bfNow) : null
+                return bf !== null ? (
+                  <div className="mt-1 flex items-baseline gap-1.5">
+                    <span className="text-[10px] text-zinc-500 line-through">{fmt(product.retailARS)}</span>
+                    <span className="text-xs font-bold text-violet-400">{fmt(bf)}</span>
+                  </div>
+                ) : (
+                  <div className="text-xs font-bold text-violet-400 mt-1">{fmt(product.retailARS)}</div>
+                )
+              })()}
 
               {/* Color dots */}
               <div className="flex flex-wrap gap-1 mt-1.5">

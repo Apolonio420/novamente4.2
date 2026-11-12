@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useCart } from "@/lib/cartStore"
+import { aplicarBf2026, carritoConBf2026 } from "@/lib/offers"
 import { cardSurchargeAmount, MP_CARD_SURCHARGE } from "@/lib/payment-config"
 import * as fpixel from "@/lib/fpixel"
 import { setPixelUser } from "@/lib/pixel-user"
@@ -86,7 +87,18 @@ const AUTOCOMPLETE: Record<keyof CustomerData, string> = {
 }
 
 export default function CheckoutPage() {
-  const { items, getTotalPrice, getTotalItems, clearCart, removeItem } = useCart()
+  const { items: itemsGuardados, getTotalPrice, getTotalItems, clearCart, removeItem } = useCart()
+  // Black Friday 2026 (lib/offers.ts): las prendas de /crear salen a precio BF
+  // con 1-4 prendas dentro de la ventana y vuelven solas al precio de lista
+  // (5ª prenda o fin de la promo). El servidor valida la misma regla.
+  const [promoTick, setPromoTick] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setPromoTick((n) => n + 1), 60_000)
+    return () => clearInterval(t)
+  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const items = useMemo(() => aplicarBf2026(itemsGuardados), [itemsGuardados, promoTick])
+  const hayBf2026 = carritoConBf2026(items)
   const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(false)
   // Pedido por transferencia ya creado: el carrito se vacía y, mientras
@@ -189,6 +201,11 @@ export default function CheckoutPage() {
       setAppliedDiscount(null)
     }
   }, [subtotal, appliedDiscount])
+
+  // Black Friday no se suma con códigos: si el carrito pasa a tener precio BF, el código se saca.
+  useEffect(() => {
+    if (hayBf2026 && appliedDiscount) setAppliedDiscount(null)
+  }, [hayBf2026, appliedDiscount])
 
   const discountARS = appliedDiscount?.discountARS ?? 0
   const total = Math.max(0, subtotal + shippingCost - discountARS)
@@ -529,6 +546,9 @@ export default function CheckoutPage() {
       // etc.) tienen que llegarle al cliente tal cual — antes acá se pisaban
       // con un genérico y el motivo real del rechazo se perdía.
       const message = error instanceof Error && error.message ? error.message : "Error al procesar el pago. Por favor intenta nuevamente."
+      // Si el rechazo fue por la promo (terminó / 5+ prendas), el carrito se
+      // reprecia con la hora actual para que vea los precios vigentes.
+      setPromoTick((n) => n + 1)
       alert(message)
     } finally {
       setIsProcessing(false)
@@ -917,8 +937,11 @@ export default function CheckoutPage() {
                       <p className="text-xs text-muted-foreground">Cantidad: {item.quantity}</p>
                     </div>
                     <div className="text-right pr-7">
+                      {typeof item.bfOriginalPrice === "number" && (
+                        <p className="text-[10px] text-muted-foreground line-through" aria-label="Precio sin Black Friday">{formatCurrency(item.bfOriginalPrice * item.quantity)}</p>
+                      )}
                       <p className="font-semibold text-sm">{formatCurrency(item.price * item.quantity)}</p>
-                      <p className="text-[10px] text-muted-foreground">{formatCurrency(item.price)} c/u</p>
+                      <p className="text-[10px] text-muted-foreground">{formatCurrency(item.price)} c/u{typeof item.bfOriginalPrice === "number" ? " · Black Friday" : ""}</p>
                     </div>
                     {/* Delete button — siempre visible en mobile, hover en desktop */}
                     <button
@@ -987,6 +1010,11 @@ export default function CheckoutPage() {
                 )}
               </div>
 
+              {hayBf2026 ? (
+                <p className="mt-3 mb-1 text-xs text-muted-foreground">
+                  Precio Black Friday aplicado (hasta 10 % OFF, de 1 a 4 prendas). No se suma con códigos de descuento.
+                </p>
+              ) : (
               <div className="mt-3 mb-1">
                 <DiscountInput
                   subtotal={subtotal}
@@ -995,6 +1023,7 @@ export default function CheckoutPage() {
                   onRemove={() => setAppliedDiscount(null)}
                 />
               </div>
+              )}
 
               <Separator className="my-4" />
 

@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { BF_2026, MENSAJE_BF_2026_NO_APLICA, MENSAJE_BF_2026_SIN_CODIGO } from '@/lib/offers'
 import { createOrder } from "@/lib/db"
 import { toPublicR2Url } from "@/lib/r2"
 import { shippingCostFor } from "@/lib/shipping-config"
@@ -63,7 +64,11 @@ export async function POST(request: NextRequest) {
     if (!chequeoPrecio.ok) {
       console.error('❌ Precio por debajo del real (transferencia):', chequeoPrecio.subfacturados)
       return NextResponse.json(
-        { success: false, error: 'Los precios del carrito no coinciden. Recargá la página y probá de nuevo.' },
+        {
+          success: false,
+          error: chequeoPrecio.ofertaTerminada ? MENSAJE_BF_2026_NO_APLICA : 'Los precios del carrito no coinciden. Recargá la página y probá de nuevo.',
+          ...(chequeoPrecio.ofertaTerminada ? { code: 'BF_2026_NO_APLICA' } : {}),
+        },
         { status: 400 },
       )
     }
@@ -91,6 +96,10 @@ export async function POST(request: NextRequest) {
     const descuento = await validarDescuento(discountCode, finalSubtotal)
     if (discountCode && !descuento.valid) {
       console.warn('[checkout/transfer] código de descuento no aplicado:', discountCode, descuento.reason)
+    }
+    // Black Friday 2026 no se suma con códigos de descuento.
+    if (chequeoPrecio.bfAplicado && descuento.valid && descuento.discountARS > 0) {
+      return NextResponse.json({ success: false, error: MENSAJE_BF_2026_SIN_CODIGO, code: 'BF_2026_SIN_CODIGO' }, { status: 400 })
     }
 
     const finalTotal = Math.max(0, finalSubtotal - descuento.discountARS) + finalShippingCost
@@ -170,8 +179,9 @@ export async function POST(request: NextRequest) {
       items: orderItems,
       ...sanitizedAttribution,
       metadata:
-        descuento.valid || tiendas.todos.length > 1
+        descuento.valid || tiendas.todos.length > 1 || chequeoPrecio.bfAplicado
           ? {
+              ...(chequeoPrecio.bfAplicado ? { promo: BF_2026.promo } : {}),
               ...(descuento.valid
                 ? {
                     discount_code_id: descuento.discountId,

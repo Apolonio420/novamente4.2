@@ -15,6 +15,8 @@ export interface CartItem {
   color: string
   size: string
   price: number
+  /** Solo en la vista repreciada (aplicarBf2026): precio de lista tachado cuando corre Black Friday. No se guarda. */
+  bfOriginalPrice?: number
   quantity: number
   image: string
   mockupUrl?: string

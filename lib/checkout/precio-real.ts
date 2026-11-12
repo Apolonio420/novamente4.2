@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { resolveProductCost } from '@/lib/partners/variants'
 import type { Plan } from '@/lib/partners/types'
 import { recargoDorsoPara } from '@/lib/pricing/recargo-doble-estampa'
+import { precioPrendaPropiaEnCarrito, BF_2026_PRICES, bf2026PriceFor } from '@/lib/offers'
 
 /**
  * Precio real de un item del carrito, resuelto EN EL SERVIDOR.
@@ -137,16 +138,38 @@ function precioDePrendaPropia(garmentKey: string, dobleEstampa: boolean): number
   return producto.retailARS + (dobleEstampa ? recargoDorsoPara(garmentKey) : 0)
 }
 
-export async function precioRealDelItem(item: ItemAValidar): Promise<number | null> {
+/**
+ * Contexto del carrito para la promo Black Friday 2026 (lib/offers.ts): el tope
+ * de 1-4 prendas es del carrito entero y la fecha es la del SERVIDOR.
+ */
+export interface ContextoPromo {
+  carrito: ItemAValidar[]
+  now?: Date | number
+}
+
+export async function precioRealDelItem(item: ItemAValidar, promo?: ContextoPromo): Promise<number | null> {
   const idPartner = item.productId || item.partner_product_id
   if (idPartner) {
     return await precioDeProductoPartner(idPartner, item.size || item.product_size)
   }
   const prenda = item.garmentType || item.product_type
   if (prenda) {
+    if (promo) {
+      const conPromo = precioPrendaPropiaEnCarrito(item, promo.carrito, promo.now ?? Date.now())
+      if (conPromo !== null) return conPromo
+    }
     return precioDePrendaPropia(prenda, item.doble_estampa === 'Si')
   }
   return null
+}
+
+/** Precio BF (+dorso) que tendría la prenda si la promo le aplicara en un carrito de 1, ignorando fecha y tope. */
+function precioBfTeorico(item: ItemAValidar): number | null {
+  if (item.productId || item.partner_product_id) return null
+  const k = String(item.garmentType || item.product_type || '')
+  const bf = BF_2026_PRICES[k]
+  if (typeof bf !== 'number') return null
+  return bf + (item.doble_estampa === 'Si' ? recargoDorsoPara(k) : 0)
 }
 
 export interface ResultadoValidacion {
@@ -155,6 +178,17 @@ export interface ResultadoValidacion {
   subfacturados: Array<{ item: string; cobrado: number; real: number }>
   /** Cuántos no se pudieron verificar (se dejaron pasar). */
   sinVerificar: number
+  /**
+   * true si algún ítem se cobra con precio Black Friday 2026 válido (para
+   * etiquetar el pedido con metadata.promo = 'bf-2026').
+   */
+  bfAplicado: boolean
+  /**
+   * true si el rechazo es porque el carrito traía el precio Black Friday y ya no
+   * corresponde (terminó la ventana o el carrito pasó a 5+ prendas): el mensaje
+   * al cliente es otro, no "los precios no coinciden".
+   */
+  ofertaTerminada: boolean
   /**
    * Productos de partner cuyo precio real (no lo que mandó el navegador —
    * la fila del producto) está por debajo del costo de producción, o del
@@ -171,20 +205,30 @@ export interface ResultadoValidacion {
  * subió después de agregar al carrito) se deja pasar y se reporta aparte, para
  * no bloquear a alguien que está pagando de más.
  */
-export async function validarPrecios(items: ItemAValidar[]): Promise<ResultadoValidacion> {
+export async function validarPrecios(items: ItemAValidar[], opts: { now?: Date | number } = {}): Promise<ResultadoValidacion> {
   const subfacturados: ResultadoValidacion['subfacturados'] = []
   const bajoCosto: ResultadoValidacion['bajoCosto'] = []
   let sinVerificar = 0
+  let bfAplicado = false
+  let ofertaTerminada = false
+  const now = opts.now ?? Date.now()
+  const promo: ContextoPromo = { carrito: items, now }
 
   for (const item of items) {
-    const real = await precioRealDelItem(item)
+    const real = await precioRealDelItem(item, promo)
     if (real === null) { sinVerificar++; continue }
     const cobrado = Number(item.unit_price ?? item.price ?? 0)
     const nombreItem = String(item.productId || item.partner_product_id || item.garmentType || item.product_type || 'item')
 
     if (cobrado < real - TOLERANCIA_ARS) {
+      const teorico = precioBfTeorico(item)
+      if (teorico !== null && Math.abs(cobrado - teorico) <= TOLERANCIA_ARS) ofertaTerminada = true
       subfacturados.push({ item: nombreItem, cobrado, real })
       continue // ya rechazado por otro motivo; no hace falta chequear el costo
+    }
+    if (bf2026PriceFor(item, items, now) !== null && cobrado < real + TOLERANCIA_ARS + 1) {
+      const lista = precioDePrendaPropia(String(item.garmentType || item.product_type), item.doble_estampa === 'Si')
+      if (lista !== null && cobrado < lista - TOLERANCIA_ARS) bfAplicado = true
     }
 
     const idPartner = item.productId || item.partner_product_id
@@ -196,5 +240,5 @@ export async function validarPrecios(items: ItemAValidar[]): Promise<ResultadoVa
     }
   }
 
-  return { ok: subfacturados.length === 0 && bajoCosto.length === 0, subfacturados, sinVerificar, bajoCosto }
+  return { ok: subfacturados.length === 0 && bajoCosto.length === 0, subfacturados, sinVerificar, bajoCosto, bfAplicado, ofertaTerminada }
 }

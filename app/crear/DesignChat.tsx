@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
+import { useBf2026Price } from "@/lib/use-bf-2026"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -252,6 +253,8 @@ export function DesignChat({
     [productDisplayNameWithOverrides],
   )
 
+  // Black Friday 2026: precio tachado (misma regla que valida el checkout, lib/offers.ts).
+  const bfPrecio = useBf2026Price(session.garmentType)
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: "assistant",
@@ -2800,7 +2803,11 @@ export function DesignChat({
               </span>
               <details className="group">
                 <summary className="cursor-pointer list-none text-white font-semibold flex items-center gap-1 hover:text-violet-300 transition">
-                  ${(getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType)))).toLocaleString("es-AR")}
+                  {bfPrecio !== null && (
+                    <span className="text-[11px] text-zinc-500 line-through font-normal">${(getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType)))).toLocaleString("es-AR")}</span>
+                  )}
+                  ${(bfPrecio !== null ? bfPrecio + ((session.dobleEstampa && hasBackTemplate(session.garmentType)) ? recargoDorso(session.garmentType) : 0) : getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType)))).toLocaleString("es-AR")}
+                  {bfPrecio !== null && <span className="text-[10px] text-emerald-400 font-normal">Black Friday</span>}
                   <span className="text-[10px] text-zinc-500 group-open:rotate-180 transition-transform">▼</span>
                 </summary>
                 <div className="absolute right-3 mt-1 z-10 bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-xs space-y-1.5 shadow-xl min-w-[220px]">
@@ -2889,8 +2896,11 @@ export function DesignChat({
               {garmentLabel(session.garmentType)} · {colorLabel(session.garmentType, session.garmentColor)} · Talle {selectedSize}
             </div>
             <div className="flex items-baseline gap-1.5">
+              {bfPrecio !== null && (
+                <span className="text-[11px] text-zinc-500 line-through">${getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType))).toLocaleString("es-AR")}</span>
+              )}
               <span className="text-white font-semibold text-base">
-                ${getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType))).toLocaleString("es-AR")}
+                ${(bfPrecio !== null ? bfPrecio + ((session.dobleEstampa && hasBackTemplate(session.garmentType)) ? recargoDorso(session.garmentType) : 0) : getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType)))).toLocaleString("es-AR")}
               </span>
               <span className="text-[10px] text-emerald-400">o 3x ${Math.round(getPriceConDorso(session.garmentType, !!(session.dobleEstampa && hasBackTemplate(session.garmentType))) / 3).toLocaleString("es-AR")}</span>
             </div>

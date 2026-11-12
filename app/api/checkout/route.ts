@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { BF_2026, MENSAJE_BF_2026_NO_APLICA, MENSAJE_BF_2026_SIN_CODIGO } from '@/lib/offers'
 import { cardSurchargeAmount } from "@/lib/payment-config"
 import { MercadoPagoConfig, Preference } from "mercadopago"
 import { createOrder, findRecentDuplicateOrder } from "@/lib/db"
@@ -138,8 +139,10 @@ export async function POST(request: NextRequest) {
       // corrija el precio.
       const mensaje = chequeo.bajoCosto.length > 0
         ? 'Este producto no está disponible ahora. Escribile a la tienda.'
-        : 'Los precios del carrito no coinciden. Recargá la página y probá de nuevo.'
-      return NextResponse.json({ success: false, error: mensaje }, { status: 400 })
+        : chequeo.ofertaTerminada
+          ? MENSAJE_BF_2026_NO_APLICA
+          : 'Los precios del carrito no coinciden. Recargá la página y probá de nuevo.'
+      return NextResponse.json({ success: false, error: mensaje, ...(chequeo.ofertaTerminada ? { code: 'BF_2026_NO_APLICA' } : {}) }, { status: 400 })
     }
     if (chequeo.sinVerificar > 0) {
       console.warn(`[checkout] ${chequeo.sinVerificar} item(s) sin precio verificable`)
@@ -167,6 +170,10 @@ export async function POST(request: NextRequest) {
     const descuento = await validarDescuento(discountCode, finalSubtotal)
     if (discountCode && !descuento.valid) {
       console.warn('[checkout] código de descuento no aplicado:', discountCode, descuento.reason)
+    }
+    // Black Friday 2026 no se suma con códigos de descuento.
+    if (chequeo.bfAplicado && descuento.valid && descuento.discountARS > 0) {
+      return NextResponse.json({ success: false, error: MENSAJE_BF_2026_SIN_CODIGO, code: 'BF_2026_SIN_CODIGO' }, { status: 400 })
     }
 
     const finalTotal = Math.max(0, finalSubtotal - descuento.discountARS) + finalShippingCost
@@ -300,6 +307,7 @@ export async function POST(request: NextRequest) {
         metadata: {
           card_surcharge_ars: cardSurcharge,
           base_total_ars: finalTotal,
+          ...(chequeo.bfAplicado ? { promo: BF_2026.promo } : {}),
           ...(tiendas.todos.length > 1 ? { tenant_ids: tiendas.todos } : {}),
           ...(descuento.valid
             ? {
